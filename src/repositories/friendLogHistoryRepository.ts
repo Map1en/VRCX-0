@@ -1,9 +1,5 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteParams, SQLiteValue } from './sqliteRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
-
 const FRIEND_LOG_TYPES = Object.freeze([
     'Friend',
     'Unfriend',
@@ -118,18 +114,12 @@ async function getFriendLogHistory(
     userId: unknown,
     options: FriendLogHistoryOptions = {}
 ): Promise<FriendLogHistoryRow[]> {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    const whereClauses: string[] = [];
-    const args: Record<string, SQLiteValue> = {};
-
+    const normalizedUserId =
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
     const normalizedTargetUserId =
         typeof options.targetUserId === 'string'
             ? options.targetUserId.trim()
             : String(options.targetUserId ?? '').trim();
-    if (normalizedTargetUserId) {
-        whereClauses.push('user_id = @user_id');
-        args['@user_id'] = normalizedTargetUserId;
-    }
 
     const normalizedTypes = Array.isArray(options.types)
         ? options.types
@@ -144,22 +134,14 @@ async function getFriendLogHistory(
                       FRIEND_LOG_TYPES.includes(entry as FriendLogType)
               )
         : [];
-    if (normalizedTypes.length) {
-        const typePlaceholders = normalizedTypes.map((type, index) => {
-            const key = `@type_${index}`;
-            args[key] = type;
-            return key;
-        });
-        whereClauses.push(`type IN (${typePlaceholders.join(', ')})`);
-    }
 
-    const whereSql = whereClauses.length
-        ? ` WHERE ${whereClauses.join(' AND ')}`
-        : '';
-    const rows = await sqliteRepository.query<FriendLogHistorySourceRow>(
-        `SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM ${userPrefix}_friend_log_history${whereSql} ORDER BY created_at DESC, id DESC`,
-        args as SQLiteParams
-    );
+    const rows = (await backend.app.FriendLogHistoryQuery({
+        query: {
+            userId: normalizedUserId,
+            targetUserId: normalizedTargetUserId,
+            types: normalizedTypes
+        }
+    })) as FriendLogHistorySourceRow[];
 
     if (!Array.isArray(rows)) {
         return [];

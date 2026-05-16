@@ -9,7 +9,6 @@ import {
     safeJsonParse,
     safeJsonStringify
 } from './baseRepository.js';
-import sqliteRepository from './sqliteRepository.js';
 
 type ConfigEntries = Array<[string, unknown]>;
 type ConfigObject = Record<string, unknown> | unknown[] | null;
@@ -46,9 +45,7 @@ class ConfigRepository {
 
         await backend.app.ConfigSetValues({ entries: [] });
 
-        const rows = await sqliteRepository.query<ConfigRow>(
-            'SELECT key, value FROM configs'
-        );
+        const rows = (await backend.app.ConfigListValues()) as ConfigRow[];
         if (Array.isArray(rows)) {
             for (const row of rows) {
                 if (Array.isArray(row) && row[0] != null && row[1] != null) {

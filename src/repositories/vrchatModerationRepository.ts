@@ -1,9 +1,5 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
-import userSessionRepository, {
-    normalizeUserTablePrefix
-} from './userSessionRepository.js';
 import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 type ObjectRow = Record<string, unknown>;
@@ -11,10 +7,10 @@ type RequestOptions = {
     endpoint?: string;
 };
 
-interface LocalModerationRow extends ObjectRow {
-    user_id?: unknown;
-    updated_at?: unknown;
-    display_name?: unknown;
+interface LocalModerationRow {
+    userId?: unknown;
+    updatedAt?: unknown;
+    displayName?: unknown;
     block?: unknown;
     mute?: unknown;
 }
@@ -158,18 +154,16 @@ async function getAllLocalModerations(ownerUserId: unknown) {
         return [];
     }
 
-    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
-    const rows = await sqliteRepository.query<LocalModerationRow | unknown[]>(
-        `SELECT user_id, updated_at, display_name, block, mute FROM ${userPrefix}_moderation`
-    );
+    const rows = (await backend.app.LocalModerationList({
+        ownerUserId: normalizedOwnerUserId
+    })) as LocalModerationRow[];
     return Array.isArray(rows)
         ? rows.map((row) => ({
-              userId: Array.isArray(row) ? row[0] : row.user_id,
-              updatedAt: Array.isArray(row) ? row[1] : row.updated_at,
-              displayName: Array.isArray(row) ? row[2] : row.display_name,
-              block: Number(Array.isArray(row) ? row[3] : row.block) === 1,
-              mute: Number(Array.isArray(row) ? row[4] : row.mute) === 1
+              userId: row.userId,
+              updatedAt: row.updatedAt,
+              displayName: row.displayName,
+              block: Boolean(row.block),
+              mute: Boolean(row.mute)
           }))
         : [];
 }
@@ -181,24 +175,19 @@ async function getLocalModerationRow(ownerUserId: unknown, userId: unknown) {
         return {};
     }
 
-    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
-    const rows = await sqliteRepository.query<LocalModerationRow | unknown[]>(
-        `SELECT user_id, updated_at, display_name, block, mute FROM ${userPrefix}_moderation WHERE user_id = @userId LIMIT 1`,
-        {
-            '@userId': normalizedUserId
-        }
-    );
-    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    const row = (await backend.app.LocalModerationGet({
+        ownerUserId: normalizedOwnerUserId,
+        userId: normalizedUserId
+    })) as LocalModerationRow | null;
     if (!row) {
         return {};
     }
     return {
-        userId: Array.isArray(row) ? row[0] : row.user_id,
-        updatedAt: Array.isArray(row) ? row[1] : row.updated_at,
-        displayName: Array.isArray(row) ? row[2] : row.display_name,
-        block: Number(Array.isArray(row) ? row[3] : row.block) === 1,
-        mute: Number(Array.isArray(row) ? row[4] : row.mute) === 1
+        userId: row.userId,
+        updatedAt: row.updatedAt,
+        displayName: row.displayName,
+        block: Boolean(row.block),
+        mute: Boolean(row.mute)
     };
 }
 

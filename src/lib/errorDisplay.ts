@@ -2,7 +2,6 @@ const internalErrorPatterns = [
     /\bSQLite (?:query|non-query) failed\b/i,
     /\bBackend command failed\b/i,
     /\bDatabase error\b/i,
-    /\bsqlite__execute(?:_non_query)?\b/i,
     /\bno such table\b/i
 ];
 

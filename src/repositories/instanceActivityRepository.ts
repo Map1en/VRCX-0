@@ -1,6 +1,4 @@
-import { parseLocation } from '@/shared/utils/locationParser.js';
-
-import sqliteRepository from './sqliteRepository.js';
+import { backend } from '@/platform/index.js';
 
 type SQLiteLikeRow = Record<string, any> | unknown[];
 
@@ -49,7 +47,7 @@ function normalizeInstanceActivityRow(row: SQLiteLikeRow): InstanceActivityRow {
 
     return {
         id: row?.id ?? '',
-        created_at: row?.created_at ?? '',
+        created_at: row?.created_at ?? row?.createdAt ?? '',
         type: row?.type ?? '',
         display_name: row?.display_name ?? row?.displayName ?? '',
         location: row?.location ?? '',
@@ -91,65 +89,30 @@ function normalizeWorldCacheRow(row: SQLiteLikeRow): WorldSummary {
     };
 }
 
-function isValidActivityLocation(location: unknown): boolean {
-    const normalizedLocation = normalizeString(location);
-    if (!normalizedLocation) {
-        return false;
-    }
-    return !parseLocation(normalizedLocation).isTraveling;
-}
-
 async function getAvailableDates(userId: unknown): Promise<unknown[]> {
     const normalizedUserId = normalizeString(userId);
     if (!normalizedUserId) {
         return [];
     }
 
-    const rows = await sqliteRepository.query(
-        `SELECT created_at
-         FROM gamelog_join_leave
-         WHERE user_id = @userId
-         ORDER BY created_at DESC`,
-        {
-            '@userId': normalizedUserId
-        }
-    );
+    const rows = await backend.app.InstanceActivityDatesGet({
+        userId: normalizedUserId
+    });
 
-    return Array.isArray(rows)
-        ? rows
-              .map((row) =>
-                  Array.isArray(row)
-                      ? row[0]
-                      : (row?.created_at ?? row?.[0] ?? '')
-              )
-              .filter(Boolean)
-        : [];
+    return Array.isArray(rows) ? rows.filter(Boolean) : [];
 }
 
 async function getInstanceActivityRows(
     startDate: string,
     endDate: string
 ): Promise<InstanceActivityRow[]> {
-    const rows = await sqliteRepository.query(
-        `SELECT *
-         FROM gamelog_join_leave
-         WHERE type = 'OnPlayerLeft'
-           AND (
-             strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds')
-                BETWEEN @utc_start_date AND @utc_end_date
-             OR created_at BETWEEN @utc_start_date AND @utc_end_date
-           )
-         ORDER BY created_at ASC, id ASC`,
-        {
-            '@utc_start_date': startDate,
-            '@utc_end_date': endDate
-        }
-    );
+    const rows = await backend.app.InstanceActivityRowsGet({
+        startDate,
+        endDate
+    });
 
     return Array.isArray(rows)
-        ? rows
-              .map(normalizeInstanceActivityRow)
-              .filter((row) => isValidActivityLocation(row.location))
+        ? rows.map((row) => normalizeInstanceActivityRow(row as SQLiteLikeRow))
         : [];
 }
 
@@ -167,64 +130,18 @@ async function getWorldSummariesByIds(
         return {};
     }
 
-    const params: Record<string, string> = {};
-    const placeholders = ids.map((id, index) => {
-        const key = `@worldId${index}`;
-        params[key] = id;
-        return key;
-    });
-
-    const rows = await sqliteRepository.query(
-        `SELECT *
-         FROM cache_world
-         WHERE id IN (${placeholders.join(', ')})`,
-        params
-    );
+    const rows = (await backend.app.WorldSummariesGet({
+        worldIds: ids
+    })) as Record<string, SQLiteLikeRow>;
 
     const map: Record<string, WorldSummary> = {};
-    if (Array.isArray(rows)) {
-        for (const row of rows) {
-            const world = normalizeWorldCacheRow(row);
-            if (world.id) {
-                map[world.id] = world;
-            }
+    for (const [worldId, row] of Object.entries(rows || {})) {
+        const world = normalizeWorldCacheRow(row);
+        if (!world.id) {
+            world.id = worldId;
         }
-    }
-
-    const locationRows = await sqliteRepository.query(
-        `SELECT gl.world_id, gl.world_name
-         FROM gamelog_location gl
-         INNER JOIN (
-             SELECT world_id, MAX(id) AS max_id
-             FROM gamelog_location
-             WHERE world_id IN (${placeholders.join(', ')})
-               AND world_name IS NOT NULL
-               AND world_name != ''
-             GROUP BY world_id
-         ) latest
-             ON latest.world_id = gl.world_id
-            AND latest.max_id = gl.id`,
-        params
-    );
-
-    if (Array.isArray(locationRows)) {
-        for (const row of locationRows) {
-            const worldId = normalizeString(
-                Array.isArray(row) ? row[0] : (row?.world_id ?? row?.worldId)
-            );
-            const worldName = normalizeString(
-                Array.isArray(row)
-                    ? row[1]
-                    : (row?.world_name ?? row?.worldName)
-            );
-            if (!worldId || !worldName || map[worldId]?.name) {
-                continue;
-            }
-            map[worldId] = {
-                ...(map[worldId] || {}),
-                id: worldId,
-                name: worldName
-            };
+        if (world.id) {
+            map[world.id] = world;
         }
     }
 

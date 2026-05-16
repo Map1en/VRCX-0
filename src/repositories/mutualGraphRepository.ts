@@ -1,10 +1,8 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
 import vrchatFriendRepository from './vrchatFriendRepository.js';
 
-type SQLiteNamedRow = Record<string, unknown>;
 type MutualGraphEntryMap = Map<string, string[] | Set<string>>;
 type MutualGraphMeta = {
     lastFetchedAt: string | null;
@@ -17,19 +15,6 @@ type MutualGraphOptions = {
     offset?: number;
     n?: number;
 };
-
-function readColumn(row: unknown, index: number, key: string): unknown {
-    if (Array.isArray(row)) {
-        return row[index];
-    }
-
-    if (row && typeof row === 'object') {
-        const record = row as SQLiteNamedRow;
-        return record[key] ?? record[index];
-    }
-
-    return null;
-}
 
 async function ensureTables(userId: unknown): Promise<string> {
     const userPrefix = normalizeUserTablePrefix(userId);
@@ -46,32 +31,39 @@ async function getSnapshot(userId: unknown): Promise<{
     snapshot: Map<string, string[]>;
     meta: Map<string, MutualGraphMeta>;
 }> {
-    const userPrefix = await ensureTables(userId);
-    const friendTable = `${userPrefix}_mutual_graph_friends`;
-    const linkTable = `${userPrefix}_mutual_graph_links`;
-    const metaTable = `${userPrefix}_mutual_graph_meta`;
-
-    const [friendRows, linkRows, metaRows] = await Promise.all([
-        sqliteRepository.query(`SELECT friend_id FROM ${friendTable}`),
-        sqliteRepository.query(`SELECT friend_id, mutual_id FROM ${linkTable}`),
-        sqliteRepository.query(
-            `SELECT friend_id, last_fetched_at, opted_out FROM ${metaTable}`
-        )
-    ]);
+    await ensureTables(userId);
+    const {
+        friendIds = [],
+        links = [],
+        meta: metaRows = []
+    } = (await backend.app.MutualGraphSnapshotGet({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim()
+    })) as {
+        friendIds?: unknown[];
+        links?: Array<{ friendId?: unknown; mutualId?: unknown }>;
+        meta?: Array<{
+            friendId?: unknown;
+            lastFetchedAt?: unknown;
+            optedOut?: unknown;
+        }>;
+    };
 
     const snapshot = new Map();
     const meta = new Map();
 
-    for (const row of friendRows ?? []) {
-        const friendId = readColumn(row, 0, 'friend_id');
-        if (friendId && !snapshot.has(friendId)) {
-            snapshot.set(String(friendId), []);
+    for (const friendId of friendIds ?? []) {
+        const normalizedFriendId = String(friendId || '');
+        if (normalizedFriendId && !snapshot.has(normalizedFriendId)) {
+            snapshot.set(normalizedFriendId, []);
         }
     }
 
-    for (const row of linkRows ?? []) {
-        const friendId = readColumn(row, 0, 'friend_id');
-        const mutualId = readColumn(row, 1, 'mutual_id');
+    for (const row of links ?? []) {
+        const friendId = row.friendId;
+        const mutualId = row.mutualId;
         if (!friendId || !mutualId) {
             continue;
         }
@@ -83,15 +75,14 @@ async function getSnapshot(userId: unknown): Promise<{
     }
 
     for (const row of metaRows ?? []) {
-        const friendId = readColumn(row, 0, 'friend_id');
+        const friendId = row.friendId;
         if (!friendId) {
             continue;
         }
 
         meta.set(String(friendId), {
-            lastFetchedAt:
-                String(readColumn(row, 1, 'last_fetched_at') || '') || null,
-            optedOut: Number(readColumn(row, 2, 'opted_out')) === 1
+            lastFetchedAt: String(row.lastFetchedAt || '') || null,
+            optedOut: Boolean(row.optedOut)
         });
     }
 

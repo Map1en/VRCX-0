@@ -1,29 +1,5 @@
 import { backend } from '@/platform/index.js';
 
-import { buildInClause } from './localDatabaseSql.js';
-import sqliteService from './sqliteRepository.js';
-
-type GameLogDatabaseRow = {
-    [key: string]: unknown;
-    rowId: unknown;
-    created_at: unknown;
-    type: unknown;
-    location?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    time?: unknown;
-    groupName?: unknown;
-    displayName?: unknown;
-    userId?: unknown;
-    instanceId?: unknown;
-    videoUrl?: unknown;
-    videoName?: unknown;
-    videoId?: unknown;
-    resourceUrl?: unknown;
-    data?: unknown;
-    message?: unknown;
-};
-
 const DEFAULT_MAX_TABLE_SIZE = 500;
 const DEFAULT_SEARCH_TABLE_SIZE = 50000;
 
@@ -43,6 +19,15 @@ function addGameLogEntries(kind, entries) {
     return backend.app.GameLogEntriesAdd({
         kind,
         entries: Array.isArray(entries) ? entries : [entries]
+    });
+}
+
+async function queryGameLog(kind, params = {}) {
+    return backend.app.GameLogQuery({
+        query: {
+            kind,
+            params
+        }
     });
 }
 
@@ -95,109 +80,14 @@ function rememberGameLogWorldName(worldId, worldName) {
 
 const gameLog = {
     async getGamelogDatabase(maxTableSize = DEFAULT_MAX_TABLE_SIZE) {
-        var gamelogDatabase = [];
         var date = new Date();
         date.setDate(date.getDate() - 1); // 24 hour limit
         var dateOffset = date.toJSON();
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: 'Location',
-                location: dbRow[2],
-                worldId: dbRow[3],
-                worldName: dbRow[4],
-                time: dbRow[5],
-                groupName: dbRow[6]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_location WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: dbRow[2],
-                displayName: dbRow[3],
-                location: dbRow[4],
-                userId: dbRow[5],
-                time: dbRow[6]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_join_leave WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: 'PortalSpawn',
-                displayName: dbRow[2],
-                location: dbRow[3],
-                userId: dbRow[4],
-                instanceId: dbRow[5],
-                worldName: dbRow[6]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_portal_spawn WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: 'VideoPlay',
-                videoUrl: dbRow[2],
-                videoName: dbRow[3],
-                videoId: dbRow[4],
-                location: dbRow[5],
-                displayName: dbRow[6],
-                userId: dbRow[7]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_video_play WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: dbRow[3],
-                resourceUrl: dbRow[2],
-                location: dbRow[4]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_resource_load WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: 'Event',
-                data: dbRow[2]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_event WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        await sqliteService.execute((dbRow) => {
-            var row = {
-                rowId: dbRow[0],
-                created_at: dbRow[1],
-                type: 'External',
-                message: dbRow[2],
-                displayName: dbRow[3],
-                userId: dbRow[4],
-                location: dbRow[5]
-            };
-            gamelogDatabase.push(row);
-        }, `SELECT * FROM gamelog_external WHERE created_at >= date('${dateOffset}') ORDER BY id DESC LIMIT ${maxTableSize}`);
-        var compareByCreatedAt = function (a, b) {
-            var A = a.created_at;
-            var B = b.created_at;
-            if (A < B) {
-                return -1;
-            }
-            if (A > B) {
-                return 1;
-            }
-            return 0;
-        };
-        gamelogDatabase.sort(compareByCreatedAt);
-        if (gamelogDatabase.length > maxTableSize) {
-            gamelogDatabase.splice(0, gamelogDatabase.length - maxTableSize);
-        }
-        return gamelogDatabase;
+        const rows = await queryGameLog('recentDatabase', {
+            dateOffset,
+            maxTableSize
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async addGamelogLocationToDatabase(entry) {
@@ -241,323 +131,80 @@ const gameLog = {
     },
 
     async getLastVisit(worldId, currentWorldMatch) {
-        var count = currentWorldMatch ? 2 : 1;
-        var ref = {
-            created_at: '',
-            worldId: ''
-        };
-        await sqliteService.execute(
-            (row) => {
-                ref = {
-                    created_at: row[0],
-                    worldId: row[1]
-                };
-            },
-            `SELECT created_at, world_id FROM gamelog_location WHERE world_id = @worldId ORDER BY id DESC LIMIT @count`,
-            {
-                '@worldId': worldId,
-                '@count': count
-            }
-        );
-        return ref;
+        return queryGameLog('lastVisit', { worldId, currentWorldMatch });
     },
 
     async getVisitCount(worldId) {
-        var ref = {
-            visitCount: 0,
-            worldId: ''
-        };
-        await sqliteService.execute(
-            (row) => {
-                ref = {
-                    visitCount: row[0],
-                    worldId
-                };
-            },
-            `SELECT COUNT(DISTINCT location) FROM gamelog_location WHERE world_id = @worldId`,
-            {
-                '@worldId': worldId
-            }
-        );
-        return ref;
+        return queryGameLog('visitCount', { worldId });
     },
 
     async getTimeSpentInWorld(worldId) {
-        var ref = {
-            timeSpent: 0,
-            worldId
-        };
-        await sqliteService.execute(
-            (row) => {
-                if (typeof row[0] === 'number') {
-                    ref.timeSpent = row[0];
-                }
-            },
-            `SELECT COALESCE(SUM(time), 0)
-             FROM gamelog_location
-             WHERE world_id = @worldId`,
-            {
-                '@worldId': worldId
-            }
-        );
-        return ref;
+        return queryGameLog('timeSpentInWorld', { worldId });
     },
 
     async getLastGroupVisit(groupId) {
-        var ref = {
-            created_at: ''
-        };
-        await sqliteService.execute(
-            (row) => {
-                ref = {
-                    created_at: row[0]
-                };
-            },
-            `SELECT created_at FROM gamelog_location WHERE location LIKE @groupId ORDER BY id DESC LIMIT 1`,
-            {
-                '@groupId': `%${groupId}%`
-            }
-        );
-        return ref;
+        return queryGameLog('lastGroupVisit', { groupId });
     },
 
     async getPreviousInstancesByGroupId(groupId) {
         const data = new Map();
-        await sqliteService.execute(
-            (dbRow) => {
-                let time = 0;
-                if (dbRow[2]) {
-                    time = dbRow[2];
-                }
-                var ref = data.get(dbRow[1]);
-                if (typeof ref !== 'undefined') {
-                    time += ref.time;
-                }
-                var row = {
-                    created_at: dbRow[0],
-                    location: dbRow[1],
-                    time,
-                    worldName: dbRow[3],
-                    groupName: dbRow[4]
-                };
-                data.set(row.location, row);
-            },
-            `SELECT created_at, location, time, world_name, group_name
-             FROM gamelog_location
-             WHERE location LIKE @groupId
-             ORDER BY id DESC`,
-            {
-                '@groupId': `%${groupId}%`
-            }
-        );
+        const rows = await queryGameLog('previousInstancesByGroupId', {
+            groupId
+        });
+        for (const row of Array.isArray(rows) ? rows : []) {
+            data.set(row.location, row);
+        }
         return data;
     },
 
     async getLastSeen(input, inCurrentWorld) {
-        const count = inCurrentWorld ? 2 : 1;
-        let ref = {
-            created_at: '',
-            userId: ''
-        };
-        await sqliteService.execute(
-            (row) => {
-                if (row[1]) {
-                    ref = {
-                        created_at: row[0],
-                        userId: row[1]
-                    };
-                } else {
-                    ref = {
-                        created_at: row[0],
-                        userId: input.id
-                    };
-                }
-            },
-            `SELECT created_at, user_id FROM gamelog_join_leave WHERE user_id = @userId OR display_name = @displayName ORDER BY id DESC LIMIT @count`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName,
-                '@count': count
-            }
-        );
-        return ref;
+        return queryGameLog('lastSeen', {
+            userId: input.id,
+            displayName: input.displayName,
+            inCurrentWorld
+        });
     },
 
     async getJoinCount(input) {
-        var ref = {
-            joinCount: '',
-            userId: ''
-        };
-        await sqliteService.execute(
-            (row) => {
-                if (row[1]) {
-                    ref = {
-                        joinCount: row[0],
-                        userId: row[1]
-                    };
-                } else {
-                    ref = {
-                        joinCount: row[0],
-                        userId: input.id
-                    };
-                }
-            },
-            `SELECT COUNT(DISTINCT location) FROM gamelog_join_leave WHERE (type = 'OnPlayerJoined') AND (user_id = @userId OR display_name = @displayName)`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName
-            }
-        );
-        return ref;
+        return queryGameLog('joinCount', {
+            userId: input.id,
+            displayName: input.displayName
+        });
     },
 
     async getTimeSpent(input) {
-        var ref = {
-            timeSpent: 0,
-            userId: input.id
-        };
-        await sqliteService.execute(
-            (row) => {
-                if (typeof row[0] === 'number') {
-                    ref.timeSpent = row[0];
-                }
-            },
-            `SELECT COALESCE(SUM(time), 0)
-             FROM gamelog_join_leave
-             WHERE type = 'OnPlayerLeft'
-               AND (user_id = @userId OR display_name = @displayName)`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName
-            }
-        );
-        return ref;
+        return queryGameLog('timeSpent', {
+            userId: input.id,
+            displayName: input.displayName
+        });
     },
 
     async getUserStats(input, inCurrentWorld) {
-        var ref = {
-            timeSpent: 0,
-            lastSeen: '',
-            joinCount: 0,
+        const result = (await queryGameLog('userStats', {
             userId: input.id,
+            displayName: input.displayName,
+            inCurrentWorld
+        })) as Record<string, any>;
+        const ref = {
+            ...(result || {}),
             previousDisplayNames: new Map()
         };
-        const count = inCurrentWorld ? 2 : 1;
-        await sqliteService.execute(
-            (row) => {
-                if (row[0]) {
-                    ref.lastSeen = row[0];
-                }
-            },
-            `SELECT created_at
-             FROM gamelog_join_leave
-             WHERE user_id = @userId OR display_name = @displayName
-             ORDER BY id DESC
-             LIMIT @count`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName,
-                '@count': count
+        for (const row of Array.isArray(result?.previousDisplayNames)
+            ? result.previousDisplayNames
+            : []) {
+            if (row.displayName && row.created_at) {
+                ref.previousDisplayNames.set(row.displayName, row.created_at);
             }
-        );
-        await sqliteService.execute(
-            (row) => {
-                if (typeof row[0] === 'number') {
-                    ref.timeSpent = row[0];
-                }
-                if (typeof row[1] === 'number') {
-                    ref.joinCount = row[1];
-                }
-            },
-            `SELECT
-                COALESCE(SUM(CASE WHEN type = 'OnPlayerLeft' THEN time ELSE 0 END), 0),
-                COUNT(DISTINCT NULLIF(location, ''))
-             FROM gamelog_join_leave
-             WHERE user_id = @userId OR display_name = @displayName`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName
-            }
-        );
-        await sqliteService.execute(
-            (row) => {
-                if (row[0] && row[1] && input.displayName !== row[0]) {
-                    ref.previousDisplayNames.set(row[0], row[1]);
-                }
-            },
-            `SELECT display_name, MAX(created_at)
-             FROM gamelog_join_leave
-             WHERE user_id = @userId
-               AND display_name != ''
-               AND display_name != @displayName
-             GROUP BY display_name
-             ORDER BY MAX(created_at) DESC`,
-            {
-                '@userId': input.id,
-                '@displayName': input.displayName
-            }
-        );
+        }
         return ref;
     },
 
     async getAllUserStats(userIds, displayNames) {
-        if (!userIds.length && !displayNames.length) {
-            return [];
-        }
-        const data = [];
-        const userIdFilter = buildInClause(
-            'g.user_id',
+        const rows = await queryGameLog('allUserStats', {
             userIds,
-            'stat_user_id'
-        );
-        const displayNameFilter = buildInClause(
-            'g.display_name',
-            displayNames,
-            'stat_display_name'
-        );
-        const whereClauses = [];
-        const args = {
-            ...userIdFilter.args,
-            ...displayNameFilter.args
-        };
-        if (userIdFilter.clause) {
-            whereClauses.push(userIdFilter.clause);
-        }
-        if (displayNameFilter.clause) {
-            whereClauses.push(displayNameFilter.clause);
-        }
-
-        await sqliteService.execute(
-            (dbRow) => {
-                const row = {
-                    lastSeen: dbRow[0],
-                    userId: dbRow[1],
-                    timeSpent: dbRow[2],
-                    joinCount: dbRow[3],
-                    displayName: dbRow[4]
-                };
-                data.push(row);
-            },
-            `SELECT
-                g.created_at,
-                g.user_id,
-                SUM(g.time) AS timeSpent,
-                COUNT(DISTINCT g.location) AS joinCount,
-                g.display_name,
-                MAX(g.id) AS max_id
-            FROM
-                gamelog_join_leave g
-            WHERE
-                ${whereClauses.join('\n                OR ')}
-            GROUP BY
-                g.user_id,
-                g.display_name
-            ORDER BY
-                g.user_id DESC
-            `,
-            args
-        );
-        return data;
+            displayNames
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getGameLogByLocation(
@@ -566,184 +213,14 @@ const gameLog = {
         vipList = [],
         { currentUserId = '', maxEntries = DEFAULT_SEARCH_TABLE_SIZE } = {}
     ) {
-        const normalizedCurrentUserId = normalizeCurrentUserId(currentUserId);
-        let vipQuery = '';
-        const vipArgs = {};
-        if (vipList.length > 0) {
-            const vipPlaceholders = [];
-            vipList.forEach((vip, i) => {
-                const key = `@vip_${i}`;
-                vipArgs[key] = vip;
-                vipPlaceholders.push(key);
-            });
-            vipQuery = `AND user_id IN (${vipPlaceholders.join(', ')})`;
-        }
-        let location = true;
-        let onplayerjoined = true;
-        let onplayerleft = true;
-        let portalspawn = true;
-        let videoplay = true;
-        let resourceload_string = true;
-        let resourceload_image = true;
-        if (filters.length > 0) {
-            location = false;
-            onplayerjoined = false;
-            onplayerleft = false;
-            portalspawn = false;
-            videoplay = false;
-            resourceload_string = false;
-            resourceload_image = false;
-            filters.forEach((filter) => {
-                switch (filter) {
-                    case 'Location':
-                        location = true;
-                        break;
-                    case 'OnPlayerJoined':
-                        onplayerjoined = true;
-                        break;
-                    case 'OnPlayerLeft':
-                        onplayerleft = true;
-                        break;
-                    case 'PortalSpawn':
-                        portalspawn = true;
-                        break;
-                    case 'VideoPlay':
-                        videoplay = true;
-                        break;
-                    case 'StringLoad':
-                        resourceload_string = true;
-                        break;
-                    case 'ImageLoad':
-                        resourceload_image = true;
-                        break;
-                }
-            });
-        }
-
-        const baseColumns = [
-            'id',
-            'created_at',
-            'type',
-            'display_name',
-            'location',
-            'user_id',
-            'time',
-            'world_id',
-            'world_name',
-            'group_name',
-            'instance_id',
-            'video_url',
-            'video_name',
-            'video_id',
-            'resource_url',
-            'resource_type'
-        ].join(', ');
-
-        const selects = [];
-        if (location) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_location WHERE location LIKE @locationLike ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (onplayerjoined || onplayerleft) {
-            let query = '';
-            if (!onplayerjoined || !onplayerleft) {
-                if (onplayerjoined) {
-                    query = "AND type = 'OnPlayerJoined'";
-                } else if (onplayerleft) {
-                    query = "AND type = 'OnPlayerLeft'";
-                }
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_join_leave WHERE (location LIKE @locationLike AND user_id != @currentUserId) ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (portalspawn) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_portal_spawn WHERE location LIKE @locationLike ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (videoplay) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_video_play WHERE location LIKE @locationLike ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (resourceload_string || resourceload_image) {
-            let checkString = '';
-            let checkImage = '';
-            if (!resourceload_string) {
-                checkString = `AND resource_type != 'StringLoad'`;
-            }
-            if (!resourceload_image) {
-                checkImage = `AND resource_type != 'ImageLoad'`;
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type FROM gamelog_resource_load WHERE location LIKE @locationLike ${checkString} ${checkImage} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-
-        if (selects.length === 0) {
-            return [];
-        }
-
-        const gamelogDatabase: GameLogDatabaseRow[] = [];
-        const args = {
-            '@locationLike': `%${instanceId}%`,
-            '@currentUserId': normalizedCurrentUserId,
-            '@limit': maxEntries,
-            '@perTable': maxEntries,
-            ...vipArgs
-        };
-        await sqliteService.execute(
-            (dbRow) => {
-                const type = dbRow[2];
-                const row: GameLogDatabaseRow = {
-                    rowId: dbRow[0],
-                    created_at: dbRow[1],
-                    type
-                };
-                switch (type) {
-                    case 'Location':
-                        row.location = dbRow[4];
-                        row.worldId = dbRow[7];
-                        row.worldName = dbRow[8];
-                        row.time = dbRow[6];
-                        row.groupName = dbRow[9];
-                        break;
-                    case 'OnPlayerJoined':
-                    case 'OnPlayerLeft':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.time = dbRow[6];
-                        break;
-                    case 'PortalSpawn':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.instanceId = dbRow[10];
-                        row.worldName = dbRow[8];
-                        break;
-                    case 'VideoPlay':
-                        row.videoUrl = dbRow[11];
-                        row.videoName = dbRow[12];
-                        row.videoId = dbRow[13];
-                        row.location = dbRow[4];
-                        row.displayName = dbRow[3];
-                        row.userId = dbRow[5];
-                        break;
-                    case 'StringLoad':
-                    case 'ImageLoad':
-                        row.resourceUrl = dbRow[14];
-                        row.location = dbRow[4];
-                        break;
-                }
-                gamelogDatabase.push(row);
-            },
-            `SELECT ${baseColumns} FROM (${selects.join(' UNION ALL ')}) ORDER BY created_at DESC, id DESC LIMIT @limit`,
-            args
-        );
-        return gamelogDatabase;
+        const rows = await queryGameLog('rowsByLocation', {
+            instanceId,
+            filters,
+            vipList,
+            currentUserId: normalizeCurrentUserId(currentUserId),
+            maxEntries
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async lookupGameLogDatabase(
@@ -751,198 +228,12 @@ const gameLog = {
         vipList,
         maxEntries = DEFAULT_MAX_TABLE_SIZE
     ) {
-        const baseColumns = [
-            'id',
-            'created_at',
-            'type',
-            'display_name',
-            'location',
-            'user_id',
-            'time',
-            'world_id',
-            'world_name',
-            'group_name',
-            'instance_id',
-            'video_url',
-            'video_name',
-            'video_id',
-            'resource_url',
-            'resource_type',
-            'data',
-            'message'
-        ].join(', ');
-        const vipFilter = buildInClause('user_id', vipList, 'lookup_vip');
-        const vipQuery = vipFilter.clause ? `AND ${vipFilter.clause}` : '';
-        let location = true;
-        let onplayerjoined = true;
-        let onplayerleft = true;
-        let portalspawn = true;
-        let msgevent = true;
-        let external = true;
-        let videoplay = true;
-        let resourceload_string = true;
-        let resourceload_image = true;
-        if (filters.length > 0) {
-            location = false;
-            onplayerjoined = false;
-            onplayerleft = false;
-            portalspawn = false;
-            msgevent = false;
-            external = false;
-            videoplay = false;
-            resourceload_string = false;
-            resourceload_image = false;
-            filters.forEach((filter) => {
-                switch (filter) {
-                    case 'Location':
-                        location = true;
-                        break;
-                    case 'OnPlayerJoined':
-                        onplayerjoined = true;
-                        break;
-                    case 'OnPlayerLeft':
-                        onplayerleft = true;
-                        break;
-                    case 'PortalSpawn':
-                        portalspawn = true;
-                        break;
-                    case 'Event':
-                        msgevent = true;
-                        break;
-                    case 'External':
-                        external = true;
-                        break;
-                    case 'VideoPlay':
-                        videoplay = true;
-                        break;
-                    case 'StringLoad':
-                        resourceload_string = true;
-                        break;
-                    case 'ImageLoad':
-                        resourceload_image = true;
-                        break;
-                }
-            });
-        }
-        const selects = [];
-        if (location) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_location ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (onplayerjoined || onplayerleft) {
-            let query = '';
-            if (!onplayerjoined || !onplayerleft) {
-                if (onplayerjoined) {
-                    query = "AND type = 'OnPlayerJoined'";
-                } else if (onplayerleft) {
-                    query = "AND type = 'OnPlayerLeft'";
-                }
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE 1=1 ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (portalspawn) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE 1=1 ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (msgevent) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'Event' AS type, NULL AS display_name, NULL AS location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, data, NULL AS message FROM gamelog_event ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (external) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE 1=1 ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (videoplay) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE 1=1 ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (resourceload_string || resourceload_image) {
-            let checkString = '';
-            let checkImage = '';
-            if (!resourceload_string) {
-                checkString = `AND resource_type != 'StringLoad'`;
-            }
-            if (!resourceload_image) {
-                checkImage = `AND resource_type != 'ImageLoad'`;
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type, NULL AS data, NULL AS message FROM gamelog_resource_load WHERE 1=1 ${checkString} ${checkImage} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (selects.length === 0) {
-            return [];
-        }
-        const gamelogDatabase: GameLogDatabaseRow[] = [];
-        const args = {
-            '@limit': maxEntries,
-            '@perTable': maxEntries,
-            ...vipFilter.args
-        };
-        await sqliteService.execute(
-            (dbRow) => {
-                const row: GameLogDatabaseRow = {
-                    rowId: dbRow[0],
-                    created_at: dbRow[1],
-                    type: dbRow[2]
-                };
-                switch (dbRow[2]) {
-                    case 'Location':
-                        row.location = dbRow[4];
-                        row.worldId = dbRow[7];
-                        row.worldName = dbRow[8];
-                        row.time = dbRow[6];
-                        row.groupName = dbRow[9];
-                        break;
-                    case 'OnPlayerJoined':
-                    case 'OnPlayerLeft':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.time = dbRow[6];
-                        break;
-                    case 'PortalSpawn':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.instanceId = dbRow[10];
-                        row.worldName = dbRow[8];
-                        break;
-                    case 'VideoPlay':
-                        row.videoUrl = dbRow[11];
-                        row.videoName = dbRow[12];
-                        row.videoId = dbRow[13];
-                        row.location = dbRow[4];
-                        row.displayName = dbRow[3];
-                        row.userId = dbRow[5];
-                        break;
-                    case 'Event':
-                        row.data = dbRow[16];
-                        break;
-                    case 'External':
-                        row.message = dbRow[17];
-                        row.displayName = dbRow[3];
-                        row.userId = dbRow[5];
-                        row.location = dbRow[4];
-                        break;
-                    case 'StringLoad':
-                    case 'ImageLoad':
-                        row.resourceUrl = dbRow[14];
-                        row.location = dbRow[4];
-                        break;
-                }
-                gamelogDatabase.push(row);
-            },
-            `SELECT ${baseColumns} FROM (${selects.join(' UNION ALL ')}) ORDER BY created_at DESC, id DESC LIMIT @limit`,
-            args
-        );
-        return gamelogDatabase;
+        const rows = await queryGameLog('lookupRows', {
+            filters,
+            vipList,
+            maxEntries
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -967,241 +258,26 @@ const gameLog = {
                 maxEntries
             });
         }
-        let vipQuery = '';
-        const vipArgs = {};
-        if (vipList.length > 0) {
-            const vipPlaceholders = [];
-            vipList.forEach((vip, i) => {
-                const key = `@vip_${i}`;
-                vipArgs[key] = vip;
-                vipPlaceholders.push(key);
-            });
-            vipQuery = `AND user_id IN (${vipPlaceholders.join(', ')})`;
-        }
-        let location = true;
-        let onplayerjoined = true;
-        let onplayerleft = true;
-        let portalspawn = true;
-        let msgevent = true;
-        let external = true;
-        let videoplay = true;
-        let resourceload_string = true;
-        let resourceload_image = true;
-        if (filters.length > 0) {
-            location = false;
-            onplayerjoined = false;
-            onplayerleft = false;
-            portalspawn = false;
-            msgevent = false;
-            external = false;
-            videoplay = false;
-            resourceload_string = false;
-            resourceload_image = false;
-            filters.forEach((filter) => {
-                switch (filter) {
-                    case 'Location':
-                        location = true;
-                        break;
-                    case 'OnPlayerJoined':
-                        onplayerjoined = true;
-                        break;
-                    case 'OnPlayerLeft':
-                        onplayerleft = true;
-                        break;
-                    case 'PortalSpawn':
-                        portalspawn = true;
-                        break;
-                    case 'Event':
-                        msgevent = true;
-                        break;
-                    case 'External':
-                        external = true;
-                        break;
-                    case 'VideoPlay':
-                        videoplay = true;
-                        break;
-                    case 'StringLoad':
-                        resourceload_string = true;
-                        break;
-                    case 'ImageLoad':
-                        resourceload_image = true;
-                        break;
-                }
-            });
-        }
-        const searchLike = `%${search}%`;
-        const selects = [];
-        const baseColumns = [
-            'id',
-            'created_at',
-            'type',
-            'display_name',
-            'location',
-            'user_id',
-            'time',
-            'world_id',
-            'world_name',
-            'group_name',
-            'instance_id',
-            'video_url',
-            'video_name',
-            'video_id',
-            'resource_url',
-            'resource_type',
-            'data',
-            'message'
-        ].join(', ');
-        if (location) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_location WHERE (world_name LIKE @searchLike OR group_name LIKE @searchLike) ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (onplayerjoined || onplayerleft) {
-            let query = '';
-            if (!onplayerjoined || !onplayerleft) {
-                if (onplayerjoined) {
-                    query = "AND type = 'OnPlayerJoined'";
-                } else if (onplayerleft) {
-                    query = "AND type = 'OnPlayerLeft'";
-                }
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE ((display_name LIKE @searchLike OR user_id LIKE @searchLike) AND user_id != @currentUserId) ${vipQuery} ${query} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (portalspawn) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR world_name LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (msgevent) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'Event' AS type, NULL AS display_name, NULL AS location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, data, NULL AS message FROM gamelog_event WHERE data LIKE @searchLike ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (external) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @searchLike OR user_id LIKE @searchLike OR message LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (videoplay) {
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @searchLike OR video_name LIKE @searchLike OR display_name LIKE @searchLike OR user_id LIKE @searchLike) ${vipQuery} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (resourceload_string || resourceload_image) {
-            let checkString = '';
-            let checkImage = '';
-            if (!resourceload_string) {
-                checkString = `AND resource_type != 'StringLoad'`;
-            }
-            if (!resourceload_image) {
-                checkImage = `AND resource_type != 'ImageLoad'`;
-            }
-            selects.push(
-                `SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type, NULL AS data, NULL AS message FROM gamelog_resource_load WHERE resource_url LIKE @searchLike ${checkString} ${checkImage} ORDER BY id DESC LIMIT @perTable)`
-            );
-        }
-        if (selects.length === 0) {
-            return [];
-        }
-        const gamelogDatabase: GameLogDatabaseRow[] = [];
-        const args = {
-            '@searchLike': searchLike,
-            '@currentUserId': normalizedCurrentUserId,
-            '@limit': maxEntries,
-            '@perTable': maxEntries,
-            ...vipArgs
-        };
-        await sqliteService.execute<unknown[]>(
-            (dbRow) => {
-                const type = dbRow[2];
-                const row: GameLogDatabaseRow = {
-                    rowId: dbRow[0],
-                    created_at: dbRow[1],
-                    type
-                };
-                switch (type) {
-                    case 'Location':
-                        row.location = dbRow[4];
-                        row.worldId = dbRow[7];
-                        row.worldName = dbRow[8];
-                        row.time = dbRow[6];
-                        row.groupName = dbRow[9];
-                        break;
-                    case 'OnPlayerJoined':
-                    case 'OnPlayerLeft':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.time = dbRow[6];
-                        break;
-                    case 'PortalSpawn':
-                        row.displayName = dbRow[3];
-                        row.location = dbRow[4];
-                        row.userId = dbRow[5];
-                        row.instanceId = dbRow[10];
-                        row.worldName = dbRow[8];
-                        break;
-                    case 'VideoPlay':
-                        row.videoUrl = dbRow[11];
-                        row.videoName = dbRow[12];
-                        row.videoId = dbRow[13];
-                        row.location = dbRow[4];
-                        row.displayName = dbRow[3];
-                        row.userId = dbRow[5];
-                        break;
-                    case 'Event':
-                        row.data = dbRow[16];
-                        break;
-                    case 'External':
-                        row.message = dbRow[17];
-                        row.displayName = dbRow[3];
-                        row.userId = dbRow[5];
-                        row.location = dbRow[4];
-                        break;
-                    case 'StringLoad':
-                    case 'ImageLoad':
-                        row.resourceUrl = dbRow[14];
-                        row.location = dbRow[4];
-                        break;
-                }
-                gamelogDatabase.push(row);
-            },
-            `SELECT ${baseColumns} FROM (${selects.join(' UNION ALL ')}) ORDER BY created_at DESC, id DESC LIMIT @limit`,
-            args
-        );
-        return gamelogDatabase;
+        const rows = await queryGameLog('searchRows', {
+            search,
+            filters,
+            vipList,
+            currentUserId: normalizedCurrentUserId,
+            maxEntries
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getLastDateGameLogDatabase() {
-        var gamelogDatabase = [];
         var date = new Date().toJSON();
         var dateOffset = new Date(Date.now() - 86400000).toJSON(); // 24 hours
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_location ORDER BY id DESC LIMIT 1');
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_join_leave ORDER BY id DESC LIMIT 1');
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_portal_spawn ORDER BY id DESC LIMIT 1');
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_event ORDER BY id DESC LIMIT 1');
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_video_play ORDER BY id DESC LIMIT 1');
-        await sqliteService.execute((dbRow) => {
-            gamelogDatabase.push(dbRow[0]);
-        }, 'SELECT created_at FROM gamelog_resource_load ORDER BY id DESC LIMIT 1');
-        if (gamelogDatabase.length > 0) {
-            gamelogDatabase.sort();
-            var newDate = gamelogDatabase[gamelogDatabase.length - 1];
-            if (newDate > dateOffset && newDate < date) {
-                date = newDate;
-            }
+        const newDate = await queryGameLog('lastDate');
+        if (
+            typeof newDate === 'string' &&
+            newDate > dateOffset &&
+            newDate < date
+        ) {
+            date = newDate;
         }
         return date;
     },
@@ -1223,16 +299,9 @@ const gameLog = {
         }
 
         const request = (async () => {
-            var worldName = '';
-            await sqliteService.execute(
-                (dbRow) => {
-                    worldName = dbRow[0];
-                },
-                'SELECT world_name FROM gamelog_location WHERE world_id = @worldId ORDER BY id DESC LIMIT 1',
-                {
-                    '@worldId': normalizedWorldId
-                }
-            );
+            const worldName = await queryGameLog('worldNameByWorldId', {
+                worldId: normalizedWorldId
+            });
             const normalizedWorldName = normalizeGameLogIdentifier(worldName);
             setCachedGameLogWorldName(normalizedWorldId, normalizedWorldName);
             return normalizedWorldName;
@@ -1259,104 +328,75 @@ const gameLog = {
             return data;
         }
 
-        await sqliteService.execute<unknown[]>(
-            (dbRow) => {
-                var [
-                    created_at_iso,
-                    created_at_ts,
+        const rows = await queryGameLog('previousInstancesByUserIdRows', {
+            userId: normalizedUserId
+        });
+        for (const row of Array.isArray(rows) ? rows : []) {
+            const created_at_iso = row.created_at;
+            const created_at_ts = row.createdAtTs;
+            const location = row.location;
+            const time = row.time;
+            const worldName = row.worldName;
+            const groupName = row.groupName;
+            const eventId = row.eventId;
+            const eventType = row.eventType;
+
+            if (
+                !currentGroup ||
+                currentGroup.location !== location ||
+                (Number(created_at_ts) - currentGroup.last_ts >
+                    groupingTimeTolerance &&
+                    !(
+                        prevEvent === 'OnPlayerJoined' &&
+                        eventType === 'OnPlayerLeft'
+                    ))
+            ) {
+                currentGroup = {
+                    created_at: created_at_iso,
                     location,
                     time,
                     worldName,
                     groupName,
-                    eventId,
-                    eventType
-                ] = dbRow;
+                    events: [eventId],
+                    last_ts: Number(created_at_ts)
+                };
 
-                if (
-                    !currentGroup ||
-                    currentGroup.location !== location ||
-                    (Number(created_at_ts) - currentGroup.last_ts >
-                        groupingTimeTolerance && // groups multiple OnPlayerJoined and OnPlayerLeft together if they are within time tolerance limit
-                        !(
-                            prevEvent === 'OnPlayerJoined' &&
-                            eventType === 'OnPlayerLeft'
-                        )) // allows OnPlayerLeft to connect with nearby OnPlayerJoined
-                ) {
-                    currentGroup = {
-                        created_at: created_at_iso,
-                        location,
-                        time,
-                        worldName,
-                        groupName,
-                        events: [eventId],
-                        last_ts: Number(created_at_ts)
-                    };
-
-                    data.add(currentGroup);
-                } else {
-                    currentGroup.time += time;
-                    currentGroup.last_ts = Number(created_at_ts);
-                    currentGroup.events.push(eventId);
-                }
-
-                prevEvent = eventType;
-            },
-            `
-            WITH grouped_locations AS (
-                SELECT DISTINCT location, world_name, group_name
-                FROM gamelog_location
-            )
-            SELECT gamelog_join_leave.created_at, strftime('%s', gamelog_join_leave.created_at) * 1000 created_at_ts, gamelog_join_leave.location, gamelog_join_leave.time, grouped_locations.world_name, grouped_locations.group_name, gamelog_join_leave.id, gamelog_join_leave.type
-            FROM gamelog_join_leave
-            INNER JOIN grouped_locations ON gamelog_join_leave.location = grouped_locations.location
-            WHERE user_id = @userId
-            ORDER BY gamelog_join_leave.id ASC`,
-            {
-                '@userId': normalizedUserId
+                data.add(currentGroup);
+            } else {
+                currentGroup.time += time;
+                currentGroup.last_ts = Number(created_at_ts);
+                currentGroup.events.push(eventId);
             }
-        );
+
+            prevEvent = eventType;
+        }
 
         return data;
     },
 
     async getPreviousInstancesByWorldId(input) {
-        var data = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    id: dbRow[0],
-                    created_at: dbRow[1],
-                    location: dbRow[2],
-                    time: dbRow[3] || 0,
-                    worldName: dbRow[4],
-                    groupName: dbRow[5]
-                });
-            },
-            `SELECT id, created_at, location, time, world_name, group_name
-            FROM gamelog_location
-            WHERE world_id = @worldId
-            ORDER BY id DESC`,
-            {
-                '@worldId': input.id
-            }
-        );
-        return data;
+        const rows = await queryGameLog('previousInstancesByWorldId', {
+            worldId: input.id
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getPlayersFromInstance(location) {
         var players = new Map();
-        await sqliteService.execute(
-            (dbRow) => {
+        const rows = await queryGameLog('playersFromInstanceRows', {
+            location
+        });
+        for (const rowData of Array.isArray(rows) ? rows : []) {
                 var time = 0;
                 var count = 0;
-                var rowId = dbRow[0];
-                var created_at = dbRow[1];
-                var displayName = normalizeGameLogIdentifier(dbRow[2]);
-                var userId = normalizeGameLogIdentifier(dbRow[3]);
+                var rowId = rowData.rowId;
+                var created_at = rowData.created_at;
+                var displayName = normalizeGameLogIdentifier(rowData.displayName);
+                var userId = normalizeGameLogIdentifier(rowData.userId);
                 var playerKey =
                     userId || `${displayName || 'anonymous'}:${rowId}`;
-                if (dbRow[4]) {
-                    time = dbRow[4];
+                if (rowData.time) {
+                    time = rowData.time;
                 }
                 var ref = players.get(playerKey);
                 if (typeof ref !== 'undefined') {
@@ -1364,7 +404,7 @@ const gameLog = {
                     count = ref.count;
                     created_at = ref.created_at;
                 }
-                if (dbRow[5] === 'OnPlayerJoined') {
+                if (rowData.type === 'OnPlayerJoined') {
                     count++;
                 }
                 var row = {
@@ -1376,63 +416,21 @@ const gameLog = {
                     count
                 };
                 players.set(playerKey, row);
-            },
-            `SELECT id, created_at, display_name, user_id, time, type FROM gamelog_join_leave WHERE location = @location ORDER BY id ASC`,
-            {
-                '@location': location
-            }
-        );
+        }
         return players;
     },
 
     async getLocationBeforeOrAt(createdAt) {
-        let row = null;
-        await sqliteService.execute(
-            (dbRow) => {
-                row = {
-                    created_at: dbRow[0],
-                    location: dbRow[1],
-                    worldId: dbRow[2],
-                    worldName: dbRow[3],
-                    groupName: dbRow[4]
-                };
-            },
-            `SELECT created_at, location, world_id, world_name, group_name
-             FROM gamelog_location
-             WHERE created_at <= @createdAt
-             ORDER BY created_at DESC
-             LIMIT 1`,
-            {
-                '@createdAt': createdAt
-            }
-        );
-        return row;
+        return queryGameLog('locationBeforeOrAt', { createdAt });
     },
 
     async getJoinLeaveEntriesForLocationRange(location, afterDate, beforeDate) {
-        const entries = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                entries.push({
-                    created_at: dbRow[0],
-                    type: dbRow[1],
-                    displayName: dbRow[2],
-                    userId: dbRow[3]
-                });
-            },
-            `SELECT created_at, type, display_name, user_id
-             FROM gamelog_join_leave
-             WHERE location = @location
-               AND created_at >= @afterDate
-               AND created_at <= @beforeDate
-             ORDER BY created_at ASC`,
-            {
-                '@location': location,
-                '@afterDate': afterDate,
-                '@beforeDate': beforeDate
-            }
-        );
-        return entries;
+        const rows = await queryGameLog('joinLeaveRange', {
+            location,
+            afterDate,
+            beforeDate
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -1440,64 +438,40 @@ const gameLog = {
      * @returns {Promise<Array<{created_at: string, display_name: string, user_id: string, time: number}>>}
      */
     async getPlayerDetailFromInstance(location) {
-        const entries = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                entries.push({
-                    created_at: dbRow[0],
-                    display_name: dbRow[1],
-                    user_id: dbRow[2],
-                    time: dbRow[3] || 0
-                });
-            },
-            `SELECT created_at, display_name, user_id, time
-             FROM gamelog_join_leave
-             WHERE location = @location AND type = 'OnPlayerLeft'
-             ORDER BY created_at ASC`,
-            {
-                '@location': location
-            }
-        );
-        return entries;
+        const rows = await queryGameLog('playerDetailFromInstance', {
+            location
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getPreviousDisplayNamesByUserId(ref) {
         var data = new Map();
-        await sqliteService.execute(
-            (dbRow) => {
-                var row = {
-                    created_at: dbRow[0],
-                    displayName: dbRow[1]
-                };
-                if (ref.displayName !== row.displayName) {
-                    data.set(row.displayName, row.created_at);
-                }
-            },
-            `SELECT created_at, display_name
-            FROM gamelog_join_leave
-            WHERE user_id = @userId
-            ORDER BY id DESC`,
-            {
-                '@userId': ref.id
+        const rows = await queryGameLog('previousDisplayNamesByUserId', {
+            userId: ref.id
+        });
+        for (const row of Array.isArray(rows) ? rows : []) {
+            if (ref.displayName !== row.displayName) {
+                data.set(row.displayName, row.created_at);
             }
-        );
+        }
         return data;
     },
 
     async getGameLogInstancesTime() {
         var instances = new Map();
-        await sqliteService.execute((dbRow) => {
+        const rows = await queryGameLog('instanceTimes');
+        for (const dbRow of Array.isArray(rows) ? rows : []) {
             var time = 0;
-            var location = dbRow[0];
-            if (dbRow[1]) {
-                time = dbRow[1];
+            var location = dbRow.location;
+            if (dbRow.time) {
+                time = dbRow.time;
             }
             var ref = instances.get(location);
             if (typeof ref !== 'undefined') {
                 time += ref;
             }
             instances.set(location, time);
-        }, 'SELECT location, time FROM gamelog_location');
+        }
         return instances;
     },
 
@@ -1510,44 +484,22 @@ const gameLog = {
      * @returns {Promise<Array<{created_at: string, time: number}>>}
      */
     async getCurrentUserOnlineSessions(fromDays = 0, toDays = 0) {
-        const data = [];
         const now = new Date();
-        const params = {};
-        const where = [];
+        const params: { fromDate?: string; toDate?: string } = {};
 
         if (fromDays > 0) {
-            const fromDate = new Date(
+            params.fromDate = new Date(
                 now.getTime() - fromDays * 86400000
             ).toISOString();
-            params['@fromDate'] = fromDate;
-            where.push('created_at >= @fromDate');
-
-            await sqliteService.execute(
-                (dbRow) => {
-                    data.push({ created_at: dbRow[0], time: dbRow[1] || 0 });
-                },
-                'SELECT created_at, time FROM gamelog_location WHERE created_at < @fromDate ORDER BY created_at DESC LIMIT 1',
-                { '@fromDate': fromDate }
-            );
         }
         if (toDays > 0) {
-            const toDate = new Date(
+            params.toDate = new Date(
                 now.getTime() - toDays * 86400000
             ).toISOString();
-            params['@toDate'] = toDate;
-            where.push('created_at < @toDate');
         }
 
-        const dateClause =
-            where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({ created_at: dbRow[0], time: dbRow[1] || 0 });
-            },
-            `SELECT created_at, time FROM gamelog_location ${dateClause} ORDER BY created_at`,
-            params
-        );
-        return data;
+        const rows = await queryGameLog('onlineSessions', params);
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -1557,16 +509,11 @@ const gameLog = {
      * @returns {Promise<Array<{created_at: string, time: number}>>}
      */
     async getCurrentUserOnlineSessionsAfter(afterCreatedAt, inclusive = false) {
-        const data = [];
-        const op = inclusive ? '>=' : '>';
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({ created_at: dbRow[0], time: dbRow[1] || 0 });
-            },
-            `SELECT created_at, time FROM gamelog_location WHERE created_at ${op} @after ORDER BY created_at`,
-            { '@after': afterCreatedAt }
-        );
-        return data;
+        const rows = await queryGameLog('onlineSessionsAfter', {
+            afterCreatedAt,
+            inclusive
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -1584,61 +531,17 @@ const gameLog = {
         sortBy = 'time',
         excludeWorldId = ''
     ) {
-        const results = [];
-        const whereClause =
-            days > 0 ? `AND created_at >= datetime('now', @daysOffset)` : '';
-        const excludeClause = excludeWorldId
-            ? 'AND world_id != @excludeWorldId'
-            : '';
-        const orderBy =
-            sortBy === 'count' ? 'visit_count DESC' : 'total_time DESC';
-        const params = { '@limit': limit };
-        if (days > 0) {
-            params['@daysOffset'] = `-${days} days`;
-        }
-        if (excludeWorldId) {
-            params['@excludeWorldId'] = excludeWorldId;
-        }
-        await sqliteService.execute(
-            (dbRow) => {
-                results.push({
-                    worldId: dbRow[0],
-                    worldName: dbRow[1] || dbRow[0],
-                    visitCount: dbRow[2],
-                    totalTime: dbRow[3] || 0
-                });
-            },
-            `SELECT
-                world_id,
-                world_name,
-                COUNT(*) AS visit_count,
-                SUM(time) AS total_time
-            FROM gamelog_location
-            WHERE world_id IS NOT NULL
-                AND world_id != ''
-                AND world_id LIKE 'wrld_%'
-                ${whereClause}
-                ${excludeClause}
-            GROUP BY world_id
-            ORDER BY ${orderBy}
-            LIMIT @limit`,
-            params
-        );
-        return results;
+        const rows = await queryGameLog('topWorlds', {
+            days,
+            limit,
+            sortBy,
+            excludeWorldId
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getUserIdFromDisplayName(displayName) {
-        var userId = '';
-        await sqliteService.execute(
-            (row) => {
-                userId = row[0];
-            },
-            `SELECT user_id FROM gamelog_join_leave WHERE display_name = @displayName AND user_id != '' ORDER BY id DESC LIMIT 1`,
-            {
-                '@displayName': displayName
-            }
-        );
-        return userId;
+        return queryGameLog('userIdFromDisplayName', { displayName });
     },
 
     /**
@@ -1653,47 +556,26 @@ const gameLog = {
         const normalizedCurrentUserId = normalizeCurrentUserId(currentUserId);
         const currentUserData = [];
         const detailData = new Map();
-        await sqliteService.execute(
-            (row) => {
-                const rowData = {
-                    id: row[0],
-                    created_at: row[1],
-                    type: row[2],
-                    display_name: row[3],
-                    location: row[4],
-                    user_id: row[5],
-                    time: row[6]
-                };
-
-                // skip dirty data
-                if (!rowData.location || rowData.location === 'traveling') {
-                    return;
-                }
-
-                if (rowData.user_id === normalizedCurrentUserId) {
-                    currentUserData.push(rowData);
-                }
-                const instanceData = detailData.get(rowData.location);
-
-                detailData.set(rowData.location, [
-                    ...(instanceData || []),
-                    rowData
-                ]);
-            },
-            `SELECT
-                     *
-                FROM
-                    gamelog_join_leave
-                WHERE type = 'OnPlayerLeft'
-                    AND (
-                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds') BETWEEN @utc_start_date AND @utc_end_date
-                        OR created_at BETWEEN @utc_start_date AND @utc_end_date
-                    );`,
-            {
-                '@utc_start_date': startDate,
-                '@utc_end_date': endDate
+        const rows = await queryGameLog('instanceActivityRows', {
+            startDate,
+            endDate
+        });
+        for (const rowData of Array.isArray(rows) ? rows : []) {
+            // skip dirty data
+            if (!rowData.location || rowData.location === 'traveling') {
+                continue;
             }
-        );
+
+            if (rowData.user_id === normalizedCurrentUserId) {
+                currentUserData.push(rowData);
+            }
+            const instanceData = detailData.get(rowData.location);
+
+            detailData.set(rowData.location, [
+                ...(instanceData || []),
+                rowData
+            ]);
+        }
 
         return { currentUserData, detailData };
     },
@@ -1703,37 +585,25 @@ const gameLog = {
      * @returns {Promise<string[]>}
      */
     async getDateOfInstanceActivity(currentUserId = '') {
-        let result = [];
-        await sqliteService.execute(
-            (row) => {
-                result.push(row[0]);
-            },
-            `SELECT created_at 
-                FROM gamelog_join_leave 
-                WHERE user_id = @userId`,
-            {
-                '@userId': normalizeCurrentUserId(currentUserId)
-            }
-        );
-        return result;
+        const result = await queryGameLog('dateOfInstanceActivity', {
+            userId: normalizeCurrentUserId(currentUserId)
+        });
+        return Array.isArray(result) ? result : [];
     },
 
     async getInstanceJoinHistory(currentUserId = '') {
         var oneWeekAgo = new Date(Date.now() - 604800000).toJSON();
         var instances = new Map();
-        await sqliteService.execute(
-            (row) => {
-                if (!instances.has(row[1])) {
-                    var epoch = new Date(row[0]).getTime();
-                    instances.set(row[1], epoch);
-                }
-            },
-            `SELECT created_at, location FROM gamelog_join_leave WHERE user_id = @userId AND created_at > @created_at ORDER BY created_at DESC`,
-            {
-                '@userId': normalizeCurrentUserId(currentUserId),
-                '@created_at': oneWeekAgo
+        const rows = await queryGameLog('instanceJoinHistory', {
+            userId: normalizeCurrentUserId(currentUserId),
+            createdAt: oneWeekAgo
+        });
+        for (const row of Array.isArray(rows) ? rows : []) {
+            if (!instances.has(row.location)) {
+                var epoch = new Date(row.created_at).getTime();
+                instances.set(row.location, epoch);
             }
-        );
+        }
         return instances;
     },
 
@@ -1813,61 +683,20 @@ const gameLog = {
      * @returns {Promise<Array<{id: number, created_at: string, location: string, worldId: string, worldName: string, time: number, groupName: string}>>}
      */
     async getSessionsLocationSegments(beforeId, limit) {
-        const data = [];
-        const cursorClause = beforeId != null ? 'AND id < @beforeId' : '';
-        const args = { '@limit': limit };
-        if (beforeId != null) {
-            args['@beforeId'] = beforeId;
-        }
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    id: dbRow[0],
-                    created_at: dbRow[1],
-                    location: dbRow[2],
-                    worldId: dbRow[3],
-                    worldName: dbRow[4],
-                    time: dbRow[5],
-                    groupName: dbRow[6]
-                });
-            },
-            `SELECT id, created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE 1=1 ${cursorClause}
-             ORDER BY id DESC
-             LIMIT @limit`,
-            args
-        );
-        return data;
+        const rows = await queryGameLog('sessionsLocationSegments', {
+            beforeId,
+            limit
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     async getSessionsLocationSegmentsByDateRange(afterDate, beforeDate, limit) {
-        const data = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    id: dbRow[0],
-                    created_at: dbRow[1],
-                    location: dbRow[2],
-                    worldId: dbRow[3],
-                    worldName: dbRow[4],
-                    time: dbRow[5],
-                    groupName: dbRow[6]
-                });
-            },
-            `SELECT id, created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE created_at >= @afterDate
-               AND created_at <= @beforeDate
-             ORDER BY id DESC
-             LIMIT @limit`,
-            {
-                '@afterDate': afterDate,
-                '@beforeDate': beforeDate,
-                '@limit': limit
-            }
-        );
-        return data;
+        const rows = await queryGameLog('sessionsLocationSegmentsByDateRange', {
+            afterDate,
+            beforeDate,
+            limit
+        });
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -1886,66 +715,13 @@ const gameLog = {
     ) {
         if (!locationTags || locationTags.length === 0) return [];
 
-        const data = [];
-        const placeholders = [];
-        const args = {
-            '@afterDate': afterDate,
-            '@beforeDate': beforeDate
-        };
-
-        locationTags.forEach((loc, i) => {
-            const key = `@loc_${i}`;
-            args[key] = loc;
-            placeholders.push(key);
+        const rows = await queryGameLog('sessionsEventsForSegments', {
+            locationTags,
+            afterDate,
+            beforeDate,
+            currentUserId: normalizeCurrentUserId(currentUserId)
         });
-
-        const locIn = placeholders.join(', ');
-
-        // join/leave events
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    type: dbRow[0],
-                    created_at: dbRow[1],
-                    displayName: dbRow[2],
-                    userId: dbRow[3],
-                    location: dbRow[4]
-                });
-            },
-            `SELECT type, created_at, display_name, user_id, location
-             FROM gamelog_join_leave
-             WHERE location IN (${locIn})
-               AND user_id != @selfId
-               AND created_at >= @afterDate
-               AND created_at <= @beforeDate
-             ORDER BY created_at ASC`,
-            { ...args, '@selfId': normalizeCurrentUserId(currentUserId) }
-        );
-
-        // video_play events
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    type: 'VideoPlay',
-                    created_at: dbRow[0],
-                    videoUrl: dbRow[1],
-                    videoName: dbRow[2],
-                    videoId: dbRow[3],
-                    displayName: dbRow[4],
-                    userId: dbRow[5],
-                    location: dbRow[6]
-                });
-            },
-            `SELECT created_at, video_url, video_name, video_id, display_name, user_id, location
-             FROM gamelog_video_play
-             WHERE location IN (${locIn})
-               AND created_at >= @afterDate
-               AND created_at <= @beforeDate
-             ORDER BY created_at ASC`,
-            args
-        );
-
-        return data;
+        return Array.isArray(rows) ? rows : [];
     },
 
     /**
@@ -1956,30 +732,11 @@ const gameLog = {
      * @returns {Promise<Array<object>>}
      */
     async getSessionsLocationSegmentsByAnchor(sinceDate, limit) {
-        const data = [];
-        await sqliteService.execute(
-            (dbRow) => {
-                data.push({
-                    id: dbRow[0],
-                    created_at: dbRow[1],
-                    location: dbRow[2],
-                    worldId: dbRow[3],
-                    worldName: dbRow[4],
-                    time: dbRow[5],
-                    groupName: dbRow[6]
-                });
-            },
-            `SELECT id, created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE created_at >= @sinceDate
-             ORDER BY id DESC
-             LIMIT @limit`,
-            {
-                '@sinceDate': sinceDate,
-                '@limit': limit
-            }
-        );
-        return data;
+        const rows = await queryGameLog('sessionsLocationSegmentsByAnchor', {
+            sinceDate,
+            limit
+        });
+        return Array.isArray(rows) ? rows : [];
     }
 };
 

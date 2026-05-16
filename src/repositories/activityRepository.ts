@@ -1,12 +1,6 @@
 import { backend } from '@/platform/index.js';
 import type { ActivitySession } from '@/shared/utils/activityEngine.js';
 
-import {
-    buildUserTableName,
-    normalizeUserTablePrefix
-} from './localDatabaseSchema.js';
-import sqliteRepository from './sqliteRepository.js';
-
 type ActivityViewKind =
     (typeof ACTIVITY_VIEW_KIND)[keyof typeof ACTIVITY_VIEW_KIND];
 type ObjectRow = Record<string, unknown>;
@@ -99,33 +93,6 @@ const ACTIVITY_VIEW_KIND = Object.freeze({
     OVERLAP: 'overlap'
 });
 
-function getSyncStateTable(userId: unknown): string {
-    return `${normalizeUserTablePrefix(userId)}_activity_sync_state_v2`;
-}
-
-function getSessionsTable(userId: unknown): string {
-    return `${normalizeUserTablePrefix(userId)}_activity_sessions_v2`;
-}
-
-function getBucketCacheTable(userId: unknown): string {
-    return buildUserTableName(userId, 'activity_bucket_cache_v2');
-}
-
-function getFeedOnlineOfflineTable(ownerUserId: unknown): string {
-    return buildUserTableName(ownerUserId, 'feed_online_offline');
-}
-
-function parseJson<T>(value: unknown, fallback: T): T | unknown {
-    if (!value) {
-        return fallback;
-    }
-    try {
-        return JSON.parse(String(value));
-    } catch {
-        return fallback;
-    }
-}
-
 function normalizeActivitySyncStateRow(
     row: ActivitySyncStateRow | unknown[] | null,
     fallbackUserId: string
@@ -213,44 +180,12 @@ async function getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
             ? new Date(Date.now() - toDays * 86400000).toISOString()
             : '';
 
-    const rows = await sqliteRepository.query<ActivityLocationRow>(
-        `
-            SELECT created_at, time
-            FROM (
-                SELECT created_at, time, 0 AS sort_group
-                FROM (
-                    SELECT created_at, time
-                    FROM gamelog_location
-                    WHERE created_at < @fromDateIso
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                )
-                UNION ALL
-                SELECT created_at, time, 1 AS sort_group
-                FROM gamelog_location
-                WHERE created_at >= @fromDateIso
-                  ${toDateIso ? 'AND created_at < @toDateIso' : ''}
-                ${
-                    toDateIso
-                        ? `UNION ALL
-                SELECT created_at, time, 2 AS sort_group
-                FROM (
-                    SELECT created_at, time
-                    FROM gamelog_location
-                    WHERE created_at >= @toDateIso
-                    ORDER BY created_at
-                    LIMIT 1
-                )`
-                        : ''
-                }
-            )
-            ORDER BY created_at ASC, sort_group ASC
-        `,
-        {
-            '@fromDateIso': fromDateIso,
-            '@toDateIso': toDateIso
+    const rows = (await backend.app.ActivitySelfSourceSlice({
+        query: {
+            fromDateIso,
+            toDateIso
         }
-    );
+    })) as ActivityLocationRow[];
 
     if (!Array.isArray(rows)) {
         return [];
@@ -265,16 +200,12 @@ async function getSelfActivitySourceAfter({
     afterCreatedAt,
     inclusive = false
 }) {
-    const operator = inclusive ? '>=' : '>';
-    const rows = await sqliteRepository.query<ActivityLocationRow>(
-        `SELECT created_at, time
-         FROM gamelog_location
-         WHERE created_at ${operator} @afterCreatedAt
-         ORDER BY created_at`,
-        {
-            '@afterCreatedAt': afterCreatedAt
+    const rows = (await backend.app.ActivitySelfSourceAfter({
+        query: {
+            afterCreatedAt,
+            inclusive
         }
-    );
+    })) as ActivityLocationRow[];
 
     if (!Array.isArray(rows)) {
         return [];
@@ -291,37 +222,14 @@ async function getFriendPresenceSlice({
     toDateIso = '',
     ownerUserId
 }) {
-    const tableName = getFeedOnlineOfflineTable(ownerUserId);
-    const rows = await sqliteRepository.query<PresenceRow | unknown[]>(
-        `
-            SELECT created_at, type
-            FROM (
-                SELECT created_at, type, 0 AS sort_group
-                FROM (
-                    SELECT created_at, type
-                    FROM ${tableName}
-                    WHERE user_id = @userId
-                      AND (type = 'Online' OR type = 'Offline')
-                      AND created_at < @fromDateIso
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                )
-                UNION ALL
-                SELECT created_at, type, 1 AS sort_group
-                FROM ${tableName}
-                WHERE user_id = @userId
-                  AND (type = 'Online' OR type = 'Offline')
-                  AND created_at >= @fromDateIso
-                  ${toDateIso ? 'AND created_at < @toDateIso' : ''}
-            )
-            ORDER BY created_at ASC, sort_group ASC
-        `,
-        {
-            '@userId': userId,
-            '@fromDateIso': fromDateIso,
-            '@toDateIso': toDateIso
+    const rows = (await backend.app.ActivityFriendPresenceSlice({
+        query: {
+            ownerUserId,
+            userId,
+            fromDateIso,
+            toDateIso
         }
-    );
+    })) as Array<PresenceRow | unknown[]>;
 
     const output = Array.isArray(rows)
         ? rows.map((row) => ({
@@ -329,28 +237,6 @@ async function getFriendPresenceSlice({
               type: Array.isArray(row) ? row[1] : row.type
           }))
         : [];
-
-    if (toDateIso) {
-        const tailRows = await sqliteRepository.query<PresenceRow | unknown[]>(
-            `SELECT created_at, type
-             FROM ${tableName}
-             WHERE user_id = @userId
-               AND (type = 'Online' OR type = 'Offline')
-               AND created_at >= @toDateIso
-             ORDER BY created_at ASC
-             LIMIT 1`,
-            {
-                '@userId': userId,
-                '@toDateIso': toDateIso
-            }
-        );
-        for (const row of tailRows ?? []) {
-            output.push({
-                created_at: Array.isArray(row) ? row[0] : row.created_at,
-                type: Array.isArray(row) ? row[1] : row.type
-            });
-        }
-    }
 
     return output.sort((left, right) =>
         String(left.created_at || '').localeCompare(
@@ -360,19 +246,13 @@ async function getFriendPresenceSlice({
 }
 
 async function getFriendPresenceAfter({ userId, afterCreatedAt, ownerUserId }) {
-    const tableName = getFeedOnlineOfflineTable(ownerUserId);
-    const rows = await sqliteRepository.query<PresenceRow | unknown[]>(
-        `SELECT created_at, type
-         FROM ${tableName}
-         WHERE user_id = @userId
-           AND (type = 'Online' OR type = 'Offline')
-           AND created_at > @afterCreatedAt
-         ORDER BY created_at`,
-        {
-            '@userId': userId,
-            '@afterCreatedAt': afterCreatedAt
+    const rows = (await backend.app.ActivityFriendPresenceAfter({
+        query: {
+            ownerUserId,
+            userId,
+            afterCreatedAt
         }
-    );
+    })) as Array<PresenceRow | unknown[]>;
     return Array.isArray(rows)
         ? rows.map((row) => ({
               created_at: Array.isArray(row) ? row[0] : row.created_at,
@@ -432,21 +312,15 @@ async function getActivitySyncState(userId) {
         return null;
     }
 
-    const rows = await sqliteRepository.query<ActivitySyncStateRow | unknown[]>(
-        `SELECT user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days
-         FROM ${getSyncStateTable(normalizedUserId)}
-         WHERE user_id = @userId
-         LIMIT 1`,
-        {
-            '@userId': normalizedUserId
-        }
-    );
+    const row = (await backend.app.ActivitySyncStateGet({
+        userId: normalizedUserId
+    })) as ActivitySyncStateRow | unknown[] | null;
 
-    if (!Array.isArray(rows) || rows.length === 0) {
+    if (!row) {
         return null;
     }
 
-    return normalizeActivitySyncStateRow(rows[0], normalizedUserId);
+    return normalizeActivitySyncStateRow(row, normalizedUserId);
 }
 
 async function upsertActivitySyncState(entry: ActivitySyncStateInput) {
@@ -482,15 +356,9 @@ async function getActivitySessions(userId) {
         return [];
     }
 
-    const rows = await sqliteRepository.query<ActivitySessionRow | unknown[]>(
-        `SELECT start_at, end_at, is_open_tail, source_revision
-         FROM ${getSessionsTable(normalizedUserId)}
-         WHERE user_id = @userId
-         ORDER BY start_at`,
-        {
-            '@userId': normalizedUserId
-        }
-    );
+    const rows = (await backend.app.ActivitySessionsGet({
+        userId: normalizedUserId
+    })) as Array<ActivitySessionRow | unknown[]>;
 
     if (!Array.isArray(rows)) {
         return [];
@@ -542,38 +410,38 @@ async function getActivityBucketCache({
     viewKind,
     excludeKey = ''
 }: ActivityBucketCacheQuery) {
-    const rows = await sqliteRepository.query<
-        ActivityBucketCacheRow | unknown[]
-    >(
-        `SELECT user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at
-         FROM ${getBucketCacheTable(ownerUserId)}
-         WHERE user_id = @ownerUserId AND target_user_id = @targetUserId AND range_days = @rangeDays AND view_kind = @viewKind AND exclude_key = @excludeKey
-         LIMIT 1`,
-        {
-            '@ownerUserId': ownerUserId,
-            '@targetUserId': targetUserId,
-            '@rangeDays': rangeDays,
-            '@viewKind': viewKind,
-            '@excludeKey': excludeKey
+    const row = (await backend.app.ActivityBucketCacheGet({
+        query: {
+            ownerUserId,
+            targetUserId,
+            rangeDays,
+            viewKind,
+            excludeKey
         }
-    );
-    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    })) as
+        | (ActivityBucketCacheRow & {
+              ownerUserId?: unknown;
+              rawBuckets?: unknown;
+              normalizedBuckets?: unknown;
+              summary?: unknown;
+              builtAt?: unknown;
+          })
+        | null;
     if (!row) {
         return null;
     }
-    const read = (index, key) => (Array.isArray(row) ? row[index] : row[key]);
     return {
-        ownerUserId: read(0, 'user_id'),
-        targetUserId: read(1, 'target_user_id'),
-        rangeDays: read(2, 'range_days'),
-        viewKind: read(3, 'view_kind'),
-        excludeKey: read(4, 'exclude_key') || '',
-        bucketVersion: read(5, 'bucket_version') || 1,
-        builtFromCursor: read(6, 'built_from_cursor') || '',
-        rawBuckets: parseJson(read(7, 'raw_buckets_json'), []),
-        normalizedBuckets: parseJson(read(8, 'normalized_buckets_json'), []),
-        summary: parseJson(read(9, 'summary_json'), {}),
-        builtAt: read(10, 'built_at') || ''
+        ownerUserId: row.ownerUserId ?? row.user_id,
+        targetUserId: row.targetUserId ?? row.target_user_id,
+        rangeDays: row.rangeDays ?? row.range_days,
+        viewKind: row.viewKind ?? row.view_kind,
+        excludeKey: row.excludeKey ?? row.exclude_key ?? '',
+        bucketVersion: row.bucketVersion ?? row.bucket_version ?? 1,
+        builtFromCursor: row.builtFromCursor ?? row.built_from_cursor ?? '',
+        rawBuckets: row.rawBuckets ?? [],
+        normalizedBuckets: row.normalizedBuckets ?? [],
+        summary: row.summary ?? {},
+        builtAt: row.builtAt ?? row.built_at ?? ''
     };
 }
 

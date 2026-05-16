@@ -1,8 +1,5 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
-
 interface SaveUserMemoInput {
     userId?: unknown;
     memo?: unknown;
@@ -78,35 +75,21 @@ async function getUserMemo(userId: unknown) {
         return createEmptyUserMemo();
     }
 
-    let row: UserMemoEntry = createEmptyUserMemo(normalizedUserId);
-    await sqliteRepository.execute<unknown[]>(
-        (dbRow) => {
-            row = {
-                userId: dbRow[0],
-                editedAt: dbRow[1],
-                memo: dbRow[2]
-            };
-        },
-        'SELECT user_id, edited_at, memo FROM memos WHERE user_id = @user_id',
-        {
-            '@user_id': normalizedUserId
-        }
+    return (
+        ((await backend.app.MemoGetUser({
+            userId: normalizedUserId
+        })) as UserMemoEntry | null) ?? createEmptyUserMemo(normalizedUserId)
     );
-    return row;
 }
 
 async function getAllUserMemos() {
-    const rows: Array<{
-        userId: unknown;
-        memo: unknown;
-    }> = [];
-    await sqliteRepository.execute<unknown[]>((dbRow) => {
-        rows.push({
-            userId: dbRow[0],
-            memo: dbRow[1]
-        });
-    }, 'SELECT user_id, memo FROM memos');
-    return rows;
+    const rows = (await backend.app.MemoListUsers()) as UserMemoEntry[];
+    return Array.isArray(rows)
+        ? rows.map((row) => ({
+              userId: row.userId,
+              memo: row.memo
+          }))
+        : [];
 }
 
 async function getAllUserNotes(ownerUserId: unknown = '') {
@@ -115,22 +98,15 @@ async function getAllUserNotes(ownerUserId: unknown = '') {
         return [];
     }
 
-    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
-    const rows: Array<{
+    const rows = (await backend.app.MemoListUserNotes({
+        ownerUserId: normalizedOwnerUserId
+    })) as Array<{
         userId: unknown;
         displayName: unknown;
         note: unknown;
         createdAt: unknown;
-    }> = [];
-    await sqliteRepository.execute<unknown[]>((dbRow) => {
-        rows.push({
-            userId: dbRow[0],
-            displayName: dbRow[1],
-            note: dbRow[2],
-            createdAt: dbRow[3]
-        });
-    }, `SELECT user_id, display_name, note, created_at FROM ${userPrefix}_notes`);
-    return rows;
+    }>;
+    return Array.isArray(rows) ? rows : [];
 }
 
 async function saveUserMemo({ userId, memo }: SaveUserMemoInput) {
@@ -165,21 +141,11 @@ async function getWorldMemo(worldId: unknown) {
         return createEmptyWorldMemo();
     }
 
-    let row: WorldMemoEntry = createEmptyWorldMemo(normalizedWorldId);
-    await sqliteRepository.execute<unknown[]>(
-        (dbRow) => {
-            row = {
-                worldId: dbRow[0],
-                editedAt: dbRow[1],
-                memo: dbRow[2]
-            };
-        },
-        'SELECT world_id, edited_at, memo FROM world_memos WHERE world_id = @world_id',
-        {
-            '@world_id': normalizedWorldId
-        }
+    return (
+        ((await backend.app.MemoGetWorld({
+            worldId: normalizedWorldId
+        })) as WorldMemoEntry | null) ?? createEmptyWorldMemo(normalizedWorldId)
     );
-    return row;
 }
 
 async function saveWorldMemo({ worldId, memo }: SaveWorldMemoInput) {
@@ -214,21 +180,12 @@ async function getAvatarMemo(avatarId: unknown) {
         return createEmptyAvatarMemo();
     }
 
-    let row: AvatarMemoEntry = createEmptyAvatarMemo(normalizedAvatarId);
-    await sqliteRepository.execute<unknown[]>(
-        (dbRow) => {
-            row = {
-                avatarId: dbRow[0],
-                editedAt: dbRow[1],
-                memo: dbRow[2]
-            };
-        },
-        'SELECT avatar_id, edited_at, memo FROM avatar_memos WHERE avatar_id = @avatar_id',
-        {
-            '@avatar_id': normalizedAvatarId
-        }
+    return (
+        ((await backend.app.MemoGetAvatar({
+            avatarId: normalizedAvatarId
+        })) as AvatarMemoEntry | null) ??
+        createEmptyAvatarMemo(normalizedAvatarId)
     );
-    return row;
 }
 
 async function saveAvatarMemo({ avatarId, memo }: SaveAvatarMemoInput) {

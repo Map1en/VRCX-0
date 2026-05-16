@@ -1,9 +1,5 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRow } from './sqliteRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
-
 type ObjectRow = Record<string, unknown>;
 
 interface AvatarCacheInput {
@@ -25,7 +21,7 @@ interface AvatarTag {
     color: unknown;
 }
 
-function asObjectRow(row: SQLiteRow | null | undefined): ObjectRow {
+function asObjectRow(row: ObjectRow | unknown[] | null | undefined): ObjectRow {
     return row && !Array.isArray(row) ? row : {};
 }
 
@@ -39,11 +35,7 @@ function parseInteger(value: unknown, fallback: number) {
     return Number.parseInt((value ?? fallback) as string, 10) || fallback;
 }
 
-function avatarHistoryTableName(userId: unknown) {
-    return `${normalizeUserTablePrefix(userId)}_avatar_history`;
-}
-
-function normalizeAvatarCacheRow(row: SQLiteRow | null | undefined) {
+function normalizeAvatarCacheRow(row: ObjectRow | unknown[] | null | undefined) {
     if (Array.isArray(row)) {
         return {
             id: row[0] ?? '',
@@ -101,21 +93,14 @@ async function getCachedAvatarById(id: unknown) {
         return null;
     }
 
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM cache_avatar WHERE id = @id LIMIT 1',
-        {
-            '@id': normalizedId
-        }
-    );
-    return Array.isArray(rows) && rows.length
-        ? normalizeAvatarCacheRow(rows[0])
-        : null;
+    const row = (await backend.app.AvatarCacheGet({
+        avatarId: normalizedId
+    })) as ObjectRow | null;
+    return row ? normalizeAvatarCacheRow(row) : null;
 }
 
 async function getAvatarCache() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM cache_avatar'
-    );
+    const rows = (await backend.app.AvatarCacheList()) as ObjectRow[];
     return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
 }
 
@@ -167,43 +152,33 @@ async function getAvatarTimeSpent(userId: unknown, avatarId: unknown) {
         return ref;
     }
 
-    await sqliteRepository.execute<unknown[]>(
-        (row) => {
-            ref.timeSpent = parseInteger(row[0], 0);
-        },
-        `SELECT time FROM ${avatarHistoryTableName(userId)} WHERE avatar_id = @avatarId`,
-        {
-            '@avatarId': normalizedAvatarId
-        }
-    );
+    const row = (await backend.app.AvatarTimeSpentGet({
+        userId,
+        avatarId: normalizedAvatarId
+    })) as ObjectRow | null;
+    ref.timeSpent = parseInteger(row?.timeSpent ?? row?.time_spent, 0);
     return ref;
 }
 
 async function getAllAvatarTimeSpent(userId: unknown) {
     const map = new Map<unknown, number>();
-    await sqliteRepository.execute<unknown[]>(
-        (row) => {
-            map.set(row[0], parseInteger(row[1], 0));
-        },
-        `SELECT avatar_id, time FROM ${avatarHistoryTableName(userId)}`
-    );
+    const rows = (await backend.app.AvatarTimeSpentList({ userId })) as
+        | ObjectRow[]
+        | null;
+    for (const row of Array.isArray(rows) ? rows : []) {
+        const avatarId = row.avatarId ?? row.avatar_id;
+        if (avatarId) {
+            map.set(avatarId, parseInteger(row.timeSpent ?? row.time_spent, 0));
+        }
+    }
     return map;
 }
 
 async function getAvatarHistory(userId: unknown, limit: unknown = 100) {
-    const tableName = avatarHistoryTableName(userId);
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        `SELECT cache_avatar.*
-         FROM ${tableName}
-         INNER JOIN cache_avatar ON cache_avatar.id = ${tableName}.avatar_id
-         WHERE author_id != @currentUserId
-         ORDER BY ${tableName}.created_at DESC
-         LIMIT @limit`,
-        {
-            '@currentUserId': normalizeId(userId),
-            '@limit': parseInteger(limit, 100)
-        }
-    );
+    const rows = (await backend.app.AvatarHistoryList({
+        userId: normalizeId(userId),
+        limit: parseInteger(limit, 100)
+    })) as ObjectRow[];
     return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
 }
 
@@ -212,39 +187,33 @@ async function clearAvatarHistory(userId: unknown) {
 }
 
 async function getAvatarTags(avatarId: unknown) {
-    const tags: AvatarTag[] = [];
-    await sqliteRepository.execute(
-        (row) => {
-            tags.push({ tag: row[0], color: row[1] || null });
-        },
-        'SELECT tag, color FROM avatar_tags WHERE avatar_id = @avatar_id',
-        {
-            '@avatar_id': normalizeId(avatarId)
-        }
-    );
-    return tags;
+    const rows = (await backend.app.AvatarTagsGet({
+        avatarId: normalizeId(avatarId)
+    })) as ObjectRow[];
+    return (Array.isArray(rows) ? rows : []).map((row) => ({
+        tag: row.tag,
+        color: row.color || null
+    }));
 }
 
 async function getAllAvatarTags() {
     const map = new Map<unknown, AvatarTag[]>();
-    await sqliteRepository.execute((row) => {
-        const avatarId = row[0];
-        const tag = row[1];
-        const color = row[2] || null;
+    const rows = (await backend.app.AvatarTagsList()) as ObjectRow[];
+    for (const row of Array.isArray(rows) ? rows : []) {
+        const avatarId = row.avatarId ?? row.avatar_id;
+        const tag = row.tag;
+        const color = row.color || null;
         if (!map.has(avatarId)) {
             map.set(avatarId, []);
         }
-        map.get(avatarId).push({ tag, color });
-    }, 'SELECT avatar_id, tag, color FROM avatar_tags');
+        map.get(avatarId)?.push({ tag, color });
+    }
     return map;
 }
 
 async function getAllDistinctTags() {
-    const tags: unknown[] = [];
-    await sqliteRepository.execute((row) => {
-        tags.push(row[0]);
-    }, 'SELECT DISTINCT tag FROM avatar_tags ORDER BY tag');
-    return tags;
+    const tags = (await backend.app.AvatarTagsDistinct()) as unknown[];
+    return Array.isArray(tags) ? tags : [];
 }
 
 async function addAvatarTag(avatarId: unknown, tag: unknown, color = null) {

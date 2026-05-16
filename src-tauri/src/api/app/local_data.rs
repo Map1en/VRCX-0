@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 
+use std::collections::HashMap;
+
 use chrono::{SecondsFormat, Utc};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_persistence::common::ParamsBuilder;
+use vrcx_0_persistence::common::{DbParams, ParamsBuilder};
 use vrcx_0_persistence::database::{DatabaseService, DatabaseWriteTransaction};
 use vrcx_0_persistence::game_log::{
     ensure_game_log_tables, write_batch as write_game_log_batch, GameLogEventEntry,
@@ -59,6 +61,464 @@ fn value_as_i64(value: &Value) -> i64 {
         return value;
     }
     value_as_string(value).parse::<i64>().unwrap_or(0)
+}
+
+fn row_value(row: &[Value], index: usize) -> &Value {
+    row.get(index).unwrap_or(&Value::Null)
+}
+
+fn row_string(row: &[Value], index: usize) -> String {
+    value_as_string(row_value(row, index))
+}
+
+fn row_i64(row: &[Value], index: usize) -> i64 {
+    value_as_i64(row_value(row, index))
+}
+
+fn parse_json_value(value: &Value, fallback: Value) -> Value {
+    let text = value_as_string(value);
+    if text.trim().is_empty() {
+        return fallback;
+    }
+    serde_json::from_str(&text).unwrap_or(fallback)
+}
+
+fn cache_entity_from_row(row: &[Value]) -> AvatarCacheOutput {
+    AvatarCacheOutput {
+        id: row_string(row, 0),
+        author_id: row_string(row, 1),
+        author_name: row_string(row, 2),
+        created_at: row_string(row, 3),
+        description: row_string(row, 4),
+        image_url: row_string(row, 5),
+        name: row_string(row, 6),
+        release_status: row_string(row, 7),
+        thumbnail_image_url: row_string(row, 8),
+        updated_at: row_string(row, 9),
+        version: row_i64(row, 10),
+    }
+}
+
+fn world_summary_from_row(row: &[Value]) -> WorldSummaryOutput {
+    WorldSummaryOutput {
+        id: row_string(row, 0),
+        author_id: row_string(row, 1),
+        author_name: row_string(row, 2),
+        created_at: row_string(row, 3),
+        description: row_string(row, 4),
+        image_url: row_string(row, 5),
+        name: row_string(row, 6),
+        release_status: row_string(row, 7),
+        thumbnail_image_url: row_string(row, 8),
+        updated_at: row_string(row, 9),
+        version: row_i64(row, 10),
+    }
+}
+
+fn player_location_from_row(row: &[Value]) -> PlayerLocationOutput {
+    PlayerLocationOutput {
+        created_at: row_string(row, 0),
+        location: row_string(row, 1),
+        world_id: row_string(row, 2),
+        world_name: row_string(row, 3),
+        time: row_i64(row, 4),
+        group_name: row_string(row, 5),
+    }
+}
+
+fn player_join_leave_from_row(row: &[Value]) -> PlayerJoinLeaveOutput {
+    PlayerJoinLeaveOutput {
+        id: row_i64(row, 0),
+        created_at: row_string(row, 1),
+        r#type: row_string(row, 2),
+        display_name: row_string(row, 3),
+        user_id: row_string(row, 4),
+        time: row_i64(row, 5),
+    }
+}
+
+fn instance_activity_from_row(row: &[Value]) -> InstanceActivityRowOutput {
+    InstanceActivityRowOutput {
+        id: row_i64(row, 0),
+        created_at: row_string(row, 1),
+        r#type: row_string(row, 2),
+        display_name: row_string(row, 3),
+        location: row_string(row, 4),
+        user_id: row_string(row, 5),
+        time: row_i64(row, 6),
+    }
+}
+
+fn activity_location_from_row(row: &[Value]) -> ActivitySourceLocationOutput {
+    ActivitySourceLocationOutput {
+        created_at: row_string(row, 0),
+        time: row_i64(row, 1),
+    }
+}
+
+fn activity_presence_from_row(row: &[Value]) -> ActivityPresenceOutput {
+    ActivityPresenceOutput {
+        created_at: row_string(row, 0),
+        r#type: row_string(row, 1),
+    }
+}
+
+fn activity_session_from_row(row: &[Value]) -> ActivitySessionOutput {
+    ActivitySessionOutput {
+        start: row_i64(row, 0),
+        end: row_i64(row, 1),
+        is_open_tail: row_i64(row, 2) != 0,
+        source_revision: row_string(row, 3),
+    }
+}
+
+fn is_traveling_location(location: &str) -> bool {
+    matches!(location.trim(), "traveling" | "traveling:traveling")
+}
+
+fn notification_v1_from_row(row: &[Value]) -> NotificationV1RowOutput {
+    NotificationV1RowOutput {
+        id: row_string(row, 0),
+        created_at: row_string(row, 1),
+        r#type: row_string(row, 2),
+        sender_user_id: row_string(row, 3),
+        sender_username: row_string(row, 4),
+        receiver_user_id: row_string(row, 5),
+        message: row_string(row, 6),
+        world_id: row_string(row, 7),
+        world_name: row_string(row, 8),
+        image_url: row_string(row, 9),
+        invite_message: row_string(row, 10),
+        request_message: row_string(row, 11),
+        response_message: row_string(row, 12),
+        expired: row_i64(row, 13),
+    }
+}
+
+fn notification_v2_from_row(row: &[Value]) -> NotificationV2RowOutput {
+    NotificationV2RowOutput {
+        id: row_string(row, 0),
+        created_at: row_string(row, 1),
+        updated_at: row_string(row, 2),
+        expires_at: row_string(row, 3),
+        r#type: row_string(row, 4),
+        link: row_string(row, 5),
+        link_text: row_string(row, 6),
+        message: row_string(row, 7),
+        title: row_string(row, 8),
+        image_url: row_string(row, 9),
+        seen: row_i64(row, 10),
+        sender_user_id: row_string(row, 11),
+        sender_username: row_string(row, 12),
+        data: row_string(row, 13),
+        responses: row_string(row, 14),
+        details: row_string(row, 15),
+    }
+}
+
+fn build_type_filter(filters: &[String]) -> (String, DbParams) {
+    let mut params = HashMap::new();
+    let filters = filters
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    if filters.is_empty() {
+        return (String::new(), params);
+    }
+
+    let mut placeholders = Vec::with_capacity(filters.len());
+    for (index, filter) in filters.into_iter().enumerate() {
+        let key = format!("@type_{index}");
+        params.insert(key.clone(), Value::String(filter));
+        placeholders.push(key);
+    }
+    (
+        format!(" WHERE type IN ({})", placeholders.join(", ")),
+        params,
+    )
+}
+
+fn row_json(row: &[Value], index: usize) -> Value {
+    row.get(index).cloned().unwrap_or(Value::Null)
+}
+
+fn count_table(db: &DatabaseService, table_name: &str) -> Result<i64, AppError> {
+    let table_name = safe_identifier(table_name, "Table name")?;
+    Ok(db
+        .execute(
+            &format!("SELECT COUNT(*) FROM {table_name}"),
+            &Default::default(),
+        )?
+        .first()
+        .map(|row| row_i64(row, 0))
+        .unwrap_or(0))
+}
+
+fn max_friend_log_number(db: &DatabaseService, user_prefix: &str) -> Result<i64, AppError> {
+    Ok(db
+        .execute(
+            &format!("SELECT MAX(friend_number) FROM {user_prefix}_friend_log_current"),
+            &Default::default(),
+        )?
+        .first()
+        .map(|row| row_i64(row, 0))
+        .unwrap_or(0))
+}
+
+fn add_list_params(params: &mut DbParams, values: &[String], prefix: &str) -> Vec<String> {
+    values
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .enumerate()
+        .map(|(index, value)| {
+            let key = format!("@{prefix}_{index}");
+            params.insert(key.clone(), Value::String(value));
+            key
+        })
+        .collect()
+}
+
+fn feed_row_from_unified_row(row: &[Value]) -> FeedRowOutput {
+    FeedRowOutput {
+        row_id: row_json(row, 0),
+        created_at: row_json(row, 1),
+        user_id: row_json(row, 2),
+        display_name: row_json(row, 3),
+        r#type: row_json(row, 4),
+        location: row_json(row, 5),
+        world_name: row_json(row, 6),
+        previous_location: row_json(row, 7),
+        time: row_json(row, 8),
+        group_name: row_json(row, 9),
+        status: row_json(row, 10),
+        status_description: row_json(row, 11),
+        previous_status: row_json(row, 12),
+        previous_status_description: row_json(row, 13),
+        bio: row_json(row, 14),
+        previous_bio: row_json(row, 15),
+        owner_id: row_json(row, 16),
+        avatar_name: row_json(row, 17),
+        current_avatar_image_url: row_json(row, 18),
+        current_avatar_thumbnail_image_url: row_json(row, 19),
+        previous_current_avatar_image_url: row_json(row, 20),
+        previous_current_avatar_thumbnail_image_url: row_json(row, 21),
+    }
+}
+
+#[derive(Default)]
+struct FeedFilterFlags {
+    gps: bool,
+    status: bool,
+    bio: bool,
+    avatar: bool,
+    online: bool,
+    offline: bool,
+}
+
+fn feed_filter_flags(filters: &[String], include_profile: bool) -> FeedFilterFlags {
+    let mut flags = FeedFilterFlags {
+        gps: true,
+        status: include_profile,
+        bio: include_profile,
+        avatar: include_profile,
+        online: true,
+        offline: true,
+    };
+    let filters = filters
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    if filters.is_empty() {
+        return flags;
+    }
+
+    flags = FeedFilterFlags::default();
+    for filter in filters {
+        match filter.as_str() {
+            "GPS" => flags.gps = true,
+            "Status" if include_profile => flags.status = true,
+            "Bio" if include_profile => flags.bio = true,
+            "Avatar" if include_profile => flags.avatar = true,
+            "Online" => flags.online = true,
+            "Offline" => flags.offline = true,
+            _ => {}
+        }
+    }
+    flags
+}
+
+fn push_feed_online_offline_select(
+    selects: &mut Vec<String>,
+    user_prefix: &str,
+    where_sql: &str,
+    type_filter: &str,
+    vip_query: &str,
+) {
+    selects.push(format!(
+        "SELECT * FROM (SELECT id, created_at, user_id, display_name, type, location, world_name, NULL AS previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_online_offline WHERE {where_sql} {type_filter} {vip_query} ORDER BY id DESC LIMIT @per_table)"
+    ));
+}
+
+fn feed_base_columns() -> &'static str {
+    "id, created_at, user_id, display_name, type, location, world_name, previous_location, time, group_name, status, status_description, previous_status, previous_status_description, bio, previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url"
+}
+
+fn game_log_row_from_unified_row(row: &[Value]) -> Value {
+    let event_type = row_string(row, 2);
+    let mut object = serde_json::Map::new();
+    object.insert("rowId".into(), row_json(row, 0));
+    object.insert("created_at".into(), row_json(row, 1));
+    object.insert("type".into(), Value::String(event_type.clone()));
+    match event_type.as_str() {
+        "Location" => {
+            object.insert("location".into(), row_json(row, 4));
+            object.insert("worldId".into(), row_json(row, 7));
+            object.insert("worldName".into(), row_json(row, 8));
+            object.insert("time".into(), row_json(row, 6));
+            object.insert("groupName".into(), row_json(row, 9));
+        }
+        "OnPlayerJoined" | "OnPlayerLeft" => {
+            object.insert("displayName".into(), row_json(row, 3));
+            object.insert("location".into(), row_json(row, 4));
+            object.insert("userId".into(), row_json(row, 5));
+            object.insert("time".into(), row_json(row, 6));
+        }
+        "PortalSpawn" => {
+            object.insert("displayName".into(), row_json(row, 3));
+            object.insert("location".into(), row_json(row, 4));
+            object.insert("userId".into(), row_json(row, 5));
+            object.insert("instanceId".into(), row_json(row, 10));
+            object.insert("worldName".into(), row_json(row, 8));
+        }
+        "VideoPlay" => {
+            object.insert("videoUrl".into(), row_json(row, 11));
+            object.insert("videoName".into(), row_json(row, 12));
+            object.insert("videoId".into(), row_json(row, 13));
+            object.insert("location".into(), row_json(row, 4));
+            object.insert("displayName".into(), row_json(row, 3));
+            object.insert("userId".into(), row_json(row, 5));
+        }
+        "Event" => {
+            object.insert("data".into(), row_json(row, 16));
+        }
+        "External" => {
+            object.insert("message".into(), row_json(row, 17));
+            object.insert("displayName".into(), row_json(row, 3));
+            object.insert("userId".into(), row_json(row, 5));
+            object.insert("location".into(), row_json(row, 4));
+        }
+        "StringLoad" | "ImageLoad" => {
+            object.insert("resourceUrl".into(), row_json(row, 14));
+            object.insert("location".into(), row_json(row, 4));
+        }
+        _ => {}
+    }
+    Value::Object(object)
+}
+
+fn game_log_location_segment_from_row(row: &[Value]) -> Value {
+    json!({
+        "id": row_json(row, 0),
+        "created_at": row_json(row, 1),
+        "location": row_json(row, 2),
+        "worldId": row_json(row, 3),
+        "worldName": row_json(row, 4),
+        "time": row_json(row, 5),
+        "groupName": row_json(row, 6)
+    })
+}
+
+fn game_log_base_columns(include_extra: bool) -> &'static str {
+    if include_extra {
+        "id, created_at, type, display_name, location, user_id, time, world_id, world_name, group_name, instance_id, video_url, video_name, video_id, resource_url, resource_type, data, message"
+    } else {
+        "id, created_at, type, display_name, location, user_id, time, world_id, world_name, group_name, instance_id, video_url, video_name, video_id, resource_url, resource_type"
+    }
+}
+
+#[derive(Default)]
+struct GameLogFilterFlags {
+    location: bool,
+    onplayerjoined: bool,
+    onplayerleft: bool,
+    portalspawn: bool,
+    event: bool,
+    external: bool,
+    videoplay: bool,
+    stringload: bool,
+    imageload: bool,
+}
+
+fn game_log_filter_flags(filters: &[String], include_extra: bool) -> GameLogFilterFlags {
+    let mut flags = GameLogFilterFlags {
+        location: true,
+        onplayerjoined: true,
+        onplayerleft: true,
+        portalspawn: true,
+        event: include_extra,
+        external: include_extra,
+        videoplay: true,
+        stringload: true,
+        imageload: true,
+    };
+    let filters = filters
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    if filters.is_empty() {
+        return flags;
+    }
+    flags = GameLogFilterFlags::default();
+    for filter in filters {
+        match filter.as_str() {
+            "Location" => flags.location = true,
+            "OnPlayerJoined" => flags.onplayerjoined = true,
+            "OnPlayerLeft" => flags.onplayerleft = true,
+            "PortalSpawn" => flags.portalspawn = true,
+            "Event" if include_extra => flags.event = true,
+            "External" if include_extra => flags.external = true,
+            "VideoPlay" => flags.videoplay = true,
+            "StringLoad" => flags.stringload = true,
+            "ImageLoad" => flags.imageload = true,
+            _ => {}
+        }
+    }
+    flags
+}
+
+fn query_param_string(params: &Value, key: &str) -> String {
+    params
+        .get(key)
+        .map(value_as_string)
+        .unwrap_or_default()
+        .trim()
+        .to_string()
+}
+
+fn query_param_i64(params: &Value, key: &str, fallback: i64) -> i64 {
+    params.get(key).map(value_as_i64).unwrap_or(fallback)
+}
+
+fn query_param_bool(params: &Value, key: &str) -> bool {
+    params.get(key).and_then(Value::as_bool).unwrap_or(false)
+}
+
+fn query_param_string_array(params: &Value, key: &str) -> Vec<String> {
+    params
+        .get(key)
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .map(value_as_string)
+                .filter(|value| !value.trim().is_empty())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn object_field<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
@@ -662,6 +1122,22 @@ pub fn app__config_set_values(
 }
 
 #[tauri::command]
+pub fn app__config_list_values(
+    state: State<'_, AppState>,
+) -> Result<Vec<ConfigReadEntry>, AppError> {
+    ensure_config_table(&state.db)?;
+    Ok(state
+        .db
+        .execute("SELECT key, value FROM configs", &Default::default())?
+        .into_iter()
+        .map(|row| ConfigReadEntry {
+            key: row_string(&row, 0),
+            value: row_string(&row, 1),
+        })
+        .collect())
+}
+
+#[tauri::command]
 pub fn app__config_remove_value(state: State<'_, AppState>, key: String) -> Result<i64, AppError> {
     ensure_config_table(&state.db)?;
     Ok(state.db.execute_non_query(
@@ -916,11 +1392,149 @@ pub fn app__database_maintenance_run(
 }
 
 #[tauri::command]
+pub fn app__database_maintenance_table_sizes_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<MaintenanceTableSizesOutput, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    ensure_global_local_data_tables(&state.db)?;
+
+    let user_id = normalize_text(user_id);
+    let mut output = MaintenanceTableSizesOutput {
+        gps: 0,
+        status: 0,
+        bio: 0,
+        avatar: 0,
+        online_offline: 0,
+        friend_log_history: 0,
+        notification: 0,
+        location: count_table(&state.db, "gamelog_location")?,
+        join_leave: count_table(&state.db, "gamelog_join_leave")?,
+        portal_spawn: count_table(&state.db, "gamelog_portal_spawn")?,
+        video_play: count_table(&state.db, "gamelog_video_play")?,
+        event: count_table(&state.db, "gamelog_event")?,
+        external: count_table(&state.db, "gamelog_external")?,
+        resource_load: count_table(&state.db, "gamelog_resource_load")?,
+    };
+    if !user_id.is_empty() {
+        let user_prefix = normalize_user_table_prefix(&user_id)?;
+        ensure_user_local_tables(&state.db, &user_prefix)?;
+        output.gps = count_table(&state.db, &format!("{user_prefix}_feed_gps"))?;
+        output.status = count_table(&state.db, &format!("{user_prefix}_feed_status"))?;
+        output.bio = count_table(&state.db, &format!("{user_prefix}_feed_bio"))?;
+        output.avatar = count_table(&state.db, &format!("{user_prefix}_feed_avatar"))?;
+        output.online_offline =
+            count_table(&state.db, &format!("{user_prefix}_feed_online_offline"))?;
+        output.friend_log_history =
+            count_table(&state.db, &format!("{user_prefix}_friend_log_history"))?;
+        output.notification = count_table(&state.db, &format!("{user_prefix}_notifications"))?;
+    }
+    Ok(output)
+}
+
+#[tauri::command]
+pub fn app__database_maintenance_max_friend_log_number_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<i64, AppError> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(0);
+    }
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    max_friend_log_number(&state.db, &user_prefix)
+}
+
+#[tauri::command]
+pub fn app__database_maintenance_broken_leave_entries_get(
+    state: State<'_, AppState>,
+) -> Result<Vec<Value>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let mut instance_times = HashMap::<String, i64>::new();
+    for row in state.db.execute(
+        "SELECT location, time FROM gamelog_location",
+        &Default::default(),
+    )? {
+        let location = row_string(&row, 0);
+        let time = row_i64(&row, 1);
+        *instance_times.entry(location).or_default() += time;
+    }
+    let mut bad_entries = Vec::new();
+    for row in state.db.execute("SELECT location, time, id FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND time > 0", &Default::default())? {
+        let location = row_string(&row, 0);
+        let time = row_i64(&row, 1);
+        if instance_times
+            .get(&location)
+            .is_some_and(|instance_time| time > *instance_time)
+        {
+            bad_entries.push(row_json(&row, 2));
+        }
+    }
+    Ok(bad_entries)
+}
+
+#[tauri::command]
+pub fn app__database_maintenance_broken_game_log_display_names_get(
+    state: State<'_, AppState>,
+) -> Result<Vec<BrokenGameLogDisplayNameOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, display_name FROM gamelog_join_leave WHERE display_name LIKE '% (%'",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| BrokenGameLogDisplayNameOutput {
+            id: row_json(&row, 0),
+            display_name: row_json(&row, 1),
+        })
+        .collect())
+}
+
+#[tauri::command]
 pub fn app__avatar_cache_upsert(
     state: State<'_, AppState>,
     entry: CacheEntityInput,
 ) -> Result<i64, AppError> {
     upsert_cache_entity(&state.db, "cache_avatar", entry)
+}
+
+#[tauri::command]
+pub fn app__avatar_cache_get(
+    state: State<'_, AppState>,
+    avatar_id: String,
+) -> Result<Option<AvatarCacheOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let avatar_id = normalize_text(avatar_id);
+    if avatar_id.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_avatar WHERE id = @avatar_id LIMIT 1",
+            &ParamsBuilder::new().set("avatar_id", avatar_id).build(),
+        )?
+        .first()
+        .map(|row| cache_entity_from_row(row)))
+}
+
+#[tauri::command]
+pub fn app__avatar_cache_list(
+    state: State<'_, AppState>,
+) -> Result<Vec<AvatarCacheOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_avatar",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| cache_entity_from_row(&row))
+        .collect())
 }
 
 #[tauri::command]
@@ -987,6 +1601,90 @@ pub fn app__avatar_time_spent_add(
 }
 
 #[tauri::command]
+pub fn app__avatar_history_list(
+    state: State<'_, AppState>,
+    user_id: String,
+    limit: i64,
+) -> Result<Vec<AvatarCacheOutput>, AppError> {
+    let user_id = normalize_text(user_id);
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT cache_avatar.id, cache_avatar.author_id, cache_avatar.author_name, cache_avatar.created_at, cache_avatar.description, cache_avatar.image_url, cache_avatar.name, cache_avatar.release_status, cache_avatar.thumbnail_image_url, cache_avatar.updated_at, cache_avatar.version
+                 FROM {user_prefix}_avatar_history
+                 INNER JOIN cache_avatar ON cache_avatar.id = {user_prefix}_avatar_history.avatar_id
+                 WHERE author_id != @current_user_id
+                 ORDER BY {user_prefix}_avatar_history.created_at DESC
+                 LIMIT @limit"
+            ),
+            &ParamsBuilder::new()
+                .set("current_user_id", user_id)
+                .set("limit", if limit > 0 { limit } else { 100 })
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| cache_entity_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__avatar_time_spent_get(
+    state: State<'_, AppState>,
+    user_id: String,
+    avatar_id: String,
+) -> Result<AvatarTimeSpentOutput, AppError> {
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    let avatar_id = normalize_text(avatar_id);
+    let time_spent = if avatar_id.is_empty() {
+        0
+    } else {
+        state
+            .db
+            .execute(
+                &format!(
+                    "SELECT time FROM {user_prefix}_avatar_history WHERE avatar_id = @avatar_id"
+                ),
+                &ParamsBuilder::new()
+                    .set("avatar_id", avatar_id.clone())
+                    .build(),
+            )?
+            .first()
+            .map(|row| row_i64(row, 0))
+            .unwrap_or(0)
+    };
+    Ok(AvatarTimeSpentOutput {
+        avatar_id,
+        time_spent,
+    })
+}
+
+#[tauri::command]
+pub fn app__avatar_time_spent_list(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Vec<AvatarTimeSpentOutput>, AppError> {
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT avatar_id, time FROM {user_prefix}_avatar_history"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| AvatarTimeSpentOutput {
+            avatar_id: row_string(&row, 0),
+            time_spent: row_i64(&row, 1),
+        })
+        .collect())
+}
+
+#[tauri::command]
 pub fn app__avatar_history_clear(
     state: State<'_, AppState>,
     user_id: String,
@@ -1020,6 +1718,61 @@ pub fn app__avatar_tag_add(
             .set("color", color)
             .build(),
     )?)
+}
+
+#[tauri::command]
+pub fn app__avatar_tags_get(
+    state: State<'_, AppState>,
+    avatar_id: String,
+) -> Result<Vec<AvatarTagOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let avatar_id = normalize_text(avatar_id);
+    Ok(state
+        .db
+        .execute(
+            "SELECT avatar_id, tag, color FROM avatar_tags WHERE avatar_id = @avatar_id",
+            &ParamsBuilder::new().set("avatar_id", avatar_id).build(),
+        )?
+        .into_iter()
+        .map(|row| AvatarTagOutput {
+            avatar_id: row_string(&row, 0),
+            tag: row_string(&row, 1),
+            color: row.get(2).cloned().unwrap_or(Value::Null),
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__avatar_tags_list(state: State<'_, AppState>) -> Result<Vec<AvatarTagOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT avatar_id, tag, color FROM avatar_tags",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| AvatarTagOutput {
+            avatar_id: row_string(&row, 0),
+            tag: row_string(&row, 1),
+            color: row.get(2).cloned().unwrap_or(Value::Null),
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__avatar_tags_distinct(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT DISTINCT tag FROM avatar_tags ORDER BY tag",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| row_string(&row, 0))
+        .filter(|tag| !tag.is_empty())
+        .collect())
 }
 
 #[tauri::command]
@@ -1204,6 +1957,172 @@ pub fn app__feed_avatar_purge(
 }
 
 #[tauri::command]
+pub fn app__feed_rows_query(
+    state: State<'_, AppState>,
+    query: FeedRowsQueryInput,
+) -> Result<Vec<FeedRowOutput>, AppError> {
+    let user_id = normalize_text(query.user_id);
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(&state.db, &user_prefix)?;
+
+    let mut params = HashMap::new();
+    let max_entries = if query.max_entries > 0 {
+        query.max_entries
+    } else {
+        500
+    };
+    params.insert("@limit".into(), Value::from(max_entries));
+    params.insert("@per_table".into(), Value::from(max_entries));
+
+    let vip_placeholders = add_list_params(&mut params, &query.vip_list, "vip");
+    let vip_query = if vip_placeholders.is_empty() {
+        String::new()
+    } else {
+        format!("AND user_id IN ({})", vip_placeholders.join(", "))
+    };
+
+    let mode = normalize_text(&query.mode);
+    let search = normalize_text(&query.search);
+    let instance_mode = mode == "instance"
+        || (mode == "search" && (search.starts_with("wrld_") || search.starts_with("grp_")));
+    let flags = feed_filter_flags(&query.filters, !instance_mode);
+    let mut selects = Vec::new();
+
+    if instance_mode {
+        params.insert(
+            "@instance_like".into(),
+            Value::String(format!("%{search}%")),
+        );
+        if flags.gps {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'GPS' AS type, location, world_name, previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_gps WHERE location LIKE @instance_like {vip_query} ORDER BY created_at DESC, id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.online || flags.offline {
+            let type_filter = match (flags.online, flags.offline) {
+                (true, false) => "AND type = 'Online'",
+                (false, true) => "AND type = 'Offline'",
+                _ => "",
+            };
+            push_feed_online_offline_select(
+                &mut selects,
+                &user_prefix,
+                "location LIKE @instance_like",
+                type_filter,
+                &vip_query,
+            );
+        }
+    } else if mode == "lookup" {
+        if flags.gps {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'GPS' AS type, location, world_name, previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_gps WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.status {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Status' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, status, status_description, previous_status, previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_status WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.bio {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Bio' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, bio, previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_bio WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.avatar {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Avatar' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_avatar WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.online || flags.offline {
+            let type_filter = match (flags.online, flags.offline) {
+                (true, false) => "AND type = 'Online'",
+                (false, true) => "AND type = 'Offline'",
+                _ => "",
+            };
+            push_feed_online_offline_select(
+                &mut selects,
+                &user_prefix,
+                "1=1",
+                type_filter,
+                &vip_query,
+            );
+        }
+    } else {
+        params.insert("@search_like".into(), Value::String(format!("%{search}%")));
+        let mut date_query = String::new();
+        if !query.date_from.trim().is_empty() {
+            date_query.push_str("AND created_at >= @date_from ");
+            params.insert("@date_from".into(), Value::String(query.date_from));
+        }
+        if !query.date_to.trim().is_empty() {
+            date_query.push_str("AND created_at <= @date_to ");
+            params.insert("@date_to".into(), Value::String(query.date_to));
+        }
+        if flags.gps {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'GPS' AS type, location, world_name, previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_gps WHERE (display_name LIKE @search_like OR world_name LIKE @search_like OR group_name LIKE @search_like) {date_query} {vip_query} ORDER BY created_at DESC, id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.status {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Status' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, status, status_description, previous_status, previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_status WHERE (display_name LIKE @search_like OR status LIKE @search_like OR status_description LIKE @search_like) {date_query} {vip_query} ORDER BY created_at DESC, id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.bio {
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Bio' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, bio, previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_bio WHERE (display_name LIKE @search_like OR bio LIKE @search_like) {date_query} {vip_query} ORDER BY created_at DESC, id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.avatar {
+            let avatar_query = if search.contains("private") {
+                "OR user_id = owner_id"
+            } else if search.contains("public") {
+                "OR user_id != owner_id"
+            } else {
+                ""
+            };
+            selects.push(format!(
+                "SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Avatar' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url FROM {user_prefix}_feed_avatar WHERE (display_name LIKE @search_like OR avatar_name LIKE @search_like) {avatar_query} {date_query} {vip_query} ORDER BY created_at DESC, id DESC LIMIT @per_table)"
+            ));
+        }
+        if flags.online || flags.offline {
+            let type_filter = match (flags.online, flags.offline) {
+                (true, false) => "AND type = 'Online'",
+                (false, true) => "AND type = 'Offline'",
+                _ => "",
+            };
+            let where_sql =
+                "(display_name LIKE @search_like OR world_name LIKE @search_like OR group_name LIKE @search_like)";
+            push_feed_online_offline_select(
+                &mut selects,
+                &user_prefix,
+                where_sql,
+                &format!("{type_filter} {date_query}"),
+                &vip_query,
+            );
+        }
+    }
+
+    if selects.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT {} FROM ({}) ORDER BY created_at DESC, id DESC LIMIT @limit",
+                feed_base_columns(),
+                selects.join(" UNION ALL ")
+            ),
+            &params,
+        )?
+        .into_iter()
+        .map(|row| feed_row_from_unified_row(&row))
+        .collect())
+}
+
+#[tauri::command]
 pub fn app__game_log_entries_add(
     state: State<'_, AppState>,
     kind: String,
@@ -1302,8 +2221,1719 @@ pub fn app__game_log_entry_delete(
         &ParamsBuilder::new()
             .set("created_at", object_field_string(&entry, &["created_at", "createdAt"]))
             .set("fallback_value", fallback_value)
-            .build(),
+        .build(),
     )?)
+}
+
+#[tauri::command]
+pub fn app__game_log_query(
+    state: State<'_, AppState>,
+    query: GameLogQueryInput,
+) -> Result<Value, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let params = query.params;
+    let kind = normalize_text(&query.kind);
+    match kind.as_str() {
+        "recentDatabase" => {
+            let date_offset = query_param_string(&params, "dateOffset");
+            let limit = query_param_i64(&params, "maxTableSize", 500);
+            let mut rows = Vec::new();
+            for row in state.db.execute(
+                "SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message
+                 FROM gamelog_location
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message
+                 FROM gamelog_join_leave
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message
+                 FROM gamelog_portal_spawn
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message
+                 FROM gamelog_video_play
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type, NULL AS data, NULL AS message
+                 FROM gamelog_resource_load
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, 'Event' AS type, NULL AS display_name, NULL AS location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, data, NULL AS message
+                 FROM gamelog_event
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset.clone())
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            for row in state.db.execute(
+                "SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message
+                 FROM gamelog_external
+                 WHERE created_at >= date(@date_offset)
+                 ORDER BY id DESC
+                 LIMIT @limit",
+                &ParamsBuilder::new()
+                    .set("date_offset", date_offset)
+                    .set("limit", limit)
+                    .build(),
+            )? {
+                rows.push(game_log_row_from_unified_row(&row));
+            }
+            rows.sort_by(|left, right| {
+                let left_date = left
+                    .get("created_at")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                let right_date = right
+                    .get("created_at")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                left_date.cmp(right_date)
+            });
+            if rows.len() > limit as usize {
+                rows.drain(0..rows.len() - limit as usize);
+            }
+            Ok(Value::Array(rows))
+        }
+        "rowsByLocation" | "lookupRows" | "searchRows" => {
+            let mode = kind.as_str();
+            let include_extra = mode != "rowsByLocation";
+            let filters = query_param_string_array(&params, "filters");
+            let flags = game_log_filter_flags(&filters, include_extra);
+            let vip_list = query_param_string_array(&params, "vipList");
+            let mut db_params = HashMap::new();
+            let max_entries = query_param_i64(&params, "maxEntries", 500);
+            db_params.insert("@limit".into(), Value::from(max_entries));
+            db_params.insert("@per_table".into(), Value::from(max_entries));
+            let vip_placeholders = add_list_params(&mut db_params, &vip_list, "vip");
+            let vip_query = if vip_placeholders.is_empty() {
+                String::new()
+            } else {
+                format!("AND user_id IN ({})", vip_placeholders.join(", "))
+            };
+            let mut selects = Vec::new();
+
+            if mode == "rowsByLocation" {
+                let instance_id = query_param_string(&params, "instanceId");
+                db_params.insert(
+                    "@location_like".into(),
+                    Value::String(format!("%{instance_id}%")),
+                );
+                db_params.insert(
+                    "@current_user_id".into(),
+                    Value::String(query_param_string(&params, "currentUserId")),
+                );
+                if flags.location {
+                    selects.push(
+                        "SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_location WHERE location LIKE @location_like ORDER BY id DESC LIMIT @per_table)".to_string()
+                    );
+                }
+                if flags.onplayerjoined || flags.onplayerleft {
+                    let query = match (flags.onplayerjoined, flags.onplayerleft) {
+                        (true, false) => "AND type = 'OnPlayerJoined'",
+                        (false, true) => "AND type = 'OnPlayerLeft'",
+                        _ => "",
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_join_leave WHERE (location LIKE @location_like AND user_id != @current_user_id) {vip_query} {query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.portalspawn {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_portal_spawn WHERE location LIKE @location_like {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.videoplay {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type FROM gamelog_video_play WHERE location LIKE @location_like {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.stringload || flags.imageload {
+                    let check_string = if flags.stringload {
+                        ""
+                    } else {
+                        "AND resource_type != 'StringLoad'"
+                    };
+                    let check_image = if flags.imageload {
+                        ""
+                    } else {
+                        "AND resource_type != 'ImageLoad'"
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type FROM gamelog_resource_load WHERE location LIKE @location_like {check_string} {check_image} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+            } else if mode == "lookupRows" {
+                if flags.location {
+                    selects.push(
+                        "SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_location ORDER BY id DESC LIMIT @per_table)".to_string()
+                    );
+                }
+                if flags.onplayerjoined || flags.onplayerleft {
+                    let query = match (flags.onplayerjoined, flags.onplayerleft) {
+                        (true, false) => "AND type = 'OnPlayerJoined'",
+                        (false, true) => "AND type = 'OnPlayerLeft'",
+                        _ => "",
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE 1=1 {vip_query} {query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.portalspawn {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.event {
+                    selects.push(
+                        "SELECT * FROM (SELECT id, created_at, 'Event' AS type, NULL AS display_name, NULL AS location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, data, NULL AS message FROM gamelog_event ORDER BY id DESC LIMIT @per_table)".to_string()
+                    );
+                }
+                if flags.external {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.videoplay {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE 1=1 {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.stringload || flags.imageload {
+                    let check_string = if flags.stringload {
+                        ""
+                    } else {
+                        "AND resource_type != 'StringLoad'"
+                    };
+                    let check_image = if flags.imageload {
+                        ""
+                    } else {
+                        "AND resource_type != 'ImageLoad'"
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type, NULL AS data, NULL AS message FROM gamelog_resource_load WHERE 1=1 {check_string} {check_image} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+            } else {
+                let search = query_param_string(&params, "search");
+                db_params.insert("@search_like".into(), Value::String(format!("%{search}%")));
+                db_params.insert(
+                    "@current_user_id".into(),
+                    Value::String(query_param_string(&params, "currentUserId")),
+                );
+                if flags.location {
+                    selects.push(
+                        "SELECT * FROM (SELECT id, created_at, 'Location' AS type, NULL AS display_name, location, NULL AS user_id, time, world_id, world_name, group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_location WHERE (world_name LIKE @search_like OR group_name LIKE @search_like) ORDER BY id DESC LIMIT @per_table)".to_string()
+                    );
+                }
+                if flags.onplayerjoined || flags.onplayerleft {
+                    let query = match (flags.onplayerjoined, flags.onplayerleft) {
+                        (true, false) => "AND type = 'OnPlayerJoined'",
+                        (false, true) => "AND type = 'OnPlayerLeft'",
+                        _ => "",
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, type, display_name, location, user_id, time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_join_leave WHERE ((display_name LIKE @search_like OR user_id LIKE @search_like) AND user_id != @current_user_id) {vip_query} {query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.portalspawn {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'PortalSpawn' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, world_name, NULL AS group_name, instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_portal_spawn WHERE (display_name LIKE @search_like OR user_id LIKE @search_like OR world_name LIKE @search_like) {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.event {
+                    selects.push(
+                        "SELECT * FROM (SELECT id, created_at, 'Event' AS type, NULL AS display_name, NULL AS location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, data, NULL AS message FROM gamelog_event WHERE data LIKE @search_like ORDER BY id DESC LIMIT @per_table)".to_string()
+                    );
+                }
+                if flags.external {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'External' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, message FROM gamelog_external WHERE (display_name LIKE @search_like OR user_id LIKE @search_like OR message LIKE @search_like) {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.videoplay {
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, 'VideoPlay' AS type, display_name, location, user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, video_url, video_name, video_id, NULL AS resource_url, NULL AS resource_type, NULL AS data, NULL AS message FROM gamelog_video_play WHERE (video_url LIKE @search_like OR video_name LIKE @search_like OR display_name LIKE @search_like OR user_id LIKE @search_like) {vip_query} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+                if flags.stringload || flags.imageload {
+                    let check_string = if flags.stringload {
+                        ""
+                    } else {
+                        "AND resource_type != 'StringLoad'"
+                    };
+                    let check_image = if flags.imageload {
+                        ""
+                    } else {
+                        "AND resource_type != 'ImageLoad'"
+                    };
+                    selects.push(format!(
+                        "SELECT * FROM (SELECT id, created_at, resource_type AS type, NULL AS display_name, location, NULL AS user_id, NULL AS time, NULL AS world_id, NULL AS world_name, NULL AS group_name, NULL AS instance_id, NULL AS video_url, NULL AS video_name, NULL AS video_id, resource_url, resource_type, NULL AS data, NULL AS message FROM gamelog_resource_load WHERE resource_url LIKE @search_like {check_string} {check_image} ORDER BY id DESC LIMIT @per_table)"
+                    ));
+                }
+            }
+
+            if selects.is_empty() {
+                return Ok(Value::Array(Vec::new()));
+            }
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        &format!(
+                            "SELECT {} FROM ({}) ORDER BY created_at DESC, id DESC LIMIT @limit",
+                            game_log_base_columns(include_extra),
+                            selects.join(" UNION ALL ")
+                        ),
+                        &db_params,
+                    )?
+                    .into_iter()
+                    .map(|row| game_log_row_from_unified_row(&row))
+                    .collect(),
+            ))
+        }
+        "lastVisit" => {
+            let world_id = query_param_string(&params, "worldId");
+            let count = if query_param_bool(&params, "currentWorldMatch") {
+                2
+            } else {
+                1
+            };
+            let row = state
+                .db
+                .execute(
+                    "SELECT created_at, world_id FROM gamelog_location WHERE world_id = @world_id ORDER BY id DESC LIMIT @count",
+                    &ParamsBuilder::new()
+                        .set("world_id", world_id)
+                        .set("count", count)
+                        .build(),
+                )?
+                .last()
+                .cloned();
+            Ok(row
+                .map(|row| json!({ "created_at": row_json(&row, 0), "worldId": row_json(&row, 1) }))
+                .unwrap_or_else(|| json!({ "created_at": "", "worldId": "" })))
+        }
+        "visitCount" => {
+            let world_id = query_param_string(&params, "worldId");
+            let count = state
+                .db
+                .execute(
+                    "SELECT COUNT(DISTINCT location) FROM gamelog_location WHERE world_id = @world_id",
+                    &ParamsBuilder::new().set("world_id", world_id.clone()).build(),
+                )?
+                .first()
+                .map(|row| row_i64(row, 0))
+                .unwrap_or(0);
+            Ok(json!({ "visitCount": count, "worldId": world_id }))
+        }
+        "timeSpentInWorld" => {
+            let world_id = query_param_string(&params, "worldId");
+            let time_spent = state
+                .db
+                .execute(
+                    "SELECT COALESCE(SUM(time), 0) FROM gamelog_location WHERE world_id = @world_id",
+                    &ParamsBuilder::new().set("world_id", world_id.clone()).build(),
+                )?
+                .first()
+                .map(|row| row_i64(row, 0))
+                .unwrap_or(0);
+            Ok(json!({ "timeSpent": time_spent, "worldId": world_id }))
+        }
+        "lastGroupVisit" => {
+            let group_id = query_param_string(&params, "groupId");
+            let created_at = state
+                .db
+                .execute(
+                    "SELECT created_at FROM gamelog_location WHERE location LIKE @group_id ORDER BY id DESC LIMIT 1",
+                    &ParamsBuilder::new()
+                        .set("group_id", format!("%{group_id}%"))
+                        .build(),
+                )?
+                .first()
+                .map(|row| row_string(row, 0))
+                .unwrap_or_default();
+            Ok(json!({ "created_at": created_at }))
+        }
+        "previousInstancesByGroupId" => {
+            let group_id = query_param_string(&params, "groupId");
+            let mut by_location = HashMap::<String, Value>::new();
+            let mut location_order = Vec::<String>::new();
+            for row in state.db.execute(
+                "SELECT created_at, location, time, world_name, group_name
+                 FROM gamelog_location
+                 WHERE location LIKE @group_id
+                 ORDER BY id DESC",
+                &ParamsBuilder::new()
+                    .set("group_id", format!("%{group_id}%"))
+                    .build(),
+            )? {
+                let location = row_string(&row, 1);
+                if !by_location.contains_key(&location) {
+                    location_order.push(location.clone());
+                }
+                let time = row_i64(&row, 2)
+                    + by_location
+                        .get(&location)
+                        .and_then(|value| value.get("time"))
+                        .map(value_as_i64)
+                        .unwrap_or(0);
+                by_location.insert(
+                    location.clone(),
+                    json!({
+                        "created_at": row_json(&row, 0),
+                        "location": location,
+                        "time": time,
+                        "worldName": row_json(&row, 3),
+                        "groupName": row_json(&row, 4)
+                    }),
+                );
+            }
+            Ok(Value::Array(
+                location_order
+                    .into_iter()
+                    .filter_map(|location| by_location.remove(&location))
+                    .collect(),
+            ))
+        }
+        "lastSeen" => {
+            let user_id = query_param_string(&params, "userId");
+            let display_name = query_param_string(&params, "displayName");
+            let count = if query_param_bool(&params, "inCurrentWorld") {
+                2
+            } else {
+                1
+            };
+            let row = state
+                .db
+                .execute(
+                    "SELECT created_at, user_id FROM gamelog_join_leave WHERE user_id = @user_id OR display_name = @display_name ORDER BY id DESC LIMIT @count",
+                    &ParamsBuilder::new()
+                        .set("user_id", user_id.clone())
+                        .set("display_name", display_name)
+                        .set("count", count)
+                        .build(),
+                )?
+                .last()
+                .cloned();
+            Ok(row
+                .map(|row| {
+                    let row_user_id = row_string(&row, 1);
+                    json!({
+                        "created_at": row_json(&row, 0),
+                        "userId": if row_user_id.is_empty() { user_id } else { row_user_id }
+                    })
+                })
+                .unwrap_or_else(|| json!({ "created_at": "", "userId": "" })))
+        }
+        "joinCount" => {
+            let user_id = query_param_string(&params, "userId");
+            let display_name = query_param_string(&params, "displayName");
+            let count = state
+                .db
+                .execute(
+                    "SELECT COUNT(DISTINCT location) FROM gamelog_join_leave WHERE (type = 'OnPlayerJoined') AND (user_id = @user_id OR display_name = @display_name)",
+                    &ParamsBuilder::new()
+                        .set("user_id", user_id.clone())
+                        .set("display_name", display_name)
+                        .build(),
+                )?
+                .first()
+                .map(|row| row_i64(row, 0))
+                .unwrap_or(0);
+            Ok(json!({ "joinCount": count, "userId": user_id }))
+        }
+        "timeSpent" => {
+            let user_id = query_param_string(&params, "userId");
+            let display_name = query_param_string(&params, "displayName");
+            let time_spent = state
+                .db
+                .execute(
+                    "SELECT COALESCE(SUM(time), 0)
+                     FROM gamelog_join_leave
+                     WHERE type = 'OnPlayerLeft'
+                       AND (user_id = @user_id OR display_name = @display_name)",
+                    &ParamsBuilder::new()
+                        .set("user_id", user_id.clone())
+                        .set("display_name", display_name)
+                        .build(),
+                )?
+                .first()
+                .map(|row| row_i64(row, 0))
+                .unwrap_or(0);
+            Ok(json!({ "timeSpent": time_spent, "userId": user_id }))
+        }
+        "userStats" => {
+            let user_id = query_param_string(&params, "userId");
+            let display_name = query_param_string(&params, "displayName");
+            let count = if query_param_bool(&params, "inCurrentWorld") {
+                2
+            } else {
+                1
+            };
+            let last_seen = state
+                .db
+                .execute(
+                    "SELECT created_at FROM gamelog_join_leave WHERE user_id = @user_id OR display_name = @display_name ORDER BY id DESC LIMIT @count",
+                    &ParamsBuilder::new()
+                        .set("user_id", user_id.clone())
+                        .set("display_name", display_name.clone())
+                        .set("count", count)
+                        .build(),
+                )?
+                .last()
+                .map(|row| row_string(row, 0))
+                .unwrap_or_default();
+            let stats = state
+                .db
+                .execute(
+                    "SELECT
+                        COALESCE(SUM(CASE WHEN type = 'OnPlayerLeft' THEN time ELSE 0 END), 0),
+                        COUNT(DISTINCT NULLIF(location, ''))
+                     FROM gamelog_join_leave
+                     WHERE user_id = @user_id OR display_name = @display_name",
+                    &ParamsBuilder::new()
+                        .set("user_id", user_id.clone())
+                        .set("display_name", display_name.clone())
+                        .build(),
+                )?
+                .first()
+                .cloned();
+            let mut previous_names = Vec::new();
+            for row in state.db.execute(
+                "SELECT display_name, MAX(created_at)
+                 FROM gamelog_join_leave
+                 WHERE user_id = @user_id
+                   AND display_name != ''
+                   AND display_name != @display_name
+                 GROUP BY display_name
+                 ORDER BY MAX(created_at) DESC",
+                &ParamsBuilder::new()
+                    .set("user_id", user_id.clone())
+                    .set("display_name", display_name)
+                    .build(),
+            )? {
+                previous_names.push(json!({
+                    "displayName": row_json(&row, 0),
+                    "created_at": row_json(&row, 1)
+                }));
+            }
+            Ok(json!({
+                "timeSpent": stats.as_ref().map(|row| row_i64(row, 0)).unwrap_or(0),
+                "lastSeen": last_seen,
+                "joinCount": stats.as_ref().map(|row| row_i64(row, 1)).unwrap_or(0),
+                "userId": user_id,
+                "previousDisplayNames": previous_names
+            }))
+        }
+        "allUserStats" => {
+            let user_ids = query_param_string_array(&params, "userIds");
+            let display_names = query_param_string_array(&params, "displayNames");
+            if user_ids.is_empty() && display_names.is_empty() {
+                return Ok(Value::Array(Vec::new()));
+            }
+            let mut db_params = HashMap::new();
+            let mut clauses = Vec::new();
+            let user_placeholders = add_list_params(&mut db_params, &user_ids, "stat_user_id");
+            if !user_placeholders.is_empty() {
+                clauses.push(format!("g.user_id IN ({})", user_placeholders.join(", ")));
+            }
+            let name_placeholders =
+                add_list_params(&mut db_params, &display_names, "stat_display_name");
+            if !name_placeholders.is_empty() {
+                clauses.push(format!(
+                    "g.display_name IN ({})",
+                    name_placeholders.join(", ")
+                ));
+            }
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        &format!(
+                            "SELECT
+                                g.created_at,
+                                g.user_id,
+                                SUM(g.time) AS timeSpent,
+                                COUNT(DISTINCT g.location) AS joinCount,
+                                g.display_name,
+                                MAX(g.id) AS max_id
+                            FROM
+                                gamelog_join_leave g
+                            WHERE
+                                {}
+                            GROUP BY
+                                g.user_id,
+                                g.display_name
+                            ORDER BY
+                                g.user_id DESC",
+                            clauses.join("\n                OR ")
+                        ),
+                        &db_params,
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "lastSeen": row_json(&row, 0),
+                            "userId": row_json(&row, 1),
+                            "timeSpent": row_json(&row, 2),
+                            "joinCount": row_json(&row, 3),
+                            "displayName": row_json(&row, 4)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "lastDate" => {
+            let mut dates = Vec::new();
+            for table in [
+                "gamelog_location",
+                "gamelog_join_leave",
+                "gamelog_portal_spawn",
+                "gamelog_event",
+                "gamelog_video_play",
+                "gamelog_resource_load",
+            ] {
+                if let Some(date) = state
+                    .db
+                    .execute(
+                        &format!("SELECT created_at FROM {table} ORDER BY id DESC LIMIT 1"),
+                        &Default::default(),
+                    )?
+                    .first()
+                    .map(|row| row_string(row, 0))
+                    .filter(|value| !value.is_empty())
+                {
+                    dates.push(date);
+                }
+            }
+            dates.sort();
+            Ok(Value::String(dates.pop().unwrap_or_default()))
+        }
+        "previousInstancesByUserIdRows" => {
+            let user_id = query_param_string(&params, "userId");
+            if user_id.is_empty() {
+                return Ok(Value::Array(Vec::new()));
+            }
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "WITH grouped_locations AS (
+                            SELECT DISTINCT location, world_name, group_name
+                            FROM gamelog_location
+                        )
+                        SELECT gamelog_join_leave.created_at,
+                               strftime('%s', gamelog_join_leave.created_at) * 1000 created_at_ts,
+                               gamelog_join_leave.location,
+                               gamelog_join_leave.time,
+                               grouped_locations.world_name,
+                               grouped_locations.group_name,
+                               gamelog_join_leave.id,
+                               gamelog_join_leave.type
+                        FROM gamelog_join_leave
+                        INNER JOIN grouped_locations ON gamelog_join_leave.location = grouped_locations.location
+                        WHERE user_id = @user_id
+                        ORDER BY gamelog_join_leave.id ASC",
+                        &ParamsBuilder::new().set("user_id", user_id).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "created_at": row_json(&row, 0),
+                            "createdAtTs": row_json(&row, 1),
+                            "location": row_json(&row, 2),
+                            "time": row_json(&row, 3),
+                            "worldName": row_json(&row, 4),
+                            "groupName": row_json(&row, 5),
+                            "eventId": row_json(&row, 6),
+                            "eventType": row_json(&row, 7)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "previousInstancesByWorldId" => {
+            let world_id = query_param_string(&params, "worldId");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT id, created_at, location, time, world_name, group_name
+                         FROM gamelog_location
+                         WHERE world_id = @world_id
+                         ORDER BY id DESC",
+                        &ParamsBuilder::new().set("world_id", world_id).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "id": row_json(&row, 0),
+                            "created_at": row_json(&row, 1),
+                            "location": row_json(&row, 2),
+                            "time": row_i64(&row, 3),
+                            "worldName": row_json(&row, 4),
+                            "groupName": row_json(&row, 5)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "playersFromInstanceRows" => {
+            let location = query_param_string(&params, "location");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT id, created_at, display_name, user_id, time, type FROM gamelog_join_leave WHERE location = @location ORDER BY id ASC",
+                        &ParamsBuilder::new().set("location", location).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "rowId": row_json(&row, 0),
+                            "created_at": row_json(&row, 1),
+                            "displayName": row_json(&row, 2),
+                            "userId": row_json(&row, 3),
+                            "time": row_i64(&row, 4),
+                            "type": row_json(&row, 5)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "locationBeforeOrAt" => {
+            let created_at = query_param_string(&params, "createdAt");
+            let row = state
+                .db
+                .execute(
+                    "SELECT created_at, location, world_id, world_name, group_name
+                     FROM gamelog_location
+                     WHERE created_at <= @created_at
+                     ORDER BY created_at DESC
+                     LIMIT 1",
+                    &ParamsBuilder::new().set("created_at", created_at).build(),
+                )?
+                .first()
+                .cloned();
+            Ok(row
+                .map(|row| {
+                    json!({
+                        "created_at": row_json(&row, 0),
+                        "location": row_json(&row, 1),
+                        "worldId": row_json(&row, 2),
+                        "worldName": row_json(&row, 3),
+                        "groupName": row_json(&row, 4)
+                    })
+                })
+                .unwrap_or(Value::Null))
+        }
+        "joinLeaveRange" => {
+            let location = query_param_string(&params, "location");
+            let after_date = query_param_string(&params, "afterDate");
+            let before_date = query_param_string(&params, "beforeDate");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT created_at, type, display_name, user_id
+                         FROM gamelog_join_leave
+                         WHERE location = @location
+                           AND created_at >= @after_date
+                           AND created_at <= @before_date
+                         ORDER BY created_at ASC",
+                        &ParamsBuilder::new()
+                            .set("location", location)
+                            .set("after_date", after_date)
+                            .set("before_date", before_date)
+                            .build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "created_at": row_json(&row, 0),
+                            "type": row_json(&row, 1),
+                            "displayName": row_json(&row, 2),
+                            "userId": row_json(&row, 3)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "playerDetailFromInstance" => {
+            let location = query_param_string(&params, "location");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT created_at, display_name, user_id, time
+                         FROM gamelog_join_leave
+                         WHERE location = @location AND type = 'OnPlayerLeft'
+                         ORDER BY created_at ASC",
+                        &ParamsBuilder::new().set("location", location).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "created_at": row_json(&row, 0),
+                            "display_name": row_json(&row, 1),
+                            "user_id": row_json(&row, 2),
+                            "time": row_i64(&row, 3)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "previousDisplayNamesByUserId" => {
+            let user_id = query_param_string(&params, "userId");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT created_at, display_name
+                         FROM gamelog_join_leave
+                         WHERE user_id = @user_id
+                         ORDER BY id DESC",
+                        &ParamsBuilder::new().set("user_id", user_id).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "created_at": row_json(&row, 0),
+                            "displayName": row_json(&row, 1)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "instanceTimes" => Ok(Value::Array(
+            state
+                .db
+                .execute(
+                    "SELECT location, time FROM gamelog_location",
+                    &Default::default(),
+                )?
+                .into_iter()
+                .map(|row| json!({ "location": row_json(&row, 0), "time": row_i64(&row, 1) }))
+                .collect(),
+        )),
+        "onlineSessions" => {
+            let from_date = query_param_string(&params, "fromDate");
+            let to_date = query_param_string(&params, "toDate");
+            let mut rows = Vec::new();
+            if !from_date.is_empty() {
+                if let Some(row) = state
+                    .db
+                    .execute(
+                        "SELECT created_at, time FROM gamelog_location WHERE created_at < @from_date ORDER BY created_at DESC LIMIT 1",
+                        &ParamsBuilder::new().set("from_date", from_date.clone()).build(),
+                    )?
+                    .first()
+                    .cloned()
+                {
+                    rows.push(json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }));
+                }
+            }
+            let mut clauses = Vec::new();
+            let mut db_params = HashMap::new();
+            if !from_date.is_empty() {
+                clauses.push("created_at >= @from_date");
+                db_params.insert("@from_date".into(), Value::String(from_date));
+            }
+            if !to_date.is_empty() {
+                clauses.push("created_at < @to_date");
+                db_params.insert("@to_date".into(), Value::String(to_date));
+            }
+            let date_clause = if clauses.is_empty() {
+                String::new()
+            } else {
+                format!("WHERE {}", clauses.join(" AND "))
+            };
+            for row in state.db.execute(
+                &format!("SELECT created_at, time FROM gamelog_location {date_clause} ORDER BY created_at"),
+                &db_params,
+            )? {
+                rows.push(json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }));
+            }
+            Ok(Value::Array(rows))
+        }
+        "onlineSessionsAfter" => {
+            let after = query_param_string(&params, "afterCreatedAt");
+            let op = if query_param_bool(&params, "inclusive") {
+                ">="
+            } else {
+                ">"
+            };
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        &format!("SELECT created_at, time FROM gamelog_location WHERE created_at {op} @after ORDER BY created_at"),
+                        &ParamsBuilder::new().set("after", after).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }))
+                    .collect(),
+            ))
+        }
+        "topWorlds" => {
+            let days = query_param_i64(&params, "days", 0);
+            let limit = query_param_i64(&params, "limit", 5);
+            let sort_by = query_param_string(&params, "sortBy");
+            let exclude_world_id = query_param_string(&params, "excludeWorldId");
+            let where_clause = if days > 0 {
+                "AND created_at >= datetime('now', @days_offset)"
+            } else {
+                ""
+            };
+            let exclude_clause = if exclude_world_id.is_empty() {
+                ""
+            } else {
+                "AND world_id != @exclude_world_id"
+            };
+            let order_by = if sort_by == "count" {
+                "visit_count DESC"
+            } else {
+                "total_time DESC"
+            };
+            let mut db_params = HashMap::new();
+            db_params.insert("@limit".into(), Value::from(limit));
+            if days > 0 {
+                db_params.insert(
+                    "@days_offset".into(),
+                    Value::String(format!("-{days} days")),
+                );
+            }
+            if !exclude_world_id.is_empty() {
+                db_params.insert("@exclude_world_id".into(), Value::String(exclude_world_id));
+            }
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        &format!(
+                            "SELECT world_id, world_name, COUNT(*) AS visit_count, SUM(time) AS total_time
+                             FROM gamelog_location
+                             WHERE world_id IS NOT NULL
+                               AND world_id != ''
+                               AND world_id LIKE 'wrld_%'
+                               {where_clause}
+                               {exclude_clause}
+                             GROUP BY world_id
+                             ORDER BY {order_by}
+                             LIMIT @limit"
+                        ),
+                        &db_params,
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        let world_id = row_string(&row, 0);
+                        let world_name = row_string(&row, 1);
+                        json!({
+                            "worldId": world_id,
+                            "worldName": if world_name.is_empty() { row_json(&row, 0) } else { row_json(&row, 1) },
+                            "visitCount": row_json(&row, 2),
+                            "totalTime": row_i64(&row, 3)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "instanceActivityRows" => {
+            let start_date = query_param_string(&params, "startDate");
+            let end_date = query_param_string(&params, "endDate");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT id, created_at, type, display_name, location, user_id, time
+                         FROM gamelog_join_leave
+                         WHERE type = 'OnPlayerLeft'
+                           AND (
+                             strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds') BETWEEN @utc_start_date AND @utc_end_date
+                             OR created_at BETWEEN @utc_start_date AND @utc_end_date
+                           )",
+                        &ParamsBuilder::new()
+                            .set("utc_start_date", start_date)
+                            .set("utc_end_date", end_date)
+                            .build(),
+                    )?
+                    .into_iter()
+                    .map(|row| {
+                        json!({
+                            "id": row_json(&row, 0),
+                            "created_at": row_json(&row, 1),
+                            "type": row_json(&row, 2),
+                            "display_name": row_json(&row, 3),
+                            "location": row_json(&row, 4),
+                            "user_id": row_json(&row, 5),
+                            "time": row_json(&row, 6)
+                        })
+                    })
+                    .collect(),
+            ))
+        }
+        "dateOfInstanceActivity" => {
+            let user_id = query_param_string(&params, "userId");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT created_at FROM gamelog_join_leave WHERE user_id = @user_id",
+                        &ParamsBuilder::new().set("user_id", user_id).build(),
+                    )?
+                    .into_iter()
+                    .map(|row| row_json(&row, 0))
+                    .collect(),
+            ))
+        }
+        "instanceJoinHistory" => {
+            let user_id = query_param_string(&params, "userId");
+            let created_at = query_param_string(&params, "createdAt");
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT created_at, location FROM gamelog_join_leave WHERE user_id = @user_id AND created_at > @created_at ORDER BY created_at DESC",
+                        &ParamsBuilder::new()
+                            .set("user_id", user_id)
+                            .set("created_at", created_at)
+                            .build(),
+                    )?
+                    .into_iter()
+                    .map(|row| json!({ "created_at": row_json(&row, 0), "location": row_json(&row, 1) }))
+                    .collect(),
+            ))
+        }
+        "worldNameByWorldId" => {
+            let world_id = query_param_string(&params, "worldId");
+            let world_name = state
+                .db
+                .execute(
+                    "SELECT world_name FROM gamelog_location WHERE world_id = @world_id ORDER BY id DESC LIMIT 1",
+                    &ParamsBuilder::new().set("world_id", world_id).build(),
+                )?
+                .first()
+                .map(|row| row_string(row, 0))
+                .unwrap_or_default();
+            Ok(Value::String(world_name))
+        }
+        "userIdFromDisplayName" => {
+            let display_name = query_param_string(&params, "displayName");
+            let user_id = state
+                .db
+                .execute(
+                    "SELECT user_id FROM gamelog_join_leave WHERE display_name = @display_name AND user_id != '' ORDER BY id DESC LIMIT 1",
+                    &ParamsBuilder::new().set("display_name", display_name).build(),
+                )?
+                .first()
+                .map(|row| row_string(row, 0))
+                .unwrap_or_default();
+            Ok(Value::String(user_id))
+        }
+        "sessionsLocationSegments" => {
+            let before_id = params
+                .get("beforeId")
+                .filter(|value| !value.is_null())
+                .map(value_as_i64)
+                .filter(|value| *value > 0);
+            let limit = query_param_i64(&params, "limit", 100);
+            let cursor_clause = if before_id.is_some() {
+                "AND id < @before_id"
+            } else {
+                ""
+            };
+            let mut db_params = HashMap::new();
+            db_params.insert("@limit".into(), Value::from(limit));
+            if let Some(before_id) = before_id {
+                db_params.insert("@before_id".into(), Value::from(before_id));
+            }
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        &format!(
+                            "SELECT id, created_at, location, world_id, world_name, time, group_name
+                             FROM gamelog_location
+                             WHERE 1=1 {cursor_clause}
+                             ORDER BY id DESC
+                             LIMIT @limit"
+                        ),
+                        &db_params,
+                    )?
+                    .into_iter()
+                    .map(|row| game_log_location_segment_from_row(&row))
+                    .collect(),
+            ))
+        }
+        "sessionsLocationSegmentsByDateRange" => {
+            let after_date = query_param_string(&params, "afterDate");
+            let before_date = query_param_string(&params, "beforeDate");
+            let limit = query_param_i64(&params, "limit", 100);
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT id, created_at, location, world_id, world_name, time, group_name
+                         FROM gamelog_location
+                         WHERE created_at >= @after_date
+                           AND created_at <= @before_date
+                         ORDER BY id DESC
+                         LIMIT @limit",
+                        &ParamsBuilder::new()
+                            .set("after_date", after_date)
+                            .set("before_date", before_date)
+                            .set("limit", limit)
+                            .build(),
+                    )?
+                    .into_iter()
+                    .map(|row| game_log_location_segment_from_row(&row))
+                    .collect(),
+            ))
+        }
+        "sessionsEventsForSegments" => {
+            let location_tags = query_param_string_array(&params, "locationTags");
+            if location_tags.is_empty() {
+                return Ok(Value::Array(Vec::new()));
+            }
+            let after_date = query_param_string(&params, "afterDate");
+            let before_date = query_param_string(&params, "beforeDate");
+            let current_user_id = query_param_string(&params, "currentUserId");
+            let mut db_params = HashMap::new();
+            db_params.insert("@after_date".into(), Value::String(after_date));
+            db_params.insert("@before_date".into(), Value::String(before_date));
+            db_params.insert("@self_id".into(), Value::String(current_user_id));
+            let placeholders = add_list_params(&mut db_params, &location_tags, "location_tag");
+            let location_in = placeholders.join(", ");
+            let mut rows = Vec::new();
+            for row in state.db.execute(
+                &format!(
+                    "SELECT type, created_at, display_name, user_id, location
+                     FROM gamelog_join_leave
+                     WHERE location IN ({location_in})
+                       AND user_id != @self_id
+                       AND created_at >= @after_date
+                       AND created_at <= @before_date
+                     ORDER BY created_at ASC"
+                ),
+                &db_params,
+            )? {
+                rows.push(json!({
+                    "type": row_json(&row, 0),
+                    "created_at": row_json(&row, 1),
+                    "displayName": row_json(&row, 2),
+                    "userId": row_json(&row, 3),
+                    "location": row_json(&row, 4)
+                }));
+            }
+            for row in state.db.execute(
+                &format!(
+                    "SELECT created_at, video_url, video_name, video_id, display_name, user_id, location
+                     FROM gamelog_video_play
+                     WHERE location IN ({location_in})
+                       AND created_at >= @after_date
+                       AND created_at <= @before_date
+                     ORDER BY created_at ASC"
+                ),
+                &db_params,
+            )? {
+                rows.push(json!({
+                    "type": "VideoPlay",
+                    "created_at": row_json(&row, 0),
+                    "videoUrl": row_json(&row, 1),
+                    "videoName": row_json(&row, 2),
+                    "videoId": row_json(&row, 3),
+                    "displayName": row_json(&row, 4),
+                    "userId": row_json(&row, 5),
+                    "location": row_json(&row, 6)
+                }));
+            }
+            Ok(Value::Array(rows))
+        }
+        "sessionsLocationSegmentsByAnchor" => {
+            let since_date = query_param_string(&params, "sinceDate");
+            let limit = query_param_i64(&params, "limit", 100);
+            Ok(Value::Array(
+                state
+                    .db
+                    .execute(
+                        "SELECT id, created_at, location, world_id, world_name, time, group_name
+                         FROM gamelog_location
+                         WHERE created_at >= @since_date
+                         ORDER BY id DESC
+                         LIMIT @limit",
+                        &ParamsBuilder::new()
+                            .set("since_date", since_date)
+                            .set("limit", limit)
+                            .build(),
+                    )?
+                    .into_iter()
+                    .map(|row| game_log_location_segment_from_row(&row))
+                    .collect(),
+            ))
+        }
+        _ => Err(AppError::Custom(format!(
+            "Unknown game log query: {}",
+            query.kind
+        ))),
+    }
+}
+
+#[tauri::command]
+pub fn app__player_list_location_get(
+    state: State<'_, AppState>,
+    location: String,
+) -> Result<Option<PlayerLocationOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let location = normalize_text(location);
+    if location.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT created_at, location, world_id, world_name, time, group_name
+             FROM gamelog_location
+             WHERE location = @location
+             ORDER BY id DESC
+             LIMIT 1",
+            &ParamsBuilder::new().set("location", location).build(),
+        )?
+        .first()
+        .map(|row| player_location_from_row(row)))
+}
+
+#[tauri::command]
+pub fn app__player_list_latest_location_get(
+    state: State<'_, AppState>,
+) -> Result<Option<PlayerLocationOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT created_at, location, world_id, world_name, time, group_name
+             FROM gamelog_location
+             ORDER BY id DESC
+             LIMIT 1",
+            &Default::default(),
+        )?
+        .first()
+        .map(|row| player_location_from_row(row)))
+}
+
+#[tauri::command]
+pub fn app__player_list_join_leave_rows(
+    state: State<'_, AppState>,
+    location: String,
+    started_at: String,
+) -> Result<Vec<PlayerJoinLeaveOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, created_at, type, display_name, user_id, time
+             FROM gamelog_join_leave
+             WHERE location = @location
+               AND (@started_at = '' OR created_at >= @started_at)
+             ORDER BY id ASC",
+            &ParamsBuilder::new()
+                .set("location", normalize_text(location))
+                .set("started_at", normalize_text(started_at))
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| player_join_leave_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__instance_activity_dates_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Vec<String>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT created_at
+             FROM gamelog_join_leave
+             WHERE user_id = @user_id
+             ORDER BY created_at DESC",
+            &ParamsBuilder::new().set("user_id", user_id).build(),
+        )?
+        .into_iter()
+        .map(|row| row_string(&row, 0))
+        .filter(|created_at| !created_at.is_empty())
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__instance_activity_rows_get(
+    state: State<'_, AppState>,
+    start_date: String,
+    end_date: String,
+) -> Result<Vec<InstanceActivityRowOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, created_at, type, display_name, location, user_id, time
+             FROM gamelog_join_leave
+             WHERE type = 'OnPlayerLeft'
+               AND (
+                 strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds')
+                    BETWEEN @utc_start_date AND @utc_end_date
+                 OR created_at BETWEEN @utc_start_date AND @utc_end_date
+               )
+             ORDER BY created_at ASC, id ASC",
+            &ParamsBuilder::new()
+                .set("utc_start_date", start_date)
+                .set("utc_end_date", end_date)
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| instance_activity_from_row(&row))
+        .filter(|row| !is_traveling_location(&row.location))
+        .collect())
+}
+
+fn empty_world_summary(id: String, name: String) -> WorldSummaryOutput {
+    WorldSummaryOutput {
+        id,
+        author_id: String::new(),
+        author_name: String::new(),
+        created_at: String::new(),
+        description: String::new(),
+        image_url: String::new(),
+        name,
+        release_status: String::new(),
+        thumbnail_image_url: String::new(),
+        updated_at: String::new(),
+        version: 0,
+    }
+}
+
+#[tauri::command]
+pub fn app__world_summaries_get(
+    state: State<'_, AppState>,
+    world_ids: Vec<String>,
+) -> Result<HashMap<String, WorldSummaryOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    ensure_game_log_tables(&state.db)?;
+    let world_ids = world_ids
+        .into_iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    if world_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let mut params = ParamsBuilder::new();
+    let mut placeholders = Vec::with_capacity(world_ids.len());
+    for (index, world_id) in world_ids.iter().enumerate() {
+        let key = format!("world_id_{index}");
+        params = params.set(&key, world_id.clone());
+        placeholders.push(format!("@{key}"));
+    }
+    let params = params.build();
+    let in_clause = placeholders.join(", ");
+
+    let mut summaries = HashMap::new();
+    for row in state.db.execute(
+        &format!(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version
+             FROM cache_world
+             WHERE id IN ({in_clause})"
+        ),
+        &params,
+    )? {
+        let world = world_summary_from_row(&row);
+        if !world.id.is_empty() {
+            summaries.insert(world.id.clone(), world);
+        }
+    }
+
+    for row in state.db.execute(
+        &format!(
+            "SELECT gl.world_id, gl.world_name
+             FROM gamelog_location gl
+             INNER JOIN (
+                 SELECT world_id, MAX(id) AS max_id
+                 FROM gamelog_location
+                 WHERE world_id IN ({in_clause})
+                   AND world_name IS NOT NULL
+                   AND world_name != ''
+                 GROUP BY world_id
+             ) latest
+                 ON latest.world_id = gl.world_id
+                AND latest.max_id = gl.id"
+        ),
+        &params,
+    )? {
+        let world_id = row_string(&row, 0);
+        let world_name = row_string(&row, 1);
+        if world_id.is_empty() || world_name.is_empty() {
+            continue;
+        }
+        if summaries
+            .get(&world_id)
+            .is_some_and(|world| !world.name.is_empty())
+        {
+            continue;
+        }
+        summaries.insert(world_id.clone(), empty_world_summary(world_id, world_name));
+    }
+
+    Ok(summaries)
+}
+
+#[tauri::command]
+pub fn app__activity_self_source_slice(
+    state: State<'_, AppState>,
+    query: ActivitySelfSourceSliceInput,
+) -> Result<Vec<ActivitySourceLocationOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let from_date = normalize_text(query.from_date_iso);
+    let to_date = normalize_text(query.to_date_iso);
+    let to_filter = if to_date.is_empty() {
+        ""
+    } else {
+        "AND created_at < @to_date_iso"
+    };
+    let to_tail = if to_date.is_empty() {
+        String::new()
+    } else {
+        "UNION ALL
+         SELECT created_at, time, 2 AS sort_group
+         FROM (
+             SELECT created_at, time
+             FROM gamelog_location
+             WHERE created_at >= @to_date_iso
+             ORDER BY created_at
+             LIMIT 1
+         )"
+        .to_string()
+    };
+    let mut db_params = HashMap::new();
+    db_params.insert("@from_date_iso".into(), Value::String(from_date));
+    db_params.insert("@to_date_iso".into(), Value::String(to_date));
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT created_at, time
+                 FROM (
+                     SELECT created_at, time, 0 AS sort_group
+                     FROM (
+                         SELECT created_at, time
+                         FROM gamelog_location
+                         WHERE created_at < @from_date_iso
+                         ORDER BY created_at DESC
+                         LIMIT 1
+                     )
+                     UNION ALL
+                     SELECT created_at, time, 1 AS sort_group
+                     FROM gamelog_location
+                     WHERE created_at >= @from_date_iso
+                       {to_filter}
+                     {to_tail}
+                 )
+                 ORDER BY created_at ASC, sort_group ASC"
+            ),
+            &db_params,
+        )?
+        .into_iter()
+        .map(|row| activity_location_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__activity_self_source_after(
+    state: State<'_, AppState>,
+    query: ActivitySelfSourceAfterInput,
+) -> Result<Vec<ActivitySourceLocationOutput>, AppError> {
+    ensure_game_log_tables(&state.db)?;
+    let op = if query.inclusive { ">=" } else { ">" };
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT created_at, time
+                 FROM gamelog_location
+                 WHERE created_at {op} @after_created_at
+                 ORDER BY created_at"
+            ),
+            &ParamsBuilder::new()
+                .set("after_created_at", normalize_text(query.after_created_at))
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| activity_location_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__activity_friend_presence_slice(
+    state: State<'_, AppState>,
+    query: ActivityFriendPresenceSliceInput,
+) -> Result<Vec<ActivityPresenceOutput>, AppError> {
+    let owner_user_id = normalize_text(query.owner_user_id);
+    let user_id = normalize_text(query.user_id);
+    if owner_user_id.is_empty() || user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    let table_name = format!("{user_prefix}_feed_online_offline");
+    let to_date = normalize_text(query.to_date_iso);
+    let to_filter = if to_date.is_empty() {
+        ""
+    } else {
+        "AND created_at < @to_date_iso"
+    };
+    let mut db_params = HashMap::new();
+    db_params.insert("@user_id".into(), Value::String(user_id.clone()));
+    db_params.insert(
+        "@from_date_iso".into(),
+        Value::String(normalize_text(query.from_date_iso)),
+    );
+    db_params.insert("@to_date_iso".into(), Value::String(to_date.clone()));
+    let mut rows: Vec<ActivityPresenceOutput> = state
+        .db
+        .execute(
+            &format!(
+                "SELECT created_at, type
+                 FROM (
+                     SELECT created_at, type, 0 AS sort_group
+                     FROM (
+                         SELECT created_at, type
+                         FROM {table_name}
+                         WHERE user_id = @user_id
+                           AND (type = 'Online' OR type = 'Offline')
+                           AND created_at < @from_date_iso
+                         ORDER BY created_at DESC
+                         LIMIT 1
+                     )
+                     UNION ALL
+                     SELECT created_at, type, 1 AS sort_group
+                     FROM {table_name}
+                     WHERE user_id = @user_id
+                       AND (type = 'Online' OR type = 'Offline')
+                       AND created_at >= @from_date_iso
+                       {to_filter}
+                 )
+                 ORDER BY created_at ASC, sort_group ASC"
+            ),
+            &db_params,
+        )?
+        .into_iter()
+        .map(|row| activity_presence_from_row(&row))
+        .collect();
+    if !to_date.is_empty() {
+        rows.extend(
+            state
+                .db
+                .execute(
+                    &format!(
+                        "SELECT created_at, type
+                         FROM {table_name}
+                         WHERE user_id = @user_id
+                           AND (type = 'Online' OR type = 'Offline')
+                           AND created_at >= @to_date_iso
+                         ORDER BY created_at ASC
+                         LIMIT 1"
+                    ),
+                    &db_params,
+                )?
+                .into_iter()
+                .map(|row| activity_presence_from_row(&row)),
+        );
+        rows.sort_by(|left, right| left.created_at.cmp(&right.created_at));
+    }
+    Ok(rows)
+}
+
+#[tauri::command]
+pub fn app__activity_friend_presence_after(
+    state: State<'_, AppState>,
+    query: ActivityFriendPresenceAfterInput,
+) -> Result<Vec<ActivityPresenceOutput>, AppError> {
+    let owner_user_id = normalize_text(query.owner_user_id);
+    let user_id = normalize_text(query.user_id);
+    if owner_user_id.is_empty() || user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT created_at, type
+                 FROM {user_prefix}_feed_online_offline
+                 WHERE user_id = @user_id
+                   AND (type = 'Online' OR type = 'Offline')
+                   AND created_at > @after_created_at
+                 ORDER BY created_at"
+            ),
+            &ParamsBuilder::new()
+                .set("user_id", user_id)
+                .set("after_created_at", normalize_text(query.after_created_at))
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| activity_presence_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__activity_sync_state_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Option<ActivitySyncStateOutput>, AppError> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(None);
+    }
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days FROM {user_prefix}_activity_sync_state_v2 WHERE user_id = @user_id LIMIT 1"),
+            &ParamsBuilder::new().set("user_id", user_id.clone()).build(),
+        )?
+        .first()
+        .map(|row| ActivitySyncStateOutput {
+            user_id: row_string(row, 0),
+            updated_at: row_string(row, 1),
+            is_self: row_i64(row, 2) != 0,
+            source_last_created_at: row_string(row, 3),
+            pending_session_start_at: row_json(row, 4),
+            cached_range_days: row_i64(row, 5),
+        }))
+}
+
+#[tauri::command]
+pub fn app__activity_sessions_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Vec<ActivitySessionOutput>, AppError> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT start_at, end_at, is_open_tail, source_revision FROM {user_prefix}_activity_sessions_v2 WHERE user_id = @user_id ORDER BY start_at"),
+            &ParamsBuilder::new().set("user_id", user_id).build(),
+        )?
+        .into_iter()
+        .map(|row| activity_session_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__activity_bucket_cache_get(
+    state: State<'_, AppState>,
+    query: ActivityBucketCacheQueryInput,
+) -> Result<Option<ActivityBucketCacheOutput>, AppError> {
+    let owner_user_id = normalize_text(query.owner_user_id);
+    if owner_user_id.is_empty() {
+        return Ok(None);
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    let target_user_id = normalize_text(query.target_user_id);
+    let range_days = value_as_i64(&query.range_days);
+    let view_kind = normalize_text(query.view_kind);
+    let exclude_key = normalize_text(query.exclude_key);
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at FROM {user_prefix}_activity_bucket_cache_v2 WHERE user_id = @owner_user_id AND target_user_id = @target_user_id AND range_days = @range_days AND view_kind = @view_kind AND exclude_key = @exclude_key LIMIT 1"),
+            &ParamsBuilder::new()
+                .set("owner_user_id", owner_user_id)
+                .set("target_user_id", target_user_id)
+                .set("range_days", range_days)
+                .set("view_kind", view_kind)
+                .set("exclude_key", exclude_key)
+                .build(),
+        )?
+        .first()
+        .map(|row| ActivityBucketCacheOutput {
+            owner_user_id: row_string(row, 0),
+            target_user_id: row_string(row, 1),
+            range_days: row_i64(row, 2),
+            view_kind: row_string(row, 3),
+            exclude_key: row_string(row, 4),
+            bucket_version: row_i64(row, 5),
+            built_from_cursor: row_string(row, 6),
+            raw_buckets: parse_json_value(row_value(row, 7), Value::Array(Vec::new())),
+            normalized_buckets: parse_json_value(row_value(row, 8), Value::Array(Vec::new())),
+            summary: parse_json_value(row_value(row, 9), json!({})),
+            built_at: row_string(row, 10),
+        }))
 }
 
 #[tauri::command]
@@ -1433,6 +4063,75 @@ pub fn app__mutual_graph_tables_ensure(
     Ok(UserTableContextOutput {
         user_id,
         user_prefix,
+    })
+}
+
+#[tauri::command]
+pub fn app__mutual_graph_snapshot_get(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<MutualGraphSnapshotOutput, AppError> {
+    let user_id = normalize_text(user_id);
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+
+    let friend_ids = state
+        .db
+        .execute(
+            &format!("SELECT friend_id FROM {user_prefix}_mutual_graph_friends"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| row_string(&row, 0))
+        .filter(|friend_id| !friend_id.is_empty())
+        .collect();
+    let links = state
+        .db
+        .execute(
+            &format!("SELECT friend_id, mutual_id FROM {user_prefix}_mutual_graph_links"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .filter_map(|row| {
+            let friend_id = row_string(&row, 0);
+            let mutual_id = row_string(&row, 1);
+            if friend_id.is_empty() || mutual_id.is_empty() {
+                None
+            } else {
+                Some(MutualGraphLinkOutput {
+                    friend_id,
+                    mutual_id,
+                })
+            }
+        })
+        .collect();
+    let meta = state
+        .db
+        .execute(
+            &format!(
+                "SELECT friend_id, last_fetched_at, opted_out FROM {user_prefix}_mutual_graph_meta"
+            ),
+            &Default::default(),
+        )?
+        .into_iter()
+        .filter_map(|row| {
+            let friend_id = row_string(&row, 0);
+            if friend_id.is_empty() {
+                None
+            } else {
+                Some(MutualGraphMetaOutput {
+                    friend_id,
+                    last_fetched_at: row_string(&row, 1),
+                    opted_out: row_i64(&row, 2) == 1,
+                })
+            }
+        })
+        .collect();
+
+    Ok(MutualGraphSnapshotOutput {
+        friend_ids,
+        links,
+        meta,
     })
 }
 
@@ -1606,6 +4305,72 @@ pub fn app__world_cache_remove(
 }
 
 #[tauri::command]
+pub fn app__world_cache_list(
+    state: State<'_, AppState>,
+) -> Result<Vec<WorldSummaryOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_world",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| world_summary_from_row(&row))
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__world_cache_get(
+    state: State<'_, AppState>,
+    world_id: String,
+) -> Result<Option<WorldSummaryOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let world_id = normalize_text(world_id);
+    if world_id.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_world WHERE id = @world_id LIMIT 1",
+            &ParamsBuilder::new().set("world_id", world_id).build(),
+        )?
+        .first()
+        .map(|row| world_summary_from_row(row)))
+}
+
+#[tauri::command]
+pub fn app__favorite_list(
+    state: State<'_, AppState>,
+    kind: String,
+) -> Result<Vec<Value>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let (table, column, _) = normalize_kind(&kind)?;
+    let id_key = match kind.trim() {
+        "friend" => "userId",
+        "avatar" => "avatarId",
+        "world" => "worldId",
+        _ => "entityId",
+    };
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT created_at, {column}, group_name FROM {table}"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| {
+            json!({
+                "created_at": row_json(&row, 0),
+                id_key: row_json(&row, 1),
+                "groupName": row_json(&row, 2)
+            })
+        })
+        .collect())
+}
+
+#[tauri::command]
 pub fn app__favorite_add(
     state: State<'_, AppState>,
     kind: String,
@@ -1677,6 +4442,123 @@ pub fn app__favorite_group_delete(
 }
 
 #[tauri::command]
+pub fn app__memo_get_user(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Option<UserMemoOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT user_id, edited_at, memo FROM memos WHERE user_id = @user_id LIMIT 1",
+            &ParamsBuilder::new().set("user_id", user_id).build(),
+        )?
+        .first()
+        .map(|row| UserMemoOutput {
+            user_id: row_string(row, 0),
+            edited_at: row_string(row, 1),
+            memo: row_string(row, 2),
+        }))
+}
+
+#[tauri::command]
+pub fn app__memo_list_users(state: State<'_, AppState>) -> Result<Vec<UserMemoOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    Ok(state
+        .db
+        .execute(
+            "SELECT user_id, edited_at, memo FROM memos",
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| UserMemoOutput {
+            user_id: row_string(&row, 0),
+            edited_at: row_string(&row, 1),
+            memo: row_string(&row, 2),
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__memo_list_user_notes(
+    state: State<'_, AppState>,
+    owner_user_id: String,
+) -> Result<Vec<UserNoteOutput>, AppError> {
+    let owner_user_id = normalize_text(owner_user_id);
+    if owner_user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_user_local_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT user_id, display_name, note, created_at FROM {user_prefix}_notes"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| UserNoteOutput {
+            user_id: row_string(&row, 0),
+            display_name: row_string(&row, 1),
+            note: row_string(&row, 2),
+            created_at: row_string(&row, 3),
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__memo_get_world(
+    state: State<'_, AppState>,
+    world_id: String,
+) -> Result<Option<WorldMemoOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let world_id = normalize_text(world_id);
+    if world_id.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT world_id, edited_at, memo FROM world_memos WHERE world_id = @world_id LIMIT 1",
+            &ParamsBuilder::new().set("world_id", world_id).build(),
+        )?
+        .first()
+        .map(|row| WorldMemoOutput {
+            world_id: row_string(row, 0),
+            edited_at: row_string(row, 1),
+            memo: row_string(row, 2),
+        }))
+}
+
+#[tauri::command]
+pub fn app__memo_get_avatar(
+    state: State<'_, AppState>,
+    avatar_id: String,
+) -> Result<Option<AvatarMemoOutput>, AppError> {
+    ensure_global_local_data_tables(&state.db)?;
+    let avatar_id = normalize_text(avatar_id);
+    if avatar_id.is_empty() {
+        return Ok(None);
+    }
+    Ok(state
+        .db
+        .execute(
+            "SELECT avatar_id, edited_at, memo FROM avatar_memos WHERE avatar_id = @avatar_id LIMIT 1",
+            &ParamsBuilder::new().set("avatar_id", avatar_id).build(),
+        )?
+        .first()
+        .map(|row| AvatarMemoOutput {
+            avatar_id: row_string(row, 0),
+            edited_at: row_string(row, 1),
+            memo: row_string(row, 2),
+        }))
+}
+
+#[tauri::command]
 pub fn app__memo_save_user(
     state: State<'_, AppState>,
     user_id: String,
@@ -1701,6 +4583,89 @@ pub fn app__memo_save_avatar(
     memo: String,
 ) -> Result<MemoSaveResult, AppError> {
     save_memo(&state.db, "avatar_memos", "avatar_id", avatar_id, memo)
+}
+
+#[tauri::command]
+pub fn app__friend_log_current_list(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<Vec<FriendLogCurrentOutput>, AppError> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT user_id, display_name, trust_level, friend_number FROM {user_prefix}_friend_log_current ORDER BY friend_number ASC, display_name COLLATE NOCASE ASC, user_id ASC"),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| FriendLogCurrentOutput {
+            user_id: row_string(&row, 0),
+            display_name: row_string(&row, 1),
+            trust_level: row_string(&row, 2),
+            friend_number: row_i64(&row, 3),
+        })
+        .filter(|row| !row.user_id.trim().is_empty())
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__friend_log_history_query(
+    state: State<'_, AppState>,
+    query: FriendLogHistoryQueryInput,
+) -> Result<Vec<FriendLogHistoryOutput>, AppError> {
+    let user_id = normalize_text(query.user_id);
+    if user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(&state.db, &user_prefix)?;
+    let mut clauses = Vec::new();
+    let mut db_params = HashMap::new();
+    let target_user_id = normalize_text(query.target_user_id);
+    if !target_user_id.is_empty() {
+        clauses.push("user_id = @user_id".to_string());
+        db_params.insert("@user_id".into(), Value::String(target_user_id));
+    }
+    let types = query
+        .types
+        .into_iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    let type_placeholders = add_list_params(&mut db_params, &types, "friend_log_type");
+    if !type_placeholders.is_empty() {
+        clauses.push(format!("type IN ({})", type_placeholders.join(", ")));
+    }
+    let where_sql = if clauses.is_empty() {
+        String::new()
+    } else {
+        format!(" WHERE {}", clauses.join(" AND "))
+    };
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM {user_prefix}_friend_log_history{where_sql} ORDER BY created_at DESC, id DESC"),
+            &db_params,
+        )?
+        .into_iter()
+        .map(|row| FriendLogHistoryOutput {
+            row_id: row_i64(&row, 0),
+            created_at: row_string(&row, 1),
+            r#type: row_string(&row, 2),
+            user_id: row_string(&row, 3),
+            display_name: row_string(&row, 4),
+            previous_display_name: row_string(&row, 5),
+            trust_level: row_string(&row, 6),
+            previous_trust_level: row_string(&row, 7),
+            friend_number: row_i64(&row, 8),
+        })
+        .filter(|row| !row.user_id.trim().is_empty())
+        .collect())
 }
 
 #[tauri::command]
@@ -1965,8 +4930,87 @@ pub fn app__friend_log_history_delete(
             .set("created_at", entry.created_at)
             .set("type", entry.r#type)
             .set("user_id", normalize_text(entry.user_id))
-            .build(),
+        .build(),
     )?)
+}
+
+#[tauri::command]
+pub fn app__notification_rows_query(
+    state: State<'_, AppState>,
+    query: NotificationRowsQueryInput,
+) -> Result<NotificationRowsOutput, AppError> {
+    let user_id = normalize_text(query.user_id);
+    if user_id.is_empty() {
+        return Ok(NotificationRowsOutput {
+            v1_rows: Vec::new(),
+            v2_rows: Vec::new(),
+            unseen_v2_rows: Vec::new(),
+        });
+    }
+
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(&state.db, &user_prefix)?;
+    let limit = if query.per_table_limit > 0 {
+        query.per_table_limit
+    } else {
+        500
+    };
+    let (where_sql, mut params) = build_type_filter(&query.filters);
+    params.insert("@limit".into(), Value::from(limit));
+
+    let v1_rows = state
+        .db
+        .execute(
+            &format!(
+                "SELECT id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired
+                 FROM {user_prefix}_notifications{where_sql}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT @limit"
+            ),
+            &params,
+        )?
+        .into_iter()
+        .map(|row| notification_v1_from_row(&row))
+        .collect();
+    let v2_rows = state
+        .db
+        .execute(
+            &format!(
+                "SELECT id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details
+                 FROM {user_prefix}_notifications_v2{where_sql}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT @limit"
+            ),
+            &params,
+        )?
+        .into_iter()
+        .map(|row| notification_v2_from_row(&row))
+        .collect();
+    let unseen_v2_rows = if query.include_unseen {
+        state
+            .db
+            .execute(
+                &format!(
+                    "SELECT id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details
+                     FROM {user_prefix}_notifications_v2
+                     WHERE seen = 0
+                       AND (expires_at IS NULL OR expires_at = '' OR expires_at > @now)
+                     ORDER BY created_at DESC, id DESC"
+                ),
+                &ParamsBuilder::new().set("now", now_iso()).build(),
+            )?
+            .into_iter()
+            .map(|row| notification_v2_from_row(&row))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(NotificationRowsOutput {
+        v1_rows,
+        v2_rows,
+        unseen_v2_rows,
+    })
 }
 
 #[tauri::command]
@@ -2186,6 +5230,65 @@ pub fn app__notification_mark_seen_local_bulk(
         Ok(())
     })?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn app__local_moderation_list(
+    state: State<'_, AppState>,
+    owner_user_id: String,
+) -> Result<Vec<LocalModerationOutput>, AppError> {
+    let owner_user_id = normalize_text(&owner_user_id);
+    if owner_user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_moderation_table(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!(
+                "SELECT user_id, updated_at, display_name, block, mute FROM {user_prefix}_moderation"
+            ),
+            &Default::default(),
+        )?
+        .into_iter()
+        .map(|row| LocalModerationOutput {
+            user_id: row_string(&row, 0),
+            updated_at: row_string(&row, 1),
+            display_name: row_string(&row, 2),
+            block: row_i64(&row, 3) == 1,
+            mute: row_i64(&row, 4) == 1,
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn app__local_moderation_get(
+    state: State<'_, AppState>,
+    owner_user_id: String,
+    user_id: String,
+) -> Result<Option<LocalModerationOutput>, AppError> {
+    let owner_user_id = normalize_text(&owner_user_id);
+    let user_id = normalize_text(user_id);
+    if owner_user_id.is_empty() || user_id.is_empty() {
+        return Ok(None);
+    }
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_moderation_table(&state.db, &user_prefix)?;
+    Ok(state
+        .db
+        .execute(
+            &format!("SELECT user_id, updated_at, display_name, block, mute FROM {user_prefix}_moderation WHERE user_id = @user_id LIMIT 1"),
+            &ParamsBuilder::new().set("user_id", user_id).build(),
+        )?
+        .first()
+        .map(|row| LocalModerationOutput {
+            user_id: row_string(row, 0),
+            updated_at: row_string(row, 1),
+            display_name: row_string(row, 2),
+            block: row_i64(row, 3) == 1,
+            mute: row_i64(row, 4) == 1,
+        }))
 }
 
 #[tauri::command]

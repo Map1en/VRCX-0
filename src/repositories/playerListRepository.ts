@@ -1,6 +1,5 @@
+import { backend } from '@/platform/index.js';
 import { parseLocation } from '@/shared/utils/locationParser.js';
-
-import sqliteRepository from './sqliteRepository.js';
 
 function normalizeString(value) {
     return typeof value === 'string'
@@ -146,20 +145,13 @@ async function resolveCurrentLocationContext(currentLocation) {
     const normalizedLocation = normalizeString(currentLocation);
 
     if (isLiveLocation(normalizedLocation)) {
-        const exactRows = await sqliteRepository.all(
-            `SELECT created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE location = @location
-             ORDER BY id DESC
-             LIMIT 1`,
-            {
-                '@location': normalizedLocation
-            }
-        );
+        const exactRow = await backend.app.PlayerListLocationGet({
+            location: normalizedLocation
+        });
 
-        if (Array.isArray(exactRows) && exactRows.length > 0) {
+        if (exactRow) {
             return {
-                ...mapLocationRow(exactRows[0]),
+                ...mapLocationRow(exactRow),
                 source: 'database'
             };
         }
@@ -188,16 +180,11 @@ async function resolveCurrentLocationContext(currentLocation) {
         };
     }
 
-    const latestRows = await sqliteRepository.all(
-        `SELECT created_at, location, world_id, world_name, time, group_name
-         FROM gamelog_location
-         ORDER BY id DESC
-         LIMIT 1`
-    );
+    const latestRow = await backend.app.PlayerListLatestLocationGet();
 
-    if (Array.isArray(latestRows) && latestRows.length > 0) {
+    if (latestRow) {
         return {
-            ...mapLocationRow(latestRows[0]),
+            ...mapLocationRow(latestRow),
             source: 'database'
         };
     }
@@ -231,17 +218,10 @@ async function getCurrentInstanceSnapshot({
     }
 
     const startedAtMs = parseDateMs(context.createdAt);
-    const rows = await sqliteRepository.all(
-        `SELECT id, created_at, type, display_name, user_id, time
-         FROM gamelog_join_leave
-         WHERE location = @location
-           AND (@startedAt = '' OR created_at >= @startedAt)
-         ORDER BY id ASC`,
-        {
-            '@location': context.location,
-            '@startedAt': startedAtMs ? context.createdAt : ''
-        }
-    );
+    const rows = await backend.app.PlayerListJoinLeaveRows({
+        location: context.location,
+        startedAt: startedAtMs ? context.createdAt : ''
+    });
 
     const playersByKey = new Map();
     const normalizedCurrentUserId = normalizeString(currentUserId);

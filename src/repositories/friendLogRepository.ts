@@ -1,8 +1,6 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository from './sqliteRepository.js';
 import type { FriendLogHistoryEntry } from './friendLogHistoryRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
 
 export interface FriendLogCurrentRow {
     userId: string;
@@ -76,10 +74,12 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
 async function getFriendLogCurrent(
     userId: unknown
 ): Promise<FriendLogCurrentRow[]> {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    const rows = await sqliteRepository.query<FriendLogSourceRow>(
-        `SELECT user_id, display_name, trust_level, friend_number FROM ${userPrefix}_friend_log_current ORDER BY friend_number ASC, display_name COLLATE NOCASE ASC, user_id ASC`
-    );
+    const rows = (await backend.app.FriendLogCurrentList({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim()
+    })) as FriendLogSourceRow[];
 
     if (!Array.isArray(rows)) {
         return [];

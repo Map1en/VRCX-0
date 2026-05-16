@@ -1,7 +1,6 @@
 import { backend } from '@/platform/index.js';
 
-import sqliteRepository, { type SQLiteValue } from './sqliteRepository.js';
-import { normalizeUserTablePrefix } from './userSessionRepository.js';
+type LocalDbValue = unknown;
 
 type MaintenanceTableSizes = {
     gps: number;
@@ -21,7 +20,7 @@ type MaintenanceTableSizes = {
 };
 
 type BrokenGameLogDisplayNameEntry = {
-    id: SQLiteValue;
+    id: LocalDbValue;
     displayName: unknown;
 };
 
@@ -41,21 +40,27 @@ async function optimize(): Promise<void> {
     await runMaintenanceTask('optimize');
 }
 
-async function countSql(sql: string): Promise<number> {
-    let size = 0;
-    await sqliteRepository.execute((row) => {
-        size = Number.parseInt(row[0] ?? 0, 10) || 0;
-    }, sql);
-    return size;
+async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
+    return Number(
+        (await backend.app.DatabaseMaintenanceMaxFriendLogNumberGet({
+            userId:
+                typeof userId === 'string'
+                    ? userId.trim()
+                    : String(userId ?? '').trim()
+        })) ?? 0
+    );
 }
 
-async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    let friendNumber = 0;
-    await sqliteRepository.execute((row) => {
-        friendNumber = Number.parseInt(row[0] ?? 0, 10) || 0;
-    }, `SELECT MAX(friend_number) FROM ${userPrefix}_friend_log_current`);
-    return friendNumber;
+async function getBackendTableSizes(
+    userId: unknown = ''
+): Promise<MaintenanceTableSizes> {
+    const sizes = (await backend.app.DatabaseMaintenanceTableSizesGet({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim()
+    })) as MaintenanceTableSizes;
+    return sizes;
 }
 
 async function getUserTableSizes(
@@ -72,8 +77,7 @@ async function getUserTableSizes(
             notification: 0
         };
     }
-    const userPrefix = normalizeUserTablePrefix(userId);
-    const [
+    const {
         gps,
         status,
         bio,
@@ -81,16 +85,7 @@ async function getUserTableSizes(
         onlineOffline,
         friendLogHistory,
         notification
-    ] = await Promise.all([
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_feed_gps`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_feed_status`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_feed_bio`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_feed_avatar`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_feed_online_offline`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_friend_log_history`),
-        countSql(`SELECT COUNT(*) FROM ${userPrefix}_notifications`)
-    ]);
-
+    } = await getBackendTableSizes(userId);
     return {
         gps,
         status,
@@ -103,7 +98,7 @@ async function getUserTableSizes(
 }
 
 async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
-    const [
+    const {
         location,
         joinLeave,
         portalSpawn,
@@ -111,16 +106,7 @@ async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
         event,
         external,
         resourceLoad
-    ] = await Promise.all([
-        countSql('SELECT COUNT(*) FROM gamelog_location'),
-        countSql('SELECT COUNT(*) FROM gamelog_join_leave'),
-        countSql('SELECT COUNT(*) FROM gamelog_portal_spawn'),
-        countSql('SELECT COUNT(*) FROM gamelog_video_play'),
-        countSql('SELECT COUNT(*) FROM gamelog_event'),
-        countSql('SELECT COUNT(*) FROM gamelog_external'),
-        countSql('SELECT COUNT(*) FROM gamelog_resource_load')
-    ]);
-
+    } = await getBackendTableSizes('');
     return {
         location,
         joinLeave,
@@ -135,14 +121,7 @@ async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
 async function getTableSizes(
     userId: unknown
 ): Promise<MaintenanceTableSizes> {
-    const [userSizes, globalSizes] = await Promise.all([
-        getUserTableSizes(userId),
-        getGlobalTableSizes()
-    ]);
-    return {
-        ...userSizes,
-        ...globalSizes
-    };
+    return getBackendTableSizes(userId);
 }
 
 async function updateTableForGroupNames(): Promise<void> {
@@ -181,32 +160,9 @@ async function fixNegativeGPS(): Promise<void> {
     await runMaintenanceTask('fixNegativeGPS');
 }
 
-async function getGameLogInstancesTime(): Promise<Map<unknown, number>> {
-    const instances = new Map<unknown, number>();
-    await sqliteRepository.execute((row) => {
-        const location = row[0];
-        const time = Number.parseInt(row[1] ?? 0, 10) || 0;
-        instances.set(location, (instances.get(location) || 0) + time);
-    }, 'SELECT location, time FROM gamelog_location');
-    return instances;
-}
-
-async function getBrokenLeaveEntries(): Promise<SQLiteValue[]> {
-    const instances = await getGameLogInstancesTime();
-    const badEntries: SQLiteValue[] = [];
-    await sqliteRepository.execute((row) => {
-        const location = row[0];
-        const time = row[1];
-        const id = row[2];
-        if (typeof time !== 'number') {
-            return;
-        }
-        const instanceTime = instances.get(location);
-        if (typeof instanceTime !== 'undefined' && time > instanceTime) {
-            badEntries.push(id as SQLiteValue);
-        }
-    }, "SELECT location, time, id FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND time > 0");
-    return badEntries;
+async function getBrokenLeaveEntries(): Promise<LocalDbValue[]> {
+    const rows = await backend.app.DatabaseMaintenanceBrokenLeaveEntriesGet();
+    return Array.isArray(rows) ? (rows as LocalDbValue[]) : [];
 }
 
 async function fixBrokenLeaveEntries(): Promise<void> {
@@ -232,14 +188,14 @@ async function fixCancelFriendRequestTypo(): Promise<void> {
 async function getBrokenGameLogDisplayNames(): Promise<
     BrokenGameLogDisplayNameEntry[]
 > {
-    const badEntries: BrokenGameLogDisplayNameEntry[] = [];
-    await sqliteRepository.execute((row) => {
-        badEntries.push({
-            id: row[0] as SQLiteValue,
-            displayName: row[1]
-        });
-    }, "SELECT id, display_name FROM gamelog_join_leave WHERE display_name LIKE '% (%'");
-    return badEntries;
+    const rows =
+        (await backend.app.DatabaseMaintenanceBrokenGameLogDisplayNamesGet()) as
+            | Array<{ id?: LocalDbValue; displayName?: unknown }>
+            | null;
+    return (Array.isArray(rows) ? rows : []).map((row) => ({
+        id: row.id,
+        displayName: row.displayName
+    }));
 }
 
 async function fixBrokenGameLogDisplayNames(): Promise<void> {

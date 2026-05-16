@@ -2,10 +2,6 @@ import { backend } from '@/platform/index.js';
 
 import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
-import sqliteRepository from './sqliteRepository.js';
-import userSessionRepository, {
-    normalizeUserTablePrefix
-} from './userSessionRepository.js';
 import {
     createRequestError,
     executeBackendHttpRequest,
@@ -205,26 +201,6 @@ function normalizeNotificationLimit(value: unknown, fallback: number): number {
     return Number.isFinite(limit) && limit > 0 ? limit : fallback;
 }
 
-function buildTypeFilterSql(filters: string[]) {
-    if (!filters.length) {
-        return {
-            whereSql: '',
-            args: {} as Record<string, string>
-        };
-    }
-
-    const args: Record<string, string> = {};
-    const placeholders = filters.map((filter, index) => {
-        const key = `@type_${index}`;
-        args[key] = filter;
-        return key;
-    });
-    return {
-        whereSql: ` WHERE type IN (${placeholders.join(', ')})`,
-        args
-    };
-}
-
 async function executeApi(
     path: string,
     {
@@ -257,8 +233,6 @@ async function queryNotifications({
         return [];
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
     const normalizedSearch = String(search || '').trim();
     const normalizedFilters = normalizeNotificationFilters(filters);
     const [maxTableSize, searchLimit] = await Promise.all([
@@ -271,36 +245,23 @@ async function queryNotifications({
         ? normalizeNotificationLimit(searchLimit, 50000)
         : normalizeNotificationLimit(maxTableSize, 500);
     const perTableLimit = isSearchOrFiltered ? limit : limit * 2;
-    const { whereSql, args: typeFilterArgs } =
-        buildTypeFilterSql(normalizedFilters);
-    const queryArgs = {
-        ...typeFilterArgs,
-        '@limit': perTableLimit
-    };
-    const unseenQueryArgs = {
-        '@now': new Date().toJSON()
-    };
-
     const isDefaultList = !normalizedSearch && normalizedFilters.length === 0;
-    const [v1Rows, v2Rows, unseenV2Rows] = await Promise.all([
-        sqliteRepository.query(
-            `SELECT * FROM ${userPrefix}_notifications${whereSql} ORDER BY created_at DESC, id DESC LIMIT @limit`,
-            queryArgs
-        ),
-        sqliteRepository.query(
-            `SELECT * FROM ${userPrefix}_notifications_v2${whereSql} ORDER BY created_at DESC, id DESC LIMIT @limit`,
-            queryArgs
-        ),
-        isDefaultList
-            ? sqliteRepository.query(
-                  `SELECT * FROM ${userPrefix}_notifications_v2
-                   WHERE seen = 0
-                   AND (expires_at IS NULL OR expires_at = '' OR expires_at > @now)
-                   ORDER BY created_at DESC, id DESC`,
-                  unseenQueryArgs
-              )
-            : Promise.resolve([])
-    ]);
+    const {
+        v1Rows = [],
+        v2Rows = [],
+        unseenV2Rows = []
+    } = (await backend.app.NotificationRowsQuery({
+        query: {
+            userId: normalizedUserId,
+            filters: normalizedFilters,
+            perTableLimit,
+            includeUnseen: isDefaultList
+        }
+    })) as {
+        v1Rows?: NotificationRow[];
+        v2Rows?: NotificationRow[];
+        unseenV2Rows?: NotificationRow[];
+    };
 
     const deduped = new Map<string, NotificationRecord>();
     for (const notification of [

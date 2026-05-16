@@ -1,10 +1,9 @@
 import { backend } from '@/platform/index.js';
 
 import configRepository from './configRepository.js';
-import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRow } from './sqliteRepository.js';
 
 type ObjectRow = Record<string, unknown>;
+type LocalDataRow = ObjectRow | unknown[];
 
 interface CacheEntryInput {
     id?: unknown;
@@ -47,7 +46,7 @@ const LOCAL_FAVORITE_GROUP_CONFIG_KEYS = Object.freeze({
     world: 'localFavoriteWorldGroups'
 });
 
-function asObjectRow(row: SQLiteRow | null | undefined): ObjectRow {
+function asObjectRow(row: LocalDataRow | null | undefined): ObjectRow {
     return row && !Array.isArray(row) ? row : {};
 }
 
@@ -60,7 +59,7 @@ function getLocalFavoriteGroupConfigKey(kind: unknown): string | undefined {
     )[kind as PropertyKey];
 }
 
-function normalizeWorldCacheRow(row: SQLiteRow | null | undefined) {
+function normalizeWorldCacheRow(row: LocalDataRow | null | undefined) {
     if (Array.isArray(row)) {
         return {
             id: row[0] ?? '',
@@ -94,7 +93,7 @@ function normalizeWorldCacheRow(row: SQLiteRow | null | undefined) {
     };
 }
 
-function normalizeAvatarCacheRow(row: SQLiteRow | null | undefined) {
+function normalizeAvatarCacheRow(row: LocalDataRow | null | undefined) {
     if (Array.isArray(row)) {
         return {
             id: row[0] ?? '',
@@ -128,7 +127,7 @@ function normalizeAvatarCacheRow(row: SQLiteRow | null | undefined) {
     };
 }
 
-function normalizeWorldFavoriteRow(row: SQLiteRow | null | undefined) {
+function normalizeWorldFavoriteRow(row: LocalDataRow | null | undefined) {
     if (Array.isArray(row)) {
         return {
             created_at: row[1] ?? '',
@@ -145,7 +144,7 @@ function normalizeWorldFavoriteRow(row: SQLiteRow | null | undefined) {
     };
 }
 
-function normalizeAvatarFavoriteRow(row: SQLiteRow | null | undefined) {
+function normalizeAvatarFavoriteRow(row: LocalDataRow | null | undefined) {
     if (Array.isArray(row)) {
         return {
             created_at: row[1] ?? '',
@@ -162,7 +161,7 @@ function normalizeAvatarFavoriteRow(row: SQLiteRow | null | undefined) {
     };
 }
 
-function normalizeFriendFavoriteRow(row: SQLiteRow | null | undefined) {
+function normalizeFriendFavoriteRow(row: LocalDataRow | null | undefined) {
     if (Array.isArray(row)) {
         return {
             created_at: row[1] ?? '',
@@ -262,37 +261,33 @@ async function createLocalFavoriteGroup({
 }
 
 async function getWorldFavorites() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM favorite_world'
-    );
+    const rows = (await backend.app.FavoriteList({
+        kind: 'world'
+    })) as LocalDataRow[];
     return Array.isArray(rows) ? rows.map(normalizeWorldFavoriteRow) : [];
 }
 
 async function getAvatarFavorites() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM favorite_avatar'
-    );
+    const rows = (await backend.app.FavoriteList({
+        kind: 'avatar'
+    })) as LocalDataRow[];
     return Array.isArray(rows) ? rows.map(normalizeAvatarFavoriteRow) : [];
 }
 
 async function getFriendFavorites() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM favorite_friend'
-    );
+    const rows = (await backend.app.FavoriteList({
+        kind: 'friend'
+    })) as LocalDataRow[];
     return Array.isArray(rows) ? rows.map(normalizeFriendFavoriteRow) : [];
 }
 
 async function getWorldCache() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM cache_world'
-    );
+    const rows = (await backend.app.WorldCacheList()) as LocalDataRow[];
     return Array.isArray(rows) ? rows.map(normalizeWorldCacheRow) : [];
 }
 
 async function getAvatarCache() {
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM cache_avatar'
-    );
+    const rows = (await backend.app.AvatarCacheList()) as LocalDataRow[];
     return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
 }
 
@@ -319,15 +314,10 @@ async function getCachedWorldById(id: unknown) {
     if (!normalizedId) {
         return null;
     }
-    const rows = await sqliteRepository.query<SQLiteRow>(
-        'SELECT * FROM cache_world WHERE id = @id LIMIT 1',
-        {
-            '@id': normalizedId
-        }
-    );
-    return Array.isArray(rows) && rows.length
-        ? normalizeWorldCacheRow(rows[0])
-        : null;
+    const row = (await backend.app.WorldCacheGet({
+        worldId: normalizedId
+    })) as LocalDataRow | null;
+    return row ? normalizeWorldCacheRow(row) : null;
 }
 
 async function removeWorldFromCache(worldId: unknown) {
