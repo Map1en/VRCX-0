@@ -105,7 +105,7 @@ export function isVrchatMissingCredentialsError(
     );
 }
 
-function notifyVrchatAuthFailure(error: VrchatRequestError): void {
+export function notifyVrchatAuthFailure(error: VrchatRequestError): void {
     if (!isVrchatMissingCredentialsError(error) || !vrchatAuthFailureHandler) {
         return;
     }

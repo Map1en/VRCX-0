@@ -1,16 +1,10 @@
-import {
-    localFavoritesRepository,
-    vrchatFavoriteRepository
-} from '@/repositories/index.js';
-import {
-    createDefaultFavoriteCachedRef,
-    createDefaultFavoriteGroupRef
-} from '@/shared/utils/entityTransforms.js';
+import { backend } from '@/platform/index.js';
 import { useFavoriteStore } from '@/state/favoriteStore.js';
 import { useFriendRosterStore } from '@/state/friendRosterStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
 
+import { notifyBackendVrchatAuthFailure } from './backendVrchatErrorService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const activeHydrations = new Map<string, Promise<unknown>>();
@@ -29,348 +23,7 @@ function favoriteBootstrapKey(userId: unknown, endpoint = '') {
     return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
 }
 
-function uniqueValues(values: unknown) {
-    return Array.from(new Set(Array.isArray(values) ? values : []));
-}
-
-function createDefaultFavoriteLimits() {
-    return {
-        maxFavoriteGroups: {
-            avatar: 6,
-            friend: 3,
-            vrcPlusWorld: 4,
-            world: 4
-        },
-        maxFavoritesPerGroup: {
-            avatar: 50,
-            friend: 150,
-            vrcPlusWorld: 100,
-            world: 100
-        }
-    };
-}
-
-function mergeFavoriteLimits(limits: Record<string, any> | null | undefined) {
-    return {
-        maxFavoriteGroups: {
-            ...createDefaultFavoriteLimits().maxFavoriteGroups,
-            ...(limits?.maxFavoriteGroups &&
-            typeof limits.maxFavoriteGroups === 'object'
-                ? limits.maxFavoriteGroups
-                : {})
-        },
-        maxFavoritesPerGroup: {
-            ...createDefaultFavoriteLimits().maxFavoritesPerGroup,
-            ...(limits?.maxFavoritesPerGroup &&
-            typeof limits.maxFavoritesPerGroup === 'object'
-                ? limits.maxFavoritesPerGroup
-                : {})
-        }
-    };
-}
-
-function buildFavoriteGroupsFromLimits(favoriteLimits: Record<string, any>) {
-    const friendGroups = [];
-    const worldGroups = [];
-    const avatarGroups = [];
-
-    for (
-        let index = 0;
-        index < favoriteLimits.maxFavoriteGroups.friend;
-        index += 1
-    ) {
-        friendGroups.push({
-            assign: false,
-            key: `friend:group_${index}`,
-            type: 'friend',
-            name: `group_${index}`,
-            displayName: `Group ${index + 1}`,
-            capacity: favoriteLimits.maxFavoritesPerGroup.friend,
-            count: 0,
-            visibility: 'private'
-        });
-    }
-
-    for (
-        let index = 0;
-        index < favoriteLimits.maxFavoriteGroups.world;
-        index += 1
-    ) {
-        worldGroups.push({
-            assign: false,
-            key: `world:worlds${index + 1}`,
-            type: 'world',
-            name: `worlds${index + 1}`,
-            displayName: `Group ${index + 1}`,
-            capacity: favoriteLimits.maxFavoritesPerGroup.world,
-            count: 0,
-            visibility: 'private'
-        });
-    }
-
-    for (
-        let index = 0;
-        index < favoriteLimits.maxFavoriteGroups.vrcPlusWorld;
-        index += 1
-    ) {
-        worldGroups.push({
-            assign: false,
-            key: `vrcPlusWorld:vrcPlusWorlds${index + 1}`,
-            type: 'vrcPlusWorld',
-            name: `vrcPlusWorlds${index + 1}`,
-            displayName: `VRC+ Group ${index + 1}`,
-            capacity: favoriteLimits.maxFavoritesPerGroup.vrcPlusWorld,
-            count: 0,
-            visibility: 'private'
-        });
-    }
-
-    for (
-        let index = 0;
-        index < favoriteLimits.maxFavoriteGroups.avatar;
-        index += 1
-    ) {
-        avatarGroups.push({
-            assign: false,
-            key: `avatar:avatars${index + 1}`,
-            type: 'avatar',
-            name: `avatars${index + 1}`,
-            displayName: `Group ${index + 1}`,
-            capacity: favoriteLimits.maxFavoritesPerGroup.avatar,
-            count: 0,
-            visibility: 'private'
-        });
-    }
-
-    return {
-        friendGroups,
-        worldGroups,
-        avatarGroups
-    };
-}
-
-function assignFavoriteGroupMetadata(
-    groupsByType: Record<string, any[]>,
-    cachedFavoriteGroupsById: Record<string, any>
-) {
-    const typeLookup = {
-        friend: groupsByType.friendGroups,
-        world: groupsByType.worldGroups,
-        vrcPlusWorld: groupsByType.worldGroups,
-        avatar: groupsByType.avatarGroups
-    };
-    const assignments = new Set();
-    const refs = Object.values(cachedFavoriteGroupsById) as Record<
-        string,
-        any
-    >[];
-
-    for (const ref of refs) {
-        const groups = typeLookup[ref.type];
-        if (!groups) {
-            continue;
-        }
-
-        for (const group of groups) {
-            if (!group.assign && group.name === ref.name) {
-                group.assign = true;
-                if (ref.displayName) {
-                    group.displayName = ref.displayName;
-                }
-                group.visibility = ref.visibility || group.visibility;
-                assignments.add(ref.id);
-                break;
-            }
-        }
-    }
-
-    for (const ref of refs) {
-        if (assignments.has(ref.id)) {
-            continue;
-        }
-
-        const groups = typeLookup[ref.type];
-        if (!groups) {
-            continue;
-        }
-
-        for (const group of groups) {
-            if (!group.assign) {
-                group.assign = true;
-                group.key = `${group.type}:${ref.name}`;
-                group.name = ref.name;
-                group.displayName = ref.displayName || group.displayName;
-                group.visibility = ref.visibility || group.visibility;
-                assignments.add(ref.id);
-                break;
-            }
-        }
-    }
-}
-
-function buildFavoriteGroupIndex({ friendGroups, worldGroups, avatarGroups }) {
-    const groupsByKey: Record<string, any> = {};
-    for (const group of friendGroups) {
-        groupsByKey[group.key] = group;
-    }
-    for (const group of worldGroups) {
-        groupsByKey[group.key] = group;
-    }
-    for (const group of avatarGroups) {
-        groupsByKey[group.key] = group;
-    }
-    return groupsByKey;
-}
-
-function countFavoriteGroups(
-    groupsByKey: Record<string, any>,
-    remoteFavoritesById: Record<string, any>
-) {
-    for (const group of Object.values(groupsByKey)) {
-        group.count = 0;
-    }
-
-    for (const favorite of Object.values(remoteFavoritesById) as Record<
-        string,
-        any
-    >[]) {
-        const group = groupsByKey[favorite.$groupKey];
-        if (group) {
-            group.count += 1;
-        }
-    }
-}
-
-function buildRemoteFavoriteSnapshot(remoteFavorites, friendRosterById) {
-    const remoteFavoritesById: Record<string, any> = {};
-    const remoteFavoritesByObjectId: Record<string, any> = {};
-    const favoritesSortOrder: string[] = [];
-    const favoriteFriendIds: string[] = [];
-    const favoriteWorldIds: string[] = [];
-    const favoriteAvatarIds: string[] = [];
-    const groupedFavoriteFriendIdsByGroupKey: Record<string, string[]> = {};
-
-    for (const json of remoteFavorites) {
-        const favorite = createDefaultFavoriteCachedRef(json);
-        if (!favorite.id || !favorite.favoriteId) {
-            continue;
-        }
-
-        remoteFavoritesById[favorite.id] = favorite;
-        remoteFavoritesByObjectId[favorite.favoriteId] = favorite;
-        favoritesSortOrder.push(favorite.favoriteId);
-
-        if (favorite.type === 'friend') {
-            favoriteFriendIds.push(favorite.favoriteId);
-            if (!groupedFavoriteFriendIdsByGroupKey[favorite.$groupKey]) {
-                groupedFavoriteFriendIdsByGroupKey[favorite.$groupKey] = [];
-            }
-            groupedFavoriteFriendIdsByGroupKey[favorite.$groupKey].push(
-                friendRosterById[favorite.favoriteId]?.id || favorite.favoriteId
-            );
-        } else if (favorite.type === 'avatar') {
-            favoriteAvatarIds.push(favorite.favoriteId);
-        } else if (
-            favorite.type === 'world' ||
-            favorite.type === 'vrcPlusWorld'
-        ) {
-            favoriteWorldIds.push(favorite.favoriteId);
-        }
-    }
-
-    return {
-        remoteFavoritesById,
-        remoteFavoritesByObjectId,
-        favoritesSortOrder,
-        favoriteFriendIds,
-        favoriteWorldIds,
-        favoriteAvatarIds,
-        groupedFavoriteFriendIdsByGroupKey
-    };
-}
-
-function buildLocalGroupedIds(
-    rows,
-    idField,
-    explicitGroups = [],
-    fallbackGroup = 'Favorites'
-) {
-    const groups = Object.create(null);
-    const list = [];
-
-    for (const groupName of explicitGroups) {
-        const normalizedGroupName = normalizeUserId(groupName);
-        if (normalizedGroupName && !groups[normalizedGroupName]) {
-            groups[normalizedGroupName] = [];
-        }
-    }
-
-    for (const row of rows) {
-        const groupName =
-            typeof row?.groupName === 'string' && row.groupName.trim()
-                ? row.groupName.trim()
-                : fallbackGroup;
-        const objectId =
-            typeof row?.[idField] === 'string'
-                ? row[idField].trim()
-                : String(row?.[idField] ?? '').trim();
-        if (!objectId) {
-            continue;
-        }
-
-        if (!groups[groupName]) {
-            groups[groupName] = [];
-        }
-        groups[groupName].unshift(objectId);
-        list.push(objectId);
-    }
-
-    if (Object.keys(groups).length === 0) {
-        groups[fallbackGroup] = [];
-    }
-
-    return {
-        groups,
-        groupsList: Object.keys(groups).sort(),
-        list: uniqueValues(list)
-    };
-}
-
-function buildDetailsById(rows) {
-    const detailsById = {};
-    for (const row of rows) {
-        const objectId =
-            typeof row?.id === 'string'
-                ? row.id.trim()
-                : String(row?.id ?? '').trim();
-        if (!objectId) {
-            continue;
-        }
-        detailsById[objectId] = row;
-    }
-    return detailsById;
-}
-
-function ensureLocalDetailFallbacks(detailsById, objectIds) {
-    for (const objectId of objectIds) {
-        if (!objectId) {
-            continue;
-        }
-        if (!detailsById[objectId]) {
-            detailsById[objectId] = { id: objectId };
-        }
-    }
-    return detailsById;
-}
-
-function buildPendingDetail(displayName, snapshot) {
-    return [
-        `Favorites baseline loaded for ${displayName} (${Object.keys(snapshot.remoteFavoritesById).length} remote records).`,
-        `${snapshot.localWorldFavoritesList.length} local world favorites, ${snapshot.localAvatarFavoritesList.length} local avatar favorites, ${snapshot.localFriendFavoritesList.length} local friend favorites.`
-    ].join(' ');
-}
-
-function isCurrentFavoriteBootstrapTarget(userId, endpoint = '') {
+function isCurrentFavoriteBootstrapTarget(userId: string, endpoint = '') {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
@@ -412,126 +65,53 @@ async function runFavoriteBootstrap({
             `Loading favorites baseline for ${displayName}.`
         );
 
-    const [
-        favoriteLimitsResponse,
-        remoteFavorites,
-        remoteFavoriteGroups,
-        localWorldFavoriteRows,
-        localAvatarFavoriteRows,
-        localFriendFavoriteRows,
-        localWorldCacheRows,
-        localAvatarCacheRows,
-        explicitLocalWorldFavoriteGroups,
-        explicitLocalAvatarFavoriteGroups,
-        explicitLocalFriendFavoriteGroups
-    ] = await Promise.all([
-        vrchatFavoriteRepository.getFavoriteLimits({ endpoint }),
-        vrchatFavoriteRepository.getAllFavorites({ endpoint }),
-        vrchatFavoriteRepository.getAllFavoriteGroups({ endpoint }),
-        localFavoritesRepository.getWorldFavorites(),
-        localFavoritesRepository.getAvatarFavorites(),
-        localFavoritesRepository.getFriendFavorites(),
-        localFavoritesRepository.getWorldCache(),
-        localFavoritesRepository.getAvatarCache(),
-        localFavoritesRepository.getExplicitLocalFavoriteGroups('world'),
-        localFavoritesRepository.getExplicitLocalFavoriteGroups('avatar'),
-        localFavoritesRepository.getExplicitLocalFavoriteGroups('friend')
-    ]);
-
-    const favoriteLimits = mergeFavoriteLimits(favoriteLimitsResponse?.json);
-    const cachedFavoriteGroupsById = {};
-    for (const json of remoteFavoriteGroups) {
-        const ref = createDefaultFavoriteGroupRef(json);
-        if (!ref.id) {
-            continue;
-        }
-        cachedFavoriteGroupsById[ref.id] = ref;
-    }
-
-    const favoriteGroups = buildFavoriteGroupsFromLimits(favoriteLimits);
-    assignFavoriteGroupMetadata(favoriteGroups, cachedFavoriteGroupsById);
-
-    const remoteSnapshot = buildRemoteFavoriteSnapshot(
-        remoteFavorites,
-        friendRosterById
-    );
-    const favoriteGroupIndex = buildFavoriteGroupIndex(favoriteGroups);
-    countFavoriteGroups(favoriteGroupIndex, remoteSnapshot.remoteFavoritesById);
-
-    const localWorldDetailsById = ensureLocalDetailFallbacks(
-        buildDetailsById(localWorldCacheRows),
-        localWorldFavoriteRows.map((row) => row.worldId)
-    );
-    const localAvatarDetailsById = ensureLocalDetailFallbacks(
-        buildDetailsById(localAvatarCacheRows),
-        localAvatarFavoriteRows.map((row) => row.avatarId)
-    );
-    const localWorldSnapshot = buildLocalGroupedIds(
-        localWorldFavoriteRows,
-        'worldId',
-        explicitLocalWorldFavoriteGroups
-    );
-    const localAvatarSnapshot = buildLocalGroupedIds(
-        localAvatarFavoriteRows,
-        'avatarId',
-        explicitLocalAvatarFavoriteGroups
-    );
-    const localFriendSnapshot = buildLocalGroupedIds(
-        localFriendFavoriteRows,
-        'userId',
-        explicitLocalFriendFavoriteGroups
-    );
-
-    const snapshot = {
-        currentUserId: normalizedUserId,
-        favoriteLimits,
-        favoritesSortOrder: remoteSnapshot.favoritesSortOrder,
-        remoteFavoritesById: remoteSnapshot.remoteFavoritesById,
-        remoteFavoritesByObjectId: remoteSnapshot.remoteFavoritesByObjectId,
-        favoriteFriendIds: remoteSnapshot.favoriteFriendIds,
-        groupedFavoriteFriendIdsByGroupKey:
-            remoteSnapshot.groupedFavoriteFriendIdsByGroupKey,
-        favoriteWorldIds: remoteSnapshot.favoriteWorldIds,
-        favoriteAvatarIds: remoteSnapshot.favoriteAvatarIds,
-        cachedFavoriteGroupsById,
-        favoriteFriendGroups: favoriteGroups.friendGroups,
-        favoriteWorldGroups: favoriteGroups.worldGroups,
-        favoriteAvatarGroups: favoriteGroups.avatarGroups,
-        localWorldFavorites: localWorldSnapshot.groups,
-        localAvatarFavorites: localAvatarSnapshot.groups,
-        localFriendFavorites: localFriendSnapshot.groups,
-        localWorldFavoriteGroups: localWorldSnapshot.groupsList,
-        localAvatarFavoriteGroups: localAvatarSnapshot.groupsList,
-        localFriendFavoriteGroups: localFriendSnapshot.groupsList,
-        localWorldFavoritesList: localWorldSnapshot.list,
-        localAvatarFavoritesList: localAvatarSnapshot.list,
-        localFriendFavoritesList: localFriendSnapshot.list,
-        localWorldDetailsById,
-        localAvatarDetailsById,
-        detail: buildPendingDetail(displayName, {
-            remoteFavoritesById: remoteSnapshot.remoteFavoritesById,
-            localWorldFavoritesList: localWorldSnapshot.list,
-            localAvatarFavoritesList: localAvatarSnapshot.list,
-            localFriendFavoritesList: localFriendSnapshot.list
+    const result = await backend.app
+        .BackendFavoritesBaselineGet({
+            userId: normalizedUserId,
+            endpoint,
+            currentUserSnapshot,
+            friendRosterById
         })
-    };
+        .catch((error) => {
+            notifyBackendVrchatAuthFailure(
+                error,
+                endpoint,
+                'favorites baseline'
+            );
+            throw error;
+        });
+    const snapshot = result.snapshot as any;
+
+    if (result.stale || !snapshot) {
+        if (isCurrentFavoriteBootstrapTarget(normalizedUserId, endpoint)) {
+            throw new Error(
+                `Favorites baseline was stale for ${normalizedUserId}.`
+            );
+        }
+
+        return {
+            userId: normalizedUserId,
+            stale: true,
+            count: result.count ?? 0
+        };
+    }
 
     if (!isCurrentFavoriteBootstrapTarget(normalizedUserId, endpoint)) {
         return {
             userId: normalizedUserId,
             stale: true,
-            count: Object.keys(snapshot.remoteFavoritesById).length
+            count: result.count ?? 0
         };
     }
 
     useFavoriteStore.getState().setFavoritesSnapshot(snapshot);
     useSessionStore.getState().setFavoritesLoaded(true);
-    syncStartupServicesTask([snapshot.detail]);
+    syncStartupServicesTask([String(snapshot.detail || '')]);
 
     return {
         userId: normalizedUserId,
         stale: false,
-        count: Object.keys(snapshot.remoteFavoritesById).length
+        count: result.count ?? 0
     };
 }
 
@@ -556,7 +136,11 @@ export function bootstrapFavorites(options) {
         return activeHydrations.get(activeKey);
     }
 
-    const promise = runFavoriteBootstrap(options)
+    const promise = runFavoriteBootstrap({
+        ...options,
+        userId: normalizedUserId,
+        currentUserSnapshot
+    })
         .catch((error) => {
             if (
                 isCurrentFavoriteBootstrapTarget(

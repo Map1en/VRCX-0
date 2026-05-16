@@ -118,10 +118,11 @@ fn command_groups() -> Vec<BackendCommandGroupSnapshot> {
         BackendCommandGroupSnapshot {
             name: "vrchat-api".into(),
             boundary: "typed Rust API gateway commands grouped by business domain".into(),
-            command_count: 18,
+            command_count: 20,
             examples: vec![
                 "app__vrchat_auth_execute".into(),
                 "app__vrchat_friend_execute".into(),
+                "app__backend_friend_roster_baseline_get".into(),
                 "app__vrchat_world_execute".into(),
             ],
         },

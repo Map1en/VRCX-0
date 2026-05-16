@@ -179,6 +179,21 @@ export interface BackendModerationUpdateResult {
     } | null;
 }
 
+export interface BackendFavoritesBaselineResult {
+    userId: string;
+    stale: boolean;
+    count: number;
+    snapshot?: Record<string, unknown> | null;
+}
+
+export interface BackendFriendRosterBaselineResult {
+    userId: string;
+    stale: boolean;
+    count: number;
+    detail: string;
+    snapshot?: Record<string, unknown> | null;
+}
+
 export interface AppBackendNamespace extends BackendNamespace {
     AppendErrorLog(entry: string): Promise<void>;
     ExitApplication(): Promise<void>;
@@ -210,6 +225,18 @@ export interface AppBackendNamespace extends BackendNamespace {
         type: string;
         enabled: boolean;
     }): Promise<BackendModerationUpdateResult>;
+    BackendFavoritesBaselineGet(input: {
+        userId: string;
+        endpoint?: string;
+        currentUserSnapshot: Record<string, unknown>;
+        friendRosterById?: Record<string, unknown>;
+    }): Promise<BackendFavoritesBaselineResult>;
+    BackendFriendRosterBaselineGet(input: {
+        userId: string;
+        endpoint?: string;
+        currentUserSnapshot: Record<string, unknown>;
+        explicitAddIntentUserIds?: string[];
+    }): Promise<BackendFriendRosterBaselineResult>;
     BackendRuntimeSnapshotGet(): Promise<BackendRuntimeSnapshot>;
     BackendSyncSnapshotGet(): Promise<BackendSyncSnapshot>;
     SetGameClientRuntimeState(

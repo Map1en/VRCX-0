@@ -1,9 +1,5 @@
-import {
-    configRepository,
-    friendLogRepository,
-    userProfileRepository,
-    vrchatFriendRepository
-} from '@/repositories/index.js';
+import { backend } from '@/platform/index.js';
+import { friendLogRepository } from '@/repositories/index.js';
 import {
     computeTrustLevel,
     computeUserPlatform
@@ -16,14 +12,13 @@ import {
     recordFriendPatch,
     recordFriendRosterFacts
 } from './domainIngestionService.js';
+import { notifyBackendVrchatAuthFailure } from './backendVrchatErrorService.js';
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
 const activeBootstraps = new Map<string, Promise<unknown>>();
 const friendLogMutationQueues = new Map<string, Promise<unknown>>();
 const explicitFriendLogAddIntents = new Map<string, symbol>();
-const MISSING_FRIEND_CONCURRENCY = 4;
-const FRIEND_REMOVAL_STATUS_CONFIRMATION_LIMIT = 50;
-const FRIEND_ADDITION_RECONCILIATION_LIMIT = 50;
+const explicitFriendLogAddIntentsHandledByBootstrap = new Set<string>();
 
 function normalizeUserId(value: unknown) {
     return typeof value === 'string'
@@ -111,13 +106,55 @@ export function registerFriendLogExplicitAddIntent({
     return () => {
         if (explicitFriendLogAddIntents.get(key) === token) {
             explicitFriendLogAddIntents.delete(key);
+            explicitFriendLogAddIntentsHandledByBootstrap.delete(key);
         }
     };
 }
 
-function hasFriendLogExplicitAddIntent(currentUserId, targetUserId) {
+function getExplicitFriendLogAddIntentUserIds(currentUserId) {
+    const normalizedCurrentUserId = normalizeUserId(currentUserId);
+    if (!normalizedCurrentUserId) {
+        return [];
+    }
+
+    const prefix = `${normalizedCurrentUserId}\u0000`;
+    return Array.from(explicitFriendLogAddIntents.keys())
+        .filter((key) => key.startsWith(prefix))
+        .map((key) => normalizeUserId(key.slice(prefix.length)))
+        .filter(Boolean);
+}
+
+function markExplicitFriendLogAddIntentsHandledByBootstrap(
+    currentUserId,
+    targetUserIds
+) {
+    const normalizedCurrentUserId = normalizeUserId(currentUserId);
+    if (!normalizedCurrentUserId || !Array.isArray(targetUserIds)) {
+        return;
+    }
+
+    for (const targetUserId of targetUserIds) {
+        const key = getExplicitFriendLogAddIntentKey(
+            normalizedCurrentUserId,
+            targetUserId
+        );
+        if (key && explicitFriendLogAddIntents.has(key)) {
+            explicitFriendLogAddIntentsHandledByBootstrap.add(key);
+        }
+    }
+}
+
+function consumeExplicitFriendLogAddIntentHandledByBootstrap(
+    currentUserId,
+    targetUserId
+) {
     const key = getExplicitFriendLogAddIntentKey(currentUserId, targetUserId);
-    return Boolean(key) && explicitFriendLogAddIntents.has(key);
+    if (!key || !explicitFriendLogAddIntentsHandledByBootstrap.has(key)) {
+        return false;
+    }
+
+    explicitFriendLogAddIntentsHandledByBootstrap.delete(key);
+    return true;
 }
 
 function addStateBucketIds(stateById, ids, state) {
@@ -147,28 +184,6 @@ function buildFriendStateMap(currentUserSnapshot) {
     addStateBucketIds(stateById, currentUserSnapshot?.onlineFriends, 'online');
 
     return stateById;
-}
-
-function getFriendLogInitKey(userId) {
-    return `friendLogInit_${userId}`;
-}
-
-function buildSnapshotFriendIdSet(currentUserSnapshot) {
-    const friendIds = new Set();
-
-    if (Array.isArray(currentUserSnapshot?.friends)) {
-        for (const value of currentUserSnapshot.friends) {
-            const userId = normalizeUserId(value);
-            if (userId) {
-                friendIds.add(userId);
-            }
-        }
-    }
-
-    return {
-        friendIds,
-        hasFriendList: Array.isArray(currentUserSnapshot?.friends)
-    };
 }
 
 function buildUnfriendHistoryEntry(
@@ -205,102 +220,6 @@ function buildFriendHistoryEntry(row: Record<string, any>, createdAt: string) {
     };
 }
 
-function buildFriendLogRemovalCandidates({
-    currentUserId,
-    existingRows,
-    fetchedFriendIds,
-    snapshotFriendIds,
-    hasFriendList
-}) {
-    const normalizedCurrentUserId = normalizeUserId(currentUserId);
-    const candidates = [];
-
-    for (const row of Array.isArray(existingRows) ? existingRows : []) {
-        const userId = normalizeUserId(row?.userId);
-        if (
-            !userId ||
-            userId === normalizedCurrentUserId ||
-            (fetchedFriendIds.has(userId) &&
-                (!hasFriendList || snapshotFriendIds.has(userId)))
-        ) {
-            continue;
-        }
-
-        candidates.push(row);
-    }
-
-    return candidates;
-}
-
-async function confirmFriendLogRemovalHistoryEntries({
-    candidates,
-    endpoint,
-    createdAt
-}) {
-    if (!Array.isArray(candidates) || candidates.length === 0) {
-        return {
-            removedRows: [],
-            historyEntries: []
-        };
-    }
-
-    if (candidates.length > FRIEND_REMOVAL_STATUS_CONFIRMATION_LIMIT) {
-        console.warn(
-            `Friend bootstrap skipped ${candidates.length} unfriend candidates; refusing to confirm a large roster drop.`
-        );
-        return {
-            removedRows: [],
-            historyEntries: []
-        };
-    }
-
-    const pending = [...candidates];
-    const removedRows = [];
-    const historyEntries = [];
-    const workers = Array.from(
-        {
-            length: Math.min(MISSING_FRIEND_CONCURRENCY, pending.length)
-        },
-        async () => {
-            while (pending.length > 0) {
-                const row = pending.shift();
-                const targetUserId = normalizeUserId(row?.userId);
-                if (!targetUserId) {
-                    continue;
-                }
-
-                try {
-                    const response =
-                        await vrchatFriendRepository.getFriendStatus({
-                            userId: targetUserId,
-                            endpoint
-                        });
-                    if ((response?.json as any)?.isFriend !== false) {
-                        continue;
-                    }
-                    const entry = buildUnfriendHistoryEntry(row, createdAt);
-                    if (entry) {
-                        removedRows.push(row);
-                        historyEntries.push(entry);
-                    }
-                } catch (error) {
-                    console.warn(
-                        `Friend bootstrap could not confirm unfriend ${targetUserId}:`,
-                        error
-                    );
-                }
-            }
-        }
-    );
-
-    await Promise.all(workers);
-
-    return {
-        removedRows,
-        historyEntries
-    };
-}
-
 export async function recordFriendLogFriendByUserId({
     currentUserId,
     targetUserId,
@@ -334,6 +253,11 @@ export async function recordFriendLogFriendByUserId({
         const hasExplicitAddIntent =
             Boolean(explicitAddIntentKey) &&
             explicitFriendLogAddIntents.has(explicitAddIntentKey);
+        const wasHandledByBootstrap =
+            consumeExplicitFriendLogAddIntentHandledByBootstrap(
+                normalizedCurrentUserId,
+                normalizedTargetUserId
+            );
         const existingRows = (await friendLogRepository.getFriendLogCurrent(
             normalizedCurrentUserId
         )) as Record<string, any>[];
@@ -401,7 +325,7 @@ export async function recordFriendLogFriendByUserId({
             currentEntry,
             {
                 historyEntry,
-                forceHistory: hasExplicitAddIntent
+                forceHistory: hasExplicitAddIntent && wasHandledByBootstrap
             }
         );
         if (hasExplicitAddIntent) {
@@ -574,47 +498,6 @@ function normalizeFriendEntry(
     };
 }
 
-function compareFriendEntries(
-    left: Record<string, any>,
-    right: Record<string, any>
-) {
-    const leftNumber =
-        Number.parseInt(left?.friendNumber ?? left?.$friendNumber ?? 0, 10) ||
-        0;
-    const rightNumber =
-        Number.parseInt(right?.friendNumber ?? right?.$friendNumber ?? 0, 10) ||
-        0;
-    const leftHasNumber = leftNumber > 0;
-    const rightHasNumber = rightNumber > 0;
-
-    if (leftHasNumber !== rightHasNumber) {
-        return leftHasNumber ? -1 : 1;
-    }
-
-    if (leftHasNumber && rightHasNumber && leftNumber !== rightNumber) {
-        return leftNumber - rightNumber;
-    }
-
-    const leftName = String(left?.displayName || left?.id || '').toLowerCase();
-    const rightName = String(
-        right?.displayName || right?.id || ''
-    ).toLowerCase();
-    const nameComparison = leftName.localeCompare(rightName);
-    if (nameComparison !== 0) {
-        return nameComparison;
-    }
-
-    return String(left?.id || '').localeCompare(String(right?.id || ''));
-}
-
-function buildBucketIds(expectedIds, friendsById, stateBucket) {
-    return expectedIds
-        .filter((userId) => friendsById[userId]?.stateBucket === stateBucket)
-        .sort((leftId, rightId) =>
-            compareFriendEntries(friendsById[leftId], friendsById[rightId])
-        );
-}
-
 function bootstrapTargetKey(userId, endpoint = '') {
     return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
 }
@@ -631,46 +514,6 @@ function isCurrentBootstrapTarget(userId, endpoint = '') {
     );
 }
 
-async function fetchMissingFriends(userIds, endpoint) {
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-        return [];
-    }
-
-    const pending = [...userIds];
-    const recoveredFriends = [];
-    const workers = Array.from(
-        {
-            length: Math.min(MISSING_FRIEND_CONCURRENCY, pending.length)
-        },
-        async () => {
-            while (pending.length > 0) {
-                const userId = pending.shift();
-                if (!userId) {
-                    continue;
-                }
-
-                try {
-                    const profile = await userProfileRepository.getUserProfile({
-                        userId,
-                        endpoint
-                    });
-                    if (profile?.id) {
-                        recoveredFriends.push(profile);
-                    }
-                } catch (error) {
-                    console.warn(
-                        `Friend bootstrap could not recover ${userId}:`,
-                        error
-                    );
-                }
-            }
-        }
-    );
-
-    await Promise.all(workers);
-    return recoveredFriends;
-}
-
 async function runFriendBootstrap({
     userId,
     endpoint = '',
@@ -682,12 +525,6 @@ async function runFriendBootstrap({
     }
 
     const displayName = getDisplayName(currentUserSnapshot) || normalizedUserId;
-    const stateById = buildFriendStateMap(currentUserSnapshot);
-    const { friendIds: snapshotFriendIds, hasFriendList } =
-        buildSnapshotFriendIdSet(currentUserSnapshot);
-    const expectedIds = Array.from(
-        new Set([...stateById.keys(), ...snapshotFriendIds])
-    );
 
     useFriendRosterStore
         .getState()
@@ -707,229 +544,56 @@ async function runFriendBootstrap({
     const bootstrapResult = await enqueueFriendLogMutation(
         normalizedUserId,
         async () => {
-            const friendLogInitialized = Boolean(
-                await configRepository.getBool(
-                    getFriendLogInitKey(normalizedUserId),
-                    false
-                )
-            );
-            const [onlineFriends, offlineFriends] = await Promise.all([
-                vrchatFriendRepository.getAllFriends({
+            const explicitAddIntentUserIds =
+                getExplicitFriendLogAddIntentUserIds(normalizedUserId);
+            const result = await backend.app
+                .BackendFriendRosterBaselineGet({
+                    userId: normalizedUserId,
                     endpoint,
-                    offline: false
-                }),
-                vrchatFriendRepository.getAllFriends({
-                    endpoint,
-                    offline: true
+                    currentUserSnapshot,
+                    explicitAddIntentUserIds
                 })
-            ]);
-
-            const fetchedFriendsById = new Map();
-            for (const friend of [...onlineFriends, ...offlineFriends]) {
-                const friendId = normalizeUserId(friend?.id);
-                if (!friendId) {
-                    continue;
-                }
-                fetchedFriendsById.set(friendId, friend);
-            }
-
-            const missingIds = expectedIds.filter(
-                (friendId) =>
-                    !friendLogInitialized && !fetchedFriendsById.has(friendId)
-            );
-            const recoveredFriends = await fetchMissingFriends(
-                missingIds,
-                endpoint
-            );
-            for (const friend of recoveredFriends) {
-                const friendId = normalizeUserId(friend?.id);
-                if (!friendId) {
-                    continue;
-                }
-                fetchedFriendsById.set(friendId, friend);
-            }
-
-            const existingRows = (await friendLogRepository.getFriendLogCurrent(
-                normalizedUserId
-            )) as Record<string, any>[];
-            const existingRowsById = new Map(
-                existingRows.map((row) => [normalizeUserId(row?.userId), row])
-            );
-            const existingIds = existingRows
-                .map((row) => normalizeUserId(row?.userId))
-                .filter(Boolean);
-            const fetchedFriendIds = new Set(fetchedFriendsById.keys());
-            const reconciliationCreatedAt = new Date().toJSON();
-            const { removedRows, historyEntries } = friendLogInitialized
-                ? await confirmFriendLogRemovalHistoryEntries({
-                      candidates: buildFriendLogRemovalCandidates({
-                          currentUserId: normalizedUserId,
-                          existingRows,
-                          fetchedFriendIds,
-                          snapshotFriendIds,
-                          hasFriendList
-                      }),
-                      endpoint,
-                      createdAt: reconciliationCreatedAt
-                  })
-                : { removedRows: [], historyEntries: [] };
-            const removedFriendIds = new Set(
-                removedRows
-                    .map((row) => normalizeUserId(row?.userId))
-                    .filter(Boolean)
-            );
-            const includedIds = friendLogInitialized
-                ? Array.from(
-                      new Set([
-                          ...existingIds,
-                          ...(hasFriendList ? snapshotFriendIds : []),
-                          ...fetchedFriendsById.keys()
-                      ])
-                  ).filter((friendId) => !removedFriendIds.has(friendId))
-                : Array.from(
-                      new Set([
-                          ...existingIds,
-                          ...expectedIds,
-                          ...fetchedFriendsById.keys()
-                      ])
-                  );
-            const friendOrderSourceIds =
-                Array.isArray(currentUserSnapshot?.friends) &&
-                currentUserSnapshot.friends.length
-                    ? currentUserSnapshot.friends
-                    : includedIds;
-            const friendOrderNumbers = new Map(
-                friendOrderSourceIds
-                    .map((friendId, index) => [
-                        normalizeUserId(friendId),
-                        index + 1
-                    ])
-                    .filter(([friendId]) => Boolean(friendId))
-            );
-            const friendsById: Record<string, any> = {};
-            const friendLogRows: Record<string, any>[] = [];
-            const addedHistoryEntries: Record<string, any>[] = [];
-
-            for (const friendId of includedIds) {
-                const friend = fetchedFriendsById.get(friendId);
-                const existingRow = existingRowsById.get(friendId) ?? {
-                    userId: friendId,
-                    displayName: getDisplayName(friend) || friendId,
-                    trustLevel: 'Visitor',
-                    friendNumber: 0
-                };
-                if (
-                    !(
-                        Number.parseInt(
-                            existingRow.friendNumber ??
-                                existingRow.$friendNumber ??
-                                0,
-                            10
-                        ) > 0
-                    )
-                ) {
-                    existingRow.friendNumber =
-                        friendOrderNumbers.get(friendId) || 0;
-                }
-                const stateBucket =
-                    normalizeStateBucket(stateById.get(friendId)) ||
-                    normalizeStateBucket(friend?.stateBucket) ||
-                    normalizeStateBucket(friend?.state) ||
-                    'offline';
-                const normalizedFriend = normalizeFriendEntry(
-                    friend,
-                    stateBucket,
-                    existingRow
-                );
-
-                friendsById[friendId] = normalizedFriend;
-                const friendLogRow = {
-                    userId: friendId,
-                    displayName: normalizedFriend.displayName,
-                    trustLevel: normalizedFriend.$trustLevel,
-                    friendNumber: normalizedFriend.$friendNumber
-                };
-                friendLogRows.push(friendLogRow);
-                if (
-                    friendLogInitialized &&
-                    friendId !== normalizedUserId &&
-                    !existingRowsById.has(friendId) &&
-                    !hasFriendLogExplicitAddIntent(normalizedUserId, friendId)
-                ) {
-                    const entry = buildFriendHistoryEntry(
-                        friendLogRow,
-                        reconciliationCreatedAt
+                .catch((error) => {
+                    notifyBackendVrchatAuthFailure(
+                        error,
+                        endpoint,
+                        'friend roster baseline'
                     );
-                    if (entry) {
-                        addedHistoryEntries.push(entry);
-                    }
-                }
-            }
-
-            const safeAddedHistoryEntries =
-                addedHistoryEntries.length >
-                FRIEND_ADDITION_RECONCILIATION_LIMIT
-                    ? []
-                    : addedHistoryEntries;
-            if (safeAddedHistoryEntries.length !== addedHistoryEntries.length) {
-                console.warn(
-                    `Friend bootstrap skipped ${addedHistoryEntries.length} friend-add candidates; refusing to write a large roster gain.`
+                    throw error;
+                });
+            if (!result.stale && result.snapshot) {
+                markExplicitFriendLogAddIntentsHandledByBootstrap(
+                    normalizedUserId,
+                    explicitAddIntentUserIds
                 );
             }
-
-            const onlineIds = buildBucketIds(
-                includedIds,
-                friendsById,
-                'online'
-            );
-            const activeIds = buildBucketIds(
-                includedIds,
-                friendsById,
-                'active'
-            );
-            const offlineIds = buildBucketIds(
-                includedIds,
-                friendsById,
-                'offline'
-            );
-            const orderedFriendIds = [
-                ...onlineIds,
-                ...activeIds,
-                ...offlineIds
-            ];
-
-            await friendLogRepository.replaceFriendLogCurrent(
-                normalizedUserId,
-                friendLogRows,
-                {
-                    historyEntries,
-                    addedHistoryEntries: safeAddedHistoryEntries
-                }
-            );
-            await configRepository.setBool(
-                getFriendLogInitKey(normalizedUserId),
-                true
-            );
-
-            return {
-                friendsById,
-                orderedFriendIds,
-                onlineIds,
-                activeIds,
-                offlineIds,
-                detail: ''
-            };
+            return result;
         }
     );
 
-    const { friendsById, orderedFriendIds, onlineIds, activeIds, offlineIds } =
-        bootstrapResult as Record<string, any>;
-    const detail = (bootstrapResult as Record<string, any>).detail;
+    const result = bootstrapResult as Record<string, any>;
+    const snapshot = result.snapshot as Record<string, any> | null | undefined;
+    const detail = String(result.detail || snapshot?.detail || '');
+
+    if (result.stale || !snapshot) {
+        if (isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
+            throw new Error(
+                `Friend roster baseline was stale for ${normalizedUserId}.`
+            );
+        }
+
+        return {
+            userId: normalizedUserId,
+            count: result.count ?? 0,
+            detail,
+            stale: true
+        };
+    }
 
     if (!isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
         return {
             userId: normalizedUserId,
-            count: orderedFriendIds.length,
+            count: result.count ?? 0,
             detail,
             stale: true
         };
@@ -937,23 +601,23 @@ async function runFriendBootstrap({
 
     useFriendRosterStore.getState().setRosterSnapshot({
         currentUserId: normalizedUserId,
-        friendsById,
-        orderedFriendIds,
-        onlineIds,
-        activeIds,
-        offlineIds,
+        friendsById: snapshot.friendsById || {},
+        orderedFriendIds: snapshot.orderedFriendIds || [],
+        onlineIds: snapshot.onlineIds || [],
+        activeIds: snapshot.activeIds || [],
+        offlineIds: snapshot.offlineIds || [],
         detail
     });
     recordFriendRosterFacts({
         endpoint,
-        friendsById
+        friendsById: snapshot.friendsById || {}
     });
     useSessionStore.getState().setFriendsLoaded(true);
     syncStartupServicesTask([detail]);
 
     return {
         userId: normalizedUserId,
-        count: orderedFriendIds.length,
+        count: result.count ?? 0,
         detail,
         stale: false
     };

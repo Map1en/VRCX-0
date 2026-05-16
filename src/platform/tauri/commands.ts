@@ -51,6 +51,8 @@ const commandArgs: Record<string, string[]> = {
     app__backend_diagnostics_get: [],
     app__backend_moderation_refresh: ['input'],
     app__backend_moderation_update: ['input'],
+    app__backend_favorites_baseline_get: ['input'],
+    app__backend_friend_roster_baseline_get: ['input'],
     app__backend_runtime_snapshot_get: [],
     app__backend_sync_snapshot_get: [],
     app__set_user_agent: [],

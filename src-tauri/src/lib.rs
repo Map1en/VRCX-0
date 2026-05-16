@@ -257,6 +257,8 @@ pub fn run() {
             api::app::backend_auth::app__backend_auth_scope_set,
             api::app::backend_moderation::app__backend_moderation_refresh,
             api::app::backend_moderation::app__backend_moderation_update,
+            api::app::backend_social::service::app__backend_favorites_baseline_get,
+            api::app::backend_social::service::app__backend_friend_roster_baseline_get,
             api::app::window::app__set_user_agent,
             api::app::shell::app__open_link,
             api::app::shell::app__open_discord_profile,
