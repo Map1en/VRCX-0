@@ -4,7 +4,7 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache.js';
 
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 const FAVORITES_PAGE_SIZE = 300;
 const FAVORITE_GROUPS_PAGE_SIZE = 50;
@@ -58,7 +58,7 @@ async function executeGet(
     params: RequestParams = {},
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatFavoriteExecute', path, {
         endpoint,
         method: 'GET',
         params,
@@ -71,7 +71,7 @@ async function executePost(
     payload: RequestPayload = {},
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatFavoriteExecute', path, {
         endpoint,
         method: 'POST',
         body: payload,
@@ -84,7 +84,7 @@ async function executePut(
     payload: RequestPayload = {},
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatFavoriteExecute', path, {
         endpoint,
         method: 'PUT',
         body: payload,
@@ -96,7 +96,7 @@ async function executeDelete(
     path: string,
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatFavoriteExecute', path, {
         endpoint,
         method: 'DELETE',
         jsonBody: false,

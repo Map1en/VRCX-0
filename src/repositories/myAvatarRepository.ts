@@ -5,9 +5,8 @@ import {
 } from '@/lib/entityQueryCache.js';
 
 import avatarLocalRepository from './avatarLocalRepository.js';
-import sqliteRepository from './sqliteRepository.js';
 import userSessionRepository from './userSessionRepository.js';
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 5000;
@@ -52,7 +51,7 @@ async function execute(
     path: string,
     { endpoint = '', method = 'GET', params = null } = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatAvatarExecute', path, {
         endpoint,
         method,
         params,
@@ -184,35 +183,17 @@ async function updateAvatarTags({
             ])
     );
 
-    await sqliteRepository.transaction(async () => {
-        for (const [tag] of previousMap) {
-            if (!nextMap.has(tag)) {
-                await avatarLocalRepository.removeAvatarTag(
-                    normalizedAvatarId,
-                    tag
-                );
-            }
-        }
+    const nextEntries = Array.from(nextMap.values());
+    const previousEntries = Array.from(previousMap.values());
+    if (JSON.stringify(previousEntries) !== JSON.stringify(nextEntries)) {
+        await avatarLocalRepository.patchAvatarTags(
+            normalizedAvatarId,
+            previousEntries,
+            nextEntries
+        );
+    }
 
-        for (const [tag, entry] of nextMap) {
-            const previous = previousMap.get(tag);
-            if (!previous) {
-                await avatarLocalRepository.addAvatarTag(
-                    normalizedAvatarId,
-                    tag,
-                    entry.color
-                );
-            } else if ((previous.color || null) !== (entry.color || null)) {
-                await avatarLocalRepository.updateAvatarTagColor(
-                    normalizedAvatarId,
-                    tag,
-                    entry.color
-                );
-            }
-        }
-    });
-
-    return Array.from(nextMap.values());
+    return nextEntries;
 }
 
 async function saveAvatar({

@@ -1,3 +1,5 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository from './sqliteRepository.js';
 import type { SQLiteParams, SQLiteValue } from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
@@ -96,6 +98,22 @@ function normalizeFriendLogHistoryRow(
     return normalizedRow;
 }
 
+function normalizeFriendLogHistoryEntryForBackend(
+    entry: FriendLogHistoryEntry | null | undefined
+) {
+    return {
+        rowId: valueAsInt(entry?.rowId),
+        createdAt: entry?.created_at ?? '',
+        type: entry?.type ?? '',
+        userId: entry?.userId ?? '',
+        displayName: entry?.displayName ?? '',
+        previousDisplayName: entry?.previousDisplayName ?? '',
+        trustLevel: entry?.trustLevel ?? '',
+        previousTrustLevel: entry?.previousTrustLevel ?? '',
+        friendNumber: valueAsInt(entry?.friendNumber)
+    };
+}
+
 async function getFriendLogHistory(
     userId: unknown,
     options: FriendLogHistoryOptions = {}
@@ -156,55 +174,41 @@ async function addFriendLogHistory(
     userId: unknown,
     entry: FriendLogHistoryEntry | null | undefined
 ) {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES (@created_at, @type, @user_id, @display_name, @previous_display_name, @trust_level, @previous_trust_level, @friend_number)`,
-        {
-            '@created_at': entry?.created_at ?? '',
-            '@type': entry?.type ?? '',
-            '@user_id': entry?.userId ?? '',
-            '@display_name': entry?.displayName ?? '',
-            '@previous_display_name': entry?.previousDisplayName ?? '',
-            '@trust_level': entry?.trustLevel ?? '',
-            '@previous_trust_level': entry?.previousTrustLevel ?? '',
-            '@friend_number': valueAsInt(entry?.friendNumber)
-        }
-    );
+    await backend.app.FriendLogHistoryAdd({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
+        entries: [normalizeFriendLogHistoryEntryForBackend(entry)]
+    });
 }
 
 async function addFriendLogHistoryArray(
     userId: unknown,
     entries: FriendLogHistoryEntry[] = []
 ) {
-    for (const entry of Array.isArray(entries) ? entries : []) {
-        await addFriendLogHistory(userId, entry);
-    }
+    await backend.app.FriendLogHistoryAdd({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
+        entries: (Array.isArray(entries) ? entries : []).map(
+            normalizeFriendLogHistoryEntryForBackend
+        )
+    });
 }
 
 async function deleteFriendLogHistory(
     userId: unknown,
     entry: FriendLogHistoryEntry | null | undefined
 ) {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    const rowId = valueAsInt(entry?.rowId);
-
-    if (rowId > 0) {
-        return sqliteRepository.executeNonQuery(
-            `DELETE FROM ${userPrefix}_friend_log_history WHERE id = @row_id`,
-            {
-                '@row_id': rowId
-            }
-        );
-    }
-
-    return sqliteRepository.executeNonQuery(
-        `DELETE FROM ${userPrefix}_friend_log_history WHERE created_at = @created_at AND type = @type AND user_id = @user_id`,
-        {
-            '@created_at': entry?.created_at ?? '',
-            '@type': entry?.type ?? '',
-            '@user_id': entry?.userId ?? ''
-        }
-    );
+    return backend.app.FriendLogHistoryDelete({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
+        entry: normalizeFriendLogHistoryEntryForBackend(entry)
+    });
 }
 
 const friendLogHistoryRepository = {

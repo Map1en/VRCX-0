@@ -1,6 +1,6 @@
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint.js';
 
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
 export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
@@ -9,7 +9,7 @@ async function execute(
     path,
     { endpoint = '', method = 'GET', headers = {}, params = null } = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatAuthExecute', path, {
         endpoint,
         method,
         headers,

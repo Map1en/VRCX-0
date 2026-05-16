@@ -1,8 +1,8 @@
+import { backend } from '@/platform/index.js';
+
 import {
-    buildInitUserTableStatements,
     normalizeUserTablePrefix as baseNormalizeUserTablePrefix
 } from './localDatabaseSchema.js';
-import sqliteRepository from './sqliteRepository.js';
 
 export interface UserTableContext {
     userId: string;
@@ -41,13 +41,13 @@ async function ensureUserTables(userId: unknown): Promise<UserTableContext> {
     }
 
     const promise = (async () => {
-        for (const sql of buildInitUserTableStatements(userPrefix)) {
-            await sqliteRepository.executeNonQuery(sql);
-        }
+        const context = (await backend.app.UserTablesEnsure({
+            userId: normalizeUserId(userId)
+        })) as UserTableContext;
 
         return {
-            userId: normalizeUserId(userId),
-            userPrefix
+            userId: context.userId || normalizeUserId(userId),
+            userPrefix: context.userPrefix || userPrefix
         };
     })().catch((error) => {
         if (userTableInitPromises.get(userPrefix) === promise) {
@@ -72,13 +72,13 @@ async function initUserTablesUncached(
     userId: unknown
 ): Promise<UserTableContext> {
     const userPrefix = normalizeUserTablePrefix(userId);
-    for (const sql of buildInitUserTableStatements(userPrefix)) {
-        await sqliteRepository.executeNonQuery(sql);
-    }
+    const context = (await backend.app.UserTablesEnsure({
+        userId: normalizeUserId(userId)
+    })) as UserTableContext;
 
     return {
-        userId: normalizeUserId(userId),
-        userPrefix
+        userId: context.userId || normalizeUserId(userId),
+        userPrefix: context.userPrefix || userPrefix
     };
 }
 
@@ -86,20 +86,10 @@ async function purgeAvatarFeedData(
     userId: unknown,
     cutoffDate: string | null = null
 ): Promise<void> {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    if (cutoffDate) {
-        await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${userPrefix}_feed_avatar WHERE created_at < @cutoff`,
-            {
-                '@cutoff': cutoffDate
-            }
-        );
-        return;
-    }
-
-    await sqliteRepository.executeNonQuery(
-        `DELETE FROM ${userPrefix}_feed_avatar`
-    );
+    await backend.app.FeedAvatarPurge({
+        userId: normalizeUserId(userId),
+        cutoffDate: cutoffDate || null
+    });
 }
 
 const userSessionRepository: UserSessionRepository = {

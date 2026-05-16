@@ -1,5 +1,7 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRow, SQLiteValue } from './sqliteRepository.js';
+import type { SQLiteRow } from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
 
 type ObjectRow = Record<string, unknown>;
@@ -25,10 +27,6 @@ interface AvatarTag {
 
 function asObjectRow(row: SQLiteRow | null | undefined): ObjectRow {
     return row && !Array.isArray(row) ? row : {};
-}
-
-function asSQLiteValue(value: unknown): SQLiteValue {
-    return value as SQLiteValue;
 }
 
 function normalizeId(value: unknown) {
@@ -80,23 +78,21 @@ function normalizeAvatarCacheRow(row: SQLiteRow | null | undefined) {
 }
 
 async function addAvatarToCache(entry: AvatarCacheInput) {
-    return sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO cache_avatar (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)`,
-        {
-            '@id': asSQLiteValue(entry.id),
-            '@added_at': new Date().toJSON(),
-            '@author_id': asSQLiteValue(entry.authorId),
-            '@author_name': asSQLiteValue(entry.authorName),
-            '@created_at': asSQLiteValue(entry.created_at),
-            '@description': asSQLiteValue(entry.description),
-            '@image_url': asSQLiteValue(entry.imageUrl),
-            '@name': asSQLiteValue(entry.name),
-            '@release_status': asSQLiteValue(entry.releaseStatus),
-            '@thumbnail_image_url': asSQLiteValue(entry.thumbnailImageUrl),
-            '@updated_at': asSQLiteValue(entry.updated_at),
-            '@version': asSQLiteValue(entry.version)
+    return backend.app.AvatarCacheUpsert({
+        entry: {
+            id: entry.id,
+            authorId: entry.authorId,
+            authorName: entry.authorName,
+            createdAt: entry.created_at,
+            description: entry.description,
+            imageUrl: entry.imageUrl,
+            name: entry.name,
+            releaseStatus: entry.releaseStatus,
+            thumbnailImageUrl: entry.thumbnailImageUrl,
+            updatedAt: entry.updated_at,
+            version: entry.version
         }
-    );
+    });
 }
 
 async function getCachedAvatarById(id: unknown) {
@@ -128,12 +124,7 @@ async function removeAvatarFromCache(avatarId: unknown) {
     if (!normalizedAvatarId) {
         return;
     }
-    await sqliteRepository.executeNonQuery(
-        'DELETE FROM cache_avatar WHERE id = @avatar_id',
-        {
-            '@avatar_id': normalizedAvatarId
-        }
-    );
+    await backend.app.AvatarCacheRemove({ avatarId: normalizedAvatarId });
 }
 
 async function addAvatarToHistory(userId: unknown, avatarId: unknown) {
@@ -142,15 +133,10 @@ async function addAvatarToHistory(userId: unknown, avatarId: unknown) {
         return;
     }
 
-    await sqliteRepository.executeNonQuery(
-        `INSERT INTO ${avatarHistoryTableName(userId)} (avatar_id, created_at, time)
-         VALUES (@avatar_id, @created_at, 0)
-         ON CONFLICT(avatar_id) DO UPDATE SET created_at = @created_at`,
-        {
-            '@avatar_id': normalizedAvatarId,
-            '@created_at': new Date().toJSON()
-        }
-    );
+    await backend.app.AvatarHistoryAdd({
+        userId,
+        avatarId: normalizedAvatarId
+    });
 }
 
 async function addAvatarTimeSpent(
@@ -164,16 +150,11 @@ async function addAvatarTimeSpent(
         return;
     }
 
-    await sqliteRepository.executeNonQuery(
-        `INSERT INTO ${avatarHistoryTableName(userId)} (avatar_id, created_at, time)
-         VALUES (@avatarId, @createdAt, @timeSpent)
-         ON CONFLICT(avatar_id) DO UPDATE SET time = time + @timeSpent`,
-        {
-            '@avatarId': normalizedAvatarId,
-            '@createdAt': new Date().toJSON(),
-            '@timeSpent': normalizedTimeSpent
-        }
-    );
+    await backend.app.AvatarTimeSpentAdd({
+        userId,
+        avatarId: normalizedAvatarId,
+        timeSpent: normalizedTimeSpent
+    });
 }
 
 async function getAvatarTimeSpent(userId: unknown, avatarId: unknown) {
@@ -227,10 +208,7 @@ async function getAvatarHistory(userId: unknown, limit: unknown = 100) {
 }
 
 async function clearAvatarHistory(userId: unknown) {
-    await sqliteRepository.executeNonQuery(
-        `DELETE FROM ${avatarHistoryTableName(userId)}`
-    );
-    await sqliteRepository.executeNonQuery('DELETE FROM cache_avatar');
+    await backend.app.AvatarHistoryClear({ userId });
 }
 
 async function getAvatarTags(avatarId: unknown) {
@@ -270,14 +248,11 @@ async function getAllDistinctTags() {
 }
 
 async function addAvatarTag(avatarId: unknown, tag: unknown, color = null) {
-    await sqliteRepository.executeNonQuery(
-        'INSERT OR IGNORE INTO avatar_tags (avatar_id, tag, color) VALUES (@avatar_id, @tag, @color)',
-        {
-            '@avatar_id': normalizeId(avatarId),
-            '@tag': asSQLiteValue(tag),
-            '@color': asSQLiteValue(color)
-        }
-    );
+    await backend.app.AvatarTagAdd({
+        avatarId: normalizeId(avatarId),
+        tag,
+        color
+    });
 }
 
 async function updateAvatarTagColor(
@@ -285,33 +260,47 @@ async function updateAvatarTagColor(
     tag: unknown,
     color: unknown
 ) {
-    await sqliteRepository.executeNonQuery(
-        'UPDATE avatar_tags SET color = @color WHERE avatar_id = @avatar_id AND tag = @tag',
-        {
-            '@avatar_id': normalizeId(avatarId),
-            '@tag': asSQLiteValue(tag),
-            '@color': asSQLiteValue(color)
-        }
-    );
+    await backend.app.AvatarTagUpdateColor({
+        avatarId: normalizeId(avatarId),
+        tag,
+        color
+    });
 }
 
 async function removeAvatarTag(avatarId: unknown, tag: unknown) {
-    await sqliteRepository.executeNonQuery(
-        'DELETE FROM avatar_tags WHERE avatar_id = @avatar_id AND tag = @tag',
-        {
-            '@avatar_id': normalizeId(avatarId),
-            '@tag': asSQLiteValue(tag)
-        }
-    );
+    await backend.app.AvatarTagRemove({
+        avatarId: normalizeId(avatarId),
+        tag
+    });
 }
 
 async function removeAllAvatarTags(avatarId: unknown) {
-    await sqliteRepository.executeNonQuery(
-        'DELETE FROM avatar_tags WHERE avatar_id = @avatar_id',
-        {
-            '@avatar_id': normalizeId(avatarId)
+    await backend.app.AvatarTagsRemoveAll({
+        avatarId: normalizeId(avatarId)
+    });
+}
+
+async function replaceAvatarTags(avatarId: unknown, entries: AvatarTag[] = []) {
+    await backend.app.AvatarTagsReplace({
+        avatarId: normalizeId(avatarId),
+        entries: Array.isArray(entries) ? entries : []
+    });
+}
+
+async function patchAvatarTags(
+    avatarId: unknown,
+    previousEntries: AvatarTag[] = [],
+    nextEntries: AvatarTag[] = []
+) {
+    await backend.app.AvatarTagsPatch({
+        avatarId: normalizeId(avatarId),
+        patch: {
+            previousEntries: Array.isArray(previousEntries)
+                ? previousEntries
+                : [],
+            nextEntries: Array.isArray(nextEntries) ? nextEntries : []
         }
-    );
+    });
 }
 
 const avatarLocalRepository = Object.freeze({
@@ -331,6 +320,8 @@ const avatarLocalRepository = Object.freeze({
     removeAllAvatarTags,
     removeAvatarFromCache,
     removeAvatarTag,
+    patchAvatarTags,
+    replaceAvatarTags,
     updateAvatarTagColor
 });
 
@@ -351,6 +342,8 @@ export {
     removeAllAvatarTags,
     removeAvatarFromCache,
     removeAvatarTag,
+    patchAvatarTags,
+    replaceAvatarTags,
     updateAvatarTagColor
 };
 export default avatarLocalRepository;

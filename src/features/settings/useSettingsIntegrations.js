@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { languageCodes } from '@/localization/index.js';
-import { configRepository, webRepository } from '@/repositories/index.js';
+import {
+    configRepository,
+    externalApiRepository
+} from '@/repositories/index.js';
 import {
     setDiscordBoolPreference,
     setTranslationApiConfigPreference,
@@ -132,9 +135,9 @@ export function useSettingsIntegrations({ commit, t }) {
         if (!apiKey) {
             return;
         }
-        const response = await webRepository.execute({
-            url: `https://www.googleapis.com/youtube/v3/videos?id=dQw4w9WgXcQ&part=snippet,contentDetails&key=${encodeURIComponent(apiKey)}`,
-            method: 'GET'
+        const response = await externalApiRepository.fetchYoutubeVideoMetadata({
+            videoId: 'dQw4w9WgXcQ',
+            apiKey
         });
         const payload = parseWebJson(response);
         if (
@@ -244,11 +247,12 @@ export function useSettingsIntegrations({ commit, t }) {
 
         setIntegrationStatus((current) => ({ ...current, models: 'running' }));
         try {
-            const response = await webRepository.execute({
-                url: buildOpenAiModelsEndpoint(endpoint),
-                method: 'GET',
-                headers
-            });
+            const response =
+                await externalApiRepository.executeTranslationRequest({
+                    url: buildOpenAiModelsEndpoint(endpoint),
+                    method: 'GET',
+                    headers
+                });
             if (response.status !== 200) {
                 throw new Error(`Failed to fetch models: ${response.status}`);
             }
@@ -304,16 +308,17 @@ export function useSettingsIntegrations({ commit, t }) {
                     toast.warning(t('dialog.translation_api.description'));
                     return;
                 }
-                const response = await webRepository.execute({
-                    url: `https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(apiKey)}`,
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        q: 'Hello world',
-                        target: translationDraft.bioLanguage || 'en',
-                        format: 'text'
-                    })
-                });
+                const response =
+                    await externalApiRepository.executeTranslationRequest({
+                        url: `https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(apiKey)}`,
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            q: 'Hello world',
+                            target: translationDraft.bioLanguage || 'en',
+                            format: 'text'
+                        })
+                    });
                 if (response.status !== 200) {
                     throw new Error(
                         t('dialog.translation_api.msg_test_failed')
@@ -330,23 +335,24 @@ export function useSettingsIntegrations({ commit, t }) {
                 if (apiKey) {
                     headers.Authorization = `Bearer ${apiKey}`;
                 }
-                const response = await webRepository.execute({
-                    url: endpoint,
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({
-                        model,
-                        messages: [
-                            {
-                                role: 'system',
-                                content:
-                                    translationDraft.translationAPIPrompt ||
-                                    `Translate the user message into ${translationDraft.bioLanguage || 'en'}. Only return the translated text.`
-                            },
-                            { role: 'user', content: 'Hello world' }
-                        ]
-                    })
-                });
+                const response =
+                    await externalApiRepository.executeTranslationRequest({
+                        url: endpoint,
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            model,
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content:
+                                        translationDraft.translationAPIPrompt ||
+                                        `Translate the user message into ${translationDraft.bioLanguage || 'en'}. Only return the translated text.`
+                                },
+                                { role: 'user', content: 'Hello world' }
+                            ]
+                        })
+                    });
                 if (response.status !== 200) {
                     throw new Error(
                         t('dialog.translation_api.msg_test_failed')

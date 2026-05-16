@@ -1,4 +1,6 @@
-import { buildInClause, buildValuesList } from './localDatabaseSql.js';
+import { backend } from '@/platform/index.js';
+
+import { buildInClause } from './localDatabaseSql.js';
 import sqliteService from './sqliteRepository.js';
 
 type GameLogDatabaseRow = {
@@ -37,8 +39,11 @@ function normalizeGameLogIdentifier(value) {
         : String(value ?? '').trim();
 }
 
-function bulkValue(value) {
-    return typeof value === 'string' || typeof value === 'number' ? value : '';
+function addGameLogEntries(kind, entries) {
+    return backend.app.GameLogEntriesAdd({
+        kind,
+        entries: Array.isArray(entries) ? entries : [entries]
+    });
 }
 
 const GAME_LOG_WORLD_NAME_CACHE_LIMIT = 1000;
@@ -196,137 +201,43 @@ const gameLog = {
     },
 
     async addGamelogLocationToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_location (created_at, location, world_id, world_name, time, group_name) VALUES (@created_at, @location, @world_id, @world_name, @time, @group_name)`,
-            {
-                '@created_at': entry.created_at,
-                '@location': entry.location,
-                '@world_id': entry.worldId,
-                '@world_name': entry.worldName,
-                '@time': entry.time,
-                '@group_name': entry.groupName
-            }
-        );
+        await addGameLogEntries('Location', [entry]);
         rememberGameLogWorldName(entry.worldId, entry.worldName);
     },
 
     async updateGamelogLocationTimeToDatabase(entry) {
-        return sqliteService.executeNonQuery(
-            `UPDATE gamelog_location SET time = @time WHERE created_at = @created_at`,
-            {
-                '@created_at': entry.created_at,
-                '@time': entry.time
-            }
-        );
+        return addGameLogEntries('LocationTime', [entry]);
     },
 
     async addGamelogJoinLeaveToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time) VALUES (@created_at, @type, @display_name, @location, @user_id, @time)`,
-            {
-                '@created_at': entry.created_at,
-                '@type': entry.type,
-                '@display_name': entry.displayName,
-                '@location': entry.location,
-                '@user_id': entry.userId,
-                '@time': entry.time
-            }
-        );
+        await addGameLogEntries('JoinLeave', [entry]);
     },
 
     async addGamelogJoinLeaveBulk(inputData) {
         if (inputData.length === 0) {
             return;
         }
-        const { valuesSql, args } = buildValuesList(
-            inputData,
-            [
-                {
-                    column: 'created_at',
-                    value: (line) => bulkValue(line.created_at)
-                },
-                { column: 'type', value: (line) => bulkValue(line.type) },
-                {
-                    column: 'display_name',
-                    value: (line) => bulkValue(line.displayName)
-                },
-                {
-                    column: 'location',
-                    value: (line) => bulkValue(line.location)
-                },
-                { column: 'user_id', value: (line) => bulkValue(line.userId) },
-                { column: 'time', value: (line) => bulkValue(line.time) }
-            ],
-            'gamelog_join_leave'
-        );
-        return sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time) VALUES ${valuesSql}`,
-            args
-        );
+        return addGameLogEntries('JoinLeave', inputData);
     },
 
     async addGamelogPortalSpawnToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_portal_spawn (created_at, display_name, location, user_id, instance_id, world_name) VALUES (@created_at, @display_name, @location, @user_id, @instance_id, @world_name)`,
-            {
-                '@created_at': entry.created_at,
-                '@display_name': entry.displayName,
-                '@location': entry.location,
-                '@user_id': entry.userId,
-                '@instance_id': entry.instanceId,
-                '@world_name': entry.worldName
-            }
-        );
+        await addGameLogEntries('PortalSpawn', [entry]);
     },
 
     async addGamelogVideoPlayToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_video_play (created_at, video_url, video_name, video_id, location, display_name, user_id) VALUES (@created_at, @video_url, @video_name, @video_id, @location, @display_name, @user_id)`,
-            {
-                '@created_at': entry.created_at,
-                '@video_url': entry.videoUrl,
-                '@video_name': entry.videoName,
-                '@video_id': entry.videoId,
-                '@location': entry.location,
-                '@display_name': entry.displayName,
-                '@user_id': entry.userId
-            }
-        );
+        await addGameLogEntries('VideoPlay', [entry]);
     },
 
     async addGamelogResourceLoadToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_resource_load (created_at, resource_url, resource_type, location) VALUES (@created_at, @resource_url, @resource_type, @location)`,
-            {
-                '@created_at': entry.created_at,
-                '@resource_url': entry.resourceUrl,
-                '@resource_type': entry.type,
-                '@location': entry.location
-            }
-        );
+        await addGameLogEntries('ResourceLoad', [entry]);
     },
 
     async addGamelogEventToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_event (created_at, data) VALUES (@created_at, @data)`,
-            {
-                '@created_at': entry.created_at,
-                '@data': entry.data
-            }
-        );
+        await addGameLogEntries('Event', [entry]);
     },
 
     async addGamelogExternalToDatabase(entry) {
-        await sqliteService.executeNonQuery(
-            `INSERT OR IGNORE INTO gamelog_external (created_at, message, display_name, user_id, location) VALUES (@created_at, @message, @display_name, @user_id, @location)`,
-            {
-                '@created_at': entry.created_at,
-                '@message': entry.message,
-                '@display_name': entry.displayName,
-                '@user_id': entry.userId,
-                '@location': entry.location
-            }
-        );
+        await addGameLogEntries('External', [entry]);
     },
 
     async getLastVisit(worldId, currentWorldMatch) {
@@ -1827,12 +1738,9 @@ const gameLog = {
     },
 
     deleteGameLogInstanceByInstanceId(input) {
-        return sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_location WHERE location = @location`,
-            {
-                '@location': input.location
-            }
-        );
+        return backend.app.GameLogInstanceDeleteByLocation({
+            location: input.location
+        });
     },
 
     deleteGameLogInstance(input) {
@@ -1844,19 +1752,10 @@ const gameLog = {
         if (!eventIds.length) {
             return Promise.resolve();
         }
-        const eventArgs = {};
-        const eventPlaceholders = eventIds.map((eventId, index) => {
-            const key = `@eventId${index}`;
-            eventArgs[key] = eventId;
-            return key;
+        return backend.app.GameLogInstanceDelete({
+            location: input.location,
+            eventIds
         });
-        return sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_join_leave WHERE (location = @location) AND (id IN (${eventPlaceholders.join(', ')}))`,
-            {
-                '@location': input.location,
-                ...eventArgs
-            }
-        );
     },
 
     async deleteGameLogEntry(input) {
@@ -1878,87 +1777,31 @@ const gameLog = {
     },
 
     async deleteGameLogVideoPlay(input) {
-        const rowId = Number.parseInt(input.rowId ?? input.id, 10);
-        if (Number.isFinite(rowId) && rowId > 0) {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM gamelog_video_play WHERE id = @id`,
-                {
-                    '@id': rowId
-                }
-            );
-            return;
-        }
-
-        await sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_video_play WHERE created_at = @created_at AND video_url = @video_url`,
-            {
-                '@created_at': input.created_at,
-                '@video_url': input.videoUrl
-            }
-        );
+        await backend.app.GameLogEntryDelete({
+            kind: 'VideoPlay',
+            entry: input
+        });
     },
 
     async deleteGameLogEvent(input) {
-        const rowId = Number.parseInt(input.rowId ?? input.id, 10);
-        if (Number.isFinite(rowId) && rowId > 0) {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM gamelog_event WHERE id = @id`,
-                {
-                    '@id': rowId
-                }
-            );
-            return;
-        }
-
-        await sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_event WHERE created_at = @created_at AND data = @data`,
-            {
-                '@created_at': input.created_at,
-                '@data': input.data
-            }
-        );
+        await backend.app.GameLogEntryDelete({
+            kind: 'Event',
+            entry: input
+        });
     },
 
     async deleteGameLogExternal(input) {
-        const rowId = Number.parseInt(input.rowId ?? input.id, 10);
-        if (Number.isFinite(rowId) && rowId > 0) {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM gamelog_external WHERE id = @id`,
-                {
-                    '@id': rowId
-                }
-            );
-            return;
-        }
-
-        await sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_external WHERE created_at = @created_at AND message = @message`,
-            {
-                '@created_at': input.created_at,
-                '@message': input.message
-            }
-        );
+        await backend.app.GameLogEntryDelete({
+            kind: 'External',
+            entry: input
+        });
     },
 
     async deleteGameLogResourceLoad(input) {
-        const rowId = Number.parseInt(input.rowId ?? input.id, 10);
-        if (Number.isFinite(rowId) && rowId > 0) {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM gamelog_resource_load WHERE id = @id`,
-                {
-                    '@id': rowId
-                }
-            );
-            return;
-        }
-
-        await sqliteService.executeNonQuery(
-            `DELETE FROM gamelog_resource_load WHERE created_at = @created_at AND resource_url = @resource_url`,
-            {
-                '@created_at': input.created_at,
-                '@resource_url': input.resourceUrl
-            }
-        );
+        await backend.app.GameLogEntryDelete({
+            kind: input.type || 'ResourceLoad',
+            entry: input
+        });
     },
 
     // ── Sessions view queries (read-only, no existing behavior changed) ──

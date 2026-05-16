@@ -14,9 +14,9 @@ vi.mock('./configRepository.js', () => ({
     }
 }));
 
-vi.mock('./webRepository.js', () => ({
+vi.mock('./externalApiRepository.js', () => ({
     default: {
-        execute: vi.fn()
+        searchAvatarProvider: vi.fn()
     }
 }));
 
@@ -31,7 +31,7 @@ import { publishPreferenceChanged } from '@/lib/preferenceEvents.js';
 import avatarProfileRepository from './avatarProfileRepository.js';
 import avatarSearchProviderRepository from './avatarSearchProviderRepository.js';
 import configRepository from './configRepository.js';
-import webRepository from './webRepository.js';
+import externalApiRepository from './externalApiRepository.js';
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
 
@@ -45,11 +45,13 @@ describe('AvatarSearchProviderRepository', () => {
         vi.mocked(configRepository.setString).mockResolvedValue(undefined);
         vi.mocked(configRepository.setBool).mockResolvedValue(undefined);
         vi.mocked(configRepository.remove).mockResolvedValue(undefined);
-        vi.mocked(webRepository.execute).mockResolvedValue({
-            status: 200,
-            data: '[]',
-            raw: []
-        });
+        vi.mocked(externalApiRepository.searchAvatarProvider).mockResolvedValue(
+            {
+                status: 200,
+                data: '[]',
+                raw: []
+            }
+        );
         vi.mocked(avatarProfileRepository.normalize).mockImplementation(
             (avatar) => ({
                 ...avatar,
@@ -106,35 +108,38 @@ describe('AvatarSearchProviderRepository', () => {
                 return Promise.resolve(fallback);
             }
         );
-        vi.mocked(webRepository.execute).mockResolvedValue({
-            status: 200,
-            data: JSON.stringify([
-                {
-                    Id: 'avtr_alpha',
-                    Name: 'Alpha',
-                    AuthorName: 'Creator A',
-                    image_url: 'https://cdn.example.test/alpha.png'
-                },
-                {
-                    _id: 'avtr_alpha',
-                    Name: 'Duplicate Alpha'
-                },
-                {
-                    avatarId: 'avtr_beta',
-                    author_id: 'usr_beta',
-                    CreatedAt: '2024-01-01T00:00:00Z',
-                    updatedAt: '2024-01-02T00:00:00Z'
-                }
-            ]),
-            raw: { provider: true }
-        });
+        vi.mocked(externalApiRepository.searchAvatarProvider).mockResolvedValue(
+            {
+                status: 200,
+                data: JSON.stringify([
+                    {
+                        Id: 'avtr_alpha',
+                        Name: 'Alpha',
+                        AuthorName: 'Creator A',
+                        image_url: 'https://cdn.example.test/alpha.png'
+                    },
+                    {
+                        _id: 'avtr_alpha',
+                        Name: 'Duplicate Alpha'
+                    },
+                    {
+                        avatarId: 'avtr_beta',
+                        author_id: 'usr_beta',
+                        CreatedAt: '2024-01-01T00:00:00Z',
+                        updatedAt: '2024-01-02T00:00:00Z'
+                    }
+                ]),
+                raw: { provider: true }
+            }
+        );
 
         const result = await avatarSearchProviderRepository.search({
             provider: ' https://avatars.example.test/search ',
             query: ' alpha '
         });
 
-        const request = webRepository.execute.mock.calls[0][0];
+        const request =
+            externalApiRepository.searchAvatarProvider.mock.calls[0][0];
         const url = new URL(request.url);
         expect(`${url.origin}${url.pathname}`).toBe(
             'https://avatars.example.test/search'
@@ -142,11 +147,7 @@ describe('AvatarSearchProviderRepository', () => {
         expect(url.searchParams.get('search')).toBe('alpha');
         expect(url.searchParams.get('n')).toBe('5000');
         expect(request).toMatchObject({
-            method: 'GET',
-            headers: {
-                Referer: 'https://vrcx.app',
-                'VRCX-ID': 'client-id'
-            }
+            vrcxId: 'client-id'
         });
         expect(avatarProfileRepository.normalize).toHaveBeenNthCalledWith(
             1,
@@ -184,7 +185,9 @@ describe('AvatarSearchProviderRepository', () => {
             })
         ).rejects.toThrow('at least 3 characters');
 
-        expect(webRepository.execute).not.toHaveBeenCalled();
+        expect(
+            externalApiRepository.searchAvatarProvider
+        ).not.toHaveBeenCalled();
     });
 
     it('publishes normalized config after saving provider preferences', async () => {

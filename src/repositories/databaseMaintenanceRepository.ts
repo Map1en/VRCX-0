@@ -1,11 +1,7 @@
-import {
-    GLOBAL_TABLE_STATEMENTS,
-    V17_GLOBAL_INDEX_STATEMENTS
-} from './localDatabaseSchema.js';
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository, { type SQLiteValue } from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
-
-const DATABASE_VERSION_WITH_V17_INDEXES = 17;
 
 type MaintenanceTableSizes = {
     gps: number;
@@ -24,50 +20,25 @@ type MaintenanceTableSizes = {
     resourceLoad?: number;
 };
 
-type GameLogJoinLeaveEntry = {
-    rowId: SQLiteValue;
-    created_at: SQLiteValue;
-    type: SQLiteValue;
-    displayName: SQLiteValue;
-    location: SQLiteValue;
-    userId: SQLiteValue;
-    time: SQLiteValue;
-};
-
 type BrokenGameLogDisplayNameEntry = {
     id: SQLiteValue;
     displayName: unknown;
 };
 
+function runMaintenanceTask(task: string): Promise<unknown> {
+    return backend.app.DatabaseMaintenanceRun({ task });
+}
+
 async function initGlobalTables(): Promise<void> {
-    for (const sql of GLOBAL_TABLE_STATEMENTS) {
-        await sqliteRepository.executeNonQuery(sql);
-    }
-    if (
-        (await getStoredDatabaseVersion()) >= DATABASE_VERSION_WITH_V17_INDEXES
-    ) {
-        await addV17GlobalPerformanceIndexes();
-    }
+    await runMaintenanceTask('initGlobalTables');
 }
 
 async function vacuum(): Promise<void> {
-    await sqliteRepository.executeNonQuery('VACUUM');
+    await runMaintenanceTask('vacuum');
 }
 
 async function optimize(): Promise<void> {
-    await sqliteRepository.executeNonQuery('PRAGMA optimize');
-}
-
-async function getStoredDatabaseVersion(): Promise<number> {
-    let version = 0;
-    try {
-        await sqliteRepository.execute((row) => {
-            version = Number.parseInt(row[0] ?? 0, 10) || 0;
-        }, "SELECT value FROM configs WHERE key = 'config:vrcx_databaseversion' LIMIT 1");
-    } catch {
-        return 0;
-    }
-    return version;
+    await runMaintenanceTask('optimize');
 }
 
 async function countSql(sql: string): Promise<number> {
@@ -174,293 +145,40 @@ async function getTableSizes(
     };
 }
 
-async function selectTableNames(whereSql: string): Promise<string[]> {
-    const tables: string[] = [];
-    await sqliteRepository.execute((row) => {
-        const tableName = row[0];
-        if (
-            typeof tableName === 'string' &&
-            /^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)
-        ) {
-            tables.push(tableName);
-        }
-    }, `SELECT name FROM sqlite_schema WHERE type='table' AND (${whereSql})`);
-    return tables;
-}
-
-function safeIdentifier(identifier: unknown, label: string): string {
-    if (
-        typeof identifier !== 'string' ||
-        !/^[A-Za-z_][A-Za-z0-9_]*$/.test(identifier)
-    ) {
-        throw new Error(`${label} contains invalid characters.`);
-    }
-    return identifier;
-}
-
-async function selectTableColumnNames(tableName: string): Promise<Set<string>> {
-    const safeTableName = safeIdentifier(tableName, 'Table name');
-    const columns = new Set<string>();
-    await sqliteRepository.execute((row) => {
-        const columnName = Array.isArray(row) ? row[1] : row?.name;
-        if (typeof columnName === 'string') {
-            columns.add(columnName);
-        }
-    }, `PRAGMA table_info(${safeTableName})`);
-    return columns;
-}
-
-async function addColumnIfMissing(
-    tableName: string,
-    columnName: string,
-    columnDefinition: string
-): Promise<boolean> {
-    const safeTableName = safeIdentifier(tableName, 'Table name');
-    const safeColumnName = safeIdentifier(columnName, 'Column name');
-    const columns = await selectTableColumnNames(safeTableName);
-    if (columns.has(safeColumnName)) {
-        return false;
-    }
-
-    await sqliteRepository.executeNonQuery(
-        `ALTER TABLE ${safeTableName} ADD COLUMN ${safeColumnName} ${columnDefinition}`
-    );
-    return true;
-}
-
-async function dropColumnIfExists(
-    tableName: string,
-    columnName: string
-): Promise<boolean> {
-    const safeTableName = safeIdentifier(tableName, 'Table name');
-    const safeColumnName = safeIdentifier(columnName, 'Column name');
-    const columns = await selectTableColumnNames(safeTableName);
-    if (!columns.has(safeColumnName)) {
-        return false;
-    }
-
-    await sqliteRepository.executeNonQuery(
-        `ALTER TABLE ${safeTableName} DROP COLUMN ${safeColumnName}`
-    );
-    return true;
-}
-
-async function migrateGameLogGroupNameColumn(): Promise<void> {
-    let columns = await selectTableColumnNames('gamelog_location');
-    if (!columns.has('groupName')) {
-        return;
-    }
-
-    if (!columns.has('group_name')) {
-        await addColumnIfMissing(
-            'gamelog_location',
-            'group_name',
-            "TEXT DEFAULT ''"
-        );
-        columns = await selectTableColumnNames('gamelog_location');
-    }
-
-    if (columns.has('group_name')) {
-        await sqliteRepository.executeNonQuery(
-            `UPDATE gamelog_location
-             SET group_name = groupName
-             WHERE (group_name IS NULL OR group_name = '')
-             AND groupName IS NOT NULL
-             AND groupName != ''`
-        );
-    }
-
-    await dropColumnIfExists('gamelog_location', 'groupName');
-}
-
 async function updateTableForGroupNames(): Promise<void> {
-    const tables = await selectTableNames(
-        "name LIKE '%_feed_gps' OR name LIKE '%_feed_online_offline' OR name = 'gamelog_location'"
-    );
-    for (const tableName of tables) {
-        await addColumnIfMissing(tableName, 'group_name', "TEXT DEFAULT ''");
-    }
-
-    await migrateGameLogGroupNameColumn();
+    await runMaintenanceTask('updateTableForGroupNames');
 }
 
 async function addFriendLogFriendNumber(): Promise<void> {
-    const tables = await selectTableNames(
-        "name LIKE '%_friend_log_current' OR name LIKE '%_friend_log_history'"
-    );
-    for (const tableName of tables) {
-        await addColumnIfMissing(
-            tableName,
-            'friend_number',
-            'INTEGER DEFAULT 0'
-        );
-    }
+    await runMaintenanceTask('addFriendLogFriendNumber');
 }
 
 async function updateTableForAvatarHistory(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_avatar_history'");
-    for (const tableName of tables) {
-        await addColumnIfMissing(tableName, 'time', 'INTEGER DEFAULT 0');
-    }
-}
-
-async function addLegacyPerformanceIndexes(): Promise<void> {
-    await sqliteRepository.executeNonQuery(
-        'CREATE INDEX IF NOT EXISTS idx_gamelog_location_world_created ON gamelog_location (world_id, created_at)'
-    );
-    await sqliteRepository.executeNonQuery(
-        'CREATE INDEX IF NOT EXISTS idx_gamelog_jl_location ON gamelog_join_leave (location)'
-    );
-    await sqliteRepository.executeNonQuery(
-        'CREATE INDEX IF NOT EXISTS idx_gamelog_jl_user_created ON gamelog_join_leave (user_id, created_at)'
-    );
-    await sqliteRepository.executeNonQuery(
-        'CREATE INDEX IF NOT EXISTS idx_gamelog_jl_display_created ON gamelog_join_leave (display_name, created_at)'
-    );
-
-    const tables = await selectTableNames("name LIKE '%_friend_log_history'");
-    for (const tableName of tables) {
-        try {
-            await sqliteRepository.executeNonQuery(
-                `CREATE INDEX IF NOT EXISTS ${tableName}_user_id_idx ON ${tableName} (user_id)`
-            );
-        } catch (error) {
-            console.error(error);
-        }
-    }
-}
-
-async function addV17GlobalPerformanceIndexes(): Promise<void> {
-    for (const sql of V17_GLOBAL_INDEX_STATEMENTS) {
-        await sqliteRepository.executeNonQuery(sql);
-    }
-}
-
-async function addNotificationPerformanceIndexes(): Promise<void> {
-    const notificationTables = await selectTableNames(
-        "name GLOB '*_notifications'"
-    );
-    for (const tableName of notificationTables) {
-        const safeTableName = safeIdentifier(tableName, 'Table name');
-        const indexName = safeIdentifier(
-            `${safeTableName}_created_id_idx`,
-            'Index name'
-        );
-        await sqliteRepository.executeNonQuery(
-            `CREATE INDEX IF NOT EXISTS ${indexName} ON ${safeTableName} (created_at DESC, id DESC)`
-        );
-    }
-
-    const notificationV2Tables = await selectTableNames(
-        "name GLOB '*_notifications_v2'"
-    );
-    for (const tableName of notificationV2Tables) {
-        const safeTableName = safeIdentifier(tableName, 'Table name');
-        const createdIndexName = safeIdentifier(
-            `${safeTableName}_created_id_idx`,
-            'Index name'
-        );
-        const seenIndexName = safeIdentifier(
-            `${safeTableName}_seen_created_id_idx`,
-            'Index name'
-        );
-        const typeIndexName = safeIdentifier(
-            `${safeTableName}_type_created_id_idx`,
-            'Index name'
-        );
-        await sqliteRepository.executeNonQuery(
-            `CREATE INDEX IF NOT EXISTS ${createdIndexName} ON ${safeTableName} (created_at DESC, id DESC)`
-        );
-        await sqliteRepository.executeNonQuery(
-            `CREATE INDEX IF NOT EXISTS ${seenIndexName} ON ${safeTableName} (seen, created_at DESC, id DESC)`
-        );
-        await sqliteRepository.executeNonQuery(
-            `CREATE INDEX IF NOT EXISTS ${typeIndexName} ON ${safeTableName} (type, created_at DESC, id DESC)`
-        );
-    }
+    await runMaintenanceTask('updateTableForAvatarHistory');
 }
 
 async function addV17PerformanceIndexes(): Promise<void> {
-    await addV17GlobalPerformanceIndexes();
-    await addNotificationPerformanceIndexes();
+    await runMaintenanceTask('addV17PerformanceIndexes');
 }
 
 async function addPerformanceIndexes(): Promise<void> {
-    await addLegacyPerformanceIndexes();
-    await addV17PerformanceIndexes();
+    await runMaintenanceTask('addPerformanceIndexes');
 }
 
 async function upgradeDatabaseVersion(): Promise<void> {
-    await updateTableForGroupNames();
-    await addFriendLogFriendNumber();
-    await updateTableForAvatarHistory();
-    await addLegacyPerformanceIndexes();
+    await runMaintenanceTask('upgradeDatabaseVersion');
 }
 
 async function cleanLegendFromFriendLog(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_friend_log_history'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${tableName}
-             WHERE type = 'TrustLevel' AND created_at > '2022-05-04T01:00:00.000Z'
-             AND ((trust_level = 'Veteran User' AND previous_trust_level = 'Trusted User') OR (trust_level = 'Trusted User' AND previous_trust_level = 'Veteran User'))`
-        );
-    }
+    await runMaintenanceTask('cleanLegendFromFriendLog');
 }
 
 async function fixGameLogTraveling(): Promise<void> {
-    const travelingList: GameLogJoinLeaveEntry[] = [];
-    await sqliteRepository.execute((row) => {
-        travelingList.unshift({
-            rowId: row[0] as SQLiteValue,
-            created_at: row[1] as SQLiteValue,
-            type: row[2] as SQLiteValue,
-            displayName: row[3] as SQLiteValue,
-            location: row[4] as SQLiteValue,
-            userId: row[5] as SQLiteValue,
-            time: row[6] as SQLiteValue
-        });
-    }, "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND location = 'traveling'");
-
-    for (const travelingEntry of travelingList) {
-        let joinEntry: GameLogJoinLeaveEntry | null = null;
-        await sqliteRepository.execute(
-            (row) => {
-                joinEntry = {
-                    rowId: row[0] as SQLiteValue,
-                    created_at: row[1] as SQLiteValue,
-                    type: row[2] as SQLiteValue,
-                    displayName: row[3] as SQLiteValue,
-                    location: row[4] as SQLiteValue,
-                    userId: row[5] as SQLiteValue,
-                    time: row[6] as SQLiteValue
-                };
-            },
-            "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerJoined' AND display_name = @displayName AND created_at <= @created_at ORDER BY created_at DESC LIMIT 1",
-            {
-                '@displayName': travelingEntry.displayName,
-                '@created_at': travelingEntry.created_at
-            }
-        );
-        if (joinEntry?.location) {
-            await sqliteRepository.executeNonQuery(
-                'UPDATE gamelog_join_leave SET location = @location WHERE id = @rowId',
-                {
-                    '@rowId': travelingEntry.rowId,
-                    '@location': joinEntry.location
-                }
-            );
-        }
-    }
+    await runMaintenanceTask('fixGameLogTraveling');
 }
 
 async function fixNegativeGPS(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_gps'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `UPDATE ${tableName} SET time = 0 WHERE time < 0`
-        );
-    }
+    await runMaintenanceTask('fixNegativeGPS');
 }
 
 async function getGameLogInstancesTime(): Promise<Map<unknown, number>> {
@@ -492,57 +210,23 @@ async function getBrokenLeaveEntries(): Promise<SQLiteValue[]> {
 }
 
 async function fixBrokenLeaveEntries(): Promise<void> {
-    const badEntries = await getBrokenLeaveEntries();
-    if (badEntries.length === 0) {
-        return;
-    }
-    const args: Record<string, SQLiteValue> = {};
-    const placeholders = badEntries.map((entry, index) => {
-        const key = `@entry_${index}`;
-        args[key] = entry;
-        return key;
-    });
-
-    await sqliteRepository.executeNonQuery(
-        `UPDATE gamelog_join_leave SET time = 0 WHERE id IN (${placeholders.join(', ')})`,
-        args
-    );
+    await runMaintenanceTask('fixBrokenLeaveEntries');
 }
 
 async function fixBrokenGroupInvites(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_notifications'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${tableName} WHERE type LIKE '%.%'`
-        );
-    }
+    await runMaintenanceTask('fixBrokenGroupInvites');
 }
 
 async function fixBrokenNotifications(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_notifications'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${tableName} WHERE (created_at is null or created_at = '')`
-        );
-    }
+    await runMaintenanceTask('fixBrokenNotifications');
 }
 
 async function fixBrokenGroupChange(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_notifications'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `DELETE FROM ${tableName} WHERE type = 'groupChange' AND created_at < '2024-04-23T03:00:00.000Z'`
-        );
-    }
+    await runMaintenanceTask('fixBrokenGroupChange');
 }
 
 async function fixCancelFriendRequestTypo(): Promise<void> {
-    const tables = await selectTableNames("name LIKE '%_friend_log_history'");
-    for (const tableName of tables) {
-        await sqliteRepository.executeNonQuery(
-            `UPDATE ${tableName} SET type = 'CancelFriendRequest' WHERE type = 'CancelFriendRequst'`
-        );
-    }
+    await runMaintenanceTask('fixCancelFriendRequestTypo');
 }
 
 async function getBrokenGameLogDisplayNames(): Promise<
@@ -559,18 +243,7 @@ async function getBrokenGameLogDisplayNames(): Promise<
 }
 
 async function fixBrokenGameLogDisplayNames(): Promise<void> {
-    const badEntries = await getBrokenGameLogDisplayNames();
-    for (const entry of badEntries) {
-        await sqliteRepository.executeNonQuery(
-            'UPDATE gamelog_join_leave SET display_name = @new_display_name WHERE id = @id',
-            {
-                '@new_display_name': String(entry.displayName || '').split(
-                    ' ('
-                )[0],
-                '@id': entry.id
-            }
-        );
-    }
+    await runMaintenanceTask('fixBrokenGameLogDisplayNames');
 }
 
 const databaseMaintenanceRepository = Object.freeze({

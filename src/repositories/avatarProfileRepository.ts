@@ -11,7 +11,10 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 
 import avatarLocalRepository from './avatarLocalRepository.js';
 import memoRepository from './memoRepository.js';
-import { executeVrchatRequest, type QueryParams } from './vrchatRequest.js';
+import {
+    executeVrchatBackendRequest,
+    type QueryParams
+} from './vrchatRequest.js';
 
 type AvatarRecord = Record<string, any>;
 
@@ -168,12 +171,16 @@ async function executeGet(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<AvatarRecord | AvatarRecord[]>(path, {
-        endpoint,
-        method: 'GET',
-        params,
-        fallbackMessage: 'VRChat avatar request failed'
-    });
+    return executeVrchatBackendRequest<AvatarRecord | AvatarRecord[]>(
+        'VrchatAvatarExecute',
+        path,
+        {
+            endpoint,
+            method: 'GET',
+            params,
+            fallbackMessage: 'VRChat avatar request failed'
+        }
+    );
 }
 
 async function executePut(
@@ -181,13 +188,17 @@ async function executePut(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<AvatarRecord>(path, {
-        endpoint,
-        method: 'PUT',
-        body: params,
-        jsonBody: params !== null,
-        fallbackMessage: 'VRChat avatar request failed'
-    });
+    return executeVrchatBackendRequest<AvatarRecord>(
+        'VrchatAvatarExecute',
+        path,
+        {
+            endpoint,
+            method: 'PUT',
+            body: params,
+            jsonBody: params !== null,
+            fallbackMessage: 'VRChat avatar request failed'
+        }
+    );
 }
 
 async function executePost(
@@ -195,12 +206,16 @@ async function executePost(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<AvatarRecord>(path, {
-        endpoint,
-        method: 'POST',
-        body: params,
-        fallbackMessage: 'VRChat avatar request failed'
-    });
+    return executeVrchatBackendRequest<AvatarRecord>(
+        'VrchatAvatarExecute',
+        path,
+        {
+            endpoint,
+            method: 'POST',
+            body: params,
+            fallbackMessage: 'VRChat avatar request failed'
+        }
+    );
 }
 
 async function executeDelete(
@@ -208,14 +223,18 @@ async function executeDelete(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<AvatarRecord>(path, {
-        endpoint,
-        method: 'DELETE',
-        params,
-        queryParams: params,
-        jsonBody: false,
-        fallbackMessage: 'VRChat avatar request failed'
-    });
+    return executeVrchatBackendRequest<AvatarRecord>(
+        'VrchatAvatarExecute',
+        path,
+        {
+            endpoint,
+            method: 'DELETE',
+            params,
+            queryParams: params,
+            jsonBody: false,
+            fallbackMessage: 'VRChat avatar request failed'
+        }
+    );
 }
 
 async function getLocalSnapshot(

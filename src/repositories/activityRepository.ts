@@ -1,3 +1,4 @@
+import { backend } from '@/platform/index.js';
 import type { ActivitySession } from '@/shared/utils/activityEngine.js';
 
 import {
@@ -5,7 +6,6 @@ import {
     normalizeUserTablePrefix
 } from './localDatabaseSchema.js';
 import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRepository } from './sqliteRepository.js';
 
 type ActivityViewKind =
     (typeof ACTIVITY_VIEW_KIND)[keyof typeof ACTIVITY_VIEW_KIND];
@@ -202,45 +202,6 @@ function normalizeLocationRow(row: ActivityLocationRow | unknown[] | null) {
         created_at: row.created_at ?? row.createdAt ?? '',
         time: Number.parseInt(String(row.time ?? 0), 10) || 0
     };
-}
-
-async function insertSessions(
-    tx: SQLiteRepository,
-    userId: string,
-    tableName: string,
-    sessions: ActivitySession[] = []
-) {
-    if (!Array.isArray(sessions) || sessions.length === 0) {
-        return;
-    }
-
-    const chunkSize = 250;
-    for (
-        let chunkStart = 0;
-        chunkStart < sessions.length;
-        chunkStart += chunkSize
-    ) {
-        const chunk = sessions.slice(chunkStart, chunkStart + chunkSize);
-        const args: Record<string, string | number> = {};
-        const values = chunk.map((session, index) => {
-            const suffix = `${chunkStart + index}`;
-            args[`@userId_${suffix}`] = userId;
-            args[`@startAt_${suffix}`] =
-                Number.parseInt(String(session?.start ?? 0), 10) || 0;
-            args[`@endAt_${suffix}`] =
-                Number.parseInt(String(session?.end ?? 0), 10) || 0;
-            args[`@isOpenTail_${suffix}`] = session?.isOpenTail ? 1 : 0;
-            args[`@sourceRevision_${suffix}`] = session?.sourceRevision || '';
-            return `(@userId_${suffix}, @startAt_${suffix}, @endAt_${suffix}, @isOpenTail_${suffix}, @sourceRevision_${suffix})`;
-        });
-
-        await tx.executeNonQuery(
-            `INSERT OR REPLACE INTO ${tableName}
-             (user_id, start_at, end_at, is_open_tail, source_revision)
-             VALUES ${values.join(', ')}`,
-            args
-        );
-    }
 }
 
 async function getSelfActivitySourceSlice({ fromDays, toDays = 0 }) {
@@ -499,20 +460,17 @@ async function upsertActivitySyncState(entry: ActivitySyncStateInput) {
         );
     }
 
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO ${getSyncStateTable(normalizedUserId)}
-         (user_id, updated_at, is_self, source_last_created_at, pending_session_start_at, cached_range_days)
-         VALUES (@userId, @updatedAt, @isSelf, @sourceLastCreatedAt, @pendingSessionStartAt, @cachedRangeDays)`,
-        {
-            '@userId': normalizedUserId,
-            '@updatedAt': entry.updatedAt || '',
-            '@isSelf': entry.isSelf ? 1 : 0,
-            '@sourceLastCreatedAt': entry.sourceLastCreatedAt || '',
-            '@pendingSessionStartAt': entry.pendingSessionStartAt ?? null,
-            '@cachedRangeDays':
+    await backend.app.ActivitySyncStateUpsert({
+        entry: {
+            userId: normalizedUserId,
+            updatedAt: entry.updatedAt || '',
+            isSelf: Boolean(entry.isSelf),
+            sourceLastCreatedAt: entry.sourceLastCreatedAt || '',
+            pendingSessionStartAt: entry.pendingSessionStartAt ?? null,
+            cachedRangeDays:
                 Number.parseInt(String(entry.cachedRangeDays ?? 0), 10) || 0
         }
-    );
+    });
 }
 
 async function getActivitySessions(userId) {
@@ -550,16 +508,10 @@ async function replaceActivitySessions(userId, sessions = []) {
         typeof userId === 'string'
             ? userId.trim()
             : String(userId ?? '').trim();
-    const tableName = getSessionsTable(normalizedUserId);
 
-    await sqliteRepository.transaction(async (tx) => {
-        await tx.executeNonQuery(
-            `DELETE FROM ${tableName} WHERE user_id = @userId`,
-            {
-                '@userId': normalizedUserId
-            }
-        );
-        await insertSessions(tx, normalizedUserId, tableName, sessions);
+    await backend.app.ActivitySessionsReplace({
+        userId: normalizedUserId,
+        sessions: Array.isArray(sessions) ? sessions : []
     });
 }
 
@@ -572,21 +524,14 @@ async function appendActivitySessions({
         typeof userId === 'string'
             ? userId.trim()
             : String(userId ?? '').trim();
-    const tableName = getSessionsTable(normalizedUserId);
 
-    await sqliteRepository.transaction(async (tx) => {
-        if (replaceFromStartAt !== null && replaceFromStartAt !== undefined) {
-            await tx.executeNonQuery(
-                `DELETE FROM ${tableName}
-                 WHERE user_id = @userId AND start_at >= @replaceFromStartAt`,
-                {
-                    '@userId': normalizedUserId,
-                    '@replaceFromStartAt': replaceFromStartAt
-                }
-            );
-        }
-
-        await insertSessions(tx, normalizedUserId, tableName, sessions);
+    await backend.app.ActivitySessionsAppend({
+        userId: normalizedUserId,
+        sessions: Array.isArray(sessions) ? sessions : [],
+        replaceFromStartAt:
+            replaceFromStartAt !== null && replaceFromStartAt !== undefined
+                ? replaceFromStartAt
+                : null
     });
 }
 
@@ -633,26 +578,21 @@ async function getActivityBucketCache({
 }
 
 async function upsertActivityBucketCache(entry: ActivityBucketCacheInput) {
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO ${getBucketCacheTable(entry.ownerUserId)}
-         (user_id, target_user_id, range_days, view_kind, exclude_key, bucket_version, built_from_cursor, raw_buckets_json, normalized_buckets_json, summary_json, built_at)
-         VALUES (@ownerUserId, @targetUserId, @rangeDays, @viewKind, @excludeKey, @bucketVersion, @builtFromCursor, @rawBucketsJson, @normalizedBucketsJson, @summaryJson, @builtAt)`,
-        {
-            '@ownerUserId': entry.ownerUserId,
-            '@targetUserId': entry.targetUserId || '',
-            '@rangeDays': entry.rangeDays,
-            '@viewKind': entry.viewKind,
-            '@excludeKey': entry.excludeKey || '',
-            '@bucketVersion': entry.bucketVersion || 1,
-            '@builtFromCursor': entry.builtFromCursor || '',
-            '@rawBucketsJson': JSON.stringify(entry.rawBuckets || []),
-            '@normalizedBucketsJson': JSON.stringify(
-                entry.normalizedBuckets || []
-            ),
-            '@summaryJson': JSON.stringify(entry.summary || {}),
-            '@builtAt': entry.builtAt || ''
+    await backend.app.ActivityBucketCacheUpsert({
+        entry: {
+            ownerUserId: entry.ownerUserId,
+            targetUserId: entry.targetUserId || '',
+            rangeDays: entry.rangeDays,
+            viewKind: entry.viewKind,
+            excludeKey: entry.excludeKey || '',
+            bucketVersion: entry.bucketVersion || 1,
+            builtFromCursor: entry.builtFromCursor || '',
+            rawBuckets: entry.rawBuckets || [],
+            normalizedBuckets: entry.normalizedBuckets || [],
+            summary: entry.summary || {},
+            builtAt: entry.builtAt || ''
         }
-    );
+    });
 }
 
 const activityRepository = Object.freeze({

@@ -1,10 +1,10 @@
 import { backend } from '@/platform/index.js';
 import {
     avatarSearchProviderRepository,
+    avatarProfileRepository,
     configRepository,
     gameLogRepository,
-    localFavoritesRepository,
-    webRepository
+    localFavoritesRepository
 } from '@/repositories/index.js';
 import i18n from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
@@ -213,16 +213,9 @@ async function handleLaunchCommand(input: unknown) {
             } else {
                 shouldFocusWindow = false;
             }
-            const url = new URL(
-                `avatars/${encodeURIComponent(avatarId)}/select`,
-                endpoint.replace(/\/?$/, '/')
-            );
-            const response = await webRepository.execute({
-                url: url.toString(),
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
+            const response = await avatarProfileRepository.selectAvatar({
+                avatarId,
+                endpoint
             });
             if (response.status >= 400) {
                 throw new Error(`Avatar switch failed (${response.status}).`);

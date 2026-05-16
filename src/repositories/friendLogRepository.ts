@@ -1,9 +1,7 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRepository } from './sqliteRepository.js';
-import type {
-    FriendLogHistoryEntry,
-    FriendLogType
-} from './friendLogHistoryRepository.js';
+import type { FriendLogHistoryEntry } from './friendLogHistoryRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
 
 export interface FriendLogCurrentRow {
@@ -35,6 +33,13 @@ export interface FriendLogCurrentUpsertOptions {
 }
 
 type FriendLogSourceRow = unknown[] | Record<string, unknown>;
+type FriendLogMutationResult = {
+    userId: string;
+    targetUserId?: string;
+    count: number;
+    inserted?: boolean;
+    historyCount: number;
+};
 
 function valueAsString(value: unknown): string {
     return value == null ? '' : String(value);
@@ -68,30 +73,6 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
     };
 }
 
-async function addFriendLogHistoryEntry(
-    tx: SQLiteRepository,
-    userPrefix: string,
-    entry: FriendLogHistoryEntry | null | undefined
-) {
-    if (!entry?.type || !entry?.userId) {
-        return;
-    }
-
-    await tx.executeNonQuery(
-        `INSERT INTO ${userPrefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES (@created_at, @type, @user_id, @display_name, @previous_display_name, @trust_level, @previous_trust_level, @friend_number)`,
-        {
-            '@created_at': entry.created_at ?? '',
-            '@type': entry.type ?? '',
-            '@user_id': entry.userId ?? '',
-            '@display_name': entry.displayName ?? '',
-            '@previous_display_name': entry.previousDisplayName ?? '',
-            '@trust_level': entry.trustLevel ?? '',
-            '@previous_trust_level': entry.previousTrustLevel ?? '',
-            '@friend_number': valueAsInt(entry.friendNumber)
-        }
-    );
-}
-
 async function getFriendLogCurrent(
     userId: unknown
 ): Promise<FriendLogCurrentRow[]> {
@@ -109,12 +90,37 @@ async function getFriendLogCurrent(
         .filter((row) => typeof row.userId === 'string' && row.userId.trim());
 }
 
+function normalizeHistoryEntryForBackend(
+    entry: FriendLogHistoryEntry | null | undefined
+) {
+    return {
+        createdAt: entry?.created_at ?? '',
+        type: entry?.type ?? '',
+        userId: normalizeTargetUserId(entry?.userId),
+        displayName: entry?.displayName ?? '',
+        previousDisplayName: entry?.previousDisplayName ?? '',
+        trustLevel: entry?.trustLevel ?? '',
+        previousTrustLevel: entry?.previousTrustLevel ?? '',
+        friendNumber: valueAsInt(entry?.friendNumber)
+    };
+}
+
+function normalizeCurrentEntryForBackend(
+    entry: FriendLogCurrentEntry | null | undefined
+) {
+    return {
+        userId: normalizeTargetUserId(entry?.userId),
+        displayName: entry?.displayName ?? '',
+        trustLevel: entry?.trustLevel ?? 'Visitor',
+        friendNumber: valueAsInt(entry?.friendNumber)
+    };
+}
+
 async function replaceFriendLogCurrent(
     userId: unknown,
     entries: FriendLogCurrentEntry[] = [],
     options: FriendLogCurrentReplaceOptions = {}
 ) {
-    const userPrefix = normalizeUserTablePrefix(userId);
     const historyEntries = Array.isArray(options?.historyEntries)
         ? options.historyEntries
         : [];
@@ -122,77 +128,21 @@ async function replaceFriendLogCurrent(
         ? options.addedHistoryEntries
         : [];
 
-    const historyCount = await sqliteRepository.transaction(async (tx) => {
-        let writtenHistoryCount = 0;
-        for (const entry of historyEntries) {
-            const targetUserId = normalizeTargetUserId(entry?.userId);
-            if (!targetUserId) {
-                continue;
-            }
-
-            const affectedRows = Number(
-                await tx.executeNonQuery(
-                    `DELETE FROM ${userPrefix}_friend_log_current WHERE user_id = @user_id`,
-                    {
-                        '@user_id': targetUserId
-                    }
-                )
-            );
-            if (Number.isFinite(affectedRows) && affectedRows > 0) {
-                await addFriendLogHistoryEntry(tx, userPrefix, entry);
-                writtenHistoryCount += 1;
-            }
-        }
-
-        for (const entry of addedHistoryEntries) {
-            const targetUserId = normalizeTargetUserId(entry?.userId);
-            if (!targetUserId) {
-                continue;
-            }
-
-            const existingRows = await tx.query(
-                `SELECT user_id FROM ${userPrefix}_friend_log_current WHERE user_id = @user_id LIMIT 1`,
-                {
-                    '@user_id': targetUserId
-                }
-            );
-            if (!Array.isArray(existingRows) || existingRows.length === 0) {
-                await addFriendLogHistoryEntry(tx, userPrefix, entry);
-                writtenHistoryCount += 1;
-            }
-        }
-
-        await tx.executeNonQuery(
-            `DELETE FROM ${userPrefix}_friend_log_current`
-        );
-
-        for (const entry of entries) {
-            if (!entry?.userId) {
-                continue;
-            }
-
-            await tx.executeNonQuery(
-                `INSERT OR REPLACE INTO ${userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)`,
-                {
-                    '@user_id': entry.userId,
-                    '@display_name': entry.displayName ?? '',
-                    '@trust_level': entry.trustLevel ?? 'Visitor',
-                    '@friend_number': valueAsInt(entry.friendNumber)
-                }
-            );
-        }
-
-        return writtenHistoryCount;
-    });
-
-    return {
+    return backend.app.FriendLogReplaceCurrent({
         userId:
             typeof userId === 'string'
                 ? userId.trim()
                 : String(userId ?? '').trim(),
-        count: Array.isArray(entries) ? entries.length : 0,
-        historyCount
-    };
+        entries: (Array.isArray(entries) ? entries : []).map(
+            normalizeCurrentEntryForBackend
+        ),
+        options: {
+            historyEntries: historyEntries.map(normalizeHistoryEntryForBackend),
+            addedHistoryEntries: addedHistoryEntries.map(
+                normalizeHistoryEntryForBackend
+            )
+        }
+    }) as Promise<FriendLogMutationResult>;
 }
 
 async function deleteFriendLogCurrentArray(
@@ -200,7 +150,6 @@ async function deleteFriendLogCurrentArray(
     targetUserIds: unknown[] = [],
     options: FriendLogCurrentDeleteOptions = {}
 ) {
-    const userPrefix = normalizeUserTablePrefix(userId);
     const normalizedTargetUserIds = Array.isArray(targetUserIds)
         ? targetUserIds
               .map((targetUserId) =>
@@ -224,56 +173,17 @@ async function deleteFriendLogCurrentArray(
     const historyEntries = Array.isArray(options?.historyEntries)
         ? options.historyEntries
         : [];
-    const historyEntriesById = new Map(
-        historyEntries
-            .map((entry) => [
-                normalizeTargetUserId(entry?.userId),
-                entry
-            ] as const)
-            .filter(([targetUserId]) => Boolean(targetUserId))
-    );
 
-    const transactionResult = await sqliteRepository.transaction(async (tx) => {
-        let deletedCount = 0;
-        let writtenHistoryCount = 0;
-
-        for (const targetUserId of normalizedTargetUserIds) {
-            const affectedRows = Number(
-                await tx.executeNonQuery(
-                    `DELETE FROM ${userPrefix}_friend_log_current WHERE user_id = @user_id`,
-                    {
-                        '@user_id': targetUserId
-                    }
-                )
-            );
-            const historyEntry = historyEntriesById.get(targetUserId);
-            if (Number.isFinite(affectedRows) && affectedRows > 0) {
-                deletedCount += affectedRows;
-            }
-            if (
-                historyEntry &&
-                Number.isFinite(affectedRows) &&
-                affectedRows > 0
-            ) {
-                await addFriendLogHistoryEntry(tx, userPrefix, historyEntry);
-                writtenHistoryCount += 1;
-            }
-        }
-
-        return {
-            deletedCount,
-            historyCount: writtenHistoryCount
-        };
-    });
-
-    return {
+    return backend.app.FriendLogDeleteCurrentArray({
         userId:
             typeof userId === 'string'
                 ? userId.trim()
                 : String(userId ?? '').trim(),
-        count: transactionResult?.deletedCount ?? 0,
-        historyCount: transactionResult?.historyCount ?? 0
-    };
+        targetUserIds: normalizedTargetUserIds,
+        options: {
+            historyEntries: historyEntries.map(normalizeHistoryEntryForBackend)
+        }
+    }) as Promise<FriendLogMutationResult>;
 }
 
 async function upsertFriendLogCurrent(
@@ -281,7 +191,6 @@ async function upsertFriendLogCurrent(
     entry: FriendLogCurrentEntry | null | undefined,
     options: FriendLogCurrentUpsertOptions = {}
 ) {
-    const userPrefix = normalizeUserTablePrefix(userId);
     if (!entry?.userId) {
         return {
             userId:
@@ -313,73 +222,36 @@ async function upsertFriendLogCurrent(
     }
 
     const historyEntry = options?.historyEntry;
-    const forceHistory = Boolean(options?.forceHistory);
-    const transactionResult = await sqliteRepository.transaction(async (tx) => {
-        const insertCount = Number(
-            await tx.executeNonQuery(
-                `INSERT OR IGNORE INTO ${userPrefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)`,
-                {
-                    '@user_id': targetUserId,
-                    '@display_name': entry.displayName ?? '',
-                    '@trust_level': entry.trustLevel ?? 'Visitor',
-                    '@friend_number': valueAsInt(entry.friendNumber)
-                }
-            )
-        );
-        const inserted = Number.isFinite(insertCount) && insertCount > 0;
 
-        if (!inserted) {
-            await tx.executeNonQuery(
-                `UPDATE ${userPrefix}_friend_log_current SET display_name = @display_name, trust_level = @trust_level, friend_number = CASE WHEN @friend_number > 0 THEN @friend_number ELSE friend_number END WHERE user_id = @user_id`,
-                {
-                    '@user_id': targetUserId,
-                    '@display_name': entry.displayName ?? '',
-                    '@trust_level': entry.trustLevel ?? 'Visitor',
-                    '@friend_number': valueAsInt(entry.friendNumber)
-                }
-            );
-        }
-
-        let historyCount = 0;
-        if (
-            (inserted || forceHistory) &&
-            historyEntry?.type &&
-            historyEntry?.userId
-        ) {
-            await addFriendLogHistoryEntry(tx, userPrefix, {
-                ...historyEntry,
-                userId: targetUserId,
-                type: historyEntry.type as FriendLogType
-            });
-            historyCount = 1;
-        }
-
-        return {
-            inserted,
-            historyCount
-        };
-    });
-
-    return {
+    return backend.app.FriendLogUpsertCurrent({
         userId:
             typeof userId === 'string'
                 ? userId.trim()
                 : String(userId ?? '').trim(),
-        targetUserId,
-        count: 1,
-        inserted: Boolean(transactionResult?.inserted),
-        historyCount: transactionResult?.historyCount ?? 0
-    };
+        entry: normalizeCurrentEntryForBackend({
+            ...entry,
+            userId: targetUserId
+        }),
+        options: {
+            historyEntry: historyEntry
+                ? normalizeHistoryEntryForBackend({
+                      ...historyEntry,
+                      userId: targetUserId
+                  })
+                : null,
+            forceHistory: Boolean(options?.forceHistory)
+        }
+    }) as Promise<FriendLogMutationResult>;
 }
 
 async function deleteFriendLogCurrent(userId: unknown, targetUserId: string) {
-    const userPrefix = normalizeUserTablePrefix(userId);
-    await sqliteRepository.executeNonQuery(
-        `DELETE FROM ${userPrefix}_friend_log_current WHERE user_id = @user_id`,
-        {
-            '@user_id': targetUserId
-        }
-    );
+    await backend.app.FriendLogDeleteCurrent({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
+        targetUserId
+    });
 }
 
 const friendLogRepository = {

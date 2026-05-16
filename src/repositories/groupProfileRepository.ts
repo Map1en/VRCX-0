@@ -6,7 +6,10 @@ import {
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
 
-import { executeVrchatRequest, type QueryParams } from './vrchatRequest.js';
+import {
+    executeVrchatBackendRequest,
+    type QueryParams
+} from './vrchatRequest.js';
 
 type GroupRecord = Record<string, any>;
 
@@ -163,7 +166,7 @@ async function executeGet(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<any>(path, {
+    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
         endpoint,
         method: 'GET',
         params,
@@ -176,7 +179,7 @@ async function executePost(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<any>(path, {
+    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
         endpoint,
         method: 'POST',
         body: params,
@@ -189,7 +192,7 @@ async function executePut(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<any>(path, {
+    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
         endpoint,
         method: 'PUT',
         body: params,
@@ -202,7 +205,7 @@ async function executeDelete(
     params: QueryParams = {},
     { endpoint = '' } = {}
 ) {
-    return executeVrchatRequest<any>(path, {
+    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
         endpoint,
         method: 'DELETE',
         params,

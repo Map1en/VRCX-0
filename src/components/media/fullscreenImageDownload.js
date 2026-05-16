@@ -1,4 +1,7 @@
-import { mediaRepository } from '@/repositories/index.js';
+import {
+    externalApiRepository,
+    mediaRepository
+} from '@/repositories/index.js';
 
 function isHttpUrl(url) {
     try {
@@ -18,23 +21,9 @@ async function dataUrlToBlob(dataUrl) {
     return blob;
 }
 
-async function fetchImageBlobDirect(url) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    if (blob.type && !blob.type.startsWith('image/')) {
-        throw new Error(`Unexpected image type: ${blob.type}`);
-    }
-
-    return blob;
-}
-
-async function fetchImageBlobViaBackend(url) {
-    const response = await mediaRepository.executeGet(url);
-    const dataUrl = typeof response.json === 'string' ? response.json : '';
+async function fetchImageBlobViaRust(url) {
+    const response = await externalApiRepository.fetchImageDataUrl(url);
+    const dataUrl = typeof response.data === 'string' ? response.data : '';
 
     if (!dataUrl.startsWith('data:image/')) {
         throw new Error('Image response is not a data URL');
@@ -54,18 +43,10 @@ export async function fetchImageBlob(url) {
     }
 
     if (isHttpUrl(normalizedUrl)) {
-        try {
-            return await fetchImageBlobViaBackend(normalizedUrl);
-        } catch (backendError) {
-            try {
-                return await fetchImageBlobDirect(normalizedUrl);
-            } catch {
-                throw backendError;
-            }
-        }
+        return fetchImageBlobViaRust(normalizedUrl);
     }
 
-    return fetchImageBlobDirect(normalizedUrl);
+    return dataUrlToBlob(normalizedUrl);
 }
 
 function blobToBase64(blob) {

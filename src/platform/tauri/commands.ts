@@ -38,7 +38,6 @@ const commandArgs: Record<string, string[]> = {
     sqlite__get_failed_upgrade: [],
     log_watcher__set_date_till: ['date'],
     web__set_cookies: ['cookies'],
-    web__execute: ['options'],
     app__open_link: ['url'],
     app__open_discord_profile: ['discordId'],
     discord__set_active: ['active'],

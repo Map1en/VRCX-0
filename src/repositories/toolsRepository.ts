@@ -5,7 +5,10 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache.js';
 
-import { executeVrchatRequest, type QueryParams } from './vrchatRequest.js';
+import {
+    executeVrchatBackendRequest,
+    type QueryParams
+} from './vrchatRequest.js';
 
 const PAGE_SIZE = 100;
 
@@ -67,7 +70,7 @@ async function execute(
     path: string,
     { endpoint = '', method = 'GET', params = null }: ExecuteOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatToolsExecute', path, {
         endpoint,
         method,
         params,
@@ -267,7 +270,10 @@ async function reportUser(
 }
 
 async function getInviteMessages(
-    { currentUserId, messageType }: { currentUserId: string; messageType: string },
+    {
+        currentUserId,
+        messageType
+    }: { currentUserId: string; messageType: string },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
     const response = await execute(

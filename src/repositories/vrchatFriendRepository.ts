@@ -1,4 +1,4 @@
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 7500;
@@ -16,7 +16,7 @@ async function execute(
     path,
     { endpoint = '', method = 'GET', params = null } = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatFriendExecute', path, {
         endpoint,
         method,
         params,

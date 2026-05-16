@@ -1,6 +1,8 @@
+import { backend } from '@/platform/index.js';
+
 import configRepository from './configRepository.js';
 import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteRow, SQLiteValue } from './sqliteRepository.js';
+import type { SQLiteRow } from './sqliteRepository.js';
 
 type ObjectRow = Record<string, unknown>;
 
@@ -47,10 +49,6 @@ const LOCAL_FAVORITE_GROUP_CONFIG_KEYS = Object.freeze({
 
 function asObjectRow(row: SQLiteRow | null | undefined): ObjectRow {
     return row && !Array.isArray(row) ? row : {};
-}
-
-function asSQLiteValue(value: unknown): SQLiteValue {
-    return value as SQLiteValue;
 }
 
 function getLocalFavoriteGroupConfigKey(kind: unknown): string | undefined {
@@ -299,23 +297,21 @@ async function getAvatarCache() {
 }
 
 async function addWorldToCache(entry: CacheEntryInput) {
-    return sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO cache_world (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)`,
-        {
-            '@id': asSQLiteValue(entry.id),
-            '@added_at': new Date().toJSON(),
-            '@author_id': asSQLiteValue(entry.authorId),
-            '@author_name': asSQLiteValue(entry.authorName),
-            '@created_at': asSQLiteValue(entry.created_at),
-            '@description': asSQLiteValue(entry.description),
-            '@image_url': asSQLiteValue(entry.imageUrl),
-            '@name': asSQLiteValue(entry.name),
-            '@release_status': asSQLiteValue(entry.releaseStatus),
-            '@thumbnail_image_url': asSQLiteValue(entry.thumbnailImageUrl),
-            '@updated_at': asSQLiteValue(entry.updated_at),
-            '@version': asSQLiteValue(entry.version)
+    return backend.app.WorldCacheUpsert({
+        entry: {
+            id: entry.id,
+            authorId: entry.authorId,
+            authorName: entry.authorName,
+            createdAt: entry.created_at,
+            description: entry.description,
+            imageUrl: entry.imageUrl,
+            name: entry.name,
+            releaseStatus: entry.releaseStatus,
+            thumbnailImageUrl: entry.thumbnailImageUrl,
+            updatedAt: entry.updated_at,
+            version: entry.version
         }
-    );
+    });
 }
 
 async function getCachedWorldById(id: unknown) {
@@ -339,12 +335,7 @@ async function removeWorldFromCache(worldId: unknown) {
     if (!normalizedWorldId) {
         return;
     }
-    await sqliteRepository.executeNonQuery(
-        'DELETE FROM cache_world WHERE id = @world_id',
-        {
-            '@world_id': normalizedWorldId
-        }
-    );
+    await backend.app.WorldCacheRemove({ worldId: normalizedWorldId });
 }
 
 async function addLocalFavorite({
@@ -362,14 +353,11 @@ async function addLocalFavorite({
         );
     }
 
-    return sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO ${target.table} (${target.column}, group_name, created_at) VALUES (${target.entityParam}, @group_name, @created_at)`,
-        {
-            [target.entityParam]: normalizedEntityId,
-            '@group_name': normalizedGroupName,
-            '@created_at': new Date().toJSON()
-        }
-    );
+    return backend.app.FavoriteAdd({
+        kind,
+        entityId: normalizedEntityId,
+        groupName: normalizedGroupName
+    });
 }
 
 function addAvatarToFavorites(avatarId: unknown, groupName: unknown) {
@@ -411,13 +399,11 @@ async function removeLocalFavorite({
         );
     }
 
-    return sqliteRepository.executeNonQuery(
-        `DELETE FROM ${target.table} WHERE ${target.column} = @entity_id AND group_name = @group_name`,
-        {
-            '@entity_id': normalizedEntityId,
-            '@group_name': normalizedGroupName
-        }
-    );
+    return backend.app.FavoriteRemove({
+        kind,
+        entityId: normalizedEntityId,
+        groupName: normalizedGroupName
+    });
 }
 
 async function renameLocalFavoriteGroup({
@@ -435,13 +421,11 @@ async function renameLocalFavoriteGroup({
         );
     }
 
-    const result = await sqliteRepository.executeNonQuery(
-        `UPDATE ${target.table} SET group_name = @new_group_name WHERE group_name = @group_name`,
-        {
-            '@new_group_name': normalizedNewGroupName,
-            '@group_name': normalizedGroupName
-        }
-    );
+    const result = await backend.app.FavoriteGroupRename({
+        kind,
+        groupName: normalizedGroupName,
+        newGroupName: normalizedNewGroupName
+    });
 
     const key = getLocalFavoriteGroupConfigKey(kind);
     if (key) {
@@ -470,12 +454,10 @@ async function deleteLocalFavoriteGroup({
         );
     }
 
-    const result = await sqliteRepository.executeNonQuery(
-        `DELETE FROM ${target.table} WHERE group_name = @group_name`,
-        {
-            '@group_name': normalizedGroupName
-        }
-    );
+    const result = await backend.app.FavoriteGroupDelete({
+        kind,
+        groupName: normalizedGroupName
+    });
 
     const key = getLocalFavoriteGroupConfigKey(kind);
     if (key) {

@@ -261,9 +261,7 @@ fn emoji_file_name(item: &Value, user_id: &str, inventory_id: &str) -> String {
         .or_else(|| user_id.to_string());
     let name = format!(
         "{}_{}",
-        holder_display_name
-            .or_else(|| holder_id.clone())
-            .trim(),
+        holder_display_name.or_else(|| holder_id.clone()).trim(),
         inventory_id
     );
     let animation_style = metadata

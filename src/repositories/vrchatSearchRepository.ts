@@ -1,5 +1,5 @@
 import {
-    executeVrchatRequest,
+    executeVrchatBackendRequest,
     type QueryParams,
     type VrchatRequestResponse
 } from './vrchatRequest.js';
@@ -22,7 +22,7 @@ async function executeGet<TJson = unknown>(
     options: SearchRequestOptions = {}
 ): Promise<VrchatRequestResponse<TJson>> {
     const normalizedParams = normalizeParams(params);
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatSearchExecute', path, {
         endpoint: options.endpoint,
         method: 'GET',
         params: normalizedParams,

@@ -5,7 +5,6 @@ import {
     configRepository,
     databaseMaintenanceRepository
 } from '@/repositories/index.js';
-import sqliteRepository from '@/repositories/sqliteRepository.js';
 import i18n from '@/services/i18nService.js';
 import { useModalStore } from '@/state/modalStore.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
@@ -80,13 +79,7 @@ async function blockOnFailedUpgrade(
 }
 
 async function writeUpgradeDatabaseVersion(): Promise<void> {
-    await sqliteRepository.executeNonQuery(
-        'INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)',
-        {
-            '@key': 'config:vrcx_databaseversion',
-            '@value': String(DATABASE_VERSION)
-        }
-    );
+    await configRepository.setString('databaseVersion', String(DATABASE_VERSION));
 }
 
 async function runLegacyDatabaseMaintenance(): Promise<void> {

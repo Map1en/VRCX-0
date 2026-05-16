@@ -1,3 +1,5 @@
+import { backend } from '@/platform/index.js';
+
 import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import sqliteRepository from './sqliteRepository.js';
@@ -5,15 +7,14 @@ import userSessionRepository, {
     normalizeUserTablePrefix
 } from './userSessionRepository.js';
 import {
-    buildUrl,
     createRequestError,
-    executeVrchatRequest,
+    executeBackendHttpRequest,
+    executeVrchatBackendRequest,
     parseJsonResponse,
     type QueryParams,
     type QueryValue,
     unwrapErrorMessage
 } from './vrchatRequest.js';
-import webRepository from './webRepository.js';
 
 type NotificationRecord = Record<string, any>;
 type NotificationRow = NotificationRecord | unknown[];
@@ -232,14 +233,18 @@ async function executeApi(
         params = null
     }: { endpoint?: string; method?: string; params?: QueryParams | null } = {}
 ) {
-    return executeVrchatRequest<NotificationRecord>(path, {
-        endpoint,
-        method,
-        params,
-        body: params,
-        jsonBody: params !== null,
-        fallbackMessage: 'VRChat notification request failed'
-    });
+    return executeVrchatBackendRequest<NotificationRecord>(
+        'VrchatNotificationExecute',
+        path,
+        {
+            endpoint,
+            method,
+            params,
+            body: params,
+            jsonBody: params !== null,
+            fallbackMessage: 'VRChat notification request failed'
+        }
+    );
 }
 
 async function queryNotifications({
@@ -343,8 +348,6 @@ async function addNotificationToDatabase({
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
     const entry: NotificationRecord = {
         id: '',
         created_at: '',
@@ -371,25 +374,10 @@ async function addNotificationToDatabase({
         throw new Error('Notification is missing required field');
     }
 
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired)`,
-        {
-            '@id': entry.id,
-            '@created_at': entry.created_at,
-            '@type': entry.type,
-            '@sender_user_id': entry.senderUserId,
-            '@sender_username': entry.senderUsername,
-            '@receiver_user_id': entry.receiverUserId,
-            '@message': entry.message,
-            '@world_id': entry.details.worldId,
-            '@world_name': entry.details.worldName,
-            '@image_url': entry.details.imageUrl,
-            '@invite_message': entry.details.inviteMessage,
-            '@request_message': entry.details.requestMessage,
-            '@response_message': entry.details.responseMessage,
-            '@expired': entry.$isExpired ? 1 : 0
-        }
-    );
+    await backend.app.NotificationAddV1({
+        userId: normalizedUserId,
+        notification: entry
+    });
 }
 
 async function addNotificationV2ToDatabase({
@@ -401,29 +389,10 @@ async function addNotificationV2ToDatabase({
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO ${userPrefix}_notifications_v2 (id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details) VALUES (@id, @created_at, @updated_at, @expires_at, @type, @link, @link_text, @message, @title, @image_url, @seen, @sender_user_id, @sender_username, @data, @responses, @details)`,
-        {
-            '@id': notification.id,
-            '@created_at': notification.createdAt,
-            '@updated_at': notification.updatedAt,
-            '@expires_at': notification.expiresAt,
-            '@type': notification.type,
-            '@link': notification.link,
-            '@link_text': notification.linkText,
-            '@message': notification.message,
-            '@title': notification.title,
-            '@image_url': notification.imageUrl,
-            '@seen': notification.seen ? 1 : 0,
-            '@sender_user_id': notification.senderUserId,
-            '@sender_username': notification.senderUsername,
-            '@data': JSON.stringify(notification.data || {}),
-            '@responses': JSON.stringify(notification.responses || []),
-            '@details': JSON.stringify(notification.details || {})
-        }
-    );
+    await backend.app.NotificationAddV2({
+        userId: normalizedUserId,
+        notification
+    });
 }
 
 async function expireNotificationV2({
@@ -436,15 +405,10 @@ async function expireNotificationV2({
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.executeNonQuery(
-        `UPDATE ${userPrefix}_notifications_v2 SET expires_at = @expires_at, seen = 1 WHERE id = @id`,
-        {
-            '@id': normalizedId,
-            '@expires_at': new Date().toJSON()
-        }
-    );
+    await backend.app.NotificationV2Expire({
+        userId: normalizedUserId,
+        id: normalizedId
+    });
 }
 
 async function seenNotificationV2({
@@ -457,14 +421,10 @@ async function seenNotificationV2({
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.executeNonQuery(
-        `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
-        {
-            '@id': normalizedId
-        }
-    );
+    await backend.app.NotificationV2MarkSeen({
+        userId: normalizedUserId,
+        id: normalizedId
+    });
 }
 
 async function updateNotificationExpired({
@@ -476,15 +436,11 @@ async function updateNotificationExpired({
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.executeNonQuery(
-        `UPDATE ${userPrefix}_notifications SET expired = @expired WHERE id = @id`,
-        {
-            '@id': notification.id,
-            '@expired': notification.$isExpired ? 1 : 0
-        }
-    );
+    await backend.app.NotificationUpdateExpired({
+        userId: normalizedUserId,
+        id: notification.id,
+        expired: Boolean(notification.$isExpired)
+    });
 }
 
 async function deleteNotification({ userId, id }) {
@@ -495,21 +451,9 @@ async function deleteNotification({ userId, id }) {
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.transaction(async (tx) => {
-        await tx.executeNonQuery(
-            `DELETE FROM ${userPrefix}_notifications WHERE id = @id`,
-            {
-                '@id': normalizedId
-            }
-        );
-        await tx.executeNonQuery(
-            `DELETE FROM ${userPrefix}_notifications_v2 WHERE id = @id`,
-            {
-                '@id': normalizedId
-            }
-        );
+    await backend.app.NotificationDelete({
+        userId: normalizedUserId,
+        id: normalizedId
     });
 }
 
@@ -521,23 +465,9 @@ async function expireNotification({ userId, id }) {
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    const now = new Date().toJSON();
-    await sqliteRepository.transaction(async (tx) => {
-        await tx.executeNonQuery(
-            `UPDATE ${userPrefix}_notifications SET expired = 1 WHERE id = @id`,
-            {
-                '@id': normalizedId
-            }
-        );
-        await tx.executeNonQuery(
-            `UPDATE ${userPrefix}_notifications_v2 SET expires_at = @expires_at, seen = 1 WHERE id = @id`,
-            {
-                '@id': normalizedId,
-                '@expires_at': now
-            }
-        );
+    await backend.app.NotificationExpire({
+        userId: normalizedUserId,
+        id: normalizedId
     });
 }
 
@@ -571,14 +501,10 @@ async function markSeen({ userId, id, version, endpoint = '' }) {
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.executeNonQuery(
-        `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
-        {
-            '@id': normalizedId
-        }
-    );
+    await backend.app.NotificationV2MarkSeen({
+        userId: normalizedUserId,
+        id: normalizedId
+    });
 }
 
 async function markSeenLocalBulk({ userId, ids }) {
@@ -592,17 +518,9 @@ async function markSeenLocalBulk({ userId, ids }) {
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedUserId);
-    await sqliteRepository.transaction(async (tx) => {
-        for (const id of normalizedIds) {
-            await tx.executeNonQuery(
-                `UPDATE ${userPrefix}_notifications_v2 SET seen = 1 WHERE id = @id`,
-                {
-                    '@id': id
-                }
-            );
-        }
+    await backend.app.NotificationMarkSeenLocalBulk({
+        userId: normalizedUserId,
+        ids: normalizedIds
     });
 }
 
@@ -742,8 +660,9 @@ async function sendInviteResponsePhoto({
     }
 
     const path = `invite/${encodeURIComponent(normalizedId)}/response/photo`;
-    const response = await webRepository.execute({
-        url: buildUrl(path, {}, endpoint),
+    const response = await executeBackendHttpRequest('VrchatMediaExecute', {
+        path,
+        endpoint,
         uploadImageLegacy: true,
         postData: JSON.stringify({
             responseSlot: normalizedSlot,

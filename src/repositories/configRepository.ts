@@ -1,3 +1,4 @@
+import { backend } from '@/platform/index.js';
 import {
     ConfigKeys,
     type ConfigDefaultValue
@@ -43,9 +44,7 @@ class ConfigRepository {
             return;
         }
 
-        await sqliteRepository.executeNonQuery(
-            'CREATE TABLE IF NOT EXISTS configs (`key` TEXT PRIMARY KEY, `value` TEXT)'
-        );
+        await backend.app.ConfigSetValues({ entries: [] });
 
         const rows = await sqliteRepository.query<ConfigRow>(
             'SELECT key, value FROM configs'
@@ -192,10 +191,9 @@ class ConfigRepository {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         const stringValue = String(value);
-        const result = await sqliteRepository.executeNonQuery(
-            'INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)',
-            { '@key': dbKey, '@value': stringValue }
-        );
+        const result = await backend.app.ConfigSetValues({
+            entries: [{ key: dbKey, value: stringValue }]
+        });
         this.#cache.set(dbKey, stringValue);
         return result;
     }
@@ -227,13 +225,11 @@ class ConfigRepository {
             String(value)
         ]);
 
-        await sqliteRepository.transaction(async (tx) => {
-            for (const [dbKey, stringValue] of normalizedEntries) {
-                await tx.executeNonQuery(
-                    'INSERT OR REPLACE INTO configs (key, value) VALUES (@key, @value)',
-                    { '@key': dbKey, '@value': stringValue }
-                );
-            }
+        await backend.app.ConfigSetValues({
+            entries: normalizedEntries.map(([key, value]) => ({
+                key,
+                value
+            }))
         });
 
         for (const [dbKey, stringValue] of normalizedEntries) {
@@ -248,12 +244,7 @@ class ConfigRepository {
     async remove(key: string): Promise<unknown> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
-        const result = await sqliteRepository.executeNonQuery(
-            'DELETE FROM configs WHERE key = @key',
-            {
-                '@key': dbKey
-            }
-        );
+        const result = await backend.app.ConfigRemoveValue({ key: dbKey });
         this.#cache.delete(dbKey);
         return result;
     }

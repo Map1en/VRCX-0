@@ -1,9 +1,10 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository from './sqliteRepository.js';
-import type { SQLiteValue } from './sqliteRepository.js';
 import userSessionRepository, {
     normalizeUserTablePrefix
 } from './userSessionRepository.js';
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 type ObjectRow = Record<string, unknown>;
 type RequestOptions = {
@@ -100,15 +101,11 @@ function normalizeUserId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-function asSQLiteValue(value: unknown): SQLiteValue {
-    return value as SQLiteValue;
-}
-
 async function executeGet(
     path: string,
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatModerationExecute', path, {
         endpoint,
         method: 'GET',
         fallbackMessage: 'VRChat moderation request failed'
@@ -120,7 +117,7 @@ async function executePut(
     payload: ObjectRow = {},
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatModerationExecute', path, {
         endpoint,
         method: 'PUT',
         body: payload,
@@ -133,7 +130,7 @@ async function executePost(
     payload: ObjectRow = {},
     { endpoint = '' }: RequestOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatModerationExecute', path, {
         endpoint,
         method: 'POST',
         body: payload,
@@ -214,18 +211,16 @@ async function setLocalModerationRow(
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
-    await sqliteRepository.executeNonQuery(
-        `INSERT OR REPLACE INTO ${userPrefix}_moderation (user_id, updated_at, display_name, block, mute) VALUES (@user_id, @updated_at, @display_name, @block, @mute)`,
-        {
-            '@user_id': asSQLiteValue(entry.userId),
-            '@updated_at': asSQLiteValue(entry.updatedAt),
-            '@display_name': asSQLiteValue(entry.displayName),
-            '@block': entry.block ? 1 : 0,
-            '@mute': entry.mute ? 1 : 0
+    await backend.app.LocalModerationSet({
+        ownerUserId: normalizedOwnerUserId,
+        entry: {
+            userId: entry.userId,
+            updatedAt: entry.updatedAt,
+            displayName: entry.displayName,
+            block: Boolean(entry.block),
+            mute: Boolean(entry.mute)
         }
-    );
+    });
 }
 
 async function deleteLocalModerationRow(ownerUserId: unknown, userId: unknown) {
@@ -235,67 +230,25 @@ async function deleteLocalModerationRow(ownerUserId: unknown, userId: unknown) {
         return;
     }
 
-    await userSessionRepository.ensureUserTables(normalizedOwnerUserId);
-    const userPrefix = normalizeUserTablePrefix(normalizedOwnerUserId);
-    await sqliteRepository.executeNonQuery(
-        `DELETE FROM ${userPrefix}_moderation WHERE user_id = @user_id`,
-        {
-            '@user_id': normalizedUserId
-        }
-    );
+    await backend.app.LocalModerationDelete({
+        ownerUserId: normalizedOwnerUserId,
+        userId: normalizedUserId
+    });
 }
 
 async function syncLocalModerationSnapshot({
     ownerUserId,
     rows = []
 }: SyncLocalModerationSnapshotInput = {}) {
-    const moderationByUserId = new Map();
-
-    for (const row of Array.isArray(rows) ? rows : []) {
-        if (row?.type !== 'block' && row?.type !== 'mute') {
-            continue;
-        }
-
-        const targetUserId =
-            typeof row.targetUserId === 'string'
-                ? row.targetUserId.trim()
-                : String(row.targetUserId ?? '').trim();
-        if (!targetUserId) {
-            continue;
-        }
-
-        const existing = moderationByUserId.get(targetUserId) ?? {
-            userId: targetUserId,
-            updatedAt: row.created || new Date().toISOString(),
-            displayName: row.targetDisplayName || '',
-            block: false,
-            mute: false
-        };
-
-        moderationByUserId.set(targetUserId, {
-            ...existing,
-            updatedAt: row.created || existing.updatedAt,
-            displayName: row.targetDisplayName || existing.displayName,
-            block: existing.block || row.type === 'block',
-            mute: existing.mute || row.type === 'mute'
-        });
+    const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+    if (!normalizedOwnerUserId) {
+        return [];
     }
 
-    const existingRows = await getAllLocalModerations(ownerUserId);
-    const writes = [];
-
-    for (const row of existingRows) {
-        if (row.userId && !moderationByUserId.has(row.userId)) {
-            writes.push(deleteLocalModerationRow(ownerUserId, row.userId));
-        }
-    }
-
-    for (const row of moderationByUserId.values()) {
-        writes.push(setLocalModerationRow(ownerUserId, row));
-    }
-
-    await Promise.all(writes);
-    return Array.from(moderationByUserId.values());
+    return backend.app.LocalModerationSyncSnapshot({
+        ownerUserId: normalizedOwnerUserId,
+        rows: Array.isArray(rows) ? rows : []
+    });
 }
 
 async function sendPlayerModeration({

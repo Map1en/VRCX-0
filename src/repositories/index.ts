@@ -4,6 +4,7 @@ export { default as vrchatAuthRepository } from './vrchatAuthRepository.js';
 export { default as sqliteRepository } from './sqliteRepository.js';
 export { default as storageRepository } from './storageRepository.js';
 export { default as webRepository } from './webRepository.js';
+export { default as externalApiRepository } from './externalApiRepository.js';
 export { default as vrchatSearchRepository } from './vrchatSearchRepository.js';
 export { default as vrchatFriendRepository } from './vrchatFriendRepository.js';
 export { default as vrchatFavoriteRepository } from './vrchatFavoriteRepository.js';

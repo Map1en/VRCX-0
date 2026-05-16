@@ -1,6 +1,9 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 
-import { storageRepository, webRepository } from '@/repositories/index.js';
+import {
+    externalApiRepository,
+    storageRepository
+} from '@/repositories/index.js';
 import { branches } from '@/shared/constants/settings.js';
 import {
     compareReleaseVersions,
@@ -53,7 +56,11 @@ function platformIdForHost(
     return '';
 }
 
-function getUpdaterTarget(hostPlatform: unknown, hostArch = '', linuxPackageKind = '') {
+function getUpdaterTarget(
+    hostPlatform: unknown,
+    hostArch = '',
+    linuxPackageKind = ''
+) {
     const platformId = platformIdForHost(
         hostPlatform,
         hostArch,
@@ -130,8 +137,8 @@ function normalizeGitHubRelease(
     const tauriAsset = getTauriManifestAssetOfInterest(
         release.assets,
         hostPlatform,
-                String(hostArch || ''),
-                String(linuxPackageKind || '')
+        String(hostArch || ''),
+        String(linuxPackageKind || '')
     );
     const asset = tauriAsset;
     if (requireInstallerAsset && !asset) {
@@ -153,7 +160,11 @@ function normalizeGitHubRelease(
     };
 }
 
-function normalizeReleaseList(branch: unknown, releases: unknown, options: UpdateOptions = {}) {
+function normalizeReleaseList(
+    branch: unknown,
+    releases: unknown,
+    options: UpdateOptions = {}
+) {
     const normalizedBranch = sanitizeBranch(branch);
     return (Array.isArray(releases) ? releases : [releases])
         .map((release) =>
@@ -183,7 +194,11 @@ function defaultBranchForVersion(_version?: unknown) {
     return 'Stable';
 }
 
-function hasUpdateForBranch(branch: unknown, currentVersion: unknown, latestReleaseVersion: unknown) {
+function hasUpdateForBranch(
+    branch: unknown,
+    currentVersion: unknown,
+    latestReleaseVersion: unknown
+) {
     const currentParsed = parseReleaseVersion(String(currentVersion || ''));
     const latestParsed = parseReleaseVersion(
         String(latestReleaseVersion || '')
@@ -203,11 +218,13 @@ function hasUpdateForBranch(branch: unknown, currentVersion: unknown, latestRele
     );
 }
 
-async function fetchBranchReleases(branch: unknown, options: UpdateOptions = {}) {
+async function fetchBranchReleases(
+    branch: unknown,
+    options: UpdateOptions = {}
+) {
     const normalizedBranch = sanitizeBranch(branch);
-    const response = await webRepository.execute({
+    const response = await externalApiRepository.fetchGithubReleases({
         url: branches[normalizedBranch].urlReleases,
-        method: 'GET',
         headers: {
             Accept: 'application/vnd.github+json'
         }
@@ -227,7 +244,10 @@ async function fetchBranchReleases(branch: unknown, options: UpdateOptions = {})
     return normalizeReleaseList(normalizedBranch, data, options);
 }
 
-async function fetchLatestBranchRelease(branch: unknown, options: UpdateOptions = {}) {
+async function fetchLatestBranchRelease(
+    branch: unknown,
+    options: UpdateOptions = {}
+) {
     const releases = await fetchBranchReleases(branch, options);
     return releases[0] || null;
 }
@@ -272,7 +292,10 @@ async function buildTauriUpdaterRequest(
     };
 }
 
-async function checkTauriUpdateForRelease(release: Record<string, any>, options: UpdateOptions = {}) {
+async function checkTauriUpdateForRelease(
+    release: Record<string, any>,
+    options: UpdateOptions = {}
+) {
     const request = await buildTauriUpdaterRequest(
         release,
         options.hostPlatform || 'unknown',
@@ -282,7 +305,10 @@ async function checkTauriUpdateForRelease(release: Record<string, any>, options:
     return invoke('app__check_tauri_update', request);
 }
 
-function handleTauriDownloadEvent(event: any, onProgress?: (progress: number) => void) {
+function handleTauriDownloadEvent(
+    event: any,
+    onProgress?: (progress: number) => void
+) {
     if (event.event === 'Started') {
         return {
             downloaded: 0,
@@ -325,7 +351,10 @@ async function checkInstallableUpdate(
     });
 }
 
-async function downloadAndInstallUpdate(release: Record<string, any>, options: UpdateOptions = {}) {
+async function downloadAndInstallUpdate(
+    release: Record<string, any>,
+    options: UpdateOptions = {}
+) {
     if (updateInstallInFlight) {
         throw new Error('An update install is already in progress.');
     }

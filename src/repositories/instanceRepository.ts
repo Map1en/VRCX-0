@@ -4,7 +4,10 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache.js';
 
-import { executeVrchatRequest, type QueryParams } from './vrchatRequest.js';
+import {
+    executeVrchatBackendRequest,
+    type QueryParams
+} from './vrchatRequest.js';
 
 type InstanceAccessType =
     | 'public'
@@ -89,7 +92,7 @@ async function execute(
     path: string,
     { method = 'GET', params = {}, endpoint = '' }: ExecuteInstanceOptions = {}
 ) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatInstanceExecute', path, {
         endpoint,
         method,
         params,

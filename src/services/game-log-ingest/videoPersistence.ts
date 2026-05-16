@@ -1,7 +1,7 @@
 import {
     configRepository,
-    gameLogRepository,
-    webRepository
+    externalApiRepository,
+    gameLogRepository
 } from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
@@ -41,9 +41,9 @@ async function lookupYouTubeVideo(videoId) {
         return null;
     }
     try {
-        const response = await webRepository.execute({
-            url: `https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(normalizedVideoId)}&part=snippet,contentDetails&key=${encodeURIComponent(apiKey)}`,
-            method: 'GET'
+        const response = await externalApiRepository.fetchYoutubeVideoMetadata({
+            videoId: normalizedVideoId,
+            apiKey
         });
         const payload = parseWebJson(response);
         if (

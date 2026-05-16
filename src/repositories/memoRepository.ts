@@ -1,3 +1,5 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteRepository from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
 
@@ -30,6 +32,12 @@ interface WorldMemoEntry {
 
 interface AvatarMemoEntry {
     avatarId: unknown;
+    editedAt: unknown;
+    memo: unknown;
+}
+
+interface BackendMemoSaveResult {
+    entityId: unknown;
     editedAt: unknown;
     memo: unknown;
 }
@@ -133,29 +141,22 @@ async function saveUserMemo({ userId, memo }: SaveUserMemoInput) {
 
     const nextMemo = typeof memo === 'string' ? memo : '';
     if (!nextMemo) {
-        await sqliteRepository.executeNonQuery(
-            'DELETE FROM memos WHERE user_id = @user_id',
-            {
-                '@user_id': normalizedUserId
-            }
-        );
+        await backend.app.MemoSaveUser({
+            userId: normalizedUserId,
+            memo: ''
+        });
         return createEmptyUserMemo(normalizedUserId);
     }
 
-    const entry = {
+    const entry = (await backend.app.MemoSaveUser({
         userId: normalizedUserId,
-        editedAt: new Date().toJSON(),
         memo: nextMemo
+    })) as BackendMemoSaveResult;
+    return {
+        userId: entry.entityId,
+        editedAt: entry.editedAt,
+        memo: entry.memo
     };
-    await sqliteRepository.executeNonQuery(
-        'INSERT OR REPLACE INTO memos (user_id, edited_at, memo) VALUES (@user_id, @edited_at, @memo)',
-        {
-            '@user_id': entry.userId,
-            '@edited_at': entry.editedAt,
-            '@memo': entry.memo
-        }
-    );
-    return entry;
 }
 
 async function getWorldMemo(worldId: unknown) {
@@ -189,29 +190,22 @@ async function saveWorldMemo({ worldId, memo }: SaveWorldMemoInput) {
 
     const nextMemo = typeof memo === 'string' ? memo : '';
     if (!nextMemo) {
-        await sqliteRepository.executeNonQuery(
-            'DELETE FROM world_memos WHERE world_id = @world_id',
-            {
-                '@world_id': normalizedWorldId
-            }
-        );
+        await backend.app.MemoSaveWorld({
+            worldId: normalizedWorldId,
+            memo: ''
+        });
         return createEmptyWorldMemo(normalizedWorldId);
     }
 
-    const entry = {
+    const entry = (await backend.app.MemoSaveWorld({
         worldId: normalizedWorldId,
-        editedAt: new Date().toJSON(),
         memo: nextMemo
+    })) as BackendMemoSaveResult;
+    return {
+        worldId: entry.entityId,
+        editedAt: entry.editedAt,
+        memo: entry.memo
     };
-    await sqliteRepository.executeNonQuery(
-        'INSERT OR REPLACE INTO world_memos (world_id, edited_at, memo) VALUES (@world_id, @edited_at, @memo)',
-        {
-            '@world_id': entry.worldId,
-            '@edited_at': entry.editedAt,
-            '@memo': entry.memo
-        }
-    );
-    return entry;
 }
 
 async function getAvatarMemo(avatarId: unknown) {
@@ -245,29 +239,22 @@ async function saveAvatarMemo({ avatarId, memo }: SaveAvatarMemoInput) {
 
     const nextMemo = typeof memo === 'string' ? memo : '';
     if (!nextMemo) {
-        await sqliteRepository.executeNonQuery(
-            'DELETE FROM avatar_memos WHERE avatar_id = @avatar_id',
-            {
-                '@avatar_id': normalizedAvatarId
-            }
-        );
+        await backend.app.MemoSaveAvatar({
+            avatarId: normalizedAvatarId,
+            memo: ''
+        });
         return createEmptyAvatarMemo(normalizedAvatarId);
     }
 
-    const entry = {
+    const entry = (await backend.app.MemoSaveAvatar({
         avatarId: normalizedAvatarId,
-        editedAt: new Date().toJSON(),
         memo: nextMemo
+    })) as BackendMemoSaveResult;
+    return {
+        avatarId: entry.entityId,
+        editedAt: entry.editedAt,
+        memo: entry.memo
     };
-    await sqliteRepository.executeNonQuery(
-        'INSERT OR REPLACE INTO avatar_memos (avatar_id, edited_at, memo) VALUES (@avatar_id, @edited_at, @memo)',
-        {
-            '@avatar_id': entry.avatarId,
-            '@edited_at': entry.editedAt,
-            '@memo': entry.memo
-        }
-    );
-    return entry;
 }
 
 const memoRepository = Object.freeze({

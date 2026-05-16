@@ -1,21 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./webRepository.js', () => ({
-    default: {
-        execute: vi.fn()
-    }
+vi.mock('@/platform/tauri/index.js', () => ({
+    callBackendCommand: vi.fn()
 }));
+
+import { callBackendCommand } from '@/platform/tauri/index.js';
 
 import {
     executeGet,
     executePost,
     normalize
 } from './groupProfileRepository.js';
-import webRepository from './webRepository.js';
 
 describe('GroupProfileRepository', () => {
     beforeEach(() => {
-        vi.mocked(webRepository.execute).mockReset();
+        vi.mocked(callBackendCommand).mockReset();
     });
 
     it('normalizes group profile fields, counts, roles, and public group URL', () => {
@@ -77,7 +76,7 @@ describe('GroupProfileRepository', () => {
     });
 
     it('sends JSON bodies for POST requests without leaking params into the URL', async () => {
-        vi.mocked(webRepository.execute).mockResolvedValue({
+        vi.mocked(callBackendCommand).mockResolvedValue({
             status: 200,
             data: '{"ok":true}',
             raw: {}
@@ -89,18 +88,28 @@ describe('GroupProfileRepository', () => {
             { endpoint: 'https://api.example.test' }
         );
 
-        expect(vi.mocked(webRepository.execute)).toHaveBeenCalledWith({
-            url: 'https://api.example.test/groups/grp_123/invites',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            },
-            body: JSON.stringify({ userId: 'usr_123' })
-        });
+        expect(vi.mocked(callBackendCommand)).toHaveBeenCalledWith(
+            'app',
+            'VrchatGroupExecute',
+            [
+                {
+                    input: expect.objectContaining({
+                        path: 'groups/grp_123/invites',
+                        endpoint: 'https://api.example.test',
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: { userId: 'usr_123' },
+                        jsonBody: true
+                    })
+                }
+            ]
+        );
     });
 
     it('unwraps string error bodies from failed group requests', async () => {
-        vi.mocked(webRepository.execute).mockResolvedValue({
+        vi.mocked(callBackendCommand).mockResolvedValue({
             status: 403,
             data: '"Forbidden"',
             raw: {}

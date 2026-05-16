@@ -1,7 +1,6 @@
-import { webRepository } from '@/repositories/index.js';
+import { externalApiRepository } from '@/repositories/index.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 
-const STATUS_API_URL = 'https://status.vrchat.com/api/v2';
 const OK_POLL_MS = 15 * 60 * 1000;
 const ISSUE_POLL_MS = 2 * 60 * 1000;
 const FOCUS_REFRESH_MS = 60 * 1000;
@@ -38,13 +37,7 @@ function parseResponse(data: unknown): unknown {
 }
 
 async function getJson(path: string): Promise<VrcStatusResponse | null> {
-    const response = await webRepository.execute({
-        url: `${STATUS_API_URL}/${path}`,
-        method: 'GET',
-        headers: {
-            Referer: 'https://vrcx.app'
-        }
-    });
+    const response = await externalApiRepository.fetchVrcStatusJson(path);
 
     if (response.status !== 200) {
         throw new Error(`VRChat status request failed (${response.status})`);
@@ -145,9 +138,8 @@ export function startVrcStatusPolling(): () => void {
             return;
         }
 
-        const interval =
-            (useRuntimeStore.getState().vrcStatus.pollingIntervalMs ||
-                OK_POLL_MS) as number;
+        const interval = (useRuntimeStore.getState().vrcStatus
+            .pollingIntervalMs || OK_POLL_MS) as number;
         pollingTimer = window.setTimeout(
             tick,
             Math.max(FOCUS_REFRESH_MS, interval)

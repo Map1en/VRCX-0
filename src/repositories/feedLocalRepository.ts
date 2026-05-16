@@ -1,3 +1,5 @@
+import { backend } from '@/platform/index.js';
+
 import sqliteService from './sqliteRepository.js';
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
 
@@ -36,41 +38,21 @@ function getUserPrefix(userId) {
 
 const ensuredFeedTablePrefixes = new Map();
 
-async function createFeedTablesForPrefix(userPrefix) {
-    if (!userPrefix) {
-        throw new Error('Feed table prefix is required.');
-    }
-    await sqliteService.executeNonQuery(
-        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_gps (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, location TEXT, world_name TEXT, previous_location TEXT, time INTEGER, group_name TEXT)`
-    );
-    await sqliteService.executeNonQuery(
-        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_status (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, status TEXT, status_description TEXT, previous_status TEXT, previous_status_description TEXT)`
-    );
-    await sqliteService.executeNonQuery(
-        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_bio (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, bio TEXT, previous_bio TEXT)`
-    );
-    await sqliteService.executeNonQuery(
-        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_avatar (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, owner_id TEXT, avatar_name TEXT, current_avatar_image_url TEXT, current_avatar_thumbnail_image_url TEXT, previous_current_avatar_image_url TEXT, previous_current_avatar_thumbnail_image_url TEXT)`
-    );
-    await sqliteService.executeNonQuery(
-        `CREATE TABLE IF NOT EXISTS ${userPrefix}_feed_online_offline (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, type TEXT, location TEXT, world_name TEXT, time INTEGER, group_name TEXT)`
-    );
-    await sqliteService.executeNonQuery(
-        `CREATE INDEX IF NOT EXISTS ${userPrefix}_feed_online_offline_user_created_idx ON ${userPrefix}_feed_online_offline (user_id, created_at)`
-    );
-}
-
-function ensureFeedTablesForPrefix(userPrefix) {
-    if (!userPrefix) {
-        throw new Error('Feed table prefix is required.');
-    }
-
+function ensureFeedTablesForUser(userId) {
+    const userPrefix = getUserPrefix(userId);
     const existing = ensuredFeedTablePrefixes.get(userPrefix);
     if (existing) {
         return existing;
     }
 
-    const promise = createFeedTablesForPrefix(userPrefix).catch((error) => {
+    const promise = backend.app
+        .UserTablesEnsure({
+            userId:
+                typeof userId === 'string'
+                    ? userId.trim()
+                    : String(userId ?? '').trim()
+        })
+        .catch((error) => {
         if (ensuredFeedTablePrefixes.get(userPrefix) === promise) {
             ensuredFeedTablePrefixes.delete(userPrefix);
         }
@@ -89,88 +71,21 @@ function markFeedTablesEnsured(userPrefix) {
 
 async function userFeedPrefix(userId) {
     const userPrefix = getUserPrefix(userId);
-    await ensureFeedTablesForPrefix(userPrefix);
+    await ensureFeedTablesForUser(userId);
     return userPrefix;
 }
 
-function addGPSToDatabaseWithPrefix(userPrefix, entry) {
-    return sqliteService.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_feed_gps (created_at, user_id, display_name, location, world_name, previous_location, time, group_name) VALUES (@created_at, @user_id, @display_name, @location, @world_name, @previous_location, @time, @group_name)`,
-        {
-            '@created_at': entry.created_at,
-            '@user_id': entry.userId,
-            '@display_name': entry.displayName,
-            '@location': entry.location,
-            '@world_name': entry.worldName,
-            '@previous_location': entry.previousLocation,
-            '@time': entry.time,
-            '@group_name': entry.groupName
+function addFeedEntry(userId, type, entry) {
+    return backend.app.FeedAddEntry({
+        userId:
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim(),
+        entry: {
+            ...(entry || {}),
+            type
         }
-    );
-}
-
-function addStatusToDatabaseWithPrefix(userPrefix, entry) {
-    return sqliteService.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_feed_status (created_at, user_id, display_name, status, status_description, previous_status, previous_status_description) VALUES (@created_at, @user_id, @display_name, @status, @status_description, @previous_status, @previous_status_description)`,
-        {
-            '@created_at': entry.created_at,
-            '@user_id': entry.userId,
-            '@display_name': entry.displayName,
-            '@status': entry.status,
-            '@status_description': entry.statusDescription,
-            '@previous_status': entry.previousStatus,
-            '@previous_status_description': entry.previousStatusDescription
-        }
-    );
-}
-
-function addBioToDatabaseWithPrefix(userPrefix, entry) {
-    return sqliteService.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_feed_bio (created_at, user_id, display_name, bio, previous_bio) VALUES (@created_at, @user_id, @display_name, @bio, @previous_bio)`,
-        {
-            '@created_at': entry.created_at,
-            '@user_id': entry.userId,
-            '@display_name': entry.displayName,
-            '@bio': entry.bio,
-            '@previous_bio': entry.previousBio
-        }
-    );
-}
-
-function addAvatarToDatabaseWithPrefix(userPrefix, entry) {
-    return sqliteService.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @current_avatar_thumbnail_image_url, @previous_current_avatar_image_url, @previous_current_avatar_thumbnail_image_url)`,
-        {
-            '@created_at': entry.created_at,
-            '@user_id': entry.userId,
-            '@display_name': entry.displayName,
-            '@owner_id': entry.ownerId,
-            '@avatar_name': entry.avatarName,
-            '@current_avatar_image_url': entry.currentAvatarImageUrl,
-            '@current_avatar_thumbnail_image_url':
-                entry.currentAvatarThumbnailImageUrl,
-            '@previous_current_avatar_image_url':
-                entry.previousCurrentAvatarImageUrl,
-            '@previous_current_avatar_thumbnail_image_url':
-                entry.previousCurrentAvatarThumbnailImageUrl
-        }
-    );
-}
-
-function addOnlineOfflineToDatabaseWithPrefix(userPrefix, entry) {
-    return sqliteService.executeNonQuery(
-        `INSERT OR IGNORE INTO ${userPrefix}_feed_online_offline (created_at, user_id, display_name, type, location, world_name, time, group_name) VALUES (@created_at, @user_id, @display_name, @type, @location, @world_name, @time, @group_name)`,
-        {
-            '@created_at': entry.created_at,
-            '@user_id': entry.userId,
-            '@display_name': entry.displayName,
-            '@type': entry.type,
-            '@location': entry.location,
-            '@world_name': entry.worldName,
-            '@time': entry.time,
-            '@group_name': entry.groupName
-        }
-    );
+    });
 }
 
 const feed = {
@@ -181,7 +96,7 @@ const feed = {
     },
 
     async addGPSToDatabaseForUser(userId, entry) {
-        return addGPSToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
+        return addFeedEntry(userId, 'GPS', entry);
     },
 
     addStatusToDatabase(userId, entry) {
@@ -189,10 +104,7 @@ const feed = {
     },
 
     async addStatusToDatabaseForUser(userId, entry) {
-        return addStatusToDatabaseWithPrefix(
-            await userFeedPrefix(userId),
-            entry
-        );
+        return addFeedEntry(userId, 'Status', entry);
     },
 
     addBioToDatabase(userId, entry) {
@@ -200,7 +112,7 @@ const feed = {
     },
 
     async addBioToDatabaseForUser(userId, entry) {
-        return addBioToDatabaseWithPrefix(await userFeedPrefix(userId), entry);
+        return addFeedEntry(userId, 'Bio', entry);
     },
 
     addAvatarToDatabase(userId, entry) {
@@ -208,10 +120,7 @@ const feed = {
     },
 
     async addAvatarToDatabaseForUser(userId, entry) {
-        return addAvatarToDatabaseWithPrefix(
-            await userFeedPrefix(userId),
-            entry
-        );
+        return addFeedEntry(userId, 'Avatar', entry);
     },
 
     /**
@@ -220,19 +129,13 @@ const feed = {
      * @param {string|null} cutoffDate - ISO date string. Deletes records older than this date. If null, deletes all records.
      */
     async purgeAvatarFeedData(userId, cutoffDate) {
-        const userPrefix = await userFeedPrefix(userId);
-        if (cutoffDate) {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM ${userPrefix}_feed_avatar WHERE created_at < @cutoff`,
-                {
-                    '@cutoff': cutoffDate
-                }
-            );
-        } else {
-            await sqliteService.executeNonQuery(
-                `DELETE FROM ${userPrefix}_feed_avatar`
-            );
-        }
+        await backend.app.FeedAvatarPurge({
+            userId:
+                typeof userId === 'string'
+                    ? userId.trim()
+                    : String(userId ?? '').trim(),
+            cutoffDate: cutoffDate || null
+        });
     },
 
     addOnlineOfflineToDatabase(userId, entry) {
@@ -240,10 +143,7 @@ const feed = {
     },
 
     async addOnlineOfflineToDatabaseForUser(userId, entry) {
-        return addOnlineOfflineToDatabaseWithPrefix(
-            await userFeedPrefix(userId),
-            entry
-        );
+        return addFeedEntry(userId, entry?.type, entry);
     },
 
     async searchFeedDatabase(

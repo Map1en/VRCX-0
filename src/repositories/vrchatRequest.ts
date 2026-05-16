@@ -1,10 +1,7 @@
-import {
-    getVrchatEndpointBase,
-    normalizeVrchatEndpoint
-} from '@/shared/vrchatEndpoint.js';
+import { callBackendCommand } from '@/platform/tauri/index.js';
+import { normalizeVrchatEndpoint } from '@/shared/vrchatEndpoint.js';
 
 import { safeJsonParse } from './baseRepository.js';
-import webRepository, { type WebExecuteOptions } from './webRepository.js';
 
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8';
 
@@ -38,6 +35,12 @@ export interface VrchatRequestResponse<TJson = unknown> {
     [key: string]: unknown;
 }
 
+interface BackendApiExecuteResponse {
+    status: number;
+    data: unknown;
+    raw: unknown;
+}
+
 export interface VrchatRequestError extends Error {
     status: number;
     endpoint: string;
@@ -47,6 +50,29 @@ export interface VrchatRequestError extends Error {
 export type VrchatAuthFailureHandler = (
     error: VrchatRequestError
 ) => void | Promise<void>;
+
+export type VrchatBackendCommand =
+    | 'VrchatAuthExecute'
+    | 'VrchatFriendExecute'
+    | 'VrchatFavoriteExecute'
+    | 'VrchatSearchExecute'
+    | 'VrchatAvatarExecute'
+    | 'VrchatWorldExecute'
+    | 'VrchatGroupExecute'
+    | 'VrchatInstanceExecute'
+    | 'VrchatNotificationExecute'
+    | 'VrchatModerationExecute'
+    | 'VrchatMediaExecute'
+    | 'VrchatToolsExecute';
+
+export type BackendHttpCommand =
+    | VrchatBackendCommand
+    | 'ExternalAvatarSearchExecute'
+    | 'ExternalTranslationExecute'
+    | 'ExternalYoutubeExecute'
+    | 'ExternalVrcStatusExecute'
+    | 'ExternalUpdateReleaseExecute'
+    | 'ExternalImageExecute';
 
 let vrchatAuthFailureHandler: VrchatAuthFailureHandler | null = null;
 let vrchatAuthFailureHandlerRegistrationId = 0;
@@ -99,66 +125,6 @@ function notifyVrchatAuthFailure(error: VrchatRequestError): void {
     }
 }
 
-function shouldSkipQueryValue(
-    value: unknown,
-    { skipEmptyString = false }: { skipEmptyString?: boolean } = {}
-): boolean {
-    return (
-        value === null ||
-        value === undefined ||
-        (skipEmptyString && value === '')
-    );
-}
-
-function serializeQueryValue(value: QueryValue): string {
-    return value instanceof Date ? value.toISOString() : String(value);
-}
-
-export function appendParams(
-    url: URL,
-    params: QueryParams = {},
-    options: { skipEmptyString?: boolean } = {}
-): URL {
-    if (!params || typeof params !== 'object') {
-        return url;
-    }
-
-    for (const [key, value] of Object.entries(params)) {
-        if (shouldSkipQueryValue(value, options)) {
-            continue;
-        }
-
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                if (shouldSkipQueryValue(item, options)) {
-                    continue;
-                }
-                url.searchParams.append(key, serializeQueryValue(item));
-            }
-            continue;
-        }
-
-        url.searchParams.set(key, serializeQueryValue(value));
-    }
-
-    return url;
-}
-
-export function buildUrl(
-    path: string,
-    params: QueryParams = {},
-    endpoint = '',
-    options: { allowDebugEndpoint?: boolean; skipEmptyString?: boolean } = {}
-): string {
-    const url = new URL(
-        path,
-        getVrchatEndpointBase(endpoint, {
-            allowDebugEndpoint: Boolean(options.allowDebugEndpoint)
-        })
-    );
-    return appendParams(url, params, options).toString();
-}
-
 export function parseJsonResponse(data: unknown): unknown {
     if (data === null || data === undefined || data === '') {
         return data ?? null;
@@ -207,7 +173,17 @@ function normalizeJsonBody(value: unknown): Record<string, unknown> {
     return isRecord(value) ? value : {};
 }
 
-export async function executeVrchatRequest<TJson = unknown>(
+export async function executeBackendHttpRequest(
+    commandName: BackendHttpCommand,
+    input: Record<string, unknown>
+): Promise<BackendApiExecuteResponse> {
+    return callBackendCommand<BackendApiExecuteResponse>('app', commandName, [
+        { input }
+    ]);
+}
+
+export async function executeVrchatBackendRequest<TJson = unknown>(
+    commandName: VrchatBackendCommand,
     path: string,
     {
         endpoint = '',
@@ -228,17 +204,19 @@ export async function executeVrchatRequest<TJson = unknown>(
     }: VrchatRequestOptions = {}
 ): Promise<VrchatRequestResponse<TJson>> {
     const requestMethod = String(method || 'GET').toUpperCase();
-    const endpointDomain = normalizeEndpoint
-        ? normalizeVrchatEndpoint(endpoint)
-        : endpoint;
+    const endpointDomain =
+        normalizeEndpoint || allowDebugEndpoint
+            ? normalizeVrchatEndpoint(endpoint, { allowDebugEndpoint })
+            : endpoint;
     const resolvedQueryParams =
         queryParams ?? (requestMethod === 'GET' ? (params ?? {}) : {});
-    const requestOptions: WebExecuteOptions = {
-        url: buildUrl(path, resolvedQueryParams, endpointDomain, {
-            allowDebugEndpoint,
-            skipEmptyString: skipEmptyQueryString
-        }),
-        method: requestMethod
+    const requestOptions: Record<string, unknown> = {
+        path,
+        endpoint: endpointDomain,
+        method: requestMethod,
+        params: params ?? {},
+        queryParams: resolvedQueryParams,
+        skipEmptyQueryString
     };
 
     if (headers && Object.keys(headers).length > 0) {
@@ -250,10 +228,14 @@ export async function executeVrchatRequest<TJson = unknown>(
             'Content-Type': JSON_CONTENT_TYPE,
             ...headers
         };
-        requestOptions.body = JSON.stringify(normalizeJsonBody(body));
+        requestOptions.body = normalizeJsonBody(body);
+        requestOptions.jsonBody = true;
     }
 
-    const response = await webRepository.execute(requestOptions);
+    const response = await executeBackendHttpRequest(
+        commandName,
+        requestOptions
+    );
     const json = parseJsonResponse(response.data);
 
     if (response.status >= 400 || (isRecord(json) && 'error' in json)) {

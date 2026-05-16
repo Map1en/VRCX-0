@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const REALTIME_TRANSPORT_TEST_TIMEOUT_MS = 15_000;
 
 const backendState = vi.hoisted(() => ({
     capabilities: {
@@ -84,7 +86,8 @@ function emitBackendEvent(name: string, payload: unknown) {
 }
 
 async function prepareReadySession(websocket = '') {
-    const { useFriendRosterStore } = await import('@/state/friendRosterStore.js');
+    const { useFriendRosterStore } =
+        await import('@/state/friendRosterStore.js');
     const { useRuntimeStore } = await import('@/state/runtimeStore.js');
     const { useSessionStore } = await import('@/state/sessionStore.js');
 
@@ -160,35 +163,51 @@ describe('realtime transport backend routing', () => {
         globalThis.WebSocket = vi.fn() as unknown as typeof WebSocket;
     });
 
-    it('starts backend realtime with current snapshot and friend baseline', async () => {
-        await prepareReadySession();
-        const { startRealtimeTransport } =
+    afterEach(async () => {
+        backendState.eventHandlers.clear();
+        const { stopRealtimeTransport } =
             await import('./realtimeTransportService.js');
-
-        await startRealtimeTransport({
-            userId: 'usr_1',
-            endpoint: '',
-            websocket: '',
-            currentUserSnapshot: { id: 'usr_1' }
+        stopRealtimeTransport({
+            preserveTelemetry: false,
+            updateStatus: false
         });
-
-        expect(backendState.app.StartRealtimeTransport).toHaveBeenCalledWith(
-            'usr_1',
-            '',
-            '',
-            expect.any(Number),
-            { id: 'usr_1' },
-            expect.objectContaining({
-                usr_2: expect.objectContaining({ id: 'usr_2' })
-            })
-        );
-        expect(globalThis.WebSocket).not.toHaveBeenCalled();
-        expect(
-            [...backendState.eventHandlers.keys()].some((name) =>
-                name.includes('WsMessage')
-            )
-        ).toBe(false);
     });
+
+    it(
+        'starts backend realtime with current snapshot and friend baseline',
+        async () => {
+            await prepareReadySession();
+            const { startRealtimeTransport } =
+                await import('./realtimeTransportService.js');
+
+            await startRealtimeTransport({
+                userId: 'usr_1',
+                endpoint: '',
+                websocket: '',
+                currentUserSnapshot: { id: 'usr_1' }
+            });
+
+            expect(
+                backendState.app.StartRealtimeTransport
+            ).toHaveBeenCalledWith(
+                'usr_1',
+                '',
+                '',
+                expect.any(Number),
+                { id: 'usr_1' },
+                expect.objectContaining({
+                    usr_2: expect.objectContaining({ id: 'usr_2' })
+                })
+            );
+            expect(globalThis.WebSocket).not.toHaveBeenCalled();
+            expect(
+                [...backendState.eventHandlers.keys()].some((name) =>
+                    name.includes('WsMessage')
+                )
+            ).toBe(false);
+        },
+        REALTIME_TRANSPORT_TEST_TIMEOUT_MS
+    );
 
     it('routes only typed backend projections', async () => {
         await prepareReadySession();

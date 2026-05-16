@@ -1,17 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./webRepository.js', () => ({
-    default: {
-        execute: vi.fn()
-    }
+vi.mock('@/platform/tauri/index.js', () => ({
+    callBackendCommand: vi.fn()
 }));
 
-import webRepository from './webRepository.js';
+import { callBackendCommand } from '@/platform/tauri/index.js';
+
 import worldProfileRepository from './worldProfileRepository.js';
 
 describe('WorldProfileRepository', () => {
     beforeEach(() => {
-        vi.mocked(webRepository.execute).mockReset();
+        vi.mocked(callBackendCommand).mockReset();
     });
 
     it('normalizes raw world API data into the shape dialogs and lists consume', () => {
@@ -67,10 +66,10 @@ describe('WorldProfileRepository', () => {
     });
 
     it('builds GET URLs with endpoint, scalar params, repeated array params, and skipped nulls', async () => {
-        vi.mocked(webRepository.execute).mockResolvedValue({
+        vi.mocked(callBackendCommand).mockResolvedValue({
             status: 200,
             data: '{"ok":true}',
-            raw: { source: 'web' }
+            raw: { source: 'rust-api' }
         });
 
         const response = await worldProfileRepository.executeGet(
@@ -88,21 +87,30 @@ describe('WorldProfileRepository', () => {
         expect(response).toMatchObject({
             json: { ok: true },
             status: 200,
-            raw: { source: 'web' }
+            raw: { source: 'rust-api' }
         });
-        const request = vi.mocked(webRepository.execute).mock.calls[0][0];
-        const url = new URL(request.url);
-        expect(request.method).toBe('GET');
-        expect(`${url.origin}${url.pathname}`).toBe(
-            'https://api.example.test/custom/worlds'
+        expect(callBackendCommand).toHaveBeenCalledWith(
+            'app',
+            'VrchatWorldExecute',
+            [
+                {
+                    input: expect.objectContaining({
+                        path: 'worlds',
+                        endpoint: 'https://api.example.test/custom/',
+                        method: 'GET',
+                        queryParams: {
+                            tag: ['featured', null, 'labs'],
+                            n: 50,
+                            ignored: undefined
+                        }
+                    })
+                }
+            ]
         );
-        expect(url.searchParams.getAll('tag')).toEqual(['featured', 'labs']);
-        expect(url.searchParams.get('n')).toBe('50');
-        expect(url.searchParams.has('ignored')).toBe(false);
     });
 
     it('throws request errors with status, endpoint, and parsed payload details', async () => {
-        vi.mocked(webRepository.execute).mockResolvedValue({
+        vi.mocked(callBackendCommand).mockResolvedValue({
             status: 404,
             data: JSON.stringify({
                 error: {

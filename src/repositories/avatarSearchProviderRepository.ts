@@ -3,7 +3,7 @@ import { publishPreferenceChanged } from '@/lib/preferenceEvents.js';
 import avatarProfileRepository from './avatarProfileRepository.js';
 import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
-import webRepository from './webRepository.js';
+import externalApiRepository from './externalApiRepository.js';
 
 type ProviderConfig = {
     enabled: boolean;
@@ -273,13 +273,9 @@ async function search({ provider, query }: SearchInput) {
         getVrcxId()
     ]);
 
-    const response = await webRepository.execute({
+    const response = await externalApiRepository.searchAvatarProvider({
         url,
-        method: 'GET',
-        headers: {
-            Referer: 'https://vrcx.app',
-            'VRCX-ID': vrcxId
-        }
+        vrcxId
     });
     const json = parseResponse(response.data);
 

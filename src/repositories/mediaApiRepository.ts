@@ -10,15 +10,14 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { normalizePlatformError } from '../platform/tauri/errors.js';
 import { backend } from '../platform/tauri/index.js';
 import {
-    buildUrl,
-    executeVrchatRequest,
+    executeBackendHttpRequest,
+    executeVrchatBackendRequest,
     parseJsonResponse,
     type QueryParams,
     type QueryValue,
     type VrchatRequestResponse,
     unwrapErrorMessage
 } from './vrchatRequest.js';
-import webRepository from './webRepository.js';
 
 type MediaApiRecord = Record<string, any>;
 type MediaApiParams = QueryParams;
@@ -65,7 +64,7 @@ async function executeFilePut({
     fileMIME,
     fileMD5
 }: FilePutOptions) {
-    const response = await webRepository.execute({
+    const response = await executeBackendHttpRequest('VrchatMediaExecute', {
         url,
         uploadFilePUT: true,
         fileData,
@@ -99,15 +98,19 @@ async function executeRequest(
     const normalizedParams = normalizeParams(params);
 
     try {
-        return await executeVrchatRequest<MediaApiRecord>(path, {
-            endpoint,
-            method,
-            params: normalizedParams,
-            body: normalizedParams,
-            allowDebugEndpoint: true,
-            fallbackMessage: 'Media request failed',
-            includeParams: true
-        });
+        return await executeVrchatBackendRequest<MediaApiRecord>(
+            'VrchatMediaExecute',
+            path,
+            {
+                endpoint,
+                method,
+                params: normalizedParams,
+                body: normalizedParams,
+                allowDebugEndpoint: true,
+                fallbackMessage: 'Media request failed',
+                includeParams: true
+            }
+        );
     } catch (error) {
         throw normalizePlatformError(error, 'Media request failed');
     }
@@ -122,7 +125,7 @@ async function executeGet(
     const normalizedParams = normalizeParams(params);
 
     try {
-        return await executeVrchatRequest(path, {
+        return await executeVrchatBackendRequest('VrchatMediaExecute', path, {
             endpoint: options.endpoint,
             method: 'GET',
             params: normalizedParams,
@@ -142,7 +145,7 @@ async function executeDelete(
     options: MediaApiOptions = {}
 ) {
     try {
-        return await executeVrchatRequest(path, {
+        return await executeVrchatBackendRequest('VrchatMediaExecute', path, {
             endpoint: options.endpoint,
             method: 'DELETE',
             jsonBody: false,
@@ -162,8 +165,9 @@ async function uploadImage(
     options: MediaApiOptions = {}
 ): Promise<MediaUploadResponse> {
     try {
-        const response = await webRepository.execute({
-            url: buildUrl(path, {}, options.endpoint, {
+        const response = await executeBackendHttpRequest('VrchatMediaExecute', {
+            path,
+            endpoint: normalizeVrchatEndpointDomain(options.endpoint, {
                 allowDebugEndpoint: true
             }),
             uploadImage: true,
@@ -324,8 +328,9 @@ async function uploadPrint(
     } = {}
 ): Promise<MediaUploadResponse> {
     try {
-        const response = await webRepository.execute({
-            url: buildUrl('prints', {}, endpoint, {
+        const response = await executeBackendHttpRequest('VrchatMediaExecute', {
+            path: 'prints',
+            endpoint: normalizeVrchatEndpointDomain(endpoint, {
                 allowDebugEndpoint: true
             }),
             uploadImagePrint: true,

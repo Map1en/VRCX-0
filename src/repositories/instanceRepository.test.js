@@ -1,18 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./webRepository.js', () => ({
-    default: {
-        execute: vi.fn()
-    }
+vi.mock('@/platform/tauri/index.js', () => ({
+    callBackendCommand: vi.fn()
 }));
 
+import { callBackendCommand } from '@/platform/tauri/index.js';
+
 import instanceRepository from './instanceRepository.js';
-import webRepository from './webRepository.js';
 
 describe('InstanceRepository', () => {
     beforeEach(() => {
-        vi.mocked(webRepository.execute).mockReset();
-        vi.mocked(webRepository.execute).mockResolvedValue({
+        vi.mocked(callBackendCommand).mockReset();
+        vi.mocked(callBackendCommand).mockResolvedValue({
             status: 200,
             data: '{"ok":true}',
             raw: { ok: true }
@@ -33,20 +32,30 @@ describe('InstanceRepository', () => {
             status: 200
         });
 
-        expect(webRepository.execute).toHaveBeenCalledWith({
-            url: 'https://api.example.test/api/1/instances',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            },
-            body: JSON.stringify({
-                type: 'private',
-                canRequestInvite: true,
-                worldId: 'wrld_test',
-                ownerId: 'usr_owner',
-                region: 'eu'
-            })
-        });
+        expect(callBackendCommand).toHaveBeenCalledWith(
+            'app',
+            'VrchatInstanceExecute',
+            [
+                {
+                    input: expect.objectContaining({
+                        path: 'instances',
+                        endpoint: 'https://api.example.test/api/1',
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: {
+                            type: 'private',
+                            canRequestInvite: true,
+                            worldId: 'wrld_test',
+                            ownerId: 'usr_owner',
+                            region: 'eu'
+                        },
+                        jsonBody: true
+                    })
+                }
+            ]
+        );
     });
 
     it('maps group-only options without leaking role ids to non-member instances', async () => {
@@ -62,19 +71,17 @@ describe('InstanceRepository', () => {
             region: 'Japan'
         });
 
-        expect(JSON.parse(webRepository.execute.mock.calls[0][0].body)).toEqual(
-            {
-                type: 'group',
-                canRequestInvite: false,
-                worldId: 'wrld_group',
-                ownerId: 'grp_team',
-                region: 'jp',
-                groupAccessType: 'plus',
-                queueEnabled: false,
-                ageGate: true,
-                displayName: 'Raid Night'
-            }
-        );
+        expect(callBackendCommand.mock.calls[0][2][0].input.body).toEqual({
+            type: 'group',
+            canRequestInvite: false,
+            worldId: 'wrld_group',
+            ownerId: 'grp_team',
+            region: 'jp',
+            groupAccessType: 'plus',
+            queueEnabled: false,
+            ageGate: true,
+            displayName: 'Raid Night'
+        });
     });
 
     it('includes group role ids only for members access instances', async () => {
@@ -86,12 +93,12 @@ describe('InstanceRepository', () => {
             roleIds: ['grol_a', 'grol_b']
         });
 
-        expect(
-            JSON.parse(webRepository.execute.mock.calls[0][0].body)
-        ).toMatchObject({
-            groupAccessType: 'members',
-            roleIds: ['grol_a', 'grol_b']
-        });
+        expect(callBackendCommand.mock.calls[0][2][0].input.body).toMatchObject(
+            {
+                groupAccessType: 'members',
+                roleIds: ['grol_a', 'grol_b']
+            }
+        );
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {
@@ -102,7 +109,7 @@ describe('InstanceRepository', () => {
             })
         ).rejects.toThrow('requires an owner id');
 
-        expect(webRepository.execute).not.toHaveBeenCalled();
+        expect(callBackendCommand).not.toHaveBeenCalled();
     });
 
     it('sends close-instance requests with the hard-close flag', async () => {
@@ -111,15 +118,25 @@ describe('InstanceRepository', () => {
             hardClose: true
         });
 
-        expect(webRepository.execute).toHaveBeenCalledWith({
-            url: 'https://api.vrchat.cloud/api/1/instances/wrld_test:12345',
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            },
-            body: JSON.stringify({
-                hardClose: true
-            })
-        });
+        expect(callBackendCommand).toHaveBeenCalledWith(
+            'app',
+            'VrchatInstanceExecute',
+            [
+                {
+                    input: expect.objectContaining({
+                        path: 'instances/wrld_test:12345',
+                        endpoint: '',
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: {
+                            hardClose: true
+                        },
+                        jsonBody: true
+                    })
+                }
+            ]
+        );
     });
 });

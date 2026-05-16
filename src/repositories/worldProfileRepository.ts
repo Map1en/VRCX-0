@@ -5,7 +5,7 @@ import {
     setCachedQueryData
 } from '@/lib/entityQueryCache.js';
 
-import { executeVrchatRequest } from './vrchatRequest.js';
+import { executeVrchatBackendRequest } from './vrchatRequest.js';
 
 interface WorldRepositoryOptions {
     endpoint?: string;
@@ -191,7 +191,7 @@ async function fetchWorldProfile({ worldId, endpoint = '' }) {
 }
 
 async function executeGet(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
         endpoint,
         method: 'GET',
         params,
@@ -200,7 +200,7 @@ async function executeGet(path, params = {}, { endpoint = '' } = {}) {
 }
 
 async function executePut(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
         endpoint,
         method: 'PUT',
         body: params,
@@ -209,7 +209,7 @@ async function executePut(path, params = {}, { endpoint = '' } = {}) {
 }
 
 async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatRequest(path, {
+    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
         endpoint,
         method: 'DELETE',
         params,
