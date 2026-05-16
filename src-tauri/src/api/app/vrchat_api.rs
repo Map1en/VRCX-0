@@ -347,7 +347,31 @@ macro_rules! api_execute_command {
             state: State<'_, AppState>,
             input: HttpApiRequestInput,
         ) -> Result<HttpApiExecuteResponse, AppError> {
-            execute_http_api(state, input, $scope).await
+            let command = stringify!($name);
+            let diagnostics = state.backend_context.diagnostics.clone();
+            let sync = state.backend_context.sync.clone();
+            diagnostics.record_command(command, "running", "HTTP API request dispatched.");
+            let result = execute_http_api(state, input, $scope).await;
+            match &result {
+                Ok(response) => {
+                    diagnostics.record_command(
+                        command,
+                        "ok",
+                        format!("status={}", response.status),
+                    );
+                    sync.record(
+                        "api",
+                        "ready",
+                        format!("{command} completed with status {}.", response.status),
+                        0,
+                    );
+                }
+                Err(error) => {
+                    diagnostics.record_command(command, "error", error.to_string());
+                    sync.record_failure("api", error.to_string());
+                }
+            }
+            result
         }
     };
 }

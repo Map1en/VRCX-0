@@ -138,7 +138,7 @@ fn handle_jobs(deps: GameClientDeps, jobs: Vec<GameClientJob>) -> Result<(), App
             GameClientJob::GameStopped => match lifecycle::prepare_game_stopped(&deps) {
                 Ok(Some(plan)) => {
                     let task_deps = deps.clone();
-                    tauri::async_runtime::spawn(async move {
+                    deps.context.tasks.spawn(async move {
                         if let Err(error) = lifecycle::execute_crash_relaunch(task_deps, plan).await
                         {
                             tracing::warn!("GameClient stopped-game handling failed: {error}");

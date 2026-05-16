@@ -50,7 +50,7 @@ pub async fn handle_screenshot(deps: BackendDeps, input: ScreenshotInput) -> Res
             let metadata_json = serde_json::to_string(&metadata)?;
             let path_for_task = screenshot_path.clone();
             let world_id_for_task = world_id.clone();
-            let written = tauri::async_runtime::spawn_blocking(move || {
+            let written = tokio::task::spawn_blocking(move || {
                 screenshot_domain::add_screenshot_metadata(
                     &path_for_task,
                     &metadata_json,

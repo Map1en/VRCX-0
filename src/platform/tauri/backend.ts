@@ -75,10 +75,83 @@ export interface LegacyVrcxMigrationStatus {
     reason?: string;
 }
 
+export interface BackendRuntimePhaseSnapshot {
+    name: string;
+    status: string;
+    detail: string;
+    updatedAt: string;
+}
+
+export interface BackendRuntimeSnapshot {
+    startedAt: string;
+    hostServicesStarted: boolean;
+    phases: BackendRuntimePhaseSnapshot[];
+}
+
+export interface BackendBackgroundJobSnapshot {
+    name: string;
+    owner: string;
+    status: string;
+    cadenceSeconds?: number | null;
+    lastStartedAt?: string | null;
+    lastFinishedAt?: string | null;
+    lastDetail: string;
+    failureCount: number;
+}
+
+export interface BackendSyncDomainSnapshot {
+    domain: string;
+    status: string;
+    detail: string;
+    updatedAt: string;
+    revision: number;
+    pendingCount: number;
+    failureCount: number;
+}
+
+export interface BackendSyncSnapshot {
+    domains: BackendSyncDomainSnapshot[];
+}
+
+export interface BackendCommandGroupSnapshot {
+    name: string;
+    boundary: string;
+    commandCount: number;
+    examples: string[];
+}
+
+export interface BackendCommandObservation {
+    command: string;
+    status: string;
+    detail: string;
+    observedAt: string;
+}
+
+export interface BackendDiagnosticsSnapshot {
+    genericSqlEnabled: boolean;
+    frontendWsParsingEnabled: boolean;
+    commandGroups: BackendCommandGroupSnapshot[];
+    recentCommands: BackendCommandObservation[];
+    notes: string[];
+}
+
+export interface BackendAppSnapshot {
+    runtime: BackendRuntimeSnapshot;
+    backgroundJobs: BackendBackgroundJobSnapshot[];
+    sync: BackendSyncSnapshot;
+    diagnostics: BackendDiagnosticsSnapshot;
+    gameLog: Record<string, unknown>;
+}
+
 export interface AppBackendNamespace extends BackendNamespace {
     AppendErrorLog(entry: string): Promise<void>;
     ExitApplication(): Promise<void>;
     GetHostCapabilities(): Promise<HostCapabilities>;
+    BackendAppSnapshotGet(): Promise<BackendAppSnapshot>;
+    BackendBackgroundJobsSnapshotGet(): Promise<BackendBackgroundJobSnapshot[]>;
+    BackendDiagnosticsGet(): Promise<BackendDiagnosticsSnapshot>;
+    BackendRuntimeSnapshotGet(): Promise<BackendRuntimeSnapshot>;
+    BackendSyncSnapshotGet(): Promise<BackendSyncSnapshot>;
     SetGameClientRuntimeState(
         sessionActive: boolean,
         currentLocation: string

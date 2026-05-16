@@ -20,7 +20,9 @@ use vrcx_0_persistence::realtime::{
 use crate::error::AppError;
 use crate::state::AppState;
 
-use super::local_data_types::*;
+pub mod types;
+
+use types::*;
 
 fn now_iso() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
@@ -1167,7 +1169,50 @@ pub fn app__database_maintenance_run(
     state: State<'_, AppState>,
     task: String,
 ) -> Result<(), AppError> {
-    match task.as_str() {
+    let task = normalize_text(task);
+    let job_name = format!("databaseMaintenance.{task}");
+    state.backend_context.diagnostics.record_command(
+        "app__database_maintenance_run",
+        "running",
+        format!("task={task}"),
+    );
+    state.backend_context.background_jobs.register_job(
+        &job_name,
+        "rust-command",
+        None,
+        "running",
+        format!("Running maintenance task {task}."),
+    );
+    let result = run_database_maintenance_task(&state, &task);
+    match &result {
+        Ok(()) => {
+            state
+                .backend_context
+                .background_jobs
+                .mark_completed(&job_name, format!("Maintenance task {task} finished."));
+            state.backend_context.diagnostics.record_command(
+                "app__database_maintenance_run",
+                "ok",
+                format!("task={task}"),
+            );
+        }
+        Err(error) => {
+            state
+                .backend_context
+                .background_jobs
+                .mark_failed(&job_name, error.to_string());
+            state.backend_context.diagnostics.record_command(
+                "app__database_maintenance_run",
+                "error",
+                format!("task={task}: {error}"),
+            );
+        }
+    }
+    result
+}
+
+fn run_database_maintenance_task(state: &AppState, task: &str) -> Result<(), AppError> {
+    match task {
         "initGlobalTables" => {
             ensure_game_log_tables(&state.db)?;
             ensure_global_local_data_tables(&state.db)?;
@@ -1253,9 +1298,9 @@ pub fn app__database_maintenance_run(
             add_notification_indexes(&state.db)?;
         }
         "upgradeDatabaseVersion" => {
-            app__database_maintenance_run(state.clone(), "updateTableForGroupNames".into())?;
-            app__database_maintenance_run(state.clone(), "addFriendLogFriendNumber".into())?;
-            app__database_maintenance_run(state.clone(), "updateTableForAvatarHistory".into())?;
+            run_database_maintenance_task(state, "updateTableForGroupNames")?;
+            run_database_maintenance_task(state, "addFriendLogFriendNumber")?;
+            run_database_maintenance_task(state, "updateTableForAvatarHistory")?;
             add_legacy_indexes(&state.db)?;
         }
         "cleanLegendFromFriendLog" => {

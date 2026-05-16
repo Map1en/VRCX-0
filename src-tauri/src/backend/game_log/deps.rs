@@ -3,6 +3,7 @@ use std::sync::Arc;
 use serde_json::Value;
 
 use crate::backend::event_bus::BackendEventBus;
+use crate::backend::task_runtime::BackendTasks;
 use crate::domain::image_cache::ImageCache;
 use crate::domain::web_client::WebClient;
 use vrcx_0_persistence::database::DatabaseService;
@@ -15,6 +16,7 @@ pub(crate) struct BackendDeps {
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
     pub event_bus: BackendEventBus,
+    pub tasks: BackendTasks,
     pub media_queue: InstanceMediaQueue,
 }
 

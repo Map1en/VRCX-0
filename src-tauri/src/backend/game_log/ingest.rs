@@ -73,6 +73,7 @@ impl GameLogProcessor {
             web: Arc::clone(&self.context.web),
             image_cache: Arc::clone(&self.context.image_cache),
             event_bus: self.context.event_bus.clone(),
+            tasks: self.context.tasks.clone(),
             media_queue: self.media_queue.clone(),
         }
     }
@@ -129,9 +130,18 @@ impl GameLogProcessor {
         raw_rows: Vec<Vec<String>>,
     ) -> Result<GameLogWriteOutcome, AppError> {
         match write_batch_with_retry(&self.context.db, batch) {
-            Ok(()) => Ok(GameLogWriteOutcome::BackendPersisted),
+            Ok(()) => {
+                self.context.sync.record(
+                    "gameLog",
+                    "persisted",
+                    "GameLog batch persisted by Rust.",
+                    0,
+                );
+                Ok(GameLogWriteOutcome::BackendPersisted)
+            }
             Err(error) => {
                 let message = error.to_string();
+                self.context.sync.record_failure("gameLog", &message);
                 self.context
                     .event_bus
                     .emit_game_log_persistence_fallback(batch, raw_rows, &message);
@@ -182,7 +192,7 @@ fn write_batch_with_retry(
 fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
     match side_effect {
         GameLogSideEffect::Video(input) => {
-            tauri::async_runtime::spawn(async move {
+            deps.tasks.clone().spawn(async move {
                 if let Err(error) = video::handle_video_play(deps, input).await {
                     tracing::warn!("GameLog video side effect failed: {error}");
                 }
@@ -198,7 +208,7 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));
         }
         GameLogSideEffect::Screenshot(input) => {
-            tauri::async_runtime::spawn(async move {
+            deps.tasks.clone().spawn(async move {
                 if let Err(error) = screenshot::handle_screenshot(
                     deps,
                     screenshot::ScreenshotInput {
@@ -214,7 +224,7 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             });
         }
         GameLogSideEffect::ApiRequest { url } => {
-            tauri::async_runtime::spawn(async move {
+            deps.tasks.clone().spawn(async move {
                 if let Err(error) = super::instance_media::handle_api_request(deps, &url).await {
                     tracing::warn!("GameLog instance media side effect failed: {error}");
                 }
@@ -225,7 +235,7 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             display_name,
             inventory_id,
         } => {
-            tauri::async_runtime::spawn(async move {
+            deps.tasks.clone().spawn(async move {
                 if let Err(error) = super::instance_media::handle_sticker_spawn(
                     deps,
                     &user_id,

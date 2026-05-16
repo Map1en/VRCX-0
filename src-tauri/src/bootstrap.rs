@@ -12,6 +12,7 @@ use tracing_subscriber::Layer;
 
 use crate::backend::event_bus::BackendEventSink;
 use crate::backend::host_actions::BackendHostActions;
+use crate::backend::task_runtime::{BackendTask, BackendTaskExecutor};
 use crate::domain::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
@@ -51,6 +52,15 @@ impl BackendHostActions for TauriBackendHostActions {
         if let Some(window) = self.app_handle.get_webview_window("main") {
             let _ = window.set_focus();
         }
+    }
+}
+
+#[derive(Clone)]
+struct TauriBackendTaskExecutor;
+
+impl BackendTaskExecutor for TauriBackendTaskExecutor {
+    fn spawn(&self, task: BackendTask) {
+        tauri::async_runtime::spawn(task);
     }
 }
 
@@ -214,16 +224,40 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     app.manage(app_state);
 
     let state = app.state::<AppState>();
+    state.backend_context.runtime.record_phase(
+        "appState",
+        "completed",
+        "Backend AppState initialized.",
+    );
+    state.backend_context.sync.record(
+        "startup",
+        "running",
+        "Tauri setup is wiring backend services.",
+        0,
+    );
     create_main_window(app, state.web.proxy_url())?;
+    state.backend_context.runtime.record_phase(
+        "mainWindow",
+        "completed",
+        "Main webview window created.",
+    );
 
     disable_windows_default_context_menu(app);
 
     let state = app.state::<AppState>();
     configure_tray(app)?;
+    state
+        .backend_context
+        .runtime
+        .record_phase("tray", "completed", "System tray configured.");
     sync_autostart_from_db(app, &state);
     hide_autostart_window_if_needed(app, &state);
     start_host_services(app, &state);
     open_devtools_if_enabled(app);
+    state
+        .backend_context
+        .sync
+        .record("startup", "ready", "Backend host services are ready.", 0);
 
     Ok(())
 }
@@ -305,10 +339,22 @@ fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
         {
             let _ = app.autolaunch().enable();
         }
+        state.backend_context.runtime.record_phase(
+            "autostart",
+            "completed",
+            "Autostart preference synchronized.",
+        );
     }
 
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-    let _ = (app, state);
+    {
+        let _ = app;
+        state.backend_context.runtime.record_phase(
+            "autostart",
+            "skipped",
+            "Autostart synchronization is unavailable on this platform.",
+        );
+    }
 }
 
 fn hide_autostart_window_if_needed(app: &tauri::App, state: &AppState) {
@@ -340,6 +386,21 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         .backend_context
         .host
         .set_actions(TauriBackendHostActions::new(app.handle().clone()));
+    state
+        .backend_context
+        .tasks
+        .set_executor(TauriBackendTaskExecutor);
+    state
+        .backend_context
+        .runtime
+        .set_host_services_started(true, "Tauri event sink and host action adapters installed.");
+    state
+        .backend_context
+        .background_jobs
+        .start_database_optimize_loop(
+            std::sync::Arc::clone(&state.db),
+            state.backend_context.tasks.clone(),
+        );
 
     if is_host_capability_available(HostCapability::GameProcessMonitor) {
         let game_process_sinks: Vec<std::sync::Arc<dyn GameProcessEventSink>> = vec![
@@ -352,10 +413,34 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
             state.log_watcher.clone(),
             game_process_sinks,
         );
+        state
+            .backend_context
+            .background_jobs
+            .mark_running("gameProcessMonitor", "Game process monitor is active.");
+    } else {
+        state.backend_context.background_jobs.register_job(
+            "gameProcessMonitor",
+            "rust-host",
+            None,
+            "unavailable",
+            "Game process monitor capability is unavailable.",
+        );
     }
 
     if is_host_capability_available(HostCapability::Ipc) {
         state.ipc.start(app.handle().clone());
+        state
+            .backend_context
+            .background_jobs
+            .mark_running("ipcServer", "Local IPC server is active.");
+    } else {
+        state.backend_context.background_jobs.register_job(
+            "ipcServer",
+            "rust-host",
+            None,
+            "unavailable",
+            "IPC capability is unavailable.",
+        );
     }
 
     #[cfg(target_os = "windows")]
@@ -367,11 +452,26 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
             tracing::warn!("failed to prime GameLog watcher from backend DB: {error}");
         }
         state.log_watcher.start(local_low, app.handle().clone());
+        state
+            .backend_context
+            .background_jobs
+            .mark_running("gameLogWatcher", "Windows GameLog watcher is active.");
+    }
+
+    #[cfg(target_os = "windows")]
+    if !is_host_capability_available(HostCapability::GameLogWatcher) {
+        state.backend_context.background_jobs.register_job(
+            "gameLogWatcher",
+            "rust-host",
+            None,
+            "unavailable",
+            "GameLog watcher capability is unavailable.",
+        );
     }
 
     #[cfg(target_os = "linux")]
-    if is_host_capability_available(HostCapability::VrchatPathDiscovery) {
-        match crate::domain::vrchat_paths::discover_linux_vrchat_paths() {
+    if is_host_capability_available(HostCapability::GameLogWatcher) {
+        match crate::domain::vrchat_paths::discover_linux_vrchat_log_paths() {
             Ok(paths) => {
                 let latest_log = paths
                     .latest_log
@@ -389,12 +489,47 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
                 state
                     .log_watcher
                     .start_without_process_monitor(paths.app_data, app.handle().clone());
+                state
+                    .backend_context
+                    .background_jobs
+                    .mark_running("gameLogWatcher", "Linux GameLog watcher is active.");
             }
             Err(reason) => {
                 tracing::warn!(reason, "Linux GameLog watcher is unavailable");
+                state.backend_context.background_jobs.register_job(
+                    "gameLogWatcher",
+                    "rust-host",
+                    None,
+                    "unavailable",
+                    reason,
+                );
             }
         }
     }
+
+    #[cfg(target_os = "linux")]
+    if !is_host_capability_available(HostCapability::GameLogWatcher) {
+        state.backend_context.background_jobs.register_job(
+            "gameLogWatcher",
+            "rust-host",
+            None,
+            "unavailable",
+            host_capabilities
+                .game_log_watcher
+                .reason
+                .clone()
+                .unwrap_or_else(|| "GameLog watcher capability is unavailable.".into()),
+        );
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    state.backend_context.background_jobs.register_job(
+        "gameLogWatcher",
+        "rust-host",
+        None,
+        "unavailable",
+        "GameLog watcher is unavailable on this platform.",
+    );
 }
 
 fn open_devtools_if_enabled(app: &tauri::App) {

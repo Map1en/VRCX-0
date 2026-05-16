@@ -177,7 +177,13 @@ impl RealtimeBackend {
         });
         let cancel_rx = self.cancel_tx.subscribe();
         let _ = self.cancel_tx.send(generation);
-        tauri::async_runtime::spawn(async move {
+        self.context.sync.record(
+            "realtime",
+            "running",
+            format!("Realtime transport generation {generation} started."),
+            0,
+        );
+        self.context.tasks.spawn(async move {
             run_realtime_transport(
                 context,
                 message_sink,
@@ -205,12 +211,19 @@ impl RealtimeBackend {
         friends_by_id: HashMap<String, FriendRecord>,
     ) -> Result<FriendBaselineResult, AppError> {
         let requested_session = RealtimeSessionContext::new(user_id, endpoint, websocket);
+        let friend_count = friends_by_id.len();
         let (result, active) = {
             let state = self
                 .state
                 .lock()
                 .map_err(|error| AppError::Custom(format!("realtime state lock: {error}")))?;
             let Some(active) = state.active_context.clone() else {
+                self.context.sync.record(
+                    "realtimeFriends",
+                    "ignored",
+                    "Friend baseline ignored because realtime has no active context.",
+                    friend_count as u64,
+                );
                 return Ok(FriendBaselineResult::default());
             };
             if active.session != requested_session
@@ -222,6 +235,12 @@ impl RealtimeBackend {
                     .session
                     .is_realtime_generation_active(active.session_generation)
             {
+                self.context.sync.record(
+                    "realtimeFriends",
+                    "ignored",
+                    "Stale friend baseline ignored by Rust realtime backend.",
+                    friend_count as u64,
+                );
                 return Ok(FriendBaselineResult {
                     accepted: false,
                     generation: generation.unwrap_or(active.generation),
@@ -254,6 +273,15 @@ impl RealtimeBackend {
         };
 
         self.drain_queued_friend_messages(active);
+        self.context.sync.record(
+            "realtimeFriends",
+            if result.accepted { "ready" } else { "ignored" },
+            format!(
+                "Friend baseline revision {} with {} friends.",
+                result.baseline_revision, result.friend_count
+            ),
+            0,
+        );
 
         Ok(result)
     }
@@ -269,7 +297,7 @@ impl RealtimeBackend {
             return Ok(());
         }
 
-        write_realtime_batch(
+        let result = write_realtime_batch(
             &self.context.db,
             &user_id,
             &RealtimePersistenceBatch {
@@ -280,7 +308,20 @@ impl RealtimeBackend {
                 ..RealtimePersistenceBatch::default()
             },
         )
-        .map_err(|error| AppError::Custom(format!("expire realtime notification: {error}")))
+        .map_err(|error| AppError::Custom(format!("expire realtime notification: {error}")));
+        match &result {
+            Ok(()) => self.context.sync.record(
+                "realtimeNotifications",
+                "persisted",
+                "Realtime notification expiration persisted by Rust.",
+                0,
+            ),
+            Err(error) => self
+                .context
+                .sync
+                .record_failure("realtimeNotifications", error.to_string()),
+        }
+        result
     }
 
     pub fn stop(&self, request: RealtimeStopRequest) {
@@ -334,6 +375,9 @@ impl RealtimeBackend {
                 reason: None,
                 status_code: None,
             });
+        self.context
+            .sync
+            .record("realtime", "idle", "Realtime transport stopped.", 0);
     }
 
     fn is_friend_output_current_locked(
@@ -432,11 +476,20 @@ impl RealtimeBackend {
                 .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
             return;
         }
-        if let Err(error) =
-            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
-        {
-            tracing::warn!("Realtime friend persistence failed: {error}");
-            projection.feed_entries.clear();
+        match write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence) {
+            Ok(()) => self.context.sync.record(
+                "realtimeFriends",
+                "persisted",
+                "Realtime friend projection persisted by Rust.",
+                0,
+            ),
+            Err(error) => {
+                tracing::warn!("Realtime friend persistence failed: {error}");
+                self.context
+                    .sync
+                    .record_failure("realtimeFriends", error.to_string());
+                projection.feed_entries.clear();
+            }
         }
         self.context
             .event_bus
@@ -449,7 +502,7 @@ impl RealtimeBackend {
         } = output.timer_action
         {
             let backend = Arc::clone(self);
-            tauri::async_runtime::spawn(async move {
+            self.context.tasks.spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 backend.fire_pending_offline(&user_id, token, now);
@@ -459,10 +512,19 @@ impl RealtimeBackend {
 
     fn apply_notification_output(&self, output: RealtimeNotificationOutput) {
         let projection = output.projection;
-        if let Err(error) =
-            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
-        {
-            tracing::warn!("Realtime notification persistence failed: {error}");
+        match write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence) {
+            Ok(()) => self.context.sync.record(
+                "realtimeNotifications",
+                "persisted",
+                "Realtime notification projection persisted by Rust.",
+                0,
+            ),
+            Err(error) => {
+                tracing::warn!("Realtime notification persistence failed: {error}");
+                self.context
+                    .sync
+                    .record_failure("realtimeNotifications", error.to_string());
+            }
         }
         self.context
             .event_bus
@@ -472,10 +534,19 @@ impl RealtimeBackend {
     fn apply_current_user_output(&self, mut output: RealtimeCurrentUserOutput) {
         self.enrich_current_user_location_output(&mut output);
         let projection = output.projection;
-        if let Err(error) =
-            write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence)
-        {
-            tracing::warn!("Realtime current user persistence failed: {error}");
+        match write_realtime_batch(&self.context.db, &output.owner_user_id, &output.persistence) {
+            Ok(()) => self.context.sync.record(
+                "realtimeCurrentUser",
+                "persisted",
+                "Realtime current-user projection persisted by Rust.",
+                0,
+            ),
+            Err(error) => {
+                tracing::warn!("Realtime current user persistence failed: {error}");
+                self.context
+                    .sync
+                    .record_failure("realtimeCurrentUser", error.to_string());
+            }
         }
         self.context
             .event_bus
@@ -522,10 +593,19 @@ impl RealtimeBackend {
         output: RealtimeInstanceClosedOutput,
     ) {
         let projection = output.projection;
-        if let Err(error) =
-            write_realtime_batch(&self.context.db, owner_user_id, &output.persistence)
-        {
-            tracing::warn!("Realtime instance-closed persistence failed: {error}");
+        match write_realtime_batch(&self.context.db, owner_user_id, &output.persistence) {
+            Ok(()) => self.context.sync.record(
+                "realtimeInstanceClosed",
+                "persisted",
+                "Realtime instance-closed projection persisted by Rust.",
+                0,
+            ),
+            Err(error) => {
+                tracing::warn!("Realtime instance-closed persistence failed: {error}");
+                self.context
+                    .sync
+                    .record_failure("realtimeInstanceClosed", error.to_string());
+            }
         }
         self.context
             .event_bus
@@ -539,7 +619,7 @@ impl RealtimeBackend {
         overlay_patch: Value,
     ) {
         let backend = Arc::clone(self);
-        tauri::async_runtime::spawn(async move {
+        self.context.tasks.spawn(async move {
             let mut options = HashMap::new();
             options.insert(
                 "url".to_string(),

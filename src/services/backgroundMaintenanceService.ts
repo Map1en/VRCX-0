@@ -1,7 +1,6 @@
 import { backend } from '@/platform/index.js';
 import {
     configRepository,
-    databaseMaintenanceRepository,
     groupProfileRepository,
     vrchatAuthRepository,
     vrchatModerationRepository
@@ -53,7 +52,6 @@ const timers = {
     clearVRCXCacheCheck: 86400,
     discordUpdate: 0,
     autoStateChange: 0,
-    databaseOptimize: 3600,
     moderationRefresh: 3600
 };
 const groupInstanceProfileCache = new Map();
@@ -75,7 +73,6 @@ function resetTimers() {
     timers.clearVRCXCacheCheck = 86400;
     timers.discordUpdate = 0;
     timers.autoStateChange = 0;
-    timers.databaseOptimize = 3600;
     timers.moderationRefresh = 3600;
     lastTickAt = Date.now();
 }
@@ -1085,9 +1082,6 @@ export async function runBackgroundMaintenanceTick() {
         await runClearVrcxCacheIfDue();
         await runDueTask('discordUpdate', 3, refreshDiscordPresence);
         await runDueTask('autoStateChange', 3, updateAutoStateChange);
-        await runDueTask('databaseOptimize', 86400, () =>
-            databaseMaintenanceRepository.optimize()
-        );
     } finally {
         running = false;
     }

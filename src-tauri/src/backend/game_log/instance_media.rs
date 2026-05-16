@@ -41,7 +41,7 @@ impl InstanceMediaQueue {
         }
 
         let _guard = self.gate.lock().await;
-        tauri::async_runtime::spawn_blocking(|| std::thread::sleep(INSTANCE_MEDIA_SAVE_INTERVAL))
+        tokio::task::spawn_blocking(|| std::thread::sleep(INSTANCE_MEDIA_SAVE_INTERVAL))
             .await
             .map_err(|error| AppError::Custom(format!("instance media delay task: {error}")))?;
         task().await

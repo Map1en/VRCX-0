@@ -1,5 +1,6 @@
 export { default as configRepository } from './configRepository.js';
 export { default as authRepository } from './authRepository.js';
+export { default as backendRuntimeRepository } from './backendRuntimeRepository.js';
 export { default as vrchatAuthRepository } from './vrchatAuthRepository.js';
 export { default as storageRepository } from './storageRepository.js';
 export { default as webRepository } from './webRepository.js';

@@ -1,8 +1,13 @@
+pub mod background;
 pub mod context;
+pub mod diagnostics;
 pub mod event_bus;
 pub mod game_client;
 pub mod game_log;
 pub mod host_actions;
 pub mod realtime;
+pub mod runtime;
 pub mod session;
+pub mod sync;
+pub mod task_runtime;
 pub mod worker;
