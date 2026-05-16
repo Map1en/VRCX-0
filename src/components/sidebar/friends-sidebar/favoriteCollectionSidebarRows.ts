@@ -29,7 +29,10 @@ function pushFriendRows(
     nextRows: Array<Record<string, unknown>>,
     sectionKey: string,
     sectionRows: unknown[],
-    { currentUserId, isGroupByInstance = false } = {}
+    {
+        currentUserId,
+        isGroupByInstance = false
+    }: { currentUserId?: string; isGroupByInstance?: boolean } = {}
 ) {
     for (const friend of sectionRows as Array<Record<string, unknown>>) {
         const friendId = normalizeId(friend?.id);

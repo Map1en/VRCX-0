@@ -220,16 +220,18 @@ export function PresenceRoomRulesDialog({ open, onOpenChange }) {
                     return;
                 }
                 setValues({
-                    autoStateChangeEnabled: result[0],
-                    autoStateChangeNoFriends: result[1],
+                    autoStateChangeEnabled: Boolean(result[0]),
+                    autoStateChangeNoFriends: Boolean(result[1]),
                     autoStateChangeGroups: parseJsonArray(result[2]),
                     autoStateChangeInstanceTypes: parseJsonArray(result[3]),
-                    autoStateChangeAloneStatus: result[4] || 'join me',
-                    autoStateChangeCompanyStatus: result[5] || 'busy',
-                    autoStateChangeAloneDescEnabled: result[6],
-                    autoStateChangeAloneDesc: result[7] || '',
-                    autoStateChangeCompanyDescEnabled: result[8],
-                    autoStateChangeCompanyDesc: result[9] || ''
+                    autoStateChangeAloneStatus:
+                        String(result[4] || '') || 'join me',
+                    autoStateChangeCompanyStatus:
+                        String(result[5] || '') || 'busy',
+                    autoStateChangeAloneDescEnabled: Boolean(result[6]),
+                    autoStateChangeAloneDesc: String(result[7] || ''),
+                    autoStateChangeCompanyDescEnabled: Boolean(result[8]),
+                    autoStateChangeCompanyDesc: String(result[9] || '')
                 });
                 setContextRules(
                     parseJsonArray(result[10]).map(normalizeContextRule)

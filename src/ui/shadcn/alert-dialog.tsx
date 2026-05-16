@@ -49,19 +49,26 @@ function AlertDialogOverlay({
     );
 }
 
+type AlertDialogContentProps = React.ComponentProps<
+    typeof AlertDialogPrimitive.Content
+> & {
+    size?: 'default' | 'sm';
+    onPointerDownOutside?: (event: any) => void;
+    onInteractOutside?: (event: any) => void;
+};
+
 function AlertDialogContent({
     className,
     size = 'default',
     onPointerDownOutside,
     onInteractOutside,
     ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
-    size?: 'default' | 'sm';
-}) {
+}: AlertDialogContentProps) {
+    const Content = AlertDialogPrimitive.Content as React.ComponentType<any>;
     return (
         <AlertDialogPortal>
             <AlertDialogOverlay />
-            <AlertDialogPrimitive.Content
+            <Content
                 data-slot="alert-dialog-content"
                 data-size={size}
                 className={cn(

@@ -1,25 +1,14 @@
 {
     "extends": "./tsconfig.app.json",
     "compilerOptions": {
-        "allowJs": true,
+        "allowJs": false,
         "checkJs": false,
         "composite": false,
         "incremental": false,
         "noEmit": true
     },
     "include": [
-        "src/domain/**/*.ts",
-        "src/platform/**/*.ts",
-        "src/repositories/**/*.ts",
-        "src/services/**/*.ts",
-        "src/lib/**/*.ts",
-        "src/types/**/*.d.ts",
-        "src/shared/constants/**/*.ts",
-        "src/shared/events/navLayoutEvents.ts",
-        "src/shared/sqliteErrorEvents.ts",
-        "src/shared/vrchatEndpoint.ts",
-        "src/state/**/*.ts",
-        "src/shared/utils/**/*.ts"
+        "src/**/*"
     ],
     "exclude": ["node_modules", "build", "dist"]
 }

@@ -47,7 +47,8 @@ function Calendar({
                     date.toLocaleString(locale?.code, { month: 'short' }),
                 ...formatters
             }}
-            classNames={{
+            classNames={
+                {
                 root: cn('w-fit', defaultClassNames.root),
                 months: cn(
                     'relative flex flex-col gap-4 md:flex-row',
@@ -141,8 +142,9 @@ function Calendar({
                     defaultClassNames.disabled
                 ),
                 hidden: cn('invisible', defaultClassNames.hidden),
-                ...classNames
-            }}
+                    ...classNames
+                } as any
+            }
             components={{
                 Root: ({ className, rootRef, ...props }) => {
                     return (

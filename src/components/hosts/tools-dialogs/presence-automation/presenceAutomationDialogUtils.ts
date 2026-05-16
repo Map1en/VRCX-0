@@ -204,7 +204,9 @@ export function setGameRunningCondition(rule, enabled) {
 }
 
 export function buildContextConditions(rule) {
-    const conditions = [{ type: 'isGameRunning' }];
+    const conditions: Array<Record<string, unknown>> = [
+        { type: 'isGameRunning' }
+    ];
     if (rule.preset === 'alone') {
         conditions.push({ type: 'isAlone' });
     } else if (rule.preset === 'withAnyone') {

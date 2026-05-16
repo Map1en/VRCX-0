@@ -35,7 +35,7 @@ jobs:
             - id: version
               name: Validate release version
               run: |
-                  node build-scripts/prepare-release-version.js \
+                  node build-scripts/prepare-release-version.ts \
                       --version "${{ inputs.version }}" \
                       --dry-run
 
@@ -135,7 +135,7 @@ jobs:
 
             - name: Apply release version
               run: |
-                  node build-scripts/prepare-release-version.js \
+                  node build-scripts/prepare-release-version.ts \
                       --version "${{ inputs.version }}"
 
             - name: Inject updater public key
@@ -211,14 +211,14 @@ jobs:
                   rename_asset "$deb_source" "$deb_path"
                   rename_asset "$rpm_source" "$rpm_path"
 
-                  node build-scripts/create-tauri-updater-manifest.js \
+                  node build-scripts/create-tauri-updater-manifest.ts \
                       --version "${{ needs.prepare.outputs.build_version }}" \
                       --tag "${{ needs.prepare.outputs.tag }}" \
                       --target "linux-x86_64-appimage-stable" \
                       --asset-name "$(basename "$appimage_path")" \
                       --signature-file "${appimage_path}.sig" \
                       --out "$manifest_path"
-                  node build-scripts/create-tauri-updater-manifest.js \
+                  node build-scripts/create-tauri-updater-manifest.ts \
                       --version "${{ needs.prepare.outputs.build_version }}" \
                       --tag "${{ needs.prepare.outputs.tag }}" \
                       --target "linux-x86_64-deb-stable" \
@@ -226,7 +226,7 @@ jobs:
                       --signature-file "${deb_path}.sig" \
                       --base "$manifest_path" \
                       --out "$manifest_path"
-                  node build-scripts/create-tauri-updater-manifest.js \
+                  node build-scripts/create-tauri-updater-manifest.ts \
                       --version "${{ needs.prepare.outputs.build_version }}" \
                       --tag "${{ needs.prepare.outputs.tag }}" \
                       --target "linux-x86_64-rpm-stable" \
@@ -283,6 +283,10 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24.x
+
             - uses: actions/download-artifact@v7
               with:
                   path: release-assets
@@ -324,7 +328,7 @@ jobs:
                           echo "No macOS updater signature found at $signature_path" >&2
                           exit 1
                       fi
-                      node build-scripts/create-tauri-updater-manifest.js \
+                      node build-scripts/create-tauri-updater-manifest.ts \
                           --version "${{ needs.prepare.outputs.build_version }}" \
                           --tag "${{ needs.prepare.outputs.tag }}" \
                           --target "$target" \
