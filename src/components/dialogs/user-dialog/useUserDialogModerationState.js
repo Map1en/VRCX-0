@@ -5,6 +5,7 @@ import {
     userSessionRepository,
     vrchatModerationRepository
 } from '@/repositories/index.js';
+import { refreshBackendModerations } from '@/services/backendModerationService.js';
 
 export function useUserDialogModerationState({
     currentEndpoint,
@@ -75,20 +76,24 @@ export function useUserDialogModerationState({
     useEffect(() => {
         let active = true;
 
-        if (!normalizedUserId || isTargetCurrentUser) {
+        if (!normalizedUserId || !normalizedCurrentUserId || isTargetCurrentUser) {
             setExtendedModerationState({ interactOff: false, muteChat: false });
             return () => {
                 active = false;
             };
         }
 
-        vrchatModerationRepository
-            .getPlayerModerations({ endpoint: currentEndpoint })
+        refreshBackendModerations({
+            userId: normalizedCurrentUserId,
+            endpoint: currentEndpoint
+        })
             .then((response) => {
                 if (!active) {
                     return;
                 }
-                const rows = Array.isArray(response.json) ? response.json : [];
+                const rows = Array.isArray(response?.rows)
+                    ? response.rows
+                    : [];
                 setExtendedModerationState({
                     interactOff: rows.some(
                         (row) =>
@@ -114,7 +119,13 @@ export function useUserDialogModerationState({
         return () => {
             active = false;
         };
-    }, [currentEndpoint, isTargetCurrentUser, normalizedUserId, reloadToken]);
+    }, [
+        currentEndpoint,
+        isTargetCurrentUser,
+        normalizedCurrentUserId,
+        normalizedUserId,
+        reloadToken
+    ]);
 
     useEffect(() => {
         let active = true;

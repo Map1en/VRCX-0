@@ -143,11 +143,52 @@ export interface BackendAppSnapshot {
     gameLog: Record<string, unknown>;
 }
 
+export interface BackendAuthScopeSnapshot {
+    currentUserId: string;
+    endpoint: string;
+    generation: number;
+    active: boolean;
+}
+
+export interface BackendModerationRefreshResult {
+    accepted: boolean;
+    userId: string;
+    remoteCount: number;
+    localCount: number;
+    rows: Array<{
+        id: string;
+        type: string;
+        sourceUserId: string;
+        sourceDisplayName: string;
+        targetUserId: string;
+        targetDisplayName: string;
+        created: string;
+    }>;
+}
+
+export interface BackendModerationUpdateResult {
+    targetUserId: string;
+    type: string;
+    enabled: boolean;
+    local?: {
+        userId: string;
+        updatedAt: string;
+        displayName: string;
+        block: boolean;
+        mute: boolean;
+    } | null;
+}
+
 export interface AppBackendNamespace extends BackendNamespace {
     AppendErrorLog(entry: string): Promise<void>;
     ExitApplication(): Promise<void>;
     GetHostCapabilities(): Promise<HostCapabilities>;
     BackendAppSnapshotGet(): Promise<BackendAppSnapshot>;
+    BackendAuthScopeGet(): Promise<BackendAuthScopeSnapshot>;
+    BackendAuthScopeSet(input: {
+        userId?: string;
+        endpoint?: string;
+    }): Promise<BackendAuthScopeSnapshot>;
     BackendBackgroundJobRecord(input: {
         name: string;
         owner?: string;
@@ -157,6 +198,18 @@ export interface AppBackendNamespace extends BackendNamespace {
     }): Promise<void>;
     BackendBackgroundJobsSnapshotGet(): Promise<BackendBackgroundJobSnapshot[]>;
     BackendDiagnosticsGet(): Promise<BackendDiagnosticsSnapshot>;
+    BackendModerationRefresh(input: {
+        userId: string;
+        endpoint?: string;
+    }): Promise<BackendModerationRefreshResult>;
+    BackendModerationUpdate(input: {
+        ownerUserId?: string;
+        endpoint?: string;
+        targetUserId: string;
+        targetDisplayName?: string;
+        type: string;
+        enabled: boolean;
+    }): Promise<BackendModerationUpdateResult>;
     BackendRuntimeSnapshotGet(): Promise<BackendRuntimeSnapshot>;
     BackendSyncSnapshotGet(): Promise<BackendSyncSnapshot>;
     SetGameClientRuntimeState(

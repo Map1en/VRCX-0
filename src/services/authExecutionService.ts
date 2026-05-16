@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 
 import { clearEntityQueryCache } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 import {
     authRepository,
     avatarProfileRepository,
@@ -117,6 +118,17 @@ function getCurrentUserDisplayName(user: Record<string, any> | null) {
     return user?.displayName || user?.username || user?.id || '';
 }
 
+function setBackendAuthScope(userId = '', endpoint = '') {
+    void backend.app
+        .BackendAuthScopeSet({
+            userId,
+            endpoint
+        })
+        .catch((error) => {
+            console.warn('Failed to sync backend auth scope:', error);
+        });
+}
+
 export function setSignedOutSessionState() {
     useSessionStore.getState().setSessionState({
         isLoggedIn: false,
@@ -151,6 +163,7 @@ export function resetCurrentUserRuntimeAuth() {
         currentUserWebsocket: '',
         currentUserSnapshot: null
     });
+    setBackendAuthScope();
 }
 
 function setCurrentUserRuntimeAuth(
@@ -179,6 +192,7 @@ function setCurrentUserRuntimeAuth(
         currentUserWebsocket: websocket,
         currentUserSnapshot: nextSnapshot ?? null
     });
+    setBackendAuthScope(nextSnapshot?.id ?? '', endpoint);
     recordCurrentUserSnapshot(nextSnapshot ?? null, { endpoint });
     persistAvatarWearTransition(transition);
 }

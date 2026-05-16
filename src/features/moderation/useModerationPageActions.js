@@ -1,3 +1,8 @@
+import {
+    refreshBackendModerations,
+    updateBackendModeration
+} from '@/services/backendModerationService.js';
+
 export function useModerationPageActions({
     confirm,
     currentEndpoint,
@@ -10,8 +15,7 @@ export function useModerationPageActions({
     setDetail,
     setRows,
     t,
-    useRuntimeStore,
-    vrchatModerationRepository
+    useRuntimeStore
 }) {
     const handleDeleteModeration = async (
         row,
@@ -41,22 +45,25 @@ export function useModerationPageActions({
         const rowKey = getModerationRowKey(row);
         setDeletingModerationKey(rowKey);
         try {
-            await vrchatModerationRepository.deletePlayerModeration({
+            await updateBackendModeration({
+                ownerUserId,
                 endpoint: currentEndpoint,
-                moderated: row.targetUserId,
-                type: row.type
+                targetUserId: row.targetUserId,
+                targetDisplayName: row.targetDisplayName || row.targetUserId,
+                type: row.type,
+                enabled: false
             });
             if (useRuntimeStore.getState().auth.currentUserId !== ownerUserId) {
                 return;
             }
-            const nextRows = rows.filter(
-                (entry) => !isSameModerationRow(entry, row)
-            );
-            setRows(nextRows);
-            await vrchatModerationRepository.syncLocalModerationSnapshot({
-                ownerUserId,
-                rows: nextRows
+            const response = await refreshBackendModerations({
+                userId: ownerUserId,
+                endpoint: currentEndpoint
             });
+            const nextRows = Array.isArray(response?.rows)
+                ? response.rows
+                : rows.filter((entry) => !isSameModerationRow(entry, row));
+            setRows(nextRows);
             setDetail(
                 t('view.moderation.dynamic.deleted_value_for_value', {
                     value: row.type || 'moderation',

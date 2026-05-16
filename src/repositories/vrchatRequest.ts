@@ -61,7 +61,6 @@ export type VrchatBackendCommand =
     | 'VrchatGroupExecute'
     | 'VrchatInstanceExecute'
     | 'VrchatNotificationExecute'
-    | 'VrchatModerationExecute'
     | 'VrchatMediaExecute'
     | 'VrchatToolsExecute';
 

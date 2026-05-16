@@ -7,6 +7,7 @@ use vrcx_0_persistence::database::DatabaseService;
 use vrcx_0_runtime::game_log::runtime_state::RuntimeSnapshot;
 use vrcx_0_runtime::session::HostSessionRuntime;
 
+use super::auth_scope::BackendAuthScope;
 use super::background::BackendBackgroundJobs;
 use super::diagnostics::BackendDiagnostics;
 use super::event_bus::BackendEventBus;
@@ -28,6 +29,7 @@ pub struct BackendContext {
     pub diagnostics: BackendDiagnostics,
     pub tasks: BackendTasks,
     pub session: HostSessionRuntime,
+    pub auth_scope: BackendAuthScope,
     pub config: ConfigRepository,
     game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
 }
@@ -51,6 +53,7 @@ impl BackendContext {
             diagnostics: BackendDiagnostics::new(),
             tasks: BackendTasks::new(),
             session: HostSessionRuntime::new(),
+            auth_scope: BackendAuthScope::new(),
             config,
             game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
         }

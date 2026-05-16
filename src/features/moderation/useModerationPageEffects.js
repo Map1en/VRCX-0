@@ -1,4 +1,7 @@
 import { useEffect } from 'react';
+
+import { refreshBackendModerations } from '@/services/backendModerationService.js';
+
 export function useModerationPageEffects({
     DEFAULT_PAGE_SIZES,
     TYPE_FILTERS_CONFIG_KEY,
@@ -38,7 +41,6 @@ export function useModerationPageEffects({
     setShiftHeld,
     sorting,
     tablePageSizesPreference,
-    vrchatModerationRepository,
     writePersistedState
 }) {
     useEffect(() => {
@@ -186,24 +188,17 @@ export function useModerationPageEffects({
         }
         setLoadStatus('running');
         setDetail('');
-        vrchatModerationRepository
-            .getPlayerModerations({
-                endpoint: currentEndpoint
-            })
-            .then(async (response) => {
+        refreshBackendModerations({
+            userId: currentUserId,
+            endpoint: currentEndpoint
+        })
+            .then((response) => {
                 if (!active) {
                     return;
                 }
-                const nextRows = Array.isArray(response.json)
-                    ? response.json
+                const nextRows = Array.isArray(response?.rows)
+                    ? response.rows
                     : [];
-                await vrchatModerationRepository.syncLocalModerationSnapshot({
-                    ownerUserId: currentUserId,
-                    rows: nextRows
-                });
-                if (!active) {
-                    return;
-                }
                 setRows(nextRows);
                 setLoadStatus('ready');
                 setDetail('');

@@ -1,3 +1,4 @@
+pub mod auth_scope;
 pub mod background;
 pub mod context;
 pub mod diagnostics;

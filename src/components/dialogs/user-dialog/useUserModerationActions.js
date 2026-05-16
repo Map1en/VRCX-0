@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { backend } from '@/platform/index.js';
-import { vrchatModerationRepository } from '@/repositories/index.js';
+import { updateBackendModeration } from '@/services/backendModerationService.js';
 
 import { normalizeUserId } from './userProfileFields.js';
 
@@ -20,8 +20,7 @@ export function useUserModerationActions({
     setActionStatus,
     setAvatarOverrideState,
     setExtendedModerationState,
-    setModerationState,
-    userSessionRepository
+    setModerationState
 }) {
     const { t } = useTranslation();
 
@@ -64,35 +63,20 @@ export function useUserModerationActions({
         }
 
         try {
-            if (enabled) {
-                await vrchatModerationRepository.sendPlayerModeration({
-                    endpoint: currentEndpoint,
-                    moderated: rosterUserId,
-                    type
-                });
-            } else {
-                await vrchatModerationRepository.deletePlayerModeration({
-                    endpoint: currentEndpoint,
-                    moderated: rosterUserId,
-                    type
-                });
-            }
-
-            moderationRevisionRef.current += 1;
             const nextModerationState = {
                 ...moderationState,
                 [type]: enabled
             };
-            if (currentUserId) {
-                await userSessionRepository.ensureUserTables(currentUserId);
-            }
-            const savedState =
-                await vrchatModerationRepository.saveLocalModeration({
-                    ownerUserId: currentUserId,
-                    userId: rosterUserId,
-                    displayName: profile?.displayName || rosterUserId,
-                    ...nextModerationState
-                });
+            const result = await updateBackendModeration({
+                ownerUserId: normalizedCurrentUserId || currentUserId || '',
+                endpoint: currentEndpoint,
+                targetUserId: rosterUserId,
+                targetDisplayName: profile?.displayName || rosterUserId,
+                type,
+                enabled
+            });
+            moderationRevisionRef.current += 1;
+            const savedState = result?.local ?? nextModerationState;
             setModerationState({
                 block: Boolean(savedState.block),
                 mute: Boolean(savedState.mute)
@@ -160,19 +144,14 @@ export function useUserModerationActions({
         }
 
         try {
-            if (enabled) {
-                await vrchatModerationRepository.sendPlayerModeration({
-                    endpoint: currentEndpoint,
-                    moderated: rosterUserId,
-                    type
-                });
-            } else {
-                await vrchatModerationRepository.deletePlayerModeration({
-                    endpoint: currentEndpoint,
-                    moderated: rosterUserId,
-                    type
-                });
-            }
+            await updateBackendModeration({
+                ownerUserId: normalizedCurrentUserId || currentUserId || '',
+                endpoint: currentEndpoint,
+                targetUserId: rosterUserId,
+                targetDisplayName: profile?.displayName || rosterUserId,
+                type,
+                enabled
+            });
             setExtendedModerationState((current) => ({
                 ...current,
                 [type]: enabled

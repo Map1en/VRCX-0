@@ -21,8 +21,7 @@ import {
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence.js';
 import {
-    configRepository,
-    vrchatModerationRepository
+    configRepository
 } from '@/repositories/index.js';
 import { openUserDialog } from '@/services/dialogService.js';
 import {
@@ -316,7 +315,6 @@ export function useModerationPageController({ embedded = false } = {}) {
         setShiftHeld,
         sorting,
         tablePageSizesPreference,
-        vrchatModerationRepository,
         writePersistedState
     });
     const { handleDeleteModeration, openModerationUser } =
@@ -332,8 +330,7 @@ export function useModerationPageController({ embedded = false } = {}) {
             setDetail,
             setRows,
             t,
-            useRuntimeStore,
-            vrchatModerationRepository
+            useRuntimeStore
         });
     const columns = useMemo(
         () =>

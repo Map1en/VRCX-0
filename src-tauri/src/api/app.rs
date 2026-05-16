@@ -1,3 +1,5 @@
+pub mod backend_auth;
+pub mod backend_moderation;
 pub mod backend_runtime;
 pub mod calendar;
 pub mod clipboard;

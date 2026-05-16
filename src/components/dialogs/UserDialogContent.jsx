@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { convertFileUrlToImageUrl } from '@/lib/entityMedia.js';
 import { useKnownUserFact } from '@/domain/users/useKnownUser.js';
-import { userSessionRepository } from '@/repositories/index.js';
 import { recordKnownUser } from '@/services/domainIngestionService.js';
 import { subscribeRecentActions } from '@/services/recentActionService.js';
 import { useDialogStore } from '@/state/dialogStore.js';
@@ -396,8 +395,7 @@ export function UserDialogContent({
         setAvatarOverrideState,
         setBaseProfile,
         setExtendedModerationState,
-        setModerationState,
-        userSessionRepository
+        setModerationState
     });
 
     if (profileIsLoading) {

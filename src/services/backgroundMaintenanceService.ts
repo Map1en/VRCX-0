@@ -2,8 +2,7 @@ import { backend } from '@/platform/index.js';
 import {
     configRepository,
     groupProfileRepository,
-    vrchatAuthRepository,
-    vrchatModerationRepository
+    vrchatAuthRepository
 } from '@/repositories/index.js';
 import { clearFavoriteRemoteDetailsCache } from '@/services/favoriteRemoteDetailsCacheService.js';
 import { isHostCapabilityAvailable } from '@/services/hostCapabilityService.js';
@@ -31,6 +30,7 @@ import {
     recordBackendBackgroundJob,
     runRecordedBackendJob
 } from './backendBackgroundJobService.js';
+import { refreshBackendModerations } from './backendModerationService.js';
 import {
     recordCurrentUserSnapshot,
     recordLocationHintsFromInstances
@@ -650,7 +650,8 @@ export async function refreshPlayerModerations({ isCurrent = null } = {}) {
         return;
     }
 
-    const response = await vrchatModerationRepository.getPlayerModerations({
+    await refreshBackendModerations({
+        userId: currentUserId,
         endpoint: currentUserEndpoint
     });
 
@@ -663,10 +664,6 @@ export async function refreshPlayerModerations({ isCurrent = null } = {}) {
         return;
     }
 
-    await vrchatModerationRepository.syncLocalModerationSnapshot({
-        ownerUserId: currentUserId,
-        rows: response.json
-    });
 }
 
 async function refreshGroupUserInstances() {

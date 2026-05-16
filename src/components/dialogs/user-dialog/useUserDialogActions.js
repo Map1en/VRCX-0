@@ -43,8 +43,7 @@ export function useUserDialogActions({
     setAvatarOverrideState,
     setBaseProfile,
     setExtendedModerationState,
-    setModerationState,
-    userSessionRepository
+    setModerationState
 }) {
     const { t } = useTranslation();
 
@@ -87,8 +86,7 @@ export function useUserDialogActions({
         setActionStatus,
         setAvatarOverrideState,
         setExtendedModerationState,
-        setModerationState,
-        userSessionRepository
+        setModerationState
     });
 
     async function findIncomingFriendRequestNotification(rosterUserId) {

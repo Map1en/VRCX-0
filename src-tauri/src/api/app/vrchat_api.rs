@@ -385,7 +385,6 @@ api_execute_command!(app__vrchat_world_execute, ApiScope::Vrchat);
 api_execute_command!(app__vrchat_group_execute, ApiScope::Vrchat);
 api_execute_command!(app__vrchat_instance_execute, ApiScope::Vrchat);
 api_execute_command!(app__vrchat_notification_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_moderation_execute, ApiScope::Vrchat);
 api_execute_command!(app__vrchat_media_execute, ApiScope::VrchatMedia);
 api_execute_command!(app__vrchat_tools_execute, ApiScope::Vrchat);
 api_execute_command!(
