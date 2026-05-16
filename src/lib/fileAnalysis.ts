@@ -120,12 +120,12 @@ export async function getFileAnalysisForUnityPackages({
                 ),
                 policy: entityQueryPolicies.fileAnalysis,
                 queryFn: () =>
-                    vrchatAuthRepository.executeGet(
-                        `analysis/${fileId}/${version}/${variant}`,
-                        {
-                            endpoint
-                        }
-                    )
+                    vrchatAuthRepository.getFileAnalysis({
+                        endpoint,
+                        fileId,
+                        version,
+                        variant
+                    })
             });
             const analysis = formatFileAnalysis(response.json);
             if (analysis?.success) {

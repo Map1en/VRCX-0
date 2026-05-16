@@ -5,6 +5,7 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 import { storeAvatarImage } from '@/shared/utils/avatar.js';
 import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
@@ -12,7 +13,11 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import avatarLocalRepository from './avatarLocalRepository.js';
 import memoRepository from './memoRepository.js';
 import {
+    createRequestError,
     executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage,
     type QueryParams
 } from './vrchatRequest.js';
 
@@ -37,6 +42,12 @@ interface AvatarListOptions {
 }
 
 const cachedAvatarNames = new Map<string, any>();
+
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
 
 function normalizeEntityId(value: unknown): string {
     return typeof value === 'string'
@@ -64,6 +75,35 @@ function normalizeArray(values: unknown): string[] {
                 : String(value ?? '').trim()
         )
         .filter(Boolean);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendAvatarResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat avatar request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 function normalizeLocalTags(
@@ -304,10 +344,12 @@ async function getAvatarProfile({
                     : entityQueryPolicies.avatar,
                 force,
                 queryFn: async () => {
-                    const response = await executeGet(
-                        `avatars/${encodeURIComponent(normalizedAvatarId)}`,
-                        {},
-                        { endpoint }
+                    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+                        await backend.app.BackendAvatarGet({
+                            avatarId: normalizedAvatarId,
+                            endpoint
+                        }),
+                        `avatars/${encodeURIComponent(normalizedAvatarId)}`
                     );
                     return response.json;
                 }
@@ -347,15 +389,14 @@ async function getAvatarGallery({
         policy: entityQueryPolicies.avatarGallery,
         force,
         queryFn: async () => {
-            const response = await executeGet(
-                'files',
-                {
-                    tag: 'avatargallery',
-                    galleryId: normalizedAvatarId,
-                    n: 100,
-                    offset: 0
-                },
-                { endpoint }
+            const response = unwrapBackendAvatarResponse<
+                AvatarRecord[] | { files?: AvatarRecord[] }
+            >(
+                await backend.app.BackendAvatarGalleryGet({
+                    avatarId: normalizedAvatarId,
+                    endpoint
+                }),
+                'files'
             );
             return Array.isArray(response.json)
                 ? response.json
@@ -389,14 +430,19 @@ async function getAvatarsByUser({
         );
     }
 
-    const params: QueryParams = { n, offset, sort, order, releaseStatus };
-    if (user) {
-        params.user = user;
-    } else {
-        params.userId = normalizedUserId;
-    }
-
-    const response = await executeGet('avatars', params, { endpoint });
+    const response = unwrapBackendAvatarResponse<AvatarRecord[]>(
+        await backend.app.BackendAvatarListByUserGet({
+            endpoint,
+            userId: normalizedUserId,
+            user,
+            n,
+            offset,
+            sort,
+            order,
+            releaseStatus
+        }),
+        'avatars'
+    );
     return Array.isArray(response.json)
         ? response.json.map((avatar) => normalize(avatar))
         : [];
@@ -432,10 +478,12 @@ async function selectAvatar({ avatarId, endpoint = '' }) {
         );
     }
 
-    const response = await executePut(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}/select`,
-        null,
-        { endpoint }
+    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarSelect({
+            avatarId: normalizedAvatarId,
+            endpoint
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}/select`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -454,10 +502,12 @@ async function selectFallbackAvatar({ avatarId, endpoint = '' }) {
         );
     }
 
-    const response = await executePut(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}/selectfallback`,
-        null,
-        { endpoint }
+    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarSelectFallback({
+            avatarId: normalizedAvatarId,
+            endpoint
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}/selectfallback`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -476,10 +526,13 @@ async function saveAvatar({ avatarId, params = {}, endpoint = '' }) {
         );
     }
 
-    const response = await executePut(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}`,
-        params,
-        { endpoint }
+    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarSave({
+            avatarId: normalizedAvatarId,
+            endpoint,
+            params
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -496,7 +549,10 @@ async function getAvatarStyles({ endpoint = '', force = false } = {}) {
         policy: entityQueryPolicies.avatarStyles,
         force,
         queryFn: async () => {
-            const response = await executeGet('avatarStyles', {}, { endpoint });
+            const response = unwrapBackendAvatarResponse(
+                await backend.app.BackendAvatarStylesGet({ endpoint }),
+                'avatarStyles'
+            );
             return Array.isArray(response.json) ? response.json : [];
         }
     });
@@ -510,10 +566,12 @@ async function deleteAvatar({ avatarId, endpoint = '' }) {
         );
     }
 
-    const response = await executeDelete(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}`,
-        {},
-        { endpoint }
+    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarDelete({
+            avatarId: normalizedAvatarId,
+            endpoint
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}`
     );
     await Promise.allSettled([
         invalidateEntityQueries(queryKeys.avatar(normalizedAvatarId, endpoint)),
@@ -532,10 +590,13 @@ async function createImposter({ avatarId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor/enqueue`,
-        {},
-        { endpoint }
+    return unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarImpostorCreate({
+            avatarId: normalizedAvatarId,
+            endpoint,
+            emptyBody: true
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor/enqueue`
     );
 }
 
@@ -547,15 +608,20 @@ async function deleteImposter({ avatarId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor`,
-        {},
-        { endpoint }
+    return unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarImpostorDelete({
+            avatarId: normalizedAvatarId,
+            endpoint
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor`
     );
 }
 
 async function getAvatarModerations({ endpoint = '' } = {}) {
-    return executeGet('auth/user/avatarmoderations', {}, { endpoint });
+    return unwrapBackendAvatarResponse(
+        await backend.app.BackendAvatarModerationsGet({ endpoint }),
+        'auth/user/avatarmoderations'
+    );
 }
 
 async function sendAvatarModeration({
@@ -571,13 +637,13 @@ async function sendAvatarModeration({
         );
     }
 
-    return executePost(
-        'auth/user/avatarmoderations',
-        {
-            avatarModerationType: normalizedType,
-            targetAvatarId: normalizedAvatarId
-        },
-        { endpoint }
+    return unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarModerationSend({
+            avatarId: normalizedAvatarId,
+            type: normalizedType,
+            endpoint
+        }),
+        'auth/user/avatarmoderations'
     );
 }
 
@@ -594,13 +660,13 @@ async function deleteAvatarModeration({
         );
     }
 
-    return executeDelete(
-        'auth/user/avatarmoderations',
-        {
-            avatarModerationType: normalizedType,
-            targetAvatarId: normalizedAvatarId
-        },
-        { endpoint }
+    return unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarModerationDelete({
+            avatarId: normalizedAvatarId,
+            type: normalizedType,
+            endpoint
+        }),
+        'auth/user/avatarmoderations'
     );
 }
 
@@ -622,11 +688,13 @@ async function getAvatarNameFromImageUrl(imageUrl, { endpoint = '' } = {}) {
         const response = await fetchCachedData({
             queryKey: queryKeys.file(fileId, endpoint),
             policy: entityQueryPolicies.fileObject,
-            queryFn: () =>
-                executeGet(
-                    `file/${encodeURIComponent(fileId)}`,
-                    {},
-                    { endpoint }
+            queryFn: async () =>
+                unwrapBackendAvatarResponse(
+                    await backend.app.BackendAvatarFileGet({
+                        fileId,
+                        endpoint
+                    }),
+                    `file/${encodeURIComponent(fileId)}`
                 )
         });
         const nextInfo = storeAvatarImage(

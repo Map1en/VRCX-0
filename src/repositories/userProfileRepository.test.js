@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./vrchatFriendRepository.js', () => ({
-    default: {
-        executeGet: vi.fn()
+const backendMock = vi.hoisted(() => ({
+    app: {
+        BackendUserMutualFriendsGet: vi.fn()
     }
 }));
 
+vi.mock('@/platform/tauri/index.js', () => ({
+    backend: backendMock,
+    default: backendMock
+}));
+
 import userProfileRepository from './userProfileRepository.js';
-import vrchatFriendRepository from './vrchatFriendRepository.js';
 
 describe('UserProfileRepository', () => {
     beforeEach(() => {
-        vi.mocked(vrchatFriendRepository.executeGet).mockReset();
+        vi.mocked(backendMock.app.BackendUserMutualFriendsGet).mockReset();
     });
 
     it('normalizes user profile defaults, trust metadata, moderator flags, and platform fallback', () => {
@@ -69,14 +73,18 @@ describe('UserProfileRepository', () => {
     });
 
     it('collects mutual friends until the first short page', async () => {
-        vi.mocked(vrchatFriendRepository.executeGet)
+        vi.mocked(backendMock.app.BackendUserMutualFriendsGet)
             .mockResolvedValueOnce({
-                json: Array.from({ length: 100 }, (_, index) => ({
+                status: 200,
+                data: Array.from({ length: 100 }, (_, index) => ({
                     id: `usr_page_1_${index}`
-                }))
+                })),
+                raw: {}
             })
             .mockResolvedValueOnce({
-                json: [{ id: 'usr_last' }]
+                status: 200,
+                data: [{ id: 'usr_last' }],
+                raw: {}
             });
 
         const rows = await userProfileRepository.getAllMutualFriends({
@@ -84,19 +92,31 @@ describe('UserProfileRepository', () => {
             endpoint: 'https://api.example.test'
         });
 
-        expect(vrchatFriendRepository.executeGet).toHaveBeenNthCalledWith(
+        expect(
+            backendMock.app.BackendUserMutualFriendsGet
+        ).toHaveBeenNthCalledWith(
             1,
-            'users/usr_target/mutuals/friends',
-            { n: 100, offset: 0 },
-            { endpoint: 'https://api.example.test' }
+            {
+                userId: 'usr_target',
+                endpoint: 'https://api.example.test',
+                n: 100,
+                offset: 0
+            }
         );
-        expect(vrchatFriendRepository.executeGet).toHaveBeenNthCalledWith(
+        expect(
+            backendMock.app.BackendUserMutualFriendsGet
+        ).toHaveBeenNthCalledWith(
             2,
-            'users/usr_target/mutuals/friends',
-            { n: 100, offset: 100 },
-            { endpoint: 'https://api.example.test' }
+            {
+                userId: 'usr_target',
+                endpoint: 'https://api.example.test',
+                n: 100,
+                offset: 100
+            }
         );
-        expect(vrchatFriendRepository.executeGet).toHaveBeenCalledTimes(2);
+        expect(
+            backendMock.app.BackendUserMutualFriendsGet
+        ).toHaveBeenCalledTimes(2);
         expect(rows).toHaveLength(101);
         expect(rows.at(-1)).toEqual({ id: 'usr_last' });
     });

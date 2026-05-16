@@ -3,9 +3,14 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 
 import {
+    createRequestError,
     executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage,
     type QueryParams
 } from './vrchatRequest.js';
 
@@ -53,6 +58,12 @@ interface CloseInstanceOptions extends InstanceRepositoryOptions {
     hardClose?: unknown;
 }
 
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
+
 function normalizeString(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
@@ -86,6 +97,38 @@ function toRegionCode(region: string): string {
         return 'jp';
     }
     return 'us';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendInstanceResponse(
+    response: BackendApiResult,
+    path: string,
+    params: QueryParams = {}
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const message = unwrapErrorMessage(json, response.status, {
+            fallbackMessage: 'VRChat instance request failed'
+        });
+        const requestError = createRequestError(
+            message,
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw new Error(message);
+    }
+
+    return {
+        json,
+        params,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 async function execute(
@@ -156,11 +199,14 @@ async function createInstance({
         params.displayName = displayName;
     }
 
-    return execute('instances', {
-        endpoint,
-        method: 'POST',
+    return unwrapBackendInstanceResponse(
+        await backend.app.BackendInstanceCreate({
+            endpoint,
+            params
+        }),
+        'instances',
         params
-    });
+    );
 }
 
 async function getInstance({
@@ -189,9 +235,14 @@ async function getInstance({
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
-            const response = await execute(
+            const response = unwrapBackendInstanceResponse(
+                await backend.app.BackendInstanceGet({
+                    endpoint,
+                    worldId: normalizedWorldId,
+                    instanceId: normalizedInstanceId
+                }),
                 `instances/${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}`,
-                { endpoint }
+                {}
             );
             return {
                 ...response,
@@ -230,12 +281,18 @@ async function getInstanceShortName({
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
-            const response = await execute(
-                `instances/${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}/shortName`,
-                {
+            const response = unwrapBackendInstanceResponse(
+                await backend.app.BackendInstanceShortNameGet({
                     endpoint,
-                    params
-                }
+                    worldId: normalizedWorldId,
+                    instanceId: normalizedInstanceId,
+                    shortName:
+                        typeof params.shortName === 'string'
+                            ? params.shortName
+                            : ''
+                }),
+                `instances/${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}/shortName`,
+                params
             );
             return {
                 ...response,
@@ -260,11 +317,17 @@ async function selfInvite({
         );
     }
     const locationPath = `${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}`;
-    return execute(`invite/myself/to/${locationPath}`, {
-        endpoint,
-        method: 'POST',
-        params: shortName ? { shortName } : {}
-    });
+    const params = shortName ? { shortName } : {};
+    return unwrapBackendInstanceResponse(
+        await backend.app.BackendInstanceSelfInvite({
+            endpoint,
+            worldId: normalizedWorldId,
+            instanceId: normalizedInstanceId,
+            shortName
+        }),
+        `invite/myself/to/${locationPath}`,
+        params
+    );
 }
 
 async function closeInstance({
@@ -278,13 +341,18 @@ async function closeInstance({
             'InstanceRepository.closeInstance requires a location.'
         );
     }
-    return execute(`instances/${normalizedLocation}`, {
-        endpoint,
-        method: 'DELETE',
-        params: {
+    const params = {
+        hardClose: Boolean(hardClose)
+    };
+    return unwrapBackendInstanceResponse(
+        await backend.app.BackendInstanceClose({
+            endpoint,
+            location: normalizedLocation,
             hardClose: Boolean(hardClose)
-        }
-    });
+        }),
+        `instances/${normalizedLocation}`,
+        params
+    );
 }
 
 const instanceRepository = Object.freeze({

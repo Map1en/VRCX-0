@@ -52,17 +52,11 @@ export type VrchatAuthFailureHandler = (
 ) => void | Promise<void>;
 
 export type VrchatBackendCommand =
-    | 'VrchatAuthExecute'
-    | 'VrchatFriendExecute'
-    | 'VrchatFavoriteExecute'
-    | 'VrchatSearchExecute'
     | 'VrchatAvatarExecute'
     | 'VrchatWorldExecute'
     | 'VrchatGroupExecute'
     | 'VrchatInstanceExecute'
-    | 'VrchatNotificationExecute'
-    | 'VrchatMediaExecute'
-    | 'VrchatToolsExecute';
+    | 'VrchatNotificationExecute';
 
 export type BackendHttpCommand =
     | VrchatBackendCommand

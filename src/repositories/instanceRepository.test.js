@@ -1,7 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const backendApp = vi.hoisted(() => ({
+    BackendInstanceCreate: vi.fn(),
+    BackendInstanceClose: vi.fn()
+}));
+
+const backendMock = vi.hoisted(() => ({
+    app: backendApp
+}));
+
 vi.mock('@/platform/tauri/index.js', () => ({
-    callBackendCommand: vi.fn()
+    callBackendCommand: vi.fn(),
+    backend: backendMock,
+    default: backendMock
 }));
 
 import { callBackendCommand } from '@/platform/tauri/index.js';
@@ -11,6 +22,14 @@ import instanceRepository from './instanceRepository.js';
 describe('InstanceRepository', () => {
     beforeEach(() => {
         vi.mocked(callBackendCommand).mockReset();
+        for (const command of Object.values(backendApp)) {
+            command.mockReset();
+            command.mockResolvedValue({
+                status: 200,
+                data: '{"ok":true}',
+                raw: { ok: true }
+            });
+        }
         vi.mocked(callBackendCommand).mockResolvedValue({
             status: 200,
             data: '{"ok":true}',
@@ -32,30 +51,16 @@ describe('InstanceRepository', () => {
             status: 200
         });
 
-        expect(callBackendCommand).toHaveBeenCalledWith(
-            'app',
-            'VrchatInstanceExecute',
-            [
-                {
-                    input: expect.objectContaining({
-                        path: 'instances',
-                        endpoint: 'https://api.example.test/api/1',
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json;charset=utf-8'
-                        },
-                        body: {
-                            type: 'private',
-                            canRequestInvite: true,
-                            worldId: 'wrld_test',
-                            ownerId: 'usr_owner',
-                            region: 'eu'
-                        },
-                        jsonBody: true
-                    })
-                }
-            ]
-        );
+        expect(backendApp.BackendInstanceCreate).toHaveBeenCalledWith({
+            endpoint: 'https://api.example.test/api/1',
+            params: {
+                type: 'private',
+                canRequestInvite: true,
+                worldId: 'wrld_test',
+                ownerId: 'usr_owner',
+                region: 'eu'
+            }
+        });
     });
 
     it('maps group-only options without leaking role ids to non-member instances', async () => {
@@ -71,7 +76,7 @@ describe('InstanceRepository', () => {
             region: 'Japan'
         });
 
-        expect(callBackendCommand.mock.calls[0][2][0].input.body).toEqual({
+        expect(backendApp.BackendInstanceCreate.mock.calls[0][0].params).toEqual({
             type: 'group',
             canRequestInvite: false,
             worldId: 'wrld_group',
@@ -93,7 +98,9 @@ describe('InstanceRepository', () => {
             roleIds: ['grol_a', 'grol_b']
         });
 
-        expect(callBackendCommand.mock.calls[0][2][0].input.body).toMatchObject(
+        expect(
+            backendApp.BackendInstanceCreate.mock.calls[0][0].params
+        ).toMatchObject(
             {
                 groupAccessType: 'members',
                 roleIds: ['grol_a', 'grol_b']
@@ -109,7 +116,7 @@ describe('InstanceRepository', () => {
             })
         ).rejects.toThrow('requires an owner id');
 
-        expect(callBackendCommand).not.toHaveBeenCalled();
+        expect(backendApp.BackendInstanceCreate).not.toHaveBeenCalled();
     });
 
     it('sends close-instance requests with the hard-close flag', async () => {
@@ -118,25 +125,10 @@ describe('InstanceRepository', () => {
             hardClose: true
         });
 
-        expect(callBackendCommand).toHaveBeenCalledWith(
-            'app',
-            'VrchatInstanceExecute',
-            [
-                {
-                    input: expect.objectContaining({
-                        path: 'instances/wrld_test:12345',
-                        endpoint: '',
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json;charset=utf-8'
-                        },
-                        body: {
-                            hardClose: true
-                        },
-                        jsonBody: true
-                    })
-                }
-            ]
-        );
+        expect(backendApp.BackendInstanceClose).toHaveBeenCalledWith({
+            endpoint: '',
+            location: 'wrld_test:12345',
+            hardClose: true
+        });
     });
 });

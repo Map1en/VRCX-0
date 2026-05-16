@@ -4,10 +4,14 @@ import {
     invalidateEntityQueries,
     queryKeys
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 
 import {
-    executeVrchatBackendRequest,
-    type QueryParams
+    createRequestError,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    type QueryParams,
+    unwrapErrorMessage
 } from './vrchatRequest.js';
 
 const PAGE_SIZE = 100;
@@ -28,15 +32,16 @@ type RepositoryOptions = {
     endpoint?: string;
     force?: boolean;
 };
-type ExecuteOptions = RepositoryOptions & {
-    method?: string;
-    params?: QueryParams | null;
-};
 type GroupCalendarIdentity = {
     groupId: string;
 };
 type GroupCalendarEventIdentity = GroupCalendarIdentity & {
     eventId: string;
+};
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
 };
 
 async function processAllPages(
@@ -66,18 +71,33 @@ async function processAllPages(
     return results;
 }
 
-async function execute(
-    path: string,
-    { endpoint = '', method = 'GET', params = null }: ExecuteOptions = {}
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendToolsResponse(
+    response: BackendApiResult,
+    path: string
 ) {
-    return executeVrchatBackendRequest('VrchatToolsExecute', path, {
-        endpoint,
-        method,
-        params,
-        body: params,
-        fallbackMessage: 'VRChat tool request failed',
-        decorateError: false
-    });
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat tool request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw new Error(requestError.message);
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 async function getGroupCalendars(
@@ -89,12 +109,11 @@ async function getGroupCalendars(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await execute('calendar', {
+            const response = await backend.app.BackendToolsCalendarsGet({
                 endpoint,
-                method: 'GET',
                 params
             });
-            return response.json;
+            return unwrapBackendToolsResponse(response, 'calendar').json;
         }
     });
 }
@@ -108,14 +127,14 @@ async function getGroupCalendar(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await execute(
-                `calendar/${encodeURIComponent(groupId)}`,
-                {
-                    endpoint,
-                    method: 'GET'
-                }
-            );
-            return response.json;
+            const response = await backend.app.BackendToolsGroupCalendarGet({
+                endpoint,
+                groupId
+            });
+            return unwrapBackendToolsResponse(
+                response,
+                `calendar/${encodeURIComponent(groupId)}`
+            ).json;
         }
     });
 }
@@ -129,12 +148,15 @@ async function getFollowingGroupCalendars(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await execute('calendar/following', {
-                endpoint,
-                method: 'GET',
-                params
-            });
-            return response.json;
+            const response =
+                await backend.app.BackendToolsFollowingCalendarsGet({
+                    endpoint,
+                    params
+                });
+            return unwrapBackendToolsResponse(
+                response,
+                'calendar/following'
+            ).json;
         }
     });
 }
@@ -148,12 +170,14 @@ async function getFeaturedGroupCalendars(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await execute('calendar/featured', {
+            const response = await backend.app.BackendToolsFeaturedCalendarsGet({
                 endpoint,
-                method: 'GET',
                 params
             });
-            return response.json;
+            return unwrapBackendToolsResponse(
+                response,
+                'calendar/featured'
+            ).json;
         }
     });
 }
@@ -199,16 +223,17 @@ async function followGroupEvent(
     }: GroupCalendarEventIdentity & { isFollowing: boolean },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
-    const response = await execute(
-        `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}/follow`,
-        {
-            endpoint,
-            method: 'POST',
-            params: { isFollowing: Boolean(isFollowing) }
-        }
-    );
+    const response = await backend.app.BackendToolsGroupEventFollow({
+        endpoint,
+        groupId,
+        eventId,
+        isFollowing: Boolean(isFollowing)
+    });
     void invalidateEntityQueries(['calendar']);
-    return response.json;
+    return unwrapBackendToolsResponse(
+        response,
+        `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}/follow`
+    ).json;
 }
 
 async function getGroupCalendarIcs(
@@ -220,14 +245,16 @@ async function getGroupCalendarIcs(
         policy: entityQueryPolicies.groupCalendarEvent,
         force,
         queryFn: async () => {
-            const response = await execute(
-                `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}.ics`,
-                {
+            const response =
+                await backend.app.BackendToolsGroupCalendarIcsGet({
                     endpoint,
-                    method: 'GET'
-                }
-            );
-            return response.json;
+                    groupId,
+                    eventId
+                });
+            return unwrapBackendToolsResponse(
+                response,
+                `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}.ics`
+            ).json;
         }
     });
 }
@@ -236,12 +263,12 @@ async function saveUserNote(
     { targetUserId, note }: { targetUserId: string; note: string },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
-    const response = await execute('userNotes', {
+    const response = await backend.app.BackendToolsUserNoteSave({
         endpoint,
-        method: 'POST',
-        params: { targetUserId, note }
+        targetUserId,
+        note
     });
-    return response.json;
+    return unwrapBackendToolsResponse(response, 'userNotes').json;
 }
 
 async function reportUser(
@@ -258,15 +285,17 @@ async function reportUser(
     },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
-    const response = await execute(
-        `feedback/${encodeURIComponent(userId)}/user`,
-        {
-            endpoint,
-            method: 'POST',
-            params: { contentType, reason, type }
-        }
-    );
-    return response.json;
+    const response = await backend.app.BackendToolsUserReport({
+        endpoint,
+        userId,
+        contentType,
+        reason,
+        type
+    });
+    return unwrapBackendToolsResponse(
+        response,
+        `feedback/${encodeURIComponent(userId)}/user`
+    ).json;
 }
 
 async function getInviteMessages(
@@ -276,14 +305,15 @@ async function getInviteMessages(
     }: { currentUserId: string; messageType: string },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
-    const response = await execute(
-        `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}`,
-        {
-            endpoint,
-            method: 'GET'
-        }
-    );
-    return response.json;
+    const response = await backend.app.BackendToolsInviteMessagesGet({
+        endpoint,
+        currentUserId,
+        messageType
+    });
+    return unwrapBackendToolsResponse(
+        response,
+        `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}`
+    ).json;
 }
 
 async function editInviteMessage(
@@ -300,19 +330,20 @@ async function editInviteMessage(
     },
     { endpoint = '' }: RepositoryOptions = {}
 ) {
-    const response = await execute(
-        `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}/${encodeURIComponent(slot)}`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: { message }
-        }
-    );
-    return response.json;
+    const response = await backend.app.BackendToolsInviteMessageEdit({
+        endpoint,
+        currentUserId,
+        messageType,
+        slot: String(slot),
+        message
+    });
+    return unwrapBackendToolsResponse(
+        response,
+        `message/${encodeURIComponent(currentUserId)}/${encodeURIComponent(messageType)}/${encodeURIComponent(slot)}`
+    ).json;
 }
 
 const toolsRepository = Object.freeze({
-    execute,
     getGroupCalendar,
     getGroupCalendars,
     getFollowingGroupCalendars,
@@ -329,7 +360,6 @@ const toolsRepository = Object.freeze({
 });
 
 export {
-    execute,
     getGroupCalendar,
     getGroupCalendars,
     getFollowingGroupCalendars,

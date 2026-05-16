@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const backendMock = vi.hoisted(() => ({
+    app: {}
+}));
+
 vi.mock('@/platform/tauri/index.js', () => ({
-    callBackendCommand: vi.fn()
+    callBackendCommand: vi.fn(),
+    backend: backendMock,
+    default: backendMock
 }));
 
 import { callBackendCommand } from '@/platform/tauri/index.js';

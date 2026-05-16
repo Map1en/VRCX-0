@@ -3,15 +3,54 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 import { replaceBioSymbols } from '@/shared/utils/base/string.js';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
 
 import {
+    createRequestError,
     executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage,
     type QueryParams
 } from './vrchatRequest.js';
 
 type GroupRecord = Record<string, any>;
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendGroupResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat group request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
+}
 
 function normalizeEntityId(value: unknown): string {
     const normalize = (text: string) => {
@@ -258,12 +297,13 @@ async function fetchGroupProfile({
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}`,
-        {
-            includeRoles: includeRoles ? 'true' : 'false'
-        },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupGet({
+            groupId: normalizedGroupId,
+            includeRoles: Boolean(includeRoles),
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}`
     );
     return normalize(response.json);
 }
@@ -280,10 +320,12 @@ async function getUserGroups({ userId, endpoint = '' }) {
         queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
-            const response = await executeGet(
-                `users/${encodeURIComponent(normalizedUserId)}/groups`,
-                {},
-                { endpoint }
+            const response = unwrapBackendGroupResponse(
+                await backend.app.BackendGroupUserGroupsGet({
+                    userId: normalizedUserId,
+                    endpoint
+                }),
+                `users/${encodeURIComponent(normalizedUserId)}/groups`
             );
             return Array.isArray(response.json) ? response.json : [];
         }
@@ -299,10 +341,14 @@ async function getGroupPosts({ groupId, endpoint = '', n = 100, offset = 0 }) {
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/posts`,
-        { n, offset },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupPostsGet({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
     return responseRows(response.json, 'posts');
 }
@@ -321,10 +367,13 @@ async function createGroupPost({ groupId, params = {}, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/posts`,
-        params,
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupPostCreate({
+            groupId: normalizedGroupId,
+            params,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
 }
 
@@ -337,10 +386,14 @@ async function editGroupPost({ groupId, postId, params = {}, endpoint = '' }) {
         );
     }
 
-    return executePut(
-        `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`,
-        params,
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupPostEdit({
+            groupId: normalizedGroupId,
+            postId: normalizedPostId,
+            params,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`
     );
 }
 
@@ -353,10 +406,13 @@ async function deleteGroupPost({ groupId, postId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupPostDelete({
+            groupId: normalizedGroupId,
+            postId: normalizedPostId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`
     );
 }
 
@@ -389,10 +445,16 @@ async function getGroupMembers({
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await executeGet(
-                `groups/${encodeURIComponent(normalizedGroupId)}/members`,
-                params,
-                { endpoint }
+            const response = unwrapBackendGroupResponse(
+                await backend.app.BackendGroupMembersGet({
+                    groupId: normalizedGroupId,
+                    n,
+                    offset,
+                    sort,
+                    roleId,
+                    endpoint
+                }),
+                `groups/${encodeURIComponent(normalizedGroupId)}/members`
             );
             return responseRows(response.json, 'members');
         }
@@ -414,10 +476,15 @@ async function getGroupMembersSearch({
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/members/search`,
-        { n, offset, query: normalizedQuery },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupMembersSearch({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            query: normalizedQuery,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/search`
     );
     return responseRows(response.json, 'results');
 }
@@ -463,10 +530,15 @@ async function getGroupGallery({
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response = await executeGet(
-                `groups/${encodeURIComponent(normalizedGroupId)}/galleries/${encodeURIComponent(normalizedGalleryId)}`,
-                params,
-                { endpoint }
+            const response = unwrapBackendGroupResponse(
+                await backend.app.BackendGroupGalleryGet({
+                    groupId: normalizedGroupId,
+                    galleryId: normalizedGalleryId,
+                    n,
+                    offset,
+                    endpoint
+                }),
+                `groups/${encodeURIComponent(normalizedGroupId)}/galleries/${encodeURIComponent(normalizedGalleryId)}`
             );
             return responseRows(response.json, 'files');
         }
@@ -492,10 +564,12 @@ async function joinGroup({ groupId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/join`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupJoin({
+            groupId: normalizedGroupId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/join`
     );
 }
 
@@ -507,10 +581,12 @@ async function leaveGroup({ groupId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/leave`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupLeave({
+            groupId: normalizedGroupId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/leave`
     );
 }
 
@@ -522,10 +598,12 @@ async function cancelGroupRequest({ groupId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/requests`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupRequestCancel({
+            groupId: normalizedGroupId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/requests`
     );
 }
 
@@ -538,10 +616,13 @@ async function sendGroupInvite({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/invites`,
-        { userId: normalizedUserId },
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupInviteSend({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/invites`
     );
 }
 
@@ -554,10 +635,13 @@ async function kickGroupMember({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupMemberKick({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -570,10 +654,13 @@ async function banGroupMember({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/bans`,
-        { userId: normalizedUserId },
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupMemberBan({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/bans`
     );
 }
 
@@ -586,10 +673,13 @@ async function unbanGroupMember({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupMemberUnban({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -602,10 +692,13 @@ async function deleteSentGroupInvite({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/invites/${encodeURIComponent(normalizedUserId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupInviteDelete({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/invites/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -624,10 +717,15 @@ async function respondGroupJoinRequest({
         );
     }
 
-    return executePut(
-        `groups/${encodeURIComponent(normalizedGroupId)}/requests/${encodeURIComponent(normalizedUserId)}`,
-        { action, ...(block ? { block: true } : {}) },
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupJoinRequestRespond({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            action,
+            block: Boolean(block),
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/requests/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -644,10 +742,13 @@ async function getGroupInstances({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executeGet(
-        `users/${encodeURIComponent(normalizedUserId)}/instances/groups/${encodeURIComponent(normalizedGroupId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupInstancesGet({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `users/${encodeURIComponent(normalizedUserId)}/instances/groups/${encodeURIComponent(normalizedGroupId)}`
     );
 }
 
@@ -659,10 +760,14 @@ async function getGroupBans({ groupId, endpoint = '', n = 100, offset = 0 }) {
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/bans`,
-        { n, offset },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupBansGet({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/bans`
     );
     return responseRows(response.json, 'bans');
 }
@@ -686,10 +791,14 @@ async function getGroupInvites({
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/invites`,
-        { n, offset },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupInvitesGet({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/invites`
     );
     return responseRows(response.json, 'invites');
 }
@@ -714,10 +823,15 @@ async function getGroupJoinRequests({
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/requests`,
-        { n, offset, blocked },
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupJoinRequestsGet({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            blocked: Boolean(blocked),
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/requests`
     );
     return responseRows(response.json, 'requests');
 }
@@ -740,10 +854,12 @@ async function getGroupAuditLogTypes({ groupId, endpoint = '' }) {
         );
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/auditLogTypes`,
-        {},
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupAuditLogTypesGet({
+            groupId: normalizedGroupId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/auditLogTypes`
     );
     return Array.isArray(response.json) ? response.json : [];
 }
@@ -767,10 +883,18 @@ async function getGroupLogs({
         params.eventTypes = eventTypes.join(',');
     }
 
-    const response = await executeGet(
-        `groups/${encodeURIComponent(normalizedGroupId)}/auditLogs`,
-        params,
-        { endpoint }
+    const response = unwrapBackendGroupResponse(
+        await backend.app.BackendGroupLogsGet({
+            groupId: normalizedGroupId,
+            n,
+            offset,
+            eventTypes:
+                typeof params.eventTypes === 'string'
+                    ? params.eventTypes
+                    : '',
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/auditLogs`
     );
     return responseRows(response.json, 'results');
 }
@@ -793,10 +917,13 @@ async function setGroupRepresentation({
         );
     }
 
-    return executePut(
-        `groups/${encodeURIComponent(normalizedGroupId)}/representation`,
-        { isRepresenting: Boolean(isRepresenting) },
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupRepresentationSet({
+            groupId: normalizedGroupId,
+            isRepresenting: Boolean(isRepresenting),
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/representation`
     );
 }
 
@@ -814,10 +941,14 @@ async function setGroupMemberProps({
         );
     }
 
-    return executePut(
-        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`,
-        params,
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupMemberPropsSet({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            params,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -829,10 +960,12 @@ async function blockGroup({ groupId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `groups/${encodeURIComponent(normalizedGroupId)}/block`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupBlock({
+            groupId: normalizedGroupId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/block`
     );
 }
 
@@ -845,10 +978,13 @@ async function unblockGroup({ groupId, userId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `groups/${encodeURIComponent(normalizedGroupId)}/bans/${encodeURIComponent(normalizedUserId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse(
+        await backend.app.BackendGroupUnblock({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/bans/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -860,10 +996,16 @@ async function getUsersGroupInstances({ userId, endpoint = '' }) {
         );
     }
 
-    return executeGet(
-        `users/${encodeURIComponent(normalizedUserId)}/instances/groups`,
-        {},
-        { endpoint }
+    return unwrapBackendGroupResponse<{
+        instances?: unknown[];
+        fetchedAt?: unknown;
+        [key: string]: unknown;
+    }>(
+        await backend.app.BackendGroupUserInstancesGet({
+            userId: normalizedUserId,
+            endpoint
+        }),
+        `users/${encodeURIComponent(normalizedUserId)}/instances/groups`
     );
 }
 

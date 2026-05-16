@@ -10,7 +10,9 @@ use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestIn
 use crate::error::AppError;
 use crate::state::AppState;
 
-use super::types::{BackendFriendCancelRequestInput, BackendFriendUserInput};
+use super::types::{
+    BackendFriendCancelRequestInput, BackendFriendUserInput, BackendFriendsGetInput,
+};
 
 fn normalize_text(value: impl AsRef<str>) -> String {
     value.as_ref().trim().to_string()
@@ -53,6 +55,21 @@ fn api_input(
     }
 }
 
+fn get_input(
+    endpoint: String,
+    path: String,
+    query_params: HashMap<String, Value>,
+) -> HttpApiRequestInput {
+    HttpApiRequestInput {
+        endpoint: Some(endpoint),
+        method: Some("GET".into()),
+        path: Some(path),
+        params: Some(query_params.clone()),
+        query_params: Some(query_params),
+        ..Default::default()
+    }
+}
+
 async fn execute_friend_api(
     state: State<'_, AppState>,
     command: &str,
@@ -69,6 +86,47 @@ async fn execute_friend_api(
         Err(error) => diagnostics.record_command(command, "error", error.to_string()),
     }
     result
+}
+
+#[tauri::command]
+pub async fn app__backend_friends_get(
+    state: State<'_, AppState>,
+    input: BackendFriendsGetInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_friend_api(
+        state,
+        "app__backend_friends_get",
+        format!("Getting friends offset {}.", input.offset),
+        get_input(
+            input.endpoint,
+            "auth/user/friends".into(),
+            HashMap::from([
+                ("offline".to_string(), json!(input.offline)),
+                ("n".to_string(), json!(input.n)),
+                ("offset".to_string(), json!(input.offset)),
+            ]),
+        ),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_friend_status_get(
+    state: State<'_, AppState>,
+    input: BackendFriendUserInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let user_id = require_text(input.user_id, "BackendFriendStatusGet requires userId.")?;
+    execute_friend_api(
+        state,
+        "app__backend_friend_status_get",
+        format!("Getting friend status for {user_id}."),
+        get_input(
+            input.endpoint,
+            format!("user/{}/friendStatus", encode_path_segment(&user_id)),
+            HashMap::new(),
+        ),
+    )
+    .await
 }
 
 #[tauri::command]

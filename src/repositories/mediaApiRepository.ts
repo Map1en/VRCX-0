@@ -10,8 +10,6 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 import { normalizePlatformError } from '../platform/tauri/errors.js';
 import { backend } from '../platform/tauri/index.js';
 import {
-    executeBackendHttpRequest,
-    executeVrchatBackendRequest,
     parseJsonResponse,
     type QueryParams,
     type QueryValue,
@@ -25,7 +23,6 @@ type MediaApiParams = QueryParams;
 interface MediaApiOptions {
     endpoint?: string;
     force?: boolean;
-    matchingDimensions?: boolean;
 }
 
 interface MediaUploadResponse {
@@ -58,15 +55,71 @@ function normalizeParams(params: unknown = {}): MediaApiParams {
     return { ...(params as Record<string, QueryValue | QueryValue[]>) };
 }
 
-async function executeFilePut({
+function resolveMediaEndpoint(endpoint: unknown = '') {
+    return normalizeVrchatEndpointDomain(endpoint, {
+        allowDebugEndpoint: true
+    });
+}
+
+function unwrapMediaResponse(
+    response: { status: number; data: unknown; raw: unknown },
+    {
+        params = {},
+        extra = {},
+        fallbackMessage = 'Media request failed'
+    }: {
+        params?: MediaApiParams;
+        extra?: MediaApiRecord;
+        fallbackMessage?: string;
+    } = {}
+): VrchatRequestResponse<MediaApiRecord> {
+    const json = parseJsonResponse(response.data) as MediaApiRecord;
+    if (
+        response.status >= 400 ||
+        (json && typeof json === 'object' && 'error' in json)
+    ) {
+        throw new Error(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage
+            })
+        );
+    }
+
+    return {
+        json,
+        params,
+        ...extra,
+        status: response.status,
+        raw: response.raw
+    };
+}
+
+async function executeMediaCommand(
+    command: () => Promise<{ status: number; data: unknown; raw: unknown }>,
+    options: {
+        params?: MediaApiParams;
+        extra?: MediaApiRecord;
+        fallbackMessage?: string;
+    } = {}
+): Promise<VrchatRequestResponse<MediaApiRecord>> {
+    try {
+        return unwrapMediaResponse(await command(), options);
+    } catch (error) {
+        throw normalizePlatformError(
+            error,
+            options.fallbackMessage ?? 'Media request failed'
+        );
+    }
+}
+
+async function uploadFileBytes({
     url,
     fileData,
     fileMIME,
     fileMD5
 }: FilePutOptions) {
-    const response = await executeBackendHttpRequest('VrchatMediaExecute', {
+    const response = await backend.app.BackendMediaFilePut({
         url,
-        uploadFilePUT: true,
         fileData,
         fileMIME,
         fileMD5
@@ -87,128 +140,21 @@ async function signFile(base64File: string): Promise<string> {
     }
 }
 
-async function executeRequest(
-    path: string,
-    {
-        method = 'GET',
-        params = {},
-        endpoint = ''
-    }: { method?: string; params?: MediaApiParams; endpoint?: string } = {}
-): Promise<VrchatRequestResponse<MediaApiRecord>> {
-    const normalizedParams = normalizeParams(params);
-
-    try {
-        return await executeVrchatBackendRequest<MediaApiRecord>(
-            'VrchatMediaExecute',
-            path,
-            {
-                endpoint,
-                method,
-                params: normalizedParams,
-                body: normalizedParams,
-                allowDebugEndpoint: true,
-                fallbackMessage: 'Media request failed',
-                includeParams: true
-            }
-        );
-    } catch (error) {
-        throw normalizePlatformError(error, 'Media request failed');
-    }
-}
-
-async function executeGet(
-    path: string,
-    params: MediaApiParams = {},
-    extra: MediaApiRecord = {},
-    options: MediaApiOptions = {}
-) {
-    const normalizedParams = normalizeParams(params);
-
-    try {
-        return await executeVrchatBackendRequest('VrchatMediaExecute', path, {
-            endpoint: options.endpoint,
-            method: 'GET',
-            params: normalizedParams,
-            allowDebugEndpoint: true,
-            fallbackMessage: 'Media request failed',
-            includeParams: true,
-            extra
-        });
-    } catch (error) {
-        throw normalizePlatformError(error, 'Media request failed');
-    }
-}
-
-async function executeDelete(
-    path: string,
-    extra: MediaApiRecord = {},
-    options: MediaApiOptions = {}
-) {
-    try {
-        return await executeVrchatBackendRequest('VrchatMediaExecute', path, {
-            endpoint: options.endpoint,
-            method: 'DELETE',
-            jsonBody: false,
-            allowDebugEndpoint: true,
-            fallbackMessage: 'Media request failed',
-            extra
-        });
-    } catch (error) {
-        throw normalizePlatformError(error, 'Media request failed');
-    }
-}
-
-async function uploadImage(
-    path: string,
-    imageData: string,
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
-): Promise<MediaUploadResponse> {
-    try {
-        const response = await executeBackendHttpRequest('VrchatMediaExecute', {
-            path,
-            endpoint: normalizeVrchatEndpointDomain(options.endpoint, {
-                allowDebugEndpoint: true
-            }),
-            uploadImage: true,
-            matchingDimensions: Boolean(options.matchingDimensions),
-            postData: JSON.stringify(params ?? {}),
-            imageData
-        });
-        const json = parseJsonResponse(response.data) as MediaApiRecord;
-
-        if (response.status >= 400) {
-            throw new Error(
-                unwrapErrorMessage(json, response.status, {
-                    fallbackMessage: 'Media upload failed'
-                })
-            );
-        }
-
-        if (json && typeof json === 'object' && 'error' in json) {
-            throw new Error(
-                unwrapErrorMessage(json, response.status, {
-                    fallbackMessage: 'Media upload failed'
-                })
-            );
-        }
-
-        return {
-            json,
-            params,
-            status: response.status,
-            raw: response.raw
-        };
-    } catch (error) {
-        throw normalizePlatformError(error, 'Media upload failed');
-    }
-}
-
 async function getFiles(
     params: MediaApiParams = {},
     options: MediaApiOptions = {}
 ) {
-    return executeGet('files', params, {}, options);
+    const normalizedParams = normalizeParams(params);
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaFilesGet({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                params: normalizedParams
+            }),
+        {
+            params: normalizedParams
+        }
+    );
 }
 
 async function getFileList(
@@ -227,12 +173,17 @@ async function deleteFile(fileId: unknown, options: MediaApiOptions = {}) {
         throw new Error('MediaRepository.deleteFile requires a file id.');
     }
 
-    return executeDelete(
-        `file/${encodeURIComponent(normalizedFileId)}`,
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaFileDelete({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                fileId: normalizedFileId
+            }),
         {
-            fileId: normalizedFileId
-        },
-        options
+            extra: {
+                fileId: normalizedFileId
+            }
+        }
     );
 }
 
@@ -240,15 +191,17 @@ async function uploadGalleryImage(
     imageData: string,
     options: MediaApiOptions = {}
 ) {
-    return uploadImage(
-        'file/image',
-        imageData,
+    const params = {
+        tag: 'gallery'
+    };
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaGalleryImageUpload({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                imageData
+            }),
         {
-            tag: 'gallery'
-        },
-        {
-            matchingDimensions: false,
-            endpoint: options.endpoint
+            params
         }
     );
 }
@@ -258,16 +211,19 @@ async function uploadAvatarGalleryImage(
     avatarId: QueryValue,
     options: MediaApiOptions = {}
 ) {
-    return uploadImage(
-        'file/image',
-        imageData,
+    const params = {
+        tag: 'avatargallery',
+        galleryId: avatarId
+    };
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaAvatarGalleryImageUpload({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                imageData,
+                avatarId
+            }),
         {
-            tag: 'avatargallery',
-            galleryId: avatarId
-        },
-        {
-            matchingDimensions: false,
-            endpoint: options.endpoint
+            params
         }
     );
 }
@@ -276,15 +232,17 @@ async function uploadVrcPlusIcon(
     imageData: string,
     options: MediaApiOptions = {}
 ) {
-    return uploadImage(
-        'file/image',
-        imageData,
+    const params = {
+        tag: 'icon'
+    };
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaVrcPlusIconUpload({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                imageData
+            }),
         {
-            tag: 'icon'
-        },
-        {
-            matchingDimensions: true,
-            endpoint: options.endpoint
+            params
         }
     );
 }
@@ -294,23 +252,33 @@ async function uploadEmoji(
     params: MediaApiParams = {},
     options: MediaApiOptions = {}
 ) {
-    return uploadImage('file/image', imageData, params, {
-        matchingDimensions: true,
-        endpoint: options.endpoint
-    });
+    const normalizedParams = normalizeParams(params);
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaEmojiUpload({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                imageData,
+                params: normalizedParams
+            }),
+        {
+            params: normalizedParams
+        }
+    );
 }
 
 async function uploadSticker(imageData: string, options: MediaApiOptions = {}) {
-    return uploadImage(
-        'file/image',
-        imageData,
+    const params = {
+        tag: 'sticker',
+        maskTag: 'square'
+    };
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaStickerUpload({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                imageData
+            }),
         {
-            tag: 'sticker',
-            maskTag: 'square'
-        },
-        {
-            matchingDimensions: true,
-            endpoint: options.endpoint
+            params
         }
     );
 }
@@ -327,44 +295,24 @@ async function uploadPrint(
         params?: MediaApiParams;
     } = {}
 ): Promise<MediaUploadResponse> {
-    try {
-        const response = await executeBackendHttpRequest('VrchatMediaExecute', {
-            path: 'prints',
-            endpoint: normalizeVrchatEndpointDomain(endpoint, {
-                allowDebugEndpoint: true
+    const normalizedParams = normalizeParams(params);
+    const response = await executeMediaCommand(
+        () =>
+            backend.app.BackendMediaPrintUpload({
+                endpoint: resolveMediaEndpoint(endpoint),
+                imageData,
+                cropWhiteBorder: Boolean(cropWhiteBorder),
+                params: normalizedParams
             }),
-            uploadImagePrint: true,
-            cropWhiteBorder: Boolean(cropWhiteBorder),
-            postData: JSON.stringify(params ?? {}),
-            imageData
-        });
-        const json = parseJsonResponse(response.data) as MediaApiRecord;
-
-        if (response.status >= 400) {
-            throw new Error(
-                unwrapErrorMessage(json, response.status, {
-                    fallbackMessage: 'Print upload failed'
-                })
-            );
+        {
+            params: normalizedParams,
+            fallbackMessage: 'Print upload failed'
         }
-
-        if (json && typeof json === 'object' && 'error' in json) {
-            throw new Error(
-                unwrapErrorMessage(json, response.status, {
-                    fallbackMessage: 'Print upload failed'
-                })
-            );
-        }
-
-        return {
-            json,
-            params,
-            status: response.status,
-            raw: response.raw
-        };
-    } catch (error) {
-        throw normalizePlatformError(error, 'Print upload failed');
-    }
+    );
+    return {
+        ...response,
+        params: response.params ?? normalizedParams
+    };
 }
 
 async function getPrints(
@@ -379,11 +327,21 @@ async function getPrints(
         throw new Error('MediaRepository.getPrints requires a user id.');
     }
 
-    return executeGet(
-        `prints/user/${encodeURIComponent(normalizedUserId)}`,
-        { n },
-        { userId: normalizedUserId },
-        options
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaPrintsGet({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                userId: normalizedUserId,
+                n
+            }),
+        {
+            params: {
+                n
+            },
+            extra: {
+                userId: normalizedUserId
+            }
+        }
     );
 }
 
@@ -396,13 +354,17 @@ async function getPrint(printId: unknown, options: MediaApiOptions = {}) {
         throw new Error('MediaRepository.getPrint requires a print id.');
     }
 
-    return executeGet(
-        `prints/${encodeURIComponent(normalizedPrintId)}`,
-        {},
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaPrintGet({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                printId: normalizedPrintId
+            }),
         {
-            printId: normalizedPrintId
-        },
-        options
+            extra: {
+                printId: normalizedPrintId
+            }
+        }
     );
 }
 
@@ -415,12 +377,17 @@ async function deletePrint(printId: unknown, options: MediaApiOptions = {}) {
         throw new Error('MediaRepository.deletePrint requires a print id.');
     }
 
-    return executeDelete(
-        `prints/${encodeURIComponent(normalizedPrintId)}`,
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaPrintDelete({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                printId: normalizedPrintId
+            }),
         {
-            printId: normalizedPrintId
-        },
-        options
+            extra: {
+                printId: normalizedPrintId
+            }
+        }
     );
 }
 
@@ -428,7 +395,17 @@ async function getInventoryItems(
     params: MediaApiParams = {},
     options: MediaApiOptions = {}
 ) {
-    return executeGet('inventory', params, {}, options);
+    const normalizedParams = normalizeParams(params);
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaInventoryItemsGet({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                params: normalizedParams
+            }),
+        {
+            params: normalizedParams
+        }
+    );
 }
 
 async function getUserInventoryItem(
@@ -460,14 +437,19 @@ async function getUserInventoryItem(
         policy: entityQueryPolicies.inventoryCollection,
         force: Boolean(options.force),
         queryFn: () =>
-            executeGet(
-                `user/${encodeURIComponent(normalizedUserId)}/inventory/${encodeURIComponent(normalizedInventoryId)}`,
-                {},
+            executeMediaCommand(
+                () =>
+                    backend.app.BackendMediaUserInventoryItemGet({
+                        endpoint: resolveMediaEndpoint(options.endpoint),
+                        userId: normalizedUserId,
+                        inventoryId: normalizedInventoryId
+                    }),
                 {
-                    inventoryId: normalizedInventoryId,
-                    userId: normalizedUserId
-                },
-                options
+                    extra: {
+                        inventoryId: normalizedInventoryId,
+                        userId: normalizedUserId
+                    }
+                }
             )
     });
 }
@@ -487,12 +469,16 @@ async function updateInventoryItem(
         );
     }
 
-    return executeRequest(
-        `inventory/${encodeURIComponent(normalizedInventoryId)}`,
+    const normalizedParams = normalizeParams(params);
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaInventoryItemUpdate({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                inventoryId: normalizedInventoryId,
+                params: normalizedParams
+            }),
         {
-            method: 'PUT',
-            params,
-            endpoint: options.endpoint
+            params: normalizedParams
         }
     );
 }
@@ -511,14 +497,16 @@ async function consumeInventoryBundle(
         );
     }
 
-    return executeRequest(
-        `inventory/${encodeURIComponent(normalizedInventoryId)}/consume`,
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaInventoryBundleConsume({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                inventoryId: normalizedInventoryId
+            }),
         {
-            method: 'PUT',
             params: {
                 inventoryId: normalizedInventoryId
-            },
-            endpoint: options.endpoint
+            }
         }
     );
 }
@@ -530,13 +518,18 @@ async function redeemReward(code: unknown, options: MediaApiOptions = {}) {
         throw new Error('MediaRepository.redeemReward requires a reward code.');
     }
 
-    return executeRequest('reward/redeem', {
-        method: 'POST',
-        params: {
-            code: normalizedCode
-        },
-        endpoint: options.endpoint
-    });
+    return executeMediaCommand(
+        () =>
+            backend.app.BackendMediaRewardRedeem({
+                endpoint: resolveMediaEndpoint(options.endpoint),
+                code: normalizedCode
+            }),
+        {
+            params: {
+                code: normalizedCode
+            }
+        }
+    );
 }
 
 async function uploadAvatarImageLegacy({
@@ -569,18 +562,15 @@ async function uploadAvatarImageLegacy({
     const signatureFile = await signFile(base64File);
     const signatureMd5 = md5Base64(signatureFile);
     const signatureSizeInBytes = getBase64ByteLength(signatureFile);
-    const upload = await executeRequest(
-        `file/${encodeURIComponent(sourceFileId)}`,
-        {
-            endpoint,
-            method: 'POST',
-            params: {
-                fileMd5,
-                fileSizeInBytes,
-                signatureMd5,
-                signatureSizeInBytes
-            }
-        }
+    const upload = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileVersionCreate({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: sourceFileId,
+            fileMd5,
+            fileSizeInBytes,
+            signatureMd5,
+            signatureSizeInBytes
+        })
     );
     const uploadedFileId = upload.json?.id;
     const versions = Array.isArray(upload.json?.versions)
@@ -591,61 +581,59 @@ async function uploadAvatarImageLegacy({
         throw new Error('Avatar image upload did not return a file version.');
     }
 
-    const fileStart = await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/file/start`,
-        { endpoint, method: 'PUT', params: {} }
+    const fileStart = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadStart({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'file'
+        })
     );
-    await executeFilePut({
+    await uploadFileBytes({
         url: fileStart.json?.url,
         fileData: base64File,
         fileMIME: 'image/png',
         fileMD5: fileMd5
     });
-    await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/file/finish`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                maxParts: 0,
-                nextPartNumber: 0
-            }
-        }
+    await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadFinish({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'file'
+        })
     );
 
-    const signatureStart = await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/signature/start`,
-        { endpoint, method: 'PUT', params: {} }
+    const signatureStart = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadStart({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'signature'
+        })
     );
-    await executeFilePut({
+    await uploadFileBytes({
         url: signatureStart.json?.url,
         fileData: signatureFile,
         fileMIME: 'application/x-rsync-signature',
         fileMD5: signatureMd5
     });
-    await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/signature/finish`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                maxParts: 0,
-                nextPartNumber: 0
-            }
-        }
+    await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadFinish({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'signature'
+        })
     );
 
-    const nextImageUrl = `${normalizeVrchatEndpointDomain(endpoint, { allowDebugEndpoint: true })}/file/${uploadedFileId}/${fileVersion}/file`;
-    const avatarResponse = await executeRequest(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                id: normalizedAvatarId,
-                imageUrl: nextImageUrl
-            }
-        }
+    const nextImageUrl = `${resolveMediaEndpoint(endpoint)}/file/${uploadedFileId}/${fileVersion}/file`;
+    const avatarResponse = await executeMediaCommand(() =>
+        backend.app.BackendMediaAvatarImageSet({
+            endpoint: resolveMediaEndpoint(endpoint),
+            entityId: normalizedAvatarId,
+            imageUrl: nextImageUrl
+        })
     );
     if (avatarResponse.json?.imageUrl !== nextImageUrl) {
         throw new Error('Avatar image change failed.');
@@ -689,18 +677,15 @@ async function uploadWorldImageLegacy({
     const signatureFile = await signFile(base64File);
     const signatureMd5 = md5Base64(signatureFile);
     const signatureSizeInBytes = getBase64ByteLength(signatureFile);
-    const upload = await executeRequest(
-        `file/${encodeURIComponent(sourceFileId)}`,
-        {
-            endpoint,
-            method: 'POST',
-            params: {
-                fileMd5,
-                fileSizeInBytes,
-                signatureMd5,
-                signatureSizeInBytes
-            }
-        }
+    const upload = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileVersionCreate({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: sourceFileId,
+            fileMd5,
+            fileSizeInBytes,
+            signatureMd5,
+            signatureSizeInBytes
+        })
     );
     const uploadedFileId = upload.json?.id;
     const versions = Array.isArray(upload.json?.versions)
@@ -711,61 +696,59 @@ async function uploadWorldImageLegacy({
         throw new Error('World image upload did not return a file version.');
     }
 
-    const fileStart = await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/file/start`,
-        { endpoint, method: 'PUT', params: {} }
+    const fileStart = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadStart({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'file'
+        })
     );
-    await executeFilePut({
+    await uploadFileBytes({
         url: fileStart.json?.url,
         fileData: base64File,
         fileMIME: 'image/png',
         fileMD5: fileMd5
     });
-    await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/file/finish`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                maxParts: 0,
-                nextPartNumber: 0
-            }
-        }
+    await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadFinish({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'file'
+        })
     );
 
-    const signatureStart = await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/signature/start`,
-        { endpoint, method: 'PUT', params: {} }
+    const signatureStart = await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadStart({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'signature'
+        })
     );
-    await executeFilePut({
+    await uploadFileBytes({
         url: signatureStart.json?.url,
         fileData: signatureFile,
         fileMIME: 'application/x-rsync-signature',
         fileMD5: signatureMd5
     });
-    await executeRequest(
-        `file/${encodeURIComponent(uploadedFileId)}/${fileVersion}/signature/finish`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                maxParts: 0,
-                nextPartNumber: 0
-            }
-        }
+    await executeMediaCommand(() =>
+        backend.app.BackendMediaFileUploadFinish({
+            endpoint: resolveMediaEndpoint(endpoint),
+            fileId: uploadedFileId,
+            version: fileVersion,
+            kind: 'signature'
+        })
     );
 
-    const nextImageUrl = `${normalizeVrchatEndpointDomain(endpoint, { allowDebugEndpoint: true })}/file/${uploadedFileId}/${fileVersion}/file`;
-    const worldResponse = await executeRequest(
-        `worlds/${encodeURIComponent(normalizedWorldId)}`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                id: normalizedWorldId,
-                imageUrl: nextImageUrl
-            }
-        }
+    const nextImageUrl = `${resolveMediaEndpoint(endpoint)}/file/${uploadedFileId}/${fileVersion}/file`;
+    const worldResponse = await executeMediaCommand(() =>
+        backend.app.BackendMediaWorldImageSet({
+            endpoint: resolveMediaEndpoint(endpoint),
+            entityId: normalizedWorldId,
+            imageUrl: nextImageUrl
+        })
     );
     if (worldResponse.json?.imageUrl !== nextImageUrl) {
         throw new Error('World image change failed.');
@@ -780,11 +763,6 @@ async function uploadWorldImageLegacy({
 }
 
 const mediaApiRepository = Object.freeze({
-    executeFilePut,
-    executeRequest,
-    executeGet,
-    executeDelete,
-    uploadImage,
     getFiles,
     getFileList,
     deleteFile,
@@ -807,11 +785,6 @@ const mediaApiRepository = Object.freeze({
 });
 
 export {
-    executeFilePut,
-    executeRequest,
-    executeGet,
-    executeDelete,
-    uploadImage,
     getFiles,
     getFileList,
     deleteFile,

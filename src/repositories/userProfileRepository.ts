@@ -6,14 +6,25 @@ import {
     setCachedQueryData
 } from '@/lib/entityQueryCache.js';
 import { recordUserProfile } from '@/domain/users/userFactAccess.js';
+import { backend } from '@/platform/index.js';
 import {
     computeTrustLevel,
     computeUserPlatform,
     createDefaultUserRef
 } from '@/shared/utils/userTransforms.js';
 
-import vrchatAuthRepository from './vrchatAuthRepository.js';
-import vrchatFriendRepository from './vrchatFriendRepository.js';
+import {
+    createRequestError,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
+
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
 
 function normalizeUserProfile(user) {
     const base = createDefaultUserRef(user ?? {});
@@ -62,6 +73,36 @@ function hasOwnField(source, field) {
         typeof source === 'object' &&
         Object.prototype.hasOwnProperty.call(source, field)
     );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendUserResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string,
+    fallbackMessage = 'VRChat user request failed'
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 function mergeCurrentUserUpdateResponse(responseJson, cachedUser, params) {
@@ -116,11 +157,14 @@ async function getUserProfile({
             : entityQueryPolicies.user,
         force,
         queryFn: async () => {
-            const response = await vrchatFriendRepository.getUser({
+            const response = await backend.app.BackendUserGet({
                 userId: normalizedUserId,
                 endpoint
             });
-            return response.json;
+            return unwrapBackendUserResponse(
+                response,
+                `users/${encodeURIComponent(normalizedUserId)}`
+            ).json;
         }
     });
     const profile = normalize(json);
@@ -143,14 +187,15 @@ async function getMutualCounts({ userId, endpoint = '' }) {
         queryKey: queryKeys.mutualCounts(normalizedUserId, endpoint),
         policy: entityQueryPolicies.mutualCounts,
         queryFn: async () => {
-            const response = await vrchatFriendRepository.executeGet(
-                `users/${encodeURIComponent(normalizedUserId)}/mutuals`,
-                {},
-                { endpoint }
-            );
-            return response.json && typeof response.json === 'object'
-                ? response.json
-                : {};
+            const response = await backend.app.BackendUserMutualCountsGet({
+                userId: normalizedUserId,
+                endpoint
+            });
+            const json = unwrapBackendUserResponse(
+                response,
+                `users/${encodeURIComponent(normalizedUserId)}/mutuals`
+            ).json;
+            return json && typeof json === 'object' ? json : {};
         }
     });
 }
@@ -170,12 +215,15 @@ async function getUserGroups({ userId, endpoint = '' }) {
         queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
-            const response = await vrchatFriendRepository.executeGet(
-                `users/${encodeURIComponent(normalizedUserId)}/groups`,
-                {},
-                { endpoint }
-            );
-            return Array.isArray(response.json) ? response.json : [];
+            const response = await backend.app.BackendUserGroupsGet({
+                userId: normalizedUserId,
+                endpoint
+            });
+            const json = unwrapBackendUserResponse(
+                response,
+                `users/${encodeURIComponent(normalizedUserId)}/groups`
+            ).json;
+            return Array.isArray(json) ? json : [];
         }
     });
 }
@@ -196,14 +244,15 @@ async function getRepresentedGroup({ userId, endpoint = '', force = false }) {
         policy: entityQueryPolicies.representedGroup,
         force,
         queryFn: async () => {
-            const response = await vrchatFriendRepository.executeGet(
-                `users/${encodeURIComponent(normalizedUserId)}/groups/represented`,
-                {},
-                { endpoint }
-            );
-            return response.json && typeof response.json === 'object'
-                ? response.json
-                : null;
+            const response = await backend.app.BackendUserRepresentedGroupGet({
+                userId: normalizedUserId,
+                endpoint
+            });
+            const json = unwrapBackendUserResponse(
+                response,
+                `users/${encodeURIComponent(normalizedUserId)}/groups/represented`
+            ).json;
+            return json && typeof json === 'object' ? json : null;
         }
     });
 }
@@ -224,12 +273,17 @@ async function getMutualFriends({
         );
     }
 
-    const response = await vrchatFriendRepository.executeGet(
-        `users/${encodeURIComponent(normalizedUserId)}/mutuals/friends`,
-        { n, offset },
-        { endpoint }
-    );
-    return Array.isArray(response.json) ? response.json : [];
+    const response = await backend.app.BackendUserMutualFriendsGet({
+        userId: normalizedUserId,
+        endpoint,
+        n,
+        offset
+    });
+    const json = unwrapBackendUserResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}/mutuals/friends`
+    ).json;
+    return Array.isArray(json) ? json : [];
 }
 
 async function getAllMutualFriends({ userId, endpoint = '' }) {
@@ -251,16 +305,17 @@ async function updateCurrentUser({ userId, endpoint = '', params = {} }) {
 
     const queryKey = queryKeys.user(normalizedUserId, endpoint);
     const cachedUser = getCachedQueryData(queryKey);
-    const response = await vrchatAuthRepository.execute(
-        `users/${encodeURIComponent(normalizedUserId)}`,
-        {
-            endpoint,
-            method: 'PUT',
-            params
-        }
-    );
+    const response = await backend.app.BackendCurrentUserUpdate({
+        userId: normalizedUserId,
+        endpoint,
+        params
+    });
+    const json = unwrapBackendUserResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}`
+    ).json;
     const mergedJson = mergeCurrentUserUpdateResponse(
-        response.json,
+        json,
         cachedUser,
         params
     );
@@ -295,18 +350,16 @@ async function updateCurrentUserBadge({
         );
     }
 
-    await vrchatAuthRepository.execute(
-        `users/${encodeURIComponent(normalizedUserId)}/badges/${encodeURIComponent(normalizedBadgeId)}`,
-        {
-            endpoint,
-            method: 'PUT',
-            params: {
-                userId: normalizedUserId,
-                badgeId: normalizedBadgeId,
-                hidden: Boolean(hidden),
-                showcased: Boolean(showcased)
-            }
-        }
+    const response = await backend.app.BackendCurrentUserBadgeUpdate({
+        userId: normalizedUserId,
+        badgeId: normalizedBadgeId,
+        endpoint,
+        hidden: Boolean(hidden),
+        showcased: Boolean(showcased)
+    });
+    unwrapBackendUserResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}/badges/${encodeURIComponent(normalizedBadgeId)}`
     );
 
     return getUserProfile({ userId: normalizedUserId, endpoint, force: true });
@@ -323,18 +376,19 @@ async function addCurrentUserTags({ userId, endpoint = '', tags = [] }) {
         );
     }
 
-    const response = await vrchatAuthRepository.execute(
-        `users/${encodeURIComponent(normalizedUserId)}/addTags`,
-        {
-            endpoint,
-            method: 'POST',
-            params: { tags }
-        }
-    );
-    const nextUser = normalize(response.json);
+    const response = await backend.app.BackendCurrentUserTagsAdd({
+        userId: normalizedUserId,
+        endpoint,
+        tags: Array.isArray(tags) ? tags.map(String) : []
+    });
+    const json = unwrapBackendUserResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}/addTags`
+    ).json;
+    const nextUser = normalize(json);
     setCachedQueryData(
         queryKeys.user(normalizedUserId, endpoint),
-        response.json
+        json
     );
     recordUserProfile(nextUser, {
         endpoint,
@@ -355,18 +409,19 @@ async function removeCurrentUserTags({ userId, endpoint = '', tags = [] }) {
         );
     }
 
-    const response = await vrchatAuthRepository.execute(
-        `users/${encodeURIComponent(normalizedUserId)}/removeTags`,
-        {
-            endpoint,
-            method: 'POST',
-            params: { tags }
-        }
-    );
-    const nextUser = normalize(response.json);
+    const response = await backend.app.BackendCurrentUserTagsRemove({
+        userId: normalizedUserId,
+        endpoint,
+        tags: Array.isArray(tags) ? tags.map(String) : []
+    });
+    const json = unwrapBackendUserResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}/removeTags`
+    ).json;
+    const nextUser = normalize(json);
     setCachedQueryData(
         queryKeys.user(normalizedUserId, endpoint),
-        response.json
+        json
     );
     recordUserProfile(nextUser, {
         endpoint,

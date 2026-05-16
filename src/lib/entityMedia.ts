@@ -218,9 +218,10 @@ async function openWorldShortName(location: unknown, shortName: unknown) {
     }
 
     try {
-        const response = (await vrchatSearchRepository.executeGet(
-            `instances/s/${normalizedShortName}`
-        )) as RepositoryResponse;
+        const response =
+            (await vrchatSearchRepository.getInstanceFromShortName(
+                normalizedShortName
+            )) as RepositoryResponse;
         const resolvedLocation = response.json?.location || location;
         if (resolvedLocation) {
             const parsedLocation = parseLocation(resolvedLocation);

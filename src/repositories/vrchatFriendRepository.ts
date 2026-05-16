@@ -2,7 +2,6 @@ import { backend } from '@/platform/index.js';
 
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     unwrapErrorMessage
@@ -18,32 +17,6 @@ function isValidFriendUser(user) {
         typeof user.id === 'string' &&
         user.id.trim()
     );
-}
-
-async function execute(
-    path,
-    { endpoint = '', method = 'GET', params = null } = {}
-) {
-    return executeVrchatBackendRequest('VrchatFriendExecute', path, {
-        endpoint,
-        method,
-        params,
-        body: params,
-        jsonBody: method !== 'GET' && params !== null,
-        fallbackMessage: 'VRChat friend request failed'
-    });
-}
-
-async function executeGet(path, params = {}, { endpoint = '' } = {}) {
-    return execute(path, { endpoint, method: 'GET', params });
-}
-
-async function executeDelete(path, params = null, { endpoint = '' } = {}) {
-    return execute(path, { endpoint, method: 'DELETE', params });
-}
-
-async function executePost(path, params = null, { endpoint = '' } = {}) {
-    return execute(path, { endpoint, method: 'POST', params });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -81,14 +54,15 @@ async function getFriends({
     n = PAGE_SIZE,
     offset = 0
 } = {}) {
-    return executeGet(
-        'auth/user/friends',
-        {
-            offline: Boolean(offline),
-            n,
-            offset
-        },
-        { endpoint }
+    const response = await backend.app.BackendFriendsGet({
+        endpoint,
+        offline: Boolean(offline),
+        n,
+        offset
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        'auth/user/friends'
     );
 }
 
@@ -124,10 +98,13 @@ async function getUser({ userId, endpoint = '' }) {
         throw new Error('VrchatFriendRepository.getUser requires a user id.');
     }
 
-    return executeGet(
-        `users/${encodeURIComponent(normalizedUserId)}`,
-        {},
-        { endpoint }
+    const response = await backend.app.BackendUserGet({
+        userId: normalizedUserId,
+        endpoint
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -163,10 +140,13 @@ async function getFriendStatus({ userId, endpoint = '' }) {
         );
     }
 
-    return executeGet(
-        `user/${encodeURIComponent(normalizedUserId)}/friendStatus`,
-        {},
-        { endpoint }
+    const response = await backend.app.BackendFriendStatusGet({
+        userId: normalizedUserId,
+        endpoint
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        `user/${encodeURIComponent(normalizedUserId)}/friendStatus`
     );
 }
 
@@ -223,10 +203,6 @@ async function cancelFriendRequest({
 }
 
 const vrchatFriendRepository = Object.freeze({
-    execute,
-    executeGet,
-    executeDelete,
-    executePost,
     getFriends,
     getAllFriends,
     getUser,
@@ -237,10 +213,6 @@ const vrchatFriendRepository = Object.freeze({
 });
 
 export {
-    execute,
-    executeGet,
-    executeDelete,
-    executePost,
     getFriends,
     getAllFriends,
     getUser,

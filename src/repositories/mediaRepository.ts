@@ -2,10 +2,6 @@ import mediaApiRepository, {
     consumeInventoryBundle,
     deleteFile,
     deletePrint,
-    executeDelete,
-    executeFilePut,
-    executeGet,
-    executeRequest,
     getFileList,
     getFiles,
     getInventoryItems,
@@ -18,7 +14,6 @@ import mediaApiRepository, {
     uploadAvatarImageLegacy,
     uploadEmoji,
     uploadGalleryImage,
-    uploadImage,
     uploadPrint,
     uploadSticker,
     uploadVrcPlusIcon,
@@ -61,11 +56,6 @@ const mediaRepository = Object.freeze({
 }) as MediaRepository;
 
 export {
-    executeFilePut,
-    executeRequest,
-    executeGet,
-    executeDelete,
-    uploadImage,
     getFiles,
     getFileList,
     deleteFile,

@@ -13,9 +13,11 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use super::types::{
-    BackendFavoriteAddInput, BackendFavoriteDeleteInput, BackendFavoriteGroupClearInput,
-    BackendFavoriteGroupSaveInput, BackendLocalFavoriteGroupInput,
-    BackendLocalFavoriteGroupRenameInput, BackendLocalFavoriteInput,
+    BackendFavoriteAddInput, BackendFavoriteAvatarsInput, BackendFavoriteDeleteInput,
+    BackendFavoriteEndpointInput, BackendFavoriteGroupClearInput, BackendFavoriteGroupSaveInput,
+    BackendFavoriteGroupsInput, BackendFavoritePagedInput, BackendFavoriteWorldsInput,
+    BackendLocalFavoriteGroupInput, BackendLocalFavoriteGroupRenameInput,
+    BackendLocalFavoriteInput,
 };
 
 fn normalize_text(value: impl AsRef<str>) -> String {
@@ -59,6 +61,21 @@ fn favorite_api_input(
     }
 }
 
+fn favorite_get_input(
+    endpoint: String,
+    path: String,
+    query_params: HashMap<String, Value>,
+) -> HttpApiRequestInput {
+    HttpApiRequestInput {
+        endpoint: Some(endpoint),
+        method: Some("GET".into()),
+        path: Some(path),
+        params: Some(query_params.clone()),
+        query_params: Some(query_params),
+        ..Default::default()
+    }
+}
+
 async fn execute_favorite_api(
     state: State<'_, AppState>,
     command: &str,
@@ -77,6 +94,122 @@ async fn execute_favorite_api(
         }
     }
     result
+}
+
+#[tauri::command]
+pub async fn app__backend_favorite_limits_get(
+    state: State<'_, AppState>,
+    input: BackendFavoriteEndpointInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_favorite_api(
+        state,
+        "app__backend_favorite_limits_get",
+        "Getting favorite limits.",
+        favorite_get_input(
+            input.endpoint,
+            "auth/user/favoritelimits".into(),
+            HashMap::new(),
+        ),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_favorites_get(
+    state: State<'_, AppState>,
+    input: BackendFavoritePagedInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_favorite_api(
+        state,
+        "app__backend_favorites_get",
+        format!("Getting favorites offset {}.", input.offset),
+        favorite_get_input(
+            input.endpoint,
+            "favorites".into(),
+            HashMap::from([
+                ("n".to_string(), json!(input.n)),
+                ("offset".to_string(), json!(input.offset)),
+            ]),
+        ),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_favorite_worlds_get(
+    state: State<'_, AppState>,
+    input: BackendFavoriteWorldsInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let owner_id = normalize_text(input.owner_id);
+    let user_id = normalize_text(input.user_id);
+    let tag = normalize_text(input.tag);
+    let mut params = HashMap::from([
+        ("n".to_string(), json!(input.n)),
+        ("offset".to_string(), json!(input.offset)),
+    ]);
+    if !owner_id.is_empty() {
+        params.insert("ownerId".to_string(), Value::String(owner_id));
+    }
+    if !user_id.is_empty() {
+        params.insert("userId".to_string(), Value::String(user_id));
+    }
+    if !tag.is_empty() {
+        params.insert("tag".to_string(), Value::String(tag));
+    }
+
+    execute_favorite_api(
+        state,
+        "app__backend_favorite_worlds_get",
+        format!("Getting favorite worlds offset {}.", input.offset),
+        favorite_get_input(input.endpoint, "worlds/favorites".into(), params),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_favorite_avatars_get(
+    state: State<'_, AppState>,
+    input: BackendFavoriteAvatarsInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let tag = normalize_text(input.tag);
+    let mut params = HashMap::from([
+        ("n".to_string(), json!(input.n)),
+        ("offset".to_string(), json!(input.offset)),
+    ]);
+    if !tag.is_empty() {
+        params.insert("tag".to_string(), Value::String(tag));
+    }
+
+    execute_favorite_api(
+        state,
+        "app__backend_favorite_avatars_get",
+        format!("Getting favorite avatars offset {}.", input.offset),
+        favorite_get_input(input.endpoint, "avatars/favorites".into(), params),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_favorite_groups_get(
+    state: State<'_, AppState>,
+    input: BackendFavoriteGroupsInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let owner_id = normalize_text(input.owner_id);
+    let mut params = HashMap::from([
+        ("n".to_string(), json!(input.n)),
+        ("offset".to_string(), json!(input.offset)),
+    ]);
+    if !owner_id.is_empty() {
+        params.insert("ownerId".to_string(), Value::String(owner_id));
+    }
+
+    execute_favorite_api(
+        state,
+        "app__backend_favorite_groups_get",
+        format!("Getting favorite groups offset {}.", input.offset),
+        favorite_get_input(input.endpoint, "favorite/groups".into(), params),
+    )
+    .await
 }
 
 fn normalize_config_key(key: &str) -> String {

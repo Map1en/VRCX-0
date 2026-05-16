@@ -3,15 +3,56 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 
 import avatarLocalRepository from './avatarLocalRepository.js';
 import userSessionRepository from './userSessionRepository.js';
-import { executeVrchatBackendRequest } from './vrchatRequest.js';
+import {
+    createRequestError,
+    executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 5000;
 
 type AvatarRecord = Record<string, any>;
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendAvatarResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat avatar request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
+}
 
 interface AvatarRequestOptions {
     endpoint?: string;
@@ -82,17 +123,17 @@ async function getAvatarsPage({
     offset = 0,
     n = PAGE_SIZE
 } = {}) {
-    return executeGet(
-        'avatars',
-        {
+    return unwrapBackendAvatarResponse<AvatarRecord[]>(
+        await backend.app.BackendAvatarListByUserGet({
+            endpoint,
+            user: 'me',
             n,
             offset,
             sort: 'updated',
             order: 'descending',
-            releaseStatus: 'all',
-            user: 'me'
-        },
-        { endpoint }
+            releaseStatus: 'all'
+        }),
+        'avatars'
     );
 }
 
@@ -207,13 +248,16 @@ async function saveAvatar({
         throw new Error('MyAvatarRepository.saveAvatar requires an avatar id.');
     }
 
-    const response = await executePut(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}`,
-        {
-            id: normalizedAvatarId,
-            ...params
-        },
-        { endpoint }
+    const response = unwrapBackendAvatarResponse<AvatarRecord>(
+        await backend.app.BackendAvatarSave({
+            avatarId: normalizedAvatarId,
+            endpoint,
+            params: {
+                id: normalizedAvatarId,
+                ...params
+            }
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}`
     );
 
     return response.json;
@@ -228,12 +272,13 @@ async function createImpostor({ avatarId, endpoint = '' }: AvatarIdInput = {}) {
         );
     }
 
-    const response = await execute(
-        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor/enqueue`,
-        {
+    const response = unwrapBackendAvatarResponse(
+        await backend.app.BackendAvatarImpostorCreate({
+            avatarId: normalizedAvatarId,
             endpoint,
-            method: 'POST'
-        }
+            emptyBody: false
+        }),
+        `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor/enqueue`
     );
 
     return response.json;
@@ -248,7 +293,10 @@ async function getAvailableAvatarStyles({
         policy: entityQueryPolicies.avatarStyles,
         force,
         queryFn: async () => {
-            const response = await executeGet('avatarStyles', {}, { endpoint });
+            const response = unwrapBackendAvatarResponse(
+                await backend.app.BackendAvatarStylesGet({ endpoint }),
+                'avatarStyles'
+            );
             return Array.isArray(response.json) ? response.json : [];
         }
     });

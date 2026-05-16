@@ -1,7 +1,12 @@
 import { backend } from '@/platform/index.js';
 
 import { normalizeUserTablePrefix } from './userSessionRepository.js';
-import vrchatFriendRepository from './vrchatFriendRepository.js';
+import {
+    createRequestError,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 
 type MutualGraphEntryMap = Map<string, string[] | Set<string>>;
 type MutualGraphMeta = {
@@ -15,6 +20,40 @@ type MutualGraphOptions = {
     offset?: number;
     n?: number;
 };
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendMutualResponse(
+    response: BackendApiResult,
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat friend request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
+}
 
 async function ensureTables(userId: unknown): Promise<string> {
     const userPrefix = normalizeUserTablePrefix(userId);
@@ -107,13 +146,15 @@ async function getMutualFriends({
         );
     }
 
-    return vrchatFriendRepository.executeGet(
-        `users/${encodeURIComponent(normalizedFriendId)}/mutuals/friends`,
-        {
-            userId: normalizedFriendId,
-            offset,
-            n
-        }
+    const response = await backend.app.BackendUserMutualFriendsGet({
+        userId: normalizedFriendId,
+        offset,
+        n,
+        includeUserIdParam: true
+    });
+    return unwrapBackendMutualResponse(
+        response,
+        `users/${encodeURIComponent(normalizedFriendId)}/mutuals/friends`
     );
 }
 

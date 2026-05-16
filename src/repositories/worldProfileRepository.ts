@@ -4,8 +4,15 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 
-import { executeVrchatBackendRequest } from './vrchatRequest.js';
+import {
+    createRequestError,
+    executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 
 interface WorldRepositoryOptions {
     endpoint?: string;
@@ -22,8 +29,39 @@ interface WorldsByUserOptions extends WorldRepositoryOptions {
     releaseStatus?: string;
 }
 
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendWorldResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat world request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 function normalizeEntityId(value) {
@@ -182,10 +220,12 @@ async function fetchWorldProfile({ worldId, endpoint = '' }) {
         );
     }
 
-    const response = await executeGet(
-        `worlds/${encodeURIComponent(normalizedWorldId)}`,
-        {},
-        { endpoint }
+    const response = unwrapBackendWorldResponse(
+        await backend.app.BackendWorldGet({
+            worldId: normalizedWorldId,
+            endpoint
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
     return normalize(response.json);
 }
@@ -278,7 +318,18 @@ async function getWorldsByUser({
         policy: entityQueryPolicies.worldCollection,
         force,
         queryFn: async () => {
-            const response = await executeGet('worlds', params, { endpoint });
+            const response = unwrapBackendWorldResponse(
+                await backend.app.BackendWorldListByUserGet({
+                    endpoint,
+                    userId: normalizedUserId,
+                    n,
+                    offset,
+                    sort,
+                    order,
+                    releaseStatus
+                }),
+                'worlds'
+            );
             return Array.isArray(response.json) ? response.json : [];
         }
     });
@@ -294,10 +345,13 @@ async function saveWorld({ worldId, params = {}, endpoint = '' }) {
         );
     }
 
-    const response = await executePut(
-        `worlds/${encodeURIComponent(normalizedWorldId)}`,
-        params,
-        { endpoint }
+    const response = unwrapBackendWorldResponse(
+        await backend.app.BackendWorldSave({
+            worldId: normalizedWorldId,
+            params,
+            endpoint
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -316,10 +370,12 @@ async function deleteWorld({ worldId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `worlds/${encodeURIComponent(normalizedWorldId)}`,
-        {},
-        { endpoint }
+    return unwrapBackendWorldResponse(
+        await backend.app.BackendWorldDelete({
+            worldId: normalizedWorldId,
+            endpoint
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
 }
 
@@ -331,10 +387,12 @@ async function publishWorld({ worldId, endpoint = '' }) {
         );
     }
 
-    const response = await executePut(
-        `worlds/${encodeURIComponent(normalizedWorldId)}/publish`,
-        { worldId: normalizedWorldId },
-        { endpoint }
+    const response = unwrapBackendWorldResponse(
+        await backend.app.BackendWorldPublish({
+            worldId: normalizedWorldId,
+            endpoint
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}/publish`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -353,10 +411,12 @@ async function unpublishWorld({ worldId, endpoint = '' }) {
         );
     }
 
-    const response = await executeDelete(
-        `worlds/${encodeURIComponent(normalizedWorldId)}/publish`,
-        {},
-        { endpoint }
+    const response = unwrapBackendWorldResponse(
+        await backend.app.BackendWorldUnpublish({
+            worldId: normalizedWorldId,
+            endpoint
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}/publish`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
@@ -376,10 +436,13 @@ async function deleteWorldPersistentData({ userId, worldId, endpoint = '' }) {
         );
     }
 
-    const response = await executeDelete(
-        `users/${encodeURIComponent(normalizedUserId)}/${encodeURIComponent(normalizedWorldId)}/persist`,
-        {},
-        { endpoint }
+    const response = unwrapBackendWorldResponse(
+        await backend.app.BackendWorldPersistentDataDelete({
+            userId: normalizedUserId,
+            worldId: normalizedWorldId,
+            endpoint
+        }),
+        `users/${encodeURIComponent(normalizedUserId)}/${encodeURIComponent(normalizedWorldId)}/persist`
     );
     setCachedQueryData(
         queryKeys.worldPersistData(
@@ -411,10 +474,13 @@ async function hasWorldPersistentData({
         policy: entityQueryPolicies.worldPersistData,
         force,
         queryFn: async () => {
-            const response = await executeGet(
-                `users/${encodeURIComponent(normalizedUserId)}/${encodeURIComponent(normalizedWorldId)}/persist/exists`,
-                {},
-                { endpoint }
+            const response = unwrapBackendWorldResponse(
+                await backend.app.BackendWorldPersistentDataExists({
+                    userId: normalizedUserId,
+                    worldId: normalizedWorldId,
+                    endpoint
+                }),
+                `users/${encodeURIComponent(normalizedUserId)}/${encodeURIComponent(normalizedWorldId)}/persist/exists`
             );
             if (typeof response.json === 'boolean') {
                 return response.json;

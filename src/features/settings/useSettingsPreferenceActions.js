@@ -291,7 +291,7 @@ export function useSettingsPreferenceActions({
     }
     async function refreshOnlineVisits() {
         try {
-            const response = await vrchatAuthRepository.executeGet('visits', {
+            const response = await vrchatAuthRepository.getOnlineVisits({
                 endpoint: auth.currentUserEndpoint || ''
             });
             setOnlineVisitCount(Number(response.json) || 0);
