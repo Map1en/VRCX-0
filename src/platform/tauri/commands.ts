@@ -201,6 +201,7 @@ const commandArgs: Record<string, string[]> = {
     app__backend_world_unpublish: ['input'],
     app__backend_runtime_snapshot_get: [],
     app__backend_sync_snapshot_get: [],
+    app__activity_self_sessions_refresh: ['input'],
     app__set_user_agent: [],
     app__check_game_running: [],
     app__set_game_client_runtime_state: ['sessionActive', 'currentLocation'],

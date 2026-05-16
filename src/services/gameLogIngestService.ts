@@ -123,6 +123,96 @@ function updateCurrentLocation({
     });
 }
 
+function normalizeProjectionPlayers(value: unknown): Array<Record<string, any>> {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .map((player) =>
+            player && typeof player === 'object'
+                ? (player as Record<string, any>)
+                : null
+        )
+        .filter(Boolean) as Array<Record<string, any>>;
+}
+
+export function applyBackendGameLogProjection(payload: unknown) {
+    const projection =
+        payload && typeof payload === 'object'
+            ? (payload as Record<string, any>)
+            : {};
+    const currentLocation = normalizeString(projection.currentLocation);
+    const currentWorldId = normalizeString(projection.currentWorldId);
+    const currentWorldName = normalizeString(projection.currentWorldName);
+    const currentDestination = normalizeString(
+        projection.currentDestination
+    );
+    const currentLocationStartedAt = normalizeString(
+        projection.currentLocationStartedAt
+    );
+    const lastGameLogAt =
+        normalizeString(projection.lastGameLogAt) ||
+        new Date().toISOString();
+    const lastGameLogType = normalizeString(projection.lastGameLogType);
+    const players = normalizeProjectionPlayers(
+        projection.currentLocationPlayers
+    );
+
+    ingestState.currentLocation = currentLocation;
+    ingestState.currentWorldName = currentWorldName;
+    ingestState.currentLocationStartedAt = currentLocationStartedAt;
+    ingestState.playersByKey.clear();
+    for (const player of players) {
+        const userId = normalizeString(player.userId);
+        const displayName = normalizeString(player.displayName);
+        if (!userId && !displayName) {
+            continue;
+        }
+        const playerKey = getPlayerKey(userId, displayName);
+        ingestState.playersByKey.set(playerKey, {
+            userId,
+            displayName,
+            joinTime: Number(player.joinTimeMs) || 0
+        });
+    }
+    if (!currentLocation) {
+        ingestState.lastVideoUrl = '';
+        ingestState.lastResourceUrl = '';
+    }
+
+    const currentLocationPlayerIds = getCurrentLocationPlayerIds();
+    const currentLocationPlayers = getCurrentLocationPlayers();
+    const gameStatePatch = {
+        currentLocation,
+        currentWorldId,
+        currentWorldName,
+        currentDestination,
+        currentLocationStartedAt: currentLocationStartedAt || null,
+        currentLocationPlayerIds,
+        currentLocationPlayers,
+        lastGameLogAt,
+        lastGameLogType
+    };
+    const runtimeStore = useRuntimeStore.getState();
+    runtimeStore.setGameState(gameStatePatch);
+
+    if (currentLocation || currentDestination) {
+        patchCurrentUserLocationFromGameState(runtimeStore, gameStatePatch);
+    }
+
+    const domainRuntime = useRuntimeStore.getState();
+    recordGameRuntimePresence({
+        endpoint: domainRuntime.auth.currentUserEndpoint,
+        currentUserId: domainRuntime.auth.currentUserId,
+        currentUserSnapshot: domainRuntime.auth.currentUserSnapshot,
+        currentLocation,
+        currentDestination,
+        currentLocationStartedAt,
+        currentLocationPlayers,
+        currentWorldName
+    });
+}
+
 function patchCurrentUserLocationFromGameState(
     runtimeStore: Record<string, any>,
     gameStatePatch: GameLogRow

@@ -328,7 +328,7 @@ pub struct ActivityPresenceOutput {
     pub(crate) r#type: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySyncStateOutput {
     pub(crate) user_id: String,
@@ -339,13 +339,32 @@ pub struct ActivitySyncStateOutput {
     pub(crate) cached_range_days: i64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySessionOutput {
     pub(crate) start: i64,
     pub(crate) end: i64,
     pub(crate) is_open_tail: bool,
     pub(crate) source_revision: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivitySelfSessionsRefreshInput {
+    pub(crate) user_id: String,
+    pub(crate) mode: String,
+    #[serde(default)]
+    pub(crate) range_days: Value,
+    #[serde(default)]
+    pub(crate) now_ms: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivitySelfSessionsRefreshOutput {
+    pub(crate) sync: ActivitySyncStateOutput,
+    pub(crate) sessions: Vec<ActivitySessionOutput>,
+    pub(crate) source_count: usize,
 }
 
 #[derive(Debug, Deserialize)]

@@ -181,6 +181,7 @@ pub fn run() {
             api::app::local_data::app__activity_self_source_after,
             api::app::local_data::app__activity_friend_presence_slice,
             api::app::local_data::app__activity_friend_presence_after,
+            api::app::local_data::app__activity_self_sessions_refresh,
             api::app::local_data::app__activity_sync_state_get,
             api::app::local_data::app__activity_sync_state_upsert,
             api::app::local_data::app__activity_sessions_get,

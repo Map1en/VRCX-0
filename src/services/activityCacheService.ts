@@ -1,8 +1,6 @@
 import { activityRepository } from '@/repositories/index.js';
-import { mergeSessions } from '@/shared/utils/activityEngine.js';
 import { useRuntimeStore } from '@/state/runtimeStore.js';
 import { useSessionStore } from '@/state/sessionStore.js';
-import { runActivityWorkerTask } from '@/workers/activityWorkerRunner.js';
 
 import { syncStartupServicesTask } from './startupServicesStatus.js';
 
@@ -191,39 +189,30 @@ async function hydrateSnapshot(userId: string) {
     return snapshot;
 }
 
+function applyActivityRefreshResult(
+    snapshot: ActivitySnapshot,
+    result: Record<string, any>
+) {
+    if (Array.isArray(result?.sessions)) {
+        snapshot.sessions = result.sessions as ActivitySession[];
+    }
+    if (result?.sync && typeof result.sync === 'object') {
+        snapshot.sync = {
+            ...snapshot.sync,
+            ...(result.sync as Record<string, any>),
+            userId: normalizeUserId(result.sync.userId || snapshot.userId),
+            isSelf: true
+        };
+    }
+}
+
 async function fullRefresh(snapshot: ActivitySnapshot, rangeDays: number) {
-    const sourceItems = (await activityRepository.getSelfActivitySourceSlice({
+    const result = await activityRepository.refreshSelfActivitySessions({
         userId: snapshot.userId,
-        fromDays: rangeDays
-    } as any)) as ActivitySourceRow[];
-    const sourceLastCreatedAt =
-        sourceItems.length > 0
-            ? sourceItems[sourceItems.length - 1].created_at
-            : '';
-    const result = await runActivityWorkerTask('computeSessionsSnapshot', {
-        sourceType: 'self_gamelog',
-        rows: sourceItems,
-        initialStart: null,
-        nowMs: Date.now(),
-        mayHaveOpenTail: true,
-        sourceRevision: sourceLastCreatedAt
+        mode: 'full',
+        rangeDays
     });
-
-    snapshot.sessions = result.sessions;
-    snapshot.sync = {
-        ...snapshot.sync,
-        updatedAt: new Date().toISOString(),
-        isSelf: true,
-        sourceLastCreatedAt: String(sourceLastCreatedAt || ''),
-        pendingSessionStartAt: result.pendingSessionStartAt,
-        cachedRangeDays: rangeDays
-    };
-
-    await activityRepository.replaceActivitySessions(
-        snapshot.userId,
-        snapshot.sessions
-    );
-    await activityRepository.upsertActivitySyncState(snapshot.sync);
+    applyActivityRefreshResult(snapshot, result);
 }
 
 async function incrementalRefresh(snapshot: ActivitySnapshot) {
@@ -231,55 +220,11 @@ async function incrementalRefresh(snapshot: ActivitySnapshot) {
         return;
     }
 
-    const sourceItems = (await activityRepository.getSelfActivitySourceAfter({
+    const result = await activityRepository.refreshSelfActivitySessions({
         userId: snapshot.userId,
-        afterCreatedAt: snapshot.sync.sourceLastCreatedAt,
-        inclusive: true
-    } as any)) as ActivitySourceRow[];
-
-    if (sourceItems.length === 0) {
-        snapshot.sync.updatedAt = new Date().toISOString();
-        await activityRepository.upsertActivitySyncState(snapshot.sync);
-        return;
-    }
-
-    const sourceLastCreatedAt = sourceItems[sourceItems.length - 1].created_at;
-    const result = await runActivityWorkerTask('computeSessionsSnapshot', {
-        sourceType: 'self_gamelog',
-        rows: sourceItems,
-        initialStart: null,
-        nowMs: Date.now(),
-        mayHaveOpenTail: true,
-        sourceRevision: sourceLastCreatedAt
+        mode: 'incremental'
     });
-
-    const replaceFromStartAt =
-        snapshot.sessions.length > 0
-            ? snapshot.sessions[Math.max(snapshot.sessions.length - 1, 0)].start
-            : null;
-    const mergedSessions = mergeSessions(snapshot.sessions, result.sessions);
-
-    snapshot.sessions = mergedSessions;
-    snapshot.sync = {
-        ...snapshot.sync,
-        updatedAt: new Date().toISOString(),
-        sourceLastCreatedAt: String(sourceLastCreatedAt || ''),
-        pendingSessionStartAt: result.pendingSessionStartAt
-    };
-
-    const tailSessions =
-        replaceFromStartAt === null
-            ? mergedSessions
-            : mergedSessions.filter(
-                  (session) => session.start >= replaceFromStartAt
-              );
-
-    await activityRepository.appendActivitySessions({
-        userId: snapshot.userId,
-        sessions: tailSessions,
-        replaceFromStartAt: replaceFromStartAt as any
-    });
-    await activityRepository.upsertActivitySyncState(snapshot.sync);
+    applyActivityRefreshResult(snapshot, result);
 }
 
 async function expandRange(snapshot: ActivitySnapshot, rangeDays: number) {
@@ -288,31 +233,12 @@ async function expandRange(snapshot: ActivitySnapshot, rangeDays: number) {
         return;
     }
 
-    const sourceItems = (await activityRepository.getSelfActivitySourceSlice({
+    const result = await activityRepository.refreshSelfActivitySessions({
         userId: snapshot.userId,
-        fromDays: rangeDays,
-        toDays: currentDays
-    } as any)) as ActivitySourceRow[];
-    const result = await runActivityWorkerTask('computeSessionsSnapshot', {
-        sourceType: 'self_gamelog',
-        rows: sourceItems,
-        initialStart: null,
-        nowMs: Date.now(),
-        mayHaveOpenTail: false,
-        sourceRevision: snapshot.sync.sourceLastCreatedAt
+        mode: 'expand',
+        rangeDays
     });
-
-    if (result.sessions.length > 0) {
-        snapshot.sessions = mergeSessions(result.sessions, snapshot.sessions);
-        await activityRepository.replaceActivitySessions(
-            snapshot.userId,
-            snapshot.sessions
-        );
-    }
-
-    snapshot.sync.cachedRangeDays = rangeDays;
-    snapshot.sync.updatedAt = new Date().toISOString();
-    await activityRepository.upsertActivitySyncState(snapshot.sync);
+    applyActivityRefreshResult(snapshot, result);
 }
 
 async function runActivityCacheWarmup({

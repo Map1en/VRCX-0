@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::backend::realtime::types::RealtimeWsStatusPayload;
 use vrcx_0_persistence::game_log::GameLogWriteBatch;
+use vrcx_0_runtime::game_log::runtime_state::GameLogProjection;
 use vrcx_0_runtime::realtime::types::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
     RealtimeNotificationProjection,
@@ -98,6 +99,10 @@ impl BackendEventBus {
                 "raw": raw,
             }),
         );
+    }
+
+    pub fn emit_game_log_projection(&self, projection: GameLogProjection) {
+        self.emit("gameLogProjection", projection);
     }
 
     pub fn emit_game_log_persistence_fallback(

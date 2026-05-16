@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     subscribe: vi.fn(),
+    applyBackendGameLogProjection: vi.fn(),
     ingestBackendGameLogEvent: vi.fn(),
     resetNowPlayingState: vi.fn(),
     recordBackendGameClientEvent: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('@/platform/index.js', () => ({
 }));
 
 vi.mock('./gameLogIngestService.js', () => ({
+    applyBackendGameLogProjection: mocks.applyBackendGameLogProjection,
     ingestBackendGameLogEvent: mocks.ingestBackendGameLogEvent,
     resetNowPlayingState: mocks.resetNowPlayingState
 }));
@@ -115,7 +117,7 @@ describe('backendEventService', () => {
         warn.mockRestore();
     });
 
-    it('projects backend-persisted GameLog mirrors without frontend DB fallback', async () => {
+    it('records backend-persisted GameLog mirrors without frontend ingest', async () => {
         const handlers = new Map<string, (payload: unknown) => void>();
         mocks.subscribe.mockImplementation((name, handler) => {
             handlers.set(name, handler);
@@ -140,9 +142,36 @@ describe('backendEventService', () => {
             setTimeout(resolve, 0);
         });
 
-        expect(mocks.ingestBackendGameLogEvent).toHaveBeenCalledWith(payload);
+        expect(mocks.ingestBackendGameLogEvent).not.toHaveBeenCalled();
         expect(
             useRuntimeStore.getState().backendEvents.addGameLogEvent.count
+        ).toBe(1);
+    });
+
+    it('applies backend GameLog projection when backend ingest is active', async () => {
+        const handlers = new Map<string, (payload: unknown) => void>();
+        mocks.subscribe.mockImplementation((name, handler) => {
+            handlers.set(name, handler);
+            return Promise.resolve(() => {});
+        });
+        mocks.isHostCapabilityAvailable.mockImplementation(
+            (name) => name === 'backendGameLogIngest'
+        );
+
+        await bindBackendEvents();
+
+        const payload = {
+            currentLocation: 'wrld_test:1',
+            currentWorldName: 'Test World',
+            currentLocationPlayers: []
+        };
+        handlers.get('gameLogProjection')?.(payload);
+
+        expect(mocks.applyBackendGameLogProjection).toHaveBeenCalledWith(
+            payload
+        );
+        expect(
+            useRuntimeStore.getState().backendEvents.gameLogProjection.count
         ).toBe(1);
     });
 });

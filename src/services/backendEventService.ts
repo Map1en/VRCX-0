@@ -6,6 +6,7 @@ import { useSessionStore } from '@/state/sessionStore.js';
 import { recordBackendGameClientEvent } from './gameClientLifecycle.js';
 import { handleGameRunningUpdate } from './gameStateService.js';
 import {
+    applyBackendGameLogProjection,
     ingestBackendGameLogEvent,
     resetNowPlayingState
 } from './gameLogIngestService.js';
@@ -20,6 +21,7 @@ import { handleBrowserFocus } from './vrcStatusService.js';
 
 type BackendEventName =
     | 'addGameLogEvent'
+    | 'gameLogProjection'
     | 'gameLogPersistenceFallback'
     | 'gameLogSideEffect'
     | 'gameClientEvent'
@@ -122,6 +124,10 @@ async function ingestAndRecordGameLogEvent(
     payload: unknown
 ): Promise<void> {
     const backendPersisted = isBackendPersistedGameLogMirror(payload);
+    if (backendPersisted) {
+        useRuntimeStore.getState().recordBackendEvent(name, payload);
+        return;
+    }
     if (!backendPersisted && !(await canIngestGameLogEvent())) {
         return;
     }
@@ -168,6 +174,14 @@ function handleBackendEvent(name: BackendEventName, payload: unknown): void {
     }
 
     runtimeStore.recordBackendEvent(name, payload);
+
+    if (name === 'gameLogProjection') {
+        if (!isHostCapabilityAvailable('backendGameLogIngest')) {
+            return;
+        }
+        applyBackendGameLogProjection(payload);
+        return;
+    }
 
     if (name === 'gameLogSideEffect') {
         if (!isHostCapabilityAvailable('backendGameLogSideEffects')) {
@@ -256,6 +270,7 @@ export async function bindBackendEvents(): Promise<() => void> {
     const unsubscribers: BackendEventUnsubscribe[] = [];
     const events: BackendEventName[] = [
         'addGameLogEvent',
+        'gameLogProjection',
         'gameLogPersistenceFallback',
         'gameLogSideEffect',
         'gameClientEvent',

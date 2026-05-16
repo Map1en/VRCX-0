@@ -88,6 +88,20 @@ interface ActivityBucketCacheInput extends ActivityBucketCacheQuery {
     builtAt?: string;
 }
 
+interface ActivitySelfSessionsRefreshInput {
+    userId?: unknown;
+    mode: 'full' | 'incremental' | 'expand';
+    rangeDays?: string | number;
+    nowMs?: number;
+}
+
+interface ActivitySelfSessionsRefreshOutput extends ObjectRow {
+    sync?: ActivitySyncStateRow | null;
+    sessions?: Array<ActivitySessionRow | unknown[]>;
+    sourceCount?: unknown;
+    source_count?: unknown;
+}
+
 const ACTIVITY_VIEW_KIND = Object.freeze({
     ACTIVITY: 'activity',
     OVERLAP: 'overlap'
@@ -347,6 +361,63 @@ async function upsertActivitySyncState(entry: ActivitySyncStateInput) {
     });
 }
 
+async function refreshSelfActivitySessions({
+    userId,
+    mode,
+    rangeDays = 0,
+    nowMs
+}: ActivitySelfSessionsRefreshInput) {
+    const normalizedUserId =
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
+    if (!normalizedUserId) {
+        throw new Error(
+            'ActivityRepository.refreshSelfActivitySessions requires a user id.'
+        );
+    }
+
+    const result = (await backend.app.ActivitySelfSessionsRefresh({
+        userId: normalizedUserId,
+        mode,
+        rangeDays,
+        ...(Number.isFinite(nowMs) ? { nowMs } : {})
+    })) as ActivitySelfSessionsRefreshOutput | null;
+    const sync = normalizeActivitySyncStateRow(
+        result?.sync || null,
+        normalizedUserId
+    );
+    const sessions = Array.isArray(result?.sessions)
+        ? result.sessions
+              .map(normalizeActivitySessionRow)
+              .filter(
+                  (row) =>
+                      Number.isFinite(row?.start) &&
+                      Number.isFinite(row?.end)
+              )
+        : [];
+
+    return {
+        sync:
+            sync ||
+            normalizeActivitySyncStateRow(null, normalizedUserId) ||
+            {
+                userId: normalizedUserId,
+                updatedAt: '',
+                isSelf: true,
+                sourceLastCreatedAt: '',
+                pendingSessionStartAt: null,
+                cachedRangeDays: 0
+            },
+        sessions,
+        sourceCount:
+            Number.parseInt(
+                String(result?.sourceCount ?? result?.source_count ?? 0),
+                10
+            ) || 0
+    };
+}
+
 async function getActivitySessions(userId) {
     const normalizedUserId =
         typeof userId === 'string'
@@ -472,6 +543,7 @@ const activityRepository = Object.freeze({
     getActivitySourceAfter,
     getActivitySyncState,
     upsertActivitySyncState,
+    refreshSelfActivitySessions,
     getActivitySessions,
     replaceActivitySessions,
     appendActivitySessions,
@@ -487,6 +559,7 @@ export {
     getSelfActivitySourceAfter,
     getActivitySyncState,
     upsertActivitySyncState,
+    refreshSelfActivitySessions,
     getActivitySessions,
     replaceActivitySessions,
     appendActivitySessions,

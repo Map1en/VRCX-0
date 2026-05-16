@@ -31,16 +31,67 @@ pub struct RuntimeSnapshot {
     pub location: String,
     pub world_name: String,
     pub destination: String,
+    pub started_at: String,
     pub players: Vec<PlayerState>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameLogProjection {
+    pub current_location: String,
+    pub current_world_id: String,
+    pub current_world_name: String,
+    pub current_destination: String,
+    pub current_location_started_at: Option<String>,
+    pub current_location_player_ids: Vec<String>,
+    pub current_location_players: Vec<PlayerState>,
+    pub last_game_log_at: String,
+    pub last_game_log_type: String,
 }
 
 impl GameLogRuntimeState {
     pub fn snapshot(&self) -> RuntimeSnapshot {
+        let mut players: Vec<PlayerState> = self.players_by_key.values().cloned().collect();
+        players.sort_by(|left, right| {
+            left.display_name
+                .cmp(&right.display_name)
+                .then_with(|| left.user_id.cmp(&right.user_id))
+        });
         RuntimeSnapshot {
             location: self.current_location.clone(),
             world_name: self.current_world_name.clone(),
             destination: self.current_destination.clone(),
-            players: self.players_by_key.values().cloned().collect(),
+            started_at: self.current_location_started_at.clone(),
+            players,
+        }
+    }
+
+    pub fn projection(&self, last_game_log_at: &str, last_game_log_type: &str) -> GameLogProjection {
+        let snapshot = self.snapshot();
+        GameLogProjection {
+            current_world_id: world_id_from_location(&snapshot.location),
+            current_location: snapshot.location,
+            current_world_name: snapshot.world_name,
+            current_destination: snapshot.destination,
+            current_location_started_at: if snapshot.started_at.is_empty() {
+                None
+            } else {
+                Some(snapshot.started_at)
+            },
+            current_location_player_ids: snapshot
+                .players
+                .iter()
+                .filter_map(|player| {
+                    if player.user_id.is_empty() {
+                        None
+                    } else {
+                        Some(player.user_id.clone())
+                    }
+                })
+                .collect(),
+            current_location_players: snapshot.players,
+            last_game_log_at: last_game_log_at.to_string(),
+            last_game_log_type: last_game_log_type.to_string(),
         }
     }
 }

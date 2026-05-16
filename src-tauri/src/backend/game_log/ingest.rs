@@ -114,6 +114,9 @@ impl GameLogProcessor {
         let write_outcome =
             self.write_batch_or_emit_failure_telemetry(&output.batch, output.raw_rows)?;
         if write_outcome == GameLogWriteOutcome::BackendPersisted {
+            if let Some(projection) = output.projection {
+                self.context.event_bus.emit_game_log_projection(projection);
+            }
             for row in output.backend_persisted_mirrors {
                 self.context.event_bus.emit_backend_game_log_event(row);
             }

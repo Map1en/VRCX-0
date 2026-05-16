@@ -6,8 +6,8 @@ use vrcx_0_persistence::game_log::{
 };
 
 use super::runtime_state::{
-    duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogRuntimeState,
-    PlayerState, RuntimeSnapshot,
+    duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogProjection,
+    GameLogRuntimeState, PlayerState, RuntimeSnapshot,
 };
 use super::video::{self, VideoInput};
 
@@ -65,6 +65,7 @@ pub struct GameLogIngestOutput {
     pub batch: GameLogWriteBatch,
     pub raw_rows: Vec<Vec<String>>,
     pub backend_persisted_mirrors: Vec<Vec<String>>,
+    pub projection: Option<GameLogProjection>,
     pub side_effects: Vec<GameLogSideEffect>,
 }
 
@@ -229,6 +230,13 @@ impl GameLogIngestEngine {
             }
         }
 
+        if let Some(row) = output.raw_rows.last() {
+            output.projection = Some(self.state.projection(
+                row.get(1).map(String::as_str).unwrap_or_default(),
+                row.get(2).map(String::as_str).unwrap_or_default(),
+            ));
+        }
+
         output
     }
 
@@ -247,6 +255,7 @@ impl GameLogIngestEngine {
             self.state.last_video_url.clear();
             self.state.now_playing_url.clear();
             output.side_effects.push(GameLogSideEffect::NowPlayingReset);
+            output.projection = Some(self.state.projection(&event.changed_at, "game-stopped"));
         }
         output
     }
