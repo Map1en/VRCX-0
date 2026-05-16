@@ -186,40 +186,6 @@ export function buildFeedFavoriteIdSet(
     return ids;
 }
 
-export function feedSearchMatches(row, search) {
-    const query = String(search || '')
-        .trim()
-        .toUpperCase();
-    if (!query) {
-        return true;
-    }
-    if (
-        (query.startsWith('WRLD_') || query.startsWith('GRP_')) &&
-        String(row?.location || '')
-            .toUpperCase()
-            .includes(query)
-    ) {
-        return true;
-    }
-    return [
-        row?.displayName,
-        row?.worldName,
-        row?.groupName,
-        row?.status,
-        row?.statusDescription,
-        row?.previousStatus,
-        row?.previousStatusDescription,
-        row?.bio,
-        row?.previousBio,
-        row?.avatarName,
-        row?.message
-    ].some((value) =>
-        String(value || '')
-            .toUpperCase()
-            .includes(query)
-    );
-}
-
 export function toIsoRangeStart(value) {
     if (!value) {
         return '';
@@ -238,44 +204,6 @@ export function toIsoRangeEnd(value) {
     return Number.isNaN(date.valueOf()) ? '' : date.toISOString();
 }
 
-export function feedEntryMatchesView({
-    currentUserId,
-    row,
-    activeFilters,
-    dateFrom,
-    dateTo,
-    favoriteIdSet,
-    favoritesOnly,
-    search
-}) {
-    if (!row || typeof row !== 'object') {
-        return false;
-    }
-    if (row.ownerUserId && row.ownerUserId !== currentUserId) {
-        return false;
-    }
-    if (
-        Array.isArray(activeFilters) &&
-        activeFilters.length &&
-        !activeFilters.includes(row.type)
-    ) {
-        return false;
-    }
-    if (favoritesOnly && !favoriteIdSet.has(normalizeFeedId(row.userId))) {
-        return false;
-    }
-    const start = toIsoRangeStart(dateFrom);
-    const end = toIsoRangeEnd(dateTo);
-    const createdAt = String(row.created_at || '');
-    if (start && createdAt && createdAt < start) {
-        return false;
-    }
-    if (end && createdAt && createdAt > end) {
-        return false;
-    }
-    return feedSearchMatches(row, search);
-}
-
 export function getFeedRowId(row) {
     if (row?.id != null) {
         return `id:${row.id}`;
@@ -289,46 +217,6 @@ export function getFeedRowId(row) {
     const location = row?.location ?? row?.details?.location ?? '';
     const message = row?.message ?? '';
     return `${type}:${createdAt}:${userId}:${location}:${message}`;
-}
-
-export function collectMatchingLiveFeedEntries(entries, minSequence, context) {
-    const unseenEntries = (Array.isArray(entries) ? entries : []).filter(
-        (item) => item.sequence > minSequence
-    );
-    if (!unseenEntries.length) {
-        return {
-            matchingEntries: [],
-            maxSequence: minSequence
-        };
-    }
-
-    const matchingEntries = unseenEntries
-        .map((item) => item.entry)
-        .filter((entry) =>
-            feedEntryMatchesView({
-                ...context,
-                row: entry
-            })
-        );
-
-    return {
-        matchingEntries,
-        maxSequence: Math.max(...unseenEntries.map((item) => item.sequence))
-    };
-}
-
-export function mergeLiveFeedEntries(rows, matchingEntries, maxRows) {
-    const nextRowsById = new Map();
-    for (const entry of [...matchingEntries].reverse()) {
-        nextRowsById.set(getFeedRowId(entry), entry);
-    }
-    for (const row of Array.isArray(rows) ? rows : []) {
-        const rowId = getFeedRowId(row);
-        if (!nextRowsById.has(rowId)) {
-            nextRowsById.set(rowId, row);
-        }
-    }
-    return Array.from(nextRowsById.values()).slice(0, maxRows);
 }
 
 export function parseDateInput(value) {

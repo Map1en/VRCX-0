@@ -608,7 +608,7 @@ pub struct BrokenGameLogDisplayNameOutput {
     pub(crate) display_name: Value,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedRowsQueryInput {
     pub(crate) user_id: String,
@@ -624,6 +624,77 @@ pub struct FeedRowsQueryInput {
     pub(crate) date_from: String,
     #[serde(default)]
     pub(crate) date_to: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedLiveEntryInput {
+    pub(crate) sequence: i64,
+    #[serde(default)]
+    pub(crate) entry: Value,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedReadModelQueryInput {
+    pub(crate) user_id: String,
+    pub(crate) mode: String,
+    #[serde(default)]
+    pub(crate) search: String,
+    #[serde(default)]
+    pub(crate) filters: Vec<String>,
+    #[serde(default)]
+    pub(crate) vip_list: Vec<String>,
+    #[serde(default)]
+    pub(crate) max_entries: i64,
+    #[serde(default)]
+    pub(crate) date_from: String,
+    #[serde(default)]
+    pub(crate) date_to: String,
+    #[serde(default)]
+    pub(crate) live_entries: Vec<FeedLiveEntryInput>,
+    #[serde(default)]
+    pub(crate) min_live_sequence: i64,
+    #[serde(default)]
+    pub(crate) favorites_only: bool,
+    #[serde(default)]
+    pub(crate) favorite_user_ids: Vec<String>,
+    #[serde(default)]
+    pub(crate) max_rows: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedLiveRowsMergeInput {
+    #[serde(default)]
+    pub(crate) rows: Vec<Value>,
+    #[serde(default)]
+    pub(crate) current_user_id: String,
+    #[serde(default)]
+    pub(crate) filters: Vec<String>,
+    #[serde(default)]
+    pub(crate) search: String,
+    #[serde(default)]
+    pub(crate) date_from: String,
+    #[serde(default)]
+    pub(crate) date_to: String,
+    #[serde(default)]
+    pub(crate) favorites_only: bool,
+    #[serde(default)]
+    pub(crate) favorite_user_ids: Vec<String>,
+    #[serde(default)]
+    pub(crate) live_entries: Vec<FeedLiveEntryInput>,
+    #[serde(default)]
+    pub(crate) min_live_sequence: i64,
+    #[serde(default)]
+    pub(crate) max_rows: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedReadModelOutput {
+    pub(crate) rows: Vec<Value>,
+    pub(crate) max_sequence: i64,
 }
 
 #[derive(Debug, Serialize)]

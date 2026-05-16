@@ -3,12 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
     buildFeedFavoriteIdSet,
     canRequestInviteFromFeedFriend,
-    collectMatchingLiveFeedEntries,
-    feedEntryMatchesView,
-    feedSearchMatches,
     getFeedRowId,
     isUserIdLike,
-    mergeLiveFeedEntries,
     normalizeFeedId,
     parseDateInput,
     resolveDisplayNameCandidate,
@@ -42,6 +38,9 @@ describe('feed row helpers', () => {
         expect(resolveFeedUserDisplayName({ userId: USER_ID }, null, '')).toBe(
             UNKNOWN_FEED_USER_DISPLAY_NAME
         );
+        expect(
+            getFeedRowId({ rowId: 1, type: 'GPS', userId: USER_ID })
+        ).toBe('row:GPS:1');
     });
 
     it('resolves friend state and current invite location from visible session data', () => {
@@ -106,109 +105,6 @@ describe('feed row helpers', () => {
         );
 
         expect([...ids]).toEqual([USER_ID, 'usr_local']);
-    });
-
-    it('matches feed rows by filters, favorites, dates, and search text', () => {
-        const row = {
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'Maple',
-            location: 'wrld_123:456',
-            worldName: 'Club Orion',
-            created_at: '2026-01-15T12:00:00.000Z'
-        };
-
-        expect(feedSearchMatches(row, 'orion')).toBe(true);
-        expect(feedSearchMatches(row, 'wrld_123')).toBe(true);
-        expect(
-            feedEntryMatchesView({
-                currentUserId: 'current',
-                row,
-                activeFilters: ['GPS'],
-                dateFrom: '2026-01-15',
-                dateTo: '2026-01-15',
-                favoriteIdSet: new Set([USER_ID]),
-                favoritesOnly: true,
-                search: 'maple'
-            })
-        ).toBe(true);
-        expect(
-            feedEntryMatchesView({
-                currentUserId: 'current',
-                row,
-                activeFilters: ['OnPlayerJoined'],
-                dateFrom: '2026-01-15',
-                dateTo: '2026-01-15',
-                favoriteIdSet: new Set([USER_ID]),
-                favoritesOnly: true,
-                search: 'maple'
-            })
-        ).toBe(false);
-    });
-
-    it('collects and merges live feed entries without duplicating existing rows', () => {
-        const oldRow = {
-            id: 1,
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'Old'
-        };
-        const updatedRow = {
-            id: 1,
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'Updated'
-        };
-        const newRow = {
-            rowId: 2,
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'New'
-        };
-
-        expect(getFeedRowId(oldRow)).toBe('id:1');
-        const result = collectMatchingLiveFeedEntries(
-            [
-                { sequence: 1, entry: oldRow },
-                { sequence: 2, entry: updatedRow },
-                { sequence: 3, entry: newRow }
-            ],
-            1,
-            {
-                currentUserId: 'current',
-                activeFilters: ['GPS'],
-                dateFrom: '',
-                dateTo: '',
-                favoriteIdSet: new Set(),
-                favoritesOnly: false,
-                search: ''
-            }
-        );
-
-        expect(result.maxSequence).toBe(3);
-        expect(result.matchingEntries).toEqual([updatedRow, newRow]);
-        expect(
-            mergeLiveFeedEntries([oldRow], result.matchingEntries, 10)
-        ).toEqual([newRow, updatedRow]);
-    });
-
-    it('keeps the newest live feed row when the same row id appears more than once', () => {
-        const firstUpdate = {
-            id: 1,
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'First update'
-        };
-        const secondUpdate = {
-            id: 1,
-            type: 'GPS',
-            userId: USER_ID,
-            displayName: 'Second update'
-        };
-
-        expect(
-            mergeLiveFeedEntries([], [secondUpdate, firstUpdate], 10)
-        ).toEqual([secondUpdate]);
     });
 
     it('formats date inputs and status display metadata', () => {

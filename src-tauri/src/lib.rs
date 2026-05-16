@@ -162,6 +162,8 @@ pub fn run() {
             api::app::local_data::app__avatar_tags_patch,
             api::app::local_data::app__feed_add_entry,
             api::app::local_data::app__feed_avatar_purge,
+            api::app::local_data::app__feed_live_rows_merge,
+            api::app::local_data::app__feed_read_model_query,
             api::app::local_data::app__feed_rows_query,
             api::app::local_data::app__game_log_entries_add,
             api::app::local_data::app__game_log_instance_delete_by_location,

@@ -28,6 +28,18 @@ type FeedDatabaseRow = {
     previousCurrentAvatarThumbnailImageUrl?: unknown;
 };
 
+type FeedRowValue = Record<string, unknown>;
+
+type FeedLiveEntry = {
+    sequence: number;
+    entry: Record<string, unknown>;
+};
+
+type FeedReadModelResult = {
+    rows: FeedRowValue[];
+    maxSequence: number;
+};
+
 const DEFAULT_MAX_TABLE_SIZE = 500;
 const DEFAULT_SEARCH_TABLE_SIZE = 50000;
 
@@ -110,6 +122,23 @@ async function queryFeedRows({
     return Array.isArray(rows) ? rows : [];
 }
 
+function normalizeFeedReadModelResult(result: unknown): FeedReadModelResult {
+    if (!result || typeof result !== 'object') {
+        return {
+            rows: [],
+            maxSequence: 0
+        };
+    }
+    const value = result as { rows?: unknown; maxSequence?: unknown };
+    return {
+        rows: Array.isArray(value.rows)
+            ? (value.rows as FeedRowValue[])
+            : [],
+        maxSequence:
+            typeof value.maxSequence === 'number' ? value.maxSequence : 0
+    };
+}
+
 const feed = {
     markFeedTablesEnsured,
 
@@ -187,6 +216,111 @@ const feed = {
             dateFrom,
             dateTo
         });
+    },
+
+    async queryFeedReadModel({
+        userId,
+        mode,
+        search = '',
+        filters = [],
+        vipList = [],
+        maxEntries = DEFAULT_MAX_TABLE_SIZE,
+        dateFrom = '',
+        dateTo = '',
+        liveEntries = [],
+        minLiveSequence = 0,
+        favoritesOnly = false,
+        favoriteUserIds = [],
+        maxRows = maxEntries
+    }: {
+        userId: unknown;
+        mode: string;
+        search?: string;
+        filters?: string[];
+        vipList?: string[];
+        maxEntries?: number;
+        dateFrom?: string;
+        dateTo?: string;
+        liveEntries?: FeedLiveEntry[];
+        minLiveSequence?: number;
+        favoritesOnly?: boolean;
+        favoriteUserIds?: string[];
+        maxRows?: number;
+    }) {
+        await ensureFeedTablesForUser(userId);
+        return normalizeFeedReadModelResult(
+            await backend.app.FeedReadModelQuery({
+                query: {
+                    userId:
+                        typeof userId === 'string'
+                            ? userId.trim()
+                            : String(userId ?? '').trim(),
+                    mode,
+                    search,
+                    filters: Array.isArray(filters) ? filters : [],
+                    vipList: Array.isArray(vipList) ? vipList : [],
+                    maxEntries,
+                    dateFrom,
+                    dateTo,
+                    liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
+                    minLiveSequence,
+                    favoritesOnly,
+                    favoriteUserIds: Array.isArray(favoriteUserIds)
+                        ? favoriteUserIds
+                        : [],
+                    maxRows
+                }
+            })
+        );
+    },
+
+    async mergeFeedLiveRows({
+        rows = [],
+        currentUserId = '',
+        filters = [],
+        search = '',
+        dateFrom = '',
+        dateTo = '',
+        favoritesOnly = false,
+        favoriteUserIds = [],
+        liveEntries = [],
+        minLiveSequence = 0,
+        maxRows = DEFAULT_MAX_TABLE_SIZE
+    }: {
+        rows?: FeedRowValue[];
+        currentUserId?: string;
+        filters?: string[];
+        search?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        favoritesOnly?: boolean;
+        favoriteUserIds?: string[];
+        liveEntries?: FeedLiveEntry[];
+        minLiveSequence?: number;
+        maxRows?: number;
+    }) {
+        return normalizeFeedReadModelResult(
+            await backend.app.FeedLiveRowsMerge({
+                query: {
+                    rows: Array.isArray(rows) ? rows : [],
+                    currentUserId:
+                        typeof currentUserId === 'string'
+                            ? currentUserId.trim()
+                            : String(currentUserId ?? '').trim(),
+                    filters: Array.isArray(filters) ? filters : [],
+                    search,
+                    dateFrom,
+                    dateTo,
+                    favoritesOnly,
+                    favoriteUserIds: Array.isArray(favoriteUserIds)
+                        ? favoriteUserIds
+                        : [],
+                    liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
+                    minLiveSequence,
+                    maxRows
+                }
+            })
+        );
     },
 
     async lookupFeedDatabase(

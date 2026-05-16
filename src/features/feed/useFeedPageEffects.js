@@ -1,9 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 export function useFeedPageEffects({
     DEFAULT_PAGE_SIZES,
     FEED_FILTER_TYPES,
     activeFilters,
-    collectMatchingLiveFeedEntries,
     columnOrder,
     columnOrderLocked,
     columnSizing,
@@ -30,7 +29,6 @@ export function useFeedPageEffects({
     isFavoritesLoaded,
     lastLiveFeedSequenceRef,
     maxFeedRows,
-    mergeLiveFeedEntries,
     normalizeId,
     pagination,
     persistedPageSize,
@@ -64,6 +62,77 @@ export function useFeedPageEffects({
     useFeedLiveStore,
     writePersistedState
 }) {
+    const rowsRef = useRef(rows);
+    const liveMergeRequestIdRef = useRef(0);
+    useEffect(() => {
+        rowsRef.current = rows;
+    }, [rows]);
+    async function mergeRowsWithLatestLive({
+        rows,
+        minLiveSequence,
+        favoriteUserIds,
+        requestIsCurrent
+    }) {
+        let result = {
+            rows,
+            maxSequence: minLiveSequence
+        };
+        let previousMaxSequence = minLiveSequence;
+        while (requestIsCurrent()) {
+            const liveFeedSnapshot = useFeedLiveStore.getState();
+            result = await feedRepository.mergeLiveRows({
+                rows: result.rows,
+                userId: currentUserId,
+                search: deferredSearchQuery,
+                filters: activeFilters,
+                favoriteUserIds,
+                dateFrom: toIsoRangeStart(dateFrom),
+                dateTo: toIsoRangeEnd(dateTo),
+                liveEntries: liveFeedSnapshot.entries,
+                minLiveSequence: result.maxSequence,
+                favoritesOnly,
+                maxRows: maxFeedRows
+            });
+            if (!requestIsCurrent()) {
+                return null;
+            }
+            const liveVersion = useFeedLiveStore.getState().version;
+            if (
+                liveVersion <= result.maxSequence ||
+                result.maxSequence <= previousMaxSequence
+            ) {
+                return result;
+            }
+            previousMaxSequence = result.maxSequence;
+        }
+        return null;
+    }
+    async function prepareFullQueryRowsForCommit({
+        result,
+        favoriteUserIds,
+        requestIsCurrent
+    }) {
+        let nextResult = result;
+        while (requestIsCurrent()) {
+            liveMergeRequestIdRef.current += 1;
+            if (
+                useFeedLiveStore.getState().version <= nextResult.maxSequence
+            ) {
+                return nextResult;
+            }
+            const mergedResult = await mergeRowsWithLatestLive({
+                rows: nextResult.rows,
+                favoriteUserIds,
+                minLiveSequence: nextResult.maxSequence,
+                requestIsCurrent
+            });
+            if (!mergedResult) {
+                return null;
+            }
+            nextResult = mergedResult;
+        }
+        return null;
+    }
     useEffect(() => {
         lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
     }, [currentUserId]);
@@ -317,42 +386,50 @@ export function useFeedPageEffects({
         const favoriteUserIds = favoritesOnly ? Array.from(favoriteIdSet) : [];
         const liveFeedSequenceAtRequestStart =
             useFeedLiveStore.getState().version;
-        const liveFeedContext = {
-            currentUserId,
-            activeFilters,
-            dateFrom,
-            dateTo,
-            favoriteIdSet,
-            favoritesOnly,
-            search: deferredSearchQuery
-        };
         setLoadStatus('running');
         feedRepository
-            .queryFeed({
+            .queryFeedReadModel({
                 userId: currentUserId,
                 search: deferredSearchQuery,
                 filters: activeFilters,
                 favoriteUserIds,
                 dateFrom: toIsoRangeStart(dateFrom),
-                dateTo: toIsoRangeEnd(dateTo)
+                dateTo: toIsoRangeEnd(dateTo),
+                liveEntries: [],
+                minLiveSequence: liveFeedSequenceAtRequestStart,
+                favoritesOnly,
+                maxRows: maxFeedRows
             })
-            .then((nextRows) => {
+            .then(async (result) => {
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                const liveFeedSnapshot = useFeedLiveStore.getState();
-                const { matchingEntries, maxSequence } =
-                    collectMatchingLiveFeedEntries(
-                        liveFeedSnapshot.entries,
-                        liveFeedSequenceAtRequestStart,
-                        liveFeedContext
-                    );
+                const mergedResult = await mergeRowsWithLatestLive({
+                    rows: result.rows,
+                    favoriteUserIds,
+                    minLiveSequence: result.maxSequence,
+                    requestIsCurrent: () => requestIdRef.current === requestId
+                });
+                if (!mergedResult || requestIdRef.current !== requestId) {
+                    return;
+                }
+                const commitResult = await prepareFullQueryRowsForCommit({
+                    result: mergedResult,
+                    favoriteUserIds,
+                    requestIsCurrent: () => requestIdRef.current === requestId
+                });
+                if (!commitResult || requestIdRef.current !== requestId) {
+                    return;
+                }
+                const maxSequence = Math.max(
+                    commitResult.maxSequence,
+                    liveFeedSequenceAtRequestStart
+                );
                 if (maxSequence > lastLiveFeedSequenceRef.current) {
                     lastLiveFeedSequenceRef.current = maxSequence;
                 }
-                setRows(
-                    mergeLiveFeedEntries(nextRows, matchingEntries, maxFeedRows)
-                );
+                rowsRef.current = commitResult.rows;
+                setRows(commitResult.rows);
                 setLoadStatus('ready');
             })
             .catch((error) => {
@@ -376,6 +453,7 @@ export function useFeedPageEffects({
         preferencesReady
     ]);
     useEffect(() => {
+        liveMergeRequestIdRef.current += 1;
         if (!preferencesReady || !currentUserId) {
             return undefined;
         }
@@ -386,29 +464,32 @@ export function useFeedPageEffects({
             ) {
                 return;
             }
-            const { matchingEntries, maxSequence } =
-                collectMatchingLiveFeedEntries(
-                    state.entries,
-                    lastLiveFeedSequenceRef.current,
-                    {
-                        currentUserId,
-                        activeFilters,
-                        dateFrom,
-                        dateTo,
-                        favoriteIdSet,
-                        favoritesOnly,
-                        search: deferredSearchQuery
+            const mergeRequestId = liveMergeRequestIdRef.current + 1;
+            liveMergeRequestIdRef.current = mergeRequestId;
+            const minLiveSequence = lastLiveFeedSequenceRef.current;
+            void mergeRowsWithLatestLive({
+                rows: rowsRef.current,
+                favoriteUserIds: favoritesOnly ? Array.from(favoriteIdSet) : [],
+                minLiveSequence,
+                requestIsCurrent: () =>
+                    liveMergeRequestIdRef.current === mergeRequestId
+            })
+                .then((result) => {
+                    if (!result) {
+                        return;
                     }
-                );
-            if (maxSequence > lastLiveFeedSequenceRef.current) {
-                lastLiveFeedSequenceRef.current = maxSequence;
-            }
-            if (!matchingEntries.length) {
-                return;
-            }
-            setRows((current) =>
-                mergeLiveFeedEntries(current, matchingEntries, maxFeedRows)
-            );
+                    if (liveMergeRequestIdRef.current !== mergeRequestId) {
+                        return;
+                    }
+                    if (result.maxSequence > lastLiveFeedSequenceRef.current) {
+                        lastLiveFeedSequenceRef.current = result.maxSequence;
+                    }
+                    rowsRef.current = result.rows;
+                    setRows(result.rows);
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
         });
     }, [
         activeFilters,

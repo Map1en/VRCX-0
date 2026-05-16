@@ -24,7 +24,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     FeedEntryContent,
-    getFeedRowId,
     getFeedRowKey
 } from './DashboardFeedEntryContent.jsx';
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState.jsx';
@@ -39,53 +38,6 @@ import {
 } from './dashboardWidgetUtils.js';
 
 const FEED_WIDGET_MAX_ROWS = 100;
-
-function feedEntryMatchesWidget(row, { currentUserId, filters }) {
-    if (!row || typeof row !== 'object') {
-        return false;
-    }
-    if (row.ownerUserId && row.ownerUserId !== currentUserId) {
-        return false;
-    }
-    return (
-        !Array.isArray(filters) || !filters.length || filters.includes(row.type)
-    );
-}
-
-function collectMatchingLiveFeedEntries(entries, minSequence, context) {
-    const unseenEntries = (Array.isArray(entries) ? entries : []).filter(
-        (item) => item.sequence > minSequence
-    );
-    if (!unseenEntries.length) {
-        return {
-            matchingEntries: [],
-            maxSequence: minSequence
-        };
-    }
-
-    const matchingEntries = unseenEntries
-        .map((item) => item.entry)
-        .filter((entry) => feedEntryMatchesWidget(entry, context));
-
-    return {
-        matchingEntries,
-        maxSequence: Math.max(...unseenEntries.map((item) => item.sequence))
-    };
-}
-
-function mergeLiveFeedEntries(rows, matchingEntries, maxRows) {
-    const nextRowsById = new Map();
-    for (const entry of [...matchingEntries].reverse()) {
-        nextRowsById.set(getFeedRowId(entry), entry);
-    }
-    for (const row of Array.isArray(rows) ? rows : []) {
-        const rowId = getFeedRowId(row);
-        if (!nextRowsById.has(rowId)) {
-            nextRowsById.set(rowId, row);
-        }
-    }
-    return Array.from(nextRowsById.values()).slice(0, maxRows);
-}
 
 export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     const { t } = useTranslation();
@@ -103,6 +55,8 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     const friendsById = useFriendRosterStore((state) => state.friendsById);
 
     const lastLiveFeedSequenceRef = useRef(0);
+    const rowsRef = useRef([]);
+    const liveMergeRequestIdRef = useRef(0);
     const [rows, setRows] = useState([]);
     const [loadStatus, setLoadStatus] = useState('idle');
     const [detail, setDetail] = useState('');
@@ -120,6 +74,67 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     useEffect(() => {
         lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
     }, [currentUserId]);
+
+    useEffect(() => {
+        rowsRef.current = rows;
+    }, [rows]);
+
+    async function mergeWidgetRowsWithLatestLive({
+        rows,
+        minLiveSequence,
+        requestIsCurrent
+    }) {
+        let result = {
+            rows,
+            maxSequence: minLiveSequence
+        };
+        let previousMaxSequence = minLiveSequence;
+        while (requestIsCurrent()) {
+            const liveFeedSnapshot = useFeedLiveStore.getState();
+            result = await feedRepository.mergeLiveRows({
+                rows: result.rows,
+                userId: currentUserId,
+                filters: activeFilters,
+                liveEntries: liveFeedSnapshot.entries,
+                minLiveSequence: result.maxSequence,
+                maxRows: FEED_WIDGET_MAX_ROWS
+            });
+            if (!requestIsCurrent()) {
+                return null;
+            }
+            const liveVersion = useFeedLiveStore.getState().version;
+            if (
+                liveVersion <= result.maxSequence ||
+                result.maxSequence <= previousMaxSequence
+            ) {
+                return result;
+            }
+            previousMaxSequence = result.maxSequence;
+        }
+        return null;
+    }
+
+    async function prepareWidgetRowsForCommit({ result, requestIsCurrent }) {
+        let nextResult = result;
+        while (requestIsCurrent()) {
+            liveMergeRequestIdRef.current += 1;
+            if (
+                useFeedLiveStore.getState().version <= nextResult.maxSequence
+            ) {
+                return nextResult;
+            }
+            const mergedResult = await mergeWidgetRowsWithLatestLive({
+                rows: nextResult.rows,
+                minLiveSequence: nextResult.maxSequence,
+                requestIsCurrent
+            });
+            if (!mergedResult) {
+                return null;
+            }
+            nextResult = mergedResult;
+        }
+        return null;
+    }
 
     useEffect(() => {
         let active = true;
@@ -140,39 +155,44 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
 
         const liveFeedSequenceAtRequestStart =
             useFeedLiveStore.getState().version;
-        const liveFeedContext = {
-            currentUserId,
-            filters: activeFilters
-        };
-
         feedRepository
-            .queryFeed({
+            .queryFeedReadModel({
                 userId: currentUserId,
-                filters: activeFilters
+                filters: activeFilters,
+                liveEntries: [],
+                minLiveSequence: liveFeedSequenceAtRequestStart,
+                maxRows: FEED_WIDGET_MAX_ROWS
             })
-            .then((nextRows) => {
+            .then(async (result) => {
                 if (!active) {
                     return;
                 }
 
-                const liveFeedSnapshot = useFeedLiveStore.getState();
-                const { matchingEntries, maxSequence } =
-                    collectMatchingLiveFeedEntries(
-                        liveFeedSnapshot.entries,
-                        liveFeedSequenceAtRequestStart,
-                        liveFeedContext
-                    );
+                const mergedResult = await mergeWidgetRowsWithLatestLive({
+                    rows: result.rows,
+                    minLiveSequence: result.maxSequence,
+                    requestIsCurrent: () => active
+                });
+                if (!active || !mergedResult) {
+                    return;
+                }
+                const commitResult = await prepareWidgetRowsForCommit({
+                    result: mergedResult,
+                    requestIsCurrent: () => active
+                });
+                if (!active || !commitResult) {
+                    return;
+                }
+                const maxSequence = Math.max(
+                    commitResult.maxSequence,
+                    liveFeedSequenceAtRequestStart
+                );
                 if (maxSequence > lastLiveFeedSequenceRef.current) {
                     lastLiveFeedSequenceRef.current = maxSequence;
                 }
 
-                setRows(
-                    mergeLiveFeedEntries(
-                        nextRows,
-                        matchingEntries,
-                        FEED_WIDGET_MAX_ROWS
-                    )
-                );
+                rowsRef.current = commitResult.rows;
+                setRows(commitResult.rows);
                 setLoadStatus('ready');
                 setDetail('');
             })
@@ -194,26 +214,40 @@ export function DashboardFeedWidget({ config = {}, configUpdater = null }) {
     }, [activeFilters, addGameLogEventCount, currentUserId]);
 
     useEffect(() => {
+        liveMergeRequestIdRef.current += 1;
         if (!currentUserId || liveFeedEntries.length === 0) {
             return;
         }
-        const { matchingEntries, maxSequence } = collectMatchingLiveFeedEntries(
-            liveFeedEntries,
-            lastLiveFeedSequenceRef.current,
-            {
-                currentUserId,
-                filters: activeFilters
-            }
-        );
-        if (maxSequence > lastLiveFeedSequenceRef.current) {
-            lastLiveFeedSequenceRef.current = maxSequence;
-        }
-        if (!matchingEntries.length) {
-            return;
-        }
-        setRows((current) =>
-            mergeLiveFeedEntries(current, matchingEntries, FEED_WIDGET_MAX_ROWS)
-        );
+        const mergeRequestId = liveMergeRequestIdRef.current + 1;
+        liveMergeRequestIdRef.current = mergeRequestId;
+        const minLiveSequence = lastLiveFeedSequenceRef.current;
+        void mergeWidgetRowsWithLatestLive({
+            rows: rowsRef.current,
+            minLiveSequence,
+            requestIsCurrent: () =>
+                liveMergeRequestIdRef.current === mergeRequestId
+        })
+            .then((result) => {
+                if (!result) {
+                    return;
+                }
+                if (liveMergeRequestIdRef.current !== mergeRequestId) {
+                    return;
+                }
+                if (result.maxSequence > lastLiveFeedSequenceRef.current) {
+                    lastLiveFeedSequenceRef.current = result.maxSequence;
+                }
+                rowsRef.current = result.rows;
+                setRows(result.rows);
+            })
+            .catch((error) => {
+                setDetail(
+                    userFacingErrorMessage(
+                        error,
+                        'Failed to merge feed widget update.'
+                    )
+                );
+            });
     }, [activeFilters, currentUserId, liveFeedEntries]);
 
     const annotatedRows = useMemo(

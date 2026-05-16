@@ -23,6 +23,17 @@ export interface FeedQueryOptions {
     dateTo?: string;
 }
 
+export interface FeedReadModelQueryOptions extends FeedQueryOptions {
+    liveEntries?: unknown[];
+    minLiveSequence?: number;
+    favoritesOnly?: boolean;
+    maxRows?: number;
+}
+
+export interface FeedLiveRowsMergeOptions extends FeedReadModelQueryOptions {
+    rows?: FeedEntry[];
+}
+
 interface FeedReadyState {
     normalizedUserId: string;
     maxTableSize: number;
@@ -117,6 +128,91 @@ class FeedRepository {
             normalizedFavorites,
             maxTableSize
         );
+    }
+
+    async queryFeedReadModel({
+        userId,
+        search = '',
+        filters = [],
+        favoriteUserIds = [],
+        dateFrom = '',
+        dateTo = '',
+        liveEntries = [],
+        minLiveSequence = 0,
+        favoritesOnly = false,
+        maxRows
+    }: FeedReadModelQueryOptions) {
+        const { normalizedUserId, maxTableSize, searchLimit } =
+            await this.#ensureReady(userId);
+        const normalizedFilters = normalizeFilterList(filters);
+        const normalizedFavorites = Array.from(
+            new Set(
+                (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
+                    .map((value) => normalizeUserId(value))
+                    .filter(Boolean)
+            )
+        );
+        const normalizedSearch = String(search || '').trim();
+        const isSearchMode = Boolean(normalizedSearch || dateFrom || dateTo);
+        const maxEntries = isSearchMode ? searchLimit : maxTableSize;
+
+        return feedLocalRepository.queryFeedReadModel({
+            userId: normalizedUserId,
+            mode: isSearchMode ? 'search' : 'lookup',
+            search: normalizedSearch,
+            filters: normalizedFilters,
+            vipList: favoritesOnly ? normalizedFavorites : [],
+            maxEntries,
+            dateFrom,
+            dateTo,
+            liveEntries: Array.isArray(liveEntries)
+                ? (liveEntries as never[])
+                : [],
+            minLiveSequence,
+            favoritesOnly,
+            favoriteUserIds: normalizedFavorites,
+            maxRows: maxRows ?? maxEntries
+        });
+    }
+
+    async mergeLiveRows({
+        userId,
+        rows = [],
+        search = '',
+        filters = [],
+        favoriteUserIds = [],
+        dateFrom = '',
+        dateTo = '',
+        liveEntries = [],
+        minLiveSequence = 0,
+        favoritesOnly = false,
+        maxRows
+    }: FeedLiveRowsMergeOptions) {
+        const normalizedUserId = normalizeUserId(userId);
+        const normalizedFilters = normalizeFilterList(filters);
+        const normalizedFavorites = Array.from(
+            new Set(
+                (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
+                    .map((value) => normalizeUserId(value))
+                    .filter(Boolean)
+            )
+        );
+
+        return feedLocalRepository.mergeFeedLiveRows({
+            rows,
+            currentUserId: normalizedUserId,
+            filters: normalizedFilters,
+            search: String(search || '').trim(),
+            dateFrom,
+            dateTo,
+            liveEntries: Array.isArray(liveEntries)
+                ? (liveEntries as never[])
+                : [],
+            minLiveSequence,
+            favoritesOnly,
+            favoriteUserIds: normalizedFavorites,
+            maxRows
+        });
     }
 
     async addGpsEntryForUser(userId: unknown, entry: FeedEntry) {
