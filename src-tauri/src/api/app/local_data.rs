@@ -2,9 +2,10 @@
 
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_persistence::common::ParamsBuilder;
+use vrcx_0_persistence::common::{DbParams, ParamsBuilder};
 use vrcx_0_persistence::database::{DatabaseService, DatabaseWriteTransaction};
 use vrcx_0_persistence::game_log::{
     ensure_game_log_tables, write_batch as write_game_log_batch, GameLogEventEntry,
@@ -4745,6 +4746,193 @@ pub fn app__friend_log_history_delete(
     )?)
 }
 
+fn notification_filter_params(
+    filters: &[String],
+    search: &str,
+    search_columns: &[&str],
+) -> (String, DbParams) {
+    let mut params = HashMap::new();
+    let mut clauses = Vec::new();
+    let filters = filters
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    let type_placeholders = add_list_params(&mut params, &filters, "notification_type");
+    if !type_placeholders.is_empty() {
+        clauses.push(format!("type IN ({})", type_placeholders.join(", ")));
+    }
+
+    let search = normalize_text(search).to_lowercase();
+    if !search.is_empty() {
+        params.insert("@search_like".into(), Value::String(format!("%{search}%")));
+        clauses.push(format!(
+            "({})",
+            search_columns
+                .iter()
+                .map(|column| format!("LOWER(COALESCE({column}, '')) LIKE @search_like"))
+                .collect::<Vec<_>>()
+                .join(" OR ")
+        ));
+    }
+
+    if clauses.is_empty() {
+        (String::new(), params)
+    } else {
+        (format!(" WHERE {}", clauses.join(" AND ")), params)
+    }
+}
+
+fn notification_date_millis(value: &str) -> i64 {
+    DateTime::parse_from_rfc3339(value)
+        .map(|date| date.timestamp_millis())
+        .unwrap_or(0)
+}
+
+fn notification_expires_at_expired(value: &str, now: DateTime<Utc>) -> bool {
+    if value.trim().is_empty() {
+        return false;
+    }
+    DateTime::parse_from_rfc3339(value)
+        .map(|date| date <= now)
+        .unwrap_or(false)
+}
+
+fn notification_value_text(value: &Value, key: &str) -> String {
+    value
+        .as_object()
+        .and_then(|object| object.get(key))
+        .map(value_as_string)
+        .unwrap_or_default()
+}
+
+fn notification_matches_search(notification: &NotificationListItemOutput, search: &str) -> bool {
+    let search = normalize_text(search).to_lowercase();
+    if search.is_empty() {
+        return true;
+    }
+
+    [
+        notification.r#type.clone(),
+        notification.sender_username.clone(),
+        notification.sender_user_id.clone(),
+        notification.title.clone(),
+        notification.message.clone(),
+        notification.link_text.clone(),
+        notification.link.clone(),
+        notification_value_text(&notification.details, "worldName"),
+        notification_value_text(&notification.details, "worldId"),
+        notification_value_text(&notification.details, "inviteMessage"),
+        notification_value_text(&notification.details, "requestMessage"),
+        notification_value_text(&notification.details, "responseMessage"),
+        notification_value_text(&notification.data, "groupName"),
+    ]
+    .iter()
+    .any(|value| value.to_lowercase().contains(&search))
+}
+
+fn notification_matches_filters(
+    notification: &NotificationListItemOutput,
+    filters: &[String],
+) -> bool {
+    let filters = filters
+        .iter()
+        .map(normalize_text)
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    filters.is_empty() || filters.iter().any(|filter| filter == &notification.r#type)
+}
+
+fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListItemOutput {
+    let details = json!({
+        "worldId": row.world_id,
+        "worldName": row.world_name,
+        "imageUrl": row.image_url,
+        "inviteMessage": row.invite_message,
+        "requestMessage": row.request_message,
+        "responseMessage": row.response_message,
+    });
+    NotificationListItemOutput {
+        id: row.id,
+        version: 1,
+        created_at: row.created_at.clone(),
+        created_at_legacy: row.created_at,
+        updated_at: String::new(),
+        expires_at: String::new(),
+        r#type: row.r#type,
+        link: String::new(),
+        link_text: String::new(),
+        message: row.message,
+        title: String::new(),
+        image_url: row.image_url,
+        seen: false,
+        sender_user_id: row.sender_user_id,
+        sender_username: row.sender_username,
+        receiver_user_id: row.receiver_user_id,
+        data: json!({}),
+        responses: json!([]),
+        details,
+        expired: row.expired == 1,
+    }
+}
+
+fn notification_v2_list_item(
+    row: NotificationV2RowOutput,
+    now: DateTime<Utc>,
+) -> NotificationListItemOutput {
+    let expires_at = row.expires_at;
+    let expired = notification_expires_at_expired(&expires_at, now);
+    let data = parse_json_value(&Value::String(row.data), json!({}));
+    let responses = parse_json_value(&Value::String(row.responses), json!([]));
+    let details = parse_json_value(&Value::String(row.details), json!({}));
+    NotificationListItemOutput {
+        id: row.id,
+        version: 2,
+        created_at: row.created_at.clone(),
+        created_at_legacy: row.created_at,
+        updated_at: row.updated_at,
+        expires_at,
+        r#type: row.r#type,
+        link: row.link,
+        link_text: row.link_text,
+        message: row.message,
+        title: row.title,
+        image_url: row.image_url,
+        seen: row.seen == 1,
+        sender_user_id: row.sender_user_id,
+        sender_username: row.sender_username,
+        receiver_user_id: String::new(),
+        data: if data.is_object() { data } else { json!({}) },
+        responses: if responses.is_array() {
+            responses
+        } else {
+            json!([])
+        },
+        details: if details.is_object() {
+            details
+        } else {
+            json!({})
+        },
+        expired,
+    }
+}
+
+fn notification_push_dedup(
+    deduped: &mut HashMap<String, NotificationListItemOutput>,
+    notification: NotificationListItemOutput,
+) {
+    if notification.id.trim().is_empty() {
+        return;
+    }
+    let should_replace = deduped
+        .get(&notification.id)
+        .map(|existing| notification.version >= existing.version)
+        .unwrap_or(true);
+    if should_replace {
+        deduped.insert(notification.id.clone(), notification);
+    }
+}
+
 #[tauri::command]
 pub fn app__notification_rows_query(
     state: State<'_, AppState>,
@@ -4822,6 +5010,130 @@ pub fn app__notification_rows_query(
         v2_rows,
         unseen_v2_rows,
     })
+}
+
+fn query_notification_list(
+    db: &DatabaseService,
+    query: NotificationListQueryInput,
+) -> Result<Vec<NotificationListItemOutput>, AppError> {
+    let user_id = normalize_text(query.user_id);
+    if user_id.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(db, &user_prefix)?;
+    let per_table_limit = if query.per_table_limit > 0 {
+        query.per_table_limit
+    } else {
+        500
+    };
+    let final_limit = if query.limit > 0 { query.limit } else { 500 };
+    let search = normalize_text(query.search);
+    let now = Utc::now();
+
+    let v1_search_columns = [
+        "type",
+        "sender_username",
+        "sender_user_id",
+        "message",
+        "world_id",
+        "world_name",
+        "invite_message",
+        "request_message",
+        "response_message",
+    ];
+    let v2_search_columns = [
+        "type",
+        "sender_username",
+        "sender_user_id",
+        "title",
+        "message",
+        "link_text",
+        "link",
+        "data",
+        "details",
+    ];
+    let (v1_where_sql, mut v1_params) =
+        notification_filter_params(&query.filters, &search, &v1_search_columns);
+    let (v2_where_sql, mut v2_params) =
+        notification_filter_params(&query.filters, &search, &v2_search_columns);
+    v1_params.insert("@limit".into(), Value::from(per_table_limit));
+    v2_params.insert("@limit".into(), Value::from(per_table_limit));
+
+    let v1_rows = db
+        .execute(
+            &format!(
+                "SELECT id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired
+                 FROM {user_prefix}_notifications{v1_where_sql}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT @limit"
+            ),
+            &v1_params,
+        )?
+        .into_iter()
+        .map(|row| notification_v1_from_row(&row));
+    let v2_rows = db
+        .execute(
+            &format!(
+                "SELECT id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details
+                 FROM {user_prefix}_notifications_v2{v2_where_sql}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT @limit"
+            ),
+            &v2_params,
+        )?
+        .into_iter()
+        .map(|row| notification_v2_from_row(&row));
+    let unseen_v2_rows = if query.include_unseen {
+        db.execute(
+            &format!(
+                "SELECT id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details
+                     FROM {user_prefix}_notifications_v2
+                     WHERE seen = 0
+                       AND (expires_at IS NULL OR expires_at = '' OR expires_at > @now)
+                     ORDER BY created_at DESC, id DESC"
+            ),
+            &ParamsBuilder::new().set("now", now_iso()).build(),
+        )?
+        .into_iter()
+        .map(|row| notification_v2_from_row(&row))
+        .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+
+    let mut deduped = HashMap::new();
+    for row in v1_rows {
+        notification_push_dedup(&mut deduped, notification_v1_list_item(row));
+    }
+    for row in v2_rows {
+        notification_push_dedup(&mut deduped, notification_v2_list_item(row, now));
+    }
+    for row in unseen_v2_rows {
+        notification_push_dedup(&mut deduped, notification_v2_list_item(row, now));
+    }
+
+    let mut notifications = deduped
+        .into_values()
+        .filter(|notification| notification_matches_filters(notification, &query.filters))
+        .filter(|notification| notification_matches_search(notification, &search))
+        .collect::<Vec<_>>();
+    notifications.sort_by(|left, right| {
+        notification_date_millis(&right.created_at)
+            .cmp(&notification_date_millis(&left.created_at))
+            .then_with(|| right.id.cmp(&left.id))
+    });
+    notifications.truncate(final_limit as usize);
+    Ok(notifications)
+}
+
+#[tauri::command]
+pub fn app__notification_list_query(
+    state: State<'_, AppState>,
+    query: NotificationListQueryInput,
+) -> Result<Vec<NotificationListItemOutput>, AppError> {
+    query_notification_list(state.db.as_ref(), query)
 }
 
 #[tauri::command]
@@ -5207,4 +5519,301 @@ pub fn app__local_moderation_sync_snapshot(
     })?;
 
     Ok(moderation_by_user_id.into_values().collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-{name}-{}-{}",
+                std::process::id(),
+                Utc::now().timestamp_nanos_opt().unwrap_or_default()
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn insert_notification_v1(
+        db: &DatabaseService,
+        user_prefix: &str,
+        id: &str,
+        created_at: &str,
+        message: &str,
+        world_name: &str,
+    ) {
+        db.execute_non_query(
+            &format!("INSERT INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired) VALUES (@id, @created_at, 'invite', 'usr_sender', 'Sender', 'usr_owner', @message, 'wrld_1', @world_name, '', '', '', '', 0)"),
+            &ParamsBuilder::new()
+                .set("id", id)
+                .set("created_at", created_at)
+                .set("message", message)
+                .set("world_name", world_name)
+                .build(),
+        )
+        .unwrap();
+    }
+
+    fn insert_notification_v2(
+        db: &DatabaseService,
+        user_prefix: &str,
+        id: &str,
+        created_at: &str,
+        message: &str,
+        seen: i64,
+    ) {
+        db.execute_non_query(
+            &format!("INSERT INTO {user_prefix}_notifications_v2 (id, created_at, updated_at, expires_at, type, link, link_text, message, title, image_url, seen, sender_user_id, sender_username, data, responses, details) VALUES (@id, @created_at, '', '2099-01-01T00:00:00.000Z', 'invite', '', '', @message, '', '', @seen, 'usr_sender', 'Sender', @data, '[]', @details)"),
+            &ParamsBuilder::new()
+                .set("id", id)
+                .set("created_at", created_at)
+                .set("message", message)
+                .set("seen", seen)
+                .set("data", json!({ "groupName": "Searchable Group" }).to_string())
+                .set("details", json!({ "worldName": "Searchable World" }).to_string())
+                .build(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn notification_v1_list_item_preserves_frontend_contract_shape() {
+        let item = notification_v1_list_item(NotificationV1RowOutput {
+            id: "notif_1".into(),
+            created_at: "2026-01-02T03:04:05.000Z".into(),
+            r#type: "invite".into(),
+            sender_user_id: "usr_sender".into(),
+            sender_username: "Sender".into(),
+            receiver_user_id: "usr_receiver".into(),
+            message: "hello".into(),
+            world_id: "wrld_1".into(),
+            world_name: "World".into(),
+            image_url: "https://example.test/image.png".into(),
+            invite_message: "join".into(),
+            request_message: "request".into(),
+            response_message: "response".into(),
+            expired: 1,
+        });
+
+        assert_eq!(item.version, 1);
+        assert_eq!(item.created_at, "2026-01-02T03:04:05.000Z");
+        assert_eq!(item.created_at_legacy, "2026-01-02T03:04:05.000Z");
+        assert_eq!(item.receiver_user_id, "usr_receiver");
+        assert_eq!(item.details["worldName"], "World");
+        assert_eq!(item.details["inviteMessage"], "join");
+        assert!(item.responses.as_array().is_some_and(Vec::is_empty));
+        assert!(item.expired);
+    }
+
+    #[test]
+    fn notification_v2_list_item_parses_json_and_expiry() {
+        let now = DateTime::parse_from_rfc3339("2026-01-02T00:00:00.000Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let item = notification_v2_list_item(
+            NotificationV2RowOutput {
+                id: "notif_2".into(),
+                created_at: "2026-01-01T00:00:00.000Z".into(),
+                updated_at: "2026-01-01T01:00:00.000Z".into(),
+                expires_at: "2026-01-01T02:00:00.000Z".into(),
+                r#type: "group.announcement".into(),
+                link: "https://example.test".into(),
+                link_text: "Open".into(),
+                message: "message".into(),
+                title: "title".into(),
+                image_url: "https://example.test/image.png".into(),
+                seen: 1,
+                sender_user_id: "usr_sender".into(),
+                sender_username: "Sender".into(),
+                data: r#"{"groupName":"Group"}"#.into(),
+                responses: r#"[{"text":"OK"}]"#.into(),
+                details: r#"{"worldId":"wrld_1"}"#.into(),
+            },
+            now,
+        );
+
+        assert_eq!(item.version, 2);
+        assert!(item.seen);
+        assert!(item.expired);
+        assert_eq!(item.data["groupName"], "Group");
+        assert_eq!(item.details["worldId"], "wrld_1");
+        assert_eq!(item.responses.as_array().map(Vec::len), Some(1));
+    }
+
+    #[test]
+    fn notification_dedup_prefers_v2_contract() {
+        let mut deduped = HashMap::new();
+        notification_push_dedup(
+            &mut deduped,
+            notification_v1_list_item(NotificationV1RowOutput {
+                id: "notif_same".into(),
+                created_at: "2026-01-01T00:00:00.000Z".into(),
+                r#type: "invite".into(),
+                sender_user_id: String::new(),
+                sender_username: String::new(),
+                receiver_user_id: String::new(),
+                message: "v1".into(),
+                world_id: String::new(),
+                world_name: String::new(),
+                image_url: String::new(),
+                invite_message: String::new(),
+                request_message: String::new(),
+                response_message: String::new(),
+                expired: 0,
+            }),
+        );
+        notification_push_dedup(
+            &mut deduped,
+            notification_v2_list_item(
+                NotificationV2RowOutput {
+                    id: "notif_same".into(),
+                    created_at: "2026-01-01T00:00:00.000Z".into(),
+                    updated_at: String::new(),
+                    expires_at: String::new(),
+                    r#type: "invite".into(),
+                    link: String::new(),
+                    link_text: String::new(),
+                    message: "v2".into(),
+                    title: String::new(),
+                    image_url: String::new(),
+                    seen: 0,
+                    sender_user_id: String::new(),
+                    sender_username: String::new(),
+                    data: "{}".into(),
+                    responses: "[]".into(),
+                    details: "{}".into(),
+                },
+                Utc::now(),
+            ),
+        );
+
+        assert_eq!(deduped.get("notif_same").map(|item| item.version), Some(2));
+        assert_eq!(
+            deduped.get("notif_same").map(|item| item.message.as_str()),
+            Some("v2")
+        );
+    }
+
+    #[test]
+    fn notification_filter_params_contract_includes_type_and_search() {
+        let (where_sql, params) =
+            notification_filter_params(&["invite".into()], "World", &["message", "details"]);
+
+        assert!(where_sql.contains("type IN (@notification_type_0)"));
+        assert!(where_sql.contains("LOWER(COALESCE(message, '')) LIKE @search_like"));
+        assert_eq!(
+            params.get("@notification_type_0").and_then(Value::as_str),
+            Some("invite")
+        );
+        assert_eq!(
+            params.get("@search_like").and_then(Value::as_str),
+            Some("%world%")
+        );
+    }
+
+    #[test]
+    fn notification_list_query_applies_db_filter_dedup_unseen_sort_and_limit() {
+        let dir = TestDir::new("notification-list-query");
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+        let user_id = "usr_owner";
+        let user_prefix = normalize_user_table_prefix(user_id).unwrap();
+        ensure_realtime_tables(&db, &user_prefix).unwrap();
+
+        insert_notification_v1(
+            &db,
+            &user_prefix,
+            "notif_same",
+            "2026-01-01T00:00:00.000Z",
+            "v1 message",
+            "Searchable World",
+        );
+        insert_notification_v2(
+            &db,
+            &user_prefix,
+            "notif_same",
+            "2026-01-01T00:00:00.000Z",
+            "v2 message",
+            1,
+        );
+        insert_notification_v2(
+            &db,
+            &user_prefix,
+            "notif_unseen",
+            "2026-01-02T00:00:00.000Z",
+            "unseen message",
+            0,
+        );
+
+        let default_rows = query_notification_list(
+            &db,
+            NotificationListQueryInput {
+                user_id: user_id.into(),
+                search: String::new(),
+                filters: Vec::new(),
+                per_table_limit: 10,
+                limit: 2,
+                include_unseen: true,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            default_rows
+                .iter()
+                .map(|row| row.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["notif_unseen", "notif_same"]
+        );
+        assert_eq!(
+            default_rows
+                .iter()
+                .find(|row| row.id == "notif_same")
+                .map(|row| (row.version, row.message.as_str())),
+            Some((2, "v2 message"))
+        );
+
+        let filtered_rows = query_notification_list(
+            &db,
+            NotificationListQueryInput {
+                user_id: user_id.into(),
+                search: "searchable group".into(),
+                filters: vec!["invite".into()],
+                per_table_limit: 10,
+                limit: 10,
+                include_unseen: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(filtered_rows.len(), 2);
+        assert!(filtered_rows
+            .iter()
+            .all(|row| row.r#type == "invite" && row.data["groupName"] == "Searchable Group"));
+
+        let unseen_filtered_rows = query_notification_list(
+            &db,
+            NotificationListQueryInput {
+                user_id: user_id.into(),
+                search: String::new(),
+                filters: vec!["friendRequest".into()],
+                per_table_limit: 10,
+                limit: 10,
+                include_unseen: true,
+            },
+        )
+        .unwrap();
+        assert!(unseen_filtered_rows.is_empty());
+    }
 }

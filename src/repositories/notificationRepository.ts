@@ -1,10 +1,8 @@
 import { backend } from '@/platform/index.js';
 
-import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     type QueryParams,
@@ -12,7 +10,6 @@ import {
 } from './vrchatRequest.js';
 
 type NotificationRecord = Record<string, any>;
-type NotificationRow = NotificationRecord | unknown[];
 
 interface NotificationUserOptions {
     userId?: unknown;
@@ -61,134 +58,6 @@ function normalizeUserId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-function readColumn(row: NotificationRow, index: number, key: string) {
-    if (Array.isArray(row)) {
-        return row[index];
-    }
-
-    if (row && typeof row === 'object') {
-        return row[key] ?? row[index];
-    }
-
-    return null;
-}
-
-function normalizeV1Notification(row: NotificationRow): NotificationRecord {
-    const details = {
-        worldId: readColumn(row, 7, 'world_id') || '',
-        worldName: readColumn(row, 8, 'world_name') || '',
-        imageUrl: readColumn(row, 9, 'image_url') || '',
-        inviteMessage: readColumn(row, 10, 'invite_message') || '',
-        requestMessage: readColumn(row, 11, 'request_message') || '',
-        responseMessage: readColumn(row, 12, 'response_message') || ''
-    };
-
-    return {
-        id: readColumn(row, 0, 'id') || '',
-        version: 1,
-        createdAt: readColumn(row, 1, 'created_at') || '',
-        created_at: readColumn(row, 1, 'created_at') || '',
-        type: readColumn(row, 2, 'type') || '',
-        senderUserId: readColumn(row, 3, 'sender_user_id') || '',
-        senderUsername: readColumn(row, 4, 'sender_username') || '',
-        receiverUserId: readColumn(row, 5, 'receiver_user_id') || '',
-        message: readColumn(row, 6, 'message') || '',
-        title: '',
-        imageUrl: details.imageUrl,
-        link: '',
-        linkText: '',
-        seen: false,
-        expired: Number(readColumn(row, 13, 'expired')) === 1,
-        data: {},
-        responses: [],
-        details
-    };
-}
-
-function isExpiredTimestamp(value: unknown): boolean {
-    if (!value) {
-        return false;
-    }
-    const expiresAt = Date.parse(String(value));
-    return Number.isFinite(expiresAt) ? expiresAt <= Date.now() : false;
-}
-
-function normalizeV2Notification(row: NotificationRow): NotificationRecord {
-    const data = safeJsonParse(readColumn(row, 13, 'data') || '{}', {});
-    const responses = safeJsonParse(
-        readColumn(row, 14, 'responses') || '[]',
-        []
-    );
-    const details = safeJsonParse(readColumn(row, 15, 'details') || '{}', {});
-
-    return {
-        id: readColumn(row, 0, 'id') || '',
-        version: 2,
-        createdAt: readColumn(row, 1, 'created_at') || '',
-        created_at: readColumn(row, 1, 'created_at') || '',
-        updatedAt: readColumn(row, 2, 'updated_at') || '',
-        expiresAt: readColumn(row, 3, 'expires_at') || '',
-        type: readColumn(row, 4, 'type') || '',
-        link: readColumn(row, 5, 'link') || '',
-        linkText: readColumn(row, 6, 'link_text') || '',
-        message: readColumn(row, 7, 'message') || '',
-        title: readColumn(row, 8, 'title') || '',
-        imageUrl: readColumn(row, 9, 'image_url') || '',
-        seen: Number(readColumn(row, 10, 'seen')) === 1,
-        senderUserId: readColumn(row, 11, 'sender_user_id') || '',
-        senderUsername: readColumn(row, 12, 'sender_username') || '',
-        data,
-        responses: Array.isArray(responses) ? responses : [],
-        details: details && typeof details === 'object' ? details : {},
-        expired: isExpiredTimestamp(readColumn(row, 3, 'expires_at'))
-    };
-}
-
-function matchesSearch(
-    notification: NotificationRecord,
-    search: string
-): boolean {
-    const query = String(search || '')
-        .trim()
-        .toLowerCase();
-    if (!query) {
-        return true;
-    }
-
-    return [
-        notification.type,
-        notification.senderUsername,
-        notification.senderUserId,
-        notification.title,
-        notification.message,
-        notification.linkText,
-        notification.link,
-        notification.details?.worldName,
-        notification.details?.worldId,
-        notification.details?.inviteMessage,
-        notification.details?.requestMessage,
-        notification.details?.responseMessage,
-        notification.data?.groupName
-    ].some((value) =>
-        String(value || '')
-            .toLowerCase()
-            .includes(query)
-    );
-}
-
-function matchesFilters(
-    notification: NotificationRecord,
-    filters: unknown
-): boolean {
-    const normalizedFilters = Array.isArray(filters)
-        ? filters.map((value) => String(value || '').trim()).filter(Boolean)
-        : [];
-    return (
-        !normalizedFilters.length ||
-        normalizedFilters.includes(notification.type)
-    );
-}
-
 function normalizeNotificationFilters(filters: unknown): string[] {
     return Array.isArray(filters)
         ? filters.map((value) => String(value || '').trim()).filter(Boolean)
@@ -198,28 +67,6 @@ function normalizeNotificationFilters(filters: unknown): string[] {
 function normalizeNotificationLimit(value: unknown, fallback: number): number {
     const limit = Number.parseInt(String(value ?? ''), 10);
     return Number.isFinite(limit) && limit > 0 ? limit : fallback;
-}
-
-async function executeApi(
-    path: string,
-    {
-        endpoint = '',
-        method = 'GET',
-        params = null
-    }: { endpoint?: string; method?: string; params?: QueryParams | null } = {}
-) {
-    return executeVrchatBackendRequest<NotificationRecord>(
-        'VrchatNotificationExecute',
-        path,
-        {
-            endpoint,
-            method,
-            params,
-            body: params,
-            jsonBody: params !== null,
-            fallbackMessage: 'VRChat notification request failed'
-        }
-    );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -255,7 +102,10 @@ async function queryNotifications({
     userId,
     search = '',
     filters = []
-}: NotificationUserOptions & { search?: string; filters?: unknown[] } = {}) {
+}: NotificationUserOptions & {
+    search?: string;
+    filters?: unknown[];
+} = {}): Promise<NotificationRecord[]> {
     const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {
         return [];
@@ -274,58 +124,17 @@ async function queryNotifications({
         : normalizeNotificationLimit(maxTableSize, 500);
     const perTableLimit = isSearchOrFiltered ? limit : limit * 2;
     const isDefaultList = !normalizedSearch && normalizedFilters.length === 0;
-    const {
-        v1Rows = [],
-        v2Rows = [],
-        unseenV2Rows = []
-    } = (await backend.app.NotificationRowsQuery({
+    const rows = await backend.app.NotificationListQuery({
         query: {
             userId: normalizedUserId,
+            search: normalizedSearch,
             filters: normalizedFilters,
             perTableLimit,
+            limit,
             includeUnseen: isDefaultList
         }
-    })) as {
-        v1Rows?: NotificationRow[];
-        v2Rows?: NotificationRow[];
-        unseenV2Rows?: NotificationRow[];
-    };
-
-    const deduped = new Map<string, NotificationRecord>();
-    for (const notification of [
-        ...(Array.isArray(v1Rows) ? v1Rows.map(normalizeV1Notification) : []),
-        ...(Array.isArray(v2Rows) ? v2Rows.map(normalizeV2Notification) : []),
-        ...(Array.isArray(unseenV2Rows)
-            ? unseenV2Rows.map(normalizeV2Notification)
-            : [])
-    ]) {
-        if (!notification.id) {
-            continue;
-        }
-        const existing = deduped.get(notification.id);
-        if (
-            !existing ||
-            Number(notification.version) >= Number(existing.version)
-        ) {
-            deduped.set(notification.id, notification);
-        }
-    }
-
-    return Array.from(deduped.values())
-        .filter((notification) => notification.id)
-        .filter((notification) =>
-            matchesFilters(notification, normalizedFilters)
-        )
-        .filter((notification) => matchesSearch(notification, normalizedSearch))
-        .sort((left, right) => {
-            const leftTime = new Date(left.createdAt || 0).valueOf() || 0;
-            const rightTime = new Date(right.createdAt || 0).valueOf() || 0;
-            if (leftTime !== rightTime) {
-                return rightTime - leftTime;
-            }
-            return String(right.id).localeCompare(String(left.id));
-        })
-        .slice(0, limit);
+    });
+    return Array.isArray(rows) ? rows.map((row) => ({ ...row })) : [];
 }
 
 async function addNotificationToDatabase({
@@ -710,7 +519,6 @@ async function sendBoop({
 const notificationRepository = Object.freeze({
     addNotificationToDatabase,
     addNotificationV2ToDatabase,
-    executeApi,
     expireNotificationV2,
     queryNotifications,
     deleteNotification,
@@ -732,7 +540,6 @@ const notificationRepository = Object.freeze({
 export {
     addNotificationToDatabase,
     addNotificationV2ToDatabase,
-    executeApi,
     expireNotificationV2,
     queryNotifications,
     deleteNotification,

@@ -103,7 +103,7 @@ async fn execute_auth_api(
 ) -> Result<HttpApiExecuteResponse, AppError> {
     let diagnostics = state.backend_context.diagnostics.clone();
     diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::vrchat_api::app__vrchat_auth_execute(state, input).await;
+    let result = super::super::vrchat_api::execute_vrchat_auth_api(state, input).await;
     match &result {
         Ok(response) => {
             diagnostics.record_command(command, "ok", format!("status={}", response.status));

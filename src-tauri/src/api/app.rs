@@ -1,5 +1,6 @@
 pub mod backend_auth;
 pub mod backend_avatars;
+pub mod backend_external;
 pub mod backend_favorites;
 pub mod backend_friends;
 pub mod backend_groups;

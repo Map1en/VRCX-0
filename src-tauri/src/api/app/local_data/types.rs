@@ -537,6 +537,51 @@ pub struct NotificationRowsOutput {
     pub(crate) unseen_v2_rows: Vec<NotificationV2RowOutput>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationListQueryInput {
+    pub(crate) user_id: String,
+    #[serde(default)]
+    pub(crate) search: String,
+    #[serde(default)]
+    pub(crate) filters: Vec<String>,
+    #[serde(default)]
+    pub(crate) per_table_limit: i64,
+    #[serde(default)]
+    pub(crate) limit: i64,
+    #[serde(default)]
+    pub(crate) include_unseen: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationListItemOutput {
+    pub(crate) id: String,
+    pub(crate) version: i64,
+    pub(crate) created_at: String,
+    #[serde(rename = "created_at")]
+    pub(crate) created_at_legacy: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub(crate) updated_at: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub(crate) expires_at: String,
+    pub(crate) r#type: String,
+    pub(crate) link: String,
+    pub(crate) link_text: String,
+    pub(crate) message: String,
+    pub(crate) title: String,
+    pub(crate) image_url: String,
+    pub(crate) seen: bool,
+    pub(crate) sender_user_id: String,
+    pub(crate) sender_username: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub(crate) receiver_user_id: String,
+    pub(crate) data: Value,
+    pub(crate) responses: Value,
+    pub(crate) details: Value,
+    pub(crate) expired: bool,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceTableSizesOutput {

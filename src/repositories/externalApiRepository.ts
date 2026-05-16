@@ -1,7 +1,4 @@
-import {
-    executeBackendHttpRequest,
-    type BackendHttpCommand
-} from './vrchatRequest.js';
+import { backend } from '@/platform/index.js';
 
 type ExternalHeaders = Record<string, string>;
 
@@ -18,19 +15,6 @@ function normalizeString(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-async function executeExternal(
-    commandName: BackendHttpCommand,
-    { url, method = 'GET', headers = {}, body = null }: ExternalRequestInput
-) {
-    return executeBackendHttpRequest(commandName, {
-        url,
-        method,
-        headers,
-        body,
-        jsonBody: false
-    });
-}
-
 async function searchAvatarProvider({
     url,
     vrcxId
@@ -38,18 +22,21 @@ async function searchAvatarProvider({
     url: string;
     vrcxId: string;
 }) {
-    return executeExternal('ExternalAvatarSearchExecute', {
-        url,
-        method: 'GET',
-        headers: {
-            Referer: 'https://vrcx.app',
-            'VRCX-ID': vrcxId
-        }
-    });
+    return backend.app.BackendExternalAvatarSearchGet({ url, vrcxId });
 }
 
-async function executeTranslationRequest(input: ExternalRequestInput) {
-    return executeExternal('ExternalTranslationExecute', input);
+async function executeTranslationRequest({
+    url,
+    method = 'GET',
+    headers = {},
+    body = null
+}: ExternalRequestInput) {
+    return backend.app.BackendExternalTranslationRequest({
+        url,
+        method,
+        headers,
+        body
+    });
 }
 
 async function fetchYoutubeVideoMetadata({
@@ -61,21 +48,14 @@ async function fetchYoutubeVideoMetadata({
 }) {
     const normalizedVideoId = normalizeString(videoId);
     const normalizedApiKey = normalizeString(apiKey);
-    const url = `https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(normalizedVideoId)}&part=snippet,contentDetails&key=${encodeURIComponent(normalizedApiKey)}`;
-    return executeExternal('ExternalYoutubeExecute', {
-        url,
-        method: 'GET'
+    return backend.app.BackendExternalYoutubeVideoMetadataGet({
+        videoId: normalizedVideoId,
+        apiKey: normalizedApiKey
     });
 }
 
 async function fetchVrcStatusJson(path: string) {
-    return executeExternal('ExternalVrcStatusExecute', {
-        url: `https://status.vrchat.com/api/v2/${path}`,
-        method: 'GET',
-        headers: {
-            Referer: 'https://vrcx.app'
-        }
-    });
+    return backend.app.BackendExternalVrcStatusJsonGet({ path });
 }
 
 async function fetchGithubReleases({
@@ -85,18 +65,14 @@ async function fetchGithubReleases({
     url: string;
     headers?: ExternalHeaders;
 }) {
-    return executeExternal('ExternalUpdateReleaseExecute', {
+    return backend.app.BackendExternalGithubReleasesGet({
         url,
-        method: 'GET',
         headers
     });
 }
 
 async function fetchImageDataUrl(url: string) {
-    return executeExternal('ExternalImageExecute', {
-        url,
-        method: 'GET'
-    });
+    return backend.app.BackendExternalImageDataUrlGet({ url });
 }
 
 const externalApiRepository = Object.freeze({

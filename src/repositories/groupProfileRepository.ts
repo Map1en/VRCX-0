@@ -9,7 +9,6 @@ import { createDefaultGroupRef } from '@/shared/utils/groupTransforms.js';
 
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     unwrapErrorMessage,
@@ -198,60 +197,6 @@ async function collectPages(
 
 function normalize(group: GroupRecord) {
     return normalizeGroupProfile(group);
-}
-
-async function executeGet(
-    path: string,
-    params: QueryParams = {},
-    { endpoint = '' } = {}
-) {
-    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
-        endpoint,
-        method: 'GET',
-        params,
-        fallbackMessage: 'VRChat group request failed'
-    });
-}
-
-async function executePost(
-    path: string,
-    params: QueryParams = {},
-    { endpoint = '' } = {}
-) {
-    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
-        endpoint,
-        method: 'POST',
-        body: params,
-        fallbackMessage: 'VRChat group request failed'
-    });
-}
-
-async function executePut(
-    path: string,
-    params: QueryParams = {},
-    { endpoint = '' } = {}
-) {
-    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
-        endpoint,
-        method: 'PUT',
-        body: params,
-        fallbackMessage: 'VRChat group request failed'
-    });
-}
-
-async function executeDelete(
-    path: string,
-    params: QueryParams = {},
-    { endpoint = '' } = {}
-) {
-    return executeVrchatBackendRequest<any>('VrchatGroupExecute', path, {
-        endpoint,
-        method: 'DELETE',
-        params,
-        queryParams: params,
-        jsonBody: false,
-        fallbackMessage: 'VRChat group request failed'
-    });
 }
 
 async function getGroupProfile({
@@ -1011,10 +956,6 @@ async function getUsersGroupInstances({ userId, endpoint = '' }) {
 
 const groupProfileRepository = Object.freeze({
     normalize,
-    executeGet,
-    executePost,
-    executePut,
-    executeDelete,
     fetchGroupProfile,
     getGroupProfile,
     getUserGroups,
@@ -1057,10 +998,6 @@ const groupProfileRepository = Object.freeze({
 
 export {
     normalize,
-    executeGet,
-    executePost,
-    executePut,
-    executeDelete,
     getGroupProfile,
     getUserGroups,
     getGroupPosts,

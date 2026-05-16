@@ -191,7 +191,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>((set, get) =
             const rows = applyPendingSeenRows(
                 await notificationRepository.queryNotifications({
                     userId: auth.currentUserId
-                }) as NotificationRow[]
+                })
             );
             set({
                 ...createNotificationState(

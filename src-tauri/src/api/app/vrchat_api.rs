@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use reqwest::Url;
+use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
 
@@ -33,12 +34,54 @@ enum ExternalApiScope {
     Image,
 }
 
+#[derive(Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct ApiResponsePolicy {
+    class: String,
+    endpoint_scope: String,
+    retryable: bool,
+    rate_limited: bool,
+    session_recovery_required: bool,
+}
+
 fn normalize_endpoint(endpoint: Option<&str>) -> String {
     let endpoint = endpoint.unwrap_or("").trim().trim_end_matches('/');
     if endpoint.is_empty() {
         DEFAULT_VRCHAT_API_ENDPOINT.to_string()
     } else {
         endpoint.to_string()
+    }
+}
+
+fn api_scope_name(scope: ApiScope) -> &'static str {
+    match scope {
+        ApiScope::Vrchat => "vrchat",
+        ApiScope::VrchatMedia => "vrchatMedia",
+        ApiScope::External(ExternalApiScope::AvatarSearch) => "externalAvatarSearch",
+        ApiScope::External(ExternalApiScope::Translation) => "externalTranslation",
+        ApiScope::External(ExternalApiScope::Youtube) => "externalYoutube",
+        ApiScope::External(ExternalApiScope::VrcStatus) => "externalVrcStatus",
+        ApiScope::External(ExternalApiScope::UpdateRelease) => "externalUpdateRelease",
+        ApiScope::External(ExternalApiScope::Image) => "externalImage",
+    }
+}
+
+fn classify_api_response(status: i32, scope: ApiScope) -> ApiResponsePolicy {
+    let class = match status {
+        200..=399 => "ok",
+        401 | 403 => "auth",
+        429 => "rateLimited",
+        400..=499 => "clientError",
+        500..=599 => "serverError",
+        _ => "unknown",
+    };
+    ApiResponsePolicy {
+        class: class.to_string(),
+        endpoint_scope: api_scope_name(scope).to_string(),
+        retryable: matches!(status, 408 | 409 | 425 | 429 | 500..=599),
+        rate_limited: status == 429,
+        session_recovery_required: matches!(scope, ApiScope::Vrchat | ApiScope::VrchatMedia)
+            && status == 401,
     }
 }
 
@@ -106,7 +149,11 @@ fn external_url_allowed(url: &Url, scope: ExternalApiScope) -> bool {
             origin == YOUTUBE_API_ORIGIN && url.path().starts_with("/youtube/v3/videos")
         }
         ExternalApiScope::VrcStatus => origin == STATUS_API_ORIGIN,
-        ExternalApiScope::UpdateRelease => origin == GITHUB_API_ORIGIN,
+        ExternalApiScope::UpdateRelease => {
+            origin == GITHUB_API_ORIGIN
+                && url.path().starts_with("/repos/")
+                && url.path().ends_with("/releases")
+        }
         ExternalApiScope::Image => matches!(url.scheme(), "https" | "http"),
     }
 }
@@ -330,19 +377,82 @@ async fn execute_http_api(
         return Err(AppError::Custom(data));
     }
 
+    let policy = classify_api_response(status, scope);
     Ok(HttpApiExecuteResponse {
         status,
         data: data.clone(),
         raw: json!({
             "status": status,
             "data": data,
+            "policy": policy,
         }),
     })
 }
 
+pub(super) async fn execute_external_avatar_search_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(
+        state,
+        input,
+        ApiScope::External(ExternalApiScope::AvatarSearch),
+    )
+    .await
+}
+
+pub(super) async fn execute_external_translation_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(
+        state,
+        input,
+        ApiScope::External(ExternalApiScope::Translation),
+    )
+    .await
+}
+
+pub(super) async fn execute_external_youtube_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(state, input, ApiScope::External(ExternalApiScope::Youtube)).await
+}
+
+pub(super) async fn execute_external_vrc_status_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(
+        state,
+        input,
+        ApiScope::External(ExternalApiScope::VrcStatus),
+    )
+    .await
+}
+
+pub(super) async fn execute_external_update_release_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(
+        state,
+        input,
+        ApiScope::External(ExternalApiScope::UpdateRelease),
+    )
+    .await
+}
+
+pub(super) async fn execute_external_image_api(
+    state: State<'_, AppState>,
+    input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    execute_http_api(state, input, ApiScope::External(ExternalApiScope::Image)).await
+}
+
 macro_rules! api_execute_command {
     ($name:ident, $scope:expr) => {
-        #[tauri::command]
         pub async fn $name(
             state: State<'_, AppState>,
             input: HttpApiRequestInput,
@@ -354,10 +464,16 @@ macro_rules! api_execute_command {
             let result = execute_http_api(state, input, $scope).await;
             match &result {
                 Ok(response) => {
+                    let policy_class = response
+                        .raw
+                        .get("policy")
+                        .and_then(|policy| policy.get("class"))
+                        .and_then(Value::as_str)
+                        .unwrap_or("unknown");
                     diagnostics.record_command(
                         command,
                         "ok",
-                        format!("status={}", response.status),
+                        format!("status={}, class={policy_class}", response.status),
                     );
                     sync.record(
                         "api",
@@ -376,41 +492,17 @@ macro_rules! api_execute_command {
     };
 }
 
-api_execute_command!(app__vrchat_auth_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_friend_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_favorite_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_search_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_avatar_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_world_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_group_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_instance_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_notification_execute, ApiScope::Vrchat);
-api_execute_command!(app__vrchat_media_execute, ApiScope::VrchatMedia);
-api_execute_command!(app__vrchat_tools_execute, ApiScope::Vrchat);
-api_execute_command!(
-    app__external_avatar_search_execute,
-    ApiScope::External(ExternalApiScope::AvatarSearch)
-);
-api_execute_command!(
-    app__external_translation_execute,
-    ApiScope::External(ExternalApiScope::Translation)
-);
-api_execute_command!(
-    app__external_youtube_execute,
-    ApiScope::External(ExternalApiScope::Youtube)
-);
-api_execute_command!(
-    app__external_vrc_status_execute,
-    ApiScope::External(ExternalApiScope::VrcStatus)
-);
-api_execute_command!(
-    app__external_update_release_execute,
-    ApiScope::External(ExternalApiScope::UpdateRelease)
-);
-api_execute_command!(
-    app__external_image_execute,
-    ApiScope::External(ExternalApiScope::Image)
-);
+api_execute_command!(execute_vrchat_auth_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_friend_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_favorite_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_search_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_avatar_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_world_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_group_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_instance_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_notification_api, ApiScope::Vrchat);
+api_execute_command!(execute_vrchat_media_api, ApiScope::VrchatMedia);
+api_execute_command!(execute_vrchat_tools_api, ApiScope::Vrchat);
 
 #[cfg(test)]
 mod tests {
@@ -516,6 +608,45 @@ mod tests {
         assert!(
             build_request_url(&request, ApiScope::External(ExternalApiScope::Translation)).is_ok()
         );
+
+        request.url = Some("https://api.github.com/repos/Map1en/VRCX-0/releases".to_string());
+        assert!(build_request_url(
+            &request,
+            ApiScope::External(ExternalApiScope::UpdateRelease)
+        )
+        .is_ok());
+
+        request.url = Some("https://api.github.com/rate_limit".to_string());
+        assert!(build_request_url(
+            &request,
+            ApiScope::External(ExternalApiScope::UpdateRelease)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn classifies_auth_and_rate_limit_statuses_for_backend_policy() {
+        let auth = classify_api_response(401, ApiScope::Vrchat);
+        assert_eq!(auth.class, "auth");
+        assert!(auth.session_recovery_required);
+        assert!(!auth.rate_limited);
+        assert!(!auth.retryable);
+
+        let forbidden = classify_api_response(403, ApiScope::Vrchat);
+        assert_eq!(forbidden.class, "auth");
+        assert!(!forbidden.session_recovery_required);
+        assert!(!forbidden.retryable);
+
+        let rate_limited = classify_api_response(429, ApiScope::Vrchat);
+        assert_eq!(rate_limited.class, "rateLimited");
+        assert!(rate_limited.rate_limited);
+        assert!(rate_limited.retryable);
+        assert!(!rate_limited.session_recovery_required);
+
+        let external_auth =
+            classify_api_response(401, ApiScope::External(ExternalApiScope::Translation));
+        assert_eq!(external_auth.class, "auth");
+        assert!(!external_auth.session_recovery_required);
     }
 
     #[test]

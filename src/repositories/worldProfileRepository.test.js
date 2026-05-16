@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const backendMock = vi.hoisted(() => ({
-    app: {}
+    app: {
+        BackendWorldGet: vi.fn(),
+        BackendWorldListByUserGet: vi.fn()
+    }
 }));
 
 vi.mock('@/platform/tauri/index.js', () => ({
@@ -10,13 +13,18 @@ vi.mock('@/platform/tauri/index.js', () => ({
     default: backendMock
 }));
 
-import { callBackendCommand } from '@/platform/tauri/index.js';
-
 import worldProfileRepository from './worldProfileRepository.js';
 
 describe('WorldProfileRepository', () => {
     beforeEach(() => {
-        vi.mocked(callBackendCommand).mockReset();
+        for (const command of Object.values(backendMock.app)) {
+            command.mockReset();
+            command.mockResolvedValue({
+                status: 200,
+                data: '{"ok":true}',
+                raw: { source: 'rust-api' }
+            });
+        }
     });
 
     it('normalizes raw world API data into the shape dialogs and lists consume', () => {
@@ -71,52 +79,38 @@ describe('WorldProfileRepository', () => {
         });
     });
 
-    it('builds GET URLs with endpoint, scalar params, repeated array params, and skipped nulls', async () => {
-        vi.mocked(callBackendCommand).mockResolvedValue({
+    it('requests user worlds through the typed backend command', async () => {
+        backendMock.app.BackendWorldListByUserGet.mockResolvedValue({
             status: 200,
-            data: '{"ok":true}',
+            data: '[{"id":" wrld_1 ","name":" Test World "}]',
             raw: { source: 'rust-api' }
         });
 
-        const response = await worldProfileRepository.executeGet(
-            'worlds',
-            {
-                tag: ['featured', null, 'labs'],
-                n: 50,
-                ignored: undefined
-            },
-            {
-                endpoint: 'https://api.example.test/custom/'
-            }
-        );
-
-        expect(response).toMatchObject({
-            json: { ok: true },
-            status: 200,
-            raw: { source: 'rust-api' }
+        const rows = await worldProfileRepository.getWorldsByUser({
+            userId: ' usr_author ',
+            n: 50,
+            offset: 10,
+            sort: 'updated',
+            order: 'descending',
+            releaseStatus: 'public',
+            endpoint: 'https://api.example.test/custom/',
+            force: true
         });
-        expect(callBackendCommand).toHaveBeenCalledWith(
-            'app',
-            'VrchatWorldExecute',
-            [
-                {
-                    input: expect.objectContaining({
-                        path: 'worlds',
-                        endpoint: 'https://api.example.test/custom/',
-                        method: 'GET',
-                        queryParams: {
-                            tag: ['featured', null, 'labs'],
-                            n: 50,
-                            ignored: undefined
-                        }
-                    })
-                }
-            ]
-        );
+
+        expect(rows).toMatchObject([{ id: 'wrld_1', name: 'Test World' }]);
+        expect(backendMock.app.BackendWorldListByUserGet).toHaveBeenCalledWith({
+            endpoint: 'https://api.example.test/custom/',
+            userId: 'usr_author',
+            n: 50,
+            offset: 10,
+            sort: 'updated',
+            order: 'descending',
+            releaseStatus: 'public'
+        });
     });
 
     it('throws request errors with status, endpoint, and parsed payload details', async () => {
-        vi.mocked(callBackendCommand).mockResolvedValue({
+        backendMock.app.BackendWorldGet.mockResolvedValue({
             status: 404,
             data: JSON.stringify({
                 error: {
@@ -127,7 +121,10 @@ describe('WorldProfileRepository', () => {
         });
 
         await expect(
-            worldProfileRepository.executeGet('worlds/wrld_missing')
+            worldProfileRepository.getWorldProfile({
+                worldId: 'wrld_missing',
+                force: true
+            })
         ).rejects.toMatchObject({
             message: 'World not found',
             status: 404,

@@ -119,7 +119,7 @@ fn command_groups() -> Vec<BackendCommandGroupSnapshot> {
             name: "vrchat-api".into(),
             boundary: "typed Rust API and API-backed local actions grouped by business domain"
                 .into(),
-            command_count: 157,
+            command_count: 146,
             examples: vec![
                 "app__backend_auth_current_user_get".into(),
                 "app__backend_search_worlds_get".into(),
@@ -137,6 +137,16 @@ fn command_groups() -> Vec<BackendCommandGroupSnapshot> {
                 "app__backend_group_join".into(),
                 "app__backend_friend_roster_baseline_get".into(),
                 "app__backend_world_get".into(),
+            ],
+        },
+        BackendCommandGroupSnapshot {
+            name: "external-api".into(),
+            boundary: "typed Rust access to allowed non-VRChat HTTP integrations".into(),
+            command_count: 6,
+            examples: vec![
+                "app__backend_external_avatar_search_get".into(),
+                "app__backend_external_translation_request".into(),
+                "app__backend_external_vrc_status_json_get".into(),
             ],
         },
         BackendCommandGroupSnapshot {

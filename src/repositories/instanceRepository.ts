@@ -7,7 +7,6 @@ import { backend } from '@/platform/index.js';
 
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     unwrapErrorMessage,
@@ -27,11 +26,6 @@ interface InstanceRepositoryOptions {
     endpoint?: string;
     force?: boolean;
     [key: string]: unknown;
-}
-
-interface ExecuteInstanceOptions extends InstanceRepositoryOptions {
-    method?: string;
-    params?: QueryParams;
 }
 
 interface CreateInstanceOptions extends InstanceRepositoryOptions {
@@ -129,22 +123,6 @@ function unwrapBackendInstanceResponse(
         status: response.status,
         raw: response.raw
     };
-}
-
-async function execute(
-    path: string,
-    { method = 'GET', params = {}, endpoint = '' }: ExecuteInstanceOptions = {}
-) {
-    return executeVrchatBackendRequest('VrchatInstanceExecute', path, {
-        endpoint,
-        method,
-        params,
-        body: params,
-        skipEmptyQueryString: true,
-        fallbackMessage: 'VRChat instance request failed',
-        decorateError: false,
-        includeParams: true
-    });
 }
 
 async function createInstance({
@@ -356,7 +334,6 @@ async function closeInstance({
 }
 
 const instanceRepository = Object.freeze({
-    execute,
     createInstance,
     getInstance,
     getInstanceShortName,
@@ -365,7 +342,6 @@ const instanceRepository = Object.freeze({
 });
 
 export {
-    execute,
     createInstance,
     getInstance,
     getInstanceShortName,

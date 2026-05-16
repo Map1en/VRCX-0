@@ -73,7 +73,7 @@ async fn execute_notification_api(
 ) -> Result<HttpApiExecuteResponse, AppError> {
     let diagnostics = state.backend_context.diagnostics.clone();
     diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::vrchat_api::app__vrchat_notification_execute(state, input).await;
+    let result = super::super::vrchat_api::execute_vrchat_notification_api(state, input).await;
     match &result {
         Ok(response) => {
             diagnostics.record_command(command, "ok", format!("status={}", response.status));
@@ -91,7 +91,7 @@ async fn execute_media_api(
 ) -> Result<HttpApiExecuteResponse, AppError> {
     let diagnostics = state.backend_context.diagnostics.clone();
     diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::vrchat_api::app__vrchat_media_execute(state, input).await;
+    let result = super::super::vrchat_api::execute_vrchat_media_api(state, input).await;
     match &result {
         Ok(response) => {
             diagnostics.record_command(command, "ok", format!("status={}", response.status));

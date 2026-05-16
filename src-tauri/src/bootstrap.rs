@@ -398,6 +398,24 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         .backend_context
         .background_jobs
         .register_frontend_job_catalog();
+    state.backend_context.background_jobs.register_job(
+        "startupRecovery",
+        "rust-host",
+        None,
+        "checkpoint",
+        "Rust backend startup recovery checkpoint recorded; no durable recovery queue is configured.",
+    );
+    state.backend_context.runtime.record_phase(
+        "startupRecovery",
+        "checkpoint",
+        "Rust backend startup recovery checkpoint recorded; no durable recovery queue is configured.",
+    );
+    state.backend_context.sync.record(
+        "startupRecovery",
+        "observed",
+        "Rust backend startup recovery checkpoint recorded; no durable recovery queue is configured.",
+        0,
+    );
     state
         .backend_context
         .background_jobs

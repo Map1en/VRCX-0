@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const backendMock = vi.hoisted(() => ({
-    app: {}
+    app: {
+        BackendGroupGet: vi.fn(),
+        BackendGroupInviteSend: vi.fn()
+    }
 }));
 
 vi.mock('@/platform/tauri/index.js', () => ({
@@ -10,17 +13,18 @@ vi.mock('@/platform/tauri/index.js', () => ({
     default: backendMock
 }));
 
-import { callBackendCommand } from '@/platform/tauri/index.js';
-
-import {
-    executeGet,
-    executePost,
-    normalize
-} from './groupProfileRepository.js';
+import groupProfileRepository, { normalize } from './groupProfileRepository.js';
 
 describe('GroupProfileRepository', () => {
     beforeEach(() => {
-        vi.mocked(callBackendCommand).mockReset();
+        for (const command of Object.values(backendMock.app)) {
+            command.mockReset();
+            command.mockResolvedValue({
+                status: 200,
+                data: '{"ok":true}',
+                raw: {}
+            });
+        }
     });
 
     it('normalizes group profile fields, counts, roles, and public group URL', () => {
@@ -81,47 +85,33 @@ describe('GroupProfileRepository', () => {
         });
     });
 
-    it('sends JSON bodies for POST requests without leaking params into the URL', async () => {
-        vi.mocked(callBackendCommand).mockResolvedValue({
-            status: 200,
-            data: '{"ok":true}',
-            raw: {}
+    it('sends group invites through the typed backend command', async () => {
+        await groupProfileRepository.sendGroupInvite({
+            groupId: ' grp_123 ',
+            userId: ' usr_123 ',
+            endpoint: 'https://api.example.test'
         });
 
-        await executePost(
-            'groups/grp_123/invites',
-            { userId: 'usr_123' },
-            { endpoint: 'https://api.example.test' }
-        );
-
-        expect(vi.mocked(callBackendCommand)).toHaveBeenCalledWith(
-            'app',
-            'VrchatGroupExecute',
-            [
-                {
-                    input: expect.objectContaining({
-                        path: 'groups/grp_123/invites',
-                        endpoint: 'https://api.example.test',
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json;charset=utf-8'
-                        },
-                        body: { userId: 'usr_123' },
-                        jsonBody: true
-                    })
-                }
-            ]
-        );
+        expect(backendMock.app.BackendGroupInviteSend).toHaveBeenCalledWith({
+            groupId: 'grp_123',
+            userId: 'usr_123',
+            endpoint: 'https://api.example.test'
+        });
     });
 
     it('unwraps string error bodies from failed group requests', async () => {
-        vi.mocked(callBackendCommand).mockResolvedValue({
+        backendMock.app.BackendGroupGet.mockResolvedValue({
             status: 403,
             data: '"Forbidden"',
             raw: {}
         });
 
-        await expect(executeGet('groups/grp_123')).rejects.toMatchObject({
+        await expect(
+            groupProfileRepository.getGroupProfile({
+                groupId: 'grp_123',
+                force: true
+            })
+        ).rejects.toMatchObject({
             message: 'Forbidden',
             status: 403,
             endpoint: 'groups/grp_123',

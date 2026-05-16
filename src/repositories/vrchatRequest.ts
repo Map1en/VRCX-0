@@ -1,30 +1,7 @@
-import { callBackendCommand } from '@/platform/tauri/index.js';
-import { normalizeVrchatEndpoint } from '@/shared/vrchatEndpoint.js';
-
 import { safeJsonParse } from './baseRepository.js';
-
-const JSON_CONTENT_TYPE = 'application/json;charset=utf-8';
 
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
-
-export interface VrchatRequestOptions {
-    endpoint?: string;
-    method?: string;
-    params?: QueryParams | null;
-    headers?: Record<string, string>;
-    allowDebugEndpoint?: boolean;
-    normalizeEndpoint?: boolean;
-    fallbackMessage?: string;
-    decorateError?: boolean;
-    includeParams?: boolean;
-    returnEndpointDomain?: boolean;
-    skipEmptyQueryString?: boolean;
-    jsonBody?: boolean;
-    body?: unknown;
-    queryParams?: QueryParams | null;
-    extra?: Record<string, unknown>;
-}
 
 export interface VrchatRequestResponse<TJson = unknown> {
     json: TJson;
@@ -33,12 +10,6 @@ export interface VrchatRequestResponse<TJson = unknown> {
     endpointDomain?: string;
     raw: unknown;
     [key: string]: unknown;
-}
-
-interface BackendApiExecuteResponse {
-    status: number;
-    data: unknown;
-    raw: unknown;
 }
 
 export interface VrchatRequestError extends Error {
@@ -50,22 +21,6 @@ export interface VrchatRequestError extends Error {
 export type VrchatAuthFailureHandler = (
     error: VrchatRequestError
 ) => void | Promise<void>;
-
-export type VrchatBackendCommand =
-    | 'VrchatAvatarExecute'
-    | 'VrchatWorldExecute'
-    | 'VrchatGroupExecute'
-    | 'VrchatInstanceExecute'
-    | 'VrchatNotificationExecute';
-
-export type BackendHttpCommand =
-    | VrchatBackendCommand
-    | 'ExternalAvatarSearchExecute'
-    | 'ExternalTranslationExecute'
-    | 'ExternalYoutubeExecute'
-    | 'ExternalVrcStatusExecute'
-    | 'ExternalUpdateReleaseExecute'
-    | 'ExternalImageExecute';
 
 let vrchatAuthFailureHandler: VrchatAuthFailureHandler | null = null;
 let vrchatAuthFailureHandlerRegistrationId = 0;
@@ -90,12 +45,20 @@ export function setVrchatAuthFailureHandler(
 export function isVrchatMissingCredentialsError(
     error: unknown
 ): error is VrchatRequestError {
+    const status =
+        error && typeof error === 'object'
+            ? (error as Partial<VrchatRequestError>).status
+            : undefined;
+    const message =
+        error && typeof error === 'object'
+            ? (error as Error).message
+            : undefined;
     return Boolean(
         error &&
-        typeof error === 'object' &&
-        (error as Partial<VrchatRequestError>).status === 401 &&
-        typeof (error as Error).message === 'string' &&
-        (error as Error).message.includes('Missing Credentials')
+            typeof error === 'object' &&
+            (status === 401 ||
+                (typeof message === 'string' &&
+                    message.includes('Missing Credentials')))
     );
 }
 
@@ -160,100 +123,4 @@ export function createRequestError(
     error.endpoint = endpoint;
     error.payload = payload;
     return error;
-}
-
-function normalizeJsonBody(value: unknown): Record<string, unknown> {
-    return isRecord(value) ? value : {};
-}
-
-export async function executeBackendHttpRequest(
-    commandName: BackendHttpCommand,
-    input: Record<string, unknown>
-): Promise<BackendApiExecuteResponse> {
-    return callBackendCommand<BackendApiExecuteResponse>('app', commandName, [
-        { input }
-    ]);
-}
-
-export async function executeVrchatBackendRequest<TJson = unknown>(
-    commandName: VrchatBackendCommand,
-    path: string,
-    {
-        endpoint = '',
-        method = 'GET',
-        params = null,
-        headers = {},
-        allowDebugEndpoint = false,
-        normalizeEndpoint = false,
-        fallbackMessage = 'VRChat request failed',
-        decorateError = true,
-        includeParams = false,
-        returnEndpointDomain = false,
-        skipEmptyQueryString = false,
-        jsonBody = method !== 'GET',
-        body = params,
-        queryParams = null,
-        extra = {}
-    }: VrchatRequestOptions = {}
-): Promise<VrchatRequestResponse<TJson>> {
-    const requestMethod = String(method || 'GET').toUpperCase();
-    const endpointDomain =
-        normalizeEndpoint || allowDebugEndpoint
-            ? normalizeVrchatEndpoint(endpoint, { allowDebugEndpoint })
-            : endpoint;
-    const resolvedQueryParams =
-        queryParams ?? (requestMethod === 'GET' ? (params ?? {}) : {});
-    const requestOptions: Record<string, unknown> = {
-        path,
-        endpoint: endpointDomain,
-        method: requestMethod,
-        params: params ?? {},
-        queryParams: resolvedQueryParams,
-        skipEmptyQueryString
-    };
-
-    if (headers && Object.keys(headers).length > 0) {
-        requestOptions.headers = headers;
-    }
-
-    if (requestMethod !== 'GET' && jsonBody) {
-        requestOptions.headers = {
-            'Content-Type': JSON_CONTENT_TYPE,
-            ...headers
-        };
-        requestOptions.body = normalizeJsonBody(body);
-        requestOptions.jsonBody = true;
-    }
-
-    const response = await executeBackendHttpRequest(
-        commandName,
-        requestOptions
-    );
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const message = unwrapErrorMessage(json, response.status, {
-            fallbackMessage
-        });
-        const requestError = createRequestError(
-            message,
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        if (decorateError) {
-            throw requestError;
-        }
-        throw new Error(message);
-    }
-
-    return {
-        json: json as TJson,
-        ...(includeParams ? { params: params ?? {} } : {}),
-        ...extra,
-        status: response.status,
-        ...(returnEndpointDomain ? { endpointDomain } : {}),
-        raw: response.raw
-    };
 }

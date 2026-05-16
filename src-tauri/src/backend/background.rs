@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use chrono::{SecondsFormat, Utc};
+use chrono::{Duration as ChronoDuration, SecondsFormat, Utc};
 use serde::Serialize;
 use vrcx_0_persistence::database::DatabaseService;
 
@@ -17,6 +17,11 @@ fn now_iso() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
+fn future_iso(seconds: u64) -> String {
+    (Utc::now() + ChronoDuration::seconds(seconds as i64))
+        .to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BackendBackgroundJobSnapshot {
@@ -26,7 +31,9 @@ pub struct BackendBackgroundJobSnapshot {
     pub cadence_seconds: Option<u64>,
     pub last_started_at: Option<String>,
     pub last_finished_at: Option<String>,
+    pub next_run_at: Option<String>,
     pub last_detail: String,
+    pub last_error: Option<String>,
     pub failure_count: u64,
 }
 
@@ -34,6 +41,13 @@ pub struct BackendBackgroundJobSnapshot {
 pub struct BackendBackgroundJobs {
     inner: Arc<Mutex<BTreeMap<String, BackendBackgroundJobSnapshot>>>,
     database_optimize_started: Arc<AtomicBool>,
+}
+
+#[derive(Default)]
+struct JobStatusTiming {
+    started_at: Option<String>,
+    finished_at: Option<String>,
+    next_run_at: Option<String>,
 }
 
 impl BackendBackgroundJobs {
@@ -61,6 +75,9 @@ impl BackendBackgroundJobs {
                         job.cadence_seconds = cadence_seconds;
                         job.status = status.clone();
                         job.last_detail = detail.clone();
+                        if job.next_run_at.is_none() {
+                            job.next_run_at = cadence_seconds.map(future_iso);
+                        }
                     })
                     .or_insert_with(|| BackendBackgroundJobSnapshot {
                         name,
@@ -69,7 +86,9 @@ impl BackendBackgroundJobs {
                         cadence_seconds,
                         last_started_at: None,
                         last_finished_at: None,
+                        next_run_at: cadence_seconds.map(future_iso),
                         last_detail: detail,
+                        last_error: None,
                         failure_count: 0,
                     });
             }
@@ -125,15 +144,55 @@ impl BackendBackgroundJobs {
     }
 
     pub fn mark_running(&self, name: &str, detail: impl Into<String>) {
-        self.upsert_status(name, "running", Some(now_iso()), None, detail, false);
+        self.upsert_status(
+            name,
+            "running",
+            JobStatusTiming {
+                started_at: Some(now_iso()),
+                ..Default::default()
+            },
+            detail,
+            false,
+        );
     }
 
     pub fn mark_completed(&self, name: &str, detail: impl Into<String>) {
-        self.upsert_status(name, "idle", None, Some(now_iso()), detail, false);
+        self.upsert_status(
+            name,
+            "idle",
+            JobStatusTiming {
+                finished_at: Some(now_iso()),
+                ..Default::default()
+            },
+            detail,
+            false,
+        );
     }
 
     pub fn mark_failed(&self, name: &str, detail: impl Into<String>) {
-        self.upsert_status(name, "error", None, Some(now_iso()), detail, true);
+        self.upsert_status(
+            name,
+            "error",
+            JobStatusTiming {
+                finished_at: Some(now_iso()),
+                ..Default::default()
+            },
+            detail,
+            true,
+        );
+    }
+
+    pub fn mark_scheduled(&self, name: &str, detail: impl Into<String>, delay_seconds: u64) {
+        self.upsert_status(
+            name,
+            "scheduled",
+            JobStatusTiming {
+                next_run_at: Some(future_iso(delay_seconds)),
+                ..Default::default()
+            },
+            detail,
+            false,
+        );
     }
 
     pub fn snapshot(&self) -> Vec<BackendBackgroundJobSnapshot> {
@@ -168,6 +227,11 @@ impl BackendBackgroundJobs {
 
         let jobs = self.clone();
         tasks.spawn(async move {
+            jobs.mark_scheduled(
+                DATABASE_OPTIMIZE_JOB,
+                "Initial PRAGMA optimize is waiting for startup idle time.",
+                DATABASE_OPTIMIZE_INITIAL_DELAY_SECONDS,
+            );
             tokio::time::sleep(Duration::from_secs(DATABASE_OPTIMIZE_INITIAL_DELAY_SECONDS)).await;
             loop {
                 jobs.mark_running(DATABASE_OPTIMIZE_JOB, "Running PRAGMA optimize.");
@@ -189,6 +253,11 @@ impl BackendBackgroundJobs {
                         jobs.mark_failed(DATABASE_OPTIMIZE_JOB, error.to_string());
                     }
                 }
+                jobs.mark_scheduled(
+                    DATABASE_OPTIMIZE_JOB,
+                    "Next PRAGMA optimize run is scheduled.",
+                    DATABASE_OPTIMIZE_INTERVAL_SECONDS,
+                );
                 tokio::time::sleep(Duration::from_secs(DATABASE_OPTIMIZE_INTERVAL_SECONDS)).await;
             }
         });
@@ -198,8 +267,7 @@ impl BackendBackgroundJobs {
         &self,
         name: &str,
         status: &str,
-        started_at: Option<String>,
-        finished_at: Option<String>,
+        timing: JobStatusTiming,
         detail: impl Into<String>,
         failed: bool,
     ) {
@@ -215,22 +283,66 @@ impl BackendBackgroundJobs {
                             cadence_seconds: None,
                             last_started_at: None,
                             last_finished_at: None,
+                            next_run_at: None,
                             last_detail: String::new(),
+                            last_error: None,
                             failure_count: 0,
                         });
                 job.status = status.to_string();
-                if let Some(started_at) = started_at {
+                if let Some(started_at) = timing.started_at {
                     job.last_started_at = Some(started_at);
                 }
-                if let Some(finished_at) = finished_at {
+                if let Some(finished_at) = timing.finished_at {
                     job.last_finished_at = Some(finished_at);
+                }
+                if let Some(next_run_at) = timing.next_run_at {
+                    job.next_run_at = Some(next_run_at);
+                } else if status == "idle" || status == "error" {
+                    job.next_run_at = job.cadence_seconds.map(future_iso);
+                } else if status == "running" {
+                    job.next_run_at = None;
                 }
                 job.last_detail = detail;
                 if failed {
+                    job.last_error = Some(job.last_detail.clone());
                     job.failure_count = job.failure_count.saturating_add(1);
+                } else if status == "running" || status == "idle" {
+                    job.last_error = None;
                 }
             }
             Err(error) => tracing::warn!("failed to lock backend background jobs: {error}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn background_job_failure_records_last_error_and_retry_state() {
+        let jobs = BackendBackgroundJobs::new();
+        jobs.register_job("sync", "rust", Some(60), "scheduled", "waiting");
+        jobs.mark_failed("sync", "network failed");
+
+        let failed = jobs
+            .snapshot()
+            .into_iter()
+            .find(|job| job.name == "sync")
+            .unwrap();
+        assert_eq!(failed.status, "error");
+        assert_eq!(failed.last_error.as_deref(), Some("network failed"));
+        assert_eq!(failed.failure_count, 1);
+        assert!(failed.next_run_at.is_some());
+
+        jobs.mark_running("sync", "retrying");
+        let retrying = jobs
+            .snapshot()
+            .into_iter()
+            .find(|job| job.name == "sync")
+            .unwrap();
+        assert_eq!(retrying.status, "running");
+        assert!(retrying.last_error.is_none());
+        assert!(retrying.next_run_at.is_none());
     }
 }

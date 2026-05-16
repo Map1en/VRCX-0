@@ -95,7 +95,9 @@ export interface BackendBackgroundJobSnapshot {
     cadenceSeconds?: number | null;
     lastStartedAt?: string | null;
     lastFinishedAt?: string | null;
+    nextRunAt?: string | null;
     lastDetail: string;
+    lastError?: string | null;
     failureCount: number;
 }
 
@@ -183,6 +185,29 @@ export interface BackendHttpApiResult {
     status: number;
     data: unknown;
     raw: unknown;
+}
+
+export interface BackendNotificationListItem {
+    id: string;
+    version: number;
+    createdAt: string;
+    created_at: string;
+    updatedAt?: string;
+    expiresAt?: string;
+    type: string;
+    link: string;
+    linkText: string;
+    message: string;
+    title: string;
+    imageUrl: string;
+    seen: boolean;
+    senderUserId: string;
+    senderUsername: string;
+    receiverUserId?: string;
+    data: Record<string, unknown>;
+    responses: unknown[];
+    details: Record<string, unknown>;
+    expired: boolean;
 }
 
 export interface BackendFavoritesBaselineResult {
@@ -753,6 +778,30 @@ export interface AppBackendNamespace extends BackendNamespace {
     }): Promise<void>;
     BackendBackgroundJobsSnapshotGet(): Promise<BackendBackgroundJobSnapshot[]>;
     BackendDiagnosticsGet(): Promise<BackendDiagnosticsSnapshot>;
+    BackendExternalAvatarSearchGet(input: {
+        url: string;
+        vrcxId: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendExternalTranslationRequest(input: {
+        url: string;
+        method?: string;
+        headers?: Record<string, string>;
+        body?: unknown;
+    }): Promise<BackendHttpApiResult>;
+    BackendExternalYoutubeVideoMetadataGet(input: {
+        videoId: string;
+        apiKey: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendExternalVrcStatusJsonGet(input: {
+        path: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendExternalGithubReleasesGet(input: {
+        url: string;
+        headers?: Record<string, string>;
+    }): Promise<BackendHttpApiResult>;
+    BackendExternalImageDataUrlGet(input: {
+        url: string;
+    }): Promise<BackendHttpApiResult>;
     BackendModerationRefresh(input: {
         userId: string;
         endpoint?: string;
@@ -788,6 +837,16 @@ export interface AppBackendNamespace extends BackendNamespace {
         responseData?: unknown;
         endpoint?: string;
     }): Promise<BackendHttpApiResult>;
+    NotificationListQuery(input: {
+        query: {
+            userId: string;
+            search?: string;
+            filters?: string[];
+            perTableLimit?: number;
+            limit?: number;
+            includeUnseen?: boolean;
+        };
+    }): Promise<BackendNotificationListItem[]>;
     BackendInviteResponseSend(input: {
         id: string;
         responseSlot: number;

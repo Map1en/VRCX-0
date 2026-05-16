@@ -9,7 +9,6 @@ import avatarLocalRepository from './avatarLocalRepository.js';
 import userSessionRepository from './userSessionRepository.js';
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     unwrapErrorMessage
@@ -86,36 +85,6 @@ interface AvatarIdInput extends AvatarRequestOptions {
 
 interface AvatarStylesInput extends AvatarRequestOptions {
     force?: boolean;
-}
-
-async function execute(
-    path: string,
-    { endpoint = '', method = 'GET', params = null } = {}
-) {
-    return executeVrchatBackendRequest('VrchatAvatarExecute', path, {
-        endpoint,
-        method,
-        params,
-        body: params,
-        jsonBody: params !== null,
-        fallbackMessage: 'VRChat avatar request failed'
-    });
-}
-
-async function executeGet(
-    path: string,
-    params: Record<string, unknown> = {},
-    { endpoint = '' }: AvatarRequestOptions = {}
-) {
-    return execute(path, { endpoint, method: 'GET', params });
-}
-
-async function executePut(
-    path: string,
-    params: Record<string, unknown> = {},
-    { endpoint = '' }: AvatarRequestOptions = {}
-) {
-    return execute(path, { endpoint, method: 'PUT', params });
 }
 
 async function getAvatarsPage({
@@ -303,9 +272,6 @@ async function getAvailableAvatarStyles({
 }
 
 const myAvatarRepository = Object.freeze({
-    execute,
-    executeGet,
-    executePut,
     getAvatarsPage,
     getMyAvatars,
     updateAvatarTags,
@@ -315,9 +281,6 @@ const myAvatarRepository = Object.freeze({
 });
 
 export {
-    execute,
-    executeGet,
-    executePut,
     getAvatarsPage,
     getMyAvatars,
     updateAvatarTags,

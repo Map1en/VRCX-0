@@ -8,7 +8,6 @@ import { backend } from '@/platform/index.js';
 
 import {
     createRequestError,
-    executeVrchatBackendRequest,
     notifyVrchatAuthFailure,
     parseJsonResponse,
     unwrapErrorMessage
@@ -228,35 +227,6 @@ async function fetchWorldProfile({ worldId, endpoint = '' }) {
         `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
     return normalize(response.json);
-}
-
-async function executeGet(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
-        endpoint,
-        method: 'GET',
-        params,
-        fallbackMessage: 'VRChat world request failed'
-    });
-}
-
-async function executePut(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
-        endpoint,
-        method: 'PUT',
-        body: params,
-        fallbackMessage: 'VRChat world request failed'
-    });
-}
-
-async function executeDelete(path, params = {}, { endpoint = '' } = {}) {
-    return executeVrchatBackendRequest('VrchatWorldExecute', path, {
-        endpoint,
-        method: 'DELETE',
-        params,
-        queryParams: params,
-        jsonBody: false,
-        fallbackMessage: 'VRChat world request failed'
-    });
 }
 
 async function getWorldProfile({
@@ -521,9 +491,6 @@ async function getAllWorldsByUser({
 const worldProfileRepository = Object.freeze({
     normalize,
     fetchWorldProfile,
-    executeGet,
-    executePut,
-    executeDelete,
     getWorldProfile,
     getWorldsByUser,
     saveWorld,
@@ -538,9 +505,6 @@ const worldProfileRepository = Object.freeze({
 export {
     normalize,
     fetchWorldProfile,
-    executeGet,
-    executePut,
-    executeDelete,
     getWorldProfile,
     getWorldsByUser,
     saveWorld,
