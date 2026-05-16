@@ -157,10 +157,10 @@ async function sweepVrchatCacheIfEnabled() {
 async function scheduleCrashRelaunchIfNeeded(previousGameState) {
     if (isBackendGameClientLifecycleActive()) {
         await waitForBackendCrashRelaunchDecision();
-        if (shouldSkipFrontendCrashRelaunch()) {
-            return;
-        }
-    } else if (shouldSkipFrontendCrashRelaunch()) {
+        return;
+    }
+
+    if (shouldSkipFrontendCrashRelaunch()) {
         return;
     }
 

@@ -35,6 +35,13 @@ pub struct BackendBackgroundJobRecordInput {
     pub detail: String,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendBackgroundFrontendJobDeferInput {
+    pub name: String,
+    pub delay_seconds: u64,
+}
+
 fn default_frontend_owner() -> String {
     "frontend".into()
 }
@@ -69,6 +76,30 @@ pub fn app__backend_background_jobs_snapshot_get(
     state: State<'_, AppState>,
 ) -> Vec<BackendBackgroundJobSnapshot> {
     state.backend_context.background_jobs.snapshot()
+}
+
+#[tauri::command]
+pub fn app__backend_background_frontend_due_jobs_get(state: State<'_, AppState>) -> Vec<String> {
+    state.backend_context.background_jobs.due_frontend_jobs()
+}
+
+#[tauri::command]
+pub fn app__backend_background_frontend_job_defer(
+    state: State<'_, AppState>,
+    input: BackendBackgroundFrontendJobDeferInput,
+) -> bool {
+    state
+        .backend_context
+        .background_jobs
+        .defer_frontend_job(&input.name, input.delay_seconds)
+}
+
+#[tauri::command]
+pub fn app__backend_background_frontend_schedules_reset(state: State<'_, AppState>) {
+    state
+        .backend_context
+        .background_jobs
+        .reset_frontend_schedules();
 }
 
 #[tauri::command]

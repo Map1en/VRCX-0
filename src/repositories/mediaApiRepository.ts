@@ -3,8 +3,6 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache.js';
-import { getBase64ByteLength, md5Base64 } from '@/shared/utils/binary.js';
-import { extractFileId } from '@/shared/utils/fileUtils.js';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint.js';
 
 import { normalizePlatformError } from '../platform/tauri/errors.js';
@@ -30,13 +28,6 @@ interface MediaUploadResponse {
     params: MediaApiParams;
     status: number;
     raw: unknown;
-}
-
-interface FilePutOptions {
-    url: string;
-    fileData: string;
-    fileMIME: string;
-    fileMD5: string;
 }
 
 interface LegacyImageUploadOptions {
@@ -112,32 +103,9 @@ async function executeMediaCommand(
     }
 }
 
-async function uploadFileBytes({
-    url,
-    fileData,
-    fileMIME,
-    fileMD5
-}: FilePutOptions) {
-    const response = await backend.app.BackendMediaFilePut({
-        url,
-        fileData,
-        fileMIME,
-        fileMD5
-    });
-
-    if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Media file upload failed (${response.status})`);
-    }
-
-    return response;
-}
-
-async function signFile(base64File: string): Promise<string> {
-    try {
-        return (await backend.app.SignFile(base64File)) as string;
-    } catch (error) {
-        throw normalizePlatformError(error, 'App command failed: SignFile');
-    }
+function resolveLegacyBlobSize(blob: LegacyImageUploadOptions['blob']) {
+    const size = Number(blob?.size);
+    return Number.isFinite(size) && size > 0 ? size : undefined;
 }
 
 async function getFiles(
@@ -549,101 +517,25 @@ async function uploadAvatarImageLegacy({
         );
     }
 
-    const sourceFileId = extractFileId(imageUrl);
-    if (!sourceFileId) {
-        throw new Error(
-            'Avatar image upload requires an existing source image file id.'
-        );
-    }
-
-    const fileMd5 = md5Base64(base64File);
-    const fileSizeInBytes =
-        Number(blob?.size) || getBase64ByteLength(base64File);
-    const signatureFile = await signFile(base64File);
-    const signatureMd5 = md5Base64(signatureFile);
-    const signatureSizeInBytes = getBase64ByteLength(signatureFile);
-    const upload = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileVersionCreate({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: sourceFileId,
-            fileMd5,
-            fileSizeInBytes,
-            signatureMd5,
-            signatureSizeInBytes
-        })
+    const response = await executeMediaCommand(
+        () =>
+            backend.app.BackendMediaAvatarImageUploadLegacy({
+                endpoint: resolveMediaEndpoint(endpoint),
+                entityId: normalizedAvatarId,
+                imageUrl,
+                base64File,
+                fileSizeInBytes: resolveLegacyBlobSize(blob)
+            }),
+        {
+            fallbackMessage: 'Avatar image upload failed'
+        }
     );
-    const uploadedFileId = upload.json?.id;
-    const versions = Array.isArray(upload.json?.versions)
-        ? upload.json.versions
-        : [];
-    const fileVersion = versions.at(-1)?.version;
-    if (!uploadedFileId || !fileVersion) {
-        throw new Error('Avatar image upload did not return a file version.');
-    }
-
-    const fileStart = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadStart({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'file'
-        })
-    );
-    await uploadFileBytes({
-        url: fileStart.json?.url,
-        fileData: base64File,
-        fileMIME: 'image/png',
-        fileMD5: fileMd5
-    });
-    await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadFinish({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'file'
-        })
-    );
-
-    const signatureStart = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadStart({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'signature'
-        })
-    );
-    await uploadFileBytes({
-        url: signatureStart.json?.url,
-        fileData: signatureFile,
-        fileMIME: 'application/x-rsync-signature',
-        fileMD5: signatureMd5
-    });
-    await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadFinish({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'signature'
-        })
-    );
-
-    const nextImageUrl = `${resolveMediaEndpoint(endpoint)}/file/${uploadedFileId}/${fileVersion}/file`;
-    const avatarResponse = await executeMediaCommand(() =>
-        backend.app.BackendMediaAvatarImageSet({
-            endpoint: resolveMediaEndpoint(endpoint),
-            entityId: normalizedAvatarId,
-            imageUrl: nextImageUrl
-        })
-    );
-    if (avatarResponse.json?.imageUrl !== nextImageUrl) {
-        throw new Error('Avatar image change failed.');
-    }
 
     return {
-        avatar: avatarResponse.json,
-        imageUrl: nextImageUrl,
-        fileId: uploadedFileId,
-        fileVersion
+        avatar: response.json?.avatar,
+        imageUrl: response.json?.imageUrl,
+        fileId: response.json?.fileId,
+        fileVersion: response.json?.fileVersion
     };
 }
 
@@ -664,101 +556,25 @@ async function uploadWorldImageLegacy({
         );
     }
 
-    const sourceFileId = extractFileId(imageUrl);
-    if (!sourceFileId) {
-        throw new Error(
-            'World image upload requires an existing source image file id.'
-        );
-    }
-
-    const fileMd5 = md5Base64(base64File);
-    const fileSizeInBytes =
-        Number(blob?.size) || getBase64ByteLength(base64File);
-    const signatureFile = await signFile(base64File);
-    const signatureMd5 = md5Base64(signatureFile);
-    const signatureSizeInBytes = getBase64ByteLength(signatureFile);
-    const upload = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileVersionCreate({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: sourceFileId,
-            fileMd5,
-            fileSizeInBytes,
-            signatureMd5,
-            signatureSizeInBytes
-        })
+    const response = await executeMediaCommand(
+        () =>
+            backend.app.BackendMediaWorldImageUploadLegacy({
+                endpoint: resolveMediaEndpoint(endpoint),
+                entityId: normalizedWorldId,
+                imageUrl,
+                base64File,
+                fileSizeInBytes: resolveLegacyBlobSize(blob)
+            }),
+        {
+            fallbackMessage: 'World image upload failed'
+        }
     );
-    const uploadedFileId = upload.json?.id;
-    const versions = Array.isArray(upload.json?.versions)
-        ? upload.json.versions
-        : [];
-    const fileVersion = versions.at(-1)?.version;
-    if (!uploadedFileId || !fileVersion) {
-        throw new Error('World image upload did not return a file version.');
-    }
-
-    const fileStart = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadStart({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'file'
-        })
-    );
-    await uploadFileBytes({
-        url: fileStart.json?.url,
-        fileData: base64File,
-        fileMIME: 'image/png',
-        fileMD5: fileMd5
-    });
-    await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadFinish({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'file'
-        })
-    );
-
-    const signatureStart = await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadStart({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'signature'
-        })
-    );
-    await uploadFileBytes({
-        url: signatureStart.json?.url,
-        fileData: signatureFile,
-        fileMIME: 'application/x-rsync-signature',
-        fileMD5: signatureMd5
-    });
-    await executeMediaCommand(() =>
-        backend.app.BackendMediaFileUploadFinish({
-            endpoint: resolveMediaEndpoint(endpoint),
-            fileId: uploadedFileId,
-            version: fileVersion,
-            kind: 'signature'
-        })
-    );
-
-    const nextImageUrl = `${resolveMediaEndpoint(endpoint)}/file/${uploadedFileId}/${fileVersion}/file`;
-    const worldResponse = await executeMediaCommand(() =>
-        backend.app.BackendMediaWorldImageSet({
-            endpoint: resolveMediaEndpoint(endpoint),
-            entityId: normalizedWorldId,
-            imageUrl: nextImageUrl
-        })
-    );
-    if (worldResponse.json?.imageUrl !== nextImageUrl) {
-        throw new Error('World image change failed.');
-    }
 
     return {
-        world: worldResponse.json,
-        imageUrl: nextImageUrl,
-        fileId: uploadedFileId,
-        fileVersion
+        world: response.json?.world,
+        imageUrl: response.json?.imageUrl,
+        fileId: response.json?.fileId,
+        fileVersion: response.json?.fileVersion
     };
 }
 

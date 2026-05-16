@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use chrono::{Duration as ChronoDuration, SecondsFormat, Utc};
 use serde::Serialize;
@@ -40,7 +40,16 @@ pub struct BackendBackgroundJobSnapshot {
 #[derive(Clone, Default)]
 pub struct BackendBackgroundJobs {
     inner: Arc<Mutex<BTreeMap<String, BackendBackgroundJobSnapshot>>>,
+    frontend_schedules: Arc<Mutex<BTreeMap<String, FrontendMaintenanceSchedule>>>,
+    frontend_last_tick: Arc<Mutex<Option<Instant>>>,
     database_optimize_started: Arc<AtomicBool>,
+}
+
+#[derive(Clone, Debug)]
+struct FrontendMaintenanceSchedule {
+    cadence_seconds: u64,
+    initial_delay_seconds: u64,
+    remaining_seconds: i64,
 }
 
 #[derive(Default)]
@@ -97,49 +106,168 @@ impl BackendBackgroundJobs {
     }
 
     pub fn register_frontend_job_catalog(&self) {
-        for (name, cadence_seconds, detail) in [
+        for (name, cadence_seconds, initial_delay_seconds, detail) in [
             (
                 "friendsRefresh",
                 Some(3_600),
-                "Friend and favorite refresh is still driven by the authenticated frontend runtime.",
+                3_600,
+                "Friend and favorite refresh is scheduled by Rust and executed by the authenticated frontend runtime.",
             ),
             (
                 "groupInstanceRefresh",
                 Some(300),
-                "Group instance refresh is still driven by the authenticated frontend runtime.",
+                0,
+                "Group instance refresh is scheduled by Rust and executed by the authenticated frontend runtime.",
             ),
             (
                 "moderationRefresh",
                 Some(3_600),
-                "Moderation snapshot refresh is still driven by the authenticated frontend runtime.",
+                3_600,
+                "Moderation snapshot refresh is scheduled by Rust and executed by the authenticated frontend runtime.",
             ),
             (
                 "appUpdateCheck",
                 Some(10_800),
-                "Update checks are still driven by frontend maintenance because they surface UI notifications.",
+                10_800,
+                "Update checks are scheduled by Rust and executed by frontend maintenance because they surface UI notifications.",
             ),
             (
                 "clearVRCXCacheCheck",
                 Some(86_400),
-                "Frontend memory/cache cleanup is still driven by the frontend runtime.",
+                86_400,
+                "Frontend memory/cache cleanup is scheduled by Rust and executed by the frontend runtime.",
             ),
             (
                 "discordUpdate",
                 Some(3),
-                "Discord presence is still driven by the authenticated frontend runtime.",
+                0,
+                "Discord presence is scheduled by Rust and executed by the authenticated frontend runtime.",
             ),
             (
                 "autoStateChange",
                 Some(3),
-                "Presence automation is still driven by the authenticated frontend runtime.",
+                0,
+                "Presence automation is scheduled by Rust and executed by the authenticated frontend runtime.",
             ),
             (
                 "startupMaintenance",
                 None,
-                "Startup maintenance is still initiated by the frontend bootstrap.",
+                0,
+                "Startup maintenance is initiated by the frontend bootstrap because it may open UI.",
             ),
         ] {
-            self.register_job(name, "frontend", cadence_seconds, "frontend-owned", detail);
+            self.register_job(name, "frontend", cadence_seconds, "scheduled", detail);
+            if let Some(cadence_seconds) = cadence_seconds {
+                self.register_frontend_schedule(name, cadence_seconds, initial_delay_seconds);
+            }
+        }
+    }
+
+    pub fn due_frontend_jobs(&self) -> Vec<String> {
+        let now = Instant::now();
+        let elapsed_seconds = match self.frontend_last_tick.lock() {
+            Ok(mut last_tick) => {
+                let elapsed_seconds = last_tick
+                    .map(|last_tick| now.saturating_duration_since(last_tick).as_secs())
+                    .unwrap_or(0);
+                *last_tick = Some(now);
+                elapsed_seconds as i64
+            }
+            Err(error) => {
+                tracing::warn!("failed to lock frontend maintenance tick state: {error}");
+                0
+            }
+        };
+
+        let mut due = Vec::new();
+        let mut scheduled = Vec::new();
+        match self.frontend_schedules.lock() {
+            Ok(mut schedules) => {
+                for (name, schedule) in schedules.iter_mut() {
+                    if elapsed_seconds > 0 {
+                        schedule.remaining_seconds =
+                            schedule.remaining_seconds.saturating_sub(elapsed_seconds);
+                    }
+                    if schedule.remaining_seconds <= 0 {
+                        due.push(name.clone());
+                        schedule.remaining_seconds = schedule.cadence_seconds as i64;
+                        scheduled.push((name.clone(), schedule.cadence_seconds));
+                    }
+                }
+            }
+            Err(error) => tracing::warn!("failed to lock frontend maintenance schedules: {error}"),
+        }
+
+        for (name, cadence_seconds) in scheduled {
+            self.mark_scheduled(
+                &name,
+                "Next Rust-scheduled frontend maintenance run is waiting.",
+                cadence_seconds,
+            );
+        }
+        due
+    }
+
+    pub fn defer_frontend_job(&self, name: &str, delay_seconds: u64) -> bool {
+        let name = name.trim();
+        if name.is_empty() {
+            return false;
+        }
+
+        let updated = match self.frontend_schedules.lock() {
+            Ok(mut schedules) => {
+                let Some(schedule) = schedules.get_mut(name) else {
+                    return false;
+                };
+                schedule.remaining_seconds = delay_seconds as i64;
+                true
+            }
+            Err(error) => {
+                tracing::warn!("failed to lock frontend maintenance schedules: {error}");
+                false
+            }
+        };
+        if updated {
+            self.mark_scheduled(
+                name,
+                format!("Rust maintenance scheduler deferred {name}."),
+                delay_seconds,
+            );
+        }
+        updated
+    }
+
+    pub fn reset_frontend_schedules(&self) {
+        match self.frontend_schedules.lock() {
+            Ok(mut schedules) => {
+                for schedule in schedules.values_mut() {
+                    schedule.remaining_seconds = schedule.initial_delay_seconds as i64;
+                }
+            }
+            Err(error) => tracing::warn!("failed to lock frontend maintenance schedules: {error}"),
+        }
+        if let Ok(mut last_tick) = self.frontend_last_tick.lock() {
+            *last_tick = None;
+        }
+    }
+
+    fn register_frontend_schedule(
+        &self,
+        name: &str,
+        cadence_seconds: u64,
+        initial_delay_seconds: u64,
+    ) {
+        match self.frontend_schedules.lock() {
+            Ok(mut schedules) => {
+                schedules
+                    .entry(name.to_string())
+                    .or_insert_with(|| FrontendMaintenanceSchedule {
+                        cadence_seconds,
+                        initial_delay_seconds,
+                        remaining_seconds: initial_delay_seconds as i64,
+                    });
+            }
+            Err(error) => tracing::warn!("failed to lock frontend maintenance schedules: {error}"),
         }
     }
 
@@ -298,7 +426,9 @@ impl BackendBackgroundJobs {
                 if let Some(next_run_at) = timing.next_run_at {
                     job.next_run_at = Some(next_run_at);
                 } else if status == "idle" || status == "error" {
-                    job.next_run_at = job.cadence_seconds.map(future_iso);
+                    if job.next_run_at.is_none() {
+                        job.next_run_at = job.cadence_seconds.map(future_iso);
+                    }
                 } else if status == "running" {
                     job.next_run_at = None;
                 }

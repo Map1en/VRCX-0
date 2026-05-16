@@ -5,7 +5,10 @@ import {
     resetBackgroundMaintenance,
     runBackgroundMaintenanceTick
 } from './backgroundMaintenanceService.js';
-import { syncGameLogTail } from './gameLogIngestService.js';
+import {
+    isBackendGameLogSideEffectsActive,
+    syncGameLogTail
+} from './gameLogIngestService.js';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
@@ -58,7 +61,13 @@ async function tickRuntimeLoop() {
     try {
         await refreshGameLogCapabilityIfPrewatching();
         const gameLogAvailable = isHostCapabilityAvailable('gameLogWatcher');
-        if (gameLogAvailable) {
+        if (gameLogAvailable && isBackendGameLogSideEffectsActive()) {
+            runtimeStore.setUpdateLoopState({
+                lastGameLogSyncAt: new Date().toISOString(),
+                lastGameLogSyncDetail:
+                    'Backend GameLog side effects are active.'
+            });
+        } else if (gameLogAvailable) {
             await syncGameLogTail();
         } else {
             runtimeStore.setUpdateLoopState({

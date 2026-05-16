@@ -249,6 +249,21 @@ export interface AppBackendNamespace extends BackendNamespace {
         username: string;
         password: string;
     }): Promise<BackendHttpApiResult>;
+    BackendAuthSavedSnapshotGet(): Promise<Record<string, unknown>>;
+    BackendAuthSavedCredentialDelete(input: {
+        userId: string;
+    }): Promise<Record<string, unknown>>;
+    BackendAuthLoginSuccessRecord(input: {
+        user?: Record<string, unknown>;
+        loginParams?: Record<string, unknown>;
+        storedLoginParams?: Record<string, unknown> | null;
+        saveCredentials?: boolean;
+    }): Promise<Record<string, unknown>>;
+    BackendAuthLogoutRecord(input: {
+        userOrUserId?: Record<string, unknown> | string | null;
+        clearLastUserLoggedIn?: boolean;
+        cookies?: unknown;
+    }): Promise<Record<string, unknown>>;
     BackendAuthTotpVerify(input: {
         endpoint?: string;
         code: string;
@@ -764,10 +779,24 @@ export interface AppBackendNamespace extends BackendNamespace {
         entityId: string;
         imageUrl: string;
     }): Promise<BackendHttpApiResult>;
+    BackendMediaAvatarImageUploadLegacy(input: {
+        endpoint?: string;
+        entityId: string;
+        imageUrl: string;
+        base64File: string;
+        fileSizeInBytes?: number;
+    }): Promise<BackendHttpApiResult>;
     BackendMediaWorldImageSet(input: {
         endpoint?: string;
         entityId: string;
         imageUrl: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendMediaWorldImageUploadLegacy(input: {
+        endpoint?: string;
+        entityId: string;
+        imageUrl: string;
+        base64File: string;
+        fileSizeInBytes?: number;
     }): Promise<BackendHttpApiResult>;
     BackendBackgroundJobRecord(input: {
         name: string;
@@ -776,6 +805,12 @@ export interface AppBackendNamespace extends BackendNamespace {
         status: string;
         detail?: string;
     }): Promise<void>;
+    BackendBackgroundFrontendDueJobsGet(): Promise<string[]>;
+    BackendBackgroundFrontendJobDefer(input: {
+        name: string;
+        delaySeconds: number;
+    }): Promise<boolean>;
+    BackendBackgroundFrontendSchedulesReset(): Promise<void>;
     BackendBackgroundJobsSnapshotGet(): Promise<BackendBackgroundJobSnapshot[]>;
     BackendDiagnosticsGet(): Promise<BackendDiagnosticsSnapshot>;
     BackendExternalAvatarSearchGet(input: {

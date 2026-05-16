@@ -3,10 +3,11 @@
 use std::collections::HashMap;
 
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use tauri::State;
 
 use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestInput};
+use crate::domain::media_files;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -14,10 +15,12 @@ use super::types::{
     BackendMediaAvatarGalleryImageUploadInput, BackendMediaEntityImageInput,
     BackendMediaFileIdInput, BackendMediaFilePutInput, BackendMediaFileUploadStageInput,
     BackendMediaFileVersionCreateInput, BackendMediaImageUploadInput,
-    BackendMediaInventoryItemInput, BackendMediaParamsInput, BackendMediaPrintIdInput,
-    BackendMediaPrintUploadInput, BackendMediaPrintsInput, BackendMediaRewardRedeemInput,
-    BackendMediaUserInventoryItemInput,
+    BackendMediaInventoryItemInput, BackendMediaLegacyImageUploadInput, BackendMediaParamsInput,
+    BackendMediaPrintIdInput, BackendMediaPrintUploadInput, BackendMediaPrintsInput,
+    BackendMediaRewardRedeemInput, BackendMediaUserInventoryItemInput,
 };
+
+const DEFAULT_VRCHAT_API_ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
 fn normalize_text(value: impl AsRef<str>) -> String {
     value.as_ref().trim().to_string()
@@ -40,6 +43,15 @@ fn json_headers() -> HashMap<String, String> {
         "Content-Type".to_string(),
         "application/json;charset=utf-8".to_string(),
     )])
+}
+
+fn normalize_media_endpoint(endpoint: &str) -> String {
+    let endpoint = endpoint.trim().trim_end_matches('/');
+    if endpoint.is_empty() {
+        DEFAULT_VRCHAT_API_ENDPOINT.into()
+    } else {
+        endpoint.to_string()
+    }
 }
 
 fn get_input(
@@ -111,6 +123,276 @@ async fn execute_media_api(
         Err(error) => diagnostics.record_command(command, "error", error.to_string()),
     }
     result
+}
+
+fn response_json(
+    response: HttpApiExecuteResponse,
+    fallback_message: &str,
+) -> Result<Value, AppError> {
+    let json = serde_json::from_str::<Value>(&response.data).unwrap_or(Value::Null);
+    if response.status >= 400
+        || json
+            .as_object()
+            .is_some_and(|object| object.contains_key("error"))
+    {
+        let message = json
+            .as_object()
+            .and_then(|object| object.get("error"))
+            .and_then(|error| {
+                error
+                    .as_str()
+                    .map(ToOwned::to_owned)
+                    .or_else(|| serde_json::to_string(error).ok())
+            })
+            .filter(|message| !message.trim().is_empty())
+            .unwrap_or_else(|| format!("{fallback_message} ({})", response.status));
+        return Err(AppError::Custom(message));
+    }
+    Ok(json)
+}
+
+async fn execute_media_json(
+    state: State<'_, AppState>,
+    command: &str,
+    detail: impl Into<String>,
+    input: HttpApiRequestInput,
+    fallback_message: &str,
+) -> Result<Value, AppError> {
+    response_json(
+        execute_media_api(state, command, detail, input).await?,
+        fallback_message,
+    )
+}
+
+async fn execute_media_success(
+    state: State<'_, AppState>,
+    command: &str,
+    detail: impl Into<String>,
+    input: HttpApiRequestInput,
+    fallback_message: &str,
+) -> Result<(), AppError> {
+    let response = execute_media_api(state, command, detail, input).await?;
+    if response.status < 200 || response.status >= 300 {
+        return Err(AppError::Custom(format!(
+            "{fallback_message} ({})",
+            response.status
+        )));
+    }
+    Ok(())
+}
+
+fn json_field_string(value: &Value, field: &str) -> String {
+    value
+        .as_object()
+        .and_then(|object| object.get(field))
+        .and_then(|value| {
+            value
+                .as_str()
+                .map(ToOwned::to_owned)
+                .or_else(|| (!value.is_null()).then(|| value.to_string()))
+        })
+        .unwrap_or_default()
+}
+
+fn value_as_i64(value: &Value) -> Option<i64> {
+    value
+        .as_i64()
+        .or_else(|| value.as_u64().and_then(|value| i64::try_from(value).ok()))
+        .or_else(|| value.as_str().and_then(|value| value.parse::<i64>().ok()))
+}
+
+fn extract_file_id(value: &str) -> String {
+    let Some(start) = value.find("file_") else {
+        return String::new();
+    };
+    value[start..]
+        .chars()
+        .take_while(|character| {
+            character.is_ascii_alphanumeric() || *character == '_' || *character == '-'
+        })
+        .collect()
+}
+
+fn latest_file_version(upload: &Value) -> Option<i64> {
+    upload
+        .as_object()
+        .and_then(|object| object.get("versions"))
+        .and_then(Value::as_array)
+        .and_then(|versions| versions.last())
+        .and_then(|version| version.as_object().and_then(|object| object.get("version")))
+        .and_then(value_as_i64)
+}
+
+async fn run_legacy_entity_image_upload(
+    state: State<'_, AppState>,
+    input: BackendMediaLegacyImageUploadInput,
+    entity_label: &str,
+    entity_path: &str,
+    entity_output_key: &str,
+    command: &str,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let entity_id = require_text(
+        input.entity_id,
+        &format!("BackendMediaLegacyImageUpload requires {entity_label} id."),
+    )?;
+    let endpoint = normalize_media_endpoint(&input.endpoint);
+    let source_file_id = extract_file_id(&input.image_url);
+    if source_file_id.is_empty() {
+        return Err(AppError::Custom(format!(
+            "{entity_label} image upload requires an existing source image file id."
+        )));
+    }
+    if input.base64_file.trim().is_empty() {
+        return Err(AppError::Custom(format!(
+            "{entity_label} image upload requires image data."
+        )));
+    }
+
+    let file_md5 = media_files::md5_base64(&input.base64_file)?;
+    let file_size_in_bytes = input
+        .file_size_in_bytes
+        .filter(|value| *value > 0)
+        .unwrap_or(media_files::base64_byte_len(&input.base64_file)? as i64);
+    let signature_file = media_files::sign_file_base64(&input.base64_file)?;
+    let signature_md5 = media_files::md5_base64(&signature_file)?;
+    let signature_size_in_bytes = media_files::base64_byte_len(&signature_file)? as i64;
+
+    let upload = execute_media_json(
+        state.clone(),
+        command,
+        format!("Creating legacy {entity_label} image file version."),
+        api_input(
+            endpoint.clone(),
+            "POST",
+            format!("file/{}", encode_path_segment(&source_file_id)),
+            Some(json!({
+                "fileMd5": file_md5,
+                "fileSizeInBytes": file_size_in_bytes,
+                "signatureMd5": signature_md5,
+                "signatureSizeInBytes": signature_size_in_bytes,
+            })),
+        ),
+        &format!("{entity_label} image upload failed"),
+    )
+    .await?;
+    let uploaded_file_id = json_field_string(&upload, "id");
+    let file_version = latest_file_version(&upload).ok_or_else(|| {
+        AppError::Custom(format!(
+            "{entity_label} image upload did not return a file version."
+        ))
+    })?;
+    if uploaded_file_id.is_empty() {
+        return Err(AppError::Custom(format!(
+            "{entity_label} image upload did not return a file id."
+        )));
+    }
+
+    for (kind, file_data, file_mime, file_md5) in [
+        (
+            "file",
+            input.base64_file.as_str(),
+            "image/png",
+            file_md5.as_str(),
+        ),
+        (
+            "signature",
+            signature_file.as_str(),
+            "application/x-rsync-signature",
+            signature_md5.as_str(),
+        ),
+    ] {
+        let start = execute_media_json(
+            state.clone(),
+            command,
+            format!("Starting legacy {entity_label} {kind} upload."),
+            api_input(
+                endpoint.clone(),
+                "PUT",
+                format!(
+                    "file/{}/{}/{}{}",
+                    encode_path_segment(&uploaded_file_id),
+                    file_version,
+                    kind,
+                    "/start"
+                ),
+                Some(json!({})),
+            ),
+            &format!("{entity_label} image upload failed"),
+        )
+        .await?;
+        let upload_url = json_field_string(&start, "url");
+        if upload_url.is_empty() {
+            return Err(AppError::Custom(format!(
+                "{entity_label} image upload did not return a {kind} upload URL."
+            )));
+        }
+        execute_media_success(
+            state.clone(),
+            command,
+            format!("Uploading legacy {entity_label} {kind} bytes."),
+            HttpApiRequestInput {
+                url: Some(upload_url),
+                upload_file_put: Some(true),
+                file_data: Some(file_data.to_string()),
+                file_mime: Some(file_mime.to_string()),
+                file_md5: Some(file_md5.to_string()),
+                ..Default::default()
+            },
+            &format!("{entity_label} image file PUT failed"),
+        )
+        .await?;
+        execute_media_json(
+            state.clone(),
+            command,
+            format!("Finishing legacy {entity_label} {kind} upload."),
+            api_input(
+                endpoint.clone(),
+                "PUT",
+                format!(
+                    "file/{}/{}/{}{}",
+                    encode_path_segment(&uploaded_file_id),
+                    file_version,
+                    kind,
+                    "/finish"
+                ),
+                Some(json!({ "maxParts": 0, "nextPartNumber": 0 })),
+            ),
+            &format!("{entity_label} image upload failed"),
+        )
+        .await?;
+    }
+
+    let next_image_url = format!("{endpoint}/file/{uploaded_file_id}/{file_version}/file");
+    let entity = execute_media_json(
+        state.clone(),
+        command,
+        format!("Setting legacy {entity_label} image."),
+        api_input(
+            endpoint,
+            "PUT",
+            format!("{entity_path}/{}", encode_path_segment(&entity_id)),
+            Some(json!({ "id": entity_id, "imageUrl": next_image_url })),
+        ),
+        &format!("{entity_label} image change failed"),
+    )
+    .await?;
+    if json_field_string(&entity, "imageUrl") != next_image_url {
+        return Err(AppError::Custom(format!(
+            "{entity_label} image change failed."
+        )));
+    }
+
+    let mut payload = Map::new();
+    payload.insert(entity_output_key.to_string(), entity);
+    payload.insert("imageUrl".into(), Value::String(next_image_url));
+    payload.insert("fileId".into(), Value::String(uploaded_file_id));
+    payload.insert("fileVersion".into(), json!(file_version));
+    let payload = Value::Object(payload);
+    Ok(HttpApiExecuteResponse {
+        status: 200,
+        data: payload.to_string(),
+        raw: payload,
+    })
 }
 
 #[tauri::command]
@@ -552,6 +834,38 @@ pub async fn app__backend_media_file_put(
             file_md5: Some(input.file_md5),
             ..Default::default()
         },
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_media_avatar_image_upload_legacy(
+    state: State<'_, AppState>,
+    input: BackendMediaLegacyImageUploadInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    run_legacy_entity_image_upload(
+        state,
+        input,
+        "Avatar",
+        "avatars",
+        "avatar",
+        "app__backend_media_avatar_image_upload_legacy",
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_media_world_image_upload_legacy(
+    state: State<'_, AppState>,
+    input: BackendMediaLegacyImageUploadInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    run_legacy_entity_image_upload(
+        state,
+        input,
+        "World",
+        "worlds",
+        "world",
+        "app__backend_media_world_image_upload_legacy",
     )
     .await
 }

@@ -55,7 +55,7 @@ function isBackendGameLogIngestActive() {
     return isHostCapabilityAvailable('backendGameLogIngest');
 }
 
-function isBackendGameLogSideEffectsActive() {
+export function isBackendGameLogSideEffectsActive() {
     return isHostCapabilityAvailable('backendGameLogSideEffects');
 }
 

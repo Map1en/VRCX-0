@@ -48,15 +48,6 @@ import {
 // 3hr
 const APP_UPDATE_CHECK_INTERVAL_SECONDS = 3 * 3600;
 
-const timers = {
-    friendsRefresh: 3600,
-    groupInstanceRefresh: 0,
-    appUpdateCheck: APP_UPDATE_CHECK_INTERVAL_SECONDS,
-    clearVRCXCacheCheck: 86400,
-    discordUpdate: 0,
-    autoStateChange: 0,
-    moderationRefresh: 3600
-};
 const groupInstanceProfileCache = new Map();
 
 function groupInstanceProfileCacheKey(endpoint, groupId) {
@@ -66,18 +57,17 @@ function groupInstanceProfileCacheKey(endpoint, groupId) {
     return normalizedEndpoint ? `${normalizedEndpoint}:${groupId}` : groupId;
 }
 
-let lastTickAt = Date.now();
 let running = false;
 
 function resetTimers() {
-    timers.friendsRefresh = 3600;
-    timers.groupInstanceRefresh = 0;
-    timers.appUpdateCheck = APP_UPDATE_CHECK_INTERVAL_SECONDS;
-    timers.clearVRCXCacheCheck = 86400;
-    timers.discordUpdate = 0;
-    timers.autoStateChange = 0;
-    timers.moderationRefresh = 3600;
-    lastTickAt = Date.now();
+    void backend.app.BackendBackgroundFrontendSchedulesReset().catch(
+        (error) => {
+            console.warn(
+                'Failed to reset backend maintenance scheduler:',
+                error
+            );
+        }
+    );
 }
 
 function setUpdaterCheckResult(hasAvailableUpdate, detail = '') {
@@ -318,13 +308,6 @@ async function hydrateGroupInstances(instances, endpoint) {
         );
         return group ? { ...instance, group } : instance;
     });
-}
-
-function getElapsedSeconds() {
-    const now = Date.now();
-    const elapsed = Math.max(1, Math.round((now - lastTickAt) / 1000));
-    lastTickAt = now;
-    return elapsed;
 }
 
 function getRuntimeAuth() {
@@ -727,34 +710,28 @@ async function refreshGroupUserInstances() {
     }
 }
 
-async function runGroupUserInstancesIfDue() {
-    if (timers.groupInstanceRefresh > 0) {
-        return;
-    }
-
+async function runGroupUserInstances() {
     if (!useSessionStore.getState().isFriendsLoaded) {
-        timers.groupInstanceRefresh = 30;
+        await deferBackendScheduledFrontendJob('groupInstanceRefresh', 30);
         return;
     }
 
-    timers.groupInstanceRefresh = 300;
     await refreshGroupUserInstances();
 }
 
-async function runClearVrcxCacheIfDue() {
-    if (timers.clearVRCXCacheCheck > 0) {
-        return;
-    }
-
+async function runClearVrcxCache() {
     const frequency = Number(
         await configRepository.getInt('clearVRCXCacheFrequency', 172800)
     );
     if (!frequency || frequency <= 0) {
-        timers.clearVRCXCacheCheck = 3600;
+        await deferBackendScheduledFrontendJob('clearVRCXCacheCheck', 3600);
         return;
     }
 
-    timers.clearVRCXCacheCheck = Math.max(60, Math.floor(frequency / 2));
+    await deferBackendScheduledFrontendJob(
+        'clearVRCXCacheCheck',
+        Math.max(60, Math.floor(frequency / 2))
+    );
     const cleared = clearFavoriteRemoteDetailsCache();
     useRuntimeStore.getState().setUpdateLoopState({
         lastCacheCleanupAt: new Date().toISOString(),
@@ -1060,17 +1037,39 @@ export async function runStartupMaintenance() {
     );
 }
 
-async function runDueTask(timerName, intervalSeconds, task) {
-    if (timers[timerName] > 0) {
-        return;
-    }
+async function deferBackendScheduledFrontendJob(timerName, delaySeconds) {
+    await backend.app
+        .BackendBackgroundFrontendJobDefer({
+            name: timerName,
+            delaySeconds
+        })
+        .catch((error) => {
+            console.warn(
+                `Failed to defer backend maintenance task ${timerName}:`,
+                error
+            );
+        });
+}
 
-    timers[timerName] = intervalSeconds;
+async function getDueBackendScheduledFrontendJobs() {
+    const dueJobs = await backend.app
+        .BackendBackgroundFrontendDueJobsGet()
+        .catch((error) => {
+            console.warn(
+                'Failed to read backend maintenance due jobs:',
+                error
+            );
+            return [];
+        });
+    return new Set(Array.isArray(dueJobs) ? dueJobs : []);
+}
+
+async function runBackendScheduledTask(timerName, intervalSeconds, task) {
     await runRecordedBackendJob(
         {
             name: timerName,
             cadenceSeconds: intervalSeconds,
-            detail: `Running frontend-owned maintenance task ${timerName}.`
+            detail: `Running Rust-scheduled frontend maintenance task ${timerName}.`
         },
         task
     );
@@ -1082,41 +1081,71 @@ export async function runBackgroundMaintenanceTick() {
     }
 
     running = true;
-    const elapsed = getElapsedSeconds();
-
-    for (const key of Object.keys(timers)) {
-        timers[key] -= elapsed;
-    }
+    const dueJobs = await getDueBackendScheduledFrontendJobs();
     void recordBackendBackgroundJob({
         name: 'backgroundMaintenanceTick',
         owner: 'frontend',
         status: 'running',
-        detail: 'Frontend maintenance tick is active.'
+        detail: 'Frontend executor is running Rust-scheduled maintenance.'
     });
 
     try {
-        await runDueTask(
-            'friendsRefresh',
-            3600,
-            refreshFriendAndFavoriteSnapshots
-        );
-        await runGroupUserInstancesIfDue();
-        await runDueTask('moderationRefresh', 3600, refreshPlayerModerations);
-        await runDueTask(
-            'appUpdateCheck',
-            APP_UPDATE_CHECK_INTERVAL_SECONDS,
-            checkForAppUpdate
-        );
-        await runClearVrcxCacheIfDue();
-        await runDueTask('discordUpdate', 3, refreshDiscordPresence);
-        await runDueTask('autoStateChange', 3, updateAutoStateChange);
+        if (dueJobs.has('friendsRefresh')) {
+            await runBackendScheduledTask(
+                'friendsRefresh',
+                3600,
+                refreshFriendAndFavoriteSnapshots
+            );
+        }
+        if (dueJobs.has('groupInstanceRefresh')) {
+            await runBackendScheduledTask(
+                'groupInstanceRefresh',
+                300,
+                runGroupUserInstances
+            );
+        }
+        if (dueJobs.has('moderationRefresh')) {
+            await runBackendScheduledTask(
+                'moderationRefresh',
+                3600,
+                refreshPlayerModerations
+            );
+        }
+        if (dueJobs.has('appUpdateCheck')) {
+            await runBackendScheduledTask(
+                'appUpdateCheck',
+                APP_UPDATE_CHECK_INTERVAL_SECONDS,
+                checkForAppUpdate
+            );
+        }
+        if (dueJobs.has('clearVRCXCacheCheck')) {
+            await runBackendScheduledTask(
+                'clearVRCXCacheCheck',
+                86400,
+                runClearVrcxCache
+            );
+        }
+        if (dueJobs.has('discordUpdate')) {
+            await runBackendScheduledTask(
+                'discordUpdate',
+                3,
+                refreshDiscordPresence
+            );
+        }
+        if (dueJobs.has('autoStateChange')) {
+            await runBackendScheduledTask(
+                'autoStateChange',
+                3,
+                updateAutoStateChange
+            );
+        }
     } finally {
         running = false;
         void recordBackendBackgroundJob({
             name: 'backgroundMaintenanceTick',
             owner: 'frontend',
             status: 'completed',
-            detail: 'Frontend maintenance tick completed.'
+            detail: 'Rust-scheduled frontend maintenance tick completed.'
         });
     }
 }

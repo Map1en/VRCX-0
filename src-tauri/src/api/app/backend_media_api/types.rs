@@ -159,3 +159,18 @@ pub struct BackendMediaEntityImageInput {
     #[serde(default)]
     pub(crate) image_url: String,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendMediaLegacyImageUploadInput {
+    #[serde(default)]
+    pub(crate) endpoint: String,
+    #[serde(default)]
+    pub(crate) entity_id: String,
+    #[serde(default)]
+    pub(crate) image_url: String,
+    #[serde(default)]
+    pub(crate) base64_file: String,
+    #[serde(default)]
+    pub(crate) file_size_in_bytes: Option<i64>,
+}
