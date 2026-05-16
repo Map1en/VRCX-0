@@ -219,38 +219,29 @@ export function useGalleryAssetActions({
         return params;
     }
     function uploadAsset(tab, base64Body, settings) {
-        if (tab === 'gallery') {
-            return mediaRepository.uploadGalleryImage(base64Body, {
-                endpoint: currentEndpoint
-            });
-        }
-        if (tab === 'icons') {
-            return mediaRepository.uploadVrcPlusIcon(base64Body, {
-                endpoint: currentEndpoint
-            });
-        }
+        const endpoint = currentEndpoint;
         if (tab === 'emojis') {
-            return mediaRepository.uploadEmoji(
-                base64Body,
-                getEmojiUploadParams(settings),
-                {
-                    endpoint: currentEndpoint
-                }
-            );
-        }
-        if (tab === 'stickers') {
-            return mediaRepository.uploadSticker(base64Body, {
-                endpoint: currentEndpoint
+            return mediaRepository.uploadAssetImage(base64Body, {
+                endpoint,
+                assetKind: tab,
+                params: getEmojiUploadParams(settings)
             });
         }
         if (tab === 'prints') {
-            return mediaRepository.uploadPrint(base64Body, {
-                endpoint: currentEndpoint,
+            return mediaRepository.uploadAssetImage(base64Body, {
+                endpoint,
+                assetKind: tab,
                 cropWhiteBorder: printCropBorder,
                 params: {
                     note: printUploadNote,
                     timestamp: getLocalTimestampString()
                 }
+            });
+        }
+        if (tab === 'gallery' || tab === 'icons' || tab === 'stickers') {
+            return mediaRepository.uploadAssetImage(base64Body, {
+                endpoint,
+                assetKind: tab
             });
         }
         throw new Error(`Unsupported upload target: ${tab}`);

@@ -238,6 +238,9 @@ export interface AppBackendNamespace extends BackendNamespace {
     BackendAuthConfigGet(input: {
         endpoint?: string;
     }): Promise<BackendHttpApiResult>;
+    BackendAuthCookieSessionRestore(input: {
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
     BackendAuthCurrentUserGet(input: {
         endpoint?: string;
     }): Promise<BackendHttpApiResult>;
@@ -245,6 +248,11 @@ export interface AppBackendNamespace extends BackendNamespace {
         endpoint?: string;
     }): Promise<BackendHttpApiResult>;
     BackendAuthLoginBasic(input: {
+        endpoint?: string;
+        username: string;
+        password: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendAuthLoginBasicStart(input: {
         endpoint?: string;
         username: string;
         password: string;
@@ -786,6 +794,13 @@ export interface AppBackendNamespace extends BackendNamespace {
         base64File: string;
         fileSizeInBytes?: number;
     }): Promise<BackendHttpApiResult>;
+    BackendMediaAssetUpload(input: {
+        endpoint?: string;
+        assetKind: string;
+        imageData: string;
+        cropWhiteBorder?: boolean;
+        params?: Record<string, unknown>;
+    }): Promise<BackendHttpApiResult>;
     BackendMediaWorldImageSet(input: {
         endpoint?: string;
         entityId: string;
@@ -806,6 +821,11 @@ export interface AppBackendNamespace extends BackendNamespace {
         detail?: string;
     }): Promise<void>;
     BackendBackgroundFrontendDueJobsGet(): Promise<string[]>;
+    BackendBackgroundFrontendJobDueClaim(input: {
+        name: string;
+        cadenceSeconds: number;
+        initialDelaySeconds?: number;
+    }): Promise<boolean>;
     BackendBackgroundFrontendJobDefer(input: {
         name: string;
         delaySeconds: number;

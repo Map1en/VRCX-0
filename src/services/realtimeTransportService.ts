@@ -290,6 +290,24 @@ function handleRealtimeStatus(
     if (!isCurrentTransportTarget(context)) {
         return;
     }
+    const statusClientRunId = Number(statusPayload.clientRunId);
+    if (
+        Number.isFinite(statusClientRunId) &&
+        statusClientRunId > 0 &&
+        backendTransportClientRunId !== null &&
+        statusClientRunId !== backendTransportClientRunId
+    ) {
+        return;
+    }
+    const statusGeneration = Number(statusPayload.generation);
+    if (
+        Number.isFinite(statusGeneration) &&
+        statusGeneration > 0 &&
+        backendTransportGeneration === null
+    ) {
+        backendTransportGeneration = statusGeneration;
+        flushPendingBackendProjectionEvents();
+    }
 
     const websocketDomain = normalizeWebsocketDomain(
         statusPayload.websocketDomain || context.websocket

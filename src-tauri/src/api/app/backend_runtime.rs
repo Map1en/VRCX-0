@@ -42,6 +42,15 @@ pub struct BackendBackgroundFrontendJobDeferInput {
     pub delay_seconds: u64,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendBackgroundFrontendJobDueClaimInput {
+    pub name: String,
+    pub cadence_seconds: u64,
+    #[serde(default)]
+    pub initial_delay_seconds: u64,
+}
+
 fn default_frontend_owner() -> String {
     "frontend".into()
 }
@@ -92,6 +101,21 @@ pub fn app__backend_background_frontend_job_defer(
         .backend_context
         .background_jobs
         .defer_frontend_job(&input.name, input.delay_seconds)
+}
+
+#[tauri::command]
+pub fn app__backend_background_frontend_job_due_claim(
+    state: State<'_, AppState>,
+    input: BackendBackgroundFrontendJobDueClaimInput,
+) -> bool {
+    state
+        .backend_context
+        .background_jobs
+        .claim_frontend_job_due(
+            &input.name,
+            input.cadence_seconds,
+            input.initial_delay_seconds,
+        )
 }
 
 #[tauri::command]

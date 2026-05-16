@@ -39,6 +39,12 @@ interface LegacyImageUploadOptions {
     endpoint?: string;
 }
 
+interface MediaAssetUploadOptions extends MediaApiOptions {
+    assetKind: string;
+    cropWhiteBorder?: boolean;
+    params?: MediaApiParams;
+}
+
 function normalizeParams(params: unknown = {}): MediaApiParams {
     if (!params || typeof params !== 'object') {
         return {};
@@ -275,6 +281,36 @@ async function uploadPrint(
         {
             params: normalizedParams,
             fallbackMessage: 'Print upload failed'
+        }
+    );
+    return {
+        ...response,
+        params: response.params ?? normalizedParams
+    };
+}
+
+async function uploadAssetImage(
+    imageData: string,
+    {
+        endpoint = '',
+        assetKind,
+        cropWhiteBorder = false,
+        params = {}
+    }: MediaAssetUploadOptions
+): Promise<MediaUploadResponse> {
+    const normalizedParams = normalizeParams(params);
+    const response = await executeMediaCommand(
+        () =>
+            backend.app.BackendMediaAssetUpload({
+                endpoint: resolveMediaEndpoint(endpoint),
+                assetKind,
+                imageData,
+                cropWhiteBorder: Boolean(cropWhiteBorder),
+                params: normalizedParams
+            }),
+        {
+            params: normalizedParams,
+            fallbackMessage: 'Media asset upload failed'
         }
     );
     return {
@@ -588,6 +624,7 @@ const mediaApiRepository = Object.freeze({
     uploadEmoji,
     uploadSticker,
     uploadPrint,
+    uploadAssetImage,
     getPrints,
     getPrint,
     deletePrint,
@@ -610,6 +647,7 @@ export {
     uploadEmoji,
     uploadSticker,
     uploadPrint,
+    uploadAssetImage,
     getPrints,
     getPrint,
     deletePrint,

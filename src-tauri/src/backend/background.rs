@@ -50,6 +50,7 @@ struct FrontendMaintenanceSchedule {
     cadence_seconds: u64,
     initial_delay_seconds: u64,
     remaining_seconds: i64,
+    last_checked: Option<Instant>,
 }
 
 #[derive(Default)]
@@ -163,34 +164,34 @@ impl BackendBackgroundJobs {
         }
     }
 
+    fn update_frontend_schedule_due(
+        schedule: &mut FrontendMaintenanceSchedule,
+        now: Instant,
+    ) -> bool {
+        let elapsed_seconds = schedule
+            .last_checked
+            .map(|last_checked| now.saturating_duration_since(last_checked).as_secs())
+            .unwrap_or(0) as i64;
+        schedule.last_checked = Some(now);
+        if elapsed_seconds > 0 {
+            schedule.remaining_seconds = schedule.remaining_seconds.saturating_sub(elapsed_seconds);
+        }
+        if schedule.remaining_seconds <= 0 {
+            schedule.remaining_seconds = schedule.cadence_seconds as i64;
+            return true;
+        }
+        false
+    }
+
     pub fn due_frontend_jobs(&self) -> Vec<String> {
         let now = Instant::now();
-        let elapsed_seconds = match self.frontend_last_tick.lock() {
-            Ok(mut last_tick) => {
-                let elapsed_seconds = last_tick
-                    .map(|last_tick| now.saturating_duration_since(last_tick).as_secs())
-                    .unwrap_or(0);
-                *last_tick = Some(now);
-                elapsed_seconds as i64
-            }
-            Err(error) => {
-                tracing::warn!("failed to lock frontend maintenance tick state: {error}");
-                0
-            }
-        };
-
         let mut due = Vec::new();
         let mut scheduled = Vec::new();
         match self.frontend_schedules.lock() {
             Ok(mut schedules) => {
                 for (name, schedule) in schedules.iter_mut() {
-                    if elapsed_seconds > 0 {
-                        schedule.remaining_seconds =
-                            schedule.remaining_seconds.saturating_sub(elapsed_seconds);
-                    }
-                    if schedule.remaining_seconds <= 0 {
+                    if Self::update_frontend_schedule_due(schedule, now) {
                         due.push(name.clone());
-                        schedule.remaining_seconds = schedule.cadence_seconds as i64;
                         scheduled.push((name.clone(), schedule.cadence_seconds));
                     }
                 }
@@ -202,6 +203,47 @@ impl BackendBackgroundJobs {
             self.mark_scheduled(
                 &name,
                 "Next Rust-scheduled frontend maintenance run is waiting.",
+                cadence_seconds,
+            );
+        }
+        due
+    }
+
+    pub fn claim_frontend_job_due(
+        &self,
+        name: &str,
+        cadence_seconds: u64,
+        initial_delay_seconds: u64,
+    ) -> bool {
+        let name = name.trim();
+        if name.is_empty() || cadence_seconds == 0 {
+            return false;
+        }
+
+        let now = Instant::now();
+        let due = match self.frontend_schedules.lock() {
+            Ok(mut schedules) => {
+                let schedule = schedules.entry(name.to_string()).or_insert_with(|| {
+                    FrontendMaintenanceSchedule {
+                        cadence_seconds,
+                        initial_delay_seconds,
+                        remaining_seconds: initial_delay_seconds as i64,
+                        last_checked: None,
+                    }
+                });
+                schedule.cadence_seconds = cadence_seconds;
+                schedule.initial_delay_seconds = initial_delay_seconds;
+                Self::update_frontend_schedule_due(schedule, now)
+            }
+            Err(error) => {
+                tracing::warn!("failed to lock frontend maintenance schedules: {error}");
+                false
+            }
+        };
+        if due {
+            self.mark_scheduled(
+                name,
+                "Next claimed Rust-scheduled frontend maintenance run is waiting.",
                 cadence_seconds,
             );
         }
@@ -220,6 +262,7 @@ impl BackendBackgroundJobs {
                     return false;
                 };
                 schedule.remaining_seconds = delay_seconds as i64;
+                schedule.last_checked = Some(Instant::now());
                 true
             }
             Err(error) => {
@@ -242,6 +285,7 @@ impl BackendBackgroundJobs {
             Ok(mut schedules) => {
                 for schedule in schedules.values_mut() {
                     schedule.remaining_seconds = schedule.initial_delay_seconds as i64;
+                    schedule.last_checked = None;
                 }
             }
             Err(error) => tracing::warn!("failed to lock frontend maintenance schedules: {error}"),
@@ -265,6 +309,7 @@ impl BackendBackgroundJobs {
                         cadence_seconds,
                         initial_delay_seconds,
                         remaining_seconds: initial_delay_seconds as i64,
+                        last_checked: None,
                     });
             }
             Err(error) => tracing::warn!("failed to lock frontend maintenance schedules: {error}"),

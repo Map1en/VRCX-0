@@ -33,6 +33,12 @@ pub struct RealtimeWsStatusPayload {
     pub websocket_domain: String,
     pub at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_run_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generation: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_generation: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status_code: Option<i32>,

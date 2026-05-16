@@ -390,6 +390,24 @@ fn saved_credential_sort_name(value: &Value) -> String {
         .to_lowercase()
 }
 
+fn saved_credential_display_name(value: Option<&Value>, fallback: &str) -> String {
+    value
+        .and_then(|record| record.as_object())
+        .and_then(|record| record.get("user"))
+        .map(|user| {
+            [
+                object_field_string(user, "displayName"),
+                object_field_string(user, "username"),
+                object_field_string(user, "id"),
+            ]
+            .into_iter()
+            .find(|value| !value.is_empty())
+            .unwrap_or_default()
+        })
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| fallback.to_string())
+}
+
 fn sorted_saved_credentials_list(
     saved_credentials: &Map<String, Value>,
     last_user_logged_in: &str,
@@ -433,6 +451,33 @@ fn build_saved_auth_snapshot(state: &State<'_, AppState>) -> Result<Value, AppEr
         auto_login_delay_enabled,
         auto_login_delay_seconds,
     );
+    let auto_login_target = if last_user_logged_in.is_empty() {
+        Value::Null
+    } else {
+        saved_credentials
+            .get(&last_user_logged_in)
+            .cloned()
+            .unwrap_or(Value::Null)
+    };
+    let cookie_restore_eligible = !last_user_logged_in.is_empty();
+    let saved_credential_fallback_available =
+        auto_login_status == "available" && !auto_login_target.is_null();
+    let auto_login_display_name = saved_credential_display_name(
+        saved_credentials.get(&last_user_logged_in),
+        if last_user_logged_in.is_empty() {
+            "saved account"
+        } else {
+            &last_user_logged_in
+        },
+    );
+    let auto_login_throttle_key = if let Value::Object(record) = &auto_login_target {
+        record
+            .get("user")
+            .map(|user| object_field_string(user, "id"))
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
     let saved_credentials_list =
         sorted_saved_credentials_list(&saved_credentials, &last_user_logged_in);
 
@@ -441,6 +486,11 @@ fn build_saved_auth_snapshot(state: &State<'_, AppState>) -> Result<Value, AppEr
         "savedCredentialCount": saved_credentials.len(),
         "savedCredentials": saved_credentials,
         "savedCredentialsList": saved_credentials_list,
+        "autoLoginTarget": auto_login_target,
+        "autoLoginDisplayName": auto_login_display_name,
+        "autoLoginThrottleKey": auto_login_throttle_key,
+        "cookieRestoreEligible": cookie_restore_eligible,
+        "savedCredentialFallbackAvailable": saved_credential_fallback_available,
         "autoLoginDelayEnabled": auto_login_delay_enabled,
         "autoLoginDelaySeconds": auto_login_delay_seconds,
         "autoLoginStatus": auto_login_status,
@@ -624,6 +674,69 @@ pub async fn app__backend_auth_login_basic(
         format!("Logging in {username}."),
         get_input(
             input.endpoint,
+            "auth/user",
+            HashMap::from([("Authorization".to_string(), authorization)]),
+            HashMap::new(),
+        ),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_auth_cookie_session_restore(
+    state: State<'_, AppState>,
+    input: BackendAuthEndpointInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let endpoint = input.endpoint;
+    execute_auth_api(
+        state.clone(),
+        "app__backend_auth_cookie_session_restore_config",
+        "Preparing VRChat config before cookie session restore.",
+        get_input(endpoint.clone(), "config", HashMap::new(), HashMap::new()),
+    )
+    .await?;
+    execute_auth_api(
+        state,
+        "app__backend_auth_cookie_session_restore",
+        "Restoring current VRChat user from cookies.",
+        get_input(endpoint, "auth/user", HashMap::new(), HashMap::new()),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_auth_login_basic_start(
+    state: State<'_, AppState>,
+    input: BackendAuthLoginBasicInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let endpoint = input.endpoint;
+    let username = require_text(
+        input.username,
+        "BackendAuthLoginBasicStart requires username.",
+    )?;
+    let password = require_text(
+        input.password,
+        "BackendAuthLoginBasicStart requires password.",
+    )?;
+    execute_auth_api(
+        state.clone(),
+        "app__backend_auth_login_basic_start_config",
+        "Preparing VRChat config before basic login.",
+        get_input(endpoint.clone(), "config", HashMap::new(), HashMap::new()),
+    )
+    .await?;
+    let credentials = format!(
+        "{}:{}",
+        encode_uri_component(&username),
+        encode_uri_component(&password)
+    );
+    let authorization = format!("Basic {}", B64.encode(credentials.as_bytes()));
+    execute_auth_api(
+        state,
+        "app__backend_auth_login_basic_start",
+        format!("Logging in {username}."),
+        get_input(
+            endpoint,
             "auth/user",
             HashMap::from([("Authorization".to_string(), authorization)]),
             HashMap::new(),

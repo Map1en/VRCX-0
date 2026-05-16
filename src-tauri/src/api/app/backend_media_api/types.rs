@@ -57,6 +57,21 @@ pub struct BackendMediaPrintUploadInput {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct BackendMediaAssetUploadInput {
+    #[serde(default)]
+    pub(crate) endpoint: String,
+    #[serde(default)]
+    pub(crate) asset_kind: String,
+    #[serde(default)]
+    pub(crate) image_data: String,
+    #[serde(default)]
+    pub(crate) crop_white_border: bool,
+    #[serde(default)]
+    pub(crate) params: HashMap<String, Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackendMediaPrintsInput {
     #[serde(default)]
     pub(crate) endpoint: String,

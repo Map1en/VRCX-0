@@ -122,6 +122,7 @@ async fn fetch_auth_token(
 pub async fn run_realtime_transport(
     context: Arc<BackendContext>,
     message_sink: Arc<dyn RealtimeMessageSink>,
+    client_run_id: u64,
     generation: u64,
     session_generation: u64,
     session: RealtimeSessionContext,
@@ -130,6 +131,7 @@ pub async fn run_realtime_transport(
     run_realtime_transport_inner(
         Arc::clone(&context),
         Arc::clone(&message_sink),
+        client_run_id,
         generation,
         session_generation,
         session.clone(),
@@ -145,6 +147,7 @@ pub async fn run_realtime_transport(
 async fn run_realtime_transport_inner(
     context: Arc<BackendContext>,
     message_sink: Arc<dyn RealtimeMessageSink>,
+    client_run_id: u64,
     generation: u64,
     session_generation: u64,
     session: RealtimeSessionContext,
@@ -156,7 +159,16 @@ async fn run_realtime_transport_inner(
 
     loop {
         if is_cancelled(cancel_rx, generation) {
-            emit_status(&event_bus, "disconnected", &websocket_domain, None, None);
+            emit_status(
+                &event_bus,
+                client_run_id,
+                generation,
+                session_generation,
+                "disconnected",
+                &websocket_domain,
+                None,
+                None,
+            );
             return;
         }
 
@@ -171,12 +183,22 @@ async fn run_realtime_transport_inner(
             &session,
             status,
         );
-        emit_status(&event_bus, status, &websocket_domain, None, None);
+        emit_status(
+            &event_bus,
+            client_run_id,
+            generation,
+            session_generation,
+            status,
+            &websocket_domain,
+            None,
+            None,
+        );
 
         match connect_once(
             Arc::clone(&context),
             Arc::clone(&message_sink),
             &session,
+            client_run_id,
             generation,
             session_generation,
             cancel_rx,
@@ -185,7 +207,16 @@ async fn run_realtime_transport_inner(
         .await
         {
             Ok(ConnectionEnd::Stopped) => {
-                emit_status(&event_bus, "disconnected", &websocket_domain, None, None);
+                emit_status(
+                    &event_bus,
+                    client_run_id,
+                    generation,
+                    session_generation,
+                    "disconnected",
+                    &websocket_domain,
+                    None,
+                    None,
+                );
                 return;
             }
             Ok(ConnectionEnd::Closed) => {
@@ -203,6 +234,9 @@ async fn run_realtime_transport_inner(
                 );
                 emit_status(
                     &event_bus,
+                    client_run_id,
+                    generation,
+                    session_generation,
                     "reconnecting",
                     &websocket_domain,
                     Some("websocket closed".into()),
@@ -221,6 +255,9 @@ async fn run_realtime_transport_inner(
                 tracing::warn!(message = %message, "backend realtime transport failed");
                 emit_status(
                     &event_bus,
+                    client_run_id,
+                    generation,
+                    session_generation,
                     status,
                     &websocket_domain,
                     Some(message),
@@ -238,6 +275,9 @@ async fn run_realtime_transport_inner(
                 if changed.is_err() || is_cancelled(cancel_rx, generation) {
                     emit_status(
                         &event_bus,
+                        client_run_id,
+                        generation,
+                        session_generation,
                         "disconnected",
                         &websocket_domain,
                         None,
@@ -254,6 +294,7 @@ async fn connect_once(
     context: Arc<BackendContext>,
     message_sink: Arc<dyn RealtimeMessageSink>,
     session: &RealtimeSessionContext,
+    client_run_id: u64,
     generation: u64,
     session_generation: u64,
     cancel_rx: &mut watch::Receiver<u64>,
@@ -302,7 +343,16 @@ async fn connect_once(
         session,
         "connected",
     );
-    emit_status(event_bus, "connected", &websocket_domain, None, None);
+    emit_status(
+        event_bus,
+        client_run_id,
+        generation,
+        session_generation,
+        "connected",
+        &websocket_domain,
+        None,
+        None,
+    );
 
     let mut parser = RealtimeMessageParser::default();
     loop {
@@ -411,6 +461,9 @@ fn is_cancelled(cancel_rx: &watch::Receiver<u64>, generation: u64) -> bool {
 
 fn emit_status(
     event_bus: &BackendEventBus,
+    client_run_id: u64,
+    generation: u64,
+    session_generation: u64,
     status: &str,
     websocket_domain: &str,
     reason: Option<String>,
@@ -420,6 +473,9 @@ fn emit_status(
         status: status.to_string(),
         websocket_domain: websocket_domain.to_string(),
         at: Utc::now().to_rfc3339(),
+        client_run_id: Some(client_run_id),
+        generation: Some(generation),
+        session_generation: Some(session_generation),
         reason,
         status_code,
     });

@@ -37,34 +37,16 @@ function createAutoLoginAbortError() {
     return error;
 }
 
-function getAutoLoginTarget(snapshot: Record<string, any> | null | undefined) {
-    const userId = snapshot?.lastUserLoggedIn;
-    if (!userId) {
-        return null;
-    }
-
-    return snapshot?.savedCredentials?.[userId] ?? null;
-}
-
-function shouldAttemptCookieRestore(
-    snapshot: Record<string, any> | null | undefined
-) {
-    return Boolean(snapshot?.lastUserLoggedIn);
-}
-
-function getAutoLoginThrottleKey(
-    savedCredential: Record<string, any> | null | undefined
-) {
-    const userId = savedCredential?.user?.id || '';
-    return userId;
-}
-
 function isMissingCredentialsError(error: any) {
     return Boolean(
         error?.status === 401 &&
         typeof error?.message === 'string' &&
         error.message.includes('Missing Credentials')
     );
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+    return Boolean(value && typeof value === 'object');
 }
 
 function normalizeAutoLoginDelaySeconds(seconds: unknown) {
@@ -202,17 +184,18 @@ export async function executeReactAutoLogin(
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const runtimeStore = useRuntimeStore.getState();
-    const savedCredential = getAutoLoginTarget(snapshot);
+    const savedCredential = isRecord(snapshot?.autoLoginTarget)
+        ? snapshot.autoLoginTarget
+        : null;
     const displayName =
-        savedCredential?.user?.displayName ||
-        savedCredential?.user?.username ||
-        savedCredential?.user?.id ||
+        String(snapshot?.autoLoginDisplayName || '').trim() ||
         snapshot?.lastUserLoggedIn ||
         'saved account';
 
-    const cookieRestoreEligible = shouldAttemptCookieRestore(snapshot);
-    const savedCredentialFallbackAvailable =
-        snapshot?.autoLoginStatus === 'available' && Boolean(savedCredential);
+    const cookieRestoreEligible = Boolean(snapshot?.cookieRestoreEligible);
+    const savedCredentialFallbackAvailable = Boolean(
+        snapshot?.savedCredentialFallbackAvailable && savedCredential
+    );
 
     if (!cookieRestoreEligible && !savedCredentialFallbackAvailable) {
         return {
@@ -273,7 +256,7 @@ export async function executeReactAutoLogin(
             };
         }
 
-        const throttleKey = getAutoLoginThrottleKey(savedCredential);
+        const throttleKey = String(snapshot?.autoLoginThrottleKey || '').trim();
         if (!canAttemptReactAutoLogin(throttleKey)) {
             await webRepository.clearCookies();
             setSignedOutSessionState();

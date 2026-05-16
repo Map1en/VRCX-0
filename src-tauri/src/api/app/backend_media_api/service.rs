@@ -12,12 +12,13 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use super::types::{
-    BackendMediaAvatarGalleryImageUploadInput, BackendMediaEntityImageInput,
-    BackendMediaFileIdInput, BackendMediaFilePutInput, BackendMediaFileUploadStageInput,
-    BackendMediaFileVersionCreateInput, BackendMediaImageUploadInput,
-    BackendMediaInventoryItemInput, BackendMediaLegacyImageUploadInput, BackendMediaParamsInput,
-    BackendMediaPrintIdInput, BackendMediaPrintUploadInput, BackendMediaPrintsInput,
-    BackendMediaRewardRedeemInput, BackendMediaUserInventoryItemInput,
+    BackendMediaAssetUploadInput, BackendMediaAvatarGalleryImageUploadInput,
+    BackendMediaEntityImageInput, BackendMediaFileIdInput, BackendMediaFilePutInput,
+    BackendMediaFileUploadStageInput, BackendMediaFileVersionCreateInput,
+    BackendMediaImageUploadInput, BackendMediaInventoryItemInput,
+    BackendMediaLegacyImageUploadInput, BackendMediaParamsInput, BackendMediaPrintIdInput,
+    BackendMediaPrintUploadInput, BackendMediaPrintsInput, BackendMediaRewardRedeemInput,
+    BackendMediaUserInventoryItemInput,
 };
 
 const DEFAULT_VRCHAT_API_ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
@@ -555,6 +556,74 @@ pub async fn app__backend_media_print_upload(
             image_data: Some(input.image_data),
             ..Default::default()
         },
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn app__backend_media_asset_upload(
+    state: State<'_, AppState>,
+    input: BackendMediaAssetUploadInput,
+) -> Result<HttpApiExecuteResponse, AppError> {
+    let asset_kind = normalize_text(&input.asset_kind);
+    let request = match asset_kind.as_str() {
+        "gallery" => image_upload_input(
+            input.endpoint,
+            "file/image",
+            input.image_data,
+            HashMap::from([("tag".to_string(), Value::String("gallery".into()))]),
+            false,
+        )?,
+        "icons" => image_upload_input(
+            input.endpoint,
+            "file/image",
+            input.image_data,
+            HashMap::from([("tag".to_string(), Value::String("icon".into()))]),
+            true,
+        )?,
+        "emojis" => image_upload_input(
+            input.endpoint,
+            "file/image",
+            input.image_data,
+            input.params,
+            true,
+        )?,
+        "stickers" => image_upload_input(
+            input.endpoint,
+            "file/image",
+            input.image_data,
+            HashMap::from([
+                ("tag".to_string(), Value::String("sticker".into())),
+                ("maskTag".to_string(), Value::String("square".into())),
+            ]),
+            true,
+        )?,
+        "prints" => {
+            let post_data = serde_json::to_string(&input.params).map_err(|error| {
+                AppError::Custom(format!("serialize print upload params: {error}"))
+            })?;
+            HttpApiRequestInput {
+                endpoint: Some(input.endpoint),
+                path: Some("prints".into()),
+                upload_image_print: Some(true),
+                crop_white_border: Some(input.crop_white_border),
+                post_data: Some(post_data),
+                image_data: Some(input.image_data),
+                ..Default::default()
+            }
+        }
+        _ => {
+            return Err(AppError::Custom(format!(
+                "unsupported media asset upload kind: {asset_kind}"
+            )))
+        }
+    };
+
+    execute_media_api(
+        state,
+        "app__backend_media_asset_upload",
+        format!("Uploading media asset {asset_kind}."),
+        request,
     )
     .await
 }

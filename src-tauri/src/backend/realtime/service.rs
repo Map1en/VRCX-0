@@ -188,6 +188,7 @@ impl RealtimeBackend {
             run_realtime_transport(
                 context,
                 message_sink,
+                client_run_id,
                 generation,
                 session_generation,
                 session,
@@ -374,7 +375,13 @@ impl RealtimeBackend {
     }
 
     pub fn stop(&self, request: RealtimeStopRequest) {
-        let (websocket_domain, final_current_user_output) = {
+        let (
+            websocket_domain,
+            client_run_id,
+            generation,
+            session_generation,
+            final_current_user_output,
+        ) = {
             let mut state = match self.state.lock() {
                 Ok(state) => state,
                 Err(error) => {
@@ -383,7 +390,7 @@ impl RealtimeBackend {
                 }
             };
 
-            let Some(active) = state.active_context.as_ref() else {
+            let Some(active) = state.active_context.clone() else {
                 if request.has_scope() {
                     return;
                 }
@@ -392,7 +399,7 @@ impl RealtimeBackend {
                 return;
             };
 
-            if !request.matches_active(active) {
+            if !request.matches_active(&active) {
                 tracing::warn!(
                     client_run_id = ?request.client_run_id,
                     generation = ?request.generation,
@@ -415,7 +422,13 @@ impl RealtimeBackend {
             self.context.session.clear_realtime_context();
             self.friends.clear();
             self.current_user.clear();
-            (websocket_domain, final_current_user_output)
+            (
+                websocket_domain,
+                active.client_run_id,
+                active.generation,
+                active.session_generation,
+                final_current_user_output,
+            )
         };
 
         if let Some(output) = final_current_user_output {
@@ -428,6 +441,9 @@ impl RealtimeBackend {
                 status: "disconnected".into(),
                 websocket_domain,
                 at: chrono::Utc::now().to_rfc3339(),
+                client_run_id: Some(client_run_id),
+                generation: Some(generation),
+                session_generation: Some(session_generation),
                 reason: None,
                 status_code: None,
             });

@@ -73,8 +73,15 @@ async function getAuthSession({ endpoint = '' } = {}) {
     return unwrapBackendAuthResponse(response, 'auth', endpoint);
 }
 
+async function restoreCookieSession({ endpoint = '' } = {}) {
+    const response = await backend.app.BackendAuthCookieSessionRestore({
+        endpoint: normalizeVrchatEndpoint(endpoint)
+    });
+    return unwrapBackendAuthResponse(response, 'auth/user', endpoint);
+}
+
 async function loginWithBasicAuth({ username, password, endpoint = '' }) {
-    const response = await backend.app.BackendAuthLoginBasic({
+    const response = await backend.app.BackendAuthLoginBasicStart({
         endpoint: normalizeVrchatEndpoint(endpoint),
         username: typeof username === 'string' ? username : String(username ?? ''),
         password: typeof password === 'string' ? password : String(password ?? '')
@@ -148,6 +155,7 @@ const vrchatAuthRepository = Object.freeze({
     getConfig,
     getCurrentUser,
     getAuthSession,
+    restoreCookieSession,
     loginWithBasicAuth,
     verifyTOTP,
     verifyOTP,
@@ -160,6 +168,7 @@ export {
     getConfig,
     getCurrentUser,
     getAuthSession,
+    restoreCookieSession,
     loginWithBasicAuth,
     verifyTOTP,
     verifyOTP,

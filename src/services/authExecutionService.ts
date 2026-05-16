@@ -488,8 +488,7 @@ export async function executeCookieSessionRestore({
     let snapshot = null;
 
     try {
-        await vrchatAuthRepository.getConfig({ endpoint });
-        const response = await vrchatAuthRepository.getCurrentUser({
+        const response = await vrchatAuthRepository.restoreCookieSession({
             endpoint
         });
         const authResponse = parseAuthResponse(response.json);
@@ -557,9 +556,6 @@ export async function executeManualLogin({
 
     try {
         await webRepository.clearCookies();
-        await vrchatAuthRepository.getConfig({
-            endpoint: loginParams.endpoint
-        });
         const response =
             await vrchatAuthRepository.loginWithBasicAuth(loginParams);
         const authResponse = parseAuthResponse(response.json);
@@ -639,9 +635,6 @@ export async function executeSavedCredentialLogin(
             await webRepository.setCookies(savedCredential.cookies);
         }
 
-        await vrchatAuthRepository.getConfig({
-            endpoint: loginParams.endpoint
-        });
         const response =
             await vrchatAuthRepository.loginWithBasicAuth(loginParams);
         const authResponse = parseAuthResponse(response.json);
