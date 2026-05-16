@@ -1,4 +1,12 @@
-import { executeVrchatBackendRequest } from './vrchatRequest.js';
+import { backend } from '@/platform/index.js';
+
+import {
+    createRequestError,
+    executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 
 const PAGE_SIZE = 50;
 const MAX_OFFSET = 7500;
@@ -36,6 +44,35 @@ async function executeDelete(path, params = null, { endpoint = '' } = {}) {
 
 async function executePost(path, params = null, { endpoint = '' } = {}) {
     return execute(path, { endpoint, method: 'POST', params });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendFriendResponse(
+    response: { status: number; data: unknown; raw: unknown },
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat friend request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 async function getFriends({
@@ -105,10 +142,13 @@ async function deleteFriend({ userId, endpoint = '' }) {
         );
     }
 
-    return executeDelete(
-        `auth/user/friends/${encodeURIComponent(normalizedUserId)}`,
-        null,
-        { endpoint }
+    const response = await backend.app.BackendFriendDelete({
+        userId: normalizedUserId,
+        endpoint
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        `auth/user/friends/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
@@ -141,10 +181,13 @@ async function sendFriendRequest({ userId, endpoint = '' }) {
         );
     }
 
-    return executePost(
-        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`,
-        null,
-        { endpoint }
+    const response = await backend.app.BackendFriendRequestSend({
+        userId: normalizedUserId,
+        endpoint
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`
     );
 }
 
@@ -168,10 +211,14 @@ async function cancelFriendRequest({
             ? { notificationId: notificationId.trim() }
             : null;
 
-    return executeDelete(
-        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`,
-        params,
-        { endpoint }
+    const response = await backend.app.BackendFriendRequestCancel({
+        userId: normalizedUserId,
+        notificationId: params?.notificationId || '',
+        endpoint
+    });
+    return unwrapBackendFriendResponse(
+        response,
+        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`
     );
 }
 

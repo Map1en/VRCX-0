@@ -3,8 +3,15 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache.js';
+import { backend } from '@/platform/index.js';
 
-import { executeVrchatBackendRequest } from './vrchatRequest.js';
+import {
+    createRequestError,
+    executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
+    parseJsonResponse,
+    unwrapErrorMessage
+} from './vrchatRequest.js';
 
 const FAVORITES_PAGE_SIZE = 300;
 const FAVORITE_GROUPS_PAGE_SIZE = 50;
@@ -15,6 +22,11 @@ type RequestOptions = {
 };
 type RequestParams = Record<string, string | number | boolean | undefined>;
 type RequestPayload = Record<string, unknown>;
+type BackendApiResult = {
+    status: number;
+    data: unknown;
+    raw: unknown;
+};
 
 interface FavoritePagingInput extends RequestOptions {
     n?: number;
@@ -104,6 +116,37 @@ async function executeDelete(
     });
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendFavoriteResponse<TJson = unknown>(
+    response: BackendApiResult,
+    path: string,
+    fallbackMessage: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const message = unwrapErrorMessage(json, response.status, {
+            fallbackMessage
+        });
+        const requestError = createRequestError(
+            message,
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status,
+        raw: response.raw
+    };
+}
+
 async function getFavoriteLimits({
     endpoint = '',
     force = false
@@ -157,14 +200,19 @@ async function addFavorite({
     favoriteId,
     tags
 }: FavoriteMutationInput = {}) {
-    return executePost(
+    const response = await backend.app.BackendFavoriteAdd({
+        endpoint,
+        type: typeof type === 'string' ? type : String(type ?? ''),
+        favoriteId:
+            typeof favoriteId === 'string'
+                ? favoriteId
+                : String(favoriteId ?? ''),
+        tags: typeof tags === 'string' ? tags : String(tags ?? '')
+    });
+    return unwrapBackendFavoriteResponse(
+        response,
         'favorites',
-        {
-            type,
-            favoriteId,
-            tags
-        },
-        { endpoint }
+        'VRChat favorite request failed'
     );
 }
 
@@ -182,9 +230,14 @@ async function deleteFavorite({
         );
     }
 
-    return executeDelete(
+    const response = await backend.app.BackendFavoriteDelete({
+        endpoint,
+        objectId: normalizedObjectId
+    });
+    return unwrapBackendFavoriteResponse(
+        response,
         `favorites/${encodeURIComponent(normalizedObjectId)}`,
-        { endpoint }
+        'VRChat favorite request failed'
     );
 }
 
@@ -374,10 +427,18 @@ async function saveFavoriteGroup({
         payload.visibility = visibility;
     }
 
-    return executePut(
+    const response = await backend.app.BackendFavoriteGroupSave({
+        endpoint,
+        ownerId: normalizedOwnerId,
+        type: normalizedType,
+        group: normalizedGroup,
+        displayName: payload.displayName as string | undefined,
+        visibility: payload.visibility as string | undefined
+    });
+    return unwrapBackendFavoriteResponse(
+        response,
         `favorite/group/${encodeURIComponent(normalizedType)}/${encodeURIComponent(normalizedGroup)}/${encodeURIComponent(normalizedOwnerId)}`,
-        payload,
-        { endpoint }
+        'VRChat favorite request failed'
     );
 }
 
@@ -402,9 +463,16 @@ async function clearFavoriteGroup({
         );
     }
 
-    return executeDelete(
+    const response = await backend.app.BackendFavoriteGroupClear({
+        endpoint,
+        ownerId: normalizedOwnerId,
+        type: normalizedType,
+        group: normalizedGroup
+    });
+    return unwrapBackendFavoriteResponse(
+        response,
         `favorite/group/${encodeURIComponent(normalizedType)}/${encodeURIComponent(normalizedGroup)}/${encodeURIComponent(normalizedOwnerId)}`,
-        { endpoint }
+        'VRChat favorite request failed'
     );
 }
 

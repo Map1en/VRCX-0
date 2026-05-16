@@ -4,11 +4,10 @@ import { safeJsonParse } from './baseRepository.js';
 import configRepository from './configRepository.js';
 import {
     createRequestError,
-    executeBackendHttpRequest,
     executeVrchatBackendRequest,
+    notifyVrchatAuthFailure,
     parseJsonResponse,
     type QueryParams,
-    type QueryValue,
     unwrapErrorMessage
 } from './vrchatRequest.js';
 
@@ -221,6 +220,35 @@ async function executeApi(
             fallbackMessage: 'VRChat notification request failed'
         }
     );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function unwrapBackendNotificationResponse(
+    response: { status: number; data: unknown; raw: unknown },
+    path: string
+) {
+    const json = parseJsonResponse(response.data);
+    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, response.status, {
+                fallbackMessage: 'VRChat notification request failed'
+            }),
+            response.status,
+            path,
+            json
+        );
+        notifyVrchatAuthFailure(requestError);
+        throw requestError;
+    }
+
+    return {
+        json,
+        status: response.status,
+        raw: response.raw
+    };
 }
 
 async function queryNotifications({
@@ -440,32 +468,18 @@ async function markSeen({ userId, id, version, endpoint = '' }) {
         return;
     }
 
-    if (Number(version) >= 2) {
-        await executeApi(
-            `notifications/${encodeURIComponent(normalizedId)}/see`,
-            {
-                endpoint,
-                method: 'POST'
-            }
-        );
-    } else {
-        await executeApi(
-            `auth/user/notifications/${encodeURIComponent(normalizedId)}/see`,
-            {
-                endpoint,
-                method: 'PUT'
-            }
-        );
-    }
-
-    if (Number(version) !== 2) {
-        return;
-    }
-
-    await backend.app.NotificationV2MarkSeen({
+    const numericVersion = Number(version) || 0;
+    const response = await backend.app.BackendNotificationMarkSeen({
         userId: normalizedUserId,
-        id: normalizedId
+        id: normalizedId,
+        version: numericVersion,
+        endpoint
     });
+    const path =
+        numericVersion >= 2
+            ? `notifications/${encodeURIComponent(normalizedId)}/see`
+            : `auth/user/notifications/${encodeURIComponent(normalizedId)}/see`;
+    unwrapBackendNotificationResponse(response, path);
 }
 
 async function markSeenLocalBulk({ userId, ids }) {
@@ -492,12 +506,13 @@ async function acceptFriendRequest({ id, endpoint = '' }) {
         return null;
     }
 
-    return executeApi(
-        `auth/user/notifications/${encodeURIComponent(normalizedId)}/accept`,
-        {
-            endpoint,
-            method: 'PUT'
-        }
+    const response = await backend.app.BackendNotificationAcceptFriendRequest({
+        id: normalizedId,
+        endpoint
+    });
+    return unwrapBackendNotificationResponse(
+        response,
+        `auth/user/notifications/${encodeURIComponent(normalizedId)}/accept`
     );
 }
 
@@ -518,33 +533,20 @@ async function hideRemoteNotification({
         return null;
     }
 
-    if (type === 'ignoredFriendRequest' && normalizedSenderUserId) {
-        return executeApi(
-            `user/${encodeURIComponent(normalizedSenderUserId)}/friendRequest`,
-            {
-                endpoint,
-                method: 'DELETE',
-                params: {
-                    notificationId: normalizedId
-                }
-            }
-        );
-    }
-
-    if (Number(version) >= 2) {
-        return executeApi(`notifications/${encodeURIComponent(normalizedId)}`, {
-            endpoint,
-            method: 'DELETE'
-        });
-    }
-
-    return executeApi(
-        `auth/user/notifications/${encodeURIComponent(normalizedId)}/hide`,
-        {
-            endpoint,
-            method: 'PUT'
-        }
-    );
+    const response = await backend.app.BackendNotificationHideRemote({
+        id: normalizedId,
+        version: Number(version) || 0,
+        type,
+        senderUserId: normalizedSenderUserId,
+        endpoint
+    });
+    const path =
+        type === 'ignoredFriendRequest' && normalizedSenderUserId
+            ? `user/${encodeURIComponent(normalizedSenderUserId)}/friendRequest`
+            : Number(version) >= 2
+              ? `notifications/${encodeURIComponent(normalizedId)}`
+              : `auth/user/notifications/${encodeURIComponent(normalizedId)}/hide`;
+    return unwrapBackendNotificationResponse(response, path);
 }
 
 async function sendNotificationResponse({
@@ -563,17 +565,15 @@ async function sendNotificationResponse({
         return null;
     }
 
-    return executeApi(
-        `notifications/${encodeURIComponent(normalizedId)}/respond`,
-        {
-            endpoint,
-            method: 'POST',
-            params: {
-                notificationId: normalizedId,
-                responseType: normalizedResponseType,
-                responseData: (responseData ?? '') as QueryValue
-            }
-        }
+    const response = await backend.app.BackendNotificationRespond({
+        id: normalizedId,
+        responseType: normalizedResponseType,
+        responseData: responseData ?? '',
+        endpoint
+    });
+    return unwrapBackendNotificationResponse(
+        response,
+        `notifications/${encodeURIComponent(normalizedId)}/respond`
     );
 }
 
@@ -589,14 +589,15 @@ async function sendInviteResponse({
         return null;
     }
 
-    return executeApi(`invite/${encodeURIComponent(normalizedId)}/response`, {
-        endpoint,
-        method: 'POST',
-        params: {
-            responseSlot: normalizedSlot,
-            rsvp: true
-        }
+    const response = await backend.app.BackendInviteResponseSend({
+        id: normalizedId,
+        responseSlot: normalizedSlot,
+        endpoint
     });
+    return unwrapBackendNotificationResponse(
+        response,
+        `invite/${encodeURIComponent(normalizedId)}/response`
+    );
 }
 
 async function sendInviteResponsePhoto({
@@ -621,45 +622,13 @@ async function sendInviteResponsePhoto({
     }
 
     const path = `invite/${encodeURIComponent(normalizedId)}/response/photo`;
-    const response = await executeBackendHttpRequest('VrchatMediaExecute', {
-        path,
-        endpoint,
-        uploadImageLegacy: true,
-        postData: JSON.stringify({
-            responseSlot: normalizedSlot,
-            rsvp: true
-        }),
-        imageData: normalizedImageData
+    const response = await backend.app.BackendInviteResponsePhotoSend({
+        id: normalizedId,
+        responseSlot: normalizedSlot,
+        imageData: normalizedImageData,
+        endpoint
     });
-    const json = parseJsonResponse(response.data);
-
-    if (response.status >= 400) {
-        throw createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat notification request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    if (json && typeof json === 'object' && 'error' in json) {
-        throw createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat notification request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapBackendNotificationResponse(response, path);
 }
 
 async function sendInvite({
@@ -675,13 +644,14 @@ async function sendInvite({
         return null;
     }
 
-    return executeApi(
-        `invite/${encodeURIComponent(normalizedReceiverUserId)}`,
-        {
-            endpoint,
-            method: 'POST',
-            params
-        }
+    const response = await backend.app.BackendInviteSend({
+        receiverUserId: normalizedReceiverUserId,
+        params,
+        endpoint
+    });
+    return unwrapBackendNotificationResponse(
+        response,
+        `invite/${encodeURIComponent(normalizedReceiverUserId)}`
     );
 }
 
@@ -698,13 +668,14 @@ async function sendRequestInvite({
         return null;
     }
 
-    return executeApi(
-        `requestInvite/${encodeURIComponent(normalizedReceiverUserId)}`,
-        {
-            endpoint,
-            method: 'POST',
-            params
-        }
+    const response = await backend.app.BackendRequestInviteSend({
+        receiverUserId: normalizedReceiverUserId,
+        params,
+        endpoint
+    });
+    return unwrapBackendNotificationResponse(
+        response,
+        `requestInvite/${encodeURIComponent(normalizedReceiverUserId)}`
     );
 }
 
@@ -725,11 +696,15 @@ async function sendBoop({
         typeof emojiId === 'string'
             ? emojiId.trim()
             : String(emojiId ?? '').trim();
-    return executeApi(`users/${encodeURIComponent(normalizedUserId)}/boop`, {
-        endpoint,
-        method: 'POST',
-        params: normalizedEmojiId ? { emojiId: normalizedEmojiId } : {}
+    const response = await backend.app.BackendBoopSend({
+        userId: normalizedUserId,
+        emojiId: normalizedEmojiId,
+        endpoint
     });
+    return unwrapBackendNotificationResponse(
+        response,
+        `users/${encodeURIComponent(normalizedUserId)}/boop`
+    );
 }
 
 const notificationRepository = Object.freeze({

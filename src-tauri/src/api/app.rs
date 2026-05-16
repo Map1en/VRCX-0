@@ -1,5 +1,8 @@
 pub mod backend_auth;
+pub mod backend_favorites;
+pub mod backend_friends;
 pub mod backend_moderation;
+pub mod backend_notifications;
 pub mod backend_runtime;
 pub mod backend_social;
 pub mod calendar;

@@ -251,13 +251,11 @@ async function createLocalFavoriteGroup({
         );
     }
 
-    const groups = normalizeGroupList(await configRepository.getArray(key, []));
-    if (!groups.includes(normalizedGroupName)) {
-        await configRepository.setArray(
-            key,
-            [...groups, normalizedGroupName].sort()
-        );
-    }
+    await backend.app.BackendLocalFavoriteGroupCreate({
+        kind: String(kind),
+        groupName: normalizedGroupName
+    });
+    await configRepository.reload();
 }
 
 async function getWorldFavorites() {
@@ -343,8 +341,8 @@ async function addLocalFavorite({
         );
     }
 
-    return backend.app.FavoriteAdd({
-        kind,
+    return backend.app.BackendLocalFavoriteAdd({
+        kind: String(kind),
         entityId: normalizedEntityId,
         groupName: normalizedGroupName
     });
@@ -389,8 +387,8 @@ async function removeLocalFavorite({
         );
     }
 
-    return backend.app.FavoriteRemove({
-        kind,
+    return backend.app.BackendLocalFavoriteRemove({
+        kind: String(kind),
         entityId: normalizedEntityId,
         groupName: normalizedGroupName
     });
@@ -411,22 +409,13 @@ async function renameLocalFavoriteGroup({
         );
     }
 
-    const result = await backend.app.FavoriteGroupRename({
-        kind,
+    const result = await backend.app.BackendLocalFavoriteGroupRename({
+        kind: String(kind),
         groupName: normalizedGroupName,
         newGroupName: normalizedNewGroupName
     });
 
-    const key = getLocalFavoriteGroupConfigKey(kind);
-    if (key) {
-        const groups = normalizeGroupList(
-            await configRepository.getArray(key, [])
-        ).filter((value) => value !== normalizedGroupName);
-        await configRepository.setArray(
-            key,
-            [...groups, normalizedNewGroupName].sort()
-        );
-    }
+    await configRepository.reload();
 
     return result;
 }
@@ -444,18 +433,12 @@ async function deleteLocalFavoriteGroup({
         );
     }
 
-    const result = await backend.app.FavoriteGroupDelete({
-        kind,
+    const result = await backend.app.BackendLocalFavoriteGroupDelete({
+        kind: String(kind),
         groupName: normalizedGroupName
     });
 
-    const key = getLocalFavoriteGroupConfigKey(kind);
-    if (key) {
-        const groups = normalizeGroupList(
-            await configRepository.getArray(key, [])
-        ).filter((value) => value !== normalizedGroupName);
-        await configRepository.setArray(key, groups);
-    }
+    await configRepository.reload();
 
     return result;
 }

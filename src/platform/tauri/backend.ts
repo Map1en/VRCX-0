@@ -179,6 +179,12 @@ export interface BackendModerationUpdateResult {
     } | null;
 }
 
+export interface BackendHttpApiResult {
+    status: number;
+    data: unknown;
+    raw: unknown;
+}
+
 export interface BackendFavoritesBaselineResult {
     userId: string;
     stale: boolean;
@@ -204,6 +210,66 @@ export interface AppBackendNamespace extends BackendNamespace {
         userId?: string;
         endpoint?: string;
     }): Promise<BackendAuthScopeSnapshot>;
+    BackendFavoriteAdd(input: {
+        endpoint?: string;
+        type: string;
+        favoriteId: string;
+        tags: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendFavoriteDelete(input: {
+        endpoint?: string;
+        objectId: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendFavoriteGroupClear(input: {
+        endpoint?: string;
+        ownerId: string;
+        type: string;
+        group: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendFavoriteGroupSave(input: {
+        endpoint?: string;
+        ownerId: string;
+        type: string;
+        group: string;
+        displayName?: string;
+        visibility?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendLocalFavoriteAdd(input: {
+        kind: string;
+        entityId: string;
+        groupName: string;
+    }): Promise<number>;
+    BackendLocalFavoriteRemove(input: {
+        kind: string;
+        entityId: string;
+        groupName: string;
+    }): Promise<number>;
+    BackendLocalFavoriteGroupCreate(input: {
+        kind: string;
+        groupName: string;
+    }): Promise<void>;
+    BackendLocalFavoriteGroupRename(input: {
+        kind: string;
+        groupName: string;
+        newGroupName: string;
+    }): Promise<number>;
+    BackendLocalFavoriteGroupDelete(input: {
+        kind: string;
+        groupName: string;
+    }): Promise<number>;
+    BackendFriendDelete(input: {
+        userId: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendFriendRequestSend(input: {
+        userId: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendFriendRequestCancel(input: {
+        userId: string;
+        notificationId?: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
     BackendBackgroundJobRecord(input: {
         name: string;
         owner?: string;
@@ -225,6 +291,55 @@ export interface AppBackendNamespace extends BackendNamespace {
         type: string;
         enabled: boolean;
     }): Promise<BackendModerationUpdateResult>;
+    BackendNotificationMarkSeen(input: {
+        userId: string;
+        id: string;
+        version: number;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendNotificationAcceptFriendRequest(input: {
+        id: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendNotificationHideRemote(input: {
+        id: string;
+        version?: number;
+        type?: string;
+        senderUserId?: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendNotificationRespond(input: {
+        id: string;
+        responseType: string;
+        responseData?: unknown;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendInviteResponseSend(input: {
+        id: string;
+        responseSlot: number;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendInviteResponsePhotoSend(input: {
+        id: string;
+        responseSlot: number;
+        imageData: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendInviteSend(input: {
+        receiverUserId: string;
+        params?: Record<string, unknown>;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendRequestInviteSend(input: {
+        receiverUserId: string;
+        params?: Record<string, unknown>;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
+    BackendBoopSend(input: {
+        userId: string;
+        emojiId?: string;
+        endpoint?: string;
+    }): Promise<BackendHttpApiResult>;
     BackendFavoritesBaselineGet(input: {
         userId: string;
         endpoint?: string;
