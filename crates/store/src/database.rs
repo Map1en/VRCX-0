@@ -473,6 +473,11 @@ impl DatabaseService {
     }
 }
 
+pub fn optimize_database(db: &DatabaseService) -> Result<(), Error> {
+    db.execute_non_query("PRAGMA optimize", &Default::default())?;
+    Ok(())
+}
+
 impl DatabaseWriteTransaction<'_> {
     #[allow(dead_code)]
     pub fn execute(

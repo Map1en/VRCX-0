@@ -1,16 +1,16 @@
 use std::sync::Arc;
-#[cfg(test)]
-use std::time::Duration;
 
 use crate::backend::context::BackendContext;
 use crate::domain::log_watcher::{GameLogEvent, GameLogEventSink, LogWatcher};
 use crate::domain::process_monitor::{GameProcessEvent, GameProcessEventSink};
 use crate::error::AppError;
 
-use crate::backend::worker::{BackendWorker, BackendWorkerOptions};
 use vrcx_0_runtime::game_log::ingest::GameLogProcessEvent;
-
-use super::ingest::{GameLogProcessor, GameLogWorkerJob};
+use vrcx_0_runtime::game_log::processor::{
+    GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob,
+};
+use vrcx_0_runtime::worker::{BackendWorker, BackendWorkerOptions};
+use vrcx_0_runtime::Result as RuntimeResult;
 
 pub struct GameLogBackend {
     pub(super) context: Arc<BackendContext>,
@@ -19,7 +19,15 @@ pub struct GameLogBackend {
 
 impl GameLogBackend {
     pub fn new(context: Arc<BackendContext>) -> Self {
-        let processor = GameLogProcessor::new(Arc::clone(&context));
+        let processor = GameLogProcessor::new(GameLogProcessorDeps {
+            db: Arc::clone(&context.db),
+            web: Arc::clone(&context.web),
+            image_cache: Arc::clone(&context.image_cache),
+            event_bus: context.event_bus.clone(),
+            tasks: context.tasks.clone(),
+            sync: context.sync.clone(),
+            snapshot: context.game_log_snapshot_handle(),
+        });
         let worker_processor = processor.clone();
         let worker = BackendWorker::start(
             "game-log",
@@ -37,17 +45,7 @@ impl GameLogBackend {
         Ok(())
     }
 
-    pub fn ingest_events(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
-        if events.is_empty() {
-            return Ok(());
-        }
-
-        self.worker
-            .push_batch(events.iter().cloned().map(GameLogWorkerJob::Event))?;
-        Ok(())
-    }
-
-    fn enqueue_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
+    fn enqueue_process_event(&self, event: GameProcessEvent) -> RuntimeResult<()> {
         let snapshot = self.context.session.snapshot();
         let changed_at = snapshot.last_game_state_changed_at.unwrap_or_else(|| {
             chrono::Utc::now()
@@ -63,31 +61,28 @@ impl GameLogBackend {
             })])?;
         Ok(())
     }
-
-    #[cfg(test)]
-    pub(super) fn wait_until_idle_for_test(&self) -> bool {
-        self.worker.wait_until_idle(Duration::from_secs(2))
-    }
 }
 
 impl GameLogEventSink for GameLogBackend {
-    fn ingest_game_log_event(
-        &self,
-        event: &crate::domain::log_watcher::GameLogEvent,
-    ) -> Result<(), AppError> {
-        self.ingest_events(std::slice::from_ref(event))
+    fn ingest_game_log_event(&self, event: &GameLogEvent) -> RuntimeResult<()> {
+        self.worker
+            .push_batch([GameLogWorkerJob::Event(event.clone())])?;
+        Ok(())
     }
 
-    fn ingest_game_log_events(
-        &self,
-        events: &[crate::domain::log_watcher::GameLogEvent],
-    ) -> Result<(), AppError> {
-        self.ingest_events(events)
+    fn ingest_game_log_events(&self, events: &[GameLogEvent]) -> RuntimeResult<()> {
+        if events.is_empty() {
+            return Ok(());
+        }
+
+        self.worker
+            .push_batch(events.iter().cloned().map(GameLogWorkerJob::Event))?;
+        Ok(())
     }
 }
 
 impl GameProcessEventSink for GameLogBackend {
-    fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> RuntimeResult<()> {
         self.enqueue_process_event(event)
     }
 }

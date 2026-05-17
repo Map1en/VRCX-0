@@ -9,9 +9,8 @@ use vrcx_0_core::friends::FriendRecord;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use crate::backend::realtime::types::RealtimeTransportStartResult;
 use crate::backend::realtime::RealtimeStopRequest;
-use vrcx_0_runtime::realtime::types::FriendBaselineResult;
+use vrcx_0_runtime::realtime::types::{FriendBaselineResult, RealtimeTransportStartResult};
 
 #[tauri::command]
 pub fn app__start_realtime_transport(
@@ -23,14 +22,14 @@ pub fn app__start_realtime_transport(
     current_user_snapshot: Value,
     friends_by_id: HashMap<String, FriendRecord>,
 ) -> Result<RealtimeTransportStartResult, AppError> {
-    state.realtime_backend.start(
+    Ok(state.realtime_backend.start(
         user_id,
         endpoint,
         websocket,
         client_run_id,
         current_user_snapshot,
         friends_by_id,
-    )
+    )?)
 }
 
 #[tauri::command]
@@ -42,13 +41,13 @@ pub fn app__sync_realtime_friend_snapshot(
     generation: Option<u64>,
     friends_by_id: HashMap<String, FriendRecord>,
 ) -> Result<FriendBaselineResult, AppError> {
-    state.realtime_backend.sync_friend_snapshot(
+    Ok(state.realtime_backend.sync_friend_snapshot(
         user_id,
         endpoint,
         websocket,
         generation,
         friends_by_id,
-    )
+    )?)
 }
 
 #[tauri::command]
@@ -61,14 +60,14 @@ pub fn app__sync_realtime_current_user_snapshot(
     snapshot: Value,
     overlay_patch: Value,
 ) -> Result<bool, AppError> {
-    state.realtime_backend.sync_current_user_snapshot(
+    Ok(state.realtime_backend.sync_current_user_snapshot(
         user_id,
         endpoint,
         websocket,
         generation,
         snapshot,
         overlay_patch,
-    )
+    )?)
 }
 
 #[tauri::command]
@@ -77,9 +76,9 @@ pub fn app__expire_realtime_notification(
     user_id: String,
     notification_id: String,
 ) -> Result<(), AppError> {
-    state
+    Ok(state
         .realtime_backend
-        .expire_notification(user_id, notification_id)
+        .expire_notification(user_id, notification_id)?)
 }
 
 #[tauri::command]

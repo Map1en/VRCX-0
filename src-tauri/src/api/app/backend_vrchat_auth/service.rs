@@ -578,7 +578,7 @@ pub fn app__backend_auth_logout_record(
     };
     let clear_last_user_logged_in = input
         .clear_last_user_logged_in
-        .unwrap_or_else(|| !user_id.is_empty());
+        .unwrap_or(!user_id.is_empty());
 
     if !user_id.is_empty() {
         let mut saved_credentials = read_saved_credentials_map(&state)?;

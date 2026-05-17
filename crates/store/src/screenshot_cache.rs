@@ -322,6 +322,17 @@ impl MetadataCacheDb {
         Ok(deleted)
     }
 
+    #[doc(hidden)]
+    pub fn mark_library_entry_stale_for_test(&self, path: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE screenshot_files SET index_version = 0, metadata_json = NULL WHERE path = ?1",
+            [path],
+        )
+        .map_err(|error| Error::Database(format!("mark screenshot row stale: {error}")))?;
+        Ok(())
+    }
+
     pub fn screenshot_folder_tree_for_root(&self, root_path: &str) -> Result<ScreenshotFolderTree> {
         let conn = self.conn.lock().unwrap();
         let mut direct_counts: HashMap<String, usize> = HashMap::new();

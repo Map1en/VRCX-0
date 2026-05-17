@@ -20,8 +20,6 @@ reqwest = { version = "0.13", features = [
     "socks"
 ] }
 tokio = { version = "1", features = ["sync", "macros", "time", "net", "io-util"] }
-tokio-tungstenite = { version = "0.29", features = ["rustls-tls-native-roots"] }
-futures-util = "0.3"
 rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
 base64 = "0.22"
 tauri-plugin-opener = "2"
@@ -35,10 +33,10 @@ percent-encoding = "2"
 tauri-plugin-updater = "2.10.1"
 vrcx-0-core = { path = "../crates/core" }
 vrcx-0-store = { path = "../crates/store" }
-vrcx-0-vrchat = { path = "../crates/vrchat" }
 vrcx-0-host = { path = "../crates/host" }
 vrcx-0-media = { path = "../crates/media" }
 vrcx-0-runtime = { path = "../crates/runtime" }
+vrcx-0-vrchat = { path = "../crates/vrchat" }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [
@@ -58,3 +56,4 @@ tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
 image = "0.25"
+vrcx-0-runtime = { path = "../crates/runtime", features = ["test-utils"] }

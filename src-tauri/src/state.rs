@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::backend::context::BackendContext;
 use crate::backend::game_client::GameClientBackend;
 use crate::backend::game_log::GameLogBackend;
-use crate::backend::realtime::RealtimeBackend;
+use crate::backend::realtime::{RealtimeBackend, RealtimeBackendDeps};
 use crate::backend::session::SessionBackend;
 use crate::domain::ipc::{IpcEventSink, IpcServer};
 use crate::domain::log_watcher::{GameLogEventSink, LogWatcher};
@@ -85,8 +85,19 @@ impl AppState {
             Arc::clone(&backend_context),
             log_watcher.clone(),
         ));
-        let realtime_backend = Arc::new(RealtimeBackend::new(Arc::clone(&backend_context)));
-        let session_backend = Arc::new(SessionBackend::new(Arc::clone(&backend_context)));
+        let realtime_backend = Arc::new(RealtimeBackend::new(RealtimeBackendDeps {
+            db: Arc::clone(&backend_context.db),
+            web: Arc::clone(&backend_context.web),
+            event_bus: backend_context.event_bus.clone(),
+            sync: backend_context.sync.clone(),
+            tasks: backend_context.tasks.clone(),
+            session: backend_context.session.clone(),
+            game_log_snapshot: backend_context.game_log_snapshot_handle(),
+        }));
+        let session_backend = Arc::new(SessionBackend::new(
+            backend_context.session.clone(),
+            backend_context.event_bus.clone(),
+        ));
         let ipc_sink: Arc<dyn IpcEventSink> = game_client_backend.clone();
         let ipc = IpcServer::new(Some(ipc_sink));
         let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))?;

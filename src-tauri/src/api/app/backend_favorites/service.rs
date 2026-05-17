@@ -5,9 +5,8 @@ use std::collections::HashMap;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_store::common::ParamsBuilder;
+use vrcx_0_store::config::ConfigRepository;
 
-use crate::api::app::local_data::types::ConfigWriteEntry;
 use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestInput};
 use crate::error::AppError;
 use crate::state::AppState;
@@ -212,15 +211,6 @@ pub async fn app__backend_favorite_groups_get(
     .await
 }
 
-fn normalize_config_key(key: &str) -> String {
-    let key = key.trim();
-    if key.starts_with("config:") {
-        return key.to_string();
-    }
-    let stripped = key.strip_prefix("VRCX_").unwrap_or(key);
-    format!("config:vrcx_{}", stripped.to_ascii_lowercase())
-}
-
 fn local_group_config_key(kind: &str) -> Result<&'static str, AppError> {
     match kind.trim() {
         "friend" => Ok("localFavoriteFriendGroups"),
@@ -231,22 +221,9 @@ fn local_group_config_key(kind: &str) -> Result<&'static str, AppError> {
 }
 
 fn read_config_array(state: &State<'_, AppState>, key: &str) -> Result<Vec<String>, AppError> {
-    super::super::local_data::app__config_set_values(state.clone(), Vec::new())?;
-    let normalized_key = normalize_config_key(key);
-    let Some(row) = state
-        .db
-        .execute(
-            "SELECT value FROM configs WHERE key = @key LIMIT 1",
-            &ParamsBuilder::new().set("key", normalized_key).build(),
-        )?
-        .first()
-        .cloned()
-    else {
-        return Ok(Vec::new());
-    };
-
-    let text = row.first().map(value_as_string).unwrap_or_default();
-    let parsed = serde_json::from_str::<Value>(&text).unwrap_or(Value::Null);
+    let parsed = ConfigRepository::new(state.db.clone())
+        .get_json(key, Value::Null)
+        .map_err(AppError::from)?;
     let mut values = parsed
         .as_array()
         .map(|items| {
@@ -276,15 +253,9 @@ fn write_config_array(
     key: &str,
     values: Vec<String>,
 ) -> Result<(), AppError> {
-    let value = serde_json::to_string(&values)
-        .map_err(|error| AppError::Custom(format!("serialize config array: {error}")))?;
-    super::super::local_data::app__config_set_values(
-        state,
-        vec![ConfigWriteEntry {
-            key: key.into(),
-            value,
-        }],
-    )
+    ConfigRepository::new(state.db.clone())
+        .set_json(key, &json!(values))
+        .map_err(AppError::from)
 }
 
 fn add_group_value(groups: &mut Vec<String>, group_name: String) {

@@ -3,17 +3,16 @@ use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::Path;
 
 use chrono::{Local, NaiveDateTime};
-use tauri::AppHandle;
 use vrcx_0_core::log_watcher::{clean_location, parse_log_line_header};
 
 use super::context::LogContext;
-use super::event::GameLogEventKind;
+use super::event::{GameLogEventKind, LogWatcherCompatEventSinkHandle};
 use super::queue::append_event;
 use super::watcher::Inner;
 
 pub(super) fn parse_log(
     inner: &Inner,
-    app_handle: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     path: &Path,
     file_name: &str,
     ctx: &mut LogContext,
@@ -44,7 +43,7 @@ pub(super) fn parse_log(
             continue;
         }
 
-        if parse_udon_exception(inner, app_handle, file_name, trimmed, first_run) {
+        if parse_udon_exception(inner, compat_event_sink, file_name, trimmed, first_run) {
             continue;
         }
 
@@ -63,62 +62,237 @@ pub(super) fn parse_log(
 
         if content.starts_with('[') {
             let _ = parse_player_joined_or_left(
-                inner, app_handle, file_name, trimmed, content, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
             ) || parse_location(
-                inner, app_handle, file_name, trimmed, content, ctx, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
             ) || parse_location_destination(
-                inner, app_handle, file_name, trimmed, content, ctx, first_run,
-            ) || parse_portal_spawn(inner, app_handle, file_name, trimmed, first_run)
-                || parse_notification(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_api_request(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_avatar_change(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_join_blocked(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_avatar_pedestal_change(
-                    inner, app_handle, file_name, trimmed, content, first_run,
-                )
-                || parse_video_error(
-                    inner, app_handle, file_name, trimmed, content, ctx, first_run,
-                )
-                || parse_video_change(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_avpro_video_change(
-                    inner, app_handle, file_name, trimmed, content, first_run,
-                )
-                || parse_usharp_video_play(
-                    inner, app_handle, file_name, trimmed, content, first_run,
-                )
-                || parse_usharp_video_sync(
-                    inner, app_handle, file_name, trimmed, content, first_run,
-                )
-                || parse_world_vrcx(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_audio_config(
-                    inner, app_handle, file_name, trimmed, content, ctx, first_run,
-                )
-                || parse_screenshot(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_string_download(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_image_download(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_vote_kick(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_failed_to_join(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_instance_reset(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_vote_kick_init(inner, app_handle, file_name, trimmed, content, first_run)
-                || parse_vote_kick_success(
-                    inner, app_handle, file_name, trimmed, content, first_run,
-                )
-                || parse_sticker_spawn(inner, app_handle, file_name, trimmed, content, first_run);
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
+            ) || parse_portal_spawn(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                first_run,
+            ) || parse_notification(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_api_request(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_avatar_change(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_join_blocked(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_avatar_pedestal_change(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_video_error(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
+            ) || parse_video_change(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_avpro_video_change(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_usharp_video_play(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_usharp_video_sync(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_world_vrcx(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_audio_config(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
+            ) || parse_screenshot(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_string_download(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_image_download(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_vote_kick(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_failed_to_join(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_instance_reset(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_vote_kick_init(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_vote_kick_success(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            ) || parse_sticker_spawn(
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
+            );
         } else {
             let _ = parse_shader_keywords_limit(
-                inner, app_handle, file_name, trimmed, content, ctx, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
             ) || parse_sdk2_video_play(
-                inner, app_handle, file_name, trimmed, content, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
             ) || parse_application_quit(
-                inner, app_handle, file_name, trimmed, content, ctx, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
             ) || parse_openvr_init(
-                inner, app_handle, file_name, trimmed, content, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
             ) || parse_desktop_mode(
-                inner, app_handle, file_name, trimmed, content, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
             ) || parse_osc_failed(
-                inner, app_handle, file_name, trimmed, content, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                first_run,
             ) || parse_untrusted_url(
-                inner, app_handle, file_name, trimmed, content, ctx, first_run,
+                inner,
+                compat_event_sink,
+                file_name,
+                trimmed,
+                content,
+                ctx,
+                first_run,
             );
         }
     }
@@ -143,7 +317,7 @@ fn parse_user_info(s: &str) -> (String, String) {
 
 fn parse_location(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -165,7 +339,7 @@ fn parse_location(
             let location = clean_location(&line[pos + 10..]);
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::Location {
@@ -186,7 +360,7 @@ fn parse_location(
 
 fn parse_location_destination(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -196,7 +370,7 @@ fn parse_location_destination(
     if content.contains("[Behaviour] OnLeftRoom") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::LocationDestination {
@@ -220,7 +394,7 @@ fn parse_location_destination(
 
 fn parse_player_joined_or_left(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -233,7 +407,7 @@ fn parse_player_joined_or_left(
             if !display_name.is_empty() || !user_id.is_empty() {
                 append_event(
                     inner,
-                    app,
+                    compat_event_sink,
                     fname,
                     line,
                     GameLogEventKind::PlayerJoined {
@@ -257,7 +431,7 @@ fn parse_player_joined_or_left(
             if !display_name.is_empty() || !user_id.is_empty() {
                 append_event(
                     inner,
-                    app,
+                    compat_event_sink,
                     fname,
                     line,
                     GameLogEventKind::PlayerLeft {
@@ -276,7 +450,7 @@ fn parse_player_joined_or_left(
 
 fn parse_portal_spawn(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     first_run: bool,
@@ -286,7 +460,7 @@ fn parse_portal_spawn(
     {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::PortalSpawn,
@@ -299,7 +473,7 @@ fn parse_portal_spawn(
 
 fn parse_notification(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -313,7 +487,7 @@ fn parse_notification(
             let data = &line[start + 30..pos];
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::Notification { data: data.into() },
@@ -326,7 +500,7 @@ fn parse_notification(
 
 fn parse_api_request(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -339,7 +513,7 @@ fn parse_api_request(
         let data = &line[pos + 25..];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::ApiRequest { url: data.into() },
@@ -352,7 +526,7 @@ fn parse_api_request(
 
 fn parse_avatar_change(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -367,7 +541,7 @@ fn parse_avatar_change(
             let avatar_name = &line[pos + 11..];
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::AvatarChange {
@@ -383,7 +557,7 @@ fn parse_avatar_change(
 
 fn parse_join_blocked(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -394,7 +568,7 @@ fn parse_join_blocked(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -407,7 +581,7 @@ fn parse_join_blocked(
 
 fn parse_avatar_pedestal_change(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -420,7 +594,7 @@ fn parse_avatar_pedestal_change(
     let data = &content[tag.len()..];
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -433,7 +607,7 @@ fn parse_avatar_pedestal_change(
 
 fn parse_video_error(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -454,7 +628,7 @@ fn parse_video_error(
             }
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::Event {
@@ -477,7 +651,7 @@ fn parse_video_error(
             }
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::Event {
@@ -494,7 +668,7 @@ fn parse_video_error(
 
 fn parse_video_change(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -509,7 +683,7 @@ fn parse_video_change(
         let url = &rest[..end];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::VideoPlay {
@@ -524,7 +698,7 @@ fn parse_video_change(
 
 fn parse_avpro_video_change(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -539,7 +713,7 @@ fn parse_avpro_video_change(
         let url = &rest[..end];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::VideoPlay {
@@ -554,7 +728,7 @@ fn parse_avpro_video_change(
 
 fn parse_sdk2_video_play(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -568,7 +742,7 @@ fn parse_sdk2_video_play(
         let url = &content[pos + 11..];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::VideoPlay {
@@ -584,7 +758,7 @@ fn parse_sdk2_video_play(
 
 fn parse_usharp_video_play(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -599,7 +773,7 @@ fn parse_usharp_video_play(
         let display_name = &content[pos + 15..];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::VideoPlay {
@@ -614,7 +788,7 @@ fn parse_usharp_video_play(
 
 fn parse_usharp_video_sync(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -627,7 +801,7 @@ fn parse_usharp_video_sync(
     let data = &content[tag.len()..];
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::VideoSync {
@@ -640,7 +814,7 @@ fn parse_usharp_video_sync(
 
 fn parse_world_vrcx(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -652,7 +826,7 @@ fn parse_world_vrcx(
     let data = &content[7..];
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Vrcx { data: data.into() },
@@ -663,7 +837,7 @@ fn parse_world_vrcx(
 
 fn parse_screenshot(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -676,7 +850,7 @@ fn parse_screenshot(
         let path = &line[pos + 22..];
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::Screenshot { path: path.into() },
@@ -688,7 +862,7 @@ fn parse_screenshot(
 
 fn parse_shader_keywords_limit(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -703,7 +877,7 @@ fn parse_shader_keywords_limit(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -717,7 +891,7 @@ fn parse_shader_keywords_limit(
 
 fn parse_application_quit(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -731,7 +905,7 @@ fn parse_application_quit(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::VrcQuit,
@@ -743,7 +917,7 @@ fn parse_application_quit(
 
 fn parse_openvr_init(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -754,7 +928,7 @@ fn parse_openvr_init(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::OpenVrInit,
@@ -765,7 +939,7 @@ fn parse_openvr_init(
 
 fn parse_desktop_mode(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -776,7 +950,7 @@ fn parse_desktop_mode(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::DesktopMode,
@@ -787,7 +961,7 @@ fn parse_desktop_mode(
 
 fn parse_string_download(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -808,7 +982,7 @@ fn parse_string_download(
             }
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::ResourceLoad {
@@ -824,7 +998,7 @@ fn parse_string_download(
 
 fn parse_image_download(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -845,7 +1019,7 @@ fn parse_image_download(
             }
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::ResourceLoad {
@@ -861,7 +1035,7 @@ fn parse_image_download(
 
 fn parse_vote_kick(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -873,7 +1047,7 @@ fn parse_vote_kick(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -886,7 +1060,7 @@ fn parse_vote_kick(
 
 fn parse_failed_to_join(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -898,7 +1072,7 @@ fn parse_failed_to_join(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -911,7 +1085,7 @@ fn parse_failed_to_join(
 
 fn parse_osc_failed(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -922,7 +1096,7 @@ fn parse_osc_failed(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -935,7 +1109,7 @@ fn parse_osc_failed(
 
 fn parse_untrusted_url(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -950,7 +1124,7 @@ fn parse_untrusted_url(
     }
     append_event(
         inner,
-        app,
+        compat_event_sink,
         fname,
         line,
         GameLogEventKind::Event {
@@ -963,7 +1137,7 @@ fn parse_untrusted_url(
 
 fn parse_instance_reset(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -975,7 +1149,7 @@ fn parse_instance_reset(
     if let Some(pos) = content.find("[ModerationManager] ") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::Event {
@@ -989,7 +1163,7 @@ fn parse_instance_reset(
 
 fn parse_vote_kick_init(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -1001,7 +1175,7 @@ fn parse_vote_kick_init(
     if let Some(pos) = content.find("[ModerationManager] ") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::Event {
@@ -1015,7 +1189,7 @@ fn parse_vote_kick_init(
 
 fn parse_vote_kick_success(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -1027,7 +1201,7 @@ fn parse_vote_kick_success(
     if let Some(pos) = content.find("[ModerationManager] ") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::Event {
@@ -1041,7 +1215,7 @@ fn parse_vote_kick_success(
 
 fn parse_sticker_spawn(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -1070,7 +1244,7 @@ fn parse_sticker_spawn(
         };
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::StickerSpawn {
@@ -1086,7 +1260,7 @@ fn parse_sticker_spawn(
 
 fn parse_audio_config(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     content: &str,
@@ -1116,7 +1290,7 @@ fn parse_audio_config(
             }
             append_event(
                 inner,
-                app,
+                compat_event_sink,
                 fname,
                 line,
                 GameLogEventKind::Event {
@@ -1135,7 +1309,7 @@ fn parse_audio_config(
 
 fn parse_udon_exception(
     inner: &Inner,
-    app: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     fname: &str,
     line: &str,
     first_run: bool,
@@ -1143,7 +1317,7 @@ fn parse_udon_exception(
     if line.contains("[PyPyDance]") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::UdonException { data: line.into() },
@@ -1154,7 +1328,7 @@ fn parse_udon_exception(
     if let Some(pos) = line.find(" ---> VRC.Udon.VM.UdonVMException: ") {
         append_event(
             inner,
-            app,
+            compat_event_sink,
             fname,
             line,
             GameLogEventKind::UdonException {

@@ -3,8 +3,8 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use crate::backend::event_bus::BackendEventBus;
-use crate::error::AppError;
+use crate::event_bus::BackendEventBus;
+use crate::{Error, Result};
 
 const DEFAULT_CAPACITY: usize = 8192;
 const DEFAULT_MAX_BATCH: usize = 256;
@@ -43,14 +43,14 @@ pub struct BackendPushReport {
 }
 
 pub trait BackendJobHandler<T>: Send + Sync + 'static {
-    fn handle_batch(&self, batch: Vec<T>) -> Result<(), AppError>;
+    fn handle_batch(&self, batch: Vec<T>) -> Result<()>;
 }
 
 impl<T, F> BackendJobHandler<T> for F
 where
-    F: Fn(Vec<T>) -> Result<(), AppError> + Send + Sync + 'static,
+    F: Fn(Vec<T>) -> Result<()> + Send + Sync + 'static,
 {
-    fn handle_batch(&self, batch: Vec<T>) -> Result<(), AppError> {
+    fn handle_batch(&self, batch: Vec<T>) -> Result<()> {
         self(batch)
     }
 }
@@ -123,27 +123,25 @@ where
         }
     }
 
-    pub fn push_batch(
-        &self,
-        batch: impl IntoIterator<Item = T>,
-    ) -> Result<BackendPushReport, AppError> {
+    pub fn push_batch(&self, batch: impl IntoIterator<Item = T>) -> Result<BackendPushReport> {
         let mut report = BackendPushReport::default();
-        let mut state = self.inner.state.lock().map_err(|error| {
-            AppError::Custom(format!("{} worker lock: {error}", self.inner.name))
-        })?;
+        let mut state =
+            self.inner.state.lock().map_err(|error| {
+                Error::Custom(format!("{} worker lock: {error}", self.inner.name))
+            })?;
 
         for item in batch {
             while state.queue.len() >= self.inner.options.capacity {
                 match self.inner.options.overflow_policy {
                     OverflowPolicy::Backpressure => {
                         if state.closed {
-                            return Err(AppError::Custom(format!(
+                            return Err(Error::Custom(format!(
                                 "{} worker is stopped",
                                 self.inner.name
                             )));
                         }
                         state = self.inner.not_full.wait(state).map_err(|error| {
-                            AppError::Custom(format!("{} worker wait: {error}", self.inner.name))
+                            Error::Custom(format!("{} worker wait: {error}", self.inner.name))
                         })?;
                     }
                     OverflowPolicy::DropOldest => {
@@ -155,7 +153,7 @@ where
             }
 
             if state.closed {
-                return Err(AppError::Custom(format!(
+                return Err(Error::Custom(format!(
                     "{} worker is stopped",
                     self.inner.name
                 )));
@@ -310,13 +308,13 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
-    use crate::backend::event_bus::BackendEventBus;
-    use crate::error::AppError;
+    use crate::event_bus::BackendEventBus;
+    use crate::{Error, Result};
 
     use super::{BackendWorker, BackendWorkerOptions, OverflowPolicy};
 
     #[test]
-    fn processes_batches_in_order() -> Result<(), AppError> {
+    fn processes_batches_in_order() -> Result<()> {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let worker_seen = Arc::clone(&seen);
         let worker = BackendWorker::start(
@@ -341,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn drop_oldest_keeps_newest_items() -> Result<(), AppError> {
+    fn drop_oldest_keeps_newest_items() -> Result<()> {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let worker_seen = Arc::clone(&seen);
         let worker = BackendWorker::start(
@@ -369,7 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn continues_after_handler_error() -> Result<(), AppError> {
+    fn continues_after_handler_error() -> Result<()> {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let worker_seen = Arc::clone(&seen);
         let worker = BackendWorker::start(
@@ -384,7 +382,7 @@ mod tests {
                 let value = batch[0];
                 worker_seen.lock().unwrap().push(value);
                 if value == 1 {
-                    Err(AppError::Custom("expected test error".into()))
+                    Err(Error::Custom("expected test error".into()))
                 } else {
                     Ok(())
                 }

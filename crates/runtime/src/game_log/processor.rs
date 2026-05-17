@@ -1,18 +1,28 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::backend::context::BackendContext;
-use crate::domain::log_watcher::GameLogEvent;
-use crate::error::AppError;
-use vrcx_0_runtime::game_log::ingest::{
+use vrcx_0_core::log_watcher::GameLogEvent;
+use vrcx_0_store::config as backend_config;
+use vrcx_0_store::database::DatabaseService;
+use vrcx_0_store::game_log::{write_batch, GameLogWriteBatch};
+
+use crate::event_bus::BackendEventBus;
+use crate::game_log::ingest::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent,
     GameLogSideEffect,
 };
-use vrcx_0_store::config as backend_config;
-use vrcx_0_store::game_log::{write_batch, GameLogWriteBatch};
-
-use super::instance_media::InstanceMediaQueue;
-use super::{lifecycle, screenshot, video, BackendDeps};
+use crate::game_log::instance_media::{
+    self as runtime_instance_media, InstanceMediaDeps, InstanceMediaQueue,
+};
+use crate::game_log::lifecycle as runtime_lifecycle;
+use crate::game_log::runtime_state::RuntimeSnapshot;
+use crate::game_log::screenshot as runtime_screenshot;
+use crate::game_log::video as runtime_video;
+use crate::image_cache::ImageCache;
+use crate::sync::BackendSyncEngine;
+use crate::task_runtime::BackendTasks;
+use crate::web_client::WebClient;
+use crate::{Error, Result};
 
 const GAME_LOG_WRITE_RETRY_DELAYS_MS: &[u64] = &[25, 100, 250];
 
@@ -23,28 +33,77 @@ enum GameLogWriteOutcome {
 }
 
 #[derive(Clone)]
-pub(super) enum GameLogWorkerJob {
+pub enum GameLogWorkerJob {
     Event(GameLogEvent),
     Process(GameLogProcessEvent),
 }
 
 #[derive(Clone)]
-pub(super) struct GameLogProcessor {
-    context: Arc<BackendContext>,
+pub struct GameLogProcessorDeps {
+    pub db: Arc<DatabaseService>,
+    pub web: Arc<WebClient>,
+    pub image_cache: Arc<ImageCache>,
+    pub event_bus: BackendEventBus,
+    pub tasks: BackendTasks,
+    pub sync: BackendSyncEngine,
+    pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
+}
+
+impl GameLogProcessorDeps {
+    fn set_game_log_snapshot(&self, snapshot: RuntimeSnapshot) {
+        match self.snapshot.lock() {
+            Ok(mut current) => {
+                *current = snapshot;
+            }
+            Err(error) => {
+                tracing::warn!("failed to lock game log snapshot: {error}");
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+struct GameLogSideEffectDeps {
+    db: Arc<DatabaseService>,
+    web: Arc<WebClient>,
+    image_cache: Arc<ImageCache>,
+    event_bus: BackendEventBus,
+    tasks: BackendTasks,
+    media_queue: InstanceMediaQueue,
+}
+
+impl GameLogSideEffectDeps {
+    fn emit_side_effect(&self, kind: &str, payload: serde_json::Value) {
+        self.event_bus.emit_game_log_side_effect(kind, payload);
+    }
+
+    fn instance_media_deps(&self) -> InstanceMediaDeps {
+        InstanceMediaDeps {
+            db: Arc::clone(&self.db),
+            web: Arc::clone(&self.web),
+            image_cache: Arc::clone(&self.image_cache),
+            queue: self.media_queue.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct GameLogProcessor {
+    deps: GameLogProcessorDeps,
     engine: Arc<Mutex<GameLogIngestEngine>>,
     media_queue: InstanceMediaQueue,
 }
 
 impl GameLogProcessor {
-    pub(super) fn new(context: Arc<BackendContext>) -> Self {
+    pub fn new(deps: GameLogProcessorDeps) -> Self {
         Self {
-            context,
+            deps,
             engine: Arc::new(Mutex::new(GameLogIngestEngine::default())),
             media_queue: InstanceMediaQueue::new(),
         }
     }
 
-    pub(super) fn handle_jobs(&self, jobs: Vec<GameLogWorkerJob>) -> Result<(), AppError> {
+    pub fn handle_jobs(&self, jobs: Vec<GameLogWorkerJob>) -> Result<()> {
         let mut pending_events = Vec::new();
         let mut first_error = None;
         for job in jobs {
@@ -67,58 +126,57 @@ impl GameLogProcessor {
         first_error.map_or(Ok(()), Err)
     }
 
-    fn deps(&self) -> BackendDeps {
-        BackendDeps {
-            db: Arc::clone(&self.context.db),
-            web: Arc::clone(&self.context.web),
-            image_cache: Arc::clone(&self.context.image_cache),
-            event_bus: self.context.event_bus.clone(),
-            tasks: self.context.tasks.clone(),
+    fn side_effect_deps(&self) -> GameLogSideEffectDeps {
+        GameLogSideEffectDeps {
+            db: Arc::clone(&self.deps.db),
+            web: Arc::clone(&self.deps.web),
+            image_cache: Arc::clone(&self.deps.image_cache),
+            event_bus: self.deps.event_bus.clone(),
+            tasks: self.deps.tasks.clone(),
             media_queue: self.media_queue.clone(),
         }
     }
 
-    fn ingest_events_now(&self, events: &[GameLogEvent]) -> Result<(), AppError> {
+    fn ingest_events_now(&self, events: &[GameLogEvent]) -> Result<()> {
         if events.is_empty() {
             return Ok(());
         }
 
-        if backend_config::get_bool(&self.context.db, "gameLogDisabled", false)? {
+        if backend_config::get_bool(&self.deps.db, "gameLogDisabled", false)? {
             return Ok(());
         }
 
-        let log_resource_load =
-            backend_config::get_bool(&self.context.db, "logResourceLoad", false)?;
+        let log_resource_load = backend_config::get_bool(&self.deps.db, "logResourceLoad", false)?;
         let (output, snapshot) = self.with_engine(|engine| {
             let output = engine.ingest_events(events, GameLogIngestOptions { log_resource_load });
             (output, engine.runtime_snapshot())
         })?;
-        self.context.set_game_log_snapshot(snapshot);
-        self.apply_ingest_output(self.deps(), output)
+        self.deps.set_game_log_snapshot(snapshot);
+        self.apply_ingest_output(self.side_effect_deps(), output)
     }
 
-    fn handle_game_process_event_now(&self, event: GameLogProcessEvent) -> Result<(), AppError> {
+    fn handle_game_process_event_now(&self, event: GameLogProcessEvent) -> Result<()> {
         let (output, snapshot) = self.with_engine(|engine| {
             let output = engine.handle_process_event(event);
             (output, engine.runtime_snapshot())
         })?;
-        self.context.set_game_log_snapshot(snapshot);
-        self.apply_ingest_output(self.deps(), output)
+        self.deps.set_game_log_snapshot(snapshot);
+        self.apply_ingest_output(self.side_effect_deps(), output)
     }
 
     fn apply_ingest_output(
         &self,
-        deps: BackendDeps,
+        deps: GameLogSideEffectDeps,
         output: GameLogIngestOutput,
-    ) -> Result<(), AppError> {
+    ) -> Result<()> {
         let write_outcome =
             self.write_batch_or_emit_failure_telemetry(&output.batch, output.raw_rows)?;
         if write_outcome == GameLogWriteOutcome::BackendPersisted {
             if let Some(projection) = output.projection {
-                self.context.event_bus.emit_game_log_projection(projection);
+                self.deps.event_bus.emit_game_log_projection(projection);
             }
             for row in output.backend_persisted_mirrors {
-                self.context.event_bus.emit_backend_game_log_event(row);
+                self.deps.event_bus.emit_backend_game_log_event(row);
             }
         }
         for side_effect in output.side_effects {
@@ -131,10 +189,10 @@ impl GameLogProcessor {
         &self,
         batch: &GameLogWriteBatch,
         raw_rows: Vec<Vec<String>>,
-    ) -> Result<GameLogWriteOutcome, AppError> {
-        match write_batch_with_retry(&self.context.db, batch) {
+    ) -> Result<GameLogWriteOutcome> {
+        match write_batch_with_retry(&self.deps.db, batch) {
             Ok(()) => {
-                self.context.sync.record(
+                self.deps.sync.record(
                     "gameLog",
                     "persisted",
                     "GameLog batch persisted by Rust.",
@@ -144,8 +202,8 @@ impl GameLogProcessor {
             }
             Err(error) => {
                 let message = error.to_string();
-                self.context.sync.record_failure("gameLog", &message);
-                self.context
+                self.deps.sync.record_failure("gameLog", &message);
+                self.deps
                     .event_bus
                     .emit_game_log_persistence_fallback(batch, raw_rows, &message);
                 tracing::warn!(
@@ -156,16 +214,16 @@ impl GameLogProcessor {
         }
     }
 
-    fn with_engine<T>(&self, f: impl FnOnce(&mut GameLogIngestEngine) -> T) -> Result<T, AppError> {
+    fn with_engine<T>(&self, f: impl FnOnce(&mut GameLogIngestEngine) -> T) -> Result<T> {
         let mut engine = self
             .engine
             .lock()
-            .map_err(|error| AppError::Custom(format!("GameLog backend state lock: {error}")))?;
+            .map_err(|error| Error::Custom(format!("GameLog backend state lock: {error}")))?;
         Ok(f(&mut engine))
     }
 }
 
-fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
+fn remember_error(first_error: &mut Option<Error>, error: Error) {
     if first_error.is_none() {
         *first_error = Some(error);
     } else {
@@ -173,10 +231,7 @@ fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
     }
 }
 
-fn write_batch_with_retry(
-    db: &vrcx_0_store::database::DatabaseService,
-    batch: &GameLogWriteBatch,
-) -> Result<(), AppError> {
+fn write_batch_with_retry(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<()> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
         match write_batch(db, batch) {
@@ -192,11 +247,18 @@ fn write_batch_with_retry(
     }
 }
 
-fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
+fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: GameLogSideEffect) {
     match side_effect {
         GameLogSideEffect::Video(input) => {
             deps.tasks.clone().spawn(async move {
-                if let Err(error) = video::handle_video_play(deps, input).await {
+                if let Err(error) = runtime_video::handle_video_play(
+                    deps.db.as_ref(),
+                    deps.web.as_ref(),
+                    &deps.event_bus,
+                    input,
+                )
+                .await
+                {
                     tracing::warn!("GameLog video side effect failed: {error}");
                 }
             });
@@ -205,22 +267,16 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             timestamp,
             created_at,
         } => {
-            lifecycle::emit_video_sync(deps, &timestamp, &created_at);
+            runtime_lifecycle::emit_video_sync(&deps.event_bus, &timestamp, &created_at);
         }
         GameLogSideEffect::NowPlayingReset => {
             deps.emit_side_effect("nowPlayingReset", serde_json::json!({}));
         }
         GameLogSideEffect::Screenshot(input) => {
             deps.tasks.clone().spawn(async move {
-                if let Err(error) = screenshot::handle_screenshot(
-                    deps,
-                    screenshot::ScreenshotInput {
-                        created_at: input.created_at,
-                        path: input.path,
-                        snapshot: input.snapshot,
-                    },
-                )
-                .await
+                if let Err(error) =
+                    runtime_screenshot::handle_screenshot(deps.db.as_ref(), &deps.event_bus, input)
+                        .await
                 {
                     tracing::warn!("GameLog screenshot side effect failed: {error}");
                 }
@@ -228,7 +284,10 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
         }
         GameLogSideEffect::ApiRequest { url } => {
             deps.tasks.clone().spawn(async move {
-                if let Err(error) = super::instance_media::handle_api_request(deps, &url).await {
+                if let Err(error) =
+                    runtime_instance_media::handle_api_request(deps.instance_media_deps(), &url)
+                        .await
+                {
                     tracing::warn!("GameLog instance media side effect failed: {error}");
                 }
             });
@@ -239,8 +298,8 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             inventory_id,
         } => {
             deps.tasks.clone().spawn(async move {
-                if let Err(error) = super::instance_media::handle_sticker_spawn(
-                    deps,
+                if let Err(error) = runtime_instance_media::handle_sticker_spawn(
+                    deps.instance_media_deps(),
                     &user_id,
                     &display_name,
                     &inventory_id,
@@ -255,10 +314,17 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
             created_at,
             is_game_running,
         } => {
-            lifecycle::handle_vrc_quit(deps, &created_at, is_game_running);
+            runtime_lifecycle::handle_vrc_quit(
+                deps.db.as_ref(),
+                &deps.event_bus,
+                &created_at,
+                is_game_running,
+            );
         }
         GameLogSideEffect::NoVr { no_vr } => {
-            if let Err(error) = lifecycle::set_game_no_vr(deps, no_vr) {
+            if let Err(error) =
+                runtime_lifecycle::set_game_no_vr(deps.db.as_ref(), &deps.event_bus, no_vr)
+            {
                 tracing::warn!("GameLog NoVR side effect failed: {error}");
             }
         }
@@ -273,17 +339,22 @@ fn dispatch_side_effect(deps: BackendDeps, side_effect: GameLogSideEffect) {
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
 
-    use crate::backend::context::BackendContext;
-    use crate::backend::game_log::GameLogBackend;
-    use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind};
-    use crate::error::AppError;
-    use vrcx_0_runtime::image_cache::ImageCache;
-    use vrcx_0_runtime::web_client::WebClient;
+    use vrcx_0_core::log_watcher::{GameLogEvent, GameLogEventKind};
     use vrcx_0_store::config as backend_config;
     use vrcx_0_store::database::DatabaseService;
     use vrcx_0_store::storage::StorageService;
+
+    use crate::event_bus::BackendEventBus;
+    use crate::game_log::runtime_state::RuntimeSnapshot;
+    use crate::image_cache::ImageCache;
+    use crate::sync::BackendSyncEngine;
+    use crate::task_runtime::BackendTasks;
+    use crate::web_client::WebClient;
+    use crate::Result;
+
+    use super::{GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
 
     struct TestDir {
         path: PathBuf,
@@ -316,9 +387,7 @@ mod tests {
         }
     }
 
-    fn test_backend(
-        name: &str,
-    ) -> Result<(TestDir, Arc<DatabaseService>, GameLogBackend), AppError> {
+    fn test_processor(name: &str) -> Result<(TestDir, Arc<DatabaseService>, GameLogProcessor)> {
         let dir = TestDir::new(name);
         let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
         let storage = StorageService::new(&dir.path.join("VRCX-0.json"))?;
@@ -328,89 +397,88 @@ mod tests {
             web.cookie_jar(),
             web.proxy_url(),
         )?);
-        let context = Arc::new(BackendContext::new(Arc::clone(&db), web, image_cache));
-        let backend = GameLogBackend::new(context);
-        Ok((dir, db, backend))
+        let processor = GameLogProcessor::new(GameLogProcessorDeps {
+            db: Arc::clone(&db),
+            web,
+            image_cache,
+            event_bus: BackendEventBus::new(),
+            tasks: BackendTasks::new(),
+            sync: BackendSyncEngine::new(),
+            snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
+        });
+        Ok((dir, db, processor))
     }
 
     #[test]
-    fn tracks_location_players_and_session_duration() -> Result<(), AppError> {
-        let (_dir, db, backend) = test_backend("backend-gamelog-phase3-ingest")?;
+    fn tracks_location_players_and_session_duration() -> Result<()> {
+        let (_dir, db, processor) = test_processor("runtime-gamelog-ingest")?;
 
-        backend.ingest_events(&[
-            event(
+        processor.handle_jobs(vec![
+            GameLogWorkerJob::Event(event(
                 "2026-05-14T04:00:00.000Z",
                 GameLogEventKind::Location {
                     location: "wrld_ingest:1".into(),
                     world_name: "Ingest World".into(),
                 },
-            ),
-            event(
+            )),
+            GameLogWorkerJob::Event(event(
                 "2026-05-14T04:00:10.000Z",
                 GameLogEventKind::PlayerJoined {
                     display_name: "Alpha".into(),
                     user_id: "usr_alpha".into(),
                 },
-            ),
-            event(
+            )),
+            GameLogWorkerJob::Event(event(
                 "2026-05-14T04:00:40.000Z",
                 GameLogEventKind::LocationDestination {
                     location: "wrld_next:1".into(),
                 },
-            ),
+            )),
         ])?;
-        assert!(backend.wait_until_idle_for_test());
 
-        let rows = db.execute("SELECT time FROM gamelog_location", &Default::default())?;
-        assert_eq!(rows[0][0], serde_json::json!(40000));
-        let rows = db.execute(
-            "SELECT type, display_name, time FROM gamelog_join_leave ORDER BY created_at",
-            &Default::default(),
-        )?;
-        assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0][0], serde_json::json!("OnPlayerJoined"));
-        assert_eq!(rows[1][0], serde_json::json!("OnPlayerLeft"));
-        assert_eq!(rows[1][1], serde_json::json!("Alpha"));
-        assert_eq!(rows[1][2], serde_json::json!(30000));
+        let locations = vrcx_0_store::game_log::get_game_log_locations(&db)?;
+        assert_eq!(locations[0].time, 40000);
+        let join_leave = vrcx_0_store::game_log::get_game_log_join_leave(&db)?;
+        assert_eq!(join_leave.len(), 2);
+        assert_eq!(join_leave[0].event_type, "OnPlayerJoined");
+        assert_eq!(join_leave[1].event_type, "OnPlayerLeft");
+        assert_eq!(join_leave[1].display_name, "Alpha");
+        assert_eq!(join_leave[1].time, 30000);
         Ok(())
     }
 
     #[test]
-    fn respects_game_log_disabled_before_core_writes_and_side_effects() -> Result<(), AppError> {
-        let (_dir, db, backend) = test_backend("backend-gamelog-phase3-disabled")?;
+    fn respects_game_log_disabled_before_core_writes_and_side_effects() -> Result<()> {
+        let (_dir, db, processor) = test_processor("runtime-gamelog-disabled")?;
         backend_config::set_bool(&db, "gameLogDisabled", true)?;
 
-        backend.ingest_events(&[event(
+        processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
             "2026-05-14T05:00:00.000Z",
             GameLogEventKind::Location {
                 location: "wrld_disabled:1".into(),
                 world_name: "Disabled".into(),
             },
-        )])?;
-        assert!(backend.wait_until_idle_for_test());
+        ))])?;
 
-        let rows = db.execute(
-            "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'gamelog_location'",
-            &Default::default(),
-        )?;
-        assert!(rows.is_empty());
+        assert!(!vrcx_0_store::game_log::game_log_location_table_exists(
+            &db
+        )?);
         Ok(())
     }
 
     #[test]
-    fn emits_backend_persisted_mirror_after_worker_write() -> Result<(), AppError> {
-        let (_dir, _db, backend) = test_backend("backend-gamelog-worker-mirror")?;
+    fn emits_backend_persisted_mirror_after_worker_write() -> Result<()> {
+        let (_dir, _db, processor) = test_processor("runtime-gamelog-worker-mirror")?;
 
-        backend.ingest_events(&[event(
+        processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
             "2026-05-14T06:00:00.000Z",
             GameLogEventKind::Location {
                 location: "wrld_mirror:1".into(),
                 world_name: "Mirror World".into(),
             },
-        )])?;
-        assert!(backend.wait_until_idle_for_test());
+        ))])?;
 
-        let events = backend.context.event_bus.take_events_for_test();
+        let events = processor.deps.event_bus.take_events_for_test();
         assert!(events.iter().any(|event| {
             event.name == "addGameLogEvent"
                 && event

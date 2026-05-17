@@ -5,12 +5,11 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use chrono::{Local, NaiveDateTime, Utc};
-use tauri::AppHandle;
 use vrcx_0_core::log_watcher::LogLocationSnapshot;
 use vrcx_0_host::log_scanner::scan_current_location_snapshot;
 
 use super::context::LogContext;
-use super::event::{GameLogEvent, GameLogEventSink};
+use super::event::{GameLogEvent, GameLogEventSink, LogWatcherCompatEventSinkHandle};
 use super::parser;
 use super::queue;
 
@@ -54,19 +53,23 @@ impl LogWatcher {
     }
 
     #[cfg(target_os = "windows")]
-    pub fn start(&self, log_dir: PathBuf, app_handle: AppHandle) {
-        self.start_with_mode(log_dir, app_handle, false);
+    pub fn start(&self, log_dir: PathBuf, compat_event_sink: LogWatcherCompatEventSinkHandle) {
+        self.start_with_mode(log_dir, compat_event_sink, false);
     }
 
     #[cfg(target_os = "linux")]
-    pub fn start_without_process_monitor(&self, log_dir: PathBuf, app_handle: AppHandle) {
-        self.start_with_mode(log_dir, app_handle, true);
+    pub fn start_without_process_monitor(
+        &self,
+        log_dir: PathBuf,
+        compat_event_sink: LogWatcherCompatEventSinkHandle,
+    ) {
+        self.start_with_mode(log_dir, compat_event_sink, true);
     }
 
     fn start_with_mode(
         &self,
         log_dir: PathBuf,
-        app_handle: AppHandle,
+        compat_event_sink: LogWatcherCompatEventSinkHandle,
         poll_without_process_monitor: bool,
     ) {
         *self.inner.log_dir.write().unwrap() = Some(log_dir.clone());
@@ -74,7 +77,7 @@ impl LogWatcher {
         *self.inner.keep_polling_until.lock().unwrap() =
             Some(Instant::now() + INACTIVE_POLL_KEEPALIVE);
         let inner = Arc::clone(&self.inner);
-        std::thread::spawn(move || thread_loop(inner, log_dir, app_handle));
+        std::thread::spawn(move || thread_loop(inner, log_dir, compat_event_sink));
     }
 
     pub fn set_date_till(&self, date: &str) {
@@ -122,7 +125,11 @@ impl LogWatcher {
     }
 }
 
-fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, app_handle: AppHandle) {
+fn thread_loop(
+    inner: Arc<Inner>,
+    log_dir: PathBuf,
+    compat_event_sink: LogWatcherCompatEventSinkHandle,
+) {
     let mut contexts: HashMap<String, LogContext> = HashMap::new();
     let mut first_run = true;
 
@@ -155,7 +162,13 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, app_handle: AppHandle) {
         };
 
         if should_poll {
-            let saw_new_data = update(&inner, &log_dir, &app_handle, &mut contexts, &mut first_run);
+            let saw_new_data = update(
+                &inner,
+                &log_dir,
+                &compat_event_sink,
+                &mut contexts,
+                &mut first_run,
+            );
             if saw_new_data {
                 *inner.keep_polling_until.lock().unwrap() =
                     Some(Instant::now() + INACTIVE_POLL_KEEPALIVE);
@@ -169,7 +182,7 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, app_handle: AppHandle) {
 fn update(
     inner: &Inner,
     log_dir: &Path,
-    app_handle: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     contexts: &mut HashMap<String, LogContext>,
     first_run: &mut bool,
 ) -> bool {
@@ -221,7 +234,7 @@ fn update(
 
         saw_new_data |= parser::parse_log(
             inner,
-            app_handle,
+            compat_event_sink,
             &entry.path(),
             &name,
             ctx,

@@ -3,20 +3,20 @@ use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::backend::realtime::types::RealtimeWsStatusPayload;
-use vrcx_0_runtime::game_log::runtime_state::GameLogProjection;
-use vrcx_0_runtime::realtime::types::{
+use crate::game_log::runtime_state::GameLogProjection;
+use crate::realtime::types::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
     RealtimeNotificationProjection,
 };
-use vrcx_0_runtime::session::HostSessionProjection;
+use crate::session::HostSessionProjection;
+use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_store::game_log::GameLogWriteBatch;
 
 pub trait BackendEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-utils"))]
 #[derive(Clone, Debug)]
 pub struct BackendEventForTest {
     pub name: String,
@@ -26,7 +26,7 @@ pub struct BackendEventForTest {
 #[derive(Clone, Default)]
 pub struct BackendEventBus {
     sink: Arc<Mutex<Option<Arc<dyn BackendEventSink>>>>,
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-utils"))]
     events: Arc<Mutex<Vec<BackendEventForTest>>>,
 }
 
@@ -52,7 +52,7 @@ impl BackendEventBus {
     }
 
     fn emit_value(&self, event: &str, payload: Value) {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "test-utils"))]
         {
             self.events.lock().unwrap().push(BackendEventForTest {
                 name: event.to_string(),
@@ -66,7 +66,7 @@ impl BackendEventBus {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-utils"))]
     pub fn take_events_for_test(&self) -> Vec<BackendEventForTest> {
         std::mem::take(&mut *self.events.lock().unwrap())
     }

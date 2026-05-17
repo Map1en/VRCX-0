@@ -1,13 +1,12 @@
-use tauri::{AppHandle, Emitter};
 use vrcx_0_core::log_watcher::convert_log_time_to_iso8601;
 
-use super::event::{GameLogEventKind, ParsedLogEntry};
+use super::event::{GameLogEventKind, LogWatcherCompatEventSinkHandle, ParsedLogEntry};
 use super::watcher::Inner;
 
 const MAX_COMPAT_LOG_ROWS: usize = 5000;
 pub(super) fn append_event(
     inner: &Inner,
-    app_handle: &AppHandle,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
     file_name: &str,
     line: &str,
     kind: GameLogEventKind,
@@ -15,20 +14,25 @@ pub(super) fn append_event(
 ) {
     append_entry(
         inner,
-        app_handle,
+        compat_event_sink,
         ParsedLogEntry::new(file_name, convert_log_time_to_iso8601(line), kind),
         first_run,
     );
 }
 
-fn append_entry(inner: &Inner, app_handle: &AppHandle, entry: ParsedLogEntry, first_run: bool) {
+fn append_entry(
+    inner: &Inner,
+    compat_event_sink: &LogWatcherCompatEventSinkHandle,
+    entry: ParsedLogEntry,
+    first_run: bool,
+) {
     if inner.event_sink.is_some() {
         inner.event_buffer.lock().unwrap().push(entry.event);
     }
 
     if !first_run {
         if let Ok(json) = serde_json::to_string(&entry.compat_row) {
-            let _ = app_handle.emit("addGameLogEvent", json);
+            compat_event_sink.emit_compat_event("addGameLogEvent", &json);
         }
     }
     let mut log_list = inner.log_list.write().unwrap();

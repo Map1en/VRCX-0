@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+use crate::common::DbParams;
 use chrono::{SecondsFormat, Utc};
 use serde_json::Value;
-use vrcx_0_store::common::DbParams;
 
-use crate::error::AppError;
+use crate::Error;
 
 use super::types::*;
 
@@ -27,12 +27,12 @@ pub(super) fn normalize_config_key(key: &str) -> String {
 
 pub(super) fn normalize_kind(
     kind: &str,
-) -> Result<(&'static str, &'static str, &'static str), AppError> {
+) -> Result<(&'static str, &'static str, &'static str), Error> {
     match kind.trim() {
         "friend" => Ok(("favorite_friend", "user_id", "@user_id")),
         "avatar" => Ok(("favorite_avatar", "avatar_id", "@avatar_id")),
         "world" => Ok(("favorite_world", "world_id", "@world_id")),
-        _ => Err(AppError::Custom("unsupported favorite kind".into())),
+        _ => Err(Error::Custom("unsupported favorite kind".into())),
     }
 }
 

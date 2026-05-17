@@ -3,8 +3,8 @@
 use serde::Deserialize;
 use tauri::State;
 
-use crate::backend::auth_scope::BackendAuthScopeSnapshot;
 use crate::state::AppState;
+use vrcx_0_runtime::auth_scope::BackendAuthScopeSnapshot;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

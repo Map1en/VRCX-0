@@ -5,15 +5,16 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::{SecondsFormat, Utc};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use reqwest::Url;
 use serde_json::{json, Map, Number, Value};
 use tauri::State;
-use vrcx_0_store::common::ParamsBuilder;
+use vrcx_0_store::config::ConfigRepository;
+use vrcx_0_vrchat::http_api::normalize_vrchat_api_endpoint;
 
 use crate::api::app::local_data::types::{
     ConfigWriteEntry, FriendLogCurrentEntryInput, FriendLogHistoryEntryInput,
     FriendLogReplaceOptionsInput,
 };
+use crate::api::app::vrchat_api_types::HttpApiRequestInput;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -23,7 +24,6 @@ use super::types::{
     RemoteFavoriteSnapshot, TrustLevelInfo,
 };
 
-const DEFAULT_VRCHAT_API_ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 const FAVORITES_PAGE_SIZE: i64 = 300;
 const FAVORITE_GROUPS_PAGE_SIZE: i64 = 50;
 const FRIEND_PAGE_SIZE: i64 = 50;
@@ -36,12 +36,7 @@ fn normalize_text(value: impl AsRef<str>) -> String {
 }
 
 fn normalize_endpoint(endpoint: &str) -> String {
-    let endpoint = endpoint.trim().trim_end_matches('/');
-    if endpoint.is_empty() {
-        DEFAULT_VRCHAT_API_ENDPOINT.to_string()
-    } else {
-        endpoint.to_string()
-    }
+    normalize_vrchat_api_endpoint(Some(endpoint))
 }
 
 fn now_iso() -> String {
@@ -119,52 +114,20 @@ fn unique_values(values: Vec<String>) -> Vec<String> {
     output
 }
 
-fn normalize_config_key(key: &str) -> String {
-    let key = key.trim();
-    if key.starts_with("config:") {
-        return key.to_string();
-    }
-    let stripped = key.strip_prefix("VRCX_").unwrap_or(key);
-    format!("config:vrcx_{}", stripped.to_ascii_lowercase())
-}
-
-fn ensure_config_table(state: &State<'_, AppState>) -> Result<(), AppError> {
-    state.db.execute_non_query(
-        "CREATE TABLE IF NOT EXISTS configs (`key` TEXT PRIMARY KEY, `value` TEXT)",
-        &Default::default(),
-    )?;
-    Ok(())
-}
-
-fn get_config_string(state: &State<'_, AppState>, key: &str) -> Result<Option<String>, AppError> {
-    ensure_config_table(state)?;
-    Ok(state
-        .db
-        .execute(
-            "SELECT value FROM configs WHERE key = @key LIMIT 1",
-            &ParamsBuilder::new()
-                .set("key", normalize_config_key(key))
-                .build(),
-        )?
-        .first()
-        .map(|row| value_as_string(row.first().unwrap_or(&Value::Null))))
-}
-
 fn get_config_bool(
     state: &State<'_, AppState>,
     key: &str,
     default_value: bool,
 ) -> Result<bool, AppError> {
-    Ok(get_config_string(state, key)?
-        .map(|value| value == "true")
-        .unwrap_or(default_value))
+    ConfigRepository::new(state.db.clone())
+        .get_bool(key, default_value)
+        .map_err(AppError::from)
 }
 
 fn get_config_array(state: &State<'_, AppState>, key: &str) -> Result<Vec<String>, AppError> {
-    let Some(value) = get_config_string(state, key)? else {
-        return Ok(Vec::new());
-    };
-    let parsed: Value = serde_json::from_str(&value).unwrap_or(Value::Null);
+    let parsed = ConfigRepository::new(state.db.clone())
+        .get_json(key, Value::Null)
+        .map_err(AppError::from)?;
     let mut groups = parsed
         .as_array()
         .map(|values| {
@@ -214,44 +177,34 @@ fn stale_friend_output(user_id: String, detail: String) -> BackendFriendRosterBa
     }
 }
 
-fn build_vrchat_api_url(endpoint: &str, path: &str) -> Result<Url, AppError> {
-    let base = format!("{}/", normalize_endpoint(endpoint));
-    Url::parse(&base)
-        .map_err(|error| AppError::Custom(format!("bad API endpoint: {error}")))?
-        .join(path.trim_start_matches('/'))
-        .map_err(|error| AppError::Custom(format!("bad API path: {error}")))
-}
-
-fn append_query_params(url: &mut Url, query: &[(&str, String)]) {
-    for (key, value) in query {
-        url.query_pairs_mut().append_pair(key, value);
-    }
-}
-
 async fn execute_vrchat_json_request(
     state: &State<'_, AppState>,
     endpoint: &str,
     path: &str,
     query: &[(&str, String)],
 ) -> Result<Value, AppError> {
-    let mut url = build_vrchat_api_url(endpoint, path)?;
-    append_query_params(&mut url, query);
+    let query_params = query
+        .iter()
+        .map(|(key, value)| ((*key).to_string(), Value::String(value.clone())))
+        .collect::<HashMap<_, _>>();
+    let response = super::super::vrchat_api::execute_vrchat_tools_api(
+        state.clone(),
+        HttpApiRequestInput {
+            endpoint: Some(normalize_endpoint(endpoint)),
+            method: Some("GET".into()),
+            path: Some(path.to_string()),
+            params: Some(query_params.clone()),
+            query_params: Some(query_params),
+            ..Default::default()
+        },
+    )
+    .await?;
 
-    let mut options = HashMap::new();
-    options.insert("url".to_string(), Value::String(url.to_string()));
-    options.insert("method".to_string(), Value::String("GET".to_string()));
-
-    let (status, data) = state.web.execute(options).await?;
-    state.web.save_cookies(&state.db);
-    if status == -1 {
-        return Err(AppError::Custom(data));
-    }
-
-    let json = parse_response_json(&data);
-    if status >= 400 || response_has_error(&json) {
+    let json = parse_response_json(&response.data);
+    if response.status >= 400 || response_has_error(&json) {
         return Err(AppError::Custom(unwrap_error_message(
             &json,
-            status,
+            response.status,
             "VRChat social baseline request failed",
         )));
     }

@@ -13,19 +13,50 @@ use vrcx_0_vrchat::realtime::{
     normalize_websocket_domain, Error as RealtimeTransportError,
 };
 
-use crate::backend::context::BackendContext;
-use crate::backend::event_bus::BackendEventBus;
-use crate::error::AppError;
+use vrcx_0_core::realtime::RealtimeMessageParser;
+use vrcx_0_store::database::DatabaseService;
 
-use super::parser::RealtimeMessageParser;
-use super::types::{RealtimeSessionContext, RealtimeWsStatusPayload};
+use crate::event_bus::BackendEventBus;
+use crate::realtime::types::{
+    RealtimeSessionContext, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
+};
+use crate::session::HostSessionRuntime;
+use crate::web_client::WebClient;
+use crate::Error;
 
 const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 
+#[derive(Clone)]
+pub struct RealtimeTransportDeps {
+    pub db: Arc<DatabaseService>,
+    pub web: Arc<WebClient>,
+    pub event_bus: BackendEventBus,
+    pub session: HostSessionRuntime,
+}
+
 enum ConnectionEnd {
     Closed,
     Stopped,
+}
+
+struct ConnectionAttempt<'a> {
+    session: &'a RealtimeSessionContext,
+    client_run_id: u64,
+    generation: u64,
+    session_generation: u64,
+    cancel_rx: &'a mut watch::Receiver<u64>,
+    event_bus: &'a BackendEventBus,
+}
+
+struct RealtimeStatusEvent<'a> {
+    client_run_id: u64,
+    generation: u64,
+    session_generation: u64,
+    status: &'a str,
+    websocket_domain: &'a str,
+    reason: Option<String>,
+    status_code: Option<i32>,
 }
 
 pub trait RealtimeMessageSink: Send + Sync {
@@ -43,7 +74,7 @@ pub trait RealtimeMessageSink: Send + Sync {
         generation: u64,
         session_generation: u64,
         session: &RealtimeSessionContext,
-        payload: &super::types::RealtimeWsMessagePayload,
+        payload: &RealtimeWsMessagePayload,
     );
 
     fn handle_realtime_transport_finished(
@@ -60,7 +91,7 @@ enum RealtimeConnectionError {
         reason: String,
         status_code: Option<i32>,
     },
-    Other(AppError),
+    Other(Error),
 }
 
 impl RealtimeConnectionError {
@@ -83,15 +114,9 @@ impl RealtimeConnectionError {
     }
 }
 
-impl From<AppError> for RealtimeConnectionError {
-    fn from(error: AppError) -> Self {
+impl From<Error> for RealtimeConnectionError {
+    fn from(error: Error) -> Self {
         Self::Other(error)
-    }
-}
-
-impl From<vrcx_0_runtime::Error> for RealtimeConnectionError {
-    fn from(error: vrcx_0_runtime::Error) -> Self {
-        Self::Other(AppError::from(error))
     }
 }
 
@@ -105,28 +130,28 @@ impl From<RealtimeTransportError> for RealtimeConnectionError {
                 reason,
                 status_code,
             },
-            error => Self::Other(AppError::Custom(error.to_string())),
+            error => Self::Other(Error::Custom(error.to_string())),
         }
     }
 }
 
 async fn fetch_auth_token(
-    context: &BackendContext,
+    deps: &RealtimeTransportDeps,
     session: &RealtimeSessionContext,
-) -> Result<String, RealtimeConnectionError> {
+) -> std::result::Result<String, RealtimeConnectionError> {
     let mut options = HashMap::new();
     options.insert(
         "url".to_string(),
         Value::String(build_auth_url(&session.endpoint)),
     );
     options.insert("method".to_string(), Value::String("GET".into()));
-    let (status, body) = context.web.execute(options).await?;
-    context.web.save_cookies(&context.db);
+    let (status, body) = deps.web.execute(options).await?;
+    deps.web.save_cookies(&deps.db);
     auth_token_from_response(status, &body).map_err(RealtimeConnectionError::from)
 }
 
 pub async fn run_realtime_transport(
-    context: Arc<BackendContext>,
+    deps: RealtimeTransportDeps,
     message_sink: Arc<dyn RealtimeMessageSink>,
     client_run_id: u64,
     generation: u64,
@@ -135,7 +160,7 @@ pub async fn run_realtime_transport(
     mut cancel_rx: watch::Receiver<u64>,
 ) {
     run_realtime_transport_inner(
-        Arc::clone(&context),
+        deps.clone(),
         Arc::clone(&message_sink),
         client_run_id,
         generation,
@@ -145,13 +170,12 @@ pub async fn run_realtime_transport(
     )
     .await;
     message_sink.handle_realtime_transport_finished(generation, session_generation, &session);
-    context
-        .session
+    deps.session
         .clear_realtime_context_if_generation(session_generation);
 }
 
 async fn run_realtime_transport_inner(
-    context: Arc<BackendContext>,
+    deps: RealtimeTransportDeps,
     message_sink: Arc<dyn RealtimeMessageSink>,
     client_run_id: u64,
     generation: u64,
@@ -159,7 +183,7 @@ async fn run_realtime_transport_inner(
     session: RealtimeSessionContext,
     cancel_rx: &mut watch::Receiver<u64>,
 ) {
-    let event_bus = context.event_bus.clone();
+    let event_bus = deps.event_bus.clone();
     let websocket_domain = normalize_websocket_domain(&session.websocket);
     let mut reconnect_attempt = 0usize;
 
@@ -167,13 +191,15 @@ async fn run_realtime_transport_inner(
         if is_cancelled(cancel_rx, generation) {
             emit_status(
                 &event_bus,
-                client_run_id,
-                generation,
-                session_generation,
-                "disconnected",
-                &websocket_domain,
-                None,
-                None,
+                RealtimeStatusEvent {
+                    client_run_id,
+                    generation,
+                    session_generation,
+                    status: "disconnected",
+                    websocket_domain: &websocket_domain,
+                    reason: None,
+                    status_code: None,
+                },
             );
             return;
         }
@@ -191,37 +217,38 @@ async fn run_realtime_transport_inner(
         );
         emit_status(
             &event_bus,
-            client_run_id,
-            generation,
-            session_generation,
-            status,
-            &websocket_domain,
-            None,
-            None,
+            RealtimeStatusEvent {
+                client_run_id,
+                generation,
+                session_generation,
+                status,
+                websocket_domain: &websocket_domain,
+                reason: None,
+                status_code: None,
+            },
         );
 
-        match connect_once(
-            Arc::clone(&context),
-            Arc::clone(&message_sink),
-            &session,
+        let attempt = ConnectionAttempt {
+            session: &session,
             client_run_id,
             generation,
             session_generation,
             cancel_rx,
-            &event_bus,
-        )
-        .await
-        {
+            event_bus: &event_bus,
+        };
+        match connect_once(deps.clone(), Arc::clone(&message_sink), attempt).await {
             Ok(ConnectionEnd::Stopped) => {
                 emit_status(
                     &event_bus,
-                    client_run_id,
-                    generation,
-                    session_generation,
-                    "disconnected",
-                    &websocket_domain,
-                    None,
-                    None,
+                    RealtimeStatusEvent {
+                        client_run_id,
+                        generation,
+                        session_generation,
+                        status: "disconnected",
+                        websocket_domain: &websocket_domain,
+                        reason: None,
+                        status_code: None,
+                    },
                 );
                 return;
             }
@@ -240,13 +267,15 @@ async fn run_realtime_transport_inner(
                 );
                 emit_status(
                     &event_bus,
-                    client_run_id,
-                    generation,
-                    session_generation,
-                    "reconnecting",
-                    &websocket_domain,
-                    Some("websocket closed".into()),
-                    None,
+                    RealtimeStatusEvent {
+                        client_run_id,
+                        generation,
+                        session_generation,
+                        status: "reconnecting",
+                        websocket_domain: &websocket_domain,
+                        reason: Some("websocket closed".into()),
+                        status_code: None,
+                    },
                 );
             }
             Err(error) => {
@@ -261,13 +290,15 @@ async fn run_realtime_transport_inner(
                 tracing::warn!(message = %message, "backend realtime transport failed");
                 emit_status(
                     &event_bus,
-                    client_run_id,
-                    generation,
-                    session_generation,
-                    status,
-                    &websocket_domain,
-                    Some(message),
-                    status_code,
+                    RealtimeStatusEvent {
+                        client_run_id,
+                        generation,
+                        session_generation,
+                        status,
+                        websocket_domain: &websocket_domain,
+                        reason: Some(message),
+                        status_code,
+                    },
                 );
                 if error.is_auth_failure() {
                     return;
@@ -281,13 +312,15 @@ async fn run_realtime_transport_inner(
                 if changed.is_err() || is_cancelled(cancel_rx, generation) {
                     emit_status(
                         &event_bus,
-                        client_run_id,
-                        generation,
-                        session_generation,
-                        "disconnected",
-                        &websocket_domain,
-                        None,
-                        None,
+                        RealtimeStatusEvent {
+                            client_run_id,
+                            generation,
+                            session_generation,
+                            status: "disconnected",
+                            websocket_domain: &websocket_domain,
+                            reason: None,
+                            status_code: None,
+                        },
                     );
                     return;
                 }
@@ -297,19 +330,14 @@ async fn run_realtime_transport_inner(
 }
 
 async fn connect_once(
-    context: Arc<BackendContext>,
+    deps: RealtimeTransportDeps,
     message_sink: Arc<dyn RealtimeMessageSink>,
-    session: &RealtimeSessionContext,
-    client_run_id: u64,
-    generation: u64,
-    session_generation: u64,
-    cancel_rx: &mut watch::Receiver<u64>,
-    event_bus: &BackendEventBus,
-) -> Result<ConnectionEnd, RealtimeConnectionError> {
+    attempt: ConnectionAttempt<'_>,
+) -> std::result::Result<ConnectionEnd, RealtimeConnectionError> {
     let Some(token) = wait_for_result_or_cancel(
-        fetch_auth_token(&context, session),
-        cancel_rx,
-        generation,
+        fetch_auth_token(&deps, attempt.session),
+        attempt.cancel_rx,
+        attempt.generation,
         CONNECT_TIMEOUT,
         |timeout| {
             RealtimeConnectionError::Other(timeout_error("auth transport bootstrap", timeout))
@@ -319,20 +347,20 @@ async fn connect_once(
     else {
         return Ok(ConnectionEnd::Stopped);
     };
-    if is_cancelled(cancel_rx, generation) {
+    if is_cancelled(attempt.cancel_rx, attempt.generation) {
         return Ok(ConnectionEnd::Stopped);
     }
 
-    let url = build_transport_url(&session.websocket, &token);
-    let websocket_domain = normalize_websocket_domain(&session.websocket);
+    let url = build_transport_url(&attempt.session.websocket, &token);
+    let websocket_domain = normalize_websocket_domain(&attempt.session.websocket);
     let Some(mut stream) = wait_for_result_or_cancel(
         async {
-            connect_websocket(&url, context.web.proxy_url())
+            connect_websocket(&url, deps.web.proxy_url())
                 .await
                 .map_err(RealtimeConnectionError::from)
         },
-        cancel_rx,
-        generation,
+        attempt.cancel_rx,
+        attempt.generation,
         CONNECT_TIMEOUT,
         |timeout| RealtimeConnectionError::Other(timeout_error("websocket connect", timeout)),
     )
@@ -340,41 +368,46 @@ async fn connect_once(
     else {
         return Ok(ConnectionEnd::Stopped);
     };
-    if is_cancelled(cancel_rx, generation) {
+    if is_cancelled(attempt.cancel_rx, attempt.generation) {
         return Ok(ConnectionEnd::Stopped);
     }
     message_sink.handle_realtime_transport_status(
-        generation,
-        session_generation,
-        session,
+        attempt.generation,
+        attempt.session_generation,
+        attempt.session,
         "connected",
     );
     emit_status(
-        event_bus,
-        client_run_id,
-        generation,
-        session_generation,
-        "connected",
-        &websocket_domain,
-        None,
-        None,
+        attempt.event_bus,
+        RealtimeStatusEvent {
+            client_run_id: attempt.client_run_id,
+            generation: attempt.generation,
+            session_generation: attempt.session_generation,
+            status: "connected",
+            websocket_domain: &websocket_domain,
+            reason: None,
+            status_code: None,
+        },
     );
 
     let mut parser = RealtimeMessageParser::default();
     loop {
         tokio::select! {
-            changed = cancel_rx.changed() => {
-                if changed.is_err() || is_cancelled(cancel_rx, generation) {
+            changed = attempt.cancel_rx.changed() => {
+                if changed.is_err() || is_cancelled(attempt.cancel_rx, attempt.generation) {
                     return Ok(ConnectionEnd::Stopped);
                 }
             }
             frame = stream.next() => {
                 let Some(frame) = frame else {
-                    tracing::warn!(generation, "[Realtime] websocket stream ended");
+                    tracing::warn!(
+                        generation = attempt.generation,
+                        "[Realtime] websocket stream ended"
+                    );
                     return Ok(ConnectionEnd::Closed);
                 };
                 let frame = frame.map_err(|error| {
-                    RealtimeConnectionError::Other(AppError::Custom(format!(
+                    RealtimeConnectionError::Other(Error::Custom(format!(
                         "websocket read: {error}"
                     )))
                 })?;
@@ -388,19 +421,19 @@ async fn connect_once(
                                 .and_then(|value| value.as_str())
                                 .unwrap_or("<missing>");
                             if message_type == "<missing>" {
-                                log_untyped_message_summary(generation, &payload.json);
+                                log_untyped_message_summary(attempt.generation, &payload.json);
                             }
                             message_sink.handle_realtime_ws_message(
-                                generation,
-                                session_generation,
-                                session,
+                                attempt.generation,
+                                attempt.session_generation,
+                                attempt.session,
                                 &payload,
                             );
                         }
                     }
                     Message::Close(close) => {
                         tracing::warn!(
-                            generation,
+                            generation = attempt.generation,
                             close = ?close,
                             "[Realtime] websocket close frame"
                         );
@@ -428,9 +461,9 @@ async fn wait_for_result_or_cancel<F, T, E, M>(
     generation: u64,
     timeout: Duration,
     make_timeout_error: M,
-) -> Result<Option<T>, E>
+) -> std::result::Result<Option<T>, E>
 where
-    F: Future<Output = Result<T, E>>,
+    F: Future<Output = std::result::Result<T, E>>,
     M: FnOnce(Duration) -> E,
 {
     let timer = tokio::time::sleep(timeout);
@@ -454,8 +487,8 @@ where
     }
 }
 
-fn timeout_error(operation: &str, timeout: Duration) -> AppError {
-    AppError::Custom(format!(
+fn timeout_error(operation: &str, timeout: Duration) -> Error {
+    Error::Custom(format!(
         "{operation} timed out after {} seconds",
         timeout.as_secs()
     ))
@@ -465,25 +498,16 @@ fn is_cancelled(cancel_rx: &watch::Receiver<u64>, generation: u64) -> bool {
     *cancel_rx.borrow() != generation
 }
 
-fn emit_status(
-    event_bus: &BackendEventBus,
-    client_run_id: u64,
-    generation: u64,
-    session_generation: u64,
-    status: &str,
-    websocket_domain: &str,
-    reason: Option<String>,
-    status_code: Option<i32>,
-) {
+fn emit_status(event_bus: &BackendEventBus, event: RealtimeStatusEvent<'_>) {
     event_bus.emit_realtime_ws_status(RealtimeWsStatusPayload {
-        status: status.to_string(),
-        websocket_domain: websocket_domain.to_string(),
+        status: event.status.to_string(),
+        websocket_domain: event.websocket_domain.to_string(),
         at: Utc::now().to_rfc3339(),
-        client_run_id: Some(client_run_id),
-        generation: Some(generation),
-        session_generation: Some(session_generation),
-        reason,
-        status_code,
+        client_run_id: Some(event.client_run_id),
+        generation: Some(event.generation),
+        session_generation: Some(event.session_generation),
+        reason: event.reason,
+        status_code: event.status_code,
     });
 }
 
@@ -526,7 +550,7 @@ mod tests {
         tx.send(2).unwrap();
 
         let result = wait_for_result_or_cancel(
-            std::future::pending::<Result<(), crate::error::AppError>>(),
+            std::future::pending::<std::result::Result<(), crate::Error>>(),
             &mut rx,
             1,
             std::time::Duration::from_millis(50),
@@ -546,7 +570,7 @@ mod tests {
         let result = wait_for_result_or_cancel(
             async {
                 tokio::time::sleep(std::time::Duration::from_millis(1)).await;
-                Ok::<_, crate::error::AppError>(())
+                Ok::<_, crate::Error>(())
             },
             &mut rx,
             1,
@@ -564,7 +588,7 @@ mod tests {
         let (_tx, mut rx) = tokio::sync::watch::channel(1u64);
 
         let error = wait_for_result_or_cancel(
-            std::future::pending::<Result<(), crate::error::AppError>>(),
+            std::future::pending::<std::result::Result<(), crate::Error>>(),
             &mut rx,
             1,
             std::time::Duration::from_millis(1),

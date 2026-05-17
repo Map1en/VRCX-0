@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Map, Value};
 use tauri::State;
+use vrcx_0_vrchat::http_api::normalize_vrchat_api_endpoint;
 
 use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestInput};
 use crate::error::AppError;
@@ -20,8 +21,6 @@ use super::types::{
     BackendMediaPrintUploadInput, BackendMediaPrintsInput, BackendMediaRewardRedeemInput,
     BackendMediaUserInventoryItemInput,
 };
-
-const DEFAULT_VRCHAT_API_ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
 fn normalize_text(value: impl AsRef<str>) -> String {
     value.as_ref().trim().to_string()
@@ -47,12 +46,7 @@ fn json_headers() -> HashMap<String, String> {
 }
 
 fn normalize_media_endpoint(endpoint: &str) -> String {
-    let endpoint = endpoint.trim().trim_end_matches('/');
-    if endpoint.is_empty() {
-        DEFAULT_VRCHAT_API_ENDPOINT.into()
-    } else {
-        endpoint.to_string()
-    }
+    normalize_vrchat_api_endpoint(Some(endpoint))
 }
 
 fn get_input(

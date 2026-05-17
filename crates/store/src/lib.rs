@@ -5,11 +5,13 @@
 
 pub mod common;
 pub mod config;
+pub mod cookies;
 pub mod database;
 mod error;
 pub mod game_log;
 pub mod legacy_migration;
 pub mod legacy_vrcx;
+pub mod local_data;
 pub mod realtime;
 pub mod screenshot_cache;
 pub mod storage;

@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+
 pub(super) struct LogContext {
     pub(super) position: u64,
     pub(super) recent_world_name: String,

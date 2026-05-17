@@ -61,3 +61,11 @@ impl From<vrcx_0_runtime::Error> for AppError {
         }
     }
 }
+
+impl From<vrcx_0_vrchat::HttpApiError> for AppError {
+    fn from(value: vrcx_0_vrchat::HttpApiError) -> Self {
+        match value {
+            vrcx_0_vrchat::HttpApiError::Custom(message) => AppError::Custom(message),
+        }
+    }
+}

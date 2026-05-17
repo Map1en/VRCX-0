@@ -1,22 +1,16 @@
 use chrono::{DateTime, Duration, Utc};
-
-use crate::error::AppError;
 use vrcx_0_host::clipboard;
-use vrcx_0_runtime::screenshots as screenshot_domain;
 use vrcx_0_store::config as backend_config;
+use vrcx_0_store::database::DatabaseService;
 use vrcx_0_store::game_log;
 
-use super::runtime_state::{world_id_from_location, RuntimeSnapshot};
-use super::BackendDeps;
+use crate::event_bus::BackendEventBus;
+use crate::game_log::ingest::ScreenshotInput;
+use crate::game_log::runtime_state::world_id_from_location;
+use crate::screenshots as screenshot_domain;
+use crate::{Error, Result};
 
 const FALLBACK_LOCATION_MAX_AGE_MS: i64 = 15 * 60 * 1000;
-
-#[derive(Clone, Debug)]
-pub struct ScreenshotInput {
-    pub created_at: String,
-    pub path: String,
-    pub snapshot: RuntimeSnapshot,
-}
 
 #[derive(Clone, Debug, Default)]
 struct ScreenshotContext {
@@ -31,23 +25,25 @@ struct ScreenshotPlayer {
     display_name: String,
 }
 
-pub async fn handle_screenshot(deps: BackendDeps, input: ScreenshotInput) -> Result<(), AppError> {
+pub async fn handle_screenshot(
+    db: &DatabaseService,
+    event_bus: &BackendEventBus,
+    input: ScreenshotInput,
+) -> Result<()> {
     let screenshot_path = input.path.trim().to_string();
     if screenshot_path.is_empty() {
         return Ok(());
     }
 
-    let screenshot_helper = backend_config::get_bool(&deps.db, "screenshotHelper", true)?;
-    let modify_filename =
-        backend_config::get_bool(&deps.db, "screenshotHelperModifyFilename", false)?;
-    let copy_to_clipboard =
-        backend_config::get_bool(&deps.db, "screenshotHelperCopyToClipboard", false)?;
+    let screenshot_helper = backend_config::get_bool(db, "screenshotHelper", true)?;
+    let modify_filename = backend_config::get_bool(db, "screenshotHelperModifyFilename", false)?;
+    let copy_to_clipboard = backend_config::get_bool(db, "screenshotHelperCopyToClipboard", false)?;
 
     let mut next_path = screenshot_path.clone();
     if screenshot_helper {
-        if let Some(context) = screenshot_context(&deps, &input)? {
+        if let Some(context) = screenshot_context(db, &input)? {
             let world_id = world_id_from_location(&context.location);
-            let metadata = build_metadata(&deps, &context, &world_id);
+            let metadata = build_metadata(db, &context, &world_id);
             let metadata_json = serde_json::to_string(&metadata)?;
             let path_for_task = screenshot_path.clone();
             let world_id_for_task = world_id.clone();
@@ -60,7 +56,7 @@ pub async fn handle_screenshot(deps: BackendDeps, input: ScreenshotInput) -> Res
                 )
             })
             .await
-            .map_err(|error| AppError::Custom(format!("screenshot metadata task: {error}")))?;
+            .map_err(|error| Error::Custom(format!("screenshot metadata task: {error}")))?;
             if !written.is_empty() {
                 next_path = written;
             }
@@ -73,7 +69,7 @@ pub async fn handle_screenshot(deps: BackendDeps, input: ScreenshotInput) -> Res
         }
     }
 
-    deps.emit_side_effect(
+    event_bus.emit_game_log_side_effect(
         "screenshotProcessed",
         serde_json::json!({
             "path": next_path,
@@ -83,9 +79,9 @@ pub async fn handle_screenshot(deps: BackendDeps, input: ScreenshotInput) -> Res
 }
 
 fn screenshot_context(
-    deps: &BackendDeps,
+    db: &DatabaseService,
     input: &ScreenshotInput,
-) -> Result<Option<ScreenshotContext>, AppError> {
+) -> Result<Option<ScreenshotContext>> {
     if !input.snapshot.location.is_empty() {
         return Ok(Some(ScreenshotContext {
             location: input.snapshot.location.clone(),
@@ -102,9 +98,8 @@ fn screenshot_context(
         }));
     }
 
-    game_log::ensure_game_log_tables(&deps.db)?;
-    let Some(location_entry) = game_log::get_location_before_or_at(&deps.db, &input.created_at)?
-    else {
+    game_log::ensure_game_log_tables(db)?;
+    let Some(location_entry) = game_log::get_location_before_or_at(db, &input.created_at)? else {
         return Ok(None);
     };
 
@@ -124,7 +119,7 @@ fn screenshot_context(
 
     let mut players = Vec::<ScreenshotPlayer>::new();
     for entry in game_log::get_join_leave_entries_for_location_range(
-        &deps.db,
+        db,
         &location_entry.location,
         &location_entry.created_at,
         &input.created_at,
@@ -167,11 +162,11 @@ fn screenshot_context(
 }
 
 fn build_metadata(
-    deps: &BackendDeps,
+    db: &DatabaseService,
     context: &ScreenshotContext,
     world_id: &str,
 ) -> serde_json::Value {
-    let (author_id, author_name) = current_author(deps);
+    let (author_id, author_name) = current_author(db);
     serde_json::json!({
         "application": "VRCX-0",
         "version": 1,
@@ -191,16 +186,14 @@ fn build_metadata(
     })
 }
 
-fn current_author(deps: &BackendDeps) -> (String, String) {
-    let author_id =
-        backend_config::get_string(&deps.db, "lastUserLoggedIn", "").unwrap_or_default();
+fn current_author(db: &DatabaseService) -> (String, String) {
+    let author_id = backend_config::get_string(db, "lastUserLoggedIn", "").unwrap_or_default();
     if author_id.is_empty() {
         return (String::new(), String::new());
     }
 
-    let saved_credentials =
-        backend_config::get_json(&deps.db, "savedCredentials", serde_json::json!({}))
-            .unwrap_or_else(|_| serde_json::json!({}));
+    let saved_credentials = backend_config::get_json(db, "savedCredentials", serde_json::json!({}))
+        .unwrap_or_else(|_| serde_json::json!({}));
     let user = saved_credentials
         .get(&author_id)
         .and_then(|entry| entry.get("user"));

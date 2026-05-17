@@ -5963,7 +5963,6 @@ version = "1.4.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",
- "futures-util",
  "image",
  "percent-encoding",
  "reqwest",
@@ -5982,7 +5981,6 @@ dependencies = [
  "tauri-plugin-window-state",
  "thiserror 2.0.18",
  "tokio",
- "tokio-tungstenite",
  "tracing",
  "tracing-subscriber",
  "vrcx-0-core",
@@ -6051,23 +6049,24 @@ dependencies = [
 name = "vrcx-0-runtime"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
  "chrono",
+ "futures-util",
  "image",
  "percent-encoding",
- "reqwest",
  "reqwest_cookie_store",
  "rusqlite",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-tungstenite",
  "tracing",
  "url",
  "vrcx-0-core",
  "vrcx-0-host",
  "vrcx-0-media",
  "vrcx-0-store",
+ "vrcx-0-vrchat",
  "walkdir",
 ]
 
@@ -6090,13 +6089,18 @@ dependencies = [
 name = "vrcx-0-vrchat"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "percent-encoding",
+ "reqwest",
+ "reqwest_cookie_store",
+ "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tokio-tungstenite",
  "url",
  "vrcx-0-core",
+ "vrcx-0-media",
 ]
 
 [[package]]

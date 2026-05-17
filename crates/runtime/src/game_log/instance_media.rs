@@ -5,16 +5,16 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use reqwest::Url;
 use serde_json::Value;
+use url::Url;
 
-use crate::error::AppError;
+use crate::image_cache::{self, ImageCache};
+use crate::web_client::WebClient;
+use crate::{Error, Result};
 use vrcx_0_host::vrchat_paths;
 use vrcx_0_media::image_processing;
-use vrcx_0_runtime::image_cache;
 use vrcx_0_store::config as backend_config;
-
-use super::BackendDeps;
+use vrcx_0_store::database::DatabaseService;
 
 const INSTANCE_MEDIA_SAVE_INTERVAL: Duration = Duration::from_millis(2500);
 const MAX_RECENT_MEDIA_IDS: usize = 100;
@@ -25,6 +25,14 @@ pub struct InstanceMediaQueue {
     recent_ids: Arc<Mutex<VecDeque<String>>>,
 }
 
+#[derive(Clone)]
+pub struct InstanceMediaDeps {
+    pub db: Arc<DatabaseService>,
+    pub web: Arc<WebClient>,
+    pub image_cache: Arc<ImageCache>,
+    pub queue: InstanceMediaQueue,
+}
+
 impl InstanceMediaQueue {
     pub fn new() -> Self {
         Self {
@@ -33,10 +41,10 @@ impl InstanceMediaQueue {
         }
     }
 
-    async fn run<F, Fut>(&self, id: &str, task: F) -> Result<(), AppError>
+    async fn run<F, Fut>(&self, id: &str, task: F) -> Result<()>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<(), AppError>>,
+        Fut: Future<Output = Result<()>>,
     {
         if self.remember_or_seen(id) {
             return Ok(());
@@ -45,7 +53,7 @@ impl InstanceMediaQueue {
         let _guard = self.gate.lock().await;
         tokio::task::spawn_blocking(|| std::thread::sleep(INSTANCE_MEDIA_SAVE_INTERVAL))
             .await
-            .map_err(|error| AppError::Custom(format!("instance media delay task: {error}")))?;
+            .map_err(|error| Error::Custom(format!("instance media delay task: {error}")))?;
         task().await
     }
 
@@ -65,12 +73,18 @@ impl InstanceMediaQueue {
     }
 }
 
-pub async fn handle_api_request(deps: BackendDeps, request_url: &str) -> Result<(), AppError> {
+impl Default for InstanceMediaQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub async fn handle_api_request(deps: InstanceMediaDeps, request_url: &str) -> Result<()> {
     if backend_config::get_bool(&deps.db, "saveInstancePrints", false)? {
         if let Some(print_id) = parse_print_id(request_url) {
             let key = print_id.clone();
             let task_deps = deps.clone();
-            deps.media_queue
+            deps.queue
                 .run(&key, move || async move {
                     save_instance_print(task_deps, &print_id).await
                 })
@@ -82,7 +96,7 @@ pub async fn handle_api_request(deps: BackendDeps, request_url: &str) -> Result<
         if let Some((user_id, inventory_id)) = parse_inventory(request_url) {
             let key = inventory_id.clone();
             let task_deps = deps.clone();
-            deps.media_queue
+            deps.queue
                 .run(&key, move || async move {
                     save_inventory_media(task_deps, "emoji", &user_id, &inventory_id, "").await
                 })
@@ -93,11 +107,11 @@ pub async fn handle_api_request(deps: BackendDeps, request_url: &str) -> Result<
 }
 
 pub async fn handle_sticker_spawn(
-    deps: BackendDeps,
+    deps: InstanceMediaDeps,
     user_id: &str,
     display_name: &str,
     inventory_id: &str,
-) -> Result<(), AppError> {
+) -> Result<()> {
     if !backend_config::get_bool(&deps.db, "saveInstanceStickers", false)? {
         return Ok(());
     }
@@ -106,14 +120,14 @@ pub async fn handle_sticker_spawn(
     let inventory_id = inventory_id.to_string();
     let task_deps = deps.clone();
     let key = inventory_id.clone();
-    deps.media_queue
+    deps.queue
         .run(&key, move || async move {
             save_inventory_media(task_deps, "sticker", &user_id, &inventory_id, &display_name).await
         })
         .await
 }
 
-async fn save_instance_print(deps: BackendDeps, print_id: &str) -> Result<(), AppError> {
+async fn save_instance_print(deps: InstanceMediaDeps, print_id: &str) -> Result<()> {
     let ugc_path = ugc_folder_path(&deps)?;
     if ugc_path.is_empty() {
         return Ok(());
@@ -156,12 +170,12 @@ async fn save_instance_print(deps: BackendDeps, print_id: &str) -> Result<(), Ap
 }
 
 async fn save_inventory_media(
-    deps: BackendDeps,
+    deps: InstanceMediaDeps,
     expected_type: &str,
     user_id: &str,
     inventory_id: &str,
     display_name: &str,
-) -> Result<(), AppError> {
+) -> Result<()> {
     let ugc_path = ugc_folder_path(&deps)?;
     if ugc_path.is_empty() {
         return Ok(());
@@ -204,7 +218,7 @@ async fn save_inventory_media(
     Ok(())
 }
 
-async fn execute_json(deps: &BackendDeps, url: &str) -> Result<Option<Value>, AppError> {
+async fn execute_json(deps: &InstanceMediaDeps, url: &str) -> Result<Option<Value>> {
     let mut options = HashMap::new();
     options.insert("url".to_string(), serde_json::json!(url));
     options.insert("method".to_string(), serde_json::json!("GET"));
@@ -215,7 +229,7 @@ async fn execute_json(deps: &BackendDeps, url: &str) -> Result<Option<Value>, Ap
     Ok(serde_json::from_str(&body).ok())
 }
 
-fn ugc_folder_path(deps: &BackendDeps) -> Result<String, AppError> {
+fn ugc_folder_path(deps: &InstanceMediaDeps) -> Result<String> {
     let configured = backend_config::get_string(&deps.db, "userGeneratedContentPath", "")?;
     Ok(vrchat_paths::ugc_photo_location(Some(configured)))
 }

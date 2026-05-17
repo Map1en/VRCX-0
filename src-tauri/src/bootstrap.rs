@@ -10,14 +10,14 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 
-use crate::backend::event_bus::BackendEventSink;
 use crate::backend::host_actions::BackendHostActions;
-use crate::backend::task_runtime::{BackendTask, BackendTaskExecutor};
 use crate::domain::process_monitor::GameProcessEventSink;
 use crate::state::AppState;
 use vrcx_0_host::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
+use vrcx_0_runtime::event_bus::BackendEventSink;
+use vrcx_0_runtime::task_runtime::{BackendTask, BackendTaskExecutor};
 
 #[derive(Clone)]
 struct TauriBackendEventSink {
@@ -474,7 +474,10 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
         if let Err(error) = state.game_log_backend.prime_log_watcher(&state.log_watcher) {
             tracing::warn!("failed to prime GameLog watcher from backend DB: {error}");
         }
-        state.log_watcher.start(local_low, app.handle().clone());
+        state.log_watcher.start(
+            local_low,
+            crate::domain::log_watcher::tauri_compat_event_sink(app.handle().clone()),
+        );
         state
             .backend_context
             .background_jobs
@@ -509,9 +512,10 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
                 if let Err(error) = state.game_log_backend.prime_log_watcher(&state.log_watcher) {
                     tracing::warn!("failed to prime GameLog watcher from backend DB: {error}");
                 }
-                state
-                    .log_watcher
-                    .start_without_process_monitor(paths.app_data, app.handle().clone());
+                state.log_watcher.start_without_process_monitor(
+                    paths.app_data,
+                    crate::domain::log_watcher::tauri_compat_event_sink(app.handle().clone()),
+                );
                 state
                     .backend_context
                     .background_jobs

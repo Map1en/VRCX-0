@@ -3,11 +3,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use crate::task_runtime::BackendTasks;
 use chrono::{Duration as ChronoDuration, SecondsFormat, Utc};
 use serde::Serialize;
 use vrcx_0_store::database::DatabaseService;
-
-use super::task_runtime::BackendTasks;
 
 const DATABASE_OPTIMIZE_JOB: &str = "databaseOptimize";
 const DATABASE_OPTIMIZE_INITIAL_DELAY_SECONDS: u64 = 3_600;
@@ -410,7 +409,7 @@ impl BackendBackgroundJobs {
                 jobs.mark_running(DATABASE_OPTIMIZE_JOB, "Running PRAGMA optimize.");
                 let db_for_task = Arc::clone(&db);
                 match tokio::task::spawn_blocking(move || {
-                    db_for_task.execute_non_query("PRAGMA optimize", &Default::default())
+                    vrcx_0_store::database::optimize_database(&db_for_task)
                 })
                 .await
                 {

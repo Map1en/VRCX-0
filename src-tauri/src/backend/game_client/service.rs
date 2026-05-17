@@ -3,56 +3,43 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::backend::context::BackendContext;
+use crate::backend::host_actions::BackendHost;
 use crate::domain::log_watcher::LogWatcher;
 use crate::domain::process_monitor::{GameProcessEvent, GameProcessEventSink};
 use crate::error::AppError;
 
-use crate::backend::worker::{BackendWorker, BackendWorkerOptions};
+use vrcx_0_core::log_watcher::LogLocationSnapshot;
+use vrcx_0_runtime::game_client::actions::{GameClientActions, SystemGameClientActions};
+use vrcx_0_runtime::game_client::processor::{
+    GameClientJob, GameClientLocationSource, GameClientProcessor, GameClientProcessorDeps,
+    GameClientState, GameClientWindowActions,
+};
+use vrcx_0_runtime::worker::{BackendWorker, BackendWorkerOptions};
+use vrcx_0_runtime::Result as RuntimeResult;
 
-use super::actions::{GameClientActions, SystemGameClientActions};
-use super::{ipc, lifecycle};
+#[derive(Clone)]
+struct LogWatcherLocationSource {
+    log_watcher: LogWatcher,
+}
 
-pub(super) struct GameClientState {
-    pub external_notifier_version: i64,
-    pub last_crash_at_ms: Option<i64>,
-    pub session_active: bool,
-    pub current_location: String,
+impl GameClientLocationSource for LogWatcherLocationSource {
+    fn vrc_closed_gracefully(&self) -> bool {
+        self.log_watcher.vrc_closed_gracefully()
+    }
+
+    fn current_location_snapshot(&self) -> Option<LogLocationSnapshot> {
+        self.log_watcher.current_location_snapshot()
+    }
 }
 
 #[derive(Clone)]
-pub(super) struct GameClientDeps {
-    pub context: Arc<BackendContext>,
-    pub log_watcher: LogWatcher,
-    pub actions: Arc<dyn GameClientActions>,
-    pub state: Arc<Mutex<GameClientState>>,
+struct BackendGameClientWindowActions {
+    host: BackendHost,
 }
 
-pub(super) enum GameClientJob {
-    VrcxNoty {
-        message: String,
-        fallback_packet: String,
-    },
-    VrcxExternal {
-        message: String,
-        display_name: String,
-        user_id: String,
-        notify: bool,
-        fallback_packet: String,
-    },
-    GameStopped,
-}
-
-impl GameClientJob {
-    fn fallback_packet(&self) -> Option<&str> {
-        match self {
-            GameClientJob::VrcxNoty {
-                fallback_packet, ..
-            }
-            | GameClientJob::VrcxExternal {
-                fallback_packet, ..
-            } => Some(fallback_packet),
-            GameClientJob::GameStopped => None,
-        }
+impl GameClientWindowActions for BackendGameClientWindowActions {
+    fn focus_main_window(&self) {
+        self.host.focus_main_window();
     }
 }
 
@@ -71,23 +58,28 @@ impl GameClientBackend {
         log_watcher: LogWatcher,
         actions: Arc<dyn GameClientActions>,
     ) -> Self {
-        let state = Arc::new(Mutex::new(GameClientState {
-            external_notifier_version: 0,
-            last_crash_at_ms: None,
-            session_active: false,
-            current_location: String::new(),
-        }));
-        let worker_deps = GameClientDeps {
-            context: Arc::clone(&context),
-            log_watcher: log_watcher.clone(),
-            actions: Arc::clone(&actions),
-            state: Arc::clone(&state),
-        };
+        let state = Arc::new(Mutex::new(GameClientState::default()));
+        let processor = GameClientProcessor::new(
+            GameClientProcessorDeps {
+                db: Arc::clone(&context.db),
+                config: context.config.clone(),
+                event_bus: context.event_bus.clone(),
+                tasks: context.tasks.clone(),
+                session: context.session.clone(),
+                actions: Arc::clone(&actions),
+                location_source: Arc::new(LogWatcherLocationSource { log_watcher }),
+                window_actions: Arc::new(BackendGameClientWindowActions {
+                    host: context.host.clone(),
+                }),
+            },
+            Arc::clone(&state),
+        );
+        let worker_processor = processor.clone();
         let worker = BackendWorker::start(
             "game-client",
             BackendWorkerOptions::default(),
             context.event_bus.clone(),
-            move |jobs| handle_jobs(worker_deps.clone(), jobs),
+            move |jobs| worker_processor.handle_jobs(jobs),
         );
 
         Self { state, worker }
@@ -114,59 +106,11 @@ impl GameClientBackend {
 }
 
 impl GameProcessEventSink for GameClientBackend {
-    fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError> {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> RuntimeResult<()> {
         if event.game_changed && !event.is_game_running {
-            self.enqueue_job(GameClientJob::GameStopped)?;
+            self.worker.push_batch([GameClientJob::GameStopped])?;
         }
         Ok(())
-    }
-}
-
-fn handle_jobs(deps: GameClientDeps, jobs: Vec<GameClientJob>) -> Result<(), AppError> {
-    let mut first_error = None;
-    for job in jobs {
-        let fallback_packet = job.fallback_packet().map(ToOwned::to_owned);
-        match job {
-            GameClientJob::VrcxNoty { .. } | GameClientJob::VrcxExternal { .. } => {
-                if let Err(error) = ipc::handle_ipc_job(&deps, job) {
-                    if let Some(packet) = fallback_packet {
-                        deps.context.event_bus.emit_ipc_event(&packet);
-                    }
-                    remember_error(&mut first_error, error);
-                }
-            }
-            GameClientJob::GameStopped => match lifecycle::prepare_game_stopped(&deps) {
-                Ok(Some(plan)) => {
-                    let task_deps = deps.clone();
-                    deps.context.tasks.spawn(async move {
-                        if let Err(error) = lifecycle::execute_crash_relaunch(task_deps, plan).await
-                        {
-                            tracing::warn!("GameClient stopped-game handling failed: {error}");
-                        }
-                    });
-                }
-                Ok(None) => {}
-                Err(error) => {
-                    deps.context.event_bus.emit_game_client_event(
-                        "crashRelaunchDecision",
-                        serde_json::json!({
-                            "handled": false,
-                            "error": error.to_string(),
-                        }),
-                    );
-                    remember_error(&mut first_error, error);
-                }
-            },
-        }
-    }
-    first_error.map_or(Ok(()), Err)
-}
-
-fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
-    if first_error.is_none() {
-        *first_error = Some(error);
-    } else {
-        tracing::warn!("GameClient worker job failed: {error}");
     }
 }
 

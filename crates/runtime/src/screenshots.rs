@@ -1123,26 +1123,28 @@ mod tests {
             .map(unix_time_millis)
             .unwrap_or_default();
         let image_path_string = image_path.to_string_lossy().into_owned();
-        {
-            let conn = rusqlite::Connection::open(&db_path)
-                .map_err(|error| Error::Database(format!("open stale row seed db: {error}")))?;
-            conn.execute(
-                "INSERT INTO screenshot_files (
-                    path, scan_root, folder_path, file_name, size_bytes, modified_at, indexed_at
-                 )
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                rusqlite::params![
-                    image_path_string.as_str(),
-                    photos_dir.to_string_lossy().as_ref(),
-                    photos_dir.to_string_lossy().as_ref(),
-                    "VRChat_2026-05-08_00-00-06.000_3840x2160.png",
-                    file_metadata.len() as i64,
-                    modified_at,
-                    now_unix_seconds(),
-                ],
-            )
-            .map_err(|error| Error::Database(format!("seed stale row: {error}")))?;
-        }
+        cache.replace_library_entries(
+            &photos_dir.to_string_lossy(),
+            &HashSet::from([image_path_string.clone()]),
+            &[ScreenshotLibraryEntry {
+                scan_root: photos_dir.to_string_lossy().into_owned(),
+                path: image_path_string.clone(),
+                folder_path: photos_dir.to_string_lossy().into_owned(),
+                file_name: "VRChat_2026-05-08_00-00-06.000_3840x2160.png".into(),
+                size_bytes: file_metadata.len() as i64,
+                modified_at,
+                created_at: None,
+                width: None,
+                height: None,
+                world_id: None,
+                world_name: None,
+                captured_at: None,
+                metadata_json: None,
+                error: None,
+            }],
+            false,
+        )?;
+        cache.mark_library_entry_stale_for_test(&image_path_string)?;
 
         let status = scan_screenshot_library_in(&photos_dir, &cache, None, false);
         assert_eq!(status.scanned, 1);

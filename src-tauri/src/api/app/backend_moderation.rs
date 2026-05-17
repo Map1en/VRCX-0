@@ -3,18 +3,18 @@
 use std::collections::HashMap;
 
 use chrono::{SecondsFormat, Utc};
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::State;
+use vrcx_0_vrchat::http_api::normalize_vrchat_api_endpoint;
 
 use crate::api::app::local_data::types::{
     LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
 };
+use crate::api::app::vrchat_api_types::HttpApiRequestInput;
 use crate::error::AppError;
 use crate::state::AppState;
 
-const DEFAULT_VRCHAT_API_ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 const PLAYER_MODERATIONS_PATH: &str = "auth/user/playermoderations";
 const PLAYER_MODERATION_DELETE_PATH: &str = "auth/user/unplayermoderate";
 
@@ -110,21 +110,7 @@ fn value_as_string_or_empty(value: Option<&Value>) -> String {
 }
 
 fn normalize_endpoint(endpoint: &str) -> String {
-    let endpoint = endpoint.trim().trim_end_matches('/');
-    if endpoint.is_empty() {
-        DEFAULT_VRCHAT_API_ENDPOINT.to_string()
-    } else {
-        endpoint.to_string()
-    }
-}
-
-fn build_vrchat_api_url(endpoint: &str, path: &str) -> Result<String, AppError> {
-    let base = format!("{}/", normalize_endpoint(endpoint));
-    Url::parse(&base)
-        .map_err(|error| AppError::Custom(format!("bad API endpoint: {error}")))?
-        .join(path.trim_start_matches('/'))
-        .map(|url| url.to_string())
-        .map_err(|error| AppError::Custom(format!("bad API path: {error}")))
+    normalize_vrchat_api_endpoint(Some(endpoint))
 }
 
 async fn execute_vrchat_json_request(
@@ -134,31 +120,32 @@ async fn execute_vrchat_json_request(
     method: &str,
     body: Option<Value>,
 ) -> Result<Value, AppError> {
-    let mut options = HashMap::new();
-    options.insert(
-        "url".to_string(),
-        Value::String(build_vrchat_api_url(endpoint, path)?),
-    );
-    options.insert("method".to_string(), Value::String(method.to_string()));
-    if let Some(body) = body {
-        options.insert(
-            "headers".to_string(),
-            json!({
-                "Content-Type": "application/json;charset=utf-8"
+    let has_body = body.is_some();
+    let response = super::vrchat_api::execute_vrchat_tools_api(
+        state.clone(),
+        HttpApiRequestInput {
+            endpoint: Some(normalize_endpoint(endpoint)),
+            method: Some(method.to_string()),
+            path: Some(path.to_string()),
+            headers: has_body.then(|| {
+                HashMap::from([(
+                    "Content-Type".to_string(),
+                    "application/json;charset=utf-8".to_string(),
+                )])
             }),
-        );
-        options.insert("body".to_string(), Value::String(body.to_string()));
-    }
+            body,
+            json_body: Some(has_body),
+            ..Default::default()
+        },
+    )
+    .await?;
 
-    let (status, data) = state.web.execute(options).await?;
-    state.web.save_cookies(&state.db);
-    if status == -1 {
-        return Err(AppError::Custom(data));
-    }
-
-    let json = parse_response_json(&data);
-    if status >= 400 || response_has_error(&json) {
-        return Err(AppError::Custom(unwrap_error_message(&json, status)));
+    let json = parse_response_json(&response.data);
+    if response.status >= 400 || response_has_error(&json) {
+        return Err(AppError::Custom(unwrap_error_message(
+            &json,
+            response.status,
+        )));
     }
 
     Ok(json)
@@ -557,17 +544,6 @@ mod tests {
         assert_eq!(rows[0].target_user_id, "usr_target");
         assert_eq!(rows[0].target_display_name, "Target");
         assert_eq!(rows[0].created, "2026-05-16T00:00:00.000Z");
-    }
-
-    #[test]
-    fn builds_player_moderation_url_from_endpoint() {
-        let url = build_vrchat_api_url("https://api.example.test/api/1/", PLAYER_MODERATIONS_PATH)
-            .unwrap();
-
-        assert_eq!(
-            url,
-            "https://api.example.test/api/1/auth/user/playermoderations"
-        );
     }
 
     #[test]

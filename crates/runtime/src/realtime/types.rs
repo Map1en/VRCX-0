@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_core::friends::FriendRecord;
+pub use vrcx_0_core::realtime::{
+    RealtimeSessionContext, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
+};
 use vrcx_0_store::realtime::RealtimePersistenceBatch;
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -22,6 +25,14 @@ pub struct FriendBaselineResult {
     pub generation: u64,
     pub baseline_revision: u64,
     pub friend_count: usize,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RealtimeTransportStartResult {
+    pub generation: u64,
+    pub client_run_id: u64,
+    pub session_generation: u64,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]

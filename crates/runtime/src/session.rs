@@ -4,6 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 
+use crate::event_bus::BackendEventBus;
+use crate::process_monitor::{GameProcessEvent, GameProcessEventSink};
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GameProcessStatus {
     pub is_game_running: bool,
@@ -146,6 +149,36 @@ impl HostSessionRuntime {
 
     fn lock_state(&self) -> std::sync::MutexGuard<'_, HostSessionState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
+    }
+}
+
+#[derive(Clone)]
+pub struct SessionBackend {
+    session: HostSessionRuntime,
+    event_bus: BackendEventBus,
+}
+
+impl SessionBackend {
+    pub fn new(session: HostSessionRuntime, event_bus: BackendEventBus) -> Self {
+        Self { session, event_bus }
+    }
+}
+
+impl GameProcessEventSink for SessionBackend {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> crate::Result<()> {
+        let projection = self.session.apply_game_process_status(GameProcessStatus {
+            is_game_running: event.is_game_running,
+            is_steamvr_running: event.is_steamvr_running,
+            changed_at: chrono::Utc::now()
+                .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+                .to_string(),
+        });
+
+        if projection.game_changed || projection.steamvr_changed {
+            self.event_bus.emit_game_process_status(projection);
+        }
+
+        Ok(())
     }
 }
 

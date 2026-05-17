@@ -7,7 +7,10 @@ use crate::Error;
 
 use super::schema::*;
 use super::tables::ensure_game_log_tables;
-use super::types::{GameLogJoinLeaveSnapshot, GameLogLocationSnapshot};
+use super::types::{
+    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
+    GameLogLocationEntry, GameLogLocationSnapshot,
+};
 
 fn latest_join_leave_lookup_sql() -> String {
     Query::select()
@@ -57,6 +60,80 @@ fn latest_created_at_sql(table: &str) -> String {
         .column(ident(COL_CREATED_AT))
         .from(ident(table))
         .order_by(ident(COL_ID), Order::Desc)
+        .limit(1)
+        .to_string(SqliteQueryBuilder)
+}
+
+fn game_log_events_sql() -> String {
+    Query::select()
+        .columns([COL_CREATED_AT, COL_DATA].into_iter().map(ident))
+        .from(ident(TABLE_EVENT))
+        .order_by(ident(COL_ID), Order::Asc)
+        .to_string(SqliteQueryBuilder)
+}
+
+fn game_log_locations_sql() -> String {
+    Query::select()
+        .columns(
+            [
+                COL_CREATED_AT,
+                COL_LOCATION,
+                COL_WORLD_ID,
+                COL_WORLD_NAME,
+                COL_TIME,
+                COL_GROUP_NAME,
+            ]
+            .into_iter()
+            .map(ident),
+        )
+        .from(ident(TABLE_LOCATION))
+        .order_by(ident(COL_ID), Order::Asc)
+        .to_string(SqliteQueryBuilder)
+}
+
+fn game_log_join_leave_sql() -> String {
+    Query::select()
+        .columns(
+            [
+                COL_CREATED_AT,
+                COL_TYPE,
+                COL_DISPLAY_NAME,
+                COL_LOCATION,
+                COL_USER_ID,
+                COL_TIME,
+            ]
+            .into_iter()
+            .map(ident),
+        )
+        .from(ident(TABLE_JOIN_LEAVE))
+        .order_by(ident(COL_CREATED_AT), Order::Asc)
+        .to_string(SqliteQueryBuilder)
+}
+
+fn game_log_externals_sql() -> String {
+    Query::select()
+        .columns(
+            [
+                COL_CREATED_AT,
+                COL_MESSAGE,
+                COL_DISPLAY_NAME,
+                COL_USER_ID,
+                COL_LOCATION,
+            ]
+            .into_iter()
+            .map(ident),
+        )
+        .from(ident(TABLE_EXTERNAL))
+        .order_by(ident(COL_ID), Order::Asc)
+        .to_string(SqliteQueryBuilder)
+}
+
+fn game_log_location_table_exists_sql() -> String {
+    Query::select()
+        .column(ident("name"))
+        .from(ident("sqlite_schema"))
+        .and_where(Expr::col(ident("type")).eq("table"))
+        .and_where(Expr::col(ident("name")).eq(TABLE_LOCATION))
         .limit(1)
         .to_string(SqliteQueryBuilder)
 }
@@ -115,6 +192,77 @@ pub fn get_join_leave_entries_for_location_range(
             user_id: row_string(&row, 3),
         })
         .collect())
+}
+
+pub fn get_game_log_events(db: &DatabaseService) -> Result<Vec<GameLogEventEntry>, Error> {
+    ensure_game_log_tables(db)?;
+    Ok(db
+        .execute(&game_log_events_sql(), &Default::default())?
+        .into_iter()
+        .map(|row| GameLogEventEntry {
+            created_at: row_string(&row, 0),
+            data: row_string(&row, 1),
+        })
+        .collect())
+}
+
+pub fn get_game_log_locations(db: &DatabaseService) -> Result<Vec<GameLogLocationEntry>, Error> {
+    ensure_game_log_tables(db)?;
+    Ok(db
+        .execute(&game_log_locations_sql(), &Default::default())?
+        .into_iter()
+        .map(|row| GameLogLocationEntry {
+            created_at: row_string(&row, 0),
+            location: row_string(&row, 1),
+            world_id: row_string(&row, 2),
+            world_name: row_string(&row, 3),
+            time: row
+                .get(4)
+                .and_then(serde_json::Value::as_i64)
+                .unwrap_or_default(),
+            group_name: row_string(&row, 5),
+        })
+        .collect())
+}
+
+pub fn get_game_log_join_leave(db: &DatabaseService) -> Result<Vec<GameLogJoinLeaveEntry>, Error> {
+    ensure_game_log_tables(db)?;
+    Ok(db
+        .execute(&game_log_join_leave_sql(), &Default::default())?
+        .into_iter()
+        .map(|row| GameLogJoinLeaveEntry {
+            created_at: row_string(&row, 0),
+            event_type: row_string(&row, 1),
+            display_name: row_string(&row, 2),
+            location: row_string(&row, 3),
+            user_id: row_string(&row, 4),
+            time: row
+                .get(5)
+                .and_then(serde_json::Value::as_i64)
+                .unwrap_or_default(),
+        })
+        .collect())
+}
+
+pub fn get_game_log_externals(db: &DatabaseService) -> Result<Vec<GameLogExternalEntry>, Error> {
+    ensure_game_log_tables(db)?;
+    Ok(db
+        .execute(&game_log_externals_sql(), &Default::default())?
+        .into_iter()
+        .map(|row| GameLogExternalEntry {
+            created_at: row_string(&row, 0),
+            message: row_string(&row, 1),
+            display_name: row_string(&row, 2),
+            user_id: row_string(&row, 3),
+            location: row_string(&row, 4),
+        })
+        .collect())
+}
+
+pub fn game_log_location_table_exists(db: &DatabaseService) -> Result<bool, Error> {
+    Ok(!db
+        .execute(&game_log_location_table_exists_sql(), &Default::default())?
+        .is_empty())
 }
 
 pub fn get_last_game_log_date(db: &DatabaseService) -> Result<String, Error> {
