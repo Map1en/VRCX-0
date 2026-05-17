@@ -1,1 +1,1 @@
-pub use vrcx_0_domain::realtime::RealtimeMessageParser;
+pub use vrcx_0_core::realtime::RealtimeMessageParser;

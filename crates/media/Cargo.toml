@@ -1,0 +1,20 @@
+[package]
+name = "vrcx-0-media"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22"
+fast_rsync = "0.2"
+fast_image_resize = { version = "6.0.0", features = ["image", "only_u8x4", "rayon"] }
+hex = "0.4"
+image = "0.25"
+sha2 = "0.11"
+serde_json = "1"
+thiserror = "2"
+vrcx-0-core = { path = "../core" }
+walkdir = "2"
+webp = "0.3.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt"] }

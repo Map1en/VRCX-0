@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use crate::domain::image_cache::ImageCache;
-use crate::domain::web_client::WebClient;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::database::DatabaseService;
 use vrcx_0_runtime::game_log::runtime_state::RuntimeSnapshot;
+use vrcx_0_runtime::image_cache::ImageCache;
 use vrcx_0_runtime::session::HostSessionRuntime;
+use vrcx_0_runtime::web_client::WebClient;
+use vrcx_0_store::config::ConfigRepository;
+use vrcx_0_store::database::DatabaseService;
 
 use super::auth_scope::BackendAuthScope;
 use super::background::BackendBackgroundJobs;

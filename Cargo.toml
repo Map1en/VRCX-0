@@ -1,0 +1,20 @@
+[workspace]
+members = [
+    "src-tauri",
+    "crates/core",
+    "crates/store",
+    "crates/vrchat",
+    "crates/host",
+    "crates/media",
+    "crates/runtime",
+]
+default-members = [
+    "src-tauri",
+    "crates/core",
+    "crates/store",
+    "crates/vrchat",
+    "crates/host",
+    "crates/media",
+    "crates/runtime",
+]
+resolver = "2"

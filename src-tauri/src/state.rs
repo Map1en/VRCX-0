@@ -5,22 +5,22 @@ use crate::backend::game_client::GameClientBackend;
 use crate::backend::game_log::GameLogBackend;
 use crate::backend::realtime::RealtimeBackend;
 use crate::backend::session::SessionBackend;
-use crate::domain::app_paths::AppPaths;
-use crate::domain::auto_launch::AutoAppLaunchManager;
-use crate::domain::discord_rpc::DiscordRpc;
-use crate::domain::image_cache::ImageCache;
 use crate::domain::ipc::{IpcEventSink, IpcServer};
-use crate::domain::legacy_migration::{
-    cleanup_legacy_updater_files, consume_pending_legacy_migration,
-};
-use crate::domain::legacy_vrcx::{LegacyVrcxMigrationStatus, LegacyVrcxSource};
 use crate::domain::log_watcher::{GameLogEventSink, LogWatcher};
 use crate::domain::process_monitor::ProcessMonitor;
-use crate::domain::screenshot::MetadataCacheDb;
-use crate::domain::storage::StorageService;
-use crate::domain::web_client::WebClient;
 use crate::error::AppError;
-use vrcx_0_persistence::database::DatabaseService;
+use vrcx_0_host::app_paths::AppPaths;
+use vrcx_0_host::auto_launch::AutoAppLaunchManager;
+use vrcx_0_host::discord_rpc::DiscordRpc;
+use vrcx_0_runtime::image_cache::ImageCache;
+use vrcx_0_runtime::web_client::WebClient;
+use vrcx_0_store::database::DatabaseService;
+use vrcx_0_store::legacy_migration::{
+    cleanup_legacy_updater_files, consume_pending_legacy_migration, LegacyMigrationPaths,
+};
+use vrcx_0_store::legacy_vrcx::{LegacyVrcxMigrationStatus, LegacyVrcxSource};
+use vrcx_0_store::screenshot_cache::MetadataCacheDb;
+use vrcx_0_store::storage::StorageService;
 
 pub struct AppState {
     pub paths: AppPaths,
@@ -52,10 +52,11 @@ impl AppState {
         cleanup_legacy_updater_files(&paths.app_data);
         let launched_from_autostart = std::env::args().any(|arg| arg == "--autostart");
 
-        consume_pending_legacy_migration(&paths)?;
+        let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
+        consume_pending_legacy_migration(&migration_paths)?;
 
         let (legacy_vrcx_source, legacy_vrcx_migration_status) =
-            crate::domain::legacy_vrcx::discover_legacy_vrcx_migration(
+            vrcx_0_store::legacy_vrcx::discover_legacy_vrcx_migration(
                 &paths.db_file,
                 &paths.config_file,
             );
@@ -88,8 +89,7 @@ impl AppState {
         let session_backend = Arc::new(SessionBackend::new(Arc::clone(&backend_context)));
         let ipc_sink: Arc<dyn IpcEventSink> = game_client_backend.clone();
         let ipc = IpcServer::new(Some(ipc_sink));
-        let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))
-            .map_err(|e| AppError::Custom(format!("screenshot cache: {e}")))?;
+        let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))?;
 
         let auto_launch = AutoAppLaunchManager::new(&paths.app_data);
 

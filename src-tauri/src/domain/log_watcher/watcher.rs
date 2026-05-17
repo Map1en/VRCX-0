@@ -6,12 +6,13 @@ use std::time::{Duration, Instant};
 
 use chrono::{Local, NaiveDateTime, Utc};
 use tauri::AppHandle;
+use vrcx_0_core::log_watcher::LogLocationSnapshot;
+use vrcx_0_host::log_scanner::scan_current_location_snapshot;
 
 use super::context::LogContext;
 use super::event::{GameLogEvent, GameLogEventSink};
 use super::parser;
 use super::queue;
-use super::scanner::{scan_current_location_snapshot, LogLocationSnapshot};
 
 const INACTIVE_POLL_KEEPALIVE: Duration = Duration::from_secs(120);
 #[derive(Clone)]

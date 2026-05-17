@@ -4,65 +4,65 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 
-use crate::domain::shell_actions;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_host::shell_actions;
 
-use super::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
 
 #[tauri::command]
 pub fn app__open_link(url: String) -> Result<(), AppError> {
-    shell_actions::open_link(&url)
+    Ok(shell_actions::open_link(&url)?)
 }
 
 #[tauri::command]
 pub fn app__open_discord_profile(discord_id: String) -> Result<(), AppError> {
-    shell_actions::open_discord_profile(&discord_id)
+    Ok(shell_actions::open_discord_profile(&discord_id)?)
 }
 
 #[tauri::command]
 pub fn app__get_file_base64(path: String) -> Result<String, AppError> {
-    shell_actions::file_base64(&path)
+    Ok(shell_actions::file_base64(&path)?)
 }
 
 #[tauri::command]
 pub fn app__get_file_bytes(path: String) -> Result<Vec<u8>, AppError> {
-    shell_actions::file_bytes(&path)
+    Ok(shell_actions::file_bytes(&path)?)
 }
 
 #[tauri::command]
 pub fn app__read_config_file() -> Result<String, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::read_config_file()
+    Ok(shell_actions::read_config_file()?)
 }
 
 #[tauri::command]
 pub fn app__read_config_file_safe() -> Result<String, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::read_config_file_safe()
+    Ok(shell_actions::read_config_file_safe()?)
 }
 
 #[tauri::command]
 pub fn app__write_config_file(json: String) -> Result<(), AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::write_config_file(&json)
+    Ok(shell_actions::write_config_file(&json)?)
 }
 
 #[tauri::command]
 pub fn app__open_vrcx_app_data_folder(state: State<'_, AppState>) -> Result<bool, AppError> {
-    shell_actions::open_existing_folder(&state.paths.app_data)
+    Ok(shell_actions::open_existing_folder(&state.paths.app_data)?)
 }
 
 #[tauri::command]
 pub fn app__open_vrc_app_data_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::open_vrc_app_data_folder()
+    Ok(shell_actions::open_vrc_app_data_folder()?)
 }
 
 #[tauri::command]
 pub fn app__open_vrc_photos_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::open_vrc_photos_folder()
+    Ok(shell_actions::open_vrc_photos_folder()?)
 }
 
 #[tauri::command]
@@ -70,24 +70,24 @@ pub fn app__open_ugc_photos_folder(ugc_path: Option<String>) -> Result<bool, App
     if ugc_path.as_deref().is_none_or(|p| p.is_empty()) {
         require_host_capability(HostCapability::VrchatPathDiscovery)?;
     }
-    shell_actions::open_ugc_photos_folder(ugc_path)
+    Ok(shell_actions::open_ugc_photos_folder(ugc_path)?)
 }
 
 #[tauri::command]
 pub fn app__open_vrc_screenshots_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    shell_actions::open_vrc_screenshots_folder()
+    Ok(shell_actions::open_vrc_screenshots_folder()?)
 }
 
 #[tauri::command]
 pub fn app__open_crash_vrc_crash_dumps() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    shell_actions::open_crash_dumps_folder()
+    Ok(shell_actions::open_crash_dumps_folder()?)
 }
 
 #[tauri::command]
 pub fn app__open_shortcut_folder(state: State<'_, AppState>) -> Result<(), AppError> {
-    shell_actions::open_shortcut_folder(&state.paths.app_data)
+    Ok(shell_actions::open_shortcut_folder(&state.paths.app_data)?)
 }
 
 #[tauri::command]
@@ -95,7 +95,10 @@ pub fn app__open_folder_and_select_item(
     path: String,
     is_folder: Option<bool>,
 ) -> Result<(), AppError> {
-    shell_actions::open_folder_and_select_item(&path, is_folder.unwrap_or(false))
+    Ok(shell_actions::open_folder_and_select_item(
+        &path,
+        is_folder.unwrap_or(false),
+    )?)
 }
 
 #[tauri::command]

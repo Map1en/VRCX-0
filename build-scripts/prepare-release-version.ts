@@ -7,7 +7,7 @@ const path = require('node:path');
 const rootDir = path.join(__dirname, '..');
 const tauriConfigPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json');
 const cargoTomlPath = path.join(rootDir, 'src-tauri', 'Cargo.toml');
-const cargoLockPath = path.join(rootDir, 'src-tauri', 'Cargo.lock');
+const cargoLockPath = path.join(rootDir, 'Cargo.lock');
 const RELEASE_VERSION_PATTERN =
     /^v?(?<major>[1-9][0-9]{0,1})\.(?<minor>0|[1-9][0-9]{0,2})\.(?<patch>0|[1-9][0-9]{0,2})(?:-[0-9A-Za-z.-]+)?$/;
 
@@ -77,7 +77,7 @@ function syncVersionToManifests(buildVersion) {
         /(\[\[package\]\]\r?\nname = "vrcx-0"\r?\nversion = )"[^"]+"/;
     if (!lockVersionPattern.test(cargoLock)) {
         throw new Error(
-            'Failed to update src-tauri/Cargo.lock package version'
+            'Failed to update Cargo.lock package version'
         );
     }
     fs.writeFileSync(

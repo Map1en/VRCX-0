@@ -32,8 +32,8 @@ jobs:
             - run: npm ci
             - run: npm run test
 
-    tauri-windows:
-        name: Tauri Rust (Windows)
+    rust-windows:
+        name: Rust Backend (Windows)
         runs-on: windows-latest
         defaults:
             run:
@@ -43,11 +43,11 @@ jobs:
             - uses: dtolnay/rust-toolchain@stable
             - uses: Swatinem/rust-cache@v2
               with:
-                  workspaces: src-tauri -> target
-            - run: cargo test --manifest-path src-tauri/Cargo.toml
+                  workspaces: . -> target
+            - run: cargo test --workspace --exclude vrcx-0 --locked
 
-    tauri-linux:
-        name: Tauri Rust (Linux)
+    rust-linux:
+        name: Rust Backend (Linux)
         runs-on: ubuntu-24.04
         steps:
             - uses: actions/checkout@v4
@@ -62,11 +62,11 @@ jobs:
             - uses: dtolnay/rust-toolchain@stable
             - uses: Swatinem/rust-cache@v2
               with:
-                  workspaces: src-tauri -> target
-            - run: cargo test --manifest-path src-tauri/Cargo.toml
+                  workspaces: . -> target
+            - run: cargo test --workspace --exclude vrcx-0 --locked
 
-    tauri-macos:
-        name: Tauri Rust (macOS)
+    rust-macos:
+        name: Rust Backend (macOS)
         runs-on: macos-latest
         defaults:
             run:
@@ -76,5 +76,5 @@ jobs:
             - uses: dtolnay/rust-toolchain@stable
             - uses: Swatinem/rust-cache@v2
               with:
-                  workspaces: src-tauri -> target
-            - run: cargo test --manifest-path src-tauri/Cargo.toml
+                  workspaces: . -> target
+            - run: cargo test --workspace --exclude vrcx-0 --locked

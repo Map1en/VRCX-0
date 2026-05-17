@@ -13,11 +13,11 @@ use tracing_subscriber::Layer;
 use crate::backend::event_bus::BackendEventSink;
 use crate::backend::host_actions::BackendHostActions;
 use crate::backend::task_runtime::{BackendTask, BackendTaskExecutor};
-use crate::domain::host_capabilities::{
-    current_host_capabilities, is_host_capability_available, HostCapability,
-};
 use crate::domain::process_monitor::GameProcessEventSink;
 use crate::state::AppState;
+use vrcx_0_host::host_capabilities::{
+    current_host_capabilities, is_host_capability_available, HostCapability,
+};
 
 #[derive(Clone)]
 struct TauriBackendEventSink {
@@ -74,14 +74,14 @@ pub fn show_main_window(app: &tauri::AppHandle) {
 }
 
 pub fn init_error_logging() {
-    let Some(app_data) = crate::domain::error_log::default_app_data_dir() else {
+    let Some(app_data) = vrcx_0_host::error_log::default_app_data_dir() else {
         return;
     };
 
     let default_panic_hook = std::panic::take_hook();
     let panic_app_data = app_data.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
-        crate::domain::error_log::append_error_log(
+        vrcx_0_host::error_log::append_error_log(
             &panic_app_data,
             "rust:panic",
             &panic_info.to_string(),
@@ -101,7 +101,7 @@ pub fn init_error_logging() {
             tracing_subscriber::fmt::layer()
                 .with_ansi(false)
                 .with_writer(move || {
-                    crate::domain::error_log::ErrorLogWriter::new(tracing_app_data.clone())
+                    vrcx_0_host::error_log::ErrorLogWriter::new(tracing_app_data.clone())
                 })
                 .with_filter(LevelFilter::ERROR),
         )
@@ -170,7 +170,7 @@ pub fn screenshot_thumbnail_protocol_response(
         }
     };
 
-    let Ok(paths) = crate::domain::app_paths::AppPaths::resolve() else {
+    let Ok(paths) = vrcx_0_host::app_paths::AppPaths::resolve() else {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(Vec::new().into())
@@ -185,7 +185,7 @@ pub fn screenshot_thumbnail_protocol_response(
 
     if !is_webp
         || !path_buf.is_file()
-        || !crate::domain::screenshot::is_path_inside_directory(&path_buf, &paths.screenshot_thumbs)
+        || !vrcx_0_host::path_utils::is_path_inside_directory(&path_buf, &paths.screenshot_thumbs)
     {
         return Response::builder()
             .status(StatusCode::NOT_FOUND)
@@ -494,7 +494,7 @@ fn start_host_services(app: &tauri::App, state: &AppState) {
 
     #[cfg(target_os = "linux")]
     if is_host_capability_available(HostCapability::GameLogWatcher) {
-        match crate::domain::vrchat_paths::discover_linux_vrchat_log_paths() {
+        match vrcx_0_host::vrchat_paths::discover_linux_vrchat_log_paths() {
             Ok(paths) => {
                 let latest_log = paths
                     .latest_log

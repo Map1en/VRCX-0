@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::error::AppError;
-use vrcx_0_persistence::config as backend_config;
-use vrcx_0_persistence::game_log::{self, GameLogVideoPlayEntry, GameLogWriteBatch};
 pub use vrcx_0_runtime::game_log::video::VideoInput;
 use vrcx_0_runtime::game_log::video::{
     convert_youtube_duration_to_seconds, parse_youtube_video_id, url_encode,
 };
+use vrcx_0_store::config as backend_config;
+use vrcx_0_store::game_log::{self, GameLogVideoPlayEntry, GameLogWriteBatch};
 
 use super::BackendDeps;
 

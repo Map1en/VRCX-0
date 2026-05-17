@@ -6,7 +6,7 @@ use crate::domain::ipc::IpcPacket;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use super::host_capabilities::{
+use vrcx_0_host::host_capabilities::{
     require_host_capability, require_host_capability_supported, HostCapability,
 };
 

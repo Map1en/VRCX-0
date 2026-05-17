@@ -8,7 +8,7 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use reqwest::Url;
 use serde_json::{json, Map, Number, Value};
 use tauri::State;
-use vrcx_0_persistence::common::ParamsBuilder;
+use vrcx_0_store::common::ParamsBuilder;
 
 use crate::api::app::local_data::types::{
     ConfigWriteEntry, FriendLogCurrentEntryInput, FriendLogHistoryEntryInput,

@@ -4,12 +4,12 @@ use std::path::PathBuf;
 
 use tauri::AppHandle;
 
-use crate::domain::calendar;
 use crate::error::AppError;
+use vrcx_0_host::calendar;
 
 #[tauri::command]
 pub fn app__open_calendar_file(ics_content: String) -> Result<(), AppError> {
-    calendar::open_calendar_file(&ics_content)
+    Ok(calendar::open_calendar_file(&ics_content)?)
 }
 
 #[tauri::command]

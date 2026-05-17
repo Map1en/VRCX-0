@@ -4,12 +4,12 @@ use std::time::Duration;
 use crate::backend::context::BackendContext;
 use crate::domain::log_watcher::GameLogEvent;
 use crate::error::AppError;
-use vrcx_0_persistence::config as backend_config;
-use vrcx_0_persistence::game_log::{write_batch, GameLogWriteBatch};
 use vrcx_0_runtime::game_log::ingest::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent,
     GameLogSideEffect,
 };
+use vrcx_0_store::config as backend_config;
+use vrcx_0_store::game_log::{write_batch, GameLogWriteBatch};
 
 use super::instance_media::InstanceMediaQueue;
 use super::{lifecycle, screenshot, video, BackendDeps};
@@ -174,7 +174,7 @@ fn remember_error(first_error: &mut Option<AppError>, error: AppError) {
 }
 
 fn write_batch_with_retry(
-    db: &vrcx_0_persistence::database::DatabaseService,
+    db: &vrcx_0_store::database::DatabaseService,
     batch: &GameLogWriteBatch,
 ) -> Result<(), AppError> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
@@ -277,13 +277,13 @@ mod tests {
 
     use crate::backend::context::BackendContext;
     use crate::backend::game_log::GameLogBackend;
-    use crate::domain::image_cache::ImageCache;
     use crate::domain::log_watcher::{GameLogEvent, GameLogEventKind};
-    use crate::domain::storage::StorageService;
-    use crate::domain::web_client::WebClient;
     use crate::error::AppError;
-    use vrcx_0_persistence::config as backend_config;
-    use vrcx_0_persistence::database::DatabaseService;
+    use vrcx_0_runtime::image_cache::ImageCache;
+    use vrcx_0_runtime::web_client::WebClient;
+    use vrcx_0_store::config as backend_config;
+    use vrcx_0_store::database::DatabaseService;
+    use vrcx_0_store::storage::StorageService;
 
     struct TestDir {
         path: PathBuf,

@@ -3,10 +3,10 @@ use std::time::Duration;
 use chrono::Utc;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
-use crate::domain::asset_bundle_cache;
 use crate::error::AppError;
-use vrcx_0_persistence::config as backend_config;
-use vrcx_0_persistence::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
+use vrcx_0_host::asset_bundle_cache;
+use vrcx_0_store::config as backend_config;
+use vrcx_0_store::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
 
 use super::service::GameClientDeps;
 

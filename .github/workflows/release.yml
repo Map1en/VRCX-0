@@ -56,13 +56,13 @@ jobs:
                       build_command: npm run tauri:build -- --config src-tauri/tauri.linux.conf.json --bundles appimage,deb,rpm
                       artifact_name: linux-packages
                       artifact_path: |
-                          src-tauri/target/release/bundle/appimage/*.AppImage
-                          src-tauri/target/release/bundle/appimage/*.AppImage.sig
-                          src-tauri/target/release/bundle/deb/*.deb
-                          src-tauri/target/release/bundle/deb/*.deb.sig
-                          src-tauri/target/release/bundle/rpm/*.rpm
-                          src-tauri/target/release/bundle/rpm/*.rpm.sig
-                          src-tauri/target/release/bundle/latest_linux_and_macos.json
+                          target/release/bundle/appimage/*.AppImage
+                          target/release/bundle/appimage/*.AppImage.sig
+                          target/release/bundle/deb/*.deb
+                          target/release/bundle/deb/*.deb.sig
+                          target/release/bundle/rpm/*.rpm
+                          target/release/bundle/rpm/*.rpm.sig
+                          target/release/bundle/latest_linux_and_macos.json
                     - label: macOS DMG (Apple Silicon)
                       os: macos-latest
                       rust_target: aarch64-apple-darwin
@@ -72,9 +72,9 @@ jobs:
                       build_command: npm run tauri:build -- --target aarch64-apple-darwin --bundles app,dmg
                       artifact_name: macos-aarch64-dmg
                       artifact_path: |
-                          src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-                          src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
-                          src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
+                          target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+                          target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
+                          target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
                     - label: macOS DMG (Intel)
                       os: macos-latest
                       rust_target: x86_64-apple-darwin
@@ -84,9 +84,9 @@ jobs:
                       build_command: npm run tauri:build -- --target x86_64-apple-darwin --bundles app,dmg
                       artifact_name: macos-x86_64-dmg
                       artifact_path: |
-                          src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-                          src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
-                          src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
+                          target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+                          target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
+                          target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
         steps:
             - uses: actions/checkout@v6
 
@@ -103,7 +103,7 @@ jobs:
 
             # - uses: Swatinem/rust-cache@v2
             #   with:
-            #       workspaces: src-tauri -> target
+            #       workspaces: . -> target
 
             - name: Install Linux dependencies
               if: runner.os == 'Linux'
@@ -158,7 +158,7 @@ jobs:
             - name: Prepare Linux release and updater assets
               if: runner.os == 'Linux'
               run: |
-                  bundle_dir="src-tauri/target/release/bundle"
+                  bundle_dir="target/release/bundle"
                   manifest_path="$bundle_dir/latest_linux_and_macos.json"
 
                   find "$bundle_dir" -maxdepth 2 -type f | sort
@@ -238,7 +238,7 @@ jobs:
             - name: Prepare macOS release and updater assets
               if: runner.os == 'macOS'
               run: |
-                  dmg_dir="src-tauri/target/${{ matrix.rust_target }}/release/bundle/dmg"
+                  dmg_dir="target/${{ matrix.rust_target }}/release/bundle/dmg"
                   dmg_path="$(find "$dmg_dir" -maxdepth 1 -name '*.dmg' | sort | head -n 1)"
                   if [[ -z "$dmg_path" ]]; then
                       echo "No macOS DMG found in $dmg_dir" >&2
@@ -253,7 +253,7 @@ jobs:
                       mv "$dmg_path" "$renamed_dmg"
                   fi
 
-                  updater_dir="src-tauri/target/${{ matrix.rust_target }}/release/bundle/macos"
+                  updater_dir="target/${{ matrix.rust_target }}/release/bundle/macos"
                   archive_path="$(find "$updater_dir" -maxdepth 1 -name '*.app.tar.gz' | sort | head -n 1)"
                   if [[ -z "$archive_path" ]]; then
                       echo "No macOS updater archive found in $updater_dir" >&2

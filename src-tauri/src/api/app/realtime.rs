@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 use tauri::State;
-use vrcx_0_domain::friends::FriendRecord;
+use vrcx_0_core::friends::FriendRecord;
 
 use crate::error::AppError;
 use crate::state::AppState;

@@ -2,9 +2,9 @@
 
 use tauri::State;
 
-use crate::domain::error_log::append_error_log_entry;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_host::error_log::append_error_log_entry;
 
 #[tauri::command]
 pub fn app__append_error_log(state: State<'_, AppState>, entry: String) -> Result<(), AppError> {

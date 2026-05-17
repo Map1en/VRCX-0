@@ -1,0 +1,30 @@
+//! Host operating-system capabilities.
+//!
+//! This crate is the home for process, filesystem, registry, clipboard, log
+//! watcher, and other host adapters. It should keep OS detail out of `runtime`
+//! and keep pure parsing/model code in `core`.
+
+pub mod app_paths;
+pub mod asset_bundle_cache;
+pub mod auto_launch;
+pub mod calendar;
+pub mod clipboard;
+pub mod discord_rpc;
+pub mod error;
+pub mod error_log;
+pub mod game_launch;
+pub mod host_capabilities;
+#[cfg(target_os = "linux")]
+pub mod linux_registry;
+pub mod local_ipc_server;
+pub mod local_player_moderations;
+pub mod log_scanner;
+pub mod path_utils;
+pub mod process_status;
+pub mod proxy;
+pub mod shell_actions;
+pub mod vrchat_ipc;
+pub mod vrchat_paths;
+pub mod vrchat_registry;
+
+pub use error::Error;

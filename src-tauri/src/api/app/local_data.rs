@@ -5,14 +5,14 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_persistence::common::{DbParams, ParamsBuilder};
-use vrcx_0_persistence::database::{DatabaseService, DatabaseWriteTransaction};
-use vrcx_0_persistence::game_log::{
+use vrcx_0_store::common::{DbParams, ParamsBuilder};
+use vrcx_0_store::database::{DatabaseService, DatabaseWriteTransaction};
+use vrcx_0_store::game_log::{
     ensure_game_log_tables, write_batch as write_game_log_batch, GameLogEventEntry,
     GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogLocationTimeUpdate,
     GameLogPortalSpawnEntry, GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };
-use vrcx_0_persistence::realtime::{
+use vrcx_0_store::realtime::{
     ensure_realtime_tables, normalize_user_table_prefix, write_realtime_batch,
     RealtimePersistenceBatch,
 };
@@ -959,7 +959,7 @@ fn add_friend_log_history_entry(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
     entry: &FriendLogHistoryEntryInput,
-) -> Result<(), vrcx_0_persistence::Error> {
+) -> Result<(), vrcx_0_store::Error> {
     if entry.r#type.trim().is_empty() || entry.user_id.trim().is_empty() {
         return Ok(());
     }
@@ -4528,7 +4528,7 @@ fn insert_activity_sessions(
     user_prefix: &str,
     user_id: &str,
     sessions: &[ActivitySessionInput],
-) -> Result<(), vrcx_0_persistence::Error> {
+) -> Result<(), vrcx_0_store::Error> {
     for session in sessions {
         tx.execute_non_query(
             &format!("INSERT OR REPLACE INTO {user_prefix}_activity_sessions_v2 (user_id, start_at, end_at, is_open_tail, source_revision) VALUES (@user_id, @start_at, @end_at, @is_open_tail, @source_revision)"),
@@ -4704,7 +4704,7 @@ fn insert_mutual_graph_friend(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
     friend_id: &str,
-) -> Result<(), vrcx_0_persistence::Error> {
+) -> Result<(), vrcx_0_store::Error> {
     tx.execute_non_query(
         &format!("INSERT OR REPLACE INTO {user_prefix}_mutual_graph_friends (friend_id) VALUES (@friend_id)"),
         &ParamsBuilder::new().set("friend_id", friend_id.to_string()).build(),
@@ -4717,7 +4717,7 @@ fn insert_mutual_graph_link(
     user_prefix: &str,
     friend_id: &str,
     mutual_id: &str,
-) -> Result<(), vrcx_0_persistence::Error> {
+) -> Result<(), vrcx_0_store::Error> {
     tx.execute_non_query(
         &format!("INSERT OR REPLACE INTO {user_prefix}_mutual_graph_links (friend_id, mutual_id) VALUES (@friend_id, @mutual_id)"),
         &ParamsBuilder::new()
@@ -5292,7 +5292,7 @@ pub fn app__friend_log_replace_current(
                     .build(),
             )?;
         }
-        Ok::<i64, vrcx_0_persistence::Error>(written_history_count)
+        Ok::<i64, vrcx_0_store::Error>(written_history_count)
     })?;
     Ok(FriendLogMutationResult {
         user_id: owner_user_id,
@@ -5349,7 +5349,7 @@ pub fn app__friend_log_delete_current_array(
                 }
             }
         }
-        Ok::<(i64, i64), vrcx_0_persistence::Error>((deleted_count, written_history_count))
+        Ok::<(i64, i64), vrcx_0_store::Error>((deleted_count, written_history_count))
     })?;
     Ok(FriendLogMutationResult {
         user_id: owner_user_id,
@@ -5413,7 +5413,7 @@ pub fn app__friend_log_upsert_current(
             add_friend_log_history_entry(tx, &user_prefix, &history_entry)?;
             history_count = 1;
         }
-        Ok::<(bool, i64), vrcx_0_persistence::Error>((inserted, history_count))
+        Ok::<(bool, i64), vrcx_0_store::Error>((inserted, history_count))
     })?;
     Ok(FriendLogMutationResult {
         user_id: owner_user_id,
@@ -5469,7 +5469,7 @@ pub fn app__friend_log_history_add(
             )?;
             written_count += affected;
         }
-        Ok::<i64, vrcx_0_persistence::Error>(written_count)
+        Ok::<i64, vrcx_0_store::Error>(written_count)
     })?;
     Ok(count)
 }

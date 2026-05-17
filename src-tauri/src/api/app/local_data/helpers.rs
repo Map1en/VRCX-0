@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{SecondsFormat, Utc};
 use serde_json::Value;
-use vrcx_0_persistence::common::DbParams;
+use vrcx_0_store::common::DbParams;
 
 use crate::error::AppError;
 

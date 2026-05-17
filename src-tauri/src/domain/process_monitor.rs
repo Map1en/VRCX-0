@@ -2,18 +2,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use sysinfo::{ProcessesToUpdate, System};
-
-use super::auto_launch::AutoAppLaunchManager;
 use super::log_watcher::LogWatcher;
 use crate::error::AppError;
-
-#[derive(Clone, Copy, Debug)]
-pub struct GameProcessEvent {
-    pub is_game_running: bool,
-    pub is_steamvr_running: bool,
-    pub game_changed: bool,
-}
+pub use vrcx_0_core::game_process::GameProcessEvent;
+use vrcx_0_host::auto_launch::AutoAppLaunchManager;
+use vrcx_0_host::process_status::ProcessStatusDetector;
 
 pub trait GameProcessEventSink: Send + Sync {
     fn on_game_process_event(&self, event: GameProcessEvent) -> Result<(), AppError>;
@@ -42,27 +35,13 @@ impl ProcessMonitor {
         let steamvr = Arc::clone(&self.steamvr_running);
 
         std::thread::spawn(move || {
-            let mut sys = System::new();
+            let mut detector = ProcessStatusDetector::new();
             let mut first_poll = true;
 
             loop {
-                sys.refresh_processes(ProcessesToUpdate::All, true);
-
-                let mut game_found = false;
-                let mut steamvr_found = false;
-
-                for proc in sys.processes().values() {
-                    let name = proc.name().to_string_lossy();
-                    if !game_found && is_vrchat_process_name(&name) {
-                        game_found = true;
-                    }
-                    if !steamvr_found && is_steamvr_process_name(&name) {
-                        steamvr_found = true;
-                    }
-                    if game_found && steamvr_found {
-                        break;
-                    }
-                }
+                let status = detector.detect();
+                let game_found = status.is_game_running;
+                let steamvr_found = status.is_steamvr_running;
 
                 let prev_game = game.swap(game_found, Ordering::Relaxed);
                 let prev_steamvr = steamvr.swap(steamvr_found, Ordering::Relaxed);
@@ -106,73 +85,5 @@ impl ProcessMonitor {
 
     pub fn is_steamvr_running(&self) -> bool {
         self.steamvr_running.load(Ordering::Relaxed)
-    }
-}
-
-pub fn detect_steamvr_running() -> bool {
-    let mut sys = System::new();
-    sys.refresh_processes(ProcessesToUpdate::All, true);
-    sys.processes()
-        .values()
-        .any(|proc| is_steamvr_process_name(&proc.name().to_string_lossy()))
-}
-
-pub fn detect_game_running() -> bool {
-    let mut sys = System::new();
-    sys.refresh_processes(ProcessesToUpdate::All, true);
-    sys.processes()
-        .values()
-        .any(|proc| is_vrchat_process_name(&proc.name().to_string_lossy()))
-}
-
-#[cfg(target_os = "linux")]
-fn is_vrchat_process_name(name: &str) -> bool {
-    name == "VRChat.exe"
-}
-
-#[cfg(not(target_os = "linux"))]
-fn is_vrchat_process_name(name: &str) -> bool {
-    name.eq_ignore_ascii_case("VRChat.exe")
-}
-
-#[cfg(target_os = "linux")]
-fn is_steamvr_process_name(name: &str) -> bool {
-    name == "vrmonitor" || name == "monado-service" || name.ends_with("wivrn-server")
-}
-
-#[cfg(not(target_os = "linux"))]
-fn is_steamvr_process_name(name: &str) -> bool {
-    name.starts_with("vrserver")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{is_steamvr_process_name, is_vrchat_process_name};
-
-    #[test]
-    #[cfg(target_os = "linux")]
-    fn linux_vrchat_process_name_matches_vue_electron_backend() {
-        assert!(is_vrchat_process_name("VRChat.exe"));
-        assert!(!is_vrchat_process_name("VRChat"));
-    }
-
-    #[test]
-    #[cfg(target_os = "linux")]
-    fn linux_steamvr_process_name_matches_vue_electron_backend() {
-        assert!(is_steamvr_process_name("vrmonitor"));
-        assert!(is_steamvr_process_name("monado-service"));
-        assert!(is_steamvr_process_name("WiVRn-wivrn-server"));
-        assert!(!is_steamvr_process_name("vrserver"));
-    }
-
-    #[test]
-    #[cfg(not(target_os = "linux"))]
-    fn non_linux_vrchat_process_name_matches_game_process_only() {
-        assert!(is_vrchat_process_name("VRChat.exe"));
-        assert!(is_vrchat_process_name("vrchat.exe"));
-        assert!(!is_vrchat_process_name("VRChat"));
-        assert!(!is_vrchat_process_name("VRChatHelper.exe"));
-        assert!(is_steamvr_process_name("vrserver"));
-        assert!(is_steamvr_process_name("vrserver.exe"));
     }
 }

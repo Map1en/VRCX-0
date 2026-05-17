@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter};
+use vrcx_0_core::log_watcher::convert_log_time_to_iso8601;
 
 use super::event::{GameLogEventKind, ParsedLogEntry};
-use super::parser::convert_log_time_to_iso8601;
 use super::watcher::Inner;
 
 const MAX_COMPAT_LOG_ROWS: usize = 5000;

@@ -2,9 +2,10 @@
 
 use tauri::{AppHandle, State};
 
-use crate::domain::legacy_vrcx::LegacyVrcxMigrationStatus;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_store::legacy_migration::LegacyMigrationPaths;
+use vrcx_0_store::legacy_vrcx::LegacyVrcxMigrationStatus;
 
 #[tauri::command]
 pub fn app__check_legacy_vrcx_available(state: State<'_, AppState>) -> bool {
@@ -20,7 +21,7 @@ pub fn app__get_legacy_vrcx_migration_status(
 
 #[tauri::command]
 pub fn app__get_legacy_vrcx_force_migration_status() -> LegacyVrcxMigrationStatus {
-    let (_, status) = crate::domain::legacy_vrcx::discover_supported_legacy_source();
+    let (_, status) = vrcx_0_store::legacy_vrcx::discover_supported_legacy_source();
     status
 }
 
@@ -41,7 +42,7 @@ pub fn app__request_legacy_migration(
             &state.legacy_vrcx_migration_status,
         )));
     };
-    crate::domain::legacy_vrcx::validate_legacy_source(source).map_err(AppError::Custom)?;
+    vrcx_0_store::legacy_vrcx::validate_legacy_source(source).map_err(AppError::Custom)?;
 
     #[cfg(debug_assertions)]
     {
@@ -52,7 +53,8 @@ pub fn app__request_legacy_migration(
 
     #[cfg(not(debug_assertions))]
     {
-        crate::domain::legacy_migration::request_legacy_migration(&state.paths)?;
+        let paths = LegacyMigrationPaths::from_app_data(state.paths.app_data.clone());
+        vrcx_0_store::legacy_migration::request_legacy_migration(&paths)?;
         app_handle.request_restart();
         Ok(true)
     }
@@ -63,14 +65,15 @@ pub fn app__request_legacy_vrcx_force_migration(
     app_handle: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<bool, AppError> {
-    let (source, status) = crate::domain::legacy_vrcx::discover_supported_legacy_source();
+    let (source, status) = vrcx_0_store::legacy_vrcx::discover_supported_legacy_source();
     let Some(source) = source.as_ref() else {
         return Err(AppError::Custom(legacy_migration_unavailable_reason(
             &status,
         )));
     };
-    crate::domain::legacy_vrcx::validate_legacy_source(source).map_err(AppError::Custom)?;
-    crate::domain::legacy_migration::request_legacy_migration(&state.paths)?;
+    vrcx_0_store::legacy_vrcx::validate_legacy_source(source).map_err(AppError::Custom)?;
+    let paths = LegacyMigrationPaths::from_app_data(state.paths.app_data.clone());
+    vrcx_0_store::legacy_migration::request_legacy_migration(&paths)?;
 
     #[cfg(debug_assertions)]
     {

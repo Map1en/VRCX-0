@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use chrono::{Duration as ChronoDuration, SecondsFormat, Utc};
 use serde::Serialize;
-use vrcx_0_persistence::database::DatabaseService;
+use vrcx_0_store::database::DatabaseService;
 
 use super::task_runtime::BackendTasks;
 

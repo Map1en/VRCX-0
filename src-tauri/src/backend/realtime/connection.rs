@@ -8,7 +8,7 @@ use futures_util::StreamExt;
 use serde_json::Value;
 use tokio::sync::watch;
 use tokio_tungstenite::tungstenite::Message;
-use vrcx_0_integrations::realtime::{
+use vrcx_0_vrchat::realtime::{
     auth_token_from_response, build_auth_url, build_transport_url, connect_websocket,
     normalize_websocket_domain, Error as RealtimeTransportError,
 };
@@ -86,6 +86,12 @@ impl RealtimeConnectionError {
 impl From<AppError> for RealtimeConnectionError {
     fn from(error: AppError) -> Self {
         Self::Other(error)
+    }
+}
+
+impl From<vrcx_0_runtime::Error> for RealtimeConnectionError {
+    fn from(error: vrcx_0_runtime::Error) -> Self {
+        Self::Other(AppError::from(error))
     }
 }
 

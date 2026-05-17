@@ -21,13 +21,43 @@ impl Serialize for AppError {
     }
 }
 
-impl From<vrcx_0_persistence::Error> for AppError {
-    fn from(value: vrcx_0_persistence::Error) -> Self {
+impl From<vrcx_0_store::Error> for AppError {
+    fn from(value: vrcx_0_store::Error) -> Self {
         match value {
-            vrcx_0_persistence::Error::Database(message) => AppError::Database(message),
-            vrcx_0_persistence::Error::Io(error) => AppError::Io(error),
-            vrcx_0_persistence::Error::Json(error) => AppError::Json(error),
-            vrcx_0_persistence::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_store::Error::Database(message) => AppError::Database(message),
+            vrcx_0_store::Error::Io(error) => AppError::Io(error),
+            vrcx_0_store::Error::Json(error) => AppError::Json(error),
+            vrcx_0_store::Error::Custom(message) => AppError::Custom(message),
+        }
+    }
+}
+
+impl From<vrcx_0_media::Error> for AppError {
+    fn from(value: vrcx_0_media::Error) -> Self {
+        match value {
+            vrcx_0_media::Error::Io(error) => AppError::Io(error),
+            vrcx_0_media::Error::Custom(message) => AppError::Custom(message),
+        }
+    }
+}
+
+impl From<vrcx_0_host::Error> for AppError {
+    fn from(value: vrcx_0_host::Error) -> Self {
+        match value {
+            vrcx_0_host::Error::Io(error) => AppError::Io(error),
+            vrcx_0_host::Error::Json(error) => AppError::Json(error),
+            vrcx_0_host::Error::Custom(message) => AppError::Custom(message),
+        }
+    }
+}
+
+impl From<vrcx_0_runtime::Error> for AppError {
+    fn from(value: vrcx_0_runtime::Error) -> Self {
+        match value {
+            vrcx_0_runtime::Error::Database(message) => AppError::Database(message),
+            vrcx_0_runtime::Error::Io(error) => AppError::Io(error),
+            vrcx_0_runtime::Error::Json(error) => AppError::Json(error),
+            vrcx_0_runtime::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }

@@ -13,7 +13,3 @@ impl IpcServer {
 
     pub fn send(&self, _packet: &IpcPacket) {}
 }
-
-pub fn vrcipc_send(_message: &str) -> bool {
-    false
-}

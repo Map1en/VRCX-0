@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_persistence::common::ParamsBuilder;
+use vrcx_0_store::common::ParamsBuilder;
 
 use crate::api::app::local_data::types::ConfigWriteEntry;
 use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestInput};

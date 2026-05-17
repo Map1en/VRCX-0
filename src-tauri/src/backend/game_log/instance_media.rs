@@ -8,9 +8,11 @@ use chrono::{DateTime, Utc};
 use reqwest::Url;
 use serde_json::Value;
 
-use crate::domain::{image_processing, media_files, vrchat_paths};
 use crate::error::AppError;
-use vrcx_0_persistence::config as backend_config;
+use vrcx_0_host::vrchat_paths;
+use vrcx_0_media::image_processing;
+use vrcx_0_runtime::image_cache;
+use vrcx_0_store::config as backend_config;
 
 use super::BackendDeps;
 
@@ -136,7 +138,7 @@ async fn save_instance_print(deps: BackendDeps, print_id: &str) -> Result<(), Ap
     let file_date = created.format("%Y-%m-%d_%H-%M-%S%.3f").to_string();
     let author_name = text(print.get("authorName"));
     let file_name = format!("{author_name}_{file_date}_{print_id}.png");
-    let file_path = media_files::save_ugc_image_to_file(
+    let file_path = image_cache::save_ugc_image_to_file(
         &deps.image_cache,
         &image_url,
         &ugc_path,
@@ -191,7 +193,7 @@ async fn save_inventory_media(
         emoji_file_name(&item, user_id, inventory_id)
     };
 
-    media_files::save_ugc_image_to_file(
+    image_cache::save_ugc_image_to_file(
         &deps.image_cache,
         &image_url,
         &ugc_path,

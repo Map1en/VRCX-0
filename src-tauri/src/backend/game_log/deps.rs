@@ -4,9 +4,9 @@ use serde_json::Value;
 
 use crate::backend::event_bus::BackendEventBus;
 use crate::backend::task_runtime::BackendTasks;
-use crate::domain::image_cache::ImageCache;
-use crate::domain::web_client::WebClient;
-use vrcx_0_persistence::database::DatabaseService;
+use vrcx_0_runtime::image_cache::ImageCache;
+use vrcx_0_runtime::web_client::WebClient;
+use vrcx_0_store::database::DatabaseService;
 
 use super::instance_media::InstanceMediaQueue;
 

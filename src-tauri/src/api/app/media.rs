@@ -4,9 +4,10 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 
-use crate::domain::{image_processing, media_files};
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_media::{image_processing, media_files};
+use vrcx_0_runtime::image_cache;
 
 #[tauri::command]
 pub async fn app__save_image_file(
@@ -32,7 +33,7 @@ pub async fn app__save_image_file(
                 other => PathBuf::from(other.to_string()),
             };
 
-            media_files::write_image_file(path, &file_name, &bytes)
+            Ok(media_files::write_image_file(path, &file_name, &bytes)?)
         }
         None => Ok(String::new()),
     }
@@ -45,22 +46,27 @@ pub async fn app__get_image(
     file_id: String,
     version: String,
 ) -> Result<String, AppError> {
-    state.image_cache.get_image(&url, &file_id, &version).await
+    Ok(state
+        .image_cache
+        .get_image(&url, &file_id, &version)
+        .await?)
 }
 
 #[tauri::command]
 pub fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, AppError> {
-    image_processing::resize_image_to_fit_limits_base64(&base64data)
+    Ok(image_processing::resize_image_to_fit_limits_base64(
+        &base64data,
+    )?)
 }
 
 #[tauri::command]
 pub fn app__sign_file(blob: String) -> Result<String, AppError> {
-    media_files::sign_file_base64(&blob)
+    Ok(media_files::sign_file_base64(&blob)?)
 }
 
 #[tauri::command]
 pub fn app__crop_all_prints(ugc_folder_path: String) -> Result<(), AppError> {
-    image_processing::crop_all_prints(&ugc_folder_path)
+    Ok(image_processing::crop_all_prints(&ugc_folder_path)?)
 }
 
 #[tauri::command]
@@ -77,14 +83,14 @@ pub async fn app__save_print_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    media_files::save_ugc_image_to_file(
+    Ok(image_cache::save_ugc_image_to_file(
         &state.image_cache,
         &url,
         &ugc_folder_path,
         &month_folder,
         &file_name,
     )
-    .await
+    .await?)
 }
 
 #[tauri::command]
@@ -95,14 +101,14 @@ pub async fn app__save_sticker_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    media_files::save_ugc_image_to_file(
+    Ok(image_cache::save_ugc_image_to_file(
         &state.image_cache,
         &url,
         &ugc_folder_path,
         &month_folder,
         &file_name,
     )
-    .await
+    .await?)
 }
 
 #[tauri::command]
@@ -113,12 +119,12 @@ pub async fn app__save_emoji_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    media_files::save_ugc_image_to_file(
+    Ok(image_cache::save_ugc_image_to_file(
         &state.image_cache,
         &url,
         &ugc_folder_path,
         &month_folder,
         &file_name,
     )
-    .await
+    .await?)
 }

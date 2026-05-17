@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_persistence::database::DatabaseUpgradeStatus;
+use vrcx_0_store::database::DatabaseUpgradeStatus;
 
 #[tauri::command]
 pub fn sqlite__begin_upgrade(

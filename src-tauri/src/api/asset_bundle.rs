@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use crate::api::app::host_capabilities::{require_host_capability, HostCapability};
-use crate::domain::asset_bundle_cache::{self, CacheCheckResult};
 use crate::error::AppError;
+use vrcx_0_host::asset_bundle_cache::{self, CacheCheckResult};
 
 #[tauri::command]
 pub fn asset_bundle__get_vrchat_cache_full_location(

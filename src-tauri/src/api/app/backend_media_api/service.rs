@@ -7,9 +7,9 @@ use serde_json::{json, Map, Value};
 use tauri::State;
 
 use crate::api::app::vrchat_api_types::{HttpApiExecuteResponse, HttpApiRequestInput};
-use crate::domain::media_files;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_media::media_files;
 
 use super::types::{
     BackendMediaAssetUploadInput, BackendMediaAvatarGalleryImageUploadInput,

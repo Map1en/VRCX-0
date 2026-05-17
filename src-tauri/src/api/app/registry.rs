@@ -2,33 +2,33 @@
 
 use std::collections::HashMap;
 
-use crate::domain::vrchat_registry;
 use crate::error::AppError;
+use vrcx_0_host::vrchat_registry;
 
-use super::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
 
 #[tauri::command]
 pub fn app__get_vrchat_registry_key(key: String) -> Result<serde_json::Value, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::get_registry_key(&key)
+    Ok(vrchat_registry::get_registry_key(&key)?)
 }
 
 #[tauri::command]
 pub fn app__get_vrchat_registry_key_string(key: String) -> Result<String, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::get_registry_key_string(&key)
+    Ok(vrchat_registry::get_registry_key_string(&key)?)
 }
 
 #[tauri::command]
 pub fn app__has_vrchat_registry_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::has_registry_folder()
+    Ok(vrchat_registry::has_registry_folder()?)
 }
 
 #[tauri::command]
 pub fn app__delete_vrchat_registry_folder() -> Result<(), AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::delete_registry_folder()
+    Ok(vrchat_registry::delete_registry_folder()?)
 }
 
 #[tauri::command]
@@ -38,23 +38,23 @@ pub fn app__set_vrchat_registry_key(
     type_int: i32,
 ) -> Result<bool, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::set_registry_key(&key, &value, type_int)
+    Ok(vrchat_registry::set_registry_key(&key, &value, type_int)?)
 }
 
 #[tauri::command]
 pub fn app__get_vrchat_registry(
 ) -> Result<HashMap<String, HashMap<String, serde_json::Value>>, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::get_registry()
+    Ok(vrchat_registry::get_registry()?)
 }
 
 #[tauri::command]
 pub fn app__set_vrchat_registry(json: String) -> Result<(), AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    vrchat_registry::set_registry(&json)
+    Ok(vrchat_registry::set_registry(&json)?)
 }
 
 #[tauri::command]
 pub fn app__read_vrc_reg_json_file(filepath: String) -> Result<String, AppError> {
-    vrchat_registry::read_reg_json_file(&filepath)
+    Ok(vrchat_registry::read_reg_json_file(&filepath)?)
 }

@@ -76,7 +76,7 @@ jobs:
               run: rustup target add "${{ matrix.rust_target }}"
             - uses: Swatinem/rust-cache@v2
               with:
-                  workspaces: src-tauri -> target
+                  workspaces: . -> target
             - run: mkdir -p dist && printf '<!doctype html><html><body></body></html>' > dist/index.html
             - name: Build Tauri crate
               env:

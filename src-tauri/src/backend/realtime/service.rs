@@ -10,14 +10,8 @@ use crate::error::AppError;
 
 use super::connection::{run_realtime_transport, RealtimeMessageSink};
 use super::types::{RealtimeSessionContext, RealtimeTransportStartResult, RealtimeWsStatusPayload};
-use vrcx_0_domain::friends::{FriendRecord, FriendRosterBaseline};
-use vrcx_0_domain::realtime::RealtimeWsMessagePayload;
-use vrcx_0_integrations::realtime::normalize_websocket_domain;
-use vrcx_0_persistence::config as backend_config;
-use vrcx_0_persistence::realtime::{
-    lookup_game_log_world_name, write_realtime_batch, NotificationExpiration,
-    RealtimePersistenceBatch,
-};
+use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
+use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_runtime::realtime::current_user::RealtimeCurrentUserRuntime;
 use vrcx_0_runtime::realtime::friends::{is_friend_event_type, RealtimeFriendsRuntime};
 use vrcx_0_runtime::realtime::notifications::{
@@ -28,6 +22,12 @@ use vrcx_0_runtime::realtime::types::{
     RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput, RealtimeFriendApplyResult,
     RealtimeFriendOutput, RealtimeInstanceClosedOutput, RealtimeNotificationOutput,
 };
+use vrcx_0_store::config as backend_config;
+use vrcx_0_store::realtime::{
+    lookup_game_log_world_name, write_realtime_batch, NotificationExpiration,
+    RealtimePersistenceBatch,
+};
+use vrcx_0_vrchat::realtime::normalize_websocket_domain;
 
 const MAX_QUEUED_FRIEND_MESSAGES: usize = 512;
 

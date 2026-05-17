@@ -1,4 +1,4 @@
-pub use vrcx_0_domain::realtime::{
+pub use vrcx_0_core::realtime::{
     RealtimeSessionContext, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
 };
 

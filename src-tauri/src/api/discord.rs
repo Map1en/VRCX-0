@@ -8,10 +8,10 @@ use crate::state::AppState;
 
 #[tauri::command]
 pub fn discord__set_active(state: State<'_, AppState>, active: bool) -> Result<bool, AppError> {
-    state.discord_rpc.set_active(active)
+    Ok(state.discord_rpc.set_active(active)?)
 }
 
 #[tauri::command]
 pub fn discord__set_assets(state: State<'_, AppState>, payload: Value) -> Result<bool, AppError> {
-    state.discord_rpc.set_assets(payload)
+    Ok(state.discord_rpc.set_assets(payload)?)
 }

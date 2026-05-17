@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
-use crate::domain::vrchat_paths;
 use crate::error::AppError;
+use vrcx_0_host::vrchat_paths;
 
-use super::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
 
 #[tauri::command]
 pub fn app__current_culture() -> String {

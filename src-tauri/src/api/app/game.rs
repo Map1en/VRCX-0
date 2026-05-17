@@ -3,11 +3,11 @@
 use tauri::State;
 use vrcx_0_runtime::session::HostSessionProjection;
 
-use crate::domain::game_launch;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_host::game_launch;
 
-use super::host_capabilities::{
+use vrcx_0_host::host_capabilities::{
     require_host_capability, require_host_capability_supported, HostCapability,
 };
 
@@ -64,11 +64,11 @@ pub fn app__quit_game() -> Result<i32, AppError> {
 #[tauri::command]
 pub fn app__start_game(arguments: String) -> Result<bool, AppError> {
     require_host_capability(HostCapability::GameLaunch)?;
-    game_launch::start_game(&arguments)
+    Ok(game_launch::start_game(&arguments)?)
 }
 
 #[tauri::command]
 pub fn app__start_game_from_path(path: String, arguments: String) -> Result<bool, AppError> {
     require_host_capability_supported(HostCapability::GameLaunch)?;
-    game_launch::start_game_from_path(&path, &arguments)
+    Ok(game_launch::start_game_from_path(&path, &arguments)?)
 }

@@ -5,6 +5,7 @@ dist/
 *.log
 
 # Tauri / Rust
+target/
 src-tauri/target/
 src-tauri/gen/
 src-tauri/LOCAL_ARCHITECTURE.md

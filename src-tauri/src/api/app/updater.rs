@@ -4,8 +4,8 @@ use serde::Serialize;
 use tauri::{ipc::Channel, AppHandle, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
-use crate::domain::proxy::normalize_proxy_url;
 use crate::error::AppError;
+use vrcx_0_host::proxy::normalize_proxy_url;
 
 #[derive(Clone, Serialize)]
 #[serde(tag = "event", content = "data")]

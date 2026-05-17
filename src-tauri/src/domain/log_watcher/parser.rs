@@ -2,19 +2,15 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::Path;
 
-use chrono::{Local, NaiveDateTime, Utc};
+use chrono::{Local, NaiveDateTime};
 use tauri::AppHandle;
+use vrcx_0_core::log_watcher::{clean_location, parse_log_line_header};
 
 use super::context::LogContext;
 use super::event::GameLogEventKind;
 use super::queue::append_event;
 use super::watcher::Inner;
 
-const LOG_TIMESTAMP_LEN: usize = 19;
-const LOG_SEPARATOR_INDEX: usize = 31;
-const LOG_CONTENT_OFFSET: usize = 34;
-const LOG_MIN_LINE_LEN: usize = 36;
-const LOG_TIME_FORMAT: &str = "%Y.%m.%d %H:%M:%S";
 pub(super) fn parse_log(
     inner: &Inner,
     app_handle: &AppHandle,
@@ -131,68 +127,6 @@ pub(super) fn parse_log(
     ctx.position > initial_position
 }
 
-pub(super) fn parse_log_line_header(line: &str) -> Option<(NaiveDateTime, &str)> {
-    let bytes = line.as_bytes();
-    if bytes.len() <= LOG_MIN_LINE_LEN || bytes.get(LOG_SEPARATOR_INDEX) != Some(&b'-') {
-        return None;
-    }
-    if !has_log_timestamp_prefix(bytes) {
-        return None;
-    }
-
-    let date_str = line.get(..LOG_TIMESTAMP_LEN)?;
-    let line_date = NaiveDateTime::parse_from_str(date_str, LOG_TIME_FORMAT).ok()?;
-    let content = line.get(LOG_CONTENT_OFFSET..)?;
-    Some((line_date, content))
-}
-
-fn has_log_timestamp_prefix(bytes: &[u8]) -> bool {
-    if bytes.len() < LOG_TIMESTAMP_LEN {
-        return false;
-    }
-
-    bytes[0].is_ascii_digit()
-        && bytes[1].is_ascii_digit()
-        && bytes[2].is_ascii_digit()
-        && bytes[3].is_ascii_digit()
-        && bytes[4] == b'.'
-        && bytes[5].is_ascii_digit()
-        && bytes[6].is_ascii_digit()
-        && bytes[7] == b'.'
-        && bytes[8].is_ascii_digit()
-        && bytes[9].is_ascii_digit()
-        && bytes[10] == b' '
-        && bytes[11].is_ascii_digit()
-        && bytes[12].is_ascii_digit()
-        && bytes[13] == b':'
-        && bytes[14].is_ascii_digit()
-        && bytes[15].is_ascii_digit()
-        && bytes[16] == b':'
-        && bytes[17].is_ascii_digit()
-        && bytes[18].is_ascii_digit()
-}
-
-pub(super) fn convert_log_time_to_iso8601(line: &str) -> String {
-    let date_str = match line.get(..LOG_TIMESTAMP_LEN) {
-        Some(value) => value,
-        None => return Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
-    };
-
-    match NaiveDateTime::parse_from_str(date_str, LOG_TIME_FORMAT) {
-        Ok(local_dt) => {
-            let local_aware = chrono::TimeZone::from_local_datetime(&Local, &local_dt);
-            match local_aware.single() {
-                Some(dt) => dt
-                    .with_timezone(&Utc)
-                    .format("%Y-%m-%dT%H:%M:%S%.3fZ")
-                    .to_string(),
-                None => format!("{}", local_dt.format("%Y-%m-%dT%H:%M:%S%.3fZ")),
-            }
-        }
-        Err(_) => Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
-    }
-}
-
 fn parse_user_info(s: &str) -> (String, String) {
     if let Some(pos) = s.rfind(" (") {
         let display_name = s[..pos].to_string();
@@ -205,10 +139,6 @@ fn parse_user_info(s: &str) -> (String, String) {
     } else {
         (s.to_string(), String::new())
     }
-}
-
-pub(super) fn clean_location(s: &str) -> String {
-    s.replace('/', "")
 }
 
 fn parse_location(
