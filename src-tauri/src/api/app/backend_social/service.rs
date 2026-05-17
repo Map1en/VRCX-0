@@ -10,13 +10,13 @@ use tauri::State;
 use vrcx_0_store::config::ConfigRepository;
 use vrcx_0_vrchat::http_api::normalize_vrchat_api_endpoint;
 
-use crate::api::app::local_data::types::{
-    ConfigWriteEntry, FriendLogCurrentEntryInput, FriendLogHistoryEntryInput,
-    FriendLogReplaceOptionsInput,
-};
 use crate::api::app::vrchat_api_types::HttpApiRequestInput;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_store::config::ConfigWriteEntry;
+use vrcx_0_store::friends::{
+    FriendLogCurrentEntryInput, FriendLogHistoryEntryInput, FriendLogReplaceOptionsInput,
+};
 
 use super::types::{
     BackendFavoritesBaselineInput, BackendFavoritesBaselineOutput,
@@ -729,19 +729,18 @@ async fn build_favorites_baseline(
     .await?;
 
     let local_world_favorite_rows =
-        super::super::local_data::app__favorite_list(state.clone(), "world".into())?;
+        super::super::favorites::app__favorite_list(state.clone(), "world".into())?;
     let local_avatar_favorite_rows =
-        super::super::local_data::app__favorite_list(state.clone(), "avatar".into())?;
+        super::super::favorites::app__favorite_list(state.clone(), "avatar".into())?;
     let local_friend_favorite_rows =
-        super::super::local_data::app__favorite_list(state.clone(), "friend".into())?;
-    let local_world_cache_rows = serde_json::to_value(
-        super::super::local_data::app__world_cache_list(state.clone())?,
-    )?
-    .as_array()
-    .cloned()
-    .unwrap_or_default();
+        super::super::favorites::app__favorite_list(state.clone(), "friend".into())?;
+    let local_world_cache_rows =
+        serde_json::to_value(super::super::worlds::app__world_cache_list(state.clone())?)?
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
     let local_avatar_cache_rows = serde_json::to_value(
-        super::super::local_data::app__avatar_cache_list(state.clone())?,
+        super::super::avatars::app__avatar_cache_list(state.clone())?,
     )?
     .as_array()
     .cloned()
@@ -1554,9 +1553,10 @@ async fn build_friend_roster_baseline(
         fetched_friends_by_id.insert(friend_id, friend);
     }
 
-    let existing_rows = serde_json::to_value(
-        super::super::local_data::app__friend_log_current_list(state.clone(), user_id.clone())?,
-    )?
+    let existing_rows = serde_json::to_value(super::super::friends::app__friend_log_current_list(
+        state.clone(),
+        user_id.clone(),
+    )?)?
     .as_array()
     .cloned()
     .unwrap_or_default();
@@ -1739,7 +1739,7 @@ async fn build_friend_roster_baseline(
         return Ok(stale_friend_output(user_id, String::new()));
     }
 
-    super::super::local_data::app__friend_log_replace_current(
+    super::super::friends::app__friend_log_replace_current(
         state.clone(),
         user_id.clone(),
         friend_log_rows,
@@ -1748,7 +1748,7 @@ async fn build_friend_roster_baseline(
             added_history_entries,
         },
     )?;
-    super::super::local_data::app__config_set_values(
+    super::super::config::app__config_set_values(
         state,
         vec![ConfigWriteEntry {
             key: get_friend_log_init_key(&user_id),

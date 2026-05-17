@@ -1,3 +1,19 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigWriteEntry {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigReadEntry {
+    pub key: String,
+    pub value: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ConfigKey(String);
 

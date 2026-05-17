@@ -8,12 +8,12 @@ use serde_json::{json, Value};
 use tauri::State;
 use vrcx_0_vrchat::http_api::normalize_vrchat_api_endpoint;
 
-use crate::api::app::local_data::types::{
-    LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
-};
 use crate::api::app::vrchat_api_types::HttpApiRequestInput;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_store::local_moderation::{
+    LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
+};
 
 const PLAYER_MODERATIONS_PATH: &str = "auth/user/playermoderations";
 const PLAYER_MODERATION_DELETE_PATH: &str = "auth/user/unplayermoderate";
@@ -321,7 +321,7 @@ async fn refresh_player_moderations(
             .iter()
             .map(BackendRemoteModerationRow::to_local_input)
             .collect();
-        super::local_data::app__local_moderation_sync_snapshot(
+        super::local_moderation::app__local_moderation_sync_snapshot(
             state,
             user_id.clone(),
             local_inputs,
@@ -374,7 +374,7 @@ async fn update_player_moderation(
     .await?;
 
     let local = if is_local_player_moderation_type(&r#type) {
-        let existing = super::local_data::app__local_moderation_get(
+        let existing = super::local_moderation::app__local_moderation_get(
             state.clone(),
             owner_user_id.clone(),
             target_user_id.clone(),
@@ -383,7 +383,7 @@ async fn update_player_moderation(
             resolve_local_moderation_state(existing.as_ref(), &r#type, input.enabled);
         let updated_at = now_iso();
         if block || mute {
-            super::local_data::app__local_moderation_set(
+            super::local_moderation::app__local_moderation_set(
                 state,
                 owner_user_id,
                 LocalModerationInput {
@@ -402,7 +402,7 @@ async fn update_player_moderation(
                 mute,
             })
         } else {
-            super::local_data::app__local_moderation_delete(
+            super::local_moderation::app__local_moderation_delete(
                 state,
                 owner_user_id,
                 target_user_id.clone(),

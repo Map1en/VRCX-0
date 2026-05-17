@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use vrcx_0_core::json::RawJson;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GameLogLocationEntry {
@@ -80,6 +81,14 @@ pub struct GameLogWriteBatch {
     pub resource_loads: Vec<GameLogResourceLoadEntry>,
     pub events: Vec<GameLogEventEntry>,
     pub externals: Vec<GameLogExternalEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameLogQueryInput {
+    pub kind: String,
+    #[serde(default)]
+    pub params: RawJson,
 }
 
 impl GameLogWriteBatch {

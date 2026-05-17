@@ -126,7 +126,7 @@ pub async fn app__backend_notification_mark_seen(
     .await?;
 
     if input.version == 2 && !response_has_error(&response) {
-        super::super::local_data::app__notification_v2_mark_seen(state, user_id, id)?;
+        super::super::notifications::app__notification_v2_mark_seen(state, user_id, id)?;
     }
 
     Ok(response)

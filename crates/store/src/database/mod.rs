@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
+pub mod maintenance;
+
 const READ_CONNECTION_COUNT: usize = 2;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

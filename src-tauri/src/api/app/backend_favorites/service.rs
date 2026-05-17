@@ -394,7 +394,7 @@ pub fn app__backend_local_favorite_add(
         input.group_name,
         "BackendLocalFavoriteAdd requires groupName.",
     )?;
-    super::super::local_data::app__favorite_add(state, kind, entity_id, group_name)
+    super::super::favorites::app__favorite_add(state, kind, entity_id, group_name)
 }
 
 #[tauri::command]
@@ -411,7 +411,7 @@ pub fn app__backend_local_favorite_remove(
         input.group_name,
         "BackendLocalFavoriteRemove requires groupName.",
     )?;
-    super::super::local_data::app__favorite_remove(state, kind, entity_id, group_name)
+    super::super::favorites::app__favorite_remove(state, kind, entity_id, group_name)
 }
 
 #[tauri::command]
@@ -445,7 +445,7 @@ pub fn app__backend_local_favorite_group_rename(
         "BackendLocalFavoriteGroupRename requires newGroupName.",
     )?;
     let key = local_group_config_key(&kind)?;
-    let result = super::super::local_data::app__favorite_group_rename(
+    let result = super::super::favorites::app__favorite_group_rename(
         state.clone(),
         kind,
         group_name.clone(),
@@ -471,7 +471,7 @@ pub fn app__backend_local_favorite_group_delete(
         "BackendLocalFavoriteGroupDelete requires groupName.",
     )?;
     let key = local_group_config_key(&kind)?;
-    let result = super::super::local_data::app__favorite_group_delete(
+    let result = super::super::favorites::app__favorite_group_delete(
         state.clone(),
         kind,
         group_name.clone(),

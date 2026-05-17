@@ -1,9 +1,14 @@
+mod local_queries;
 mod query;
 mod schema;
 mod tables;
 mod types;
 mod write;
 
+pub use local_queries::{
+    app__game_log_entries_add, app__game_log_entry_delete, app__game_log_instance_delete,
+    app__game_log_instance_delete_by_location, app__game_log_query,
+};
 pub use query::{
     game_log_location_table_exists, get_game_log_events, get_game_log_externals,
     get_game_log_join_leave, get_game_log_locations, get_join_leave_entries_for_location_range,
@@ -12,7 +17,7 @@ pub use query::{
 pub use tables::ensure_game_log_tables;
 pub use types::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
-    GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogResourceLoadEntry,
-    GameLogVideoPlayEntry, GameLogWriteBatch,
+    GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogQueryInput,
+    GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };
 pub use write::{insert_video_play, write_batch};
