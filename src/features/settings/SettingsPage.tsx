@@ -42,7 +42,7 @@ export function SettingsPage() {
                 onValueChange={shell.setActiveSettingsTab}
                 className="flex min-h-0 flex-1 flex-col"
             >
-                <div className="max-w-full shrink-0 overflow-x-auto">
+                <div className="max-w-full shrink-0 overflow-x-auto overflow-y-hidden">
                     <TabsList>
                         {shell.settingsTabs.map(([value, labelKey]: any) => (
                             <TabsTrigger key={value} value={value}>
