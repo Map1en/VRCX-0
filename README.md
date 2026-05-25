@@ -1,6 +1,6 @@
 # VRCX-0
 
-English | [简体中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
+English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md)
 
 VRCX-0 is a rewrite of VRCX, rebuilt from the previous CefSharp + Vue architecture with **Tauri + React**. It is developed by one of VRCX's former maintainers.
 
