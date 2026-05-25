@@ -1691,7 +1691,7 @@
                     "minimized": "Start Minimized at System Startup",
                     "tray": "Minimize to Tray When Closing",
                     "background_mode": "Switch to Background Mode When Minimized to Tray",
-                    "background_mode_description": "When closing VRCX-0 to the system tray, switch to Background Mode for ultra-low memory usage, around one-tenth. Some page state may reset after restore.",
+                    "background_mode_description": "Automatically switch to background mode when minimized to tray. Reduces memory usage to 10% as before. Some page states may reset upon restoration. ",
                     "disable_vr_overlay_gpu_acceleration": "Disable VR Overlay GPU Acceleration",
                     "proxy": "Proxy Settings",
                     "proxy_description": "Set the proxy server used by VRCX-0. Restart is required to apply a changed proxy.",
