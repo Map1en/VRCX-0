@@ -42,7 +42,7 @@ fork後新增、修改、重寫及新建的所有程式碼，均依 GNU General 
 環境需求：
 
 - Node.js LTS
-- 建議透過 rustup 安裝的最新穩定版 Rust 工具鏈
+- 建議透過 rustup 安裝最新穩定版 Rust 工具鏈
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0
