@@ -35,7 +35,7 @@ VROverlay 支援已列入規劃。
 
 本儲存庫的初始提交對應分叉時的上游 VRCX 快照，依 MIT License 發布。
 
-fork後新增、修改、重寫及新建的所有程式碼，均依 GNU General Public License v3.0（GPLv3）發布。
+fork 後新增、修改、重寫及新建的所有程式碼，均依 GNU General Public License v3.0（GPLv3）發布。
 
 ## 開發
 
