@@ -1,6 +1,6 @@
 # VRCX-0
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | 日本語
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | 日本語 | [한국어](README.ko-KR.md)
 
 VRCX-0 は VRCX のリライト版です。従来の CefSharp + Vue ベースの構成から、**Tauri + React** ベースへ作り直しています。
 開発は、以前 VRCX のメンテナーを務めていたメンバーの一人が行っています。
