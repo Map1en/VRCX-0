@@ -1,12 +1,12 @@
 {
     "language": "한국어 (ko)",
-    "translator": "pypy",
+    "translator": "pypy, aeongdesu",
     "common": {
         "no_data": "데이터 없음",
         "no_matching_records": "일치하는 기록이 없습니다",
         "feature_relocated": {
             "title": "지원 중단 알림",
-            "description": "이 기능은 향후 업데이트에서 제거될 예정입니다. 대신 {feature}을(를) 사용하세요."
+            "description": "이 기능은 향후 업데이트에서 제거될 예정입니다. 대신 {feature}을(를) 사용해 주세요."
         },
         "actions": {
             "open": "열기",
@@ -47,25 +47,25 @@
             "saturday": "토요일"
         },
         "duration": "기간",
-        "load_more": "더 로드하기",
+        "load_more": "더 불러오기..",
         "no_more": "더 이상 항목이 없습니다.",
         "current_session": "현재",
         "settings_saved": "설정이 저장되었습니다.",
         "loading": "로드 중",
         "no_matching_entries": "일치하는 항목이 없습니다.",
         "status": {
-            "database_initialization_is_still_pending": "데이터베이스 초기화가 아직 보류 중입니다."
+            "database_initialization_is_still_pending": "데이터베이스 초기화가 아직 대기 중입니다."
         },
         "label": {
-            "authenticated_and_prepared_the_session": "세션 인증 및 준비",
+            "authenticated_and_prepared_the_session": "세션 인증 및 준비 완료",
             "auto_login": "자동 로그인",
-            "vrchat_launched": "VRChat 출시됨"
+            "vrchat_launched": "VRChat 실행됨"
         },
         "action": {
             "retry": "재시도"
         },
         "error": {
-            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스 열기에 실패했습니다. 자체 초대로 돌아갑니다."
+            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스 열기에 실패했습니다. 나에게 초대 보내기로 전환됩니다."
         }
     },
     "nav_tooltip": {
@@ -75,9 +75,9 @@
         "player_list": "플레이어 목록",
         "search": "검색",
         "favorites": "즐겨찾기",
-        "favorite_friends": "좋아하는 친구",
-        "favorite_worlds": "좋아하는 세계",
-        "favorite_avatars": "좋아하는 아바타",
+        "favorite_friends": "즐겨찾는 친구",
+        "favorite_worlds": "즐겨찾는 월드",
+        "favorite_avatars": "즐겨찾는 아바타",
         "my_avatars": "내 아바타",
         "social": "소셜",
         "friend_log": "친구 기록",
@@ -117,7 +117,7 @@
             "folder_drop_here": "여기로 항목을 드래그하세요.",
             "hide": "숨기기",
             "show": "표시",
-            "hidden_items": "숨겨진",
+            "hidden_items": "숨겨짐",
             "pin_to_nav": "내비게이션에 고정",
             "unpin_from_nav": "고정 해제",
             "pinned": "탐색에 추가됨",
@@ -136,15 +136,15 @@
                 "show_value": "{value} 표시"
             }
         },
-        "github": "GitHub의 VRCX-0",
-        "discord": "Discord에 가입하세요"
+        "github": "GitHub",
+        "discord": "Discord 서버"
     },
     "dashboard": {
         "default_name": "대시보드",
         "new_dashboard": "새로운 대시보드",
         "empty": "이 대시보드는 비어 있습니다.",
         "actions": {
-            "start_editing": "편집 시작",
+            "start_editing": "편집하기",
             "add_row": "행 추가",
             "add_full_row": "전체 행 추가",
             "add_split_row": "분할 행 추가",
@@ -179,16 +179,16 @@
                 "show_type": "표시 유형"
             },
             "no_data": "데이터 없음",
-            "unknown_world": "미지의 세계",
+            "unknown_world": "알 수 없는 월드",
             "feed_online": "온라인",
             "feed_offline": "오프라인",
-            "feed_bio": "업데이트된 약력",
+            "feed_avatar": "→",
+            "feed_bio": "자기소개 업데이트 됨",
             "instance_players": "플레이어",
             "instance_not_in_game": "게임 중이 아님",
-            "feed_avatar": "→",
             "time_ago": "{time} 전"
         },
-        "first_save_tip": "설정 > 인터페이스 > 탐색에서 새 대시보드 버튼을 숨길 수 있습니다.",
+        "first_save_tip": "설정 > 인터페이스 > 네비게이션에서 새 대시보드 버튼을 숨길 수 있습니다.",
         "confirmations": {
             "delete_title": "대시보드 삭제",
             "delete_description": "이 대시보드를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
@@ -216,12 +216,12 @@
             "current_players": "현재 플레이어",
             "current_instance_player_page": "현재 인스턴스 플레이어 페이지.",
             "search": "검색",
-            "search_worlds_and_groups": "세계와 그룹을 검색하세요.",
-            "favorite_friends": "좋아하는 친구",
+            "search_worlds_and_groups": "월드와 그룹을 검색하세요.",
+            "favorite_friends": "즐겨찾는 친구",
             "favorite_friends_page": "즐겨찾는 친구 페이지.",
-            "favorite_worlds": "좋아하는 세계",
-            "favorite_worlds_page": "즐겨찾는 세계 페이지.",
-            "favorite_avatars": "좋아하는 아바타",
+            "favorite_worlds": "즐겨찾는 월드",
+            "favorite_worlds_page": "즐겨찾는 월드 페이지.",
+            "favorite_avatars": "즐겨찾는 아바타",
             "favorite_avatars_page": "즐겨찾는 아바타 페이지.",
             "friend_history": "친구 이력",
             "friend_history_table_page": "친구 기록 테이블 페이지.",
@@ -1398,7 +1398,7 @@
                 "column_category": "카테고리",
                 "column_message": "메시지",
                 "loading": "로그 항목 로드 중",
-                "load_more": "더 로드하기",
+                "load_more": "더 불러오기..",
                 "no_entries": "현재 필터와 일치하는 항목이 없습니다.",
                 "no_entries_description": "수준, 카테고리 또는 검색 텍스트를 조정합니다.",
                 "no_category": "카테고리 없음",
@@ -4527,7 +4527,7 @@
             "moderation_tools": "조정 도구"
         },
         "boop_dialog": {
-            "header": "부프",
+            "header": "콕 찌르기",
             "emoji_manager": "이모티콘 관리자",
             "select_default_emoji": "기본 이모티콘 선택",
             "default_emojis": "기본 이모티콘",
