@@ -7,7 +7,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { openExternalLink } from '@/services/entityMediaService';
 import {
     fetchLatestChangelogRelease,
-    parseLocalizedChangelog,
+    parseChangelog,
     resolvePreferredChangelogLanguage,
     type LocalizedChangelogEntry
 } from '@/services/changelogService';
@@ -102,6 +102,7 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
     const { i18n, t } = useTranslation();
     const [latestRelease, setLatestRelease] = useState<any>(null);
     const [entries, setEntries] = useState<LocalizedChangelogEntry[]>([]);
+    const [note, setNote] = useState('');
     const [activeLanguage, setActiveLanguage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -116,6 +117,7 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
         setError('');
         setLatestRelease(null);
         setEntries([]);
+        setNote('');
         setActiveLanguage('');
 
         fetchLatestChangelogRelease()
@@ -124,9 +126,11 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
                     return;
                 }
 
-                const nextEntries = parseLocalizedChangelog(release?.body || '');
+                const parsedChangelog = parseChangelog(release?.body || '');
+                const nextEntries = parsedChangelog.entries;
                 setLatestRelease(release);
                 setEntries(nextEntries);
+                setNote(parsedChangelog.note);
                 setActiveLanguage(
                     resolvePreferredChangelogLanguage(
                         nextEntries,
@@ -190,47 +194,62 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
                         {error}
                     </div>
                 ) : selectedEntry ? (
-                    <Tabs
-                        value={activeLanguage}
-                        onValueChange={setActiveLanguage}
-                    >
-                        <TabsList className="max-w-full justify-start overflow-x-auto overflow-y-hidden">
+                    <div className="space-y-3">
+                        {note ? (
+                            <div className="bg-muted/40 text-foreground/90 rounded-md border px-3 py-2 text-sm">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    skipHtml
+                                    components={markdownComponents}
+                                >
+                                    {note}
+                                </ReactMarkdown>
+                            </div>
+                        ) : null}
+                        <Tabs
+                            value={activeLanguage}
+                            onValueChange={setActiveLanguage}
+                        >
+                            <TabsList className="max-w-full justify-start overflow-x-auto overflow-y-hidden">
+                                {entries.map((entry) => (
+                                    <TabsTrigger
+                                        key={`${entry.lang}-${entry.tag}`}
+                                        value={entry.lang}
+                                    >
+                                        {entry.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
                             {entries.map((entry) => (
-                                <TabsTrigger
-                                    key={`${entry.lang}-${entry.anchor}`}
+                                <TabsContent
+                                    key={`${entry.lang}-${entry.tag}-content`}
                                     value={entry.lang}
                                 >
-                                    {entry.label}
-                                </TabsTrigger>
+                                    <ScrollArea className="h-[min(58vh,520px)] rounded-md border">
+                                        <div className="p-3 text-sm">
+                                            {entry.markdown ? (
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    skipHtml
+                                                    components={
+                                                        markdownComponents
+                                                    }
+                                                >
+                                                    {entry.markdown}
+                                                </ReactMarkdown>
+                                            ) : (
+                                                <div className="text-muted-foreground">
+                                                    {t(
+                                                        'dialog.change_log.empty'
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </ScrollArea>
+                                </TabsContent>
                             ))}
-                        </TabsList>
-                        {entries.map((entry) => (
-                            <TabsContent
-                                key={`${entry.lang}-${entry.anchor}-content`}
-                                value={entry.lang}
-                            >
-                                <ScrollArea className="h-[min(58vh,520px)] rounded-md border">
-                                    <div className="p-3 text-sm">
-                                        {entry.markdown ? (
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                skipHtml
-                                                components={markdownComponents}
-                                            >
-                                                {entry.markdown}
-                                            </ReactMarkdown>
-                                        ) : (
-                                            <div className="text-muted-foreground">
-                                                {t(
-                                                    'dialog.change_log.empty'
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </ScrollArea>
-                            </TabsContent>
-                        ))}
-                    </Tabs>
+                        </Tabs>
+                    </div>
                 ) : (
                     <div className="text-muted-foreground rounded-md border p-3 text-sm">
                         {t('dialog.change_log.empty')}

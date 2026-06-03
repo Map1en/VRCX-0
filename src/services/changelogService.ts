@@ -5,11 +5,19 @@ const STABLE_BRANCH = 'Stable';
 const DEFAULT_CHANGELOG_LANG = 'en';
 const DEFAULT_CHANGELOG_LABEL = 'English';
 const MARKER_BLOCK_PATTERN =
-    /<!--\s*vrcx-changelog:start\b([^>]*)-->([\s\S]*?)<!--\s*vrcx-changelog:end\s*-->/gi;
-const MARKER_ATTRIBUTE_PATTERN =
-    /([a-zA-Z][\w:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))/g;
+    /<!--\s*vrcx-0-changelog:start\s+tag\s*=\s*(vrcx-0-v\d+-[a-z]{2}(?:-[a-z]{2})?)\s*-->([\s\S]*?)<!--\s*vrcx-0-changelog:end\s*-->/gi;
+const NOTE_MARKER_PATTERN = /<!--\s*vrcx-0-changelog:note\s*([\s\S]*?)-->/i;
+const CHANGELOG_TAG_PATTERN =
+    /^vrcx-0-v\d+-([a-z]{2}(?:-[a-z]{2})?)$/i;
 const MARKDOWN_ANCHOR_PATTERN =
     /^\s*<a\s+(?:name|id)=["'][^"']+["']\s*><\/a>\s*(?:\r?\n)?/gim;
+const LANGUAGE_LABELS: Record<string, string> = {
+    en: 'English',
+    ja: '日本語',
+    ko: '한국어',
+    'zh-CN': '简体中文',
+    'zh-TW': '繁體中文'
+};
 
 export const POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY =
     'VRCX_showPostUpdateChangelogToast';
@@ -20,8 +28,13 @@ export const LAST_STARTED_VERSION_CONFIG_KEY = 'VRCX_lastStartedVersion';
 export type LocalizedChangelogEntry = {
     lang: string;
     label: string;
-    anchor: string;
+    tag: string;
     markdown: string;
+};
+
+export type ParsedLocalizedChangelog = {
+    note: string;
+    entries: LocalizedChangelogEntry[];
 };
 
 type PostUpdateChangelogToastInput = {
@@ -35,45 +48,48 @@ function normalizeVersion(value: unknown) {
     return String(value || '').trim();
 }
 
-function parseMarkerAttributes(attributeText: string) {
-    const attributes: Record<string, string> = {};
-    MARKER_ATTRIBUTE_PATTERN.lastIndex = 0;
-
-    let match = MARKER_ATTRIBUTE_PATTERN.exec(attributeText);
-    while (match) {
-        const [, key, doubleQuotedValue, singleQuotedValue, bareValue] = match;
-        attributes[key] = doubleQuotedValue ?? singleQuotedValue ?? bareValue ?? '';
-        match = MARKER_ATTRIBUTE_PATTERN.exec(attributeText);
-    }
-
-    return attributes;
-}
-
 function sanitizeChangelogMarkdown(markdown: unknown) {
     return String(markdown || '')
         .replace(MARKDOWN_ANCHOR_PATTERN, '')
         .trim();
 }
 
-export function parseLocalizedChangelog(body: unknown) {
+function normalizeChangelogLanguage(language: string) {
+    const [base = '', region = ''] = language.split('-');
+    if (!region) {
+        return base.toLowerCase();
+    }
+    return `${base.toLowerCase()}-${region.toUpperCase()}`;
+}
+
+function resolveChangelogLanguageFromTag(tag: string) {
+    const match = CHANGELOG_TAG_PATTERN.exec(tag);
+    const lang = normalizeChangelogLanguage(match?.[1] || DEFAULT_CHANGELOG_LANG);
+    return {
+        lang,
+        label: LANGUAGE_LABELS[lang] || lang
+    };
+}
+
+export function parseChangelog(body: unknown): ParsedLocalizedChangelog {
     const source = String(body || '');
+    const note = sanitizeChangelogMarkdown(
+        NOTE_MARKER_PATTERN.exec(source)?.[1] || ''
+    );
     const entries: LocalizedChangelogEntry[] = [];
     MARKER_BLOCK_PATTERN.lastIndex = 0;
 
     let match = MARKER_BLOCK_PATTERN.exec(source);
     while (match) {
-        const [, attributeText, markdown] = match;
-        const attributes = parseMarkerAttributes(attributeText || '');
-        const lang = attributes.lang || DEFAULT_CHANGELOG_LANG;
-        const label = attributes.label || lang;
-        const anchor = attributes.anchor || '';
+        const [, tag, markdown] = match;
+        const { lang, label } = resolveChangelogLanguageFromTag(tag);
         const sanitizedMarkdown = sanitizeChangelogMarkdown(markdown);
 
         if (sanitizedMarkdown) {
             entries.push({
                 lang,
                 label,
-                anchor,
+                tag,
                 markdown: sanitizedMarkdown
             });
         }
@@ -82,17 +98,27 @@ export function parseLocalizedChangelog(body: unknown) {
     }
 
     if (entries.length) {
-        return entries;
+        return {
+            note,
+            entries
+        };
     }
 
-    return [
-        {
-            lang: DEFAULT_CHANGELOG_LANG,
-            label: DEFAULT_CHANGELOG_LABEL,
-            anchor: '',
-            markdown: sanitizeChangelogMarkdown(source)
-        }
-    ];
+    return {
+        note,
+        entries: [
+            {
+                lang: DEFAULT_CHANGELOG_LANG,
+                label: DEFAULT_CHANGELOG_LABEL,
+                tag: '',
+                markdown: sanitizeChangelogMarkdown(source)
+            }
+        ]
+    };
+}
+
+export function parseLocalizedChangelog(body: unknown) {
+    return parseChangelog(body).entries;
 }
 
 export function resolvePreferredChangelogLanguage(

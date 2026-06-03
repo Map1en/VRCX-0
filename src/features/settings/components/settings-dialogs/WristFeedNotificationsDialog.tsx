@@ -78,10 +78,6 @@ function selectedGroupKeys(groupKeys: OverlayActivityFavoriteGroupKeys) {
     return Array.isArray(groupKeys) ? groupKeys : [];
 }
 
-function formatEnabledCount(enabledCount: number, totalCount: number) {
-    return `${enabledCount}/${totalCount}`;
-}
-
 export function WristFeedNotificationsDialog({
     open,
     onOpenChange,
@@ -257,9 +253,6 @@ export function WristFeedNotificationsDialog({
     }
 
     const selectedCategoryTypes = rawTypesByCategory[selectedCategory] || [];
-    const selectedEnabledCount = selectedCategoryTypes.filter(
-        (type) => draft.wrist.types[type]?.scope !== 'off'
-    ).length;
     const definitionsLoaded = activityDefinitions.length > 0;
 
     return (
@@ -277,51 +270,35 @@ export function WristFeedNotificationsDialog({
                 <div className="grid h-[min(62vh,36rem)] min-h-0 grid-cols-[18rem_minmax(0,1fr)] gap-5 overflow-hidden">
                     <ScrollArea className="h-full border-r pr-3">
                         <FieldGroup className="gap-1">
-                            {activityCategories.map((category) => {
-                                const categoryTypes =
-                                    rawTypesByCategory[category] || [];
-                                const enabledCount = categoryTypes.filter(
-                                    (type) =>
-                                        draft.wrist.types[type]?.scope !== 'off'
-                                ).length;
-                                return (
-                                    <Button
-                                        key={category}
-                                        type="button"
-                                        variant={
-                                            selectedCategory === category
-                                                ? 'secondary'
-                                                : 'ghost'
-                                        }
-                                        className="h-auto w-full justify-between gap-3 px-3 py-2.5 text-left whitespace-normal"
-                                        onClick={() =>
-                                            setSelectedCategory(category)
-                                        }
-                                    >
-                                        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                                            <span className="font-medium">
-                                                {t(
-                                                    `dialog.wrist_feed_notifications.categories.${category}.label`
-                                                )}
-                                            </span>
-                                            <span className="text-muted-foreground line-clamp-2 text-xs font-normal">
-                                                {t(
-                                                    `dialog.wrist_feed_notifications.categories.${category}.description`
-                                                )}
-                                            </span>
+                            {activityCategories.map((category) => (
+                                <Button
+                                    key={category}
+                                    type="button"
+                                    variant={
+                                        selectedCategory === category
+                                            ? 'secondary'
+                                            : 'ghost'
+                                    }
+                                    className="h-auto w-full justify-between gap-3 px-3 py-2.5 text-left whitespace-normal"
+                                    onClick={() =>
+                                        setSelectedCategory(category)
+                                    }
+                                >
+                                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                                        <span className="font-medium">
+                                            {t(
+                                                `dialog.wrist_feed_notifications.categories.${category}.label`
+                                            )}
                                         </span>
-                                        <span className="flex shrink-0 items-center gap-2">
-                                            <Badge variant="outline">
-                                                {formatEnabledCount(
-                                                    enabledCount,
-                                                    categoryTypes.length
-                                                )}
-                                            </Badge>
-                                            <ChevronRightIcon data-icon="inline-end" />
+                                        <span className="text-muted-foreground line-clamp-2 text-xs font-normal">
+                                            {t(
+                                                `dialog.wrist_feed_notifications.categories.${category}.description`
+                                            )}
                                         </span>
-                                    </Button>
-                                );
-                            })}
+                                    </span>
+                                    <ChevronRightIcon data-icon="inline-end" />
+                                </Button>
+                            ))}
                         </FieldGroup>
                     </ScrollArea>
 
@@ -346,12 +323,6 @@ export function WristFeedNotificationsDialog({
                                     </Badge>
                                 </div>
                             </div>
-                            <Badge variant="outline">
-                                {formatEnabledCount(
-                                    selectedEnabledCount,
-                                    selectedCategoryTypes.length
-                                )}
-                            </Badge>
                         </div>
 
                         <ScrollArea className="min-h-0 pr-2">

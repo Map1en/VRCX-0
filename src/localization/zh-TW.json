@@ -1643,7 +1643,7 @@
                     "hide_private_worlds": "隱藏私人世界",
                     "vr_device_status": "VR 裝置狀態",
                     "battery_percentage": "顯示電量百分比",
-                    "wrist_feed_notifications": "手腕動態通知"
+                    "wrist_feed_notifications": "手腕動態過濾器"
                 },
                 "vr_extras": {
                     "header": "VR 額外功能"
@@ -1916,7 +1916,7 @@
                     "post_update_changelog_prompt_description": "升級後首次啟動新版本時，在右下角提示查看更新內容。",
                     "wrist_overlay": "手腕動態嵌入介面",
                     "wrist_overlay_description": "僅在 VRChat 處於 VR 模式且 SteamVR 正在執行時啟動手腕動態。",
-                    "wrist_feed_notifications": "手腕動態通知",
+                    "wrist_feed_notifications": "手腕動態過濾器",
                     "wrist_overlay_hide_private_worlds": "隱藏私人世界",
                     "wrist_overlay_dark_background": "深色背景",
                     "wrist_overlay_show_devices": "VR 裝置狀態",
@@ -1993,7 +1993,7 @@
                     "show_cpu_usage": "顯示 CPU 使用率",
                     "show_game_uptime": "顯示遊戲啟動時長",
                     "show_pc_uptime": "顯示電腦啟動時長",
-                    "wrist_feed_filters": "手腕動態篩選器"
+                    "wrist_feed_filters": "手腕動態過濾器"
                 }
             },
             "discord_presence": {
@@ -4421,7 +4421,7 @@
         },
         "shared_feed_filters": {
             "notification": "通知篩選器",
-            "wrist": "手腕動態篩選器",
+            "wrist": "手腕動態過濾器",
             "on": "開啟",
             "off": "關閉",
             "favorite": "收藏",
@@ -4431,9 +4431,9 @@
             "close": "關閉"
         },
         "wrist_feed_notifications": {
-            "title": "手腕動態通知",
+            "title": "手腕動態過濾器",
             "description": "選擇哪些內容顯示在手腕動態中。桌面通知使用單獨的篩選設定。",
-            "reset_recommended": "重置為建議值",
+            "reset_recommended": "重置",
             "scopes": {
                 "off": "關閉",
                 "on": "開啟",

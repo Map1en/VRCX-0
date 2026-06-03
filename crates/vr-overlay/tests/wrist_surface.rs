@@ -78,6 +78,10 @@ fn wrist_surface_aggregates_normal_trackers_and_expands_abnormal_trackers() {
     let texts = scene_texts(&scene.commands);
 
     assert!(texts.iter().any(|text| text == "HMD"));
+    assert!(
+        text_max_width(&scene.commands, "HMD").is_some_and(|width| width >= 34.0),
+        "HMD label must reserve enough width for all three letters"
+    );
     assert!(texts.iter().any(|text| text == "L"));
     assert!(texts.iter().any(|text| text == "R"));
     assert!(texts.iter().any(|text| text == "T8"));
@@ -307,6 +311,15 @@ fn scene_texts(commands: &[DrawCommand]) -> Vec<String> {
 fn text_color(commands: &[DrawCommand], expected_text: &str) -> Option<Color> {
     commands.iter().find_map(|command| match command {
         DrawCommand::Text { text, style, .. } if text == expected_text => Some(style.color),
+        _ => None,
+    })
+}
+
+fn text_max_width(commands: &[DrawCommand], expected_text: &str) -> Option<f32> {
+    commands.iter().find_map(|command| match command {
+        DrawCommand::Text {
+            text, max_width, ..
+        } if text == expected_text => Some(*max_width),
         _ => None,
     })
 }

@@ -1643,7 +1643,7 @@
                     "hide_private_worlds": "プライベートワールドを表示しない",
                     "vr_device_status": "VR デバイス状態",
                     "battery_percentage": "バッテリー残量を表示",
-                    "wrist_feed_notifications": "手首フィード通知"
+                    "wrist_feed_notifications": "手首フィードフィルター"
                 },
                 "vr_extras": {
                     "header": "VR (拡張)"
@@ -1916,7 +1916,7 @@
                     "post_update_changelog_prompt_description": "新しいバージョンで初回起動したとき、右下に更新内容の通知を表示します。",
                     "wrist_overlay": "手首フィードオーバーレイ",
                     "wrist_overlay_description": "VRChat が VR モードで SteamVR が実行中のときだけ手首フィードを開始します。",
-                    "wrist_feed_notifications": "手首フィード通知",
+                    "wrist_feed_notifications": "手首フィードフィルター",
                     "wrist_overlay_hide_private_worlds": "プライベートワールドを表示しない",
                     "wrist_overlay_dark_background": "暗い背景",
                     "wrist_overlay_show_devices": "VR デバイス状態",
@@ -4431,9 +4431,9 @@
             "close": "閉じる"
         },
         "wrist_feed_notifications": {
-            "title": "手首フィード通知",
+            "title": "手首フィードフィルター",
             "description": "手首フィードに表示する内容を選択します。デスクトップ通知は別のフィルターを使用します。",
-            "reset_recommended": "推奨にリセット",
+            "reset_recommended": "リセット",
             "scopes": {
                 "off": "オフ",
                 "on": "オン",

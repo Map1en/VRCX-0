@@ -1,45 +1,47 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+    parseChangelog,
     parseLocalizedChangelog,
     resolvePostUpdateChangelogToastState,
     resolvePreferredChangelogLanguage
 } from './changelogService';
 
 describe('changelogService', () => {
-    test('parses localized release body marker blocks', () => {
+    test('parses localized release body marker blocks and the global note', () => {
         const body = `
-[English](#vrcx-changelog-en) | [简体中文](#vrcx-changelog-zh-cn)
+<!-- vrcx-0-changelog:note
+This release focuses on the changelog page.
+-->
 
-<!-- vrcx-changelog:start lang=en label="English" anchor="vrcx-changelog-en" -->
-<a name="vrcx-changelog-en"></a>
-
+<!-- vrcx-0-changelog:start tag=vrcx-0-v240-en -->
 ### English
 - Added the changelog dialog.
-<!-- vrcx-changelog:end -->
+<!-- vrcx-0-changelog:end -->
 
-<!-- vrcx-changelog:start lang=zh-CN label="简体中文" anchor="vrcx-changelog-zh-cn" -->
-<a name="vrcx-changelog-zh-cn"></a>
-
+<!-- vrcx-0-changelog:start tag=vrcx-0-v240-zh-CN -->
 ### 简体中文
 - 新增更新内容对话框。
-<!-- vrcx-changelog:end -->
+<!-- vrcx-0-changelog:end -->
 `;
 
-        expect(parseLocalizedChangelog(body)).toEqual([
-            {
-                lang: 'en',
-                label: 'English',
-                anchor: 'vrcx-changelog-en',
-                markdown: '### English\n- Added the changelog dialog.'
-            },
-            {
-                lang: 'zh-CN',
-                label: '简体中文',
-                anchor: 'vrcx-changelog-zh-cn',
-                markdown: '### 简体中文\n- 新增更新内容对话框。'
-            }
-        ]);
+        expect(parseChangelog(body)).toEqual({
+            note: 'This release focuses on the changelog page.',
+            entries: [
+                {
+                    lang: 'en',
+                    label: 'English',
+                    tag: 'vrcx-0-v240-en',
+                    markdown: '### English\n- Added the changelog dialog.'
+                },
+                {
+                    lang: 'zh-CN',
+                    label: '简体中文',
+                    tag: 'vrcx-0-v240-zh-CN',
+                    markdown: '### 简体中文\n- 新增更新内容对话框。'
+                }
+            ]
+        });
     });
 
     test('falls back to the full release body when marker blocks are absent', () => {
@@ -49,7 +51,7 @@ describe('changelogService', () => {
             {
                 lang: 'en',
                 label: 'English',
-                anchor: '',
+                tag: '',
                 markdown: body
             }
         ]);
@@ -57,12 +59,12 @@ describe('changelogService', () => {
 
     test('prefers exact locale, then base language, then English', () => {
         const entries = parseLocalizedChangelog(`
-<!-- vrcx-changelog:start lang=en label="English" anchor="en" -->
+<!-- vrcx-0-changelog:start tag=vrcx-0-v240-en -->
 English body
-<!-- vrcx-changelog:end -->
-<!-- vrcx-changelog:start lang=zh-CN label="简体中文" anchor="zh-cn" -->
+<!-- vrcx-0-changelog:end -->
+<!-- vrcx-0-changelog:start tag=vrcx-0-v240-zh-CN -->
 中文内容
-<!-- vrcx-changelog:end -->
+<!-- vrcx-0-changelog:end -->
 `);
 
         expect(resolvePreferredChangelogLanguage(entries, 'zh-CN')).toBe(

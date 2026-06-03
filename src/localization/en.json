@@ -1643,7 +1643,7 @@
                     "hide_private_worlds": "Hide Private Worlds",
                     "vr_device_status": "VR Device Status",
                     "battery_percentage": "Battery Percentage",
-                    "wrist_feed_notifications": "Wrist Feed Notifications"
+                    "wrist_feed_notifications": "Wrist Feed Filters"
                 },
                 "vr_extras": {
                     "header": "VR Extras"
@@ -1916,7 +1916,7 @@
                     "post_update_changelog_prompt_description": "Shows a persistent prompt after the app starts on a newly installed version.",
                     "wrist_overlay": "Wrist Feed Overlay",
                     "wrist_overlay_description": "Starts the SteamVR wrist feed only while VRChat is in VR and SteamVR is running.",
-                    "wrist_feed_notifications": "Wrist Feed Notifications",
+                    "wrist_feed_notifications": "Wrist Feed Filters",
                     "wrist_overlay_hide_private_worlds": "Hide Private Worlds",
                     "wrist_overlay_dark_background": "Dark Background",
                     "wrist_overlay_show_devices": "VR Device Status",
@@ -4431,9 +4431,9 @@
             "close": "Close"
         },
         "wrist_feed_notifications": {
-            "title": "Wrist Feed Notifications",
+            "title": "Wrist Feed Filters",
             "description": "Choose what appears on the wrist feed. Desktop notifications use separate filters.",
-            "reset_recommended": "Reset Recommended",
+            "reset_recommended": "Reset",
             "scopes": {
                 "off": "Off",
                 "on": "On",

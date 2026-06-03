@@ -127,7 +127,7 @@ impl OverlayBackend for OpenVrOverlayBackend {
         surface_id: &OverlaySurfaceId,
         frame: RgbaFrame,
     ) -> Result<(), String> {
-        let (handle, visible_upload) = {
+        let handle = {
             let surface = self.surfaces.get_mut(surface_id).ok_or_else(|| {
                 format!(
                     "overlay surface '{}' is not registered",
@@ -146,19 +146,17 @@ impl OverlayBackend for OpenVrOverlayBackend {
                 }
                 surface.pending_frame = None;
                 surface.last_visible_frame_upload_at = Some(now);
-                (surface.handle, true)
+                surface.handle
             } else {
-                surface.pending_frame = None;
-                (surface.handle, false)
+                surface.pending_frame = Some(frame);
+                return Ok(());
             }
         };
 
         if let Err(error) = self.upload_frame(handle, &frame) {
             if let Some(surface) = self.surfaces.get_mut(surface_id) {
                 surface.pending_frame = Some(frame);
-                if visible_upload {
-                    surface.last_visible_frame_upload_at = None;
-                }
+                surface.last_visible_frame_upload_at = None;
             }
             return Err(error);
         }
@@ -393,18 +391,6 @@ impl OpenVrOverlayBackend {
             }
         }
         if !visible {
-            let pending_after_hide = self
-                .surfaces
-                .get_mut(surface_id)
-                .and_then(|surface| surface.pending_frame.take());
-            if let Some(frame) = pending_after_hide {
-                if let Err(error) = self.upload_frame(handle, &frame) {
-                    if let Some(surface) = self.surfaces.get_mut(surface_id) {
-                        surface.pending_frame = Some(frame);
-                    }
-                    return Err(error);
-                }
-            }
             if let Some(surface) = self.surfaces.get_mut(surface_id) {
                 surface.last_visible_frame_upload_at = None;
             }

@@ -217,7 +217,8 @@ fn tracker_index(label: &str) -> u32 {
 }
 
 fn device_label_width(label: &str) -> f32 {
-    (estimated_text_width(label, 14.0) + 2.0).clamp(10.0, 42.0)
+    let padding = if label == "HMD" { 12.0 } else { 4.0 };
+    (estimated_text_width(label, 14.0) + padding).clamp(12.0, 48.0)
 }
 
 fn device_percent_width(text: &str) -> f32 {
