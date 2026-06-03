@@ -71,7 +71,7 @@
     "overlay": {
         "footer": {
             "players": "{count}명",
-            "instance_duration": "체류 {duration}"
+            "instance_duration": "인스턴스 기간 {duration}"
         }
     },
     "nav_tooltip": {
@@ -103,6 +103,8 @@
         "resources": "리소스",
         "qq_group": "QQ그룹 (중국 커뮤니티)",
         "get_help": "도움을 받으세요",
+        "github": "GitHub",
+        "discord": "Discord 서버",
         "changelog": "변경 내역",
         "update_available": "업데이트 가능",
         "update": "업데이트",
@@ -110,8 +112,8 @@
         "edit_dashboard": "대시보드 편집",
         "delete_dashboard": "대시보드 삭제",
         "custom_nav": {
-            "header": "탐색 사용자 정의",
-            "dialog_title": "탐색 메뉴 사용자 정의",
+            "header": "탐색 꾸미기",
+            "dialog_title": "탐색 메뉴 꾸미기",
             "new_folder": "새 폴더",
             "folder_name_placeholder": "폴더 이름",
             "folder_icon_placeholder": "아이콘 클래스(예: ri-menu-fold-line)",
@@ -120,18 +122,18 @@
             "edit_dashboard": "대시보드 편집",
             "delete_dashboard": "대시보드 삭제",
             "folder_empty": "이 폴더는 비어 있습니다.",
-            "folder_drop_here": "여기로 항목을 드래그하세요.",
+            "folder_drop_here": "여기로 항목을 드래그하세요",
             "hide": "숨기기",
             "show": "표시",
             "hidden_items": "숨겨짐",
-            "pin_to_nav": "내비게이션에 고정",
+            "pin_to_nav": "탐색에 고정",
             "unpin_from_nav": "고정 해제",
             "pinned": "탐색에 추가됨",
             "unpinned": "탐색에서 삭제됨",
             "confirm": "확인",
             "cancel": "취소",
             "restore_default": "기본값 복원",
-            "restore_default_confirm": "탐색을 기본 순서로 복원하시겠습니까?",
+            "restore_default_confirm": "탐색을 기본값으로 복원하시겠습니까?",
             "dynamic": {
                 "drag_value": "{value} 드래그",
                 "icon_for_value": "{value} 아이콘",
@@ -141,9 +143,7 @@
                 "remove_value": "{value} 제거",
                 "show_value": "{value} 표시"
             }
-        },
-        "github": "GitHub",
-        "discord": "Discord 서버"
+        }
     },
     "dashboard": {
         "default_name": "대시보드",
@@ -190,22 +190,22 @@
             "feed_offline": "오프라인",
             "feed_avatar": "→",
             "feed_bio": "자기소개 업데이트 됨",
-            "instance_players": "플레이어",
+            "instance_players": "인원수",
             "instance_not_in_game": "게임 중이 아님",
             "time_ago": "{time} 전"
         },
-        "first_save_tip": "설정 > 인터페이스 > 네비게이션에서 새 대시보드 버튼을 숨길 수 있습니다.",
+        "first_save_tip": "설정 > 인터페이스 > 탐색에서 새 대시보드 버튼을 숨길 수 있습니다.",
         "confirmations": {
             "delete_title": "대시보드 삭제",
             "delete_description": "이 대시보드를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
         },
         "registry": {
             "feed_widget": "피드 위젯",
-            "compact_feed_widget_configuration": "컴팩트 피드 위젯 구성.",
+            "compact_feed_widget_configuration": "콤팩트 피드 위젯 구성.",
             "game_log_widget": "게임 로그 위젯",
-            "compact_game_log_widget_configuration": "컴팩트한 게임 로그 위젯 구성.",
+            "compact_game_log_widget_configuration": "콤팩트한 게임 로그 위젯 구성.",
             "instance_widget": "인스턴스 위젯",
-            "compact_in_game_status_widget_configuration": "컴팩트한 게임 내 상태 위젯 구성.",
+            "compact_in_game_status_widget_configuration": "콤팩트한 게임 내 상태 위젯 구성.",
             "icon": "아이콘",
             "display_name": "표시 이름",
             "rank": "순위",
@@ -232,7 +232,7 @@
             "friend_history": "친구 이력",
             "friend_history_table_page": "친구 기록 테이블 페이지.",
             "friends": "친구",
-            "friend_management_page": "친구관리 페이지입니다.",
+            "friend_management_page": "친구관리 페이지.",
             "moderation": "중재",
             "moderation_table_page": "중재 테이블 페이지.",
             "notification_center": "알림 센터",
@@ -248,6 +248,7 @@
         }
     },
     "app_menu": {
+        "app": "VRCX-0",
         "view": "보기",
         "tools": "도구",
         "help": "도움말",
@@ -256,8 +257,10 @@
         "theme_devkit_build_badge": "테마 개발 키트",
         "settings": "설정...",
         "check_updates": "업데이트 확인",
-        "start_background_mode": "배경 모드로 전환",
+        "restart": "VRCX-0 다시 시작",
+        "start_background_mode": "백그라운드 모드로 전환",
         "logout": "로그아웃",
+        "quit": "VRCX-0 종료",
         "quick_search": "빠른 검색",
         "notification_center": "알림 센터",
         "expand_friends_sidebar": "친구 사이드바 표시",
@@ -268,8 +271,12 @@
         "reset_zoom": "줌 재설정",
         "all_tools": "모든 도구...",
         "open_devtools": "DevTools 열기",
+        "github": "GitHub",
         "report_issue": "문제 보고",
         "open_source_licenses": "제3자 고지 사항",
+        "about": "VRCX-0 정보",
+        "about_title": "VRCX-0 정보",
+        "about_description": "VRChat용 데스크탑 컴패니언.",
         "version": "버전",
         "messages": {
             "zoom_failed": "확대/축소를 적용하지 못했습니다.",
@@ -288,42 +295,36 @@
         "action": {
             "close_window": "창 닫기"
         },
-        "app": "VRCX-0",
-        "restart": "VRCX-0 다시 시작",
-        "quit": "VRCX-0 종료",
-        "collapse_friends_sidebar": "친구 사이드바 숨기기",
-        "github": "GitHub",
-        "about": "VRCX-0 정보",
-        "about_title": "VRCX-0 정보",
-        "about_description": "VRChat용 데스크탑 컴패니언입니다."
+        "collapse_friends_sidebar": "친구 사이드바 숨기기"
     },
     "side_panel": {
         "search_placeholder": "검색",
         "search_no_results": "검색결과가 없습니다",
-        "search_min_chars": "2자 이상 입력하세요.",
+        "search_min_chars": "2자 이상 입력해주세요.",
         "search_categories": "검색...",
-        "search_scope_all": "이름, 지역 메모 및 메모",
+        "search_scope_all": "이름, 로컬 메모 및 메모",
         "search_scope_avatars": "소유 및 즐겨찾기",
         "search_scope_worlds": "소유 및 즐겨찾기",
         "search_scope_joined": "소유 및 가입",
         "search_friends": "친구",
         "search_avatars": "아바타",
-        "search_own_avatars": "나만의 아바타",
-        "search_fav_avatars": "좋아하는 아바타",
-        "search_worlds": "세계",
-        "search_own_worlds": "나만의 세계",
-        "search_fav_worlds": "좋아하는 세계",
+        "search_own_avatars": "소유한 아바타",
+        "search_fav_avatars": "즐겨찾는 아바타",
+        "search_worlds": "월드",
+        "search_own_worlds": "소유한 월드",
+        "search_fav_worlds": "즐겨찾는 월드",
         "search_groups": "그룹",
-        "search_own_groups": "자신의 그룹",
+        "search_own_groups": "소유한 그룹",
         "search_joined_groups": "가입된 그룹",
         "search_result_active": "오프라인",
         "search_result_offline": "활성",
         "search_result_more": "더 보기:",
         "refresh_tooltip": "새로고침",
+        "refresh_available_in_minutes": "최근에 동기화되었습니다. {count}분 후에 다시 시도해 주세요.",
         "groups": "그룹",
         "friends": "친구",
         "me": "나",
-        "favorite": "친한 친구",
+        "favorite": "즐겨찾는 친구",
         "same_instance": "동일한 인스턴스",
         "online": "온라인",
         "active": "활성",
@@ -346,8 +347,8 @@
             "favorite_groups_placeholder": "모든 그룹",
             "edit_group_order": "그룹 주문 수정",
             "custom_tabs": {
-                "configure": "탭 사용자 정의",
-                "title": "사이드바 탭 사용자 정의",
+                "configure": "탭 꾸미기",
+                "title": "사이드바 탭 꾸미기",
                 "display_mode": "탭 표시",
                 "display_auto": "자동",
                 "display_icon_text": "아이콘 + 텍스트",
@@ -377,7 +378,7 @@
         "notifications": "알림",
         "notification_center": {
             "title": "알림 센터",
-            "view_more": "더 많이 보기",
+            "view_more": "더 보기",
             "tab_friend": "친구",
             "tab_group": "그룹",
             "tab_other": "기타",
@@ -386,32 +387,32 @@
             "no_unseen_notifications": "읽지 않은 알림 없음"
         },
         "success": {
-            "invite_request_sent": "초대 요청이 전송되었습니다.",
-            "boop_sent": "삑삑 보냈어",
-            "friend_and_favorite_snapshots_refreshed": "친구와 즐겨찾기가 새로고침되었습니다.",
-            "vrchat_launch_request_sent": "VRChat 실행 요청이 전송되었습니다."
+            "vrchat_launch_request_sent": "VRChat 실행 요청을 보냈습니다",
+            "invite_request_sent": "초대 요청을 보냈습니다",
+            "boop_sent": "콕찌르기를 보냈습니다",
+            "friend_and_favorite_snapshots_refreshed": "친구와 즐겨찾기가 새로고침되었습니다"
         },
         "error": {
-            "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-            "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
-            "cannot_update_profile_no_current_user_session_is_available": "프로필을 업데이트할 수 없습니다. 현재 사용자 세션을 사용할 수 없습니다.",
-            "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
-            "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
+            "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다",
+            "cannot_invite_no_current_vrchat_location_is_available": "초대 불가: 현재 VRChat 위치를 사용할 수 없습니다",
+            "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+            "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
+            "cannot_update_profile_no_current_user_session_is_available": "프로필 업데이트 불가: 현재 사용자 세션을 사용할 수 없습니다."
         },
         "empty": {
-            "no_authenticated_user_snapshot_is_available": "친구를 새로 고치기 전에 로그인하세요"
-        },
-        "refresh_available_in_minutes": "최근에 동기화되었습니다. {count}분 후에 다시 시도해 주세요."
+            "no_authenticated_user_snapshot_is_available": "친구를 새로 고치기 전에 로그인 해주세요"
+        }
     },
     "view": {
         "login": {
-            "savedAccounts": "계정 선택",
+            "savedAccounts": "저장된 계정",
             "login": "로그인",
             "signingIn": "로그인 중...",
-            "register": "가입",
+            "register": "회원 가입",
             "forgotPassword": "비밀번호를 잊어버리셨나요?",
             "updater": "업데이터",
             "proxy_settings": "프록시 설정",
+            "proxy_description": "로그인 전에 사용되는 프록시 서버를 설정합니다. 127.0.0.1:7890, http://127.0.0.1:7890, 및 socks5://127.0.0.1:7890을 지원합니다.",
             "settings": "설정",
             "language": "언어",
             "field": {
@@ -420,7 +421,11 @@
                 "saveCredentials": "로그인 정보 저장",
                 "devEndpoint": "개발자용 API",
                 "endpoint": "엔드포인트",
-                "websocket": "WebSocket"
+                "websocket": "웹소켓"
+            },
+            "placeholder": {
+                "account": "VRChat 계정",
+                "password": "VRChat 비밀번호"
             },
             "validation": {
                 "username_required": "사용자 이름 또는 이메일이 필요합니다",
@@ -428,35 +433,30 @@
             },
             "saved_account_remove": {
                 "title": "저장된 계정 삭제",
+                "description": "{name}이(가) 삭제됩니다",
                 "confirm": "제거",
-                "removing": "삭제 중...",
-                "description": "{name}이(가) 삭제됩니다"
-            },
-            "language_detect": {
-                "title": "언어 감지됨",
-                "description": "시스템 언어가 {language}인 것 같습니다. 전환하시겠습니까?"
-            },
-            "proxy_description": "로그인 전에 사용되는 프록시 서버를 설정합니다. 127.0.0.1:7890, http://127.0.0.1:7890, 및 양말5://127.0.0.1:7890을 지원합니다.",
-            "placeholder": {
-                "account": "VRChat 계정",
-                "password": "VRChat 비밀번호"
+                "removing": "삭제 중..."
             },
             "footer": {
                 "github": "GitHub",
                 "discord": "Discord"
+            },
+            "language_detect": {
+                "title": "언어 감지됨",
+                "description": "시스템 언어가 {language}인 것 같습니다. 전환하시겠습니까?"
             }
         },
         "feed": {
             "filter": "필터",
-            "favorites_only_tooltip": "친한 친구만 보기",
+            "favorites_only_tooltip": "즐겨찾는 친구만 보기",
             "search_placeholder": "검색",
             "filters": {
+                "GPS": "GPS",
                 "Online": "온라인",
                 "Offline": "오프라인",
                 "Status": "상태",
                 "Avatar": "아바타",
-                "Bio": "바이오",
-                "GPS": "GPS"
+                "Bio": "자기소개"
             },
             "modes": {
                 "table": "테이블",
@@ -470,7 +470,7 @@
                 "density": "밀도",
                 "density_options": {
                     "compact": "콤팩트",
-                    "dense": "조밀한"
+                    "dense": "조밀하게"
                 },
                 "latest": "최신",
                 "new_column": "새 열",
@@ -479,60 +479,60 @@
                 "all_friends": "모든 친구",
                 "all_favorites": "모든 즐겨찾는 그룹",
                 "selected_favorites": "선택한 즐겨찾는 그룹",
+                "groups_count": "{count} 그룹",
                 "except_all_favorites": "모든 즐겨찾기 제외",
+                "except_groups_count": "{count} 그룹 제외",
                 "exclude_favorites": "즐겨찾는 그룹 제외",
-                "exclude_none": "제외하지 마세요",
+                "exclude_none": "제외하지 않기",
                 "exclude_all_favorites": "모든 즐겨찾는 그룹",
                 "exclude_selected_favorites": "선택한 즐겨찾는 그룹",
                 "excluded_favorite_groups": "제외된 즐겨찾는 그룹",
-                "favorite_groups": "좋아하는 그룹",
+                "favorite_groups": "즐겨찾는 그룹",
                 "types": "유형",
                 "restore_preset": "사전 설정 복원",
                 "restore_preset_title": "피드 열 사전 설정을 복원하시겠습니까?",
                 "restore_preset_description": "즐겨찾기, 위치, 프로필, 현재 상태 등 미리 설정된 열이 복원됩니다.",
                 "restore_preset_confirm": "사전 설정 복원",
-                "bio_diff": "바이오체인지",
-                "groups_count": "{count} 그룹",
-                "except_groups_count": "{count} 그룹 제외"
+                "bio_diff": "자기소개 변경"
             },
             "time": {
-                "just_now": "지금 막",
+                "just_now": "방금",
                 "seconds_ago": "{count}초 전",
                 "minutes_ago": "{count}분 전",
                 "hours_ago": "{count}시간 전",
                 "days_ago": "{count}일 전"
             },
             "error": {
-                "avatar_author_unavailable": "아바타 작성자를 사용할 수 없습니다.",
-                "avatar_is_private_or_not_found": "아바타가 비공개이거나 찾을 수 없습니다.",
-                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
-                "cannot_request_invite_friend_is_not_online": "초대를 요청할 수 없습니다. 친구가 온라인 상태가 아닙니다.",
-                "feed_query_failed": "피드 쿼리 실패",
-                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
-                "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
+                "avatar_author_unavailable": "아바타 제작자를 사용할 수 없습니다",
+                "avatar_is_private_or_not_found": "아바타가 비공개이거나 찾을 수 없습니다",
+                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다",
+                "cannot_invite_no_current_vrchat_location_is_available": "초대 불가: 현재 VRChat 위치를 사용할 수 없습니다",
+                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+                "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
+                "cannot_request_invite_friend_is_not_online": "초대 요청 불가: 친구가 온라인 상태가 아닙니다.",
+                "feed_query_failed": "피드 쿼리 실패"
             },
             "label": {
                 "previous_avatar": "이전 아바타",
                 "rows": "행",
-                "favorites_are_still_hydrating": "즐겨찾기는 여전히 수분을 공급하고 있습니다.",
+                "favorites_are_still_hydrating": "즐겨찾기를 불러오는 중입니다",
                 "favorites_only": "즐겨찾기만"
             },
             "success": {
-                "invite_request_sent": "초대 요청이 전송되었습니다.",
-                "boop_sent": "삑삑 보냈어",
-                "vrchat_launch_request_sent": "VRChat 실행 요청이 전송되었습니다."
+                "vrchat_launch_request_sent": "VRChat 실행 요청을 보냈습니다",
+                "invite_request_sent": "초대 요청을 보냈습니다",
+                "boop_sent": "콕찌르기를 보냈습니다"
             },
             "loading": {
                 "loading_feed_rows": "피드 행 로드 중"
             },
             "empty": {
-                "no_feed_rows_match_the_current_filters": "현재 필터와 일치하는 피드 행이 없습니다."
+                "no_feed_rows_match_the_current_filters": "현재 필터와 일치하는 피드 행이 없습니다"
             },
             "toast": {
-                "failed_to_resolve_avatar_author": "아바타 작성자를 확인하지 못했습니다.",
-                "failed_to_load_instance_history": "인스턴스 기록을 로드하지 못했습니다.",
-                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_resolve_avatar_author": "아바타 제작자를 찾을 수 없습니다",
+                "failed_to_load_instance_history": "인스턴스 기록을 불러오지 못했습니다",
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "failed_to_request_invite": "초대를 요청하지 못했습니다.",
@@ -564,17 +564,17 @@
             "density_options": {
                 "standard": "표준",
                 "compact": "콤팩트",
-                "dense": "조밀한"
+                "dense": "조밀하게"
             },
             "separate_same_instance_friends": "동일한 인스턴스 친구 분리",
             "show_same_instance_in_online": "온라인에서 동일한 인스턴스 표시",
             "loading_more": "더 로드 중...",
             "busy": "바쁨",
+            "local_group": "지역: {name}",
             "all_matching_friends": "일치하는 모든 친구",
             "no_favorite_group": "좋아하는 그룹 없음",
             "favorite_group_segment": "좋아하는 그룹 세그먼트",
-            "friend_is_not_in_hydrated_favorite_group": "친구가 하이드레이트 좋아하는 그룹에 속해 있지 않습니다.",
-            "local_group": "지역: {name}"
+            "friend_is_not_in_hydrated_favorite_group": "친구가 하이드레이트 좋아하는 그룹에 속해 있지 않습니다."
         },
         "game_log": {
             "filter_placeholder": "필터",
@@ -645,20 +645,20 @@
                 "no_authenticated_user_is_available_for_the_game_log_snapshot": "게임 로그 스냅샷에는 인증된 사용자가 없습니다."
             },
             "description": {
-                "favorites_are_still_hydrating": "즐겨 찾기는 여전히 수분을 공급하고 있습니다.",
+                "favorites_are_still_hydrating": "즐겨찾기를 계속 불러오는 중입니다",
                 "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "더 많은 최근 세션을 보려면 필터나 검색어를 확장하세요.",
                 "broaden_the_filters_or_search_query_to_see_more_results": "더 많은 결과를 보려면 필터나 검색어를 확장하세요."
             },
             "toast": {
+                "failed_to_look_up_value": "{value}을(를) 조회하지 못했습니다.",
                 "failed_to_delete_game_log_row": "게임 로그 행을 삭제하지 못했습니다.",
-                "failed_to_load_instance_history": "인스턴스 기록을 로드하지 못했습니다.",
-                "failed_to_look_up_value": "{value}을(를) 조회하지 못했습니다."
+                "failed_to_load_instance_history": "인스턴스 기록을 불러오지 못했습니다"
             },
             "modal": {
                 "delete_game_log_row": "게임 로그 행을 삭제하시겠습니까?"
             },
             "dynamic": {
-                "no_user_id_was_found_for_value": "{value}에 대한 사용자 ID를 찾을 수 없습니다."
+                "no_user_id_was_found_for_value": "{value}에 대한 사용자 ID를 찾을 수 없습니다"
             }
         },
         "my_avatars": {
@@ -667,32 +667,32 @@
             "table_view": "테이블 보기",
             "grid_view": "그리드 보기",
             "error": {
-                "selected_avatar_style_is_not_available": "선택한 아바타 스타일을 사용할 수 없습니다.",
-                "style_list_could_not_be_loaded_unknown_style_selections_will": "스타일 목록을 로드할 수 없습니다. 알 수 없는 스타일 선택이 유지됩니다.",
-                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다.",
+                "selected_avatar_style_is_not_available": "선택한 아바타 스타일을 사용할 수 없습니다",
+                "style_list_could_not_be_loaded_unknown_style_selections_will": "스타일 목록을 불러올 수 없습니다. 알 수 없는 스타일 선택이 유지됩니다",
+                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다",
                 "selected_file_is_not_an_image": "선택한 파일은 이미지가 아닙니다",
-                "avatar_inventory_failed_to_load": "아바타 인벤토리를 로드하지 못했습니다."
+                "avatar_inventory_failed_to_load": "아바타 인벤토리를 불러오지 못했습니다"
             },
             "success": {
-                "avatar_styles_updated": "아바타 스타일이 업데이트되었습니다.",
-                "avatar_selected": "아바타가 선택됨",
+                "avatar_styles_updated": "아바타 스타일이 업데이트되었습니다",
+                "avatar_selected": "아바타가 선택되었습니다",
                 "avatar_image_updated": "아바타 이미지가 업데이트되었습니다.",
-                "avatar_request_did_not_complete": "아바타 요청이 완료되지 않았습니다."
+                "avatar_request_did_not_complete": "아바타 요청이 완료되지 않았습니다"
             },
             "label": {
                 "primary_style": "기본 스타일",
                 "none": "없음",
                 "secondary_style": "보조 스타일",
-                "author_tags": "작성자 태그",
+                "author_tags": "제작자 태그",
                 "manage_avatar_tags": "아바타 태그 관리",
                 "tag_name": "태그 이름",
-                "visibility": "가시성",
+                "visibility": "표시",
                 "platform": "플랫폼",
                 "grid_settings": "그리드 설정",
                 "grid_density": "그리드 밀도",
                 "grid_density_standard": "표준",
                 "grid_density_compact": "콤팩트",
-                "grid_density_dense": "조밀한",
+                "grid_density_dense": "조밀하게",
                 "current_avatar": "현재",
                 "click_to_wear": "클릭해서 착용해보세요",
                 "impostor_queued_for_creation": "임포스터가 생성 대기 중입니다.",
@@ -866,7 +866,7 @@
                 "sort_favorites": "즐겨찾기 정렬",
                 "sort_by_date": "날짜순으로 정렬",
                 "sort_by_players": "플레이어별로 정렬",
-                "visibility": "가시성",
+                "visibility": "표시",
                 "group": "그룹",
                 "favorite_group_renamed": "즐겨찾는 그룹 이름이 변경되었습니다.",
                 "group_visibility_changed": "그룹 공개 상태가 변경됨",
@@ -886,13 +886,13 @@
                 "favorite_group_cleared": "즐겨찾는 그룹이 삭제되었습니다.",
                 "local_favorite_group_deleted": "지역 즐겨찾는 그룹이 삭제되었습니다.",
                 "avatar_history_cleared": "아바타 기록이 삭제되었습니다.",
-                "invite_request_sent": "초대 요청이 전송되었습니다.",
-                "boop_sent": "삑삑 보냈어",
-                "avatar_selected": "아바타가 선택됨",
+                "invite_request_sent": "초대 요청을 보냈습니다",
+                "boop_sent": "콕찌르기를 보냈습니다",
+                "avatar_selected": "아바타가 선택되었습니다",
                 "copied_selected_favorite_ids": "선택한 즐겨찾기 ID를 복사했습니다.",
                 "selected_favorites_removed": "선택한 즐겨찾기가 삭제되었습니다.",
                 "vrchat_favorite_removed": "VRChat 즐겨찾기가 삭제되었습니다.",
-                "vrchat_launch_request_sent": "VRChat 실행 요청이 전송되었습니다."
+                "vrchat_launch_request_sent": "VRChat 실행 요청을 보냈습니다"
             },
             "action": {
                 "remove_favorite": "즐겨찾기 삭제",
@@ -908,10 +908,10 @@
             },
             "error": {
                 "cannot_self_invite_to_this_instance": "이 인스턴스에 직접 초대할 수 없습니다.",
-                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
+                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+                "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
                 "favorites_failed_to_load": "즐겨찾기를 로드하지 못했습니다.",
-                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
+                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다",
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
             "loading": {
@@ -1061,13 +1061,13 @@
                 "friend_request_accepted": "친구 요청이 수락되었습니다.",
                 "notification_declined": "알림이 거부됨",
                 "invite_response_sent": "초대 응답이 전송되었습니다.",
-                "boop_sent": "삑삑 보냈어",
+                "boop_sent": "콕찌르기를 보냈습니다",
                 "notification_response_sent": "알림 응답이 전송되었습니다.",
                 "notification_log_entry_deleted": "알림 로그 항목이 삭제되었습니다."
             },
             "error": {
-                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
+                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+                "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
                 "cannot_send_invite_response_no_current_user_session_is_available": "초대 응답을 보낼 수 없습니다. 현재 사용자 세션을 사용할 수 없습니다.",
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
@@ -1113,7 +1113,7 @@
                 "friend": "친구",
                 "friends": "친구",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "즐겨찾기 전용 기능을 끄거나 검색어를 확장해 보세요.",
-                "favorites_are_still_hydrating": "즐겨찾기는 여전히 수분을 공급하고 있습니다.",
+                "favorites_are_still_hydrating": "즐겨찾기를 불러오는 중입니다",
                 "try_a_different_segment_or_broaden_the_search_query": "다른 세그먼트를 사용해 보거나 검색어를 확장하세요.",
                 "the_current_search_filters_excluded_every_friend_in_the_roster": "현재 검색 필터는 명단에 있는 모든 친구를 제외했습니다.",
                 "world": "세계",
@@ -1122,9 +1122,9 @@
             "success": {
                 "friend_detail_loading_cancelled": "친구 세부정보 로드가 취소되었습니다.",
                 "roster_bootstrap_did_not_complete": "명단 부트스트랩이 완료되지 않았습니다.",
-                "invite_request_sent": "초대 요청이 전송되었습니다.",
-                "boop_sent": "삑삑 보냈어",
-                "vrchat_launch_request_sent": "VRChat 실행 요청이 전송되었습니다."
+                "invite_request_sent": "초대 요청을 보냈습니다",
+                "boop_sent": "콕찌르기를 보냈습니다",
+                "vrchat_launch_request_sent": "VRChat 실행 요청을 보냈습니다"
             },
             "empty": {
                 "no_friends_are_available_for_mutual_friends_loading": "서로 친구를 불러오는 데 사용할 수 있는 친구가 없습니다.",
@@ -1137,10 +1137,10 @@
             },
             "error": {
                 "friend_roster_failed_to_load": "친구 명단을 로드하지 못했습니다.",
-                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
+                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+                "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
                 "friend_locations_failed_to_load": "친구 위치를 로드하지 못했습니다.",
-                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
+                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다",
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
             "description": {
@@ -2394,7 +2394,7 @@
                 "failed_to_delete_local_favorite_group": "로컬 즐겨찾기 그룹을 삭제하지 못했습니다.",
                 "failed_to_refresh_avatar_history": "아바타 기록을 새로 고치지 못했습니다.",
                 "failed_to_clear_avatar_history": "아바타 기록을 지우지 못했습니다.",
-                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "failed_to_request_invite": "초대를 요청하지 못했습니다.",
@@ -2459,7 +2459,7 @@
         },
         "friends": {
             "toast": {
-                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "failed_to_request_invite": "초대를 요청하지 못했습니다.",
@@ -2525,7 +2525,7 @@
             },
             "field": {
                 "name": "이름",
-                "author": "작성자",
+                "author": "제작자",
                 "version": "버전",
                 "tested_with": "테스트됨",
                 "downloads": "다운로드",
@@ -2813,7 +2813,7 @@
                 "moderation_show_avatar": "아바타 보이기",
                 "reset_hidden_avatar": "숨겨진 아바타 재설정",
                 "reset_shown_avatar": "표시된 아바타 재설정",
-                "reset_avatar_visibility": "아바타 가시성 재설정",
+                "reset_avatar_visibility": "아바타 표시 재설정",
                 "moderation_actions": "조정...",
                 "moderation_enable_avatar_interaction": "아바타 상호작용 허용",
                 "moderation_disable_avatar_interaction": "아바타 상호작용 거부",
@@ -3072,9 +3072,9 @@
                 "bio_links": "바이오 링크",
                 "bio": "바이오",
                 "previous_display_names": "이전 표시 이름",
-                "visibility_everyone": "가시성: 모든 사람",
-                "visibility_friends": "가시성: 친구",
-                "visibility_hidden": "가시성: 숨김",
+                "visibility_everyone": "표시: 모든 사람",
+                "visibility_friends": "표시: 친구",
+                "visibility_hidden": "표시: 숨김",
                 "moderator": "중재자",
                 "friend": "친구 #",
                 "muted": "음소거됨",
@@ -3089,7 +3089,7 @@
                 "booping_setting_updated": "부핑 설정이 업데이트되었습니다.",
                 "shared_connections_setting_updated": "공유 연결 설정이 업데이트되었습니다.",
                 "report_sent": "보고서가 전송되었습니다.",
-                "boop_sent": "삑삑 보냈어",
+                "boop_sent": "콕찌르기를 보냈습니다",
                 "profile_details_updated": "프로필 세부정보가 업데이트되었습니다.",
                 "group_invite_sent": "그룹 초대가 전송되었습니다.",
                 "left_group": "왼쪽 그룹",
@@ -3108,10 +3108,10 @@
                 "no_results": "결과 없음"
             },
             "error": {
-                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
+                "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다",
+                "cannot_invite_current_location_is_not_a_concrete_instance": "초대 불가: 현재 위치는 구체적인 인스턴스가 아닙니다",
                 "user_profile_unavailable": "사용자 프로필을 사용할 수 없습니다.",
-                "avatar_author_unavailable": "아바타 작성자를 사용할 수 없습니다.",
+                "avatar_author_unavailable": "아바타 제작자를 사용할 수 없습니다.",
                 "blocked": "차단됨",
                 "cannot_load_message_templates_no_current_user_session_is_available": "메시지 템플릿을 로드할 수 없습니다. 현재 사용자 세션을 사용할 수 없습니다.",
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다.",
@@ -3146,12 +3146,12 @@
                 "invite_message_sent": "초대 메시지가 전송되었습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "invite_request_message_sent": "초대 요청 메시지가 전송되었습니다.",
-                "invite_request_sent": "초대 요청이 전송되었습니다.",
+                "invite_request_sent": "초대 요청을 보냈습니다",
                 "failed_to_request_invite": "초대를 요청하지 못했습니다.",
                 "failed_to_send_boop": "붑을 보내지 못했습니다.",
                 "already_viewing_user": "이미 이 사용자를 보고 있습니다.",
                 "translation_failed": "번역 실패",
-                "failed_to_load_avatar_author": "아바타 작성자를 로드하지 못했습니다.",
+                "failed_to_load_avatar_author": "아바타 제작자를 로드하지 못했습니다.",
                 "failed_to_send_group_invite": "그룹 초대를 보내지 못했습니다.",
                 "failed_to_update_group_visibility": "그룹 공개 상태를 업데이트하지 못했습니다.",
                 "failed_to_leave_group": "그룹에서 탈퇴하지 못했습니다.",
@@ -3268,7 +3268,7 @@
                 "copy_url": "URL 복사",
                 "copy_name": "이름 복사",
                 "youtube_preview": "YouTube 미리보기",
-                "author_tags": "작성자 태그",
+                "author_tags": "제작자 태그",
                 "players": "유저 수",
                 "favorites": "즐겨찾기 수",
                 "visits": "방문자 수",
@@ -3308,11 +3308,11 @@
                 "self_invite": "셀프 초대",
                 "recommended_capacity": "권장 용량",
                 "youtube_preview": "YouTube 미리보기",
-                "author": "작성자",
+                "author": "제작자",
                 "world_tags": "월드 태그",
                 "avatar_scaling_disabled": "아바타 크기 조정이 비활성화되었습니다.",
                 "focus_view_disabled": "포커스 뷰 비활성화됨",
-                "author_tags": "작성자 태그",
+                "author_tags": "제작자 태그",
                 "content_tags": "콘텐츠 태그",
                 "raw_content_tags": "원시 콘텐츠 태그",
                 "default_content_settings": "기본 콘텐츠 설정",
@@ -3330,7 +3330,7 @@
                 "open_in_game": "게임 내에서 열기",
                 "update_world_name_description_capacity_and_preview": "이 세계의 이름, 설명, 용량, 미리보기 업데이트",
                 "change_world_image": "세상의 이미지를 바꾸다",
-                "edit_managed_content_author_and_feature_tags_for_this_world": "이 세계에 대한 관리 콘텐츠, 작성자 및 기능 태그 편집",
+                "edit_managed_content_author_and_feature_tags_for_this_world": "이 세계에 대한 관리 콘텐츠, 제작자 및 기능 태그 편집",
                 "enable_debugging": "디버깅 활성화",
                 "add_domain": "도메인 추가",
                 "reset_your_vrchat_home_location": "VRChat 집 위치 재설정"
@@ -3345,9 +3345,9 @@
                 "cannot_self_invite_location_is_not_a_concrete_instance": "직접 초대할 수 없습니다. 위치가 구체적인 인스턴스가 아닙니다.",
                 "failed_to_refresh_the_remote_world_snapshot": "원격 세계 스냅샷을 새로 고치지 못했습니다.",
                 "failed_to_load_the_world_profile": "월드 프로필을 로드하지 못했습니다.",
-                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다.",
+                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다",
                 "selected_file_is_not_an_image": "선택한 파일은 이미지가 아닙니다",
-                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
+                "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다",
                 "group_id_is_required_for_group_instances": "그룹 인스턴스에는 ID 그룹이 필요합니다.",
                 "cannot_open_in_vrchat_location_is_not_a_concrete_instance": "VRChat에서 열 수 없습니다. 위치가 구체적인 인스턴스가 아닙니다.",
                 "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스 열기에 실패했습니다. 자체 초대로 돌아갑니다.",
@@ -3366,7 +3366,7 @@
                 "youtube_preview_updated": "YouTube 미리보기가 업데이트되었습니다.",
                 "world_tags_updated": "세계 태그가 업데이트되었습니다.",
                 "allowed_domains_updated": "허용된 도메인이 업데이트되었습니다.",
-                "vrchat_launch_request_sent": "VRChat 실행 요청이 전송되었습니다.",
+                "vrchat_launch_request_sent": "VRChat 실행 요청을 보냈습니다",
                 "instance_url_copied": "인스턴스 URL 복사됨"
             },
             "description": {
@@ -3403,7 +3403,7 @@
                 "failed_to_update_allowed_domains": "허용된 도메인을 업데이트하지 못했습니다.",
                 "failed_to_upload_world_image": "월드 이미지 업로드 실패",
                 "translation_failed": "번역 실패",
-                "failed_to_launch_vrchat_instance": "VRChat 인스턴스를 시작하지 못했습니다.",
+                "failed_to_launch_vrchat_instance": "VRChat 인스턴스를 시작하지 못했습니다",
                 "instance_created_but_self_invite_failed_value": "인스턴스가 생성되었지만 자체 초대에 실패했습니다: {value}",
                 "failed_to_open_instance_in_vrchat": "VRChat에서 인스턴스를 열지 못했습니다."
             },
@@ -3463,7 +3463,7 @@
                 "edit_details": "세부정보 편집",
                 "change_description": "설명 변경",
                 "change_content_tags": "콘텐츠 태그 변경",
-                "change_styles_author_tags": "스타일 및 작성자 태그 변경",
+                "change_styles_author_tags": "스타일 및 제작자 태그 변경",
                 "change_image": "이미지 변경",
                 "advanced": "고급",
                 "download_package": "유니티 패키지 다운로드",
@@ -3492,7 +3492,7 @@
                 "android_performance": "안드로이드 성능",
                 "ios_performance": "iOS 성능",
                 "time_spent": "방문 시간",
-                "visibility": "가시성",
+                "visibility": "표시",
                 "tags": "태그",
                 "memo": "VRCX-0 메모",
                 "memo_placeholder": "-",
@@ -3515,7 +3515,7 @@
             },
             "success": {
                 "avatar_refreshed": "아바타가 새로 고쳐졌습니다.",
-                "avatar_selected": "아바타가 선택됨",
+                "avatar_selected": "아바타가 선택되었습니다",
                 "avatar_details_updated": "아바타 세부정보가 업데이트되었습니다.",
                 "avatar_image_updated": "아바타 이미지가 업데이트되었습니다.",
                 "avatar_cache_deleted": "아바타 캐시가 삭제되었습니다.",
@@ -3539,7 +3539,7 @@
                 "select_style": "스타일 선택"
             },
             "description": {
-                "edit_avatar_details_description": "아바타 이름, 설명, 스타일, 작성자 태그를 편집합니다.",
+                "edit_avatar_details_description": "아바타 이름, 설명, 스타일, 제작자 태그를 편집합니다.",
                 "avatar_snapshot_unavailable_description": "VRCX-0은(는) 이 대화 상자에 대한 아바타 스냅샷을 확인할 수 없습니다."
             },
             "toast": {
@@ -3625,7 +3625,7 @@
                 "manage_selected": "선택한 그룹 관리",
                 "select_all": "모두 선택",
                 "deselect_all": "모두 선택 취소",
-                "visibility": "그룹 가시성",
+                "visibility": "그룹 표시",
                 "visibility_everyone": "모두에게 보임",
                 "visibility_friends": "친구에게 보임",
                 "visibility_hidden": "보이지 않음",
@@ -3678,7 +3678,7 @@
             },
             "posts": {
                 "header": "게시물",
-                "visibility": "가시성:",
+                "visibility": "표시:",
                 "edited_at": "편집 날짜:",
                 "created_at": "생성일:",
                 "edit_tooltip": "게시물 수정",
@@ -3703,7 +3703,7 @@
                     "users_with_no_role": "역할이 없는 유저만"
                 },
                 "unsubscribed_announcements": "공지사항 구독 취소됨",
-                "visibility": "가시성:",
+                "visibility": "표시:",
                 "representing": "대표",
                 "manager_notes": "관리자 메모:",
                 "search": "검색"
@@ -4171,7 +4171,7 @@
             "density_options": {
                 "standard": "표준",
                 "compact": "콤팩트",
-                "dense": "조밀한"
+                "dense": "조밀하게"
             },
             "crop_image": "업로드 확인",
             "emoji_animation_fps": "FPS:"
@@ -4254,7 +4254,7 @@
             "col_players": "플레이어",
             "col_resolution": "해상도",
             "col_match": "경기",
-            "col_author": "작성자",
+            "col_author": "제작자",
             "gallery": "갤러리",
             "folders": "폴더",
             "scanning": "스크린샷 스캔 중",
@@ -4277,7 +4277,7 @@
             "avatar_scaling_disabled": "아바타 스케일링 비활성화",
             "focus_view_disabled": "포커스 뷰 비활성화",
             "enable_debugging": "모두에게 디버깅 허용",
-            "author_tags": "작성자 태그(쉼표로 구분)",
+            "author_tags": "제작자 태그(쉼표로 구분)",
             "content_tags": "콘텐츠 경고 태그",
             "content_horror": "공포",
             "content_gore": "고어",
@@ -4461,7 +4461,7 @@
             "block_join_requests": "가입 요청 차단",
             "progress": "진행:",
             "display_name": "표시 이름",
-            "visibility": "가시성",
+            "visibility": "표시",
             "avatar": "아바타",
             "joined_at": "가입일",
             "banned_at": "금지 장소",
@@ -4496,7 +4496,7 @@
             "title": "제목",
             "message": "메시지",
             "send_notification": "알림 보내기",
-            "post_visibility": "게시물 가시성",
+            "post_visibility": "게시물 표시",
             "visibility_public": "공개",
             "visibility_group": "그룹",
             "image": "이미지",
@@ -4533,7 +4533,7 @@
             "moderation_tools": "조정 도구"
         },
         "boop_dialog": {
-            "header": "콕 찌르기",
+            "header": "콕찌르기",
             "emoji_manager": "이모티콘 관리자",
             "select_default_emoji": "기본 이모티콘 선택",
             "default_emojis": "기본 이모티콘",
@@ -5107,7 +5107,7 @@
                 "selected_file_is_not_image": "선택한 파일은 이미지가 아닙니다."
             },
             "error": {
-                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다.",
+                "selected_image_is_too_large": "선택한 이미지가 너무 큽니다",
                 "failed_to_read_image": "이미지를 읽지 못했습니다."
             }
         },
@@ -5583,7 +5583,7 @@
         },
         "app_status_bar": {
             "toast": {
-                "failed_to_save_status_bar_visibility": "상태 표시줄 가시성을 저장하지 못했습니다.",
+                "failed_to_save_status_bar_visibility": "상태 표시줄 표시을 저장하지 못했습니다.",
                 "failed_to_save_clock_count": "시계 수를 저장하지 못했습니다.",
                 "failed_to_save_status_bar_clocks": "상태 표시줄 시계를 저장하지 못했습니다.",
                 "failed_to_open_media_link": "미디어 링크를 열지 못했습니다.",
@@ -5600,7 +5600,7 @@
         "location": {
             "toast": {
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다.",
-                "failed_to_load_instance_history": "인스턴스 기록을 로드하지 못했습니다."
+                "failed_to_load_instance_history": "인스턴스 기록을 불러오지 못했습니다"
             }
         },
         "friends_sidebar": {
@@ -5610,7 +5610,7 @@
                 "status_updated": "상태가 업데이트되었습니다."
             },
             "toast": {
-                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
                 "failed_to_request_invite": "초대를 요청하지 못했습니다.",
@@ -5632,7 +5632,7 @@
         },
         "groups_sidebar": {
             "toast": {
-                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다."
             }
         },
