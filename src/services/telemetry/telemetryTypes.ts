@@ -2,8 +2,6 @@ import type { BackendRuntimeMode } from '@/platform/tauri/appCommandTypes';
 
 export type TelemetryRuntimeMode = BackendRuntimeMode;
 
-export type TelemetryFeatureKey = 'background_mode';
-
 export type TelemetryContextPayload = {
     installId: string;
     sessionId: string;
@@ -19,20 +17,12 @@ export type TelemetryContextPayload = {
 };
 
 export type TelemetryEventPayload =
-    | (TelemetryContextPayload & {
-          eventType: 'feature';
-          featureKey: TelemetryFeatureKey;
-      })
-    | (TelemetryContextPayload & {
-          eventType: 'error';
-          errorCode: string;
-      });
+    TelemetryContextPayload & {
+        eventType: 'error';
+        errorCode: string;
+    };
 
 export type TelemetrySessionState = {
     installId: string;
     sessionId: string;
 };
-
-export const TELEMETRY_FEATURE_KEYS = Object.freeze({
-    backgroundMode: 'background_mode'
-} satisfies Record<string, TelemetryFeatureKey>);

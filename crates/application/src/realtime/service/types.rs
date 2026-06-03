@@ -68,6 +68,7 @@ pub struct RealtimeHostRuntimeDeps {
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
     pub game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
+    pub overlay_activity: OverlayActivityRuntime,
 }
 
 pub struct RealtimeHostRuntime {

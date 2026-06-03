@@ -5,7 +5,13 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import type { ModerationLoadStatus, ModerationRow } from './moderationPageTypes';
 
-export function useModerationRows() {
+type ModerationRowsOptions = {
+    refreshKey?: string;
+};
+
+export function useModerationRows({
+    refreshKey = ''
+}: ModerationRowsOptions = {}) {
     const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
@@ -56,7 +62,7 @@ export function useModerationRows() {
         return () => {
             active = false;
         };
-    }, [currentEndpoint, currentUserId, refreshToken]);
+    }, [currentEndpoint, currentUserId, refreshKey, refreshToken]);
 
     function refresh() {
         setRefreshToken((value) => value + 1);

@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
+default = []
+steamvr-overlay = ["vrcx-0-host/steamvr-overlay"]
 test-utils = ["vrcx-0-application/test-utils"]
 
 [dependencies]
+chrono = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -17,4 +20,5 @@ vrcx-0-core = { path = "../core" }
 vrcx-0-host = { path = "../host" }
 vrcx-0-media = { path = "../media" }
 vrcx-0-persistence = { path = "../persistence" }
+vrcx-0-vr-overlay = { path = "../vr-overlay" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }

@@ -51,7 +51,12 @@ windows-sys = { version = "0.61", features = [
 webkit2gtk-nvidia-quirk = "1"
 
 [features]
+default = ["steamvr-overlay"]
 devtools = ["tauri/devtools"]
+steamvr-overlay = [
+    "vrcx-0-host/steamvr-overlay",
+    "vrcx-0-runtime-host/steamvr-overlay",
+]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

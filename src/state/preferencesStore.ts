@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
@@ -34,6 +35,10 @@ export type TableDensityPreference = 'standard' | 'compact';
 export type FeedTimeDisplayModePreference = 'exact' | 'relative';
 export type TranslationApiType = 'google' | 'openai';
 export type DefaultLaunchModePreference = 'vr' | 'desktop';
+export type WristOverlayHandPreference = 'left' | 'right' | 'both';
+export type WristOverlaySizePreference = 'compact' | 'normal' | 'large';
+export type WristOverlayStartModePreference = 'steamvr' | 'vrchatVrMode';
+export type WristOverlayButtonPreference = 'grip' | 'menu';
 export type TrustColorKey = keyof typeof TRUST_COLOR_DEFAULTS;
 export type TrustColorsPreference = Record<TrustColorKey, string>;
 export type DiscordPreferenceKey =
@@ -53,10 +58,35 @@ export interface TableLimitsPreference {
 
 export interface SharedFeedFiltersPreference {
     noty: Record<string, unknown>;
-    wrist: Record<string, unknown>;
 }
 
 export { normalizeOverlayActivityFilters, parseOverlayActivityFilters };
+
+function hasPersistedOverlayActivityFilters(value: unknown): boolean {
+    if (!value) {
+        return false;
+    }
+    if (typeof value === 'string') {
+        try {
+            return hasPersistedOverlayActivityFilters(JSON.parse(value));
+        } catch {
+            return false;
+        }
+    }
+    const source = asRecord(value);
+    const wrist = asRecord(source.wrist);
+    return Boolean(wrist.types || wrist.categories);
+}
+
+export function parseOverlayActivityFiltersPreference(
+    value?: unknown,
+    legacySharedFeedFilters?: unknown
+) {
+    if (!hasPersistedOverlayActivityFilters(value)) {
+        return migrateLegacySharedFeedWristFilters(legacySharedFeedFilters);
+    }
+    return parseOverlayActivityFilters(value);
+}
 
 type BoundedIntOptions = {
     min?: number;
@@ -69,7 +99,6 @@ type TableLimits = {
 };
 type SharedFeedFilterSnapshot = {
     noty?: unknown;
-    wrist?: unknown;
 };
 type PreferenceInputSnapshot = Record<string, unknown>;
 
@@ -114,6 +143,30 @@ export function normalizeFeedTimeDisplayMode(
     value: unknown
 ): FeedTimeDisplayModePreference {
     return value === 'exact' ? 'exact' : 'relative';
+}
+
+export function normalizeWristOverlayHand(
+    value: unknown
+): WristOverlayHandPreference {
+    return value === 'right' || value === 'both' ? value : 'left';
+}
+
+export function normalizeWristOverlaySize(
+    value: unknown
+): WristOverlaySizePreference {
+    return value === 'compact' || value === 'large' ? value : 'normal';
+}
+
+export function normalizeWristOverlayStartMode(
+    value: unknown
+): WristOverlayStartModePreference {
+    return value === 'steamvr' ? 'steamvr' : 'vrchatVrMode';
+}
+
+export function normalizeWristOverlayButton(
+    value: unknown
+): WristOverlayButtonPreference {
+    return value === 'menu' ? 'menu' : 'grip';
 }
 
 export function normalizeTablePageSizes(value: unknown): number[] {
@@ -164,15 +217,10 @@ export function normalizeSharedFeedFilters(
 ): SharedFeedFiltersPreference {
     const filters = asRecord(value) as SharedFeedFilterSnapshot;
     const noty = asRecord(filters.noty);
-    const wrist = asRecord(filters.wrist);
     return {
         noty: {
             ...sharedFeedFiltersDefaults.noty,
             ...noty
-        },
-        wrist: {
-            ...sharedFeedFiltersDefaults.wrist,
-            ...wrist
         }
     };
 }
@@ -219,12 +267,22 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     hideUnfriends: false,
     randomUserColours: false,
     notificationIconDot: true,
+    showPostUpdateChangelogToast: true,
     desktopToast: 'Never',
     afkDesktopToast: false,
     desktopNotificationSound: false,
     notificationTTS: 'Never',
     notificationTTSNickName: false,
     notificationTTSVoice: '0',
+    wristOverlayEnabled: false,
+    wristOverlayStartMode: 'vrchatVrMode',
+    wristOverlayButton: 'grip',
+    wristOverlayHand: 'left',
+    wristOverlaySize: 'normal',
+    wristOverlayHidePrivateWorlds: false,
+    wristOverlayDarkBackground: true,
+    wristOverlayShowDevices: true,
+    wristOverlayShowBatteryPercent: false,
     relaunchVRChatAfterCrash: false,
     vrcQuitFix: true,
     autoSweepVRChatCache: false,
@@ -251,8 +309,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     },
     localFavoriteFriendsGroups: [],
     sharedFeedFilters: {
-        noty: { ...sharedFeedFiltersDefaults.noty },
-        wrist: { ...sharedFeedFiltersDefaults.wrist }
+        noty: { ...sharedFeedFiltersDefaults.noty }
     },
     overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     feedTimeDisplayMode: 'relative',
@@ -277,6 +334,10 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
 export function normalizePreferenceSnapshot(
     snapshot: PreferenceInputSnapshot = {}
 ) {
+    const hasOverlayActivityFiltersInput = Object.prototype.hasOwnProperty.call(
+        snapshot,
+        'overlayActivityFilters'
+    );
     const next: any = {
         ...DEFAULT_PREFERENCES,
         ...snapshot
@@ -330,12 +391,34 @@ export function normalizePreferenceSnapshot(
         hideUnfriends: normalizeBool(next.hideUnfriends),
         randomUserColours: normalizeBool(next.randomUserColours),
         notificationIconDot: normalizeBool(next.notificationIconDot),
+        showPostUpdateChangelogToast: normalizeBool(
+            next.showPostUpdateChangelogToast
+        ),
         desktopToast: next.desktopToast || 'Never',
         afkDesktopToast: normalizeBool(next.afkDesktopToast),
         desktopNotificationSound: normalizeBool(next.desktopNotificationSound),
         notificationTTS: next.notificationTTS || 'Never',
         notificationTTSNickName: normalizeBool(next.notificationTTSNickName),
         notificationTTSVoice: String(next.notificationTTSVoice ?? '0'),
+        wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
+        wristOverlayStartMode: normalizeWristOverlayStartMode(
+            next.wristOverlayStartMode
+        ),
+        wristOverlayButton: normalizeWristOverlayButton(
+            next.wristOverlayButton
+        ),
+        wristOverlayHand: normalizeWristOverlayHand(next.wristOverlayHand),
+        wristOverlaySize: normalizeWristOverlaySize(next.wristOverlaySize),
+        wristOverlayHidePrivateWorlds: normalizeBool(
+            next.wristOverlayHidePrivateWorlds
+        ),
+        wristOverlayDarkBackground: normalizeBool(
+            next.wristOverlayDarkBackground
+        ),
+        wristOverlayShowDevices: normalizeBool(next.wristOverlayShowDevices),
+        wristOverlayShowBatteryPercent: normalizeBool(
+            next.wristOverlayShowBatteryPercent
+        ),
         relaunchVRChatAfterCrash: normalizeBool(next.relaunchVRChatAfterCrash),
         vrcQuitFix: normalizeBool(next.vrcQuitFix),
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
@@ -369,8 +452,11 @@ export function normalizePreferenceSnapshot(
             ? next.localFavoriteFriendsGroups.filter(Boolean)
             : [],
         sharedFeedFilters: parseSharedFeedFilters(next.sharedFeedFilters),
-        overlayActivityFilters: parseOverlayActivityFilters(
-            next.overlayActivityFilters
+        overlayActivityFilters: parseOverlayActivityFiltersPreference(
+            hasOverlayActivityFiltersInput
+                ? next.overlayActivityFilters
+                : undefined,
+            next.sharedFeedFilters
         ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(
             next.feedTimeDisplayMode

@@ -68,6 +68,12 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat でインスタンスを開けなかったため、自分への招待に切り替えます"
         }
     },
+    "overlay": {
+        "footer": {
+            "players": "{count}人",
+            "instance_duration": "滞在 {duration}"
+        }
+    },
     "nav_tooltip": {
         "friends_locations": "フレンドの現在地",
         "feed": "フィード",
@@ -1617,7 +1623,27 @@
                     "header": "VR 通知"
                 },
                 "wrist_overlay": {
-                    "header": "手首のオーバーレイ"
+                    "header": "手首のオーバーレイ",
+                    "wrist_feed_overlay": "手首フィードオーバーレイ",
+                    "start_when": "開始タイミング",
+                    "start_when_steamvr": "SteamVR 起動時",
+                    "start_when_vrchat_vr_mode": "VRChat 起動時",
+                    "overlay_button": "オーバーレイボタン",
+                    "overlay_button_grip": "Grip",
+                    "overlay_button_menu": "Menu",
+                    "display_on": "表示する手",
+                    "display_on_left": "左",
+                    "display_on_right": "右",
+                    "display_on_both": "両方",
+                    "size": "サイズ",
+                    "size_compact": "コンパクト",
+                    "size_normal": "標準",
+                    "size_large": "大",
+                    "dark_background": "暗い背景",
+                    "hide_private_worlds": "プライベートワールドを表示しない",
+                    "vr_device_status": "VR デバイス状態",
+                    "battery_percentage": "バッテリー残量を表示",
+                    "wrist_feed_notifications": "手首フィード通知"
                 },
                 "vr_extras": {
                     "header": "VR (拡張)"
@@ -1886,7 +1912,22 @@
                     "layout_notification_center": "通知センター",
                     "layout_table": "通知タブ",
                     "notification_filter": "通知フィルター",
+                    "post_update_changelog_prompt": "更新後に更新内容の通知を表示",
+                    "post_update_changelog_prompt_description": "新しいバージョンで初回起動したとき、右下に更新内容の通知を表示します。",
+                    "wrist_overlay": "手首フィードオーバーレイ",
+                    "wrist_overlay_description": "VRChat が VR モードで SteamVR が実行中のときだけ手首フィードを開始します。",
                     "wrist_feed_notifications": "手首フィード通知",
+                    "wrist_overlay_hide_private_worlds": "プライベートワールドを表示しない",
+                    "wrist_overlay_dark_background": "暗い背景",
+                    "wrist_overlay_show_devices": "VR デバイス状態",
+                    "wrist_overlay_display_on": "オーバーレイを表示する手",
+                    "wrist_overlay_display_on_left": "左手",
+                    "wrist_overlay_display_on_right": "右手",
+                    "wrist_overlay_display_on_both": "両手",
+                    "wrist_overlay_size": "サイズ",
+                    "wrist_overlay_size_compact": "コンパクト",
+                    "wrist_overlay_size_normal": "標準",
+                    "wrist_overlay_size_large": "大",
                     "test_notification": "テスト通知を送る",
                     "test_message": "これはテスト通知です",
                     "steamvr_notifications": {
@@ -1948,7 +1989,7 @@
                     "display_overlay_on_both": "両手",
                     "grey_background": "暗い背景",
                     "minimal_feed_icons": "小さいフィードアイコン",
-                    "show_vr_devices": "VR デバイスを表示する",
+                    "show_vr_devices": "VR デバイス状態",
                     "show_cpu_usage": "CPU 使用率を表示する",
                     "show_game_uptime": "ゲームの起動時間を表示する",
                     "show_pc_uptime": "PC の起動時間を表示する",
@@ -4652,7 +4693,14 @@
             "description": "将来の VRCX-0 の開発を支援するために寄付をご検討ください。",
             "close": "閉じる",
             "donate": "寄付",
-            "github": "GitHub"
+            "github": "GitHub",
+            "loading": "更新履歴を読み込んでいます...",
+            "failed_to_load": "更新履歴の読み込みに失敗しました。",
+            "latest_release": "最新リリース",
+            "empty": "このリリースには利用可能な更新履歴がありません。",
+            "toast_title": "{value} に更新しました",
+            "toast_description": "このバージョンの更新内容を確認できます。",
+            "view_changes": "更新内容を見る"
         },
         "open_source": {
             "header": "サードパーティー通知",
@@ -5049,6 +5097,9 @@
         "vrcx_updater": {
             "failed": "アップデートの確認に失敗しました、{message}",
             "failed_install": "更新のインストールに失敗しました",
+            "current_version": "現在のバージョン",
+            "latest_version": "最新バージョン",
+            "released": "公開日",
             "checking_hash": "ハッシュ値の検証中...",
             "checking_update_state": "更新状態を確認中です。",
             "no_downloadable_releases_found": "ダウンロード可能なリリースが見つかりません。",

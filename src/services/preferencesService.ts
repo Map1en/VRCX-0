@@ -3,6 +3,10 @@ import { tauriClient } from '@/platform/tauri/client';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
 import {
+    normalizeOverlayActivityFiltersWithDefinitions,
+    type OverlayActivityTypeDefinition
+} from '@/shared/constants/overlayActivityFilters';
+import {
     normalizePreferenceKey,
     publishPreferenceChanged
 } from '@/shared/events/preferenceEvents';
@@ -15,7 +19,7 @@ import {
     DEFAULT_PREFERENCES,
     normalizeDefaultLaunchMode,
     normalizeFeedTimeDisplayMode,
-    parseOverlayActivityFilters,
+    parseOverlayActivityFiltersPreference,
     parseSharedFeedFilters,
     normalizeSharedFeedFilters,
     normalizeOverlayActivityFilters,
@@ -46,6 +50,7 @@ import {
     resolveThemeMode
 } from './themeService';
 import { applyTrustColorClasses } from './trustColorService';
+import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from './changelogService';
 
 const DEFAULT_NOTIFICATION_LAYOUT = 'notification-center';
 const DEFAULT_TRANSLATION_ENDPOINT =
@@ -72,6 +77,18 @@ const DISCORD_BOOL_PREFERENCE_KEYS = new Set([
     'discordWorldNameAsDiscordStatus'
 ]);
 const VRCHAT_RICH_PRESENCE_CONFIG_KEY = 'disableRichPresence';
+const WRIST_OVERLAY_RUNTIME_CONFIG_KEYS = new Set([
+    'appLanguage',
+    'dtHour12',
+    'wristOverlayStartMode',
+    'wristOverlayButton',
+    'wristOverlayHand',
+    'wristOverlaySize',
+    'wristOverlayHidePrivateWorlds',
+    'wristOverlayDarkBackground',
+    'wristOverlayShowDevices',
+    'wristOverlayShowBatteryPercent'
+]);
 
 function setDocumentLanguage(language: any) {
     document.documentElement.setAttribute('lang', language);
@@ -107,6 +124,16 @@ function patchPreferenceValue(key: any, value: any) {
     usePreferencesStore
         .getState()
         .setPreferenceValue(normalizePreferenceKey(key), value);
+}
+
+async function reloadWristOverlayRuntimeConfigIfNeeded(key: any) {
+    const normalizedKey = normalizePreferenceKey(key);
+    if (!WRIST_OVERLAY_RUNTIME_CONFIG_KEYS.has(normalizedKey)) {
+        return;
+    }
+    await tauriClient.app.VrOverlayConfigReload().catch((error: any) => {
+        console.warn('Failed to reload wrist overlay runtime config:', error);
+    });
 }
 
 function normalizeBioLanguage(language: any) {
@@ -161,12 +188,22 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends,
         randomUserColours,
         notificationIconDot,
+        showPostUpdateChangelogToast,
         desktopToast,
         afkDesktopToast,
         desktopNotificationSound,
         notificationTTS,
         notificationTTSNickName,
         notificationTTSVoice,
+        wristOverlayEnabled,
+        wristOverlayStartMode,
+        wristOverlayButton,
+        wristOverlayHand,
+        wristOverlaySize,
+        wristOverlayHidePrivateWorlds,
+        wristOverlayDarkBackground,
+        wristOverlayShowDevices,
+        wristOverlayShowBatteryPercent,
         relaunchVRChatAfterCrash,
         vrcQuitFix,
         autoSweepVRChatCache,
@@ -243,12 +280,25 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('hideUnfriends', false),
         configRepository.getBool('randomUserColours', false),
         configRepository.getBool('notificationIconDot', true),
+        configRepository.getBool(
+            POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
+            true
+        ),
         configRepository.getString('desktopToast', 'Never'),
         configRepository.getBool('afkDesktopToast', false),
         configRepository.getBool('desktopNotificationSound', false),
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSVoice', '0'),
+        configRepository.getBool('wristOverlayEnabled', false),
+        configRepository.getString('wristOverlayStartMode', 'vrchatVrMode'),
+        configRepository.getString('wristOverlayButton', 'grip'),
+        configRepository.getString('wristOverlayHand', 'left'),
+        configRepository.getString('wristOverlaySize', 'normal'),
+        configRepository.getBool('wristOverlayHidePrivateWorlds', false),
+        configRepository.getBool('wristOverlayDarkBackground', true),
+        configRepository.getBool('wristOverlayShowDevices', true),
+        configRepository.getBool('wristOverlayShowBatteryPercent', false),
         configRepository.getBool('relaunchVRChatAfterCrash', false),
         configRepository.getBool('vrcQuitFix', true),
         configRepository.getBool('autoSweepVRChatCache', false),
@@ -289,10 +339,7 @@ export async function loadPreferenceSnapshot() {
             'sharedFeedFilters',
             JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
         ),
-        configRepository.getString(
-            'overlayActivityFilters',
-            JSON.stringify(DEFAULT_PREFERENCES.overlayActivityFilters)
-        ),
+        configRepository.getString('overlayActivityFilters', ''),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
         configRepository.getBool('youtubeAPI', false),
         configRepository.getBool('translationAPI', false),
@@ -390,12 +437,22 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends: Boolean(hideUnfriends),
         randomUserColours: Boolean(randomUserColours),
         notificationIconDot: Boolean(notificationIconDot),
+        showPostUpdateChangelogToast: Boolean(showPostUpdateChangelogToast),
         desktopToast: desktopToast || 'Never',
         afkDesktopToast: Boolean(afkDesktopToast),
         desktopNotificationSound: Boolean(desktopNotificationSound),
         notificationTTS: notificationTTS || 'Never',
         notificationTTSNickName: Boolean(notificationTTSNickName),
         notificationTTSVoice: notificationTTSVoice || '0',
+        wristOverlayEnabled: Boolean(wristOverlayEnabled),
+        wristOverlayStartMode: wristOverlayStartMode || 'vrchatVrMode',
+        wristOverlayButton: wristOverlayButton || 'grip',
+        wristOverlayHand: wristOverlayHand || 'left',
+        wristOverlaySize: wristOverlaySize || 'normal',
+        wristOverlayHidePrivateWorlds: Boolean(wristOverlayHidePrivateWorlds),
+        wristOverlayDarkBackground: Boolean(wristOverlayDarkBackground),
+        wristOverlayShowDevices: Boolean(wristOverlayShowDevices),
+        wristOverlayShowBatteryPercent: Boolean(wristOverlayShowBatteryPercent),
         relaunchVRChatAfterCrash: Boolean(relaunchVRChatAfterCrash),
         vrcQuitFix: Boolean(vrcQuitFix),
         autoSweepVRChatCache: Boolean(autoSweepVRChatCache),
@@ -426,8 +483,9 @@ export async function loadPreferenceSnapshot() {
             localFavoriteFriendsGroups
         ),
         sharedFeedFilters: parseSharedFeedFilters(sharedFeedFilters),
-        overlayActivityFilters: parseOverlayActivityFilters(
-            overlayActivityFilters
+        overlayActivityFilters: parseOverlayActivityFiltersPreference(
+            overlayActivityFilters,
+            sharedFeedFilters
         ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),
@@ -459,6 +517,7 @@ export async function setAppLanguagePreference(language: any) {
     useShellStore.getState().setLocale(nextLanguage);
     setDocumentLanguage(nextLanguage);
     await configRepository.setString('appLanguage', nextLanguage);
+    await reloadWristOverlayRuntimeConfigIfNeeded('appLanguage');
 }
 
 export async function setThemeModePreference(themeMode: any) {
@@ -701,6 +760,7 @@ export async function setBoolConfigPreference(key: any, value: any) {
     }
     patchPreferenceValue(key, enabled);
     publishPreferenceChanged(key, enabled);
+    await reloadWristOverlayRuntimeConfigIfNeeded(key);
 }
 
 export async function setStringConfigPreference(key: any, value: any) {
@@ -708,6 +768,7 @@ export async function setStringConfigPreference(key: any, value: any) {
     await configRepository.setString(key, nextValue);
     patchPreferenceValue(key, nextValue);
     publishPreferenceChanged(key, nextValue);
+    await reloadWristOverlayRuntimeConfigIfNeeded(key);
 }
 
 export async function setIntConfigPreference(
@@ -864,15 +925,46 @@ export async function setSharedFeedFiltersPreference(value: any) {
     return sharedFeedFilters;
 }
 
-export async function setOverlayActivityFiltersPreference(value: any) {
-    const overlayActivityFilters = normalizeOverlayActivityFilters(value);
+async function loadOverlayActivityTypeDefinitionsForSave() {
+    return tauriClient.app
+        .OverlayActivityDefinitionsGet()
+        .catch((error: any) => {
+            console.warn(
+                'Failed to load overlay activity definitions for save:',
+                error
+            );
+            return [] as OverlayActivityTypeDefinition[];
+        });
+}
+
+export async function setOverlayActivityFiltersPreference(
+    value: any,
+    definitions?: OverlayActivityTypeDefinition[]
+) {
+    const activityDefinitions =
+        definitions ?? (await loadOverlayActivityTypeDefinitionsForSave());
+    const overlayActivityFilters = activityDefinitions.length
+        ? normalizeOverlayActivityFiltersWithDefinitions(
+              value,
+              activityDefinitions
+          )
+        : normalizeOverlayActivityFilters(value);
     await configRepository.setString(
         'overlayActivityFilters',
         JSON.stringify(overlayActivityFilters)
     );
+    await tauriClient.app.OverlayActivityFiltersReload();
     patchPreferences({ overlayActivityFilters });
     publishPreferenceChanged('overlayActivityFilters', overlayActivityFilters);
     return overlayActivityFilters;
+}
+
+export async function setWristOverlayEnabledPreference(value: any) {
+    const snapshot = await tauriClient.app.VrOverlayEnabledSet(Boolean(value));
+    const wristOverlayEnabled = Boolean(snapshot.enabled);
+    patchPreferences({ wristOverlayEnabled });
+    publishPreferenceChanged('wristOverlayEnabled', wristOverlayEnabled);
+    return wristOverlayEnabled;
 }
 
 export async function setLocalFavoriteFriendsGroupsPreference(value: any) {

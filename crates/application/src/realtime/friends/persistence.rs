@@ -114,6 +114,21 @@ pub(super) fn add_profile_diff_feed_entries(
     }
 }
 
+pub(super) fn friend_relationship_feed_entry(
+    entry_type: &str,
+    user_id: &str,
+    patch: &Value,
+    previous: Option<&Value>,
+    created_at: &str,
+) -> Value {
+    json!({
+        "created_at": created_at,
+        "type": entry_type,
+        "userId": user_id,
+        "displayName": display_name(user_id, patch, previous),
+    })
+}
+
 pub(super) fn gps_feed_entry(
     user_id: &str,
     patch: &Value,

@@ -1,9 +1,13 @@
 import {
+    BanIcon,
+    BellOffIcon,
     CalendarDaysIcon,
     CheckIcon,
     ExternalLinkIcon,
+    LinkIcon,
     MessageCircleIcon,
-    SendIcon,
+    ReplyIcon,
+    TagIcon,
     Trash2Icon,
     UserIcon,
     UsersIcon,
@@ -294,6 +298,33 @@ function NotificationActionButton({ label, onClick, children }: any) {
     );
 }
 
+function getResponseIcon(response: any, notificationType: any) {
+    if (response?.type === 'link') {
+        return LinkIcon;
+    }
+    switch (response?.icon) {
+        case 'check':
+            return CheckIcon;
+        case 'cancel':
+            return XIcon;
+        case 'ban':
+            return BanIcon;
+        case 'bell-slash':
+            return BellOffIcon;
+        case 'reply':
+            return notificationType === 'boop' ? MessageCircleIcon : ReplyIcon;
+        default:
+            return TagIcon;
+    }
+}
+
+function canMarkNotificationSeen(notification: any) {
+    return !(
+        Number(notification?.version ?? 1) !== 2 &&
+        notification?.type === 'friendRequest'
+    );
+}
+
 function NotificationRow({
     notification,
     isUnseen,
@@ -408,7 +439,7 @@ function NotificationRow({
                                         onAcceptRequestInvite(notification);
                                     }}
                                 >
-                                    <SendIcon data-icon="icon" />
+                                    <CheckIcon data-icon="icon" />
                                 </NotificationActionButton>
                             ) : null}
                             {remoteActionsVisible &&
@@ -447,6 +478,10 @@ function NotificationRow({
                                 ? responses.map((response: any) => {
                                       const responseLabel =
                                           getResponseLabel(response);
+                                      const ResponseIcon = getResponseIcon(
+                                          response,
+                                          notification.type
+                                      );
                                       return (
                                           <NotificationActionButton
                                               key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
@@ -458,11 +493,7 @@ function NotificationRow({
                                                   );
                                               }}
                                           >
-                                              {response?.type === 'link' ? (
-                                                  <ExternalLinkIcon data-icon="icon" />
-                                              ) : (
-                                                  <CheckIcon data-icon="icon" />
-                                              )}
+                                              <ResponseIcon data-icon="icon" />
                                           </NotificationActionButton>
                                       );
                                   })
@@ -492,7 +523,8 @@ function NotificationRow({
                                     <ExternalLinkIcon data-icon="icon" />
                                 </NotificationActionButton>
                             ) : null}
-                            {isUnseen ? (
+                            {isUnseen &&
+                            canMarkNotificationSeen(notification) ? (
                                 <NotificationActionButton
                                     label={t(
                                         'view.notification.action.mark_seen'

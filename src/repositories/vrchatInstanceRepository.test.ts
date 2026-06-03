@@ -109,4 +109,32 @@ describe('InstanceRepository', () => {
         expect(tauriApp.VrchatInstanceCreate).not.toHaveBeenCalled();
     });
 
+    it('throws request errors with status, endpoint, and parsed payload details', async () => {
+        tauriApp.VrchatInstanceCreate.mockResolvedValue({
+            status: 403,
+            data: JSON.stringify({
+                error: {
+                    message: 'Instance create forbidden'
+                }
+            }),
+            raw: {}
+        });
+
+        await expect(
+            vrchatInstanceRepository.createInstance({
+                worldId: 'wrld_test',
+                ownerId: 'usr_owner',
+                accessType: 'friends'
+            })
+        ).rejects.toMatchObject({
+            message: 'Instance create forbidden',
+            status: 403,
+            endpoint: 'instances',
+            payload: {
+                error: {
+                    message: 'Instance create forbidden'
+                }
+            }
+        });
+    });
 });

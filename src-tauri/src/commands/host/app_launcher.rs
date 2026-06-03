@@ -76,11 +76,9 @@ pub async fn app__app_launcher_target_pick(
         return Ok(None);
     }
 
-    let mut builder = app_handle.dialog().file();
+    let builder = app_handle.dialog().file();
     #[cfg(target_os = "windows")]
-    {
-        builder = builder.add_filter("Applications and shortcuts", &["exe", "lnk", "url"]);
-    }
+    let builder = builder.add_filter("Applications and shortcuts", &["exe", "lnk", "url"]);
 
     let result = builder.blocking_pick_file();
     let Some(file_path) = result else {

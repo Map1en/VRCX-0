@@ -941,7 +941,13 @@ fn stop_tracked_run(run: &mut AppLauncherRun) {
     let mut failed_pids = Vec::new();
     let mut missing_pids = Vec::new();
     for pid in all_pids.iter().copied().rev() {
-        kill_process_by_pid(&sys, pid, &mut killed_pids, &mut failed_pids, &mut missing_pids);
+        kill_process_by_pid(
+            &sys,
+            pid,
+            &mut killed_pids,
+            &mut failed_pids,
+            &mut missing_pids,
+        );
     }
 
     let close_untracked_matching_pids = should_close_untracked_matching_processes(
@@ -951,7 +957,13 @@ fn stop_tracked_run(run: &mut AppLauncherRun) {
     );
     if close_untracked_matching_pids {
         for pid in untracked_matching_pids.iter().copied().rev() {
-            kill_process_by_pid(&sys, pid, &mut killed_pids, &mut failed_pids, &mut missing_pids);
+            kill_process_by_pid(
+                &sys,
+                pid,
+                &mut killed_pids,
+                &mut failed_pids,
+                &mut missing_pids,
+            );
         }
     }
 
@@ -988,7 +1000,9 @@ fn process_name_from_target_for_platform(target: &str, windows: bool) -> Option<
             .rsplit(['\\', '/'])
             .next()
     } else {
-        Path::new(trimmed).file_name().and_then(|value| value.to_str())
+        Path::new(trimmed)
+            .file_name()
+            .and_then(|value| value.to_str())
     }?;
     let process_name = normalize_process_name(file_name);
     (!process_name.is_empty()).then_some(process_name)
@@ -1007,7 +1021,7 @@ fn process_pids_by_run_target(sys: &System, run: &AppLauncherRun) -> Vec<u32> {
                     .exe()
                     .and_then(|path| path.to_str())
                     .is_some_and(|path| process_exe_matches_run_target(path, run)))
-                .then_some(pid.as_u32())
+            .then_some(pid.as_u32())
         })
         .collect::<Vec<_>>();
     pids.sort_unstable();
@@ -1285,8 +1299,11 @@ mod app_launcher_tests {
         let steam_run = new_run("run-steam", &steam_entry, false);
 
         assert_eq!(
-            process_name_from_target_for_platform("C:\\Program Files (x86)\\Steam\\steam.exe", true)
-                .as_deref(),
+            process_name_from_target_for_platform(
+                "C:\\Program Files (x86)\\Steam\\steam.exe",
+                true
+            )
+            .as_deref(),
             Some("steam")
         );
         assert_eq!(process_name_for_run(&steam_run).as_deref(), Some("steam"));
@@ -1330,8 +1347,7 @@ mod app_launcher_tests {
             normalized_process_path_for_platform(windows_target, true)
         );
 
-        let linux_target =
-            "/home/User/.local/share/Steam/steamapps/common/Tool/Tool.AppImage";
+        let linux_target = "/home/User/.local/share/Steam/steamapps/common/Tool/Tool.AppImage";
         assert_eq!(
             normalized_process_path_for_platform(linux_target, false),
             normalized_process_path_for_platform(linux_target, false)

@@ -22,6 +22,10 @@ pub struct LogWatcher {
 
 pub trait LogLocationSnapshotScanner: Send + Sync {
     fn scan_current_location_snapshot(&self, log_dir: &Path) -> Option<LogLocationSnapshot>;
+
+    fn scan_latest_vr_mode(&self, _log_dir: &Path) -> Option<bool> {
+        None
+    }
 }
 
 #[derive(Default)]
@@ -178,6 +182,13 @@ impl LogWatcher {
         self.inner
             .location_snapshot_scanner
             .scan_current_location_snapshot(&log_dir)
+    }
+
+    pub fn current_vr_mode(&self) -> Option<bool> {
+        let log_dir = self.inner.log_dir.read().unwrap().clone()?;
+        self.inner
+            .location_snapshot_scanner
+            .scan_latest_vr_mode(&log_dir)
     }
 
     pub fn set_game_running(&self, running: bool) {

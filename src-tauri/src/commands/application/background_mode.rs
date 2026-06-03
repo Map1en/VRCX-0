@@ -22,6 +22,7 @@ pub async fn app__start_background_mode(
         && current.mode == BackendRuntimeMode::Background
         && current.phase == BackendRuntimePhase::Running
     {
+        bootstrap::show_background_mode_started_notification(&app_handle, &state);
         destroy_main_window(&app_handle);
     }
     refresh_tray_menu(&app_handle, &state);

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
@@ -24,8 +26,8 @@ export function SettingsNotificationsTab({
     notificationTtsTest,
     onNotificationLayoutChange,
     onNotificationIconDotChange,
+    onPostUpdateChangelogToastChange,
     onOpenFeedFilterDialog,
-    onOpenWristFeedNotificationsDialog,
     onTestDesktopNotification,
     onDesktopToastChange,
     onAfkDesktopToastChange,
@@ -93,6 +95,22 @@ export function SettingsNotificationsTab({
 
                     <Field
                         label={t(
+                            'view.settings.notifications.notifications.post_update_changelog_prompt'
+                        )}
+                        description={t(
+                            'view.settings.notifications.notifications.post_update_changelog_prompt_description'
+                        )}
+                    >
+                        <Switch
+                            checked={prefs.showPostUpdateChangelogToast}
+                            onCheckedChange={
+                                onPostUpdateChangelogToastChange
+                            }
+                        />
+                    </Field>
+
+                    <Field
+                        label={t(
                             'view.settings.notifications.notifications.notification_filter'
                         )}
                     >
@@ -103,22 +121,6 @@ export function SettingsNotificationsTab({
                         >
                             {t(
                                 'view.settings.notifications.notifications.notification_filter'
-                            )}
-                        </Button>
-                    </Field>
-
-                    <Field
-                        label={t(
-                            'view.settings.notifications.notifications.wrist_feed_notifications'
-                        )}
-                    >
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onOpenWristFeedNotificationsDialog}
-                        >
-                            {t(
-                                'view.settings.notifications.notifications.wrist_feed_notifications'
                             )}
                         </Button>
                     </Field>
@@ -348,4 +350,3 @@ export function SettingsNotificationsTab({
         </SettingsTabContent>
     );
 }
-import { useTranslation } from 'react-i18next';

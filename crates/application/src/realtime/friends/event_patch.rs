@@ -1,6 +1,6 @@
 use super::persistence::{
-    add_location_metadata, add_profile_diff_feed_entries, friend_log_upsert, gps_feed_entry,
-    is_online_state, online_offline_feed_entry,
+    add_location_metadata, add_profile_diff_feed_entries, friend_log_upsert,
+    friend_relationship_feed_entry, gps_feed_entry, is_online_state, online_offline_feed_entry,
 };
 use super::projection::{has_event_state_bucket, resolve_state_bucket};
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
@@ -60,10 +60,21 @@ pub(super) fn apply_friend_event(
                     &state_bucket,
                     &now.iso,
                 ));
+            output
+                .persistence
+                .feed_entries
+                .push(friend_relationship_feed_entry(
+                    "Friend",
+                    &user_id,
+                    &patch,
+                    previous.as_ref(),
+                    &now.iso,
+                ));
             output.projection.friend_log_changed = true;
         }
         "friend-delete" => {
             let user_id = event_user_id(content)?;
+            let previous = get_friend_value(state, &user_id);
             state.pending_offline.remove(&user_id);
             state.recent_gps.remove(&user_id);
             if let Some(baseline) = state.baseline.as_mut() {
@@ -71,9 +82,20 @@ pub(super) fn apply_friend_event(
             }
             output.projection.removals.push(user_id.clone());
             output.persistence.friend_log_deletes.push(FriendLogDelete {
-                target_user_id: user_id,
+                target_user_id: user_id.clone(),
                 created_at: now.iso.clone(),
             });
+            let patch = json!({ "id": user_id.clone() });
+            output
+                .persistence
+                .feed_entries
+                .push(friend_relationship_feed_entry(
+                    "Unfriend",
+                    &user_id,
+                    &patch,
+                    previous.as_ref(),
+                    &now.iso,
+                ));
             output.projection.friend_log_changed = true;
         }
         "friend-update" => {
@@ -248,7 +270,8 @@ pub(super) fn apply_friend_event(
             } else {
                 "preserve"
             };
-            let mut patch = online_patch(content, user_patch, previous.as_ref(), now, &state_bucket);
+            let mut patch =
+                online_patch(content, user_patch, previous.as_ref(), now, &state_bucket);
             if !has_embedded_user {
                 if let Some(patch_object) = patch.as_object_mut() {
                     patch_object.remove("pendingOffline");

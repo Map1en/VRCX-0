@@ -1,4 +1,8 @@
 import type { TauriCommandNamespace } from './commands';
+import type {
+    OverlayActivityCategory,
+    OverlayActivityScope
+} from '@/shared/constants/overlayActivityFilters';
 
 export interface AssetBundleCacheCheckResult {
     Item1?: number;
@@ -279,6 +283,62 @@ export interface RuntimeAppSnapshot {
     sync: RuntimeSyncSnapshot;
     diagnostics: RuntimeDiagnosticsSnapshot;
     gameLog: Record<string, unknown>;
+}
+
+export interface OverlayActivityText {
+    key: string;
+    fallback: string;
+    params?: unknown;
+}
+
+export interface OverlayActivityContent {
+    icon: string;
+    title: OverlayActivityText;
+    body: OverlayActivityText;
+    summary: string;
+    detail: string;
+    location: string;
+    worldName: string;
+    groupName: string;
+    status: string;
+    statusDescription: string;
+    avatarName: string;
+    imageUrl: string;
+}
+
+export type OverlayActivityActorRelation = 'none' | 'friend' | 'favorite';
+
+export interface OverlayActivityEntry {
+    sequence: number;
+    sourceId: string;
+    activityType: string;
+    category: string;
+    createdAt: string;
+    actorUserId: string;
+    actorDisplayName: string;
+    content: OverlayActivityContent;
+    actorRelation?: OverlayActivityActorRelation;
+    payload?: unknown;
+}
+
+export interface OverlayActivitySnapshot {
+    entries: OverlayActivityEntry[];
+}
+
+export interface OverlayActivityTypeDefinition {
+    key: string;
+    category: OverlayActivityCategory;
+    allowedScopes: OverlayActivityScope[];
+    defaultScope: OverlayActivityScope;
+    aliases: string[];
+}
+
+export interface VrOverlayRuntimeSnapshot {
+    enabled: boolean;
+    backendAvailable: boolean;
+    running: boolean;
+    vrMode: boolean;
+    steamvrRunning: boolean;
 }
 
 export interface RuntimeAuthScopeSnapshot {
@@ -731,6 +791,12 @@ export interface AppTauriCommandNamespace extends TauriCommandNamespace {
         userId?: string;
         endpoint?: string;
     }): Promise<RuntimeAuthScopeSnapshot>;
+    OverlayActivityFiltersReload(): Promise<void>;
+    OverlayActivityDefinitionsGet(): Promise<OverlayActivityTypeDefinition[]>;
+    OverlayActivitySnapshotGet(): Promise<OverlayActivitySnapshot>;
+    VrOverlayStatusGet(): Promise<VrOverlayRuntimeSnapshot>;
+    VrOverlayEnabledSet(enabled: boolean): Promise<VrOverlayRuntimeSnapshot>;
+    VrOverlayConfigReload(): Promise<VrOverlayRuntimeSnapshot>;
     StartBackgroundMode(): Promise<BackendRuntimeSnapshot>;
     StopBackgroundMode(reason?: string | null): Promise<BackendRuntimeSnapshot>;
     GetBackendRuntimeSnapshot(): Promise<BackendRuntimeSnapshot>;

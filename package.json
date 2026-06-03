@@ -12,10 +12,16 @@
         "url": "git+https://github.com/Map1en/VRCX-0"
     },
     "scripts": {
+        "generate:overlay-locales": "node ./scripts/extract-overlay-locales.mjs",
+        "predev": "npm run generate:overlay-locales",
         "dev": "vite",
         "tauri": "tauri",
+        "pretauri:dev": "npm run generate:overlay-locales",
         "tauri:dev": "tauri dev --features devtools",
+        "tauri:dev:overlay-preview": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/overlay-preview/run-dev-preview.ps1",
+        "pretauri:build": "npm run generate:overlay-locales",
         "tauri:build": "tauri build",
+        "pretauri:build:devtools": "npm run generate:overlay-locales",
         "tauri:build:devtools": "tauri build --features devtools",
         "format": "oxfmt .",
         "format:check": "oxfmt --check .",
@@ -29,6 +35,7 @@
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "build:licenses": "node ./build-scripts/generate-third-party-licenses.ts",
+        "prebuild": "npm run generate:overlay-locales",
         "build": "vite build && npm run build:licenses"
     },
     "dependencies": {
@@ -65,8 +72,10 @@
         "react-day-picker": "^10.0.1",
         "react-dom": "^19.2.6",
         "react-i18next": "^17.0.8",
+        "react-markdown": "^10.1.0",
         "react-resizable-panels": "^4.11.2",
         "react-router-dom": "^7.15.1",
+        "remark-gfm": "^4.0.1",
         "sigma": "^3.0.3",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.6.0",

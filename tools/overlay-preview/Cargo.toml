@@ -1,0 +1,15 @@
+[package]
+name = "vrcx-0-overlay-preview"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+serde_json = "1"
+softbuffer = "0.4"
+vrcx-0-application = { path = "../../crates/application" }
+vrcx-0-host = { path = "../../crates/host" }
+vrcx-0-runtime-host = { path = "../../crates/runtime-host" }
+vrcx-0-vr-overlay = { path = "../../crates/vr-overlay" }
+winit = "0.30"

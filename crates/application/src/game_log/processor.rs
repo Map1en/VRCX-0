@@ -20,6 +20,7 @@ use crate::game_log::runtime_state::RuntimeSnapshot;
 use crate::game_log::screenshot as runtime_screenshot;
 use crate::game_log::video as runtime_video;
 use crate::image_cache::ImageCache;
+use crate::overlay_activity::OverlayActivityRuntime;
 use crate::sync::RuntimeSyncEngine;
 use crate::task_supervisor::TaskSupervisor;
 use crate::web_client::WebClient;
@@ -49,6 +50,7 @@ pub struct GameLogProcessorDeps {
     pub sync: RuntimeSyncEngine,
     pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
     pub host_actions: Arc<dyn GameLogHostActions>,
+    pub overlay_activity: OverlayActivityRuntime,
 }
 
 impl GameLogProcessorDeps {
@@ -175,8 +177,9 @@ impl GameLogProcessor {
         output: GameLogIngestOutput,
     ) -> Result<()> {
         let write_outcome =
-            self.write_batch_or_emit_failure_telemetry(&output.batch, output.raw_rows)?;
+            self.write_batch_or_emit_failure_telemetry(&output.batch, output.raw_rows.clone())?;
         if let GameLogWriteOutcome::RuntimePersisted { affected_count } = write_outcome {
+            self.deps.overlay_activity.ingest_game_log_output(&output);
             self.deps.event_bus.emit_game_log_persisted(affected_count);
             if let Some(projection) = output.projection {
                 self.deps.event_bus.emit_game_log_projection(projection);
@@ -361,6 +364,7 @@ mod tests {
     use crate::game_log::runtime_state::RuntimeSnapshot;
     use crate::game_log::NoopGameLogHostActions;
     use crate::image_cache::ImageCache;
+    use crate::overlay_activity::OverlayActivityRuntime;
     use crate::sync::RuntimeSyncEngine;
     use crate::task_supervisor::TaskSupervisor;
     use crate::web_client::WebClient;
@@ -415,6 +419,7 @@ mod tests {
             sync: RuntimeSyncEngine::new(),
             snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
             host_actions: Arc::new(NoopGameLogHostActions),
+            overlay_activity: OverlayActivityRuntime::new(),
         });
         Ok((dir, db, processor))
     }

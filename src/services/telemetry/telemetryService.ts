@@ -1,5 +1,3 @@
-import { useRuntimeStore } from '@/state/runtimeStore';
-
 import {
     TELEMETRY_HEARTBEAT_INTERVAL_MS,
     isTelemetryEnabled
@@ -7,18 +5,13 @@ import {
 import { postTelemetry } from './telemetryClient';
 import {
     buildTelemetryContext,
-    getCurrentTelemetryMode,
     waitForInitialTelemetryContext
 } from './telemetryPayload';
 import {
     createTelemetrySessionId,
     getOrCreateTelemetryInstallId
 } from './telemetryIdentity';
-import {
-    TELEMETRY_FEATURE_KEYS,
-    type TelemetryFeatureKey,
-    type TelemetrySessionState
-} from './telemetryTypes';
+import type { TelemetrySessionState } from './telemetryTypes';
 
 let activeSession: TelemetrySessionState | null = null;
 let startPromise: Promise<void> | null = null;
@@ -39,17 +32,6 @@ async function sendHeartbeat(session: TelemetrySessionState): Promise<void> {
         '/api/v1/telemetry/session/heartbeat',
         buildTelemetryContext(session)
     );
-}
-
-async function sendFeature(
-    session: TelemetrySessionState,
-    featureKey: TelemetryFeatureKey
-): Promise<void> {
-    await postTelemetry('/api/v1/telemetry/event', {
-        ...buildTelemetryContext(session),
-        eventType: 'feature',
-        featureKey
-    });
 }
 
 async function sendErrorCode(
@@ -83,12 +65,6 @@ async function ensureTelemetrySession(): Promise<TelemetrySessionState | null> {
     return activeSession;
 }
 
-function recordRuntimeModeFeature(mode: unknown): void {
-    if (mode === 'background') {
-        recordTelemetryFeature(TELEMETRY_FEATURE_KEYS.backgroundMode);
-    }
-}
-
 export function startTelemetryLifecycle(): () => void {
     if (!isTelemetryEnabled()) {
         return () => {};
@@ -97,7 +73,6 @@ export function startTelemetryLifecycle(): () => void {
     let disposed = false;
     let heartbeatTimer: number | null = null;
     let heartbeatInFlight = false;
-    let lastMode = getCurrentTelemetryMode();
     const startupAbortController = new AbortController();
 
     const requestHeartbeat = () => {
@@ -132,41 +107,14 @@ export function startTelemetryLifecycle(): () => void {
         }, TELEMETRY_HEARTBEAT_INTERVAL_MS);
     })().catch(() => {});
 
-    const unsubscribeRuntime = useRuntimeStore.subscribe(
-        (state: any, previousState: any) => {
-            const nextMode = state.backendRuntime?.mode || 'foreground';
-            const previousMode = previousState.backendRuntime?.mode || lastMode;
-            if (nextMode !== previousMode) {
-                lastMode = getCurrentTelemetryMode();
-                recordRuntimeModeFeature(nextMode);
-            }
-        }
-    );
-
     return () => {
         disposed = true;
         startupAbortController.abort();
-        unsubscribeRuntime();
         if (heartbeatTimer !== null) {
             window.clearInterval(heartbeatTimer);
             heartbeatTimer = null;
         }
     };
-}
-
-export function recordTelemetryFeature(featureKey: TelemetryFeatureKey): void {
-    if (!isTelemetryEnabled()) {
-        return;
-    }
-    const run = async () => {
-        if (!activeSession) {
-            await startPromise;
-        }
-        if (activeSession) {
-            await sendFeature(activeSession, featureKey);
-        }
-    };
-    silently(run());
 }
 
 export function recordTelemetryErrorCode(errorCode: string): void {

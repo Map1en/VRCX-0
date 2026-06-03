@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import {
     LoadingState,
@@ -14,8 +15,11 @@ import { useModerationPageController } from './useModerationPageController';
 
 export function ModerationPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
+    const location = useLocation();
     const { filteredRows, filters, rowsState, table, tableState } =
-        useModerationPageController();
+        useModerationPageController({
+            refreshKey: location.key || location.pathname
+        });
     const isLoading =
         rowsState.loadStatus === 'running' && rowsState.rows.length === 0;
     const isError =

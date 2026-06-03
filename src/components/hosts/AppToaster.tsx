@@ -4,6 +4,8 @@ import {
     OctagonXIcon,
     TriangleAlertIcon
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -12,6 +14,8 @@ import { Toaster } from '@/ui/shadcn/sonner';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 const TITLE_BAR_TOAST_OFFSET: any = { top: 'calc(2rem + 32px)' };
+const APP_TOASTER_PORTAL_ID = 'vrcx-0-toast-root';
+const APP_TOASTER_Z_INDEX = 70;
 const VRCHAT_API_UNAVAILABLE_TOAST_DURATION_MS = 12000;
 const VRCHAT_STATUS_HOST = 'status.vrchat.com';
 const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/gi;
@@ -104,11 +108,32 @@ function resolveSonnerTheme(themeMode: any) {
     return 'system';
 }
 
+function getAppToasterPortalContainer() {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    let container = document.getElementById(APP_TOASTER_PORTAL_ID);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = APP_TOASTER_PORTAL_ID;
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
 export function AppToaster(props: any) {
     const themeMode = useShellStore((state: any) => state.themeMode);
     const theme = resolveSonnerTheme(themeMode);
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+        null
+    );
 
-    return (
+    useEffect(() => {
+        setPortalContainer(getAppToasterPortalContainer());
+    }, []);
+
+    const toaster = (
         <Toaster
             theme={theme}
             position="top-center"
@@ -124,9 +149,16 @@ export function AppToaster(props: any) {
                 '--normal-bg': 'var(--popover)',
                 '--normal-text': 'var(--popover-foreground)',
                 '--normal-border': 'var(--border)',
-                '--border-radius': 'var(--radius)'
+                '--border-radius': 'var(--radius)',
+                zIndex: APP_TOASTER_Z_INDEX
             }}
             {...props}
         />
     );
+
+    if (!portalContainer) {
+        return toaster;
+    }
+
+    return createPortal(toaster, portalContainer);
 }

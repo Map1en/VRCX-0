@@ -48,7 +48,6 @@ export function FeedFilterDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4 overflow-hidden">
-                    {/* Wrist feed filters are hidden until wrist feed consumes this shared filter mode. */}
                     <FieldGroup className="max-h-[60vh] overflow-y-auto pr-1">
                         {currentSharedFeedFilterOptions.map((setting: any) => (
                             <Field

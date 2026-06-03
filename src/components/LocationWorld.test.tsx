@@ -44,6 +44,9 @@ vi.mock('react-i18next', () => {
     const translations: any = {
         'component.region_code_badge.dynamic.region_value': 'Region',
         'dialog.new_instance.access_type_friend_plus': 'Friends+',
+        'dialog.new_instance.access_type_group': 'Group',
+        'dialog.new_instance.access_type_group_plus': 'Group Plus',
+        'dialog.new_instance.group_access_type_plus': 'Group Plus',
         'dialog.new_instance.access_type_public': 'Public',
         'dialog.user.info.instance_closed': 'Instance closed',
         'dialog.world.instances.instance_creator': 'Creator',
@@ -108,7 +111,7 @@ describe('LocationWorld', () => {
     it('renders object locations with world, access type, group, creator, and player summary', () => {
         const html = renderLocationWorld({
             locationObject: {
-                tag: 'wrld_beta:98765~hidden(usr_owner)~region(eu)~group(grp_beta)',
+                tag: 'wrld_beta:98765~group(grp_beta)~groupAccessType(plus)~region(eu)',
                 worldId: 'wrld_beta',
                 instanceId: '98765',
                 playerCount: 7,
@@ -121,7 +124,7 @@ describe('LocationWorld', () => {
         });
 
         expect(html).toContain('EU');
-        expect(html).toContain('World Beta · Friends+ #98765');
+        expect(html).toContain('World Beta · Group Plus #98765');
         expect(html).toContain('(Group Beta)');
         expect(html).toContain('Creator: Maple');
         expect(html).toContain('7/24');

@@ -9,6 +9,8 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
 const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const TRANSIENT_V1_UNSEEN_TYPES = new Set(['friendRequest']);
+const ACTION_REQUIRED_V1_TYPES = new Set(['friendRequest']);
 const pendingSeenIds = new Set<unknown>();
 
 type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
@@ -69,11 +71,23 @@ function isNotificationExpired(notification?: NotificationRow | null): boolean {
 }
 
 function isUnseenNotification(notification?: NotificationRow | null): boolean {
+    const version = Number(notification?.version ?? 1);
+    const type = String(notification?.type || '');
+    const isTransientV1Unseen =
+        version !== 2 &&
+        TRANSIENT_V1_UNSEEN_TYPES.has(type) &&
+        getNotificationTs(notification) > Date.now() - RECENT_WINDOW_MS;
     return (
-        notification?.version === 2 &&
+        (version === 2 || isTransientV1Unseen) &&
         notification.seen === false &&
         !isNotificationExpired(notification)
     );
+}
+
+function shouldMarkSeenOnCenterClose(notification?: NotificationRow | null): boolean {
+    const version = Number(notification?.version ?? 1);
+    const type = String(notification?.type || '');
+    return !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type));
 }
 
 function createEmptyCategories(): NotificationCategories {
@@ -327,10 +341,14 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 return;
             }
 
-            const ids = unseenRows
+            const markableRows = unseenRows.filter(shouldMarkSeenOnCenterClose);
+            const ids = markableRows
                 .map((notification: any) => notification.id)
                 .filter(Boolean);
-            const localV2Ids = unseenRows
+            if (!ids.length) {
+                return;
+            }
+            const localV2Ids = markableRows
                 .filter(
                     (notification: any) => Number(notification.version) === 2
                 )
@@ -345,7 +363,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     userId: auth.currentUserId,
                     ids: localV2Ids
                 });
-                for (const notification of unseenRows) {
+                for (const notification of markableRows) {
                     await notificationPersistenceRepository
                         .markSeen({
                             userId: auth.currentUserId,

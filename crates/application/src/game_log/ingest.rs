@@ -535,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn player_left_removes_unique_display_name_when_user_id_key_changes() {
+    fn player_left_tolerates_missing_join_user_id_when_display_name_is_unique() {
         let mut engine = GameLogIngestEngine::default();
         let output = engine.ingest_events(
             &[
@@ -564,6 +564,9 @@ mod tests {
             GameLogIngestOptions::default(),
         );
 
+        // Rust keeps a narrow compatibility fallback for log rows where join
+        // lacks a user_id but leave later includes one. Legacy Vue only keyed
+        // this path by userId.
         assert_eq!(output.batch.join_leave.len(), 2);
         assert_eq!(output.batch.join_leave[1].event_type, "OnPlayerLeft");
         assert_eq!(output.batch.join_leave[1].time, 30000);

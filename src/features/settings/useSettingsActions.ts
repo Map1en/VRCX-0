@@ -25,6 +25,7 @@ import {
     setTableLimitsPreference,
     setTrustColorPreference,
     setUserGeneratedContentPathPreference,
+    setWristOverlayEnabledPreference,
     loadTrustColorPreference,
     resetTrustColorsPreference
 } from '@/services/preferencesService';
@@ -146,6 +147,7 @@ export function useSettingsActions(deps: any) {
         setTableLimitsPreference,
         setTrustColorPreference,
         setUserGeneratedContentPathPreference,
+        setWristOverlayEnabledPreference,
         sharedFeedFiltersDefaults,
         t,
         tableLimitsSaveDisabled,

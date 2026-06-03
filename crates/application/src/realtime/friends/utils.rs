@@ -249,6 +249,93 @@ mod tests {
     }
 
     #[test]
+    fn friend_add_generates_friend_feed_entry() {
+        let runtime = RealtimeFriendsRuntime::new();
+        runtime.set_baseline(
+            FriendRosterBaseline {
+                current_user_id: "usr_self".into(),
+                friends_by_id: Default::default(),
+                ..FriendRosterBaseline::default()
+            },
+            1,
+            0,
+        );
+
+        let RealtimeFriendApplyResult::Output(output) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-add",
+                    "content": {
+                        "userId": "usr_added",
+                        "user": {
+                            "id": "usr_added",
+                            "displayName": "Added Friend"
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:00Z".into(),
+            })
+        else {
+            panic!("friend-add should produce an output");
+        };
+
+        assert_eq!(output.persistence.feed_entries[0]["type"], "Friend");
+        assert_eq!(output.persistence.feed_entries[0]["userId"], "usr_added");
+        assert_eq!(
+            output.persistence.feed_entries[0]["displayName"],
+            "Added Friend"
+        );
+    }
+
+    #[test]
+    fn friend_delete_generates_unfriend_feed_entry() {
+        let runtime = RealtimeFriendsRuntime::new();
+        runtime.set_baseline(
+            FriendRosterBaseline {
+                current_user_id: "usr_self".into(),
+                friends_by_id: [(
+                    "usr_removed".to_string(),
+                    FriendRecord {
+                        id: "usr_removed".into(),
+                        display_name: "Removed Friend".into(),
+                        state: "offline".into(),
+                        state_bucket: "offline".into(),
+                        ..FriendRecord::default()
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                ..FriendRosterBaseline::default()
+            },
+            1,
+            0,
+        );
+
+        let RealtimeFriendApplyResult::Output(output) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-delete",
+                    "content": {
+                        "userId": "usr_removed"
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:00Z".into(),
+            })
+        else {
+            panic!("friend-delete should produce an output");
+        };
+
+        assert_eq!(output.persistence.feed_entries[0]["type"], "Unfriend");
+        assert_eq!(output.persistence.feed_entries[0]["userId"], "usr_removed");
+        assert_eq!(
+            output.persistence.feed_entries[0]["displayName"],
+            "Removed Friend"
+        );
+    }
+
+    #[test]
     fn friend_location_with_embedded_user_forces_online_projection() {
         let runtime = RealtimeFriendsRuntime::new();
         runtime.set_baseline(

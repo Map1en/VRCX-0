@@ -8,6 +8,7 @@ use vrcx_0_core::log_watcher::{
     clean_location, convert_log_time_to_iso8601, parse_log_line_header, LogLocationSnapshot,
 };
 
+#[derive(Clone)]
 struct LogFileCandidate {
     path: PathBuf,
     file_name: String,
@@ -16,6 +17,16 @@ struct LogFileCandidate {
 }
 
 pub fn scan_current_location_snapshot(log_dir: &Path) -> Option<LogLocationSnapshot> {
+    let candidate = latest_output_log_candidate(log_dir)?;
+    scan_log_file_location_snapshot(&candidate.path, &candidate.file_name)
+}
+
+pub fn scan_latest_vr_mode(log_dir: &Path) -> Option<bool> {
+    let candidate = latest_output_log_candidate(log_dir)?;
+    scan_log_file_vr_mode(&candidate.path)
+}
+
+fn latest_output_log_candidate(log_dir: &Path) -> Option<LogFileCandidate> {
     if !log_dir.exists() {
         return None;
     }
@@ -45,12 +56,16 @@ pub fn scan_current_location_snapshot(log_dir: &Path) -> Option<LogLocationSnaps
         })
         .collect();
 
-    let candidate = candidates
+    candidates
         .iter()
         .filter(|candidate| candidate.timestamp.is_some())
         .max_by_key(|candidate| candidate.timestamp)
-        .or_else(|| candidates.iter().max_by_key(|candidate| candidate.modified))?;
-    scan_log_file_location_snapshot(&candidate.path, &candidate.file_name)
+        .cloned()
+        .or_else(|| {
+            candidates
+                .into_iter()
+                .max_by_key(|candidate| candidate.modified)
+        })
 }
 
 fn parse_output_log_file_timestamp(file_name: &str) -> Option<NaiveDateTime> {
@@ -107,4 +122,28 @@ fn scan_log_file_location_snapshot(path: &Path, file_name: &str) -> Option<LogLo
     }
 
     current_location
+}
+
+fn scan_log_file_vr_mode(path: &Path) -> Option<bool> {
+    let file = File::open(path).ok()?;
+    let reader = BufReader::with_capacity(65536, file);
+    let mut vr_mode = None;
+
+    for line in reader.lines().map_while(Result::ok) {
+        let trimmed = line.trim_end();
+        let Some((_line_date, content)) = parse_log_line_header(trimmed) else {
+            continue;
+        };
+        if content.starts_with("Initializing VRSDK.") || content.starts_with("STEAMVR HMD Model: ")
+        {
+            vr_mode = Some(true);
+        } else if content.starts_with("VR Disabled")
+            || content.starts_with("VRCApplication: OnApplicationQuit at ")
+            || content.starts_with("VRCApplication: HandleApplicationQuit at ")
+        {
+            vr_mode = Some(false);
+        }
+    }
+
+    vr_mode
 }

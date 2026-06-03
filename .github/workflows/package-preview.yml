@@ -55,14 +55,28 @@ jobs:
                 include:
                     - platform: windows_x86_64
                       os: windows-latest
+                      rust_target: ''
                       output: VRCX-0_${version}_preview_${timestamp}_windows_x86_64.exe
                     - platform: linux_x86_64
                       os: ubuntu-24.04
+                      rust_target: ''
                       output: VRCX-0_${version}_preview_${timestamp}_linux_x86_64.AppImage
+                    - platform: macos_aarch64
+                      os: macos-latest
+                      rust_target: aarch64-apple-darwin
+                      output: VRCX-0_${version}_preview_${timestamp}_macos_aarch64.dmg
+                    - platform: macos_x86_64
+                      os: macos-latest
+                      rust_target: x86_64-apple-darwin
+                      output: VRCX-0_${version}_preview_${timestamp}_macos_x86_64.dmg
         steps:
             - uses: actions/checkout@v6
 
             - uses: dtolnay/rust-toolchain@stable
+
+            - name: Install Rust target
+              if: matrix.rust_target != ''
+              run: rustup target add "${{ matrix.rust_target }}"
 
             - uses: actions/setup-node@v6
               with:
@@ -77,9 +91,13 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends \
                       build-essential \
+                      clang \
+                      cmake \
                       curl \
                       file \
+                      g++ \
                       libayatana-appindicator3-dev \
+                      libclang-dev \
                       libssl-dev \
                       libxdo-dev \
                       librsvg2-dev \
@@ -103,16 +121,16 @@ jobs:
                   node <<'NODE'
                   const fs = require('node:fs');
 
+                  const platform = process.env.MATRIX_PLATFORM;
+                  const runnerOs = process.env.RUNNER_OS;
                   const tauriConfigPath = 'src-tauri/tauri.conf.json';
                   const linuxConfigPath = 'src-tauri/tauri.linux.conf.json';
-                  const outputConfigPath = process.env.RUNNER_OS === 'Linux'
-                      ? 'src-tauri/tauri.linux-preview.conf.json'
-                      : 'src-tauri/tauri.windows-preview.conf.json';
+                  const outputConfigPath = `src-tauri/tauri.preview.${platform}.conf.json`;
 
                   const tauriConfig = JSON.parse(fs.readFileSync(tauriConfigPath, 'utf8'));
-                  let config = tauriConfig;
+                  let config = structuredClone(tauriConfig);
 
-                  if (process.env.RUNNER_OS === 'Linux') {
+                  if (runnerOs === 'Linux') {
                       const linuxConfig = JSON.parse(fs.readFileSync(linuxConfigPath, 'utf8'));
                       config = {
                           bundle: {
@@ -122,18 +140,24 @@ jobs:
                           }
                       };
                   } else {
-                      config = structuredClone(tauriConfig);
                       config.bundle ??= {};
                       config.bundle.createUpdaterArtifacts = false;
-                      config.bundle.windows ??= {};
-                      delete config.bundle.windows.certificateThumbprint;
-                      delete config.bundle.windows.signCommand;
+                      if (runnerOs === 'Windows') {
+                          config.bundle.windows ??= {};
+                          delete config.bundle.windows.certificateThumbprint;
+                          delete config.bundle.windows.signCommand;
+                      }
+                      if (runnerOs === 'macOS') {
+                          config.bundle.targets = ['dmg'];
+                      }
                   }
 
                   fs.writeFileSync(outputConfigPath, `${JSON.stringify(config, null, 4)}\n`);
                   fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${tauriConfig.version}\n`);
                   fs.appendFileSync(process.env.GITHUB_OUTPUT, `config=${outputConfigPath}\n`);
                   NODE
+              env:
+                  MATRIX_PLATFORM: ${{ matrix.platform }}
 
             - name: Build Windows Preview exe
               if: runner.os == 'Windows'
@@ -157,6 +181,17 @@ jobs:
                       --config "${{ steps.config.outputs.config }}" \
                       --bundles appimage
 
+            - name: Build macOS Preview DMG
+              if: runner.os == 'macOS'
+              env:
+                  VRCX-0_BUILD_LABEL: preview
+                  VRCX-0_BUILD_BADGE: Preview ${{ needs.prepare.outputs.timestamp }}
+              run: |
+                  npm run tauri:build:devtools -- \
+                      --target "${{ matrix.rust_target }}" \
+                      --config "${{ steps.config.outputs.config }}" \
+                      --bundles dmg
+
             - name: Collect Preview artifact
               run: |
                   mkdir -p preview-assets
@@ -166,11 +201,21 @@ jobs:
                   output="${output//\$\{version\}/$version}"
                   output="${output//\$\{timestamp\}/$timestamp}"
 
-                  if [[ "${{ runner.os }}" == "Windows" ]]; then
-                      cp target/debug/vrcx-0.exe "preview-assets/$output"
-                  else
-                      cp target/release/bundle/appimage/*.AppImage "preview-assets/$output"
-                  fi
+                  case "${{ matrix.platform }}" in
+                      windows_x86_64)
+                          cp target/debug/vrcx-0.exe "preview-assets/$output"
+                          ;;
+                      linux_x86_64)
+                          cp target/release/bundle/appimage/*.AppImage "preview-assets/$output"
+                          ;;
+                      macos_aarch64|macos_x86_64)
+                          cp "target/${{ matrix.rust_target }}/release/bundle/dmg/"*.dmg "preview-assets/$output"
+                          ;;
+                      *)
+                          echo "Unknown platform: ${{ matrix.platform }}" >&2
+                          exit 1
+                          ;;
+                  esac
 
                   ls -la preview-assets
 

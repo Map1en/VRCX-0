@@ -6,6 +6,7 @@ export {
     OVERLAY_ACTIVITY_SCOPES,
     OVERLAY_ACTIVITY_TYPE_DEFINITIONS,
     OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY,
+    migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
     overlayActivityTypeLabelKey,
     parseOverlayActivityFilters,
@@ -70,12 +71,6 @@ export function normalizeSharedFeedFilters(value: any = {}) {
         noty: {
             ...sharedFeedFiltersDefaults.noty,
             ...(value?.noty && typeof value.noty === 'object' ? value.noty : {})
-        },
-        wrist: {
-            ...sharedFeedFiltersDefaults.wrist,
-            ...(value?.wrist && typeof value.wrist === 'object'
-                ? value.wrist
-                : {})
         }
     };
 }

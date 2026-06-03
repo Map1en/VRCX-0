@@ -2,6 +2,8 @@ mod adapters;
 mod bootstrap;
 mod commands;
 mod error;
+#[cfg(target_os = "macos")]
+mod macos_menu;
 mod state;
 
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
@@ -88,6 +90,7 @@ fn start_background_mode_and_hide_window(app: tauri::AppHandle) {
                     && current.mode == BackendRuntimeMode::Background
                     && current.phase == BackendRuntimePhase::Running
                 {
+                    bootstrap::show_background_mode_started_notification(&app, &state);
                     bootstrap::destroy_main_window_for_background_mode(&app);
                 }
                 refresh_tray_menu(&app, &state);
@@ -282,6 +285,12 @@ pub fn run() {
                     commands::host::window::stop_runtime_services(app);
                     app.exit(0);
                 }
+                id if id.starts_with("mac-menu-") => {
+                    #[cfg(target_os = "macos")]
+                    if let Err(error) = macos_menu::emit_menu_action(app, id) {
+                        tracing::warn!(error = %error, id, "failed to emit macOS menu action");
+                    }
+                }
                 _ => {}
             }
         })
@@ -327,6 +336,12 @@ pub fn run() {
             commands::application::background_mode::app__get_backend_runtime_snapshot,
             commands::application::background_mode::app__get_backend_runtime_frontend_session_snapshot,
             commands::application::background_mode::app__ensure_main_window,
+            commands::application::overlay_activity::app__overlay_activity_definitions_get,
+            commands::application::overlay_activity::app__overlay_activity_filters_reload,
+            commands::application::overlay_activity::app__overlay_activity_snapshot_get,
+            commands::application::vr_overlay::app__vr_overlay_status_get,
+            commands::application::vr_overlay::app__vr_overlay_enabled_set,
+            commands::application::vr_overlay::app__vr_overlay_config_reload,
             commands::application::registry_backup::app__registry_backup_list,
             commands::application::registry_backup::app__registry_backup_create,
             commands::application::registry_backup::app__registry_backup_restore,

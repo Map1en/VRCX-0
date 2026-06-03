@@ -14,9 +14,15 @@ import { useModerationRows } from './useModerationRows';
 import { useModerationShiftKey } from './useModerationShiftKey';
 import { useModerationTableState } from './useModerationTableState';
 
-export function useModerationPageController() {
+type ModerationPageControllerOptions = {
+    refreshKey?: string;
+};
+
+export function useModerationPageController({
+    refreshKey = ''
+}: ModerationPageControllerOptions = {}) {
     const filters = useModerationFilters();
-    const rowsState = useModerationRows();
+    const rowsState = useModerationRows({ refreshKey });
     const filteredRows = useMemo(() => {
         const activeTypeSet = filters.selectedTypes.length
             ? new Set(filters.selectedTypes)

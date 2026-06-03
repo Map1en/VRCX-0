@@ -284,6 +284,18 @@ export function enrichPlayerListRows({
                 row.ageVerificationStatus === '18+' ||
                 userRef?.ageVerificationStatus === '18+'
         );
+        const moderationTags = normalizedUserId
+            ? [
+                  isBlocked ? 'blocked' : '',
+                  isMuted ? 'muted' : ''
+              ].filter(Boolean)
+            : [];
+        const moderationSeverity =
+            moderationTags[0] === 'blocked'
+                ? 'blocked'
+                : moderationTags[0] === 'muted'
+                  ? 'muted'
+                  : '';
         const joinedAtTime = parseTimeMs(row.joinedAt || row.joinedAtMs);
         const iconWeight =
             (isCurrentUser ? 1000 : 0) +
@@ -324,6 +336,8 @@ export function enrichPlayerListRows({
             isAvatarInteractionDisabled,
             isChatBoxMuted,
             timeoutTime,
+            moderationSeverity,
+            moderationTags,
             ageVerified,
             iconWeight,
             timerMs:

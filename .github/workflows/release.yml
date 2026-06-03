@@ -113,9 +113,13 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends \
                       build-essential \
+                      clang \
+                      cmake \
                       curl \
                       file \
+                      g++ \
                       libayatana-appindicator3-dev \
+                      libclang-dev \
                       libssl-dev \
                       libxdo-dev \
                       librsvg2-dev \

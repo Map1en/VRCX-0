@@ -68,6 +68,12 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Failed open instance in VRChat, falling back to self invite"
         }
     },
+    "overlay": {
+        "footer": {
+            "players": "{count} players",
+            "instance_duration": "Instance {duration}"
+        }
+    },
     "nav_tooltip": {
         "friends_locations": "Friend Locations",
         "feed": "Feed",
@@ -1617,7 +1623,27 @@
                     "header": "VR Notifications"
                 },
                 "wrist_overlay": {
-                    "header": "Wrist Overlay"
+                    "header": "Wrist Overlay",
+                    "wrist_feed_overlay": "Wrist Feed Overlay",
+                    "start_when": "Start When",
+                    "start_when_steamvr": "SteamVR Starts",
+                    "start_when_vrchat_vr_mode": "VRChat Starts",
+                    "overlay_button": "Overlay Button",
+                    "overlay_button_grip": "Grip",
+                    "overlay_button_menu": "Menu",
+                    "display_on": "Display On",
+                    "display_on_left": "Left",
+                    "display_on_right": "Right",
+                    "display_on_both": "Both",
+                    "size": "Size",
+                    "size_compact": "Compact",
+                    "size_normal": "Normal",
+                    "size_large": "Large",
+                    "dark_background": "Dark Background",
+                    "hide_private_worlds": "Hide Private Worlds",
+                    "vr_device_status": "VR Device Status",
+                    "battery_percentage": "Battery Percentage",
+                    "wrist_feed_notifications": "Wrist Feed Notifications"
                 },
                 "vr_extras": {
                     "header": "VR Extras"
@@ -1886,7 +1912,22 @@
                     "layout_notification_center": "Notification Center",
                     "layout_table": "Notifications Page",
                     "notification_filter": "Notification Filters",
+                    "post_update_changelog_prompt": "Show update notes after updating",
+                    "post_update_changelog_prompt_description": "Shows a persistent prompt after the app starts on a newly installed version.",
+                    "wrist_overlay": "Wrist Feed Overlay",
+                    "wrist_overlay_description": "Starts the SteamVR wrist feed only while VRChat is in VR and SteamVR is running.",
                     "wrist_feed_notifications": "Wrist Feed Notifications",
+                    "wrist_overlay_hide_private_worlds": "Hide Private Worlds",
+                    "wrist_overlay_dark_background": "Dark Background",
+                    "wrist_overlay_show_devices": "VR Device Status",
+                    "wrist_overlay_display_on": "Display Overlay On",
+                    "wrist_overlay_display_on_left": "Left",
+                    "wrist_overlay_display_on_right": "Right",
+                    "wrist_overlay_display_on_both": "Both",
+                    "wrist_overlay_size": "Size",
+                    "wrist_overlay_size_compact": "Compact",
+                    "wrist_overlay_size_normal": "Normal",
+                    "wrist_overlay_size_large": "Large",
                     "test_notification": "Send Test Notification",
                     "test_message": "Test notification",
                     "steamvr_notifications": {
@@ -1948,7 +1989,7 @@
                     "display_overlay_on_both": "Both Hands",
                     "grey_background": "Use Gray Background",
                     "minimal_feed_icons": "Use Minimal Feed Icons",
-                    "show_vr_devices": "Show VR Devices",
+                    "show_vr_devices": "VR Device Status",
                     "show_cpu_usage": "Show CPU Usage",
                     "show_game_uptime": "Show Game Uptime",
                     "show_pc_uptime": "Show PC Uptime",
@@ -4652,7 +4693,14 @@
             "description": "Consider donating to support future development of VRCX-0",
             "close": "Close",
             "donate": "Donate",
-            "github": "GitHub"
+            "github": "GitHub",
+            "loading": "Loading changelog...",
+            "failed_to_load": "Failed to load changelog.",
+            "latest_release": "Latest release",
+            "empty": "No changelog is available for this release.",
+            "toast_title": "Updated to {value}",
+            "toast_description": "Review what changed in this version.",
+            "view_changes": "View changes"
         },
         "open_source": {
             "header": "Third-Party Notices",
@@ -5049,6 +5097,9 @@
         "vrcx_updater": {
             "failed": "Failed to check for update, {message}",
             "failed_install": "Failed to install update",
+            "current_version": "Current Version",
+            "latest_version": "Latest Version",
+            "released": "Released",
             "checking_hash": "Checking hash...",
             "checking_update_state": "Checking update state.",
             "no_downloadable_releases_found": "No downloadable releases found.",

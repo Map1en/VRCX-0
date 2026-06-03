@@ -68,6 +68,12 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat에서 인스턴스 열기에 실패했습니다. 나에게 초대 보내기로 전환됩니다."
         }
     },
+    "overlay": {
+        "footer": {
+            "players": "{count}명",
+            "instance_duration": "체류 {duration}"
+        }
+    },
     "nav_tooltip": {
         "friends_locations": "친구 위치",
         "feed": "피드",

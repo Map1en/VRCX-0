@@ -7,6 +7,7 @@ import { getNameColour, openExternalLink } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { usePreferencesStore } from '@/state/preferencesStore';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -59,10 +60,50 @@ function DisplayNameCell({ isDarkMode, randomUserColours, row }: any) {
                   color: getNameColour(row.original.userId, isDarkMode)
               }
             : undefined;
+    const { t } = useTranslation();
+    const moderationTags = Array.isArray(row.original?.moderationTags)
+        ? row.original.moderationTags
+        : [];
 
     return (
-        <span className="block min-w-0 truncate text-sm" style={style}>
-            {row.original.displayName}
+        <span className="flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate text-sm" style={style}>
+                {row.original.displayName}
+            </span>
+            {moderationTags.includes('blocked') ? (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="inline-flex shrink-0">
+                            <Badge
+                                variant="destructive"
+                                className="h-4 px-1.5 text-[10px] leading-none"
+                            >
+                                {t('view.player_list.error.blocked')}
+                            </Badge>
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.error.blocked')}
+                    </TooltipContent>
+                </Tooltip>
+            ) : null}
+            {moderationTags.includes('muted') ? (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="inline-flex shrink-0">
+                            <Badge
+                                variant="outline"
+                                className="text-muted-foreground h-4 px-1.5 text-[10px] leading-none"
+                            >
+                                {t('view.player_list.label.muted')}
+                            </Badge>
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {t('view.player_list.label.muted')}
+                    </TooltipContent>
+                </Tooltip>
+            ) : null}
         </span>
     );
 }

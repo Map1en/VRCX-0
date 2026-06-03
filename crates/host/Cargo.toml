@@ -3,6 +3,10 @@ name = "vrcx-0-host"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+steamvr-overlay = ["dep:openvr"]
+
 [dependencies]
 arboard = "3"
 base64 = { workspace = true }
@@ -18,6 +22,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }
+vrcx-0-vr-overlay = { path = "../vr-overlay" }
 walkdir = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
@@ -34,3 +39,6 @@ windows-sys = { version = "0.61", features = [
     "Win32_UI_WindowsAndMessaging"
 ] }
 winreg = "0.56"
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+openvr = { version = "0.9", optional = true }

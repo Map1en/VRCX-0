@@ -43,6 +43,7 @@ import { Kbd, KbdGroup } from '@/ui/shadcn/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { AppMenuBar } from './AppMenuBar';
+import { TitleBarUpdateButton } from './TitleBarUpdateButton';
 import { useDirectAccessAction } from './directAccessAction';
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
@@ -382,27 +383,11 @@ export function AppTitleBar() {
                 {titleBarActionsVisible ? (
                     <div className="flex h-full min-w-0 shrink-0 items-center gap-1 px-1">
                         {hasAvailableUpdate ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        className="h-6 gap-1.5 rounded-md px-2 text-xs shadow-none"
-                                        onClick={() =>
-                                            setSystemHostOpen(
-                                                'updaterOpen',
-                                                true
-                                            )
-                                        }
-                                    >
-                                        {t('nav_menu.update')}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {t('nav_menu.update')}
-                                </TooltipContent>
-                            </Tooltip>
+                            <TitleBarUpdateButton
+                                onClick={() =>
+                                    setSystemHostOpen('updaterOpen', true)
+                                }
+                            />
                         ) : null}
                         <TitleBarCommandGroup
                             quickSearchLabel={quickSearchLabel}

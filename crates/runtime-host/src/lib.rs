@@ -9,6 +9,7 @@ mod log_watcher;
 mod process_monitor;
 mod registry_backup;
 mod state;
+pub mod vr_overlay;
 
 pub use context::RuntimeHostContext;
 pub use error::{Error, Result};
@@ -18,7 +19,8 @@ pub use game_log::GameLogHostRuntime;
 pub use host_actions::{RuntimeHost, RuntimeHostActions};
 pub use host_file_access::{ensure_vrchat_launch_path_allowed, is_known_root_path, HostFileAccess};
 pub use log_watcher::{
-    GameLogEvent, GameLogEventSink, HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
+    GameLogEvent, GameLogEventSink, HostGameLogEventFanout, HostLogLocationSnapshotScanner,
+    LogLocationSnapshot, LogWatcher,
 };
 pub use process_monitor::HostGameProcessMonitorActions;
 pub use registry_backup::HostRegistryBackupActions;

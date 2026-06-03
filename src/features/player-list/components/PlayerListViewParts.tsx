@@ -21,6 +21,7 @@ import { ResizableTableCell } from '@/components/data-table/ResizableTableParts'
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { LocationWorld } from '@/components/LocationWorld';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
@@ -340,7 +341,13 @@ export function PlayerListRows({
     return table.getRowModel().rows.map((row: any) => (
         <TableRow
             key={row.id}
-            className="cursor-pointer"
+            className={cn(
+                'cursor-pointer border-l-2 border-l-transparent',
+                row.original?.moderationSeverity === 'blocked' &&
+                    'border-l-destructive bg-destructive/10 hover:bg-destructive/15',
+                row.original?.moderationSeverity === 'muted' &&
+                    'border-l-muted-foreground/50 bg-muted/40 hover:bg-muted/60'
+            )}
             tabIndex={0}
             aria-label={`Open ${row.original?.displayName || row.original?.userId || 'player'}`}
             onKeyDown={(event: any) => {

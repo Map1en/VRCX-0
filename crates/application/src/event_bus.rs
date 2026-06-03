@@ -4,6 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::game_log::GameLogProjection;
+use crate::overlay_activity::OverlayActivitySnapshot;
 use crate::realtime::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
     RealtimeInstanceQueueProjection, RealtimeNotificationProjection,
@@ -191,5 +192,9 @@ impl RuntimeEventBus {
         payload: RealtimeInstanceQueueProjection,
     ) {
         self.emit("realtimeInstanceQueueProjection", payload);
+    }
+
+    pub fn emit_overlay_activity_snapshot(&self, payload: OverlayActivitySnapshot) {
+        self.emit("overlayActivitySnapshot", payload);
     }
 }

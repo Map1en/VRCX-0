@@ -93,6 +93,7 @@ export const settingsTabs = [
     ['interface', 'view.settings.category.interface'],
     ['social', 'view.settings.category.social'],
     ['notifications', 'view.settings.category.notifications'],
+    ['vr', 'view.settings.category.vr'],
     ['media', 'view.settings.category.media'],
     ['integrations', 'view.settings.category.integrations'],
     ['advanced', 'view.settings.category.advanced']

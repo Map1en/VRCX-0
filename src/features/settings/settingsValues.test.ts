@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 
+import { settingsTabs } from './settingsOptions';
 import {
     buildOpenAiModelsEndpoint,
     buildTablePageSizeOptions,
@@ -9,6 +10,7 @@ import {
     filterTablePageSizeOptions,
     formatByteSize,
     isValidFontFamilyList,
+    migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
     normalizeSharedFeedFilters,
     normalizeTablePageSizes,
@@ -20,6 +22,19 @@ import {
 } from './settingsValues';
 
 describe('settingsValues', () => {
+    it('places the VR settings tab between notifications and media', () => {
+        expect(settingsTabs.map(([value]) => value)).toEqual([
+            'system',
+            'interface',
+            'social',
+            'notifications',
+            'vr',
+            'media',
+            'integrations',
+            'advanced'
+        ]);
+    });
+
     it('normalizes table page sizes to the sorted usable choices users can save', () => {
         expect(
             normalizeTablePageSizes(['50', 10, '10', 0, -5, 2000, 'bad', 25])
@@ -51,7 +66,7 @@ describe('settingsValues', () => {
             ...sharedFeedFiltersDefaults.noty,
             displayName: 'Never'
         });
-        expect(filters.wrist).toEqual(sharedFeedFiltersDefaults.wrist);
+        expect((filters as any).wrist).toBeUndefined();
     });
 
     it('normalizes wrist activity filters with type-specific scopes', () => {
@@ -116,11 +131,14 @@ describe('settingsValues', () => {
             }
         });
         expect(Object.keys(filters.wrist.types)).toHaveLength(
-            OVERLAY_ACTIVITY_TYPE_DEFINITIONS.length
+            OVERLAY_ACTIVITY_TYPE_DEFINITIONS.length + 1
         );
         expect(filters.wrist.types.Avatar).toBeUndefined();
         expect(filters.wrist.types.PortalSpawn).toBeUndefined();
-        expect(filters.wrist.types.unknown).toBeUndefined();
+        expect(filters.wrist.types.unknown).toEqual({
+            scope: 'on',
+            favoriteGroupKeys: 'all'
+        });
     });
 
     it('migrates legacy wrist category rules into per-type rules', () => {
@@ -182,6 +200,36 @@ describe('settingsValues', () => {
         });
         expect(filters.wrist.types.Avatar).toBeUndefined();
         expect(filters.wrist.types.PortalSpawn).toBeUndefined();
+    });
+
+    it('migrates legacy shared wrist feed filters into wrist activity filters', () => {
+        const filters = migrateLegacySharedFeedWristFilters({
+            wrist: {
+                invite: 'VIP',
+                OnPlayerJoined: 'Everyone',
+                friendRequest: 'Off',
+                'group.queueReady': 'Friends',
+                Location: 'On'
+            }
+        });
+
+        expect(filters.wrist.types.invite).toEqual({
+            scope: 'allFavorites',
+            favoriteGroupKeys: 'all'
+        });
+        expect(filters.wrist.types.OnPlayerJoined).toEqual({
+            scope: 'everyoneInInstance',
+            favoriteGroupKeys: 'all'
+        });
+        expect(filters.wrist.types.friendRequest).toEqual({
+            scope: 'off',
+            favoriteGroupKeys: 'all'
+        });
+        expect(filters.wrist.types['group.queueReady']).toEqual({
+            scope: 'on',
+            favoriteGroupKeys: 'all'
+        });
+        expect((filters.wrist.types as any).Location).toBeUndefined();
     });
 
     it('maps wrist activity raw type keys to locale-safe label keys', () => {

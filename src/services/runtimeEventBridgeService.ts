@@ -41,6 +41,7 @@ type RuntimeEventName =
     | 'gameClientEvent'
     | 'runtimeWorkerError'
     | 'runtimeGroupInstancesProjection'
+    | 'overlayActivitySnapshot'
     | 'realtimeFriendProjection'
     | 'realtimeNotificationProjection'
     | 'realtimeCurrentUserProjection'
@@ -677,6 +678,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'gameLogPersistenceFallback',
         'gameLogSideEffect',
         'runtimeGroupInstancesProjection',
+        'overlayActivitySnapshot',
         'gameClientEvent',
         'runtimeWorkerError',
         'realtimeFriendProjection',

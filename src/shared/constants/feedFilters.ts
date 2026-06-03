@@ -20,7 +20,7 @@ export interface SharedFeedFilterDefinition {
 }
 
 export type SharedFeedFilterDefaults = Record<
-    'noty' | 'wrist',
+    'noty',
     Record<string, SharedFeedFilterOptionValue>
 >;
 
@@ -48,7 +48,6 @@ const getOptions = (
 
 function feedFiltersOptions(): {
     notyFeedFiltersOptions: SharedFeedFilterDefinition[];
-    wristFeedFiltersOptions: SharedFeedFilterDefinition[];
 } {
     const baseOptions: SharedFeedFilterDefinition[] = [
         {
@@ -236,20 +235,8 @@ function feedFiltersOptions(): {
         }
     ];
 
-    const notyFeedFiltersOptions = baseOptions;
-
-    const wristFeedFiltersOptions = [
-        {
-            key: 'Location',
-            name: 'Self Location',
-            options: getOptions(['Off', 'On'])
-        },
-        ...baseOptions
-    ];
-
     return {
-        notyFeedFiltersOptions,
-        wristFeedFiltersOptions
+        notyFeedFiltersOptions: baseOptions
     };
 }
 
@@ -295,48 +282,6 @@ const sharedFeedFiltersDefaults: SharedFeedFilterDefaults = {
         Unblocked: 'Off',
         Muted: 'Off',
         Unmuted: 'Off'
-    },
-    wrist: {
-        Location: 'On',
-        OnPlayerJoined: 'Everyone',
-        OnPlayerLeft: 'Everyone',
-        OnPlayerJoining: 'Friends',
-        Online: 'Friends',
-        Offline: 'Friends',
-        GPS: 'Friends',
-        Status: 'Friends',
-        invite: 'Friends',
-        requestInvite: 'Friends',
-        inviteResponse: 'Friends',
-        requestInviteResponse: 'Friends',
-        boop: 'Friends',
-        friendRequest: 'On',
-        Friend: 'On',
-        Unfriend: 'On',
-        DisplayName: 'Friends',
-        TrustLevel: 'Friends',
-        groupChange: 'On',
-        'group.announcement': 'On',
-        'group.informative': 'On',
-        'group.invite': 'On',
-        'group.joinRequest': 'On',
-        'group.transfer': 'On',
-        'group.queueReady': 'On',
-        'instance.closed': 'On',
-        PortalSpawn: 'Everyone',
-        Event: 'On',
-        External: 'On',
-        VideoPlay: 'On',
-        BlockedOnPlayerJoined: 'Off',
-        BlockedOnPlayerLeft: 'Off',
-        MutedOnPlayerJoined: 'Off',
-        MutedOnPlayerLeft: 'Off',
-        AvatarChange: 'Everyone',
-        ChatBoxMessage: 'Off',
-        Blocked: 'On',
-        Unblocked: 'On',
-        Muted: 'On',
-        Unmuted: 'On'
     }
 };
 

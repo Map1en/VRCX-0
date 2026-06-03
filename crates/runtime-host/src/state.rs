@@ -12,9 +12,13 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
+    vr_overlay::{
+        start_preview_bridge_if_enabled, VrOverlayActivitySink, VrOverlayRuntime,
+        VrOverlayRuntimeSnapshot, VR_OVERLAY_ENABLED_CONFIG_KEY,
+    },
     GameClientHostRuntime, GameLogEventSink, GameLogHostRuntime, HostFileAccess,
-    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher, Result,
-    RuntimeHostContext, RuntimeHostEventSink,
+    HostGameLogEventFanout, HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
+    Result, RuntimeHostContext, RuntimeHostEventSink,
 };
 use vrcx_0_application::{
     build_background_discord_presence_command, build_background_presence_facts,
@@ -24,13 +28,13 @@ use vrcx_0_application::{
     saved_snapshot, BackendRuntime, BackendRuntimeMode, BackendRuntimePhase,
     BackendRuntimeSnapshot, BackendRuntimeTelemetry, BackgroundCapabilitySession,
     BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState,
-    BackgroundPresenceAutomationState, BackgroundPresenceFactsInput, GameProcessEventSink,
-    ImageCache, LoginSuccessRecordInput, LogoutRecordInput, ModerationSyncDeps,
-    ModerationSyncRefreshInput, ProcessMonitor, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
-    RealtimeStopRequest, RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult,
-    RegistryBackupSnapshot, RuntimeBackgroundJobs, RuntimeEventSink,
-    SavedCredentialLoginStartInput, SessionHostRuntime, SocialBaselineDeps,
-    SocialFavoritesBaselineInput, SocialFriendRosterBaselineInput, WebClient,
+    BackgroundPresenceAutomationState, BackgroundPresenceFactsInput, GameProcessEvent,
+    GameProcessEventSink, ImageCache, LoginSuccessRecordInput, LogoutRecordInput,
+    ModerationSyncDeps, ModerationSyncRefreshInput, OverlayActivitySnapshot, OverlayFavoriteGroups,
+    ProcessMonitor, RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest,
+    RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
+    RuntimeBackgroundJobs, RuntimeEventSink, SavedCredentialLoginStartInput, SessionHostRuntime,
+    SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFriendRosterBaselineInput, WebClient,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
@@ -69,6 +73,7 @@ const BACKGROUND_PRESENCE_CADENCE_SECONDS: u64 = 3;
 const BACKGROUND_DISCORD_CADENCE_SECONDS: u64 = 3;
 const BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS: u64 = 300;
 const BACKGROUND_CURRENT_USER_CADENCE_SECONDS: u64 = 300;
+const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS: u64 = 5;
 const BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS: u64 = 3_600;
 const BACKGROUND_MODERATION_CADENCE_SECONDS: u64 = 3_600;
 const CURRENT_USER_REFRESH_LOCAL_AUTHORITY_FIELDS: &[&str] = &[
@@ -128,6 +133,7 @@ pub struct RuntimeHostState {
     pub game_client_runtime: Arc<GameClientHostRuntime>,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
     pub session_runtime: Arc<SessionHostRuntime>,
+    pub vr_overlay_runtime: Arc<VrOverlayRuntime>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
     pub host_file_access: HostFileAccess,
@@ -145,6 +151,32 @@ pub struct RuntimeHostState {
     registry_backup_lock: Arc<Mutex<()>>,
     backend_frontend_session: Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
     _profile_lock: ProfileLock,
+}
+
+struct VrOverlayProcessSink {
+    runtime: Arc<VrOverlayRuntime>,
+    log_watcher: LogWatcher,
+}
+
+impl VrOverlayProcessSink {
+    fn new(runtime: Arc<VrOverlayRuntime>, log_watcher: LogWatcher) -> Self {
+        Self {
+            runtime,
+            log_watcher,
+        }
+    }
+}
+
+impl GameProcessEventSink for VrOverlayProcessSink {
+    fn on_game_process_event(&self, event: GameProcessEvent) -> vrcx_0_application::Result<()> {
+        self.runtime.on_game_process_event(event)?;
+        if event.is_game_running {
+            if let Some(vr_mode) = self.log_watcher.current_vr_mode() {
+                self.runtime.set_vr_mode(vr_mode);
+            }
+        }
+        Ok(())
+    }
 }
 
 impl RuntimeHostState {
@@ -189,7 +221,20 @@ impl RuntimeHostState {
             host_file_access.clone(),
             paths.clone(),
         ));
-        let game_log_sink: Arc<dyn GameLogEventSink> = game_log_runtime.clone();
+        let vr_overlay_runtime = Arc::new(VrOverlayRuntime::new(Arc::clone(&runtime_context)));
+        let vr_overlay_enabled = runtime_context
+            .config()
+            .get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
+        vr_overlay_runtime.set_enabled(vr_overlay_enabled);
+        vr_overlay_runtime.start_refresh_loop(runtime_context.tasks.clone());
+        runtime_context.set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(
+            Arc::clone(&vr_overlay_runtime),
+        )));
+        start_preview_bridge_if_enabled(Arc::clone(&runtime_context));
+        let game_log_sink: Arc<dyn GameLogEventSink> = Arc::new(HostGameLogEventFanout::new(vec![
+            game_log_runtime.clone(),
+            vr_overlay_runtime.clone(),
+        ]));
         let log_watcher = LogWatcher::new_with_location_snapshot_scanner(
             Some(game_log_sink),
             Arc::new(HostLogLocationSnapshotScanner),
@@ -208,6 +253,7 @@ impl RuntimeHostState {
             tasks: runtime_context.tasks.clone(),
             session: runtime_context.session.clone(),
             game_log_snapshot: runtime_context.game_log_snapshot_handle(),
+            overlay_activity: runtime_context.overlay_activity.clone(),
         }));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             runtime_context.session.clone(),
@@ -239,6 +285,7 @@ impl RuntimeHostState {
             game_client_runtime,
             realtime_runtime,
             session_runtime,
+            vr_overlay_runtime,
             web,
             image_cache,
             host_file_access,
@@ -277,6 +324,36 @@ impl RuntimeHostState {
 
     pub fn app_launcher_snapshot(&self) -> AppLauncherSnapshot {
         self.auto_launch.snapshot()
+    }
+
+    pub fn set_vr_overlay_enabled(&self, enabled: bool) -> Result<VrOverlayRuntimeSnapshot> {
+        self.runtime_context
+            .config()
+            .set_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, enabled)?;
+        self.vr_overlay_runtime.set_enabled(enabled);
+        Ok(self.vr_overlay_runtime.snapshot())
+    }
+
+    pub fn reload_vr_overlay_config(&self) -> VrOverlayRuntimeSnapshot {
+        self.vr_overlay_runtime.reconcile_current();
+        self.vr_overlay_runtime.snapshot()
+    }
+
+    pub fn vr_overlay_snapshot(&self) -> VrOverlayRuntimeSnapshot {
+        self.vr_overlay_runtime.snapshot()
+    }
+
+    pub fn is_vr_overlay_running(&self) -> bool {
+        self.vr_overlay_runtime.is_running()
+    }
+
+    pub fn overlay_activity_snapshot(&self) -> OverlayActivitySnapshot {
+        self.runtime_context.overlay_activity.snapshot()
+    }
+
+    pub fn reload_overlay_activity_filters(&self) {
+        self.runtime_context.reload_overlay_activity_filters();
+        self.vr_overlay_runtime.reconcile_current();
     }
 
     pub fn set_app_launcher_enabled(&self, enabled: bool) -> Result<AppLauncherSnapshot> {
@@ -479,12 +556,20 @@ impl RuntimeHostState {
             .background_jobs
             .start_database_optimize_loop(Arc::clone(&self.db), self.runtime_context.tasks.clone());
 
+        self.start_log_watcher_for_current_platform(&host_capabilities);
+
         if is_host_capability_available(HostCapability::GameProcessMonitor) {
+            let vr_overlay_process_sink: Arc<dyn GameProcessEventSink> =
+                Arc::new(VrOverlayProcessSink::new(
+                    self.vr_overlay_runtime.clone(),
+                    self.log_watcher.clone(),
+                ));
             let game_process_sinks: Vec<Arc<dyn GameProcessEventSink>> = vec![
                 self.session_runtime.clone(),
                 self.game_log_runtime.clone(),
                 self.game_client_runtime.clone(),
                 self.realtime_runtime.clone(),
+                vr_overlay_process_sink,
             ];
             self.process_monitor.start(
                 crate::HostGameProcessMonitorActions::new(self.auto_launch.clone()),
@@ -503,8 +588,6 @@ impl RuntimeHostState {
                 "Game process monitor capability is unavailable.",
             );
         }
-
-        self.start_log_watcher_for_current_platform(&host_capabilities);
     }
 
     pub fn stop_backend_runtime(&self, reason: impl Into<String>) -> BackendRuntimeSnapshot {
@@ -512,6 +595,7 @@ impl RuntimeHostState {
         self.backend_runtime
             .set_phase(BackendRuntimePhase::Stopping);
         self.realtime_runtime.stop(RealtimeStopRequest::default());
+        self.vr_overlay_runtime.stop();
         self.process_monitor.stop();
         self.log_watcher.stop();
         self.game_log_runtime.stop();
@@ -564,6 +648,7 @@ impl RuntimeHostState {
             .lock()
             .ok()
             .and_then(|mut slot| slot.take());
+        self.runtime_context.overlay_activity.clear_runtime_state();
         self.realtime_runtime.stop(RealtimeStopRequest::default());
         self.runtime_context.session.clear_realtime_context();
         if let Some(previous) = previous {
@@ -679,21 +764,26 @@ impl RuntimeHostState {
             snapshot,
         );
 
-        let friends_by_id = match self.build_backend_friend_baseline(&session).await {
-            Ok(friends_by_id) => friends_by_id,
+        let social_baseline = match self.build_backend_social_baseline(&session).await {
+            Ok(social_baseline) => social_baseline,
             Err(error) => {
-                tracing::warn!(error = %error, "failed to build backend friend baseline");
-                HashMap::new()
+                tracing::warn!(error = %error, "failed to build backend social baseline");
+                BackendSocialBaseline::default()
             }
         };
         self.set_backend_frontend_session(&session);
+        self.runtime_context
+            .overlay_activity
+            .set_favorite_groups(OverlayFavoriteGroups::from_map(
+                social_baseline.favorite_groups,
+            ));
         self.realtime_runtime.start(
             session.user_id,
             session.endpoint,
             session.websocket,
             0,
             session.current_user,
-            friends_by_id,
+            social_baseline.friends_by_id,
         )?;
         self.backend_runtime.set_phase(BackendRuntimePhase::Running);
         if self.backend_runtime.snapshot().mode == BackendRuntimeMode::Background {
@@ -902,17 +992,18 @@ impl RuntimeHostState {
         self.clear_backend_authenticated_session(reason)
     }
 
-    async fn build_backend_friend_baseline(
+    async fn build_backend_social_baseline(
         &self,
         session: &AuthenticatedRuntimeSession,
-    ) -> Result<HashMap<String, FriendRecord>> {
+    ) -> Result<BackendSocialBaseline> {
+        let deps = SocialBaselineDeps {
+            db: Arc::clone(&self.db),
+            web: Arc::clone(&self.web),
+            auth_scope: self.runtime_context.auth_scope.clone(),
+            session: self.runtime_context.session.clone(),
+        };
         let output = build_friend_roster_baseline(
-            SocialBaselineDeps {
-                db: Arc::clone(&self.db),
-                web: Arc::clone(&self.web),
-                auth_scope: self.runtime_context.auth_scope.clone(),
-                session: self.runtime_context.session.clone(),
-            },
+            deps.clone(),
             SocialFriendRosterBaselineInput {
                 user_id: session.user_id.clone(),
                 endpoint: session.endpoint.clone(),
@@ -922,14 +1013,42 @@ impl RuntimeHostState {
         )
         .await?;
         let Some(snapshot) = output.snapshot else {
-            return Ok(HashMap::new());
+            return Ok(BackendSocialBaseline::default());
         };
         let snapshot = snapshot.into_value();
         let friends_by_id = snapshot
             .get("friendsById")
             .cloned()
             .unwrap_or_else(|| serde_json::json!({}));
-        Ok(serde_json::from_value(friends_by_id)?)
+        let friends_by_id_map =
+            serde_json::from_value::<HashMap<String, FriendRecord>>(friends_by_id.clone())?;
+        let favorite_groups = match build_favorites_baseline(
+            deps,
+            SocialFavoritesBaselineInput {
+                user_id: session.user_id.clone(),
+                endpoint: session.endpoint.clone(),
+                current_user_snapshot: RawJson::from(session.current_user.clone()),
+                friend_roster_by_id: RawJson::from(friends_by_id),
+            },
+        )
+        .await
+        {
+            Ok(output) => output
+                .snapshot
+                .map(|snapshot| favorite_group_membership_from_snapshot(snapshot.into_value()))
+                .unwrap_or_default(),
+            Err(error) => {
+                tracing::warn!(
+                    error = %error,
+                    "failed to build backend favorite baseline for overlay activity"
+                );
+                HashMap::new()
+            }
+        };
+        Ok(BackendSocialBaseline {
+            friends_by_id: friends_by_id_map,
+            favorite_groups,
+        })
     }
 
     fn set_backend_frontend_session(&self, session: &AuthenticatedRuntimeSession) {
@@ -942,6 +1061,17 @@ impl RuntimeHostState {
             current_user_snapshot: session.current_user.clone(),
         };
         if let Ok(mut slot) = self.backend_frontend_session.lock() {
+            let scope_changed = slot
+                .as_ref()
+                .map(|current| {
+                    current.user_id != snapshot.user_id
+                        || current.endpoint != snapshot.endpoint
+                        || current.websocket != snapshot.websocket
+                })
+                .unwrap_or(true);
+            if scope_changed {
+                self.runtime_context.overlay_activity.clear_runtime_state();
+            }
             *slot = Some(snapshot);
         }
     }
@@ -970,6 +1100,17 @@ impl RuntimeHostState {
             current_user_snapshot,
         };
         if let Ok(mut slot) = self.backend_frontend_session.lock() {
+            let scope_changed = slot
+                .as_ref()
+                .map(|current| {
+                    current.user_id != snapshot.user_id
+                        || current.endpoint != snapshot.endpoint
+                        || current.websocket != snapshot.websocket
+                })
+                .unwrap_or(true);
+            if scope_changed {
+                self.runtime_context.overlay_activity.clear_runtime_state();
+            }
             *slot = Some(snapshot);
         }
         self.backend_runtime
@@ -1285,6 +1426,7 @@ impl RuntimeHostState {
                 let mut next_discord = Instant::now();
                 let mut next_current_user = Instant::now();
                 let mut next_group_instances = Instant::now();
+                let mut next_overlay_activity_config = Instant::now();
                 let mut next_social = Instant::now();
                 let mut next_moderation = Instant::now();
                 let mut favorite_friend_groups_by_key: HashMap<String, Vec<String>> =
@@ -1313,10 +1455,12 @@ impl RuntimeHostState {
                         discord_state = BackgroundDiscordPresenceState::default();
                         discord_success_info = None;
                         favorite_friend_groups_by_key.clear();
+                        runtime_context.overlay_activity.clear_runtime_state();
                         next_presence = now;
                         next_discord = now;
                         next_current_user = now;
                         next_group_instances = now;
+                        next_overlay_activity_config = now;
                         next_social = now;
                         next_moderation = now;
                     }
@@ -1349,6 +1493,14 @@ impl RuntimeHostState {
                         .await;
                         next_group_instances =
                             now + Duration::from_secs(BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS);
+                    }
+
+                    if now >= next_overlay_activity_config {
+                        runtime_context.reload_overlay_activity_filters();
+                        next_overlay_activity_config = now
+                            + Duration::from_secs(
+                                BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS,
+                            );
                     }
 
                     let tick_context = BackgroundTickContext {
@@ -2189,6 +2341,10 @@ async fn run_background_social_baseline_refresh(
                     serde_json::from_value::<HashMap<String, FriendRecord>>(friends_value.clone())
                 {
                     let count = friends_by_id.len();
+                    context
+                        .runtime_context
+                        .overlay_activity
+                        .set_friend_user_ids(friends_by_id.keys().cloned());
                     let _ = context.realtime_runtime.sync_friend_snapshot(
                         session.current_user_id.clone(),
                         session.endpoint.clone(),
@@ -2210,8 +2366,15 @@ async fn run_background_social_baseline_refresh(
                     .await
                     {
                         if let Some(snapshot) = favorites_output.snapshot {
-                            *favorite_friend_groups_by_key =
+                            let groups =
                                 favorite_group_membership_from_snapshot(snapshot.into_value());
+                            context
+                                .runtime_context
+                                .overlay_activity
+                                .set_favorite_groups(OverlayFavoriteGroups::from_map(
+                                    groups.clone(),
+                                ));
+                            *favorite_friend_groups_by_key = groups;
                         }
                     }
                     count
@@ -2589,6 +2752,12 @@ struct AuthenticatedRuntimeSession {
     endpoint: String,
     websocket: String,
     current_user: serde_json::Value,
+}
+
+#[derive(Default)]
+struct BackendSocialBaseline {
+    friends_by_id: HashMap<String, FriendRecord>,
+    favorite_groups: HashMap<String, Vec<String>>,
 }
 
 impl AuthenticatedRuntimeSession {

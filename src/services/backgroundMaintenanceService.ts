@@ -48,11 +48,37 @@ function resetTimers() {
         });
 }
 
-function setUpdaterCheckResult(hasAvailableUpdate: any, detail: any = '') {
+function toUpdaterReleaseSnapshot(release: any) {
+    if (!release) {
+        return null;
+    }
+    return {
+        title: release.displayName || release.name || release.tagName || '',
+        currentVersion:
+            // oxlint-disable-next-line no-undef
+            formatReleaseDisplayVersion(VERSION || '') || String(VERSION || ''),
+        latestVersion:
+            release.displayVersion ||
+            formatReleaseDisplayVersion(
+                release.canonicalVersion || release.version || release.tagName
+            ) ||
+            String(release.version || release.tagName || ''),
+        publishedAt: release.publishedAt || release.date || ''
+    };
+}
+
+function setUpdaterCheckResult(
+    hasAvailableUpdate: any,
+    detail: any = '',
+    release: any = null
+) {
     useRuntimeStore.getState().setUpdateLoopState({
         hasAvailableUpdate: Boolean(hasAvailableUpdate),
         lastUpdaterCheckAt: new Date().toISOString(),
-        lastUpdaterCheckDetail: detail
+        lastUpdaterCheckDetail: detail,
+        latestUpdaterRelease: hasAvailableUpdate
+            ? toUpdaterReleaseSnapshot(release)
+            : null
     });
 }
 
@@ -546,7 +572,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true }: any = {}) {
                         ),
                         message
                     });
-                    setUpdaterCheckResult(true, message);
+                    setUpdaterCheckResult(true, message, update);
                     useRuntimeStore
                         .getState()
                         .setSystemHostOpen('updaterOpen', true);
@@ -582,7 +608,7 @@ async function checkForAppUpdate({ includeRegistryBackup = true }: any = {}) {
                         ),
                         message
                     });
-                    setUpdaterCheckResult(true, message);
+                    setUpdaterCheckResult(true, message, latestRelease);
                     useRuntimeStore
                         .getState()
                         .setSystemHostOpen('updaterOpen', true);

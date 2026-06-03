@@ -78,7 +78,14 @@ describe('friends locations row helpers', () => {
             )
         ).toBe('wrld_profile:456');
         expect(isOnlineFriend({ stateBucket: 'online' })).toBe(true);
-        expect(isOnlineFriend({ status: 'active' })).toBe(true);
+        expect(isOnlineFriend({ stateBucket: 'active' })).toBe(false);
+        expect(
+            isOnlineFriend({
+                stateBucket: 'offline',
+                status: 'active',
+                location: 'wrld_stale:123'
+            })
+        ).toBe(false);
         expect(isOnlineFriend({ state: 'offline' })).toBe(false);
     });
 

@@ -119,7 +119,7 @@ function unwrapVrchatInstanceResponse(
             json
         );
         notifyVrchatAuthFailure(requestError);
-        throw new Error(message);
+        throw requestError;
     }
 
     return {

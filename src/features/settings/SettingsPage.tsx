@@ -11,6 +11,7 @@ import { SettingsAdvancedSection } from './components/SettingsAdvancedSection';
 import { SettingsDialogsSection } from './components/SettingsDialogsSection';
 import { SettingsNotificationsSection } from './components/SettingsNotificationsSection';
 import { SettingsSystemSection } from './components/SettingsSystemSection';
+import { SettingsVrSection } from './components/SettingsVrSection';
 import { SettingsIntegrationsTab } from './components/settings-tabs/SettingsIntegrationsTab';
 import { SettingsInterfaceTab } from './components/settings-tabs/SettingsInterfaceTab';
 import { SettingsMediaTab } from './components/settings-tabs/SettingsMediaTab';
@@ -28,6 +29,7 @@ export function SettingsPage() {
         integrations,
         social,
         notifications,
+        vr,
         advanced,
         dialogs
     } = pageState;
@@ -53,10 +55,11 @@ export function SettingsPage() {
                 </div>
                 <SettingsSystemSection system={system} />
                 <SettingsInterfaceTab settingsInterface={settingsInterface} />
-                <SettingsMediaTab media={media} />
-                <SettingsIntegrationsTab integrations={integrations} />
                 <SettingsSocialTab social={social} />
                 <SettingsNotificationsSection notifications={notifications} />
+                <SettingsVrSection vr={vr} />
+                <SettingsMediaTab media={media} />
+                <SettingsIntegrationsTab integrations={integrations} />
                 <SettingsAdvancedSection advanced={advanced} />
             </Tabs>
             <SettingsDialogsSection dialogs={dialogs} />

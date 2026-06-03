@@ -109,7 +109,7 @@ export function useSettingsPageState() {
     const [customFontDraft, setCustomFontDraft] = useState('');
     const [loading, setLoading] = useState(true);
     const [activeSettingsTab, setActiveSettingsTab] = useState('system');
-    const [feedFilterMode, setFeedFilterMode] = useState('noty');
+    const feedFilterMode = 'noty';
     const [feedFilterDialogOpen, setFeedFilterDialogOpen] = useState(false);
     const [
         wristFeedNotificationsDialogOpen,
@@ -209,6 +209,7 @@ export function useSettingsPageState() {
         updateSharedFeedFilter,
         resetSharedFeedFilters,
         saveOverlayActivityFilters,
+        saveWristOverlayEnabled,
         refreshRuntimeAppSnapshot,
         searchLimitError,
         tableLimitsSaveDisabled,
@@ -255,9 +256,7 @@ export function useSettingsPageState() {
     });
     const feedFilterOptions = FEED_FILTER_OPTIONS;
     const currentSharedFeedFilterOptions =
-        feedFilterMode === 'noty'
-            ? feedFilterOptions.notyFeedFiltersOptions
-            : feedFilterOptions.wristFeedFiltersOptions;
+        feedFilterOptions.notyFeedFiltersOptions;
     const remoteFavoriteFriendGroupOptions = useMemo(
         () =>
             (favoriteFriendGroups || [])
@@ -676,7 +675,6 @@ export function useSettingsPageState() {
             setNotificationLayoutPreference,
             setPrefs,
             setFeedFilterDialogOpen,
-            setWristFeedNotificationsDialogOpen,
             saveStringPreference,
             saveBoolPreference,
             saveNotificationTtsMode,
@@ -684,6 +682,13 @@ export function useSettingsPageState() {
             setNotificationTtsTestVisible,
             setNotificationTtsTest,
             speakNotificationTts
+        },
+        vr: {
+            prefs,
+            setWristFeedNotificationsDialogOpen,
+            saveStringPreference,
+            saveBoolPreference,
+            saveWristOverlayEnabled
         },
         advanced: {
             prefs,
@@ -761,7 +766,6 @@ export function useSettingsPageState() {
             feedFilterDialogOpen,
             setFeedFilterDialogOpen,
             feedFilterMode,
-            setFeedFilterMode,
             currentSharedFeedFilterOptions,
             sharedFeedFilters,
             updateSharedFeedFilter,

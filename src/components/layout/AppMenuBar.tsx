@@ -521,7 +521,11 @@ export function AppMenuBar({
                             <MenuItem onSelect={() => openLink(links.qqGroup)}>
                                 {t('nav_menu.qq_group')}
                             </MenuItem>
-                            <MenuItem onSelect={() => openLink(links.releases)}>
+                            <MenuItem
+                                onSelect={() =>
+                                    setSystemHostOpen('changelogOpen', true)
+                                }
+                            >
                                 {t('nav_menu.changelog')}
                             </MenuItem>
                         </MenubarGroup>

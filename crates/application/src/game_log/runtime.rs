@@ -5,6 +5,7 @@ use vrcx_0_persistence::DatabaseService;
 
 use crate::event_bus::RuntimeEventBus;
 use crate::image_cache::ImageCache;
+use crate::overlay_activity::OverlayActivityRuntime;
 use crate::process_monitor::GameProcessEvent;
 use crate::session::HostSessionRuntime;
 use crate::sync::RuntimeSyncEngine;
@@ -29,6 +30,7 @@ pub struct GameLogRuntimeDeps {
     pub session: HostSessionRuntime,
     pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
     pub host_actions: Arc<dyn GameLogHostActions>,
+    pub overlay_activity: OverlayActivityRuntime,
 }
 
 pub struct GameLogRuntime {
@@ -48,6 +50,7 @@ impl GameLogRuntime {
             sync: deps.sync,
             snapshot: deps.snapshot,
             host_actions: deps.host_actions,
+            overlay_activity: deps.overlay_activity,
         });
         let worker_processor = processor.clone();
         let worker = RuntimeWorker::start(

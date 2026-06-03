@@ -209,9 +209,7 @@ export function resolveFriendsLocationsCurrentInviteLocation(
 export function isOnlineFriend(friend: any) {
     return Boolean(
         friend?.stateBucket === 'online' ||
-        friend?.state === 'online' ||
-        friend?.status === 'active' ||
-        resolvePresenceLocation(friend)
+            friend?.state === 'online'
     );
 }
 

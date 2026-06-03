@@ -196,9 +196,10 @@ function resolveFriendPresenceLocation(
         isConcreteInstanceLocation(currentLocation);
     const canUseLegacyLocationFields =
         currentLocationIsConcrete || currentSentinel === 'traveling';
-    const orderedFields: Array<'location' | 'traveling'> = preferTraveling
-        ? ['traveling', 'location']
-        : ['location', 'traveling'];
+    const orderedFields: Array<'location' | 'traveling'> =
+        preferTraveling && currentSentinel === 'traveling'
+            ? ['traveling', 'location']
+            : ['location', 'traveling'];
     for (const field of orderedFields) {
         if (field === 'location' && currentSentinel === 'traveling') {
             continue;

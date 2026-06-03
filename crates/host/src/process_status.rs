@@ -83,7 +83,11 @@ fn is_vrchat_process_name(name: &str) -> bool {
 
 #[cfg(target_os = "linux")]
 fn is_steamvr_process_name(name: &str) -> bool {
-    name == "vrmonitor" || name == "monado-service" || name.ends_with("wivrn-server")
+    let normalized = name.to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "vrmonitor" | "vrserver" | "vrserver.exe" | "vrcompositor" | "monado-service"
+    ) || normalized.ends_with("wivrn-server")
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -114,9 +118,11 @@ mod tests {
     #[cfg(target_os = "linux")]
     fn linux_steamvr_process_name_matches_vue_electron_host() {
         assert!(is_steamvr_process_name("vrmonitor"));
+        assert!(is_steamvr_process_name("vrserver"));
+        assert!(is_steamvr_process_name("VRServer.exe"));
+        assert!(is_steamvr_process_name("vrcompositor"));
         assert!(is_steamvr_process_name("monado-service"));
         assert!(is_steamvr_process_name("WiVRn-wivrn-server"));
-        assert!(!is_steamvr_process_name("vrserver"));
     }
 
     #[test]

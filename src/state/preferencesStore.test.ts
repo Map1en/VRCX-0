@@ -58,8 +58,8 @@ describe('preferencesStore normalizers', () => {
                         AvatarChange: 'VIP'
                     }
                 })
-            ).wrist.AvatarChange
-        ).toBe('VIP');
+            )
+        ).toEqual(DEFAULT_PREFERENCES.sharedFeedFilters);
 
         expect(parseSharedFeedFilters('{bad json')).toEqual(
             DEFAULT_PREFERENCES.sharedFeedFilters
@@ -80,6 +80,10 @@ describe('preferencesStore normalizers', () => {
                     'group.queueReady': {
                         scope: 'selectedFavorites',
                         favoriteGroupKeys: ['group_3']
+                    },
+                    FutureBackendType: {
+                        scope: 'selectedFavorites',
+                        favoriteGroupKeys: ['group_future', '']
                     }
                 }
             }
@@ -97,6 +101,39 @@ describe('preferencesStore normalizers', () => {
             scope: 'on',
             favoriteGroupKeys: 'all'
         });
+        expect(filters.wrist.types.FutureBackendType).toEqual({
+            scope: 'selectedFavorites',
+            favoriteGroupKeys: ['group_future']
+        });
+    });
+
+    it('migrates legacy shared wrist filters when overlay activity filters are missing', () => {
+        const snapshot = normalizePreferenceSnapshot({
+            sharedFeedFilters: JSON.stringify({
+                wrist: {
+                    invite: 'VIP',
+                    OnPlayerJoined: 'Everyone',
+                    friendRequest: 'Off'
+                }
+            })
+        });
+
+        expect(snapshot.overlayActivityFilters.wrist.types.invite).toEqual({
+            scope: 'allFavorites',
+            favoriteGroupKeys: 'all'
+        });
+        expect(
+            snapshot.overlayActivityFilters.wrist.types.OnPlayerJoined
+        ).toEqual({
+            scope: 'everyoneInInstance',
+            favoriteGroupKeys: 'all'
+        });
+        expect(
+            snapshot.overlayActivityFilters.wrist.types.friendRequest
+        ).toEqual({
+            scope: 'off',
+            favoriteGroupKeys: 'all'
+        });
     });
 
     it('coerces persisted preference snapshots into safe runtime values', () => {
@@ -109,6 +146,14 @@ describe('preferencesStore normalizers', () => {
             weekStartsOn: 2,
             navPanelWidth: 9999,
             tablePageSizes: ['25', '10', '25'],
+            wristOverlayStartMode: 'steamvr',
+            wristOverlayButton: 'menu',
+            wristOverlayHand: 'both',
+            wristOverlaySize: 'large',
+            wristOverlayDarkBackground: 'false',
+            wristOverlayShowDevices: 'true',
+            wristOverlayShowBatteryPercent: 'true',
+            wristOverlayHidePrivateWorlds: 'true',
             tableLimits: {
                 maxTableSize: 5,
                 searchLimit: 999999
@@ -164,6 +209,14 @@ describe('preferencesStore normalizers', () => {
                 searchLimit: 100000
             },
             localFavoriteFriendsGroups: ['VIP'],
+            wristOverlayStartMode: 'steamvr',
+            wristOverlayButton: 'menu',
+            wristOverlayHand: 'both',
+            wristOverlaySize: 'large',
+            wristOverlayDarkBackground: false,
+            wristOverlayShowDevices: true,
+            wristOverlayShowBatteryPercent: true,
+            wristOverlayHidePrivateWorlds: true,
             translationAPIType: 'openai',
             translationAPIEndpoint: DEFAULT_PREFERENCES.translationAPIEndpoint,
             translationAPIModel: DEFAULT_PREFERENCES.translationAPIModel,
@@ -190,5 +243,17 @@ describe('preferencesStore normalizers', () => {
         expect(snapshot.trustColor.known).toBe(
             (DEFAULT_PREFERENCES.trustColor as any).known
         );
+    });
+
+    it('falls back invalid wrist overlay trigger preferences to defaults', () => {
+        expect(
+            normalizePreferenceSnapshot({
+                wristOverlayStartMode: 'invalid',
+                wristOverlayButton: 'trigger'
+            })
+        ).toMatchObject({
+            wristOverlayStartMode: 'vrchatVrMode',
+            wristOverlayButton: 'grip'
+        });
     });
 });

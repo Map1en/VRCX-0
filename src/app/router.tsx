@@ -3,6 +3,8 @@ import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 
 import { GlobalHosts } from '@/components/hosts/GlobalHosts';
 import { AppTitleBar } from '@/components/layout/AppTitleBar';
+import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
+import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -69,12 +71,16 @@ function AppShellRoute() {
 }
 
 function AppRouterContent() {
+    const isMacHost = useRuntimeStore(
+        (state: any) => state.hostCapabilities.platform === 'macos'
+    );
+
     return (
         <div
             data-vrcx-0-surface="app-root"
             className="vrcx-0-app-root flex h-screen min-h-0 w-full flex-col overflow-hidden"
         >
-            <AppTitleBar />
+            {isMacHost ? <MacOverlayTitleBar /> : <AppTitleBar />}
             <div
                 data-vrcx-0-surface="route-host"
                 className="vrcx-0-route-host min-h-0 flex-1 overflow-hidden"
@@ -112,6 +118,7 @@ function AppRouterContent() {
                 </Routes>
             </div>
             <GlobalHosts />
+            <MacNativeMenuActionHost />
         </div>
     );
 }

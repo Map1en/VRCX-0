@@ -343,12 +343,26 @@ async function checkInstallableUpdate(
         return null;
     }
 
-    return checkTauriUpdateForRelease(release, {
+    const update = await checkTauriUpdateForRelease(release, {
         branch,
         hostArch,
         linuxPackageKind,
         hostPlatform
     });
+    if (!update) {
+        return null;
+    }
+    const updateRecord = update as Record<string, any>;
+    return {
+        ...release,
+        ...updateRecord,
+        canonicalVersion: release.canonicalVersion,
+        displayVersion: release.displayVersion,
+        displayName: release.displayName,
+        publishedAt: release.publishedAt,
+        tagName: release.tagName,
+        htmlUrl: release.htmlUrl
+    };
 }
 
 async function downloadAndInstallUpdate(

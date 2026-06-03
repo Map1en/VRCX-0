@@ -1,6 +1,6 @@
 # VRCX-0
 
-[English](README.md) | [简体中文](README.zh-CN.md) | 繁體中文 | [日本語](README.ja-JP.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | 繁體中文 | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
 
 VRCX-0 是 VRCX 的重寫版本，以 **Tauri + React** 取代原有的 CefSharp + Vue 架構，由 VRCX 前任維護者之一開發。
 

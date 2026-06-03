@@ -59,6 +59,15 @@ describe('invite permissions', () => {
             checkCanInviteSelf('wrld_private:12345~private(usr_me)', deps)
         ).toBe(true);
         expect(
+            checkCanInviteSelf('wrld_private:12345~private(usr_other)', deps)
+        ).toBe(false);
+        expect(
+            checkCanInviteSelf(
+                'wrld_private:12345~private(usr_other)~canRequestInvite',
+                deps
+            )
+        ).toBe(false);
+        expect(
             checkCanInviteSelf('wrld_friends:12345~friends(usr_friend)', deps)
         ).toBe(true);
         expect(

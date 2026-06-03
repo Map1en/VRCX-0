@@ -68,6 +68,12 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "無法在 VRChat 中開啟房間，改用自我邀請"
         }
     },
+    "overlay": {
+        "footer": {
+            "players": "{count} 位玩家",
+            "instance_duration": "停留 {duration}"
+        }
+    },
     "nav_tooltip": {
         "friends_locations": "好友位置",
         "feed": "動態",
@@ -1617,7 +1623,27 @@
                     "header": "VR 通知"
                 },
                 "wrist_overlay": {
-                    "header": "手腕嵌入介面"
+                    "header": "手腕嵌入介面",
+                    "wrist_feed_overlay": "手腕動態嵌入介面",
+                    "start_when": "啟動時機",
+                    "start_when_steamvr": "SteamVR 啟動時",
+                    "start_when_vrchat_vr_mode": "VRChat 啟動時",
+                    "overlay_button": "嵌入介面按鍵",
+                    "overlay_button_grip": "Grip",
+                    "overlay_button_menu": "Menu",
+                    "display_on": "顯示在",
+                    "display_on_left": "左手",
+                    "display_on_right": "右手",
+                    "display_on_both": "雙手",
+                    "size": "大小",
+                    "size_compact": "精簡",
+                    "size_normal": "一般",
+                    "size_large": "大型",
+                    "dark_background": "深色背景",
+                    "hide_private_worlds": "隱藏私人世界",
+                    "vr_device_status": "VR 裝置狀態",
+                    "battery_percentage": "顯示電量百分比",
+                    "wrist_feed_notifications": "手腕動態通知"
                 },
                 "vr_extras": {
                     "header": "VR 額外功能"
@@ -1886,7 +1912,22 @@
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知頁面",
                     "notification_filter": "通知篩選器",
+                    "post_update_changelog_prompt": "顯示更新後的更新內容提示",
+                    "post_update_changelog_prompt_description": "升級後首次啟動新版本時，在右下角提示查看更新內容。",
+                    "wrist_overlay": "手腕動態嵌入介面",
+                    "wrist_overlay_description": "僅在 VRChat 處於 VR 模式且 SteamVR 正在執行時啟動手腕動態。",
                     "wrist_feed_notifications": "手腕動態通知",
+                    "wrist_overlay_hide_private_worlds": "隱藏私人世界",
+                    "wrist_overlay_dark_background": "深色背景",
+                    "wrist_overlay_show_devices": "VR 裝置狀態",
+                    "wrist_overlay_display_on": "嵌入介面顯示位置",
+                    "wrist_overlay_display_on_left": "左手",
+                    "wrist_overlay_display_on_right": "右手",
+                    "wrist_overlay_display_on_both": "雙手",
+                    "wrist_overlay_size": "大小",
+                    "wrist_overlay_size_compact": "精簡",
+                    "wrist_overlay_size_normal": "一般",
+                    "wrist_overlay_size_large": "大型",
                     "test_notification": "發送測試用通知",
                     "test_message": "測試通知。",
                     "steamvr_notifications": {
@@ -1948,7 +1989,7 @@
                     "display_overlay_on_both": "雙手",
                     "grey_background": "灰色背景",
                     "minimal_feed_icons": "迷你動態圖示",
-                    "show_vr_devices": "顯示 VR 裝置",
+                    "show_vr_devices": "VR 裝置狀態",
                     "show_cpu_usage": "顯示 CPU 使用率",
                     "show_game_uptime": "顯示遊戲啟動時長",
                     "show_pc_uptime": "顯示電腦啟動時長",
@@ -4652,7 +4693,14 @@
             "description": "考慮捐款來支持未來 VRCX-0 的開發：",
             "close": "關閉",
             "donate": "贊助",
-            "github": "GitHub"
+            "github": "GitHub",
+            "loading": "正在載入更新日誌...",
+            "failed_to_load": "更新日誌載入失敗。",
+            "latest_release": "最新版本",
+            "empty": "此版本沒有可用的更新日誌。",
+            "toast_title": "已更新到 {value}",
+            "toast_description": "查看此版本的更新內容。",
+            "view_changes": "查看更新內容"
         },
         "open_source": {
             "header": "第三方聲明",
@@ -5049,6 +5097,9 @@
         "vrcx_updater": {
             "failed": "檢查更新失敗，{message}",
             "failed_install": "安裝更新失敗",
+            "current_version": "目前版本",
+            "latest_version": "最新版本",
+            "released": "發布日期",
             "checking_hash": "檢查 hash...",
             "checking_update_state": "正在檢查更新狀態。",
             "no_downloadable_releases_found": "未找到可下載的版本。",

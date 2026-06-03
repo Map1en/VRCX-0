@@ -3,18 +3,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildFeedFavoriteGroupOptions } from '@/features/feed/feedColumnScope';
+import { tauriClient } from '@/platform/tauri/client';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
-    OVERLAY_ACTIVITY_CATEGORIES,
-    OVERLAY_ACTIVITY_RAW_TYPES,
-    OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY,
+    defaultOverlayActivityFiltersFromDefinitions,
     normalizeOverlayActivityFilters,
+    normalizeOverlayActivityFiltersWithDefinitions,
+    overlayActivityCategoriesFromDefinitions,
+    overlayActivityDefinitionByKeyFromDefinitions,
+    overlayActivityRawTypesByCategoryFromDefinitions,
     overlayActivityTypeLabelKey,
     type OverlayActivityCategory,
     type OverlayActivityFavoriteGroupKeys,
     type OverlayActivityFiltersPreference,
     type OverlayActivityRule,
-    type OverlayActivityScope
+    type OverlayActivityScope,
+    type OverlayActivityTypeDefinition
 } from '@/shared/constants/overlayActivityFilters';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { Badge } from '@/ui/shadcn/badge';
@@ -51,11 +55,19 @@ type WristFeedNotificationsDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
     value: OverlayActivityFiltersPreference;
-    onSave(value: OverlayActivityFiltersPreference): Promise<unknown>;
+    onSave(
+        value: OverlayActivityFiltersPreference,
+        definitions: OverlayActivityTypeDefinition[]
+    ): Promise<unknown>;
 };
 
-function normalizeDraft(value: unknown) {
-    return normalizeOverlayActivityFilters(value);
+function normalizeDraft(
+    value: unknown,
+    definitions: OverlayActivityTypeDefinition[]
+) {
+    return definitions.length
+        ? normalizeOverlayActivityFiltersWithDefinitions(value, definitions)
+        : normalizeOverlayActivityFilters(value);
 }
 
 function scopeUsesFavoriteGroups(scope: OverlayActivityScope) {
@@ -77,7 +89,10 @@ export function WristFeedNotificationsDialog({
     onSave
 }: WristFeedNotificationsDialogProps) {
     const { t } = useTranslation();
-    const [draft, setDraft] = useState(() => normalizeDraft(value));
+    const [activityDefinitions, setActivityDefinitions] = useState<
+        OverlayActivityTypeDefinition[]
+    >([]);
+    const [draft, setDraft] = useState(() => normalizeDraft(value, []));
     const [selectedCategory, setSelectedCategory] =
         useState<OverlayActivityCategory>('actionRequired');
     const favoriteFriendGroups = useFavoriteStore(
@@ -94,28 +109,78 @@ export function WristFeedNotificationsDialog({
             }),
         [favoriteFriendGroups, localFriendFavoriteGroups]
     );
+    const activityCategories = useMemo(
+        () => overlayActivityCategoriesFromDefinitions(activityDefinitions),
+        [activityDefinitions]
+    );
+    const rawTypesByCategory = useMemo(
+        () =>
+            overlayActivityRawTypesByCategoryFromDefinitions(
+                activityDefinitions
+            ),
+        [activityDefinitions]
+    );
+    const definitionByKey = useMemo(
+        () => overlayActivityDefinitionByKeyFromDefinitions(activityDefinitions),
+        [activityDefinitions]
+    );
 
     useEffect(() => {
         if (open) {
-            setDraft(normalizeDraft(value));
+            setDraft(normalizeDraft(value, activityDefinitions));
         }
-    }, [open, value]);
+    }, [activityDefinitions, open, value]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+        let cancelled = false;
+        tauriClient.app
+            .OverlayActivityDefinitionsGet()
+            .then((definitions) => {
+                if (!cancelled) {
+                    setActivityDefinitions(definitions);
+                }
+            })
+            .catch((error) => {
+                console.warn(
+                    'Failed to load wrist activity definitions:',
+                    error
+                );
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (
+            activityCategories.length &&
+            !activityCategories.includes(selectedCategory)
+        ) {
+            setSelectedCategory(activityCategories[0]);
+        }
+    }, [activityCategories, selectedCategory]);
 
     function updateTypeRule(type: string, patch: Partial<OverlayActivityRule>) {
         setDraft((current) =>
-            normalizeDraft({
-                ...current,
-                wrist: {
-                    ...current.wrist,
-                    types: {
-                        ...current.wrist.types,
-                        [type]: {
-                            ...current.wrist.types[type],
-                            ...patch
+            normalizeDraft(
+                {
+                    ...current,
+                    wrist: {
+                        ...current.wrist,
+                        types: {
+                            ...current.wrist.types,
+                            [type]: {
+                                ...current.wrist.types[type],
+                                ...patch
+                            }
                         }
                     }
-                }
-            })
+                },
+                activityDefinitions
+            )
         );
     }
 
@@ -169,21 +234,33 @@ export function WristFeedNotificationsDialog({
     }
 
     async function saveDraft() {
-        const saved = await onSave(normalizeDraft(draft));
+        const saved = await onSave(
+            normalizeDraft(draft, activityDefinitions),
+            activityDefinitions
+        );
         if (saved) {
             onOpenChange(false);
         }
     }
 
     function resetRecommended() {
-        setDraft(normalizeDraft(DEFAULT_OVERLAY_ACTIVITY_FILTERS));
+        setDraft(
+            normalizeDraft(
+                activityDefinitions.length
+                    ? defaultOverlayActivityFiltersFromDefinitions(
+                          activityDefinitions
+                      )
+                    : DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+                activityDefinitions
+            )
+        );
     }
 
-    const selectedCategoryTypes =
-        OVERLAY_ACTIVITY_RAW_TYPES[selectedCategory] || [];
+    const selectedCategoryTypes = rawTypesByCategory[selectedCategory] || [];
     const selectedEnabledCount = selectedCategoryTypes.filter(
-        (type) => draft.wrist.types[type].scope !== 'off'
+        (type) => draft.wrist.types[type]?.scope !== 'off'
     ).length;
+    const definitionsLoaded = activityDefinitions.length > 0;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,12 +277,12 @@ export function WristFeedNotificationsDialog({
                 <div className="grid h-[min(62vh,36rem)] min-h-0 grid-cols-[18rem_minmax(0,1fr)] gap-5 overflow-hidden">
                     <ScrollArea className="h-full border-r pr-3">
                         <FieldGroup className="gap-1">
-                            {OVERLAY_ACTIVITY_CATEGORIES.map((category) => {
+                            {activityCategories.map((category) => {
                                 const categoryTypes =
-                                    OVERLAY_ACTIVITY_RAW_TYPES[category];
+                                    rawTypesByCategory[category] || [];
                                 const enabledCount = categoryTypes.filter(
                                     (type) =>
-                                        draft.wrist.types[type].scope !== 'off'
+                                        draft.wrist.types[type]?.scope !== 'off'
                                 ).length;
                                 return (
                                     <Button
@@ -281,10 +358,14 @@ export function WristFeedNotificationsDialog({
                             <FieldGroup className="gap-0 rounded-lg border">
                                 {selectedCategoryTypes.map((type) => {
                                     const definition =
-                                        OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY[
-                                            type
-                                        ];
-                                    const rule = draft.wrist.types[type];
+                                        definitionByKey[type];
+                                    if (!definition) {
+                                        return null;
+                                    }
+                                    const rule = draft.wrist.types[type] || {
+                                        scope: definition.defaultScope,
+                                        favoriteGroupKeys: 'all'
+                                    };
                                     const usesFavoriteGroups =
                                         scopeUsesFavoriteGroups(rule.scope);
                                     const selectedGroups = selectedGroupKeys(
@@ -391,6 +472,7 @@ export function WristFeedNotificationsDialog({
                         type="button"
                         variant="outline"
                         onClick={resetRecommended}
+                        disabled={!definitionsLoaded}
                     >
                         <RotateCcwIcon data-icon="inline-start" />
                         {t('dialog.wrist_feed_notifications.reset_recommended')}
@@ -401,7 +483,11 @@ export function WristFeedNotificationsDialog({
                                 {t('common.actions.cancel')}
                             </Button>
                         </DialogClose>
-                        <Button type="button" onClick={saveDraft}>
+                        <Button
+                            type="button"
+                            onClick={saveDraft}
+                            disabled={!definitionsLoaded}
+                        >
                             {t('common.actions.save')}
                         </Button>
                     </div>

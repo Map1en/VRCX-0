@@ -38,6 +38,7 @@ export function useSettingsPreferenceActions({
     setTableLimitsPreference,
     setTablePageSizesDialogOpen,
     setTrustColorPreference,
+    setWristOverlayEnabledPreference,
     t,
     tableLimitsDraft,
     tableLimitsSaveDisabled,
@@ -402,12 +403,15 @@ export function useSettingsPreferenceActions({
             }
         );
     }
-    async function saveOverlayActivityFilters(value: any) {
+    async function saveOverlayActivityFilters(value: any, definitions?: any) {
         let savedFilters;
         const previousFilters = prefs.overlayActivityFilters;
         const saved = await commit(
             async () => {
-                savedFilters = await setOverlayActivityFiltersPreference(value);
+                savedFilters = await setOverlayActivityFiltersPreference(
+                    value,
+                    definitions
+                );
             },
             () => {
                 setPrefs((current: any) => ({
@@ -430,6 +434,34 @@ export function useSettingsPreferenceActions({
         }));
         toast.success(t('common.settings_saved'));
         return savedFilters;
+    }
+    async function saveWristOverlayEnabled(value: any) {
+        let savedValue = Boolean(value);
+        const previousValue = prefs.wristOverlayEnabled;
+        const saved = await commit(
+            async () => {
+                savedValue = await setWristOverlayEnabledPreference(value);
+            },
+            () => {
+                setPrefs((current: any) => ({
+                    ...current,
+                    wristOverlayEnabled: Boolean(value)
+                }));
+                return () =>
+                    setPrefs((current: any) => ({
+                        ...current,
+                        wristOverlayEnabled: previousValue
+                    }));
+            }
+        );
+        if (!saved) {
+            return null;
+        }
+        setPrefs((current: any) => ({
+            ...current,
+            wristOverlayEnabled: savedValue
+        }));
+        return savedValue;
     }
     function speakNotificationTts(
         text: any,
@@ -477,6 +509,7 @@ export function useSettingsPreferenceActions({
         saveTableLimitsDialog,
         toggleLocalFavoriteFriendsGroup,
         saveOverlayActivityFilters,
+        saveWristOverlayEnabled,
         speakNotificationTts
     };
 }

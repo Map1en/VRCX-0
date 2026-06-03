@@ -7,6 +7,7 @@ use tauri::http::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::{Emitter, Manager, WebviewWindowBuilder};
 use tauri_plugin_autostart::ManagerExt as _;
+use tauri_plugin_notification::NotificationExt;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -583,6 +584,8 @@ pub fn setup_app_with_data_dir(
         .runtime_context
         .runtime
         .record_phase("tray", "completed", "System tray configured.");
+    #[cfg(target_os = "macos")]
+    crate::macos_menu::configure_macos_app_menu(app.handle())?;
     sync_autostart_from_db(app, &state);
     apply_autostart_window_state_if_needed(app, &state);
     start_host_services(app.handle(), &state);
@@ -614,6 +617,13 @@ fn create_main_window(
         })?;
 
     let mut builder = WebviewWindowBuilder::from_config(app, window_config)?;
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .decorations(true)
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .traffic_light_position(tauri::LogicalPosition::new(16.0, 16.0));
+    }
     let state = app.state::<AppState>();
     if let Some(route) = state.take_background_resume_route() {
         let route = serde_json::to_string(&route)?;
@@ -721,6 +731,24 @@ struct TrayLabels {
     exit: &'static str,
 }
 
+struct BackgroundModeNotificationLabels {
+    title: &'static str,
+    body: &'static str,
+}
+
+pub(crate) fn show_background_mode_started_notification(app: &tauri::AppHandle, state: &AppState) {
+    let labels = background_mode_notification_labels(state);
+    if let Err(error) = app
+        .notification()
+        .builder()
+        .title(labels.title)
+        .body(labels.body)
+        .show()
+    {
+        tracing::warn!(error = %error, "failed to show background mode notification");
+    }
+}
+
 fn is_background_mode_active(state: &AppState) -> bool {
     let snapshot = state.snapshot_backend_runtime();
     snapshot.mode == BackendRuntimeMode::Background
@@ -731,13 +759,43 @@ fn is_community_theme_enabled(state: &AppState) -> bool {
     db_config_bool(state, "config:vrcx_communitythemeenabled") == Some(true)
 }
 
-fn tray_labels(state: &AppState) -> TrayLabels {
-    let language = state
+fn app_language(state: &AppState) -> String {
+    state
         .runtime_context
         .config()
         .get_string("appLanguage", "en")
         .unwrap_or_else(|_| "en".into())
-        .to_ascii_lowercase();
+        .to_ascii_lowercase()
+}
+
+fn background_mode_notification_labels(state: &AppState) -> BackgroundModeNotificationLabels {
+    let language = app_language(state);
+    if language.starts_with("zh-tw") || language.starts_with("zh-hant") {
+        return BackgroundModeNotificationLabels {
+            title: "背景模式已啟動",
+            body: "VRCX-0 正在背景模式中執行。",
+        };
+    }
+    if language.starts_with("zh") {
+        return BackgroundModeNotificationLabels {
+            title: "后台模式已启动",
+            body: "VRCX-0 正在后台模式中运行。",
+        };
+    }
+    if language.starts_with("ja") {
+        return BackgroundModeNotificationLabels {
+            title: "バックグラウンドモードで起動しました",
+            body: "VRCX-0 はバックグラウンドモードで実行中です。",
+        };
+    }
+    BackgroundModeNotificationLabels {
+        title: "Background Mode started",
+        body: "VRCX-0 is running in Background Mode.",
+    }
+}
+
+fn tray_labels(state: &AppState) -> TrayLabels {
+    let language = app_language(state);
     if language.starts_with("zh-tw") || language.starts_with("zh-hant") {
         return TrayLabels {
             open: "開啟 VRCX-0",

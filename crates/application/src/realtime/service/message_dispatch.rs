@@ -88,6 +88,10 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         if let Some(projection) = apply_instance_queue_ws_message(generation, payload) {
             self.runtime
                 .deps
+                .overlay_activity
+                .ingest_instance_queue_projection(&projection);
+            self.runtime
+                .deps
                 .event_bus
                 .emit_realtime_instance_queue_projection(projection);
             return;

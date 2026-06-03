@@ -212,6 +212,7 @@ fn normalize_v1_notification(content: &Value, now: &str) -> Value {
         .entry("senderUsername")
         .or_insert(Value::String(String::new()));
     object.entry("type").or_insert(Value::String(String::new()));
+    object.entry("version").or_insert(Value::from(1));
     object
         .entry("message")
         .or_insert(Value::String(String::new()));
@@ -344,7 +345,6 @@ fn should_persist_v1(notification: &Value, current_user_id: &str) -> bool {
     let sender = string_field(notification.get("senderUserId"));
     let notification_type = string_field(notification.get("type"));
     sender != current_user_id
-        && notification_type != "friendRequest"
         && notification_type != "ignoredFriendRequest"
         && !notification_type.contains('.')
 }

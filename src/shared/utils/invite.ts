@@ -107,6 +107,9 @@ function checkCanInviteSelf(
     if (L.userId === deps.currentUserId) {
         return true;
     }
+    if (L.accessType === 'invite' || L.accessType === 'invite+') {
+        return false;
+    }
     if (L.accessType === 'friends' && !deps.friends?.has(L.userId)) {
         return false;
     }

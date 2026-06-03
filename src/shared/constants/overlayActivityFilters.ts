@@ -79,6 +79,7 @@ const INSTANCE_ACTOR_SCOPES: OverlayActivityScope[] = [
     'allFavorites',
     'everyoneInInstance'
 ];
+const REMOVED_OVERLAY_ACTIVITY_TYPE_KEYS = new Set(['PortalSpawn']);
 
 function defineType(
     category: OverlayActivityCategory,
@@ -260,6 +261,67 @@ export const DEFAULT_OVERLAY_ACTIVITY_FILTERS: OverlayActivityFiltersPreference 
         }
     };
 
+export function overlayActivityCategoriesFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityCategory[] {
+    const categories: OverlayActivityCategory[] = [];
+    for (const definition of definitions) {
+        if (!categories.includes(definition.category)) {
+            categories.push(definition.category);
+        }
+    }
+    return categories;
+}
+
+export function overlayActivityRawTypesByCategoryFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): Record<OverlayActivityCategory, string[]> {
+    return definitions.reduce(
+        (result, definition) => {
+            result[definition.category] ||= [];
+            result[definition.category].push(definition.key);
+            return result;
+        },
+        {} as Record<OverlayActivityCategory, string[]>
+    );
+}
+
+export function overlayActivityDefinitionByKeyFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): Record<string, OverlayActivityTypeDefinition> {
+    return Object.fromEntries(
+        definitions.map((definition) => [definition.key, definition])
+    ) as Record<string, OverlayActivityTypeDefinition>;
+}
+
+export function defaultOverlayActivityTypeRulesFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): Record<string, OverlayActivityRule> {
+    return Object.fromEntries(
+        definitions.map((definition) => [
+            definition.key,
+            {
+                scope: definition.defaultScope,
+                favoriteGroupKeys: 'all'
+            }
+        ])
+    );
+}
+
+export function defaultOverlayActivityFiltersFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFiltersPreference {
+    return {
+        version: 1,
+        wrist: {
+            types: cloneOverlayActivityTypeRules(
+                defaultOverlayActivityTypeRulesFromDefinitions(definitions),
+                definitions
+            )
+        }
+    };
+}
+
 export function overlayActivityTypeLabelKey(type: string) {
     return type.replace(/\./g, '_');
 }
@@ -269,10 +331,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function cloneOverlayActivityTypeRules(
-    types: Record<string, OverlayActivityRule>
+    types: Record<string, OverlayActivityRule>,
+    definitions: OverlayActivityTypeDefinition[] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS
 ): Record<string, OverlayActivityRule> {
     return Object.fromEntries(
-        OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map((definition) => {
+        definitions.map((definition) => {
             const rule = types[definition.key];
             return [
                 definition.key,
@@ -369,6 +432,59 @@ function normalizeRule(
     };
 }
 
+function normalizeUnknownTypeRule(value: unknown): OverlayActivityRule | null {
+    if (!isRecord(value)) {
+        return null;
+    }
+    const scope = OVERLAY_ACTIVITY_SCOPES.includes(
+        value.scope as OverlayActivityScope
+    )
+        ? (value.scope as OverlayActivityScope)
+        : null;
+    if (!scope) {
+        return null;
+    }
+    return {
+        scope,
+        favoriteGroupKeys: scopeUsesFavoriteGroups(scope)
+            ? normalizeFavoriteGroupKeys(value.favoriteGroupKeys)
+            : 'all'
+    };
+}
+
+function sharedFeedFilterScope(
+    value: unknown,
+    definition: OverlayActivityTypeDefinition
+): OverlayActivityScope | null {
+    const allowedScopes = definition.allowedScopes;
+    switch (value) {
+        case 'Off':
+            return 'off';
+        case 'VIP':
+            if (allowedScopes.includes('allFavorites')) {
+                return 'allFavorites';
+            }
+            if (allowedScopes.includes('selectedFavorites')) {
+                return 'selectedFavorites';
+            }
+            return allowedScopes.includes('on') ? 'on' : null;
+        case 'Friends':
+            if (allowedScopes.includes('friends')) {
+                return 'friends';
+            }
+            return allowedScopes.includes('on') ? 'on' : null;
+        case 'Everyone':
+            if (allowedScopes.includes('everyoneInInstance')) {
+                return 'everyoneInInstance';
+            }
+            return allowedScopes.includes('on') ? 'on' : null;
+        case 'On':
+            return allowedScopes.includes('on') ? 'on' : null;
+        default:
+            return null;
+    }
+}
+
 function getTypeCandidate(
     types: Record<string, unknown>,
     definition: OverlayActivityTypeDefinition
@@ -422,6 +538,16 @@ function getLegacyTypeRule(
 export function normalizeOverlayActivityFilters(
     value: unknown = {}
 ): OverlayActivityFiltersPreference {
+    return normalizeOverlayActivityFiltersWithDefinitions(
+        value,
+        OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+    );
+}
+
+export function normalizeOverlayActivityFiltersWithDefinitions(
+    value: unknown = {},
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFiltersPreference {
     const source = isRecord(value) ? value : {};
     const wrist = isRecord(source.wrist) ? source.wrist : {};
     const types = isRecord(wrist.types) ? wrist.types : {};
@@ -429,34 +555,97 @@ export function normalizeOverlayActivityFilters(
     const legacyFavoriteGroupKeys = normalizeFavoriteGroupKeys(
         wrist.favoriteGroupKeys
     );
+    const defaultTypes =
+        defaultOverlayActivityTypeRulesFromDefinitions(definitions);
+    const definitionKeys = new Set(
+        definitions.map((definition) => definition.key)
+    );
+    const aliasKeys = new Set(
+        definitions.flatMap((definition) => definition.aliases || [])
+    );
+    const normalizedKnownTypes = definitions.map((definition) => {
+        const defaultRule = defaultTypes[definition.key];
+        const legacyRule = getLegacyTypeRule(
+            definition,
+            categories,
+            legacyFavoriteGroupKeys
+        );
+        const typeCandidate = getTypeCandidate(types, definition);
+        const sourceRule: Record<string, unknown> = typeCandidate
+            ? typeCandidate
+            : legacyRule || {};
+        const fallbackRule = legacyRule
+            ? normalizeRule(definition, legacyRule, defaultRule)
+            : defaultRule;
+        return [
+            definition.key,
+            normalizeRule(definition, sourceRule, fallbackRule)
+        ];
+    });
+    const normalizedUnknownTypes = Object.entries(types).flatMap(
+        ([key, value]) => {
+            if (
+                definitionKeys.has(key) ||
+                aliasKeys.has(key) ||
+                REMOVED_OVERLAY_ACTIVITY_TYPE_KEYS.has(key)
+            ) {
+                return [];
+            }
+            const rule = normalizeUnknownTypeRule(value);
+            return rule ? [[key, rule]] : [];
+        }
+    );
 
     return {
         version: 1,
         wrist: {
-            types: Object.fromEntries(
-                OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map((definition) => {
-                    const defaultRule =
-                        DEFAULT_OVERLAY_ACTIVITY_TYPES[definition.key];
-                    const legacyRule = getLegacyTypeRule(
-                        definition,
-                        categories,
-                        legacyFavoriteGroupKeys
-                    );
-                    const typeCandidate = getTypeCandidate(types, definition);
-                    const sourceRule: Record<string, unknown> = typeCandidate
-                        ? typeCandidate
-                        : legacyRule || {};
-                    const fallbackRule = legacyRule
-                        ? normalizeRule(definition, legacyRule, defaultRule)
-                        : defaultRule;
-                    return [
-                        definition.key,
-                        normalizeRule(definition, sourceRule, fallbackRule)
-                    ];
-                })
-            )
+            types: Object.fromEntries([
+                ...normalizedKnownTypes,
+                ...normalizedUnknownTypes
+            ])
         }
     };
+}
+
+export function migrateLegacySharedFeedWristFilters(
+    value: unknown = {}
+): OverlayActivityFiltersPreference {
+    if (typeof value === 'string') {
+        try {
+            return migrateLegacySharedFeedWristFilters(JSON.parse(value));
+        } catch {
+            return normalizeOverlayActivityFilters();
+        }
+    }
+    const source = isRecord(value) ? value : {};
+    const wrist = isRecord(source.wrist) ? source.wrist : {};
+    const types = Object.fromEntries(
+        OVERLAY_ACTIVITY_TYPE_DEFINITIONS.flatMap((definition) => {
+            const keys = [definition.key, ...(definition.aliases || [])];
+            const legacyValue = keys
+                .map((key) => wrist[key])
+                .find((candidate) => candidate !== undefined);
+            const scope = sharedFeedFilterScope(legacyValue, definition);
+            if (!scope) {
+                return [];
+            }
+            return [
+                [
+                    definition.key,
+                    {
+                        scope,
+                        favoriteGroupKeys: 'all'
+                    }
+                ]
+            ];
+        })
+    );
+    return normalizeOverlayActivityFilters({
+        version: 1,
+        wrist: {
+            types
+        }
+    });
 }
 
 export function parseOverlayActivityFilters(

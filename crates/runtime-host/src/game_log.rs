@@ -74,6 +74,7 @@ impl GameLogHostRuntime {
             sync: context.sync.clone(),
             snapshot: context.game_log_snapshot_handle(),
             session: context.session.clone(),
+            overlay_activity: context.overlay_activity.clone(),
             host_actions: Arc::new(HostGameLogActions {
                 file_access,
                 app_paths,

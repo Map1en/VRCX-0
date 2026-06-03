@@ -190,15 +190,15 @@ pub fn app__desktop_notification(
 fn default_desktop_notification_sound() -> &'static str {
     #[cfg(target_os = "windows")]
     {
-        return "Default";
+        "Default"
     }
     #[cfg(target_os = "macos")]
     {
-        return "NSUserNotificationDefaultSoundName";
+        "NSUserNotificationDefaultSoundName"
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        return "message-new-instant";
+        "message-new-instant"
     }
     #[cfg(not(any(target_os = "windows", target_os = "macos", unix)))]
     {

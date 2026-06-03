@@ -12,7 +12,6 @@ import { useNotificationStore } from '@/state/notificationStore';
 type SharedFeedMode = keyof SharedFeedFilterDefaults;
 type SharedFeedFilters = {
     noty: Record<string, unknown>;
-    wrist: Record<string, unknown>;
 };
 type SharedFeedEntry = Record<string, unknown> & {
     type?: unknown;
@@ -48,15 +47,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function normalizeSharedFeedFilters(value?: unknown): SharedFeedFilters {
     const record = isRecord(value) ? value : {};
     const noty = isRecord(record.noty) ? record.noty : {};
-    const wrist = isRecord(record.wrist) ? record.wrist : {};
     return {
         noty: {
             ...sharedFeedFiltersDefaults.noty,
             ...noty
-        },
-        wrist: {
-            ...sharedFeedFiltersDefaults.wrist,
-            ...wrist
         }
     };
 }

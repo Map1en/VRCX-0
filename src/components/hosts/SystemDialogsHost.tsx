@@ -9,6 +9,7 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { DatabaseUpgradeDialog } from './system-dialogs/DatabaseUpgradeDialog';
+import { ChangelogDialog } from './system-dialogs/ChangelogDialog';
 import { LaunchOptionsDialog } from './system-dialogs/LaunchOptionsDialog';
 import { RegistryBackupDialog } from './system-dialogs/RegistryBackupDialog';
 import { UpdaterDialog } from './system-dialogs/UpdaterDialog';
@@ -17,6 +18,9 @@ import { VRChatConfigDialog } from './system-dialogs/VRChatConfigDialog';
 export function SystemDialogsHost() {
     const updaterOpen = useRuntimeStore(
         (state: any) => state.systemHosts.updaterOpen
+    );
+    const changelogOpen = useRuntimeStore(
+        (state: any) => state.systemHosts.changelogOpen
     );
     const registryBackupOpen = useRuntimeStore(
         (state: any) => state.systemHosts.registryBackupOpen
@@ -68,6 +72,12 @@ export function SystemDialogsHost() {
             <UpdaterDialog
                 open={Boolean(updaterOpen)}
                 onOpenChange={(open: any) => setSystemHostOpen('updaterOpen', open)}
+            />
+            <ChangelogDialog
+                open={Boolean(changelogOpen)}
+                onOpenChange={(open: any) =>
+                    setSystemHostOpen('changelogOpen', open)
+                }
             />
             <RegistryBackupDialog
                 open={Boolean(registryBackupOpen)}

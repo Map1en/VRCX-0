@@ -180,7 +180,7 @@ describe('InstanceActionBar', () => {
     it('accepts a normalized target without repeating location props', () => {
         const html = renderActionBar({
             target: {
-                location: 'wrld_test:12345~hidden(usr_owner)~shortName(tok)',
+                location: 'wrld_test:12345~hidden(usr_owner)&shortName=tok',
                 shortName: 'tok',
                 worldName: 'Target World'
             },

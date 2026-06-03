@@ -126,6 +126,16 @@ export const ConfigKeys = {
     notificationIconDot: { type: 'bool', default: true },
 
     // ── Settings - Overlay ───────────────────────────
+    wristOverlayEnabled: { type: 'bool', default: false },
+    wristOverlayStartMode: { type: 'string', default: 'vrchatVrMode' },
+    wristOverlayButton: { type: 'string', default: 'grip' },
+    wristOverlayHand: { type: 'string', default: 'left' },
+    wristOverlaySize: { type: 'string', default: 'normal' },
+    wristOverlayHidePrivateWorlds: { type: 'bool', default: false },
+    wristOverlayDarkBackground: { type: 'bool', default: true },
+    wristOverlayShowDevices: { type: 'bool', default: true },
+    wristOverlayShowBatteryPercent: { type: 'bool', default: false },
+
     // ── Settings - VR Background ─────────────────────
     // ── Auto State Change ────────────────────────────
     autoStateChangeEnabled: { type: 'bool', default: false },

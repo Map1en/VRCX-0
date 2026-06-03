@@ -74,12 +74,18 @@ describe('location utils', () => {
             travelingToLocation: 'wrld_traveling:67890'
         };
 
-        expect(resolveFriendPresenceLocation(friend)).toBe(
-            'wrld_traveling:67890'
-        );
+        expect(resolveFriendPresenceLocation(friend)).toBe('wrld_current:12345');
         expect(
             resolveFriendPresenceLocation(friend, { preferTraveling: false })
         ).toBe('wrld_current:12345');
+
+        expect(
+            resolveFriendPresenceLocation({
+                id: 'usr_b',
+                location: 'traveling',
+                travelingToLocation: 'wrld_traveling:67890'
+            })
+        ).toBe('wrld_traveling:67890');
     });
 
     it('can require concrete instance locations', () => {

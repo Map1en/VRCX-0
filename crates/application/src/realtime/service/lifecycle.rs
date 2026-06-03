@@ -34,6 +34,7 @@ impl RealtimeHostRuntime {
                 "Runtime realtime transport requires an authenticated user.".into(),
             ));
         }
+        let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
         let generation = {
             let mut state = self
                 .state
@@ -76,6 +77,9 @@ impl RealtimeHostRuntime {
                 generation,
                 0,
             );
+            self.deps
+                .overlay_activity
+                .set_friend_user_ids(friend_user_ids);
             self.current_user.set_snapshot(
                 session.user_id.clone(),
                 generation,
@@ -141,6 +145,7 @@ impl RealtimeHostRuntime {
     ) -> Result<FriendBaselineResult> {
         let requested_session = RealtimeSessionContext::new(user_id, endpoint, websocket);
         let friend_count = friends_by_id.len();
+        let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
         let (result, active) = {
             let state = self
                 .state
@@ -201,6 +206,11 @@ impl RealtimeHostRuntime {
             (result, active)
         };
 
+        if result.accepted {
+            self.deps
+                .overlay_activity
+                .set_friend_user_ids(friend_user_ids);
+        }
         self.drain_queued_friend_messages(active);
         self.deps.sync.record(
             "realtimeFriends",
@@ -460,7 +470,7 @@ impl RealtimeHostRuntime {
         };
     }
 
-    fn apply_friend_output(self: &Arc<Self>, output: RealtimeFriendOutput) {
+    fn apply_friend_output(self: &Arc<Self>, mut output: RealtimeFriendOutput) {
         let timer_action = output.timer_action.clone();
         let profile_refetch_user_ids = output.profile_refetch_user_ids.clone();
         let mut projection = output.projection.clone();
@@ -470,6 +480,8 @@ impl RealtimeHostRuntime {
                 .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
             return;
         }
+        self.enrich_projection_world_names(&mut projection.feed_entries);
+        self.enrich_persistence_world_names(&mut output.persistence);
         let persistence_attempted = !output.persistence.is_empty();
         match write_realtime_batch(&self.deps.db, &output.owner_user_id, &output.persistence) {
             Ok(counts) => {
@@ -489,6 +501,9 @@ impl RealtimeHostRuntime {
                 projection.feed_entries.clear();
             }
         }
+        self.deps
+            .overlay_activity
+            .ingest_friend_projection(&projection);
         self.deps
             .event_bus
             .emit_realtime_friend_projection(projection);
@@ -672,8 +687,10 @@ impl RealtimeHostRuntime {
         self.is_friend_output_current_locked(&state, projection)
     }
 
-    pub(super) fn apply_notification_output(&self, output: RealtimeNotificationOutput) {
-        let projection = output.projection;
+    pub(super) fn apply_notification_output(&self, mut output: RealtimeNotificationOutput) {
+        let mut projection = output.projection;
+        self.enrich_notification_world_names(&mut projection);
+        self.enrich_persistence_world_names(&mut output.persistence);
         let persistence_attempted = !output.persistence.is_empty();
         match write_realtime_batch(&self.deps.db, &output.owner_user_id, &output.persistence) {
             Ok(counts) => {
@@ -692,6 +709,9 @@ impl RealtimeHostRuntime {
                     .record_failure("realtimeNotifications", error.to_string());
             }
         }
+        self.deps
+            .overlay_activity
+            .ingest_notification_projection(&projection);
         self.deps
             .event_bus
             .emit_realtime_notification_projection(projection);
@@ -721,6 +741,89 @@ impl RealtimeHostRuntime {
         self.deps
             .event_bus
             .emit_realtime_current_user_projection(projection);
+    }
+
+    fn enrich_projection_world_names(&self, entries: &mut [Value]) {
+        for entry in entries {
+            self.enrich_world_name(entry);
+        }
+    }
+
+    fn enrich_notification_world_names(&self, projection: &mut RealtimeNotificationProjection) {
+        for upsert in &mut projection.upserts {
+            self.enrich_world_name(&mut upsert.notification);
+        }
+    }
+
+    fn enrich_persistence_world_names(&self, persistence: &mut RealtimePersistenceBatch) {
+        self.enrich_projection_world_names(&mut persistence.feed_entries);
+        for notification in &mut persistence.notification_v1_upserts {
+            self.enrich_world_name(notification);
+        }
+        for notification in &mut persistence.notification_v2_upserts {
+            self.enrich_world_name(notification);
+        }
+        for update in &mut persistence.notification_v2_updates {
+            self.enrich_world_name(&mut update.updates);
+        }
+    }
+
+    fn enrich_world_name(&self, value: &mut Value) {
+        let Some(object) = value.as_object_mut() else {
+            return;
+        };
+        let top_level_name = object_string(object, "worldName");
+        let details_name = nested_object_string(object, &["details", "worldName"]);
+        let top_level_is_meaningful = is_meaningful_world_name(&top_level_name);
+        let details_is_meaningful = is_meaningful_world_name(&details_name);
+        if top_level_is_meaningful && details_is_meaningful {
+            return;
+        }
+
+        let world_name = if top_level_is_meaningful {
+            Some(top_level_name)
+        } else if details_is_meaningful {
+            Some(details_name)
+        } else {
+            let world_id = first_world_id([
+                object_string(object, "worldId"),
+                object_string(object, "worldName"),
+                object_string(object, "location"),
+                object_string(object, "instanceLocation"),
+                nested_object_string(object, &["details", "worldId"]),
+                nested_object_string(object, &["details", "worldName"]),
+                nested_object_string(object, &["details", "location"]),
+            ]);
+            if world_id.is_empty() {
+                None
+            } else {
+                self.lookup_world_display_name(&world_id)
+            }
+        };
+
+        if let Some(world_name) = world_name {
+            if !top_level_is_meaningful {
+                object.insert("worldName".into(), Value::String(world_name.clone()));
+            }
+            if !details_is_meaningful {
+                if let Some(details) = object.get_mut("details").and_then(Value::as_object_mut) {
+                    details.insert("worldName".into(), Value::String(world_name));
+                }
+            }
+        }
+    }
+
+    fn lookup_world_display_name(&self, world_id: &str) -> Option<String> {
+        world_cache_get(self.deps.db.as_ref(), world_id.to_string())
+            .ok()
+            .flatten()
+            .map(|world| world.name)
+            .filter(|name| is_meaningful_world_name(name))
+            .or_else(|| {
+                lookup_game_log_world_name(self.deps.db.as_ref(), world_id)
+                    .ok()
+                    .filter(|name| is_meaningful_world_name(name))
+            })
     }
 
     fn enrich_current_user_location_output(&self, output: &mut RealtimeCurrentUserOutput) {
@@ -775,6 +878,9 @@ impl RealtimeHostRuntime {
                     .record_failure("realtimeInstanceClosed", error.to_string());
             }
         }
+        self.deps
+            .overlay_activity
+            .ingest_instance_closed_projection(&projection);
         self.deps
             .event_bus
             .emit_realtime_instance_closed_projection(projection);
@@ -914,5 +1020,203 @@ impl RealtimeHostRuntime {
             return;
         };
         self.apply_current_user_output(output);
+    }
+}
+
+fn object_string(object: &serde_json::Map<String, Value>, key: &str) -> String {
+    object
+        .get(key)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .map(ToString::to_string)
+        .unwrap_or_default()
+}
+
+fn nested_object_string(object: &serde_json::Map<String, Value>, path: &[&str]) -> String {
+    let Some((first, rest)) = path.split_first() else {
+        return String::new();
+    };
+    let Some(mut current) = object.get(*first) else {
+        return String::new();
+    };
+    for key in rest {
+        let Some(next) = current.get(*key) else {
+            return String::new();
+        };
+        current = next;
+    }
+    current
+        .as_str()
+        .map(str::trim)
+        .map(ToString::to_string)
+        .unwrap_or_default()
+}
+
+fn first_world_id<const N: usize>(values: [String; N]) -> String {
+    values
+        .into_iter()
+        .map(|value| world_id_from_location_or_id(&value))
+        .find(|value| !value.is_empty())
+        .unwrap_or_default()
+}
+
+fn world_id_from_location_or_id(value: &str) -> String {
+    let trimmed = value.trim();
+    if !trimmed.starts_with("wrld_") {
+        return String::new();
+    }
+    trimmed
+        .split([':', '~'])
+        .next()
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn is_meaningful_world_name(value: &str) -> bool {
+    let trimmed = value.trim();
+    !trimmed.is_empty() && !trimmed.starts_with("wrld_")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::{Arc, Mutex};
+
+    use serde_json::json;
+    use vrcx_0_core::friends::FriendRecord;
+    use vrcx_0_persistence::storage::StorageService;
+    use vrcx_0_persistence::DatabaseService;
+
+    use crate::overlay_activity::{
+        OverlayActivityCandidate, OverlayActivityFilters, OverlayActivityRuntime,
+    };
+    use crate::{
+        HostSessionRuntime, RuntimeEventBus, RuntimeSnapshot, RuntimeSyncEngine, TaskSupervisor,
+        WebClient,
+    };
+
+    use super::super::types::RealtimeHostRuntimeState;
+    use super::*;
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-realtime-{name}-{}-{nonce}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[test]
+    fn sync_friend_snapshot_updates_overlay_friend_scope() -> Result<()> {
+        let dir = TestDir::new("overlay-friend-scope");
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+        let storage = StorageService::new(&dir.path.join("storage.json"))?;
+        let web = Arc::new(WebClient::new(
+            &storage,
+            db.as_ref(),
+            "wss://pipeline.vrchat.cloud".to_string(),
+        )?);
+        let session = HostSessionRuntime::new();
+        let host_session_generation =
+            session.set_realtime_context(crate::session::RealtimeSessionContext::new(
+                "usr_self".into(),
+                "https://api.vrchat.cloud/api/1".into(),
+                "wss://pipeline.vrchat.cloud".into(),
+            ));
+        let overlay_activity =
+            OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+                "version": 1,
+                "wrist": {
+                    "types": {
+                        "invite": {
+                            "scope": "friends",
+                            "favoriteGroupKeys": "all"
+                        }
+                    }
+                }
+            })));
+        let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
+            db,
+            web,
+            event_bus: RuntimeEventBus::new(),
+            sync: RuntimeSyncEngine::new(),
+            tasks: TaskSupervisor::new(),
+            session,
+            game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
+            overlay_activity: overlay_activity.clone(),
+        }));
+        let active_session = RealtimeSessionContext::new(
+            "usr_self".into(),
+            "https://api.vrchat.cloud/api/1".into(),
+            "wss://pipeline.vrchat.cloud".into(),
+        );
+        {
+            let mut state = runtime.state.lock().unwrap();
+            *state = RealtimeHostRuntimeState {
+                generation: 7,
+                active_context: Some(ActiveRealtimeContext {
+                    session: active_session.clone(),
+                    generation: 7,
+                    client_run_id: 1,
+                    session_generation: host_session_generation,
+                }),
+                ..RealtimeHostRuntimeState::default()
+            };
+        }
+        let mut friends_by_id = HashMap::new();
+        friends_by_id.insert(
+            "usr_new".to_string(),
+            FriendRecord {
+                id: "usr_new".to_string(),
+                display_name: "New Friend".to_string(),
+                state: "online".to_string(),
+                state_bucket: "online".to_string(),
+                ..FriendRecord::default()
+            },
+        );
+
+        let result = runtime.sync_friend_snapshot(
+            active_session.user_id.clone(),
+            active_session.endpoint.clone(),
+            active_session.websocket.clone(),
+            Some(7),
+            friends_by_id,
+        )?;
+
+        assert!(result.accepted);
+        assert!(overlay_activity
+            .ingest_candidate(invite_candidate("usr_new"))
+            .is_some());
+        Ok(())
+    }
+
+    fn invite_candidate(user_id: &str) -> OverlayActivityCandidate {
+        OverlayActivityCandidate {
+            source_id: format!("invite:{user_id}"),
+            activity_type: "invite".to_string(),
+            created_at: "2026-06-01T00:00:00.000Z".to_string(),
+            actor_user_id: user_id.to_string(),
+            actor_display_name: "Friend".to_string(),
+            current_instance: false,
+            payload: json!({}),
+        }
     }
 }
