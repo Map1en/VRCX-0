@@ -1,4 +1,4 @@
-use sea_query::{Alias, Expr, OnConflict, Query, SimpleExpr, SqliteQueryBuilder};
+use sea_query::{Alias, Expr, ExprTrait, OnConflict, Query, SimpleExpr, SqliteQueryBuilder};
 
 pub fn ident(name: impl Into<String>) -> Alias {
     Alias::new(name)
