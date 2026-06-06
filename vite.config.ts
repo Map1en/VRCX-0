@@ -81,6 +81,25 @@ function getAssetFilename({ name }) {
     return 'assets/i18n/[name][extname]';
 }
 
+function createReactDevtoolsStandalonePlugin(enabled) {
+    return {
+        name: 'vrcx-0-react-devtools-standalone',
+        transformIndexHtml() {
+            if (!enabled) return;
+
+            return [
+                {
+                    tag: 'script',
+                    attrs: {
+                        src: 'http://localhost:8097'
+                    },
+                    injectTo: 'body-prepend'
+                }
+            ];
+        }
+    };
+}
+
 export default defineConfig(({ mode }) => {
     const tauriConf = JSON.parse(
         fs.readFileSync(
@@ -91,14 +110,20 @@ export default defineConfig(({ mode }) => {
     const version = tauriConf.version;
     const buildTarget = getPlatformBuildTarget();
     const isProductionBuild = mode === 'production';
-    const telemetryEndpoint =
-        isProductionBuild ?
-            process.env.VRCX_0_TELEMETRY_ENDPOINT || productionTelemetryEndpoint
-        :   '';
+    const enableReactDevtoolsStandalone =
+        mode === 'development' && process.env.VITE_REACT_DEVTOOLS === '1';
+    const telemetryEndpoint = isProductionBuild
+        ? process.env.VRCX_0_TELEMETRY_ENDPOINT || productionTelemetryEndpoint
+        : '';
+    const bundledCjkFontsEnabled = process.platform !== 'darwin';
 
     return {
         base: '',
-        plugins: [react(), tailwindcss()],
+        plugins: [
+            createReactDevtoolsStandalonePlugin(enableReactDevtoolsStandalone),
+            react(),
+            tailwindcss()
+        ],
         resolve: {
             alias: {
                 '@': resolve(import.meta.dirname, 'src')
@@ -148,7 +173,10 @@ export default defineConfig(({ mode }) => {
             VRCX_0_TELEMETRY_ENABLED: JSON.stringify(
                 isProductionBuild && telemetryEndpoint.length > 0
             ),
-            VRCX_0_TELEMETRY_ENDPOINT: JSON.stringify(telemetryEndpoint)
+            VRCX_0_TELEMETRY_ENDPOINT: JSON.stringify(telemetryEndpoint),
+            VRCX_0_BUNDLED_CJK_FONTS_ENABLED: JSON.stringify(
+                bundledCjkFontsEnabled
+            )
         },
         server: {
             port: 9000,

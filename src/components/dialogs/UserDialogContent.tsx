@@ -209,6 +209,7 @@ export function UserDialogContent({
         currentGameDestination,
         currentGameLocation,
         currentSnapshotLocation,
+        currentUserId,
         currentUserSnapshot,
         isTargetCurrentUser,
         normalizedUserId,

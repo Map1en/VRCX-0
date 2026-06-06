@@ -1,5 +1,4 @@
 import { CalendarIcon, RefreshCwIcon } from 'lucide-react';
-import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
 import { GroupEventCard } from '@/components/hosts/tools-dialogs/GroupEventCard';
@@ -7,6 +6,7 @@ import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { formatDateTime } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -70,8 +70,27 @@ function eventTimeLabel(event: any) {
     if (!event?.startsAt) {
         return '';
     }
-    const start = format(new Date(event.startsAt), 'yyyy-MM-dd HH:mm');
-    const end = event.endsAt ? format(new Date(event.endsAt), 'HH:mm') : '';
+    const start = formatDateTime(
+        event.startsAt,
+        {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        },
+        { fallback: '' }
+    );
+    const end = event.endsAt
+        ? formatDateTime(
+              event.endsAt,
+              {
+                  hour: '2-digit',
+                  minute: '2-digit'
+              },
+              { fallback: '' }
+          )
+        : '';
     return end ? `${start} - ${end}` : start;
 }
 

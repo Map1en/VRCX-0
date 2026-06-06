@@ -7,7 +7,7 @@ edition = "2021"
 chrono = { workspace = true }
 dirs = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled", "backup"] }
-sea-query = { version = "0.32.7", default-features = false, features = ["backend-sqlite"] }
+sea-query = { version = "1.0.1", default-features = false, features = ["backend-sqlite"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

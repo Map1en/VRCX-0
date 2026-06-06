@@ -1,11 +1,7 @@
-import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
-    ChevronDownIcon
-} from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,33 +14,7 @@ import {
 
 import { FRIEND_LIST_SEARCH_FILTERS as SEARCH_FILTERS } from '../friendListState';
 
-export function SortButton({ column, label, descFirst = false }: any) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start gap-1 p-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => {
-                if (!direction && descFirst) {
-                    column.toggleSorting(true);
-                    return;
-                }
-                column.toggleSorting(direction === 'asc');
-            }}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
+export { DataTableSortButton as SortButton };
 
 export function FriendListEmptyState({ title, description }: any) {
     return <EmptyState title={title} description={description} />;

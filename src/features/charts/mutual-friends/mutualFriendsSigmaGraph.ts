@@ -1,10 +1,10 @@
 import EdgeCurveProgram from '@sigma/edge-curve';
 import { createNodeBorderProgram } from '@sigma/node-border';
-import { format } from 'date-fns';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import Sigma from 'sigma';
 
+import { formatDateFilter } from '@/lib/dateTime';
 import mutualGraphPersistenceRepository from '@/repositories/mutualGraphPersistenceRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { executeWithBackoff } from '@/shared/utils/retry';
@@ -271,7 +271,7 @@ function drawSigmaNodeHover(ctx: any, data: any, settings: any, t: any) {
     const font = settings.labelFont ?? 'sans-serif';
     const smallFontSize = Math.max(9, fontSize - 2);
     const subLine = data.lastFetchedAt
-        ? `${t('view.charts.mutual_friend.context_menu.last_fetched')}: ${format(new Date(data.lastFetchedAt), 'yyyy-MM-dd HH:mm')}`
+        ? `${t('view.charts.mutual_friend.context_menu.last_fetched')}: ${formatDateFilter(data.lastFetchedAt, 'long')}`
         : '';
     const paddingX = 6;
     const paddingY = 4;

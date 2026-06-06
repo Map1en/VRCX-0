@@ -8,6 +8,7 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { formatDateFilter } from '@/lib/dateTime';
 import mediaRepository from '@/repositories/mediaRepository';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -41,14 +42,8 @@ function formatDate(value: any) {
     if (!value) {
         return '';
     }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value);
-    }
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    }).format(date);
+    const formatted = formatDateFilter(value, 'long');
+    return formatted === '-' ? String(value) : formatted;
 }
 
 let lastWorldDialogTab = 'instances';

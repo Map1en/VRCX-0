@@ -1,11 +1,7 @@
-import {
-    ArrowDownIcon,
-    ArrowRightIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon
-} from 'lucide-react';
+import { ArrowRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
@@ -28,28 +24,7 @@ export const FRIEND_LOG_TYPES = [
     'TrustLevel'
 ];
 
-export function SortButton({ column, label }: any) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
+export { DataTableSortButton as SortButton };
 
 export function FriendLogEmptyState({ title, description }: any) {
     return <EmptyState title={title} description={description} />;

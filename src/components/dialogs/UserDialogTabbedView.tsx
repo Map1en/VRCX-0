@@ -127,6 +127,7 @@ export function UserDialogTabbedView({
         toggleBadgeShowcased: onToggleBadgeShowcased
     } = selfControls;
     const { t } = useTranslation();
+    const [nowMs, setNowMs] = useState(() => Date.now());
     const {
         confirm,
         currentAvatarId,
@@ -143,6 +144,15 @@ export function UserDialogTabbedView({
     const [selfPanel, setSelfPanel] = useState('');
     const { copyUserText, openDiscordProfile } =
         useUserDialogClipboardActions();
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            setNowMs(Date.now());
+        }, 60000);
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, []);
 
     const tabData: any = useUserDialogTabData({
         profile,
@@ -247,7 +257,10 @@ export function UserDialogTabbedView({
         lastSeen,
         profileLanguages,
         mutualFriendCount,
-        friendNumber
+        friendNumber,
+        estimatedOnlineDurationMs,
+        presenceActivityAt,
+        friendedAt
     } = buildUserDialogProfileSummary({
         profile,
         userStats,
@@ -257,7 +270,8 @@ export function UserDialogTabbedView({
         vrchatConfigConstants,
         currentUserSnapshot: isLocalUserVrcPlusSupporter
             ? VRC_PLUS_SUMMARY_SNAPSHOT
-            : null
+            : null,
+        nowMs
     });
     const statusIndicatorClassName = userStatusIndicatorClassName(profile, {
         showOffline: true
@@ -409,7 +423,8 @@ export function UserDialogTabbedView({
         statusIndicatorClassName,
         statusStateText,
         userSubtitle,
-        userUrl
+        userUrl,
+        estimatedOnlineDurationMs
     };
     const headerCommands: any = {
         onAvatarOverride,
@@ -489,6 +504,8 @@ export function UserDialogTabbedView({
             isCurrentUser,
             lastSeen,
             memo,
+            friendedAt,
+            presenceActivityAt,
             profile,
             representedGroup,
             representedGroupStatus,

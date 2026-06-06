@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { openExternalLink } from '@/services/entityMediaService';
 import {
-    fetchLatestChangelogRelease,
+    fetchChangelogRelease,
     parseChangelog,
     resolvePreferredChangelogLanguage,
     type LocalizedChangelogEntry
@@ -98,7 +98,7 @@ const markdownComponents = {
     )
 };
 
-export function ChangelogDialog({ open, onOpenChange }: any) {
+export function ChangelogDialog({ open, onOpenChange, targetVersion }: any) {
     const { i18n, t } = useTranslation();
     const [latestRelease, setLatestRelease] = useState<any>(null);
     const [entries, setEntries] = useState<LocalizedChangelogEntry[]>([]);
@@ -120,7 +120,7 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
         setNote('');
         setActiveLanguage('');
 
-        fetchLatestChangelogRelease()
+        fetchChangelogRelease(targetVersion)
             .then((release: any) => {
                 if (!active) {
                     return;
@@ -134,7 +134,7 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
                 setActiveLanguage(
                     resolvePreferredChangelogLanguage(
                         nextEntries,
-                        i18n.language
+                        i18n.resolvedLanguage || i18n.language
                     )
                 );
             })
@@ -157,7 +157,7 @@ export function ChangelogDialog({ open, onOpenChange }: any) {
         return () => {
             active = false;
         };
-    }, [i18n.language, open, t]);
+    }, [i18n.language, i18n.resolvedLanguage, open, t, targetVersion]);
 
     const selectedEntry = useMemo(
         () =>

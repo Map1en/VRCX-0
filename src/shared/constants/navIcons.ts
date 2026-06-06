@@ -15,6 +15,7 @@ const navIconEntries: Array<readonly [NavIconKey, string]> = [
     ['lucide:Rss', 'RSS'],
     ['lucide:MapPin', 'Map Pin'],
     ['lucide:History', 'History'],
+    ['lucide:TextSearch', 'Text Search'],
     ['lucide:Gamepad2', 'Gamepad'],
     ['lucide:UsersRound', 'Room Players'],
     ['lucide:Search', 'Search'],

@@ -3,7 +3,9 @@ import { tauriClient } from '@/platform/tauri/client';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
 import {
+    normalizeOverlayActivityFilterProfile,
     normalizeOverlayActivityFiltersWithDefinitions,
+    parseOverlayActivityFilterProfile,
     type OverlayActivityTypeDefinition
 } from '@/shared/constants/overlayActivityFilters';
 import {
@@ -34,12 +36,16 @@ import {
     useShellStore
 } from '@/state/shellStore';
 
+import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from './changelogService';
 import { refreshDiscordPresence } from './discordPresenceService';
 import {
     configureRecentActionCooldown,
     readRecentActionCooldown
 } from './recentActionService';
 import {
+    APP_CJK_FONT_PACK_DEFAULT_KEY,
+    APP_FONT_DEFAULT_KEY,
+    applyAppFontPreferences,
     applyThemeColor,
     applyThemeMode,
     applyZoomLevel,
@@ -50,7 +56,6 @@ import {
     resolveThemeMode
 } from './themeService';
 import { applyTrustColorClasses } from './trustColorService';
-import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from './changelogService';
 
 const DEFAULT_NOTIFICATION_LAYOUT = 'notification-center';
 const DEFAULT_TRANSLATION_ENDPOINT =
@@ -89,6 +94,14 @@ const WRIST_OVERLAY_RUNTIME_CONFIG_KEYS = new Set([
     'wristOverlayShowDevices',
     'wristOverlayShowBatteryPercent'
 ]);
+const LEGACY_OVERLAY_NOTIFICATION_KEYS = Object.freeze({
+    xsNotifications: 'VRCX-0_xsNotifications',
+    ovrtHudNotifications: 'VRCX-0_ovrtHudNotifications',
+    ovrtWristNotifications: 'VRCX-0_ovrtWristNotifications',
+    imageNotifications: 'VRCX-0_imageNotifications',
+    notificationTimeout: 'VRCX-0_notificationTimeout',
+    notificationOpacity: 'VRCX-0_notificationOpacity'
+});
 
 function setDocumentLanguage(language: any) {
     document.documentElement.setAttribute('lang', language);
@@ -144,6 +157,34 @@ function normalizeStringList(value: any) {
     return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+async function getBoolConfigWithLegacy(key: string, defaultValue: boolean) {
+    if ((await configRepository.getRawValue(key)) !== null) {
+        return configRepository.getBool(key, defaultValue);
+    }
+    const legacyKey = getLegacyOverlayNotificationKey(key);
+    if (legacyKey && (await configRepository.getRawValue(legacyKey)) !== null) {
+        return configRepository.getBool(legacyKey, defaultValue);
+    }
+    return defaultValue;
+}
+
+async function getIntConfigWithLegacy(key: string, defaultValue: number) {
+    if ((await configRepository.getRawValue(key)) !== null) {
+        return configRepository.getInt(key, defaultValue);
+    }
+    const legacyKey = getLegacyOverlayNotificationKey(key);
+    if (legacyKey && (await configRepository.getRawValue(legacyKey)) !== null) {
+        return configRepository.getInt(legacyKey, defaultValue);
+    }
+    return defaultValue;
+}
+
+function getLegacyOverlayNotificationKey(key: string) {
+    return LEGACY_OVERLAY_NOTIFICATION_KEYS[
+        key as keyof typeof LEGACY_OVERLAY_NOTIFICATION_KEYS
+    ];
+}
+
 function resolveTablePageSize(candidate: any, pageSizes: any) {
     const allowed = normalizeTablePageSizes(pageSizes);
     const fallbackPageSize = allowed[0] ?? DEFAULT_TABLE_PAGE_SIZE;
@@ -195,6 +236,12 @@ export async function loadPreferenceSnapshot() {
         notificationTTS,
         notificationTTSNickName,
         notificationTTSVoice,
+        xsNotifications,
+        ovrtHudNotifications,
+        ovrtWristNotifications,
+        imageNotifications,
+        notificationTimeout,
+        notificationOpacity,
         wristOverlayEnabled,
         wristOverlayStartMode,
         wristOverlayButton,
@@ -231,6 +278,7 @@ export async function loadPreferenceSnapshot() {
         localFavoriteFriendsGroups,
         sharedFeedFilters,
         overlayActivityFilters,
+        vrNotificationActivityFilters,
         feedTimeDisplayMode,
         youtubeAPI,
         translationAPI,
@@ -280,16 +328,19 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('hideUnfriends', false),
         configRepository.getBool('randomUserColours', false),
         configRepository.getBool('notificationIconDot', true),
-        configRepository.getBool(
-            POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
-            true
-        ),
+        configRepository.getBool(POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY, true),
         configRepository.getString('desktopToast', 'Never'),
         configRepository.getBool('afkDesktopToast', false),
         configRepository.getBool('desktopNotificationSound', false),
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSVoice', '0'),
+        getBoolConfigWithLegacy('xsNotifications', true),
+        getBoolConfigWithLegacy('ovrtHudNotifications', true),
+        getBoolConfigWithLegacy('ovrtWristNotifications', false),
+        getBoolConfigWithLegacy('imageNotifications', true),
+        getIntConfigWithLegacy('notificationTimeout', 3000),
+        getIntConfigWithLegacy('notificationOpacity', 100),
         configRepository.getBool('wristOverlayEnabled', false),
         configRepository.getString('wristOverlayStartMode', 'vrchatVrMode'),
         configRepository.getString('wristOverlayButton', 'grip'),
@@ -340,6 +391,7 @@ export async function loadPreferenceSnapshot() {
             JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
         ),
         configRepository.getString('overlayActivityFilters', ''),
+        configRepository.getString('vrNotificationActivityFilters', ''),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
         configRepository.getBool('youtubeAPI', false),
         configRepository.getBool('translationAPI', false),
@@ -444,6 +496,16 @@ export async function loadPreferenceSnapshot() {
         notificationTTS: notificationTTS || 'Never',
         notificationTTSNickName: Boolean(notificationTTSNickName),
         notificationTTSVoice: notificationTTSVoice || '0',
+        xsNotifications: Boolean(xsNotifications),
+        ovrtHudNotifications: Boolean(ovrtHudNotifications),
+        ovrtWristNotifications: Boolean(ovrtWristNotifications),
+        imageNotifications: Boolean(imageNotifications),
+        notificationTimeout: Number.isFinite(notificationTimeout)
+            ? notificationTimeout
+            : 3000,
+        notificationOpacity: Number.isFinite(notificationOpacity)
+            ? notificationOpacity
+            : 100,
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
         wristOverlayStartMode: wristOverlayStartMode || 'vrchatVrMode',
         wristOverlayButton: wristOverlayButton || 'grip',
@@ -487,6 +549,9 @@ export async function loadPreferenceSnapshot() {
             overlayActivityFilters,
             sharedFeedFilters
         ),
+        vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
+            vrNotificationActivityFilters
+        ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),
         translationAPI: Boolean(translationAPI),
@@ -517,6 +582,20 @@ export async function setAppLanguagePreference(language: any) {
     useShellStore.getState().setLocale(nextLanguage);
     setDocumentLanguage(nextLanguage);
     await configRepository.setString('appLanguage', nextLanguage);
+    const [fontFamily, cjkFontPack, customFontFamily] = await Promise.all([
+        configRepository.getString('VRCX_fontFamily', APP_FONT_DEFAULT_KEY),
+        configRepository.getString(
+            'VRCX_cjkFontPack',
+            APP_CJK_FONT_PACK_DEFAULT_KEY
+        ),
+        configRepository.getString('customFontFamily', '')
+    ]);
+    applyAppFontPreferences({
+        fontFamily,
+        customFontFamily,
+        cjkFontPack,
+        locale: nextLanguage
+    });
     await reloadWristOverlayRuntimeConfigIfNeeded('appLanguage');
 }
 
@@ -957,6 +1036,21 @@ export async function setOverlayActivityFiltersPreference(
     patchPreferences({ overlayActivityFilters });
     publishPreferenceChanged('overlayActivityFilters', overlayActivityFilters);
     return overlayActivityFilters;
+}
+
+export async function setVrNotificationActivityFiltersPreference(value: any) {
+    const vrNotificationActivityFilters =
+        normalizeOverlayActivityFilterProfile(value);
+    await configRepository.setString(
+        'vrNotificationActivityFilters',
+        JSON.stringify(vrNotificationActivityFilters)
+    );
+    patchPreferences({ vrNotificationActivityFilters });
+    publishPreferenceChanged(
+        'vrNotificationActivityFilters',
+        vrNotificationActivityFilters
+    );
+    return vrNotificationActivityFilters;
 }
 
 export async function setWristOverlayEnabledPreference(value: any) {

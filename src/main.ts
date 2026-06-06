@@ -4,13 +4,17 @@ import { createRoot } from 'react-dom/client';
 import '@/styles/globals.css';
 import { installDevPerformanceTimelineGuard } from '@/app/devPerformanceTimelineGuard';
 import { installErrorLogging } from '@/services/errorLogService';
+import { loadBundledCjkFonts } from '@/styles/cjkFonts';
 
 // only use in dev to prevent OOM from React dev tools User Timing measures
 installDevPerformanceTimelineGuard();
 installErrorLogging();
 
 async function bootstrap() {
-    await import('@/services/i18nService');
+    await Promise.all([
+        loadBundledCjkFonts(),
+        import('@/services/i18nService')
+    ]);
 
     const { App } = await import('./app/App');
 

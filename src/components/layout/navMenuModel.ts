@@ -30,6 +30,7 @@ export const routePathByName = Object.freeze({
     feed: '/feed',
     'friends-locations': '/friends-locations',
     'game-log': '/game-log',
+    'instance-history': '/instance-history',
     'player-list': '/player-list',
     search: '/search',
     'favorite-friends': '/favorites/friends',
@@ -72,6 +73,7 @@ export function createBaseDefaultNavLayout(t: any) {
         { type: 'item', key: 'feed' },
         { type: 'item', key: 'friends-locations' },
         { type: 'item', key: 'game-log' },
+        { type: 'item', key: 'instance-history' },
         { type: 'item', key: 'player-list' },
         { type: 'item', key: 'search' },
         {

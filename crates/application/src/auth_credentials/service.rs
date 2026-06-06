@@ -1,7 +1,7 @@
 use serde_json::{json, Map, Value};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::auth::{config_get_input, login_basic_input};
+use vrcx_0_vrchat_client::auth::{config_get_input, current_user_get_input, login_basic_input};
 use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse};
 
 use super::types::{LoginSuccessRecordInput, LogoutRecordInput, SavedCredentialLoginStartInput};
@@ -158,6 +158,12 @@ pub async fn saved_credential_login_start(
         ));
     }
 
+    let endpoint = normalize_text(input.endpoint);
+    match probe_cookie_session(web, db, endpoint.clone(), &user_id, false).await? {
+        CookieSessionProbe::Use(response) => return Ok(response),
+        CookieSessionProbe::Fallback => {}
+    }
+
     web.clear_cookies();
     if let Some(cookie) = saved_credential
         .as_object()
@@ -174,7 +180,11 @@ pub async fn saved_credential_login_start(
         }
     }
 
-    let endpoint = normalize_text(input.endpoint);
+    match probe_cookie_session(web, db, endpoint.clone(), &user_id, true).await? {
+        CookieSessionProbe::Use(response) => return Ok(response),
+        CookieSessionProbe::Fallback => {}
+    }
+
     let config_response = web
         .execute_api(config_get_input(endpoint.clone()), ApiScope::Vrchat, db)
         .await?;
@@ -189,6 +199,106 @@ pub async fn saved_credential_login_start(
         "Saved credential login requires password.",
     )?;
     web.execute_api(request, ApiScope::Vrchat, db).await
+}
+
+enum CookieSessionProbe {
+    Use(HttpApiExecuteResponse),
+    Fallback,
+}
+
+async fn probe_cookie_session(
+    web: &WebClient,
+    db: &DatabaseService,
+    endpoint: String,
+    expected_user_id: &str,
+    allow_unmatched_two_factor: bool,
+) -> Result<CookieSessionProbe> {
+    let config_response = web
+        .execute_api(config_get_input(endpoint.clone()), ApiScope::Vrchat, db)
+        .await?;
+    if response_allows_saved_credential_fallback(&config_response) {
+        return Ok(CookieSessionProbe::Fallback);
+    }
+    if !(200..=399).contains(&config_response.status) {
+        return Ok(CookieSessionProbe::Use(config_response));
+    }
+
+    let current_user_response = web
+        .execute_api(current_user_get_input(endpoint), ApiScope::Vrchat, db)
+        .await?;
+    if response_allows_saved_credential_fallback(&current_user_response) {
+        return Ok(CookieSessionProbe::Fallback);
+    }
+    if !allow_unmatched_two_factor && response_requires_two_factor(&current_user_response) {
+        return Ok(CookieSessionProbe::Fallback);
+    }
+    if authenticated_response_user_mismatches(&current_user_response, expected_user_id) {
+        return Ok(CookieSessionProbe::Fallback);
+    }
+    Ok(CookieSessionProbe::Use(current_user_response))
+}
+
+fn response_allows_saved_credential_fallback(response: &HttpApiExecuteResponse) -> bool {
+    response.status == 401 && response_error_message(response).contains("Missing Credentials")
+}
+
+fn response_error_message(response: &HttpApiExecuteResponse) -> String {
+    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
+        return String::new();
+    };
+    value_message_string(&json).unwrap_or_default()
+}
+
+fn response_requires_two_factor(response: &HttpApiExecuteResponse) -> bool {
+    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
+        return false;
+    };
+    json.get("requiresTwoFactorAuth")
+        .and_then(Value::as_array)
+        .is_some_and(|methods| !methods.is_empty())
+}
+
+fn authenticated_response_user_mismatches(
+    response: &HttpApiExecuteResponse,
+    expected_user_id: &str,
+) -> bool {
+    let expected_user_id = expected_user_id.trim();
+    if expected_user_id.is_empty() || !(200..=399).contains(&response.status) {
+        return false;
+    }
+    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
+        return false;
+    };
+    if json
+        .get("requiresTwoFactorAuth")
+        .and_then(Value::as_array)
+        .is_some_and(|methods| !methods.is_empty())
+    {
+        return false;
+    }
+    let response_user_id = object_field_string(&json, "id");
+    !response_user_id.is_empty() && response_user_id != expected_user_id
+}
+
+fn value_message_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(value) => Some(value.trim().to_string()),
+        Value::Object(_) => object_field_optional_string(value, "message").or_else(|| {
+            value.get("error").and_then(|error| {
+                value_message_string(error)
+                    .or_else(|| object_field_optional_string(error, "message"))
+            })
+        }),
+        _ => None,
+    }
+}
+
+fn object_field_optional_string(value: &Value, key: &str) -> Option<String> {
+    value
+        .as_object()
+        .and_then(|object| object.get(key))
+        .map(|value| value_as_string(Some(value)))
+        .filter(|value| !value.is_empty())
 }
 
 fn value_as_string(value: Option<&Value>) -> String {

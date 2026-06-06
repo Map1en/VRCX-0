@@ -49,6 +49,8 @@ export function UserDialogTabsSection(props: any) {
         isCurrentUser,
         lastSeen,
         memo,
+        friendedAt,
+        presenceActivityAt,
         profile,
         representedGroup,
         representedGroupStatus,
@@ -155,9 +157,11 @@ export function UserDialogTabsSection(props: any) {
         visibleHomeLocationTarget
     };
     const activitySummarySection: UserDialogActivitySummarySectionProps = {
+        friendedAt,
         isCurrentUser,
         lastSeen,
         onOpenInstanceHistory,
+        presenceActivityAt,
         profile,
         userTimeSpent,
         userJoinCount,

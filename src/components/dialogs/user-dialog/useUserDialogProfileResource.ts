@@ -623,6 +623,10 @@ export function useUserDialogProfileResource({
                 if (!active) {
                     return;
                 }
+                const remoteProfile = stripSyntheticSnapshotDefaults(
+                    nextProfile,
+                    {}
+                );
 
                 setBaseProfile((currentProfile: any) =>
                     preserveProfileIdentity(
@@ -636,14 +640,14 @@ export function useUserDialogProfileResource({
                                 return isTargetCurrentUser
                                     ? mergeCurrentUserAvatarFields(
                                           mergeCurrentUserPresenceFields(
-                                              nextProfile,
+                                              remoteProfile,
                                               previousProfile
                                           ),
                                           previousProfile
                                       )
                                     : mergeLocalSnapshotIntoProfile(
                                           localSnapshotRef.current,
-                                          nextProfile
+                                          remoteProfile
                                       );
                             })(),
                             activitySnapshotRef.current

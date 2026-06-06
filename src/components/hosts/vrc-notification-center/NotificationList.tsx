@@ -13,10 +13,10 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
+import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';
@@ -74,10 +74,8 @@ function getNotificationAbsoluteTime(notification: any) {
     if (!timestamp) {
         return '';
     }
-    const date = new Date(timestamp);
-    return Number.isNaN(date.getTime())
-        ? ''
-        : format(date, 'yyyy-MM-dd HH:mm:ss');
+    const formatted = formatDateFilter(timestamp, 'long');
+    return formatted === '-' ? '' : formatted;
 }
 
 function getNotificationRelativeTime(notification: any) {
@@ -85,10 +83,7 @@ function getNotificationRelativeTime(notification: any) {
     if (!timestamp) {
         return '';
     }
-    const date = new Date(timestamp);
-    return Number.isNaN(date.getTime())
-        ? ''
-        : formatDistanceToNow(date, { addSuffix: false });
+    return formatRelativeTime(timestamp);
 }
 
 function getGroupDisplayName(notification: any) {

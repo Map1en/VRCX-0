@@ -18,6 +18,9 @@ export function PostUpdateChangelogToastHost() {
     const setSystemHostOpen = useRuntimeStore(
         (state: any) => state.setSystemHostOpen
     );
+    const setChangelogTargetVersion = useRuntimeStore(
+        (state: any) => state.setChangelogTargetVersion
+    );
 
     useEffect(() => {
         if (!backendRuntimeSnapshotHydrated || hasCheckedRef.current) {
@@ -70,6 +73,7 @@ export function PostUpdateChangelogToastHost() {
                             onClick: () => {
                                 recordSeen();
                                 toast.dismiss(toastId);
+                                setChangelogTargetVersion(state.currentVersion);
                                 setSystemHostOpen('changelogOpen', true);
                             }
                         },
@@ -87,7 +91,12 @@ export function PostUpdateChangelogToastHost() {
         return () => {
             cancelled = true;
         };
-    }, [backendRuntimeSnapshotHydrated, setSystemHostOpen, t]);
+    }, [
+        backendRuntimeSnapshotHydrated,
+        setChangelogTargetVersion,
+        setSystemHostOpen,
+        t
+    ]);
 
     return null;
 }

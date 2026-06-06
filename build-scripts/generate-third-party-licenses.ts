@@ -21,10 +21,7 @@ const tauriResourceNoticePath = path.join(
 );
 const bundledFontPackages = Object.freeze([
     '@fontsource-variable/geist',
-    '@fontsource-variable/noto-sans-jp',
-    '@fontsource-variable/noto-sans-kr',
-    '@fontsource-variable/noto-sans-sc',
-    '@fontsource-variable/noto-sans-tc'
+    '@fontsource-variable/noto-sans-sc'
 ]);
 
 function normalizeWhitespace(value) {

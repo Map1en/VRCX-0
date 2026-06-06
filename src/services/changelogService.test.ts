@@ -70,6 +70,12 @@ English body
         expect(resolvePreferredChangelogLanguage(entries, 'zh-CN')).toBe(
             'zh-CN'
         );
+        expect(resolvePreferredChangelogLanguage(entries, 'zh-cn')).toBe(
+            'zh-CN'
+        );
+        expect(resolvePreferredChangelogLanguage(entries, 'zh_CN')).toBe(
+            'zh-CN'
+        );
         expect(resolvePreferredChangelogLanguage(entries, 'en-US')).toBe('en');
         expect(resolvePreferredChangelogLanguage(entries, 'ja')).toBe('en');
     });

@@ -13,6 +13,7 @@ import {
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     normalizeSharedFeedFilters,
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues';
@@ -53,6 +54,12 @@ export function createDefaultSettingsPrefs() {
         notificationTTS: 'Never',
         notificationTTSNickName: false,
         notificationTTSVoice: '0',
+        xsNotifications: true,
+        ovrtHudNotifications: true,
+        ovrtWristNotifications: false,
+        imageNotifications: true,
+        notificationTimeout: 3000,
+        notificationOpacity: 100,
         wristOverlayEnabled: false,
         wristOverlayStartMode: 'vrchatVrMode',
         wristOverlayButton: 'grip',
@@ -90,6 +97,7 @@ export function createDefaultSettingsPrefs() {
             sharedFeedFiltersDefaults
         ),
         overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+        vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
         feedTimeDisplayMode: 'relative',
         youtubeAPI: false,
         translationAPI: false,

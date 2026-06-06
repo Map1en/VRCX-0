@@ -118,6 +118,13 @@ const ACTIVITY_TYPES: &[ActivityTypeDefinition] = &[
         &[],
     ),
     definition(
+        "ChatBoxMessage",
+        OverlayActivityCategory::CurrentInstance,
+        INSTANCE_ACTOR_SCOPES,
+        OverlayActivityScope::Off,
+        &[],
+    ),
+    definition(
         "Online",
         OverlayActivityCategory::FavoriteMovement,
         FRIEND_ACTOR_SCOPES,

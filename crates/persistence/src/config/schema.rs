@@ -1,4 +1,4 @@
-use sea_query::{ColumnDef, Expr, OnConflict, Query, SqliteQueryBuilder, Table};
+use sea_query::{ColumnDef, Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder, Table};
 
 use crate::common::{ident, named_param};
 

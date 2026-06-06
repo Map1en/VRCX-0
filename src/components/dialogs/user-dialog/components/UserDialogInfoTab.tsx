@@ -21,12 +21,7 @@ import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
-import {
-    formatDate,
-    formatDateOnly,
-    formatStatsDate,
-    formatStatsDuration
-} from '../userDialogRows';
+import { formatStatsDuration } from '../userDialogRows';
 import { EntityList } from '../UserDialogViewParts';
 import { useUserBioTranslation } from '../useUserBioTranslation';
 
@@ -69,9 +64,11 @@ export type UserDialogProfileLinksSectionProps = {
 };
 
 export type UserDialogActivitySummarySectionProps = {
+    friendedAt: any;
     isCurrentUser: boolean;
     lastSeen: any;
     onOpenInstanceHistory?: DialogAction;
+    presenceActivityAt: any;
     profile: DialogRecord;
     userTimeSpent: any;
     userJoinCount: any;
@@ -168,6 +165,20 @@ function InfoStatGrid({ children, className }: any) {
             {children}
         </div>
     );
+}
+
+function formatLocalizedActivityDate(value: any, locale: any, dateOnly = false) {
+    if (!value) {
+        return '\u2014';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '\u2014';
+    }
+    return new Intl.DateTimeFormat(locale || undefined, {
+        dateStyle: 'medium',
+        ...(dateOnly ? {} : { timeStyle: 'medium' })
+    }).format(date);
 }
 
 function TextScroll({ children, className = 'h-52' }: any) {
@@ -553,15 +564,18 @@ function UserDialogBioPanel({
 }
 
 function UserDialogActivitySummaryPanel({
+    friendedAt,
     isCurrentUser,
     lastSeen,
     onOpenInstanceHistory,
+    presenceActivityAt,
     profile,
     userTimeSpent,
     userJoinCount,
     previousInstances
 }: UserDialogActivitySummarySectionProps) {
-    const { t } = useTranslation();
+    const { i18n, t } = useTranslation();
+    const dateLocale = i18n.resolvedLanguage || i18n.language;
     const openHistory = previousInstances.length
         ? onOpenInstanceHistory
         : undefined;
@@ -575,25 +589,36 @@ function UserDialogActivitySummaryPanel({
                 {!isCurrentUser ? (
                     <InfoStat
                         label={t('dialog.user.info.last_seen')}
-                        value={formatStatsDate(lastSeen)}
+                        value={formatLocalizedActivityDate(
+                            lastSeen,
+                            dateLocale
+                        )}
                         subtle
                     />
                 ) : null}
                 <InfoStat
-                    label={t('dialog.user.info.last_login')}
-                    value={formatDate(
-                        profile.last_login || profile.last_activity
+                    label={t('dialog.user.info.last_activity')}
+                    value={formatLocalizedActivityDate(
+                        presenceActivityAt,
+                        dateLocale
                     )}
                     subtle
                 />
                 <InfoStat
-                    label={t('dialog.user.info.last_activity')}
-                    value={formatDate(profile.last_activity)}
+                    label={t('dialog.user.info.friended')}
+                    value={formatLocalizedActivityDate(
+                        friendedAt,
+                        dateLocale
+                    )}
                     subtle
                 />
                 <InfoStat
                     label={t('dialog.user.info.date_joined')}
-                    value={formatDateOnly(profile.date_joined)}
+                    value={formatLocalizedActivityDate(
+                        profile.date_joined,
+                        dateLocale,
+                        true
+                    )}
                     subtle
                 />
                 {isCurrentUser ? (
@@ -690,10 +715,14 @@ export function UserDialogInfoTab({
                         }
                     />
                     <UserDialogActivitySummaryPanel
+                        friendedAt={activitySummarySection.friendedAt}
                         isCurrentUser={activitySummarySection.isCurrentUser}
                         lastSeen={activitySummarySection.lastSeen}
                         onOpenInstanceHistory={
                             activitySummarySection.onOpenInstanceHistory
+                        }
+                        presenceActivityAt={
+                            activitySummarySection.presenceActivityAt
                         }
                         profile={activitySummarySection.profile}
                         userTimeSpent={activitySummarySection.userTimeSpent}

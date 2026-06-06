@@ -1,3 +1,5 @@
+import { formatDateTime } from '@/lib/dateTime';
+
 export function getTodayKey() {
     return toLocalDayKey(new Date());
 }
@@ -18,14 +20,15 @@ export function parseLocalDayKey(dayKey: any) {
 }
 
 export function formatDateLabel(dayKey: any) {
-    try {
-        return new Intl.DateTimeFormat(undefined, {
+    const formatted = formatDateTime(
+        parseLocalDayKey(dayKey),
+        {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
             weekday: 'short'
-        }).format(parseLocalDayKey(dayKey));
-    } catch {
-        return dayKey;
-    }
+        },
+        { fallback: String(dayKey || '') }
+    );
+    return formatted || String(dayKey || '');
 }

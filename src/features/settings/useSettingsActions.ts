@@ -25,6 +25,7 @@ import {
     setTableLimitsPreference,
     setTrustColorPreference,
     setUserGeneratedContentPathPreference,
+    setVrNotificationActivityFiltersPreference,
     setWristOverlayEnabledPreference,
     loadTrustColorPreference,
     resetTrustColorsPreference
@@ -147,6 +148,7 @@ export function useSettingsActions(deps: any) {
         setTableLimitsPreference,
         setTrustColorPreference,
         setUserGeneratedContentPathPreference,
+        setVrNotificationActivityFiltersPreference,
         setWristOverlayEnabledPreference,
         sharedFeedFiltersDefaults,
         t,

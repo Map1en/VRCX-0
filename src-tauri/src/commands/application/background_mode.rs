@@ -14,9 +14,21 @@ pub async fn app__start_background_mode(
     state: State<'_, AppState>,
 ) -> Result<BackendRuntimeSnapshot, AppError> {
     bootstrap::capture_background_resume_route(&app_handle, &state);
-    let snapshot = state
+    let snapshot = match state
         .start_backend_runtime(BackendRuntimeMode::Background)
-        .await?;
+        .await
+    {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            bootstrap::show_auth_failure_notification_after_backend_start_error(
+                &app_handle,
+                &state,
+                &error.to_string(),
+            );
+            refresh_tray_menu(&app_handle, &state);
+            return Err(error.into());
+        }
+    };
     let current = state.snapshot_backend_runtime();
     if snapshot.mode == BackendRuntimeMode::Background
         && current.mode == BackendRuntimeMode::Background

@@ -7,6 +7,7 @@ pub mod host_capabilities;
 pub mod ipc_commands;
 pub mod legacy_migration;
 pub mod media;
+pub mod overlay_notifications;
 pub mod paths;
 pub mod registry;
 pub mod screenshots;

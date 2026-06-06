@@ -4,6 +4,7 @@ declare global {
     const VRCX_0_BUILD_BADGE: string;
     const VRCX_0_TELEMETRY_ENABLED: boolean;
     const VRCX_0_TELEMETRY_ENDPOINT: string;
+    const VRCX_0_BUNDLED_CJK_FONTS_ENABLED: boolean;
 
     interface Window {
         $debug?: AppDebug;

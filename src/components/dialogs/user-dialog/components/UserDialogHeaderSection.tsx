@@ -1,4 +1,5 @@
 import {
+    ClockIcon,
     CopyIcon,
     ExternalLinkIcon,
     PencilIcon,
@@ -19,6 +20,7 @@ import {
     PreviousDisplayNamesBadge,
     UserTitleLanguages
 } from '../UserDialogViewParts';
+import { formatStatsDuration } from '../userDialogRows';
 import { UserDialogHeaderActions } from './UserDialogHeaderActions';
 import {
     hasRenderableUserProfileBadges,
@@ -214,6 +216,7 @@ export function UserDialogHeaderSection(props: any) {
         detail,
         extendedModerationState = {},
         fallbackAvatarTarget,
+        estimatedOnlineDurationMs,
         friendNumber,
         friendRequestState = {},
         imageUrl,
@@ -332,6 +335,9 @@ export function UserDialogHeaderSection(props: any) {
         ? userImage(profile, true, '256', true)
         : '';
     const hasTitleMeta = Boolean(profileLanguages?.length);
+    const estimatedOnlineForText = estimatedOnlineDurationMs
+        ? formatStatsDuration(estimatedOnlineDurationMs)
+        : '';
     const hasProfileBadges = hasRenderableUserProfileBadges(profile);
 
     return (
@@ -435,6 +441,19 @@ export function UserDialogHeaderSection(props: any) {
                                 {userSubtitle}
                             </div>
                         )
+                    ) : null}
+                    {estimatedOnlineForText ? (
+                        <div className="text-muted-foreground/80 flex min-w-0 items-center gap-1.5 text-[11px] leading-tight font-normal">
+                            <ClockIcon
+                                data-icon="inline-start"
+                                className="size-3 shrink-0 opacity-70"
+                            />
+                            <span className="min-w-0 truncate">
+                                {t('dialog.user.info.estimated_online_for', {
+                                    duration: estimatedOnlineForText
+                                })}
+                            </span>
+                        </div>
                     ) : null}
                     {hasTitleMeta ? (
                         <div className="flex min-w-0 flex-wrap items-center gap-1.5">

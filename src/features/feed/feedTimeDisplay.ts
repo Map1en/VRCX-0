@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import { formatDateFilter } from '@/lib/dateTime';
+import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 
 function parseTimestampMs(value: unknown) {
@@ -15,29 +15,16 @@ function parseTimestampMs(value: unknown) {
 export function formatFeedRelativeTime(
     value: unknown,
     nowMs: number,
-    t: TFunction
+    _t: TFunction
 ) {
     const timestampMs = parseTimestampMs(value);
     if (timestampMs === null) {
         return '-';
     }
 
-    const seconds = Math.max(0, Math.floor((nowMs - timestampMs) / 1000));
-    if (seconds < 30) {
-        return t('view.feed.time.just_now');
-    }
-
-    if (seconds < 60) {
-        return t('view.feed.time.seconds_ago', { count: seconds });
-    }
-
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-        return t('view.feed.time.minutes_ago', { count: minutes });
-    }
-
-    return t('view.feed.time.hours_ago', {
-        count: Math.floor(minutes / 60)
+    return formatRelativeTime(timestampMs, {
+        nowMs,
+        style: 'short'
     });
 }
 

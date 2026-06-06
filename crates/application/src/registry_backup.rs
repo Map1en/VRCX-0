@@ -457,16 +457,15 @@ fn is_unity_player_prefs_key(key: &str) -> bool {
     !name.is_empty()
         && !hash.is_empty()
         && hash.bytes().all(|byte| byte.is_ascii_digit())
-        && name.bytes().all(|byte| {
-            byte == b' ' || byte == b'.' || byte == b'_' || byte.is_ascii_alphanumeric()
-        })
+        && name.bytes().all(is_unity_player_prefs_name_byte)
 }
 
 fn is_unity_player_prefs_name(key: &str) -> bool {
-    !key.is_empty()
-        && key.bytes().all(|byte| {
-            byte == b' ' || byte == b'.' || byte == b'_' || byte.is_ascii_alphanumeric()
-        })
+    !key.is_empty() && key.bytes().all(is_unity_player_prefs_name_byte)
+}
+
+fn is_unity_player_prefs_name_byte(byte: u8) -> bool {
+    byte == b' ' || byte == b'.' || byte == b'_' || byte == b'-' || byte.is_ascii_alphanumeric()
 }
 
 fn normalized_backup_name(name: &str) -> String {

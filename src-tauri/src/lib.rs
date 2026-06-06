@@ -96,6 +96,11 @@ fn start_background_mode_and_hide_window(app: tauri::AppHandle) {
                 refresh_tray_menu(&app, &state);
             }
             Err(error) => {
+                bootstrap::show_auth_failure_notification_after_backend_start_error(
+                    &app,
+                    &state,
+                    &error.to_string(),
+                );
                 tracing::warn!(error = %error, "failed to start background mode from tray");
                 refresh_tray_menu(&app, &state);
             }
@@ -693,6 +698,9 @@ pub fn run() {
             commands::host::registry::app__set_vrchat_registry,
             commands::host::registry::app__read_vrc_reg_json_file,
             commands::host::window::app__desktop_notification,
+            commands::host::overlay_notifications::app__xs_notification,
+            commands::host::overlay_notifications::app__ovrt_notification,
+            commands::host::window::app__auth_failure_notification_show,
             commands::local::local_player_moderations::app__get_vrchat_moderations,
             commands::local::local_player_moderations::app__get_vrchat_user_moderation,
             commands::local::local_player_moderations::app__set_vrchat_user_moderation,

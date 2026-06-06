@@ -15,10 +15,10 @@ import {
 
 import { PreviousInstancesListTable } from './previous-instances-table/PreviousInstancesListTable';
 import {
-    createdTime,
     formatPreviousInstanceCount,
     rowLocation,
-    rowSearchText
+    rowSearchText,
+    sortPreviousInstanceRows
 } from './previous-instances-table/previousInstancesRows';
 import { PreviousInstanceDetailsPanel } from './previous-instances-table/PreviousInstancesViewParts';
 
@@ -39,6 +39,7 @@ function PreviousInstancesPanel({
     initialDetailRow = null,
     detailsOnly = false,
     showHeader = true,
+    headerActions = null,
     className = ''
 }: any) {
     const { t } = useTranslation();
@@ -50,6 +51,7 @@ function PreviousInstancesPanel({
     const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
     const [rows, setRows] = useState<any[]>([]);
     const [search, setSearch] = useState('');
+    const [sortKey, setSortKey] = useState('date');
     const [sortDesc, setSortDesc] = useState(true);
     const [pageSize, setPageSize] = useState(10);
     const [pageIndex, setPageIndex] = useState(0);
@@ -67,12 +69,22 @@ function PreviousInstancesPanel({
         const nextRows = query
             ? rows.filter((row: any) => rowSearchText(row).includes(query))
             : rows;
-        return [...nextRows].sort((left: any, right: any) =>
-            sortDesc
-                ? createdTime(right) - createdTime(left)
-                : createdTime(left) - createdTime(right)
-        );
-    }, [rows, search, sortDesc]);
+        return sortPreviousInstanceRows(nextRows, sortKey, sortDesc);
+    }, [rows, search, sortDesc, sortKey]);
+
+    function changeSort(nextKey: any) {
+        if (nextKey === sortKey) {
+            if (!sortDesc) {
+                setSortKey('');
+                setSortDesc(true);
+                return;
+            }
+            setSortDesc((value: any) => !value);
+            return;
+        }
+        setSortKey(nextKey);
+        setSortDesc(nextKey === 'date');
+    }
 
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
     const currentPageIndex = Math.min(pageIndex, totalPages - 1);
@@ -169,8 +181,9 @@ function PreviousInstancesPanel({
                 setPageSize(value);
                 setPageIndex(0);
             }}
+            sortKey={sortKey}
             sortDesc={sortDesc}
-            onSortDescChange={() => setSortDesc((value: any) => !value)}
+            onSortChange={changeSort}
             currentPageIndex={currentPageIndex}
             totalPages={totalPages}
             onPreviousPage={() =>
@@ -184,6 +197,7 @@ function PreviousInstancesPanel({
             currentEndpoint={currentEndpoint}
             onOpenDetails={setDetailRow}
             onDeleteRow={deleteRow}
+            headerActions={headerActions}
         />
     );
 }

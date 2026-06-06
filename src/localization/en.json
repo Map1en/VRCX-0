@@ -78,6 +78,7 @@
         "friends_locations": "Friend Locations",
         "feed": "Feed",
         "game_log": "Game Log",
+        "instance_history": "Instance History",
         "player_list": "Current Players",
         "search": "Search",
         "favorites": "Favorites",
@@ -659,6 +660,30 @@
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "No user id was found for {value}"
+            }
+        },
+        "instance_history": {
+            "title": "Instance History",
+            "placeholder": {
+                "user": "Select user"
+            },
+            "label": {
+                "loaded_records": "{count} records loaded",
+                "selected_user": "Selected user",
+                "unnamed_user": "Unnamed user",
+                "self": "Me",
+                "date_range": "Date range"
+            },
+            "action": {
+                "current_user": "Me",
+                "open_full": "Open full instance history"
+            },
+            "description": {
+                "viewing": "Viewing {name}",
+                "no_current_user": "Sign in before viewing instance history."
+            },
+            "toast": {
+                "failed_to_load_instance_history": "Failed to load instance history"
             }
         },
         "my_avatars": {
@@ -1620,7 +1645,7 @@
                     "header": "VR Core"
                 },
                 "vr_notifications": {
-                    "header": "VR Notifications"
+                    "header": "VR Overlay Notifications"
                 },
                 "wrist_overlay": {
                     "header": "Wrist Overlay",
@@ -1930,8 +1955,8 @@
                     "wrist_overlay_size_large": "Large",
                     "test_notification": "Send Test Notification",
                     "test_message": "Test notification",
-                    "steamvr_notifications": {
-                        "header": "SteamVR Notifications",
+                    "vr_notifications": {
+                        "header": "VR Overlay Notifications",
                         "steamvr_overlay": "SteamVR Overlay",
                         "overlay_notifications": "Overlay Notifications",
                         "notification_position": "Notification Position",
@@ -1939,6 +1964,7 @@
                         "wayvr_notifications": "WayVR Notifications",
                         "ovrtoolkit_hud_notifications": "OVR Toolkit HUD Notifications",
                         "ovrtoolkit_wrist_notifications": "OVR Toolkit Wrist Notifications",
+                        "notification_filters": "Overlay Notification Filters",
                         "user_images": "Show User Icons",
                         "user_images_description": "May impact performance.",
                         "notification_opacity": "Notification Opacity",
@@ -1956,7 +1982,7 @@
                     "desktop_notifications": {
                         "header": "Desktop Notifications",
                         "when_to_display": "Show Desktop Notifications",
-                        "when_to_display_vr": "Show VR Notifications",
+                        "when_to_display_vr": "Show VR Overlay Notifications",
                         "desktop_notification_while_afk": "Show Notifications While AFK",
                         "notification_sound": "Notification Sound"
                     },
@@ -2819,6 +2845,8 @@
             "badges": {
                 "assigned": "Assigned",
                 "hidden": "Hidden",
+                "visible": "Visible",
+                "visibility": "Visibility",
                 "showcased": "Showcased"
             },
             "actions": {
@@ -2920,6 +2948,7 @@
                 "time_together": "Time Together",
                 "play_time": "Play Time",
                 "online_for": "Online For",
+                "estimated_online_for": "Online for about {duration}",
                 "offline_for": "Offline For",
                 "last_activity": "Last Activity",
                 "last_login": "Last Login",
@@ -4430,6 +4459,10 @@
             "reset": "Reset",
             "close": "Close"
         },
+        "vr_notifications": {
+            "title": "VR Overlay Notification Filters",
+            "description": "Choose which runtime notifications are sent to XSOverlay and OVR Toolkit while SteamVR is running."
+        },
         "wrist_feed_notifications": {
             "title": "Wrist Feed Filters",
             "description": "Choose what appears on the wrist feed. Desktop notifications use separate filters.",
@@ -4491,6 +4524,7 @@
                 "OnPlayerJoining": "Player Joining",
                 "OnPlayerJoined": "Player Joined",
                 "OnPlayerLeft": "Player Left",
+                "ChatBoxMessage": "Chatbox Message",
                 "AvatarChange": "Avatar Change",
                 "Online": "Online",
                 "Offline": "Offline",
@@ -5941,6 +5975,8 @@
             "live_friend_location_board_for_finding_people": "Live friend location board for finding people.",
             "game_log": "Game Log",
             "table_heavy_game_event_log": "Table-heavy game event log.",
+            "instance_history": "Instance History",
+            "local_instance_history_for_a_selected_user": "Instance history for a selected user.",
             "current_players": "Current Players",
             "search": "Search",
             "world_and_group_search_route": "World and group search route.",

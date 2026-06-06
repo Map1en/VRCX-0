@@ -1,7 +1,11 @@
+import { Maximize2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
 import { userDialogMutualFriendSortingOptions } from '@/shared/constants/user';
+import { useDialogStore } from '@/state/dialogStore';
+import { Button } from '@/ui/shadcn/button';
 import {
     Select,
     SelectContent,
@@ -10,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -317,6 +322,22 @@ export function UserDialogInstanceHistoryTab({
     profile,
     onPreviousInstancesChange
 }: any) {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    const closeDialog = useDialogStore((state: any) => state.closeDialog);
+    const userId = profile?.id || profile?.userId || '';
+    const openFullLabel = t('view.instance_history.action.open_full');
+
+    function openFullHistory() {
+        if (!userId) {
+            return;
+        }
+        closeDialog();
+        navigate(
+            `/instance-history?scope=user&id=${encodeURIComponent(userId)}`
+        );
+    }
+
     return (
         <EntityDialogTabContent
             value="instance-history"
@@ -329,6 +350,23 @@ export function UserDialogInstanceHistoryTab({
                 targetRef={profile}
                 onRowsChange={onPreviousInstancesChange}
                 className="flex-1"
+                headerActions={
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                disabled={!userId}
+                                aria-label={openFullLabel}
+                                onClick={openFullHistory}
+                            >
+                                <Maximize2Icon className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{openFullLabel}</TooltipContent>
+                    </Tooltip>
+                }
             />
         </EntityDialogTabContent>
     );

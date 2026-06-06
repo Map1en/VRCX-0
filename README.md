@@ -25,12 +25,6 @@ On first run, VRCX-0 can automatically migrate your existing VRCX database and s
 Your original VRCX data is not modified.
 Existing users can start using VRCX-0 with their current data without any manual setup.
 
-## VROverlay
-
-VROverlay support is planned.
-
-It will be redesigned around practical use cases instead of directly reusing the old implementation.
-
 ## License
 
 The initial commit of this repository corresponds to the upstream VRCX snapshot at the time of the fork and is licensed under the MIT License.

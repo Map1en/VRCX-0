@@ -214,27 +214,16 @@ export function formatDate(value: any) {
     if (!value) {
         return DASH;
     }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value);
-    }
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    }).format(date);
+    const formatted = formatDateFilter(value, 'long');
+    return formatted === '-' ? DASH : formatted;
 }
 
 export function formatDateOnly(value: any) {
     if (!value) {
         return DASH;
     }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return DASH;
-    }
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium'
-    }).format(date);
+    const formatted = formatDateFilter(value, 'date');
+    return formatted === '-' ? DASH : formatted;
 }
 
 export function formatStatsDate(value: any) {

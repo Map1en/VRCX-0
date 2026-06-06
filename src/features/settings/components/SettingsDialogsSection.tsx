@@ -55,8 +55,12 @@ export function SettingsDialogsSection({ dialogs }: any) {
         resetSharedFeedFilters,
         wristFeedNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen,
+        vrNotificationsDialogOpen,
+        setVrNotificationsDialogOpen,
         overlayActivityFilters,
-        saveOverlayActivityFilters
+        saveOverlayActivityFilters,
+        vrNotificationActivityFilters,
+        saveVrNotificationActivityFilters
     } = dialogs;
 
     return (
@@ -138,6 +142,12 @@ export function SettingsDialogsSection({ dialogs }: any) {
                 setOpen: setWristFeedNotificationsDialogOpen,
                 value: overlayActivityFilters,
                 onSave: saveOverlayActivityFilters
+            }}
+            vrNotifications={{
+                open: vrNotificationsDialogOpen,
+                setOpen: setVrNotificationsDialogOpen,
+                value: vrNotificationActivityFilters,
+                onSave: saveVrNotificationActivityFilters
             }}
         />
     );

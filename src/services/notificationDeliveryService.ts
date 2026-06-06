@@ -1,10 +1,21 @@
-import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
+import { getKnownUserFact } from '@/domain/users/userFactAccess';
 import { tauriClient } from '@/platform/tauri/client';
 import configRepository from '@/repositories/configRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
+import { userImage as resolveUserImageUrl } from '@/services/entityMediaService';
+import {
+    normalizeOverlayActivityFilterProfile,
+    OVERLAY_ACTIVITY_TYPE_DEFINITIONS,
+    parseOverlayActivityFilterProfile,
+    type OverlayActivityRule,
+    type OverlayActivityTypeDefinition
+} from '@/shared/constants/overlayActivityFilters';
 import i18n from '@/services/i18nService';
+import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils';
 import { displayLocation } from '@/shared/utils/locationParser';
+import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = Object.freeze({
@@ -13,7 +24,14 @@ const DEFAULT_NOTIFICATION_PREFERENCES = Object.freeze({
     desktopNotificationSound: false,
     notificationTTS: 'Never',
     notificationTTSVoice: '0',
-    notificationTTSNickName: false
+    notificationTTSNickName: false,
+    xsNotifications: true,
+    ovrtHudNotifications: true,
+    ovrtWristNotifications: false,
+    imageNotifications: true,
+    notificationTimeout: 3000,
+    notificationOpacity: 100,
+    vrNotificationActivityFilters: normalizeOverlayActivityFilterProfile()
 });
 
 const NOTIFICATION_PREFERENCE_KEYS = Object.keys(
@@ -32,9 +50,18 @@ const BODY_ONLY_TYPES = new Set([
     'External'
 ]);
 const COLON_SEPARATOR_TYPES = new Set(['groupChange', 'VideoPlay']);
+const OVERLAY_ACTIVITY_DEFINITION_BY_NOTIFICATION_TYPE = Object.fromEntries(
+    OVERLAY_ACTIVITY_TYPE_DEFINITIONS.flatMap((definition) => [
+        [definition.key, definition],
+        ...(definition.aliases || []).map((alias) => [alias, definition])
+    ])
+) as Record<string, OverlayActivityTypeDefinition>;
 type NotificationPreferenceKey = keyof typeof DEFAULT_NOTIFICATION_PREFERENCES;
 
-let cachedPreferences: Record<NotificationPreferenceKey, string | boolean> = {
+let cachedPreferences: Record<
+    NotificationPreferenceKey,
+    string | boolean | number | object
+> = {
     ...DEFAULT_NOTIFICATION_PREFERENCES
 };
 let preferencesLoaded = false;
@@ -42,6 +69,14 @@ let preferencesLoadPromise = null;
 let unsubscribePreferences = null;
 let preferenceRevision = 0;
 const changedPreferenceKeys = new Set<NotificationPreferenceKey>();
+const LEGACY_OVERLAY_NOTIFICATION_KEYS = Object.freeze({
+    xsNotifications: 'VRCX-0_xsNotifications',
+    ovrtHudNotifications: 'VRCX-0_ovrtHudNotifications',
+    ovrtWristNotifications: 'VRCX-0_ovrtWristNotifications',
+    imageNotifications: 'VRCX-0_imageNotifications',
+    notificationTimeout: 'VRCX-0_notificationTimeout',
+    notificationOpacity: 'VRCX-0_notificationOpacity'
+});
 
 function normalizeInteger(
     value: any,
@@ -56,17 +91,58 @@ function normalizeInteger(
     return Math.min(max, Math.max(min, parsed));
 }
 
-function normalizeNotificationPreference(key: NotificationPreferenceKey, value: unknown) {
+function normalizeNotificationPreference(
+    key: NotificationPreferenceKey,
+    value: unknown
+) {
     switch (key) {
         case 'afkDesktopToast':
         case 'desktopNotificationSound':
         case 'notificationTTSNickName':
+        case 'xsNotifications':
+        case 'ovrtHudNotifications':
+        case 'ovrtWristNotifications':
+        case 'imageNotifications':
             return Boolean(value);
+        case 'notificationTimeout':
+            return normalizeInteger(value, 3000, 0, 600000);
+        case 'notificationOpacity':
+            return normalizeInteger(value, 100, 0, 100);
+        case 'vrNotificationActivityFilters':
+            return parseOverlayActivityFilterProfile(value);
         default:
             return typeof value === 'string'
                 ? value
                 : String(value ?? DEFAULT_NOTIFICATION_PREFERENCES[key] ?? '');
     }
+}
+
+async function getBoolPreferenceWithLegacy(key: string, defaultValue: boolean) {
+    if ((await configRepository.getRawValue(key)) !== null) {
+        return configRepository.getBool(key, defaultValue);
+    }
+    const legacyKey = getLegacyOverlayNotificationKey(key);
+    if (legacyKey && (await configRepository.getRawValue(legacyKey)) !== null) {
+        return configRepository.getBool(legacyKey, defaultValue);
+    }
+    return defaultValue;
+}
+
+async function getIntPreferenceWithLegacy(key: string, defaultValue: number) {
+    if ((await configRepository.getRawValue(key)) !== null) {
+        return configRepository.getInt(key, defaultValue);
+    }
+    const legacyKey = getLegacyOverlayNotificationKey(key);
+    if (legacyKey && (await configRepository.getRawValue(legacyKey)) !== null) {
+        return configRepository.getInt(legacyKey, defaultValue);
+    }
+    return defaultValue;
+}
+
+function getLegacyOverlayNotificationKey(key: string) {
+    return LEGACY_OVERLAY_NOTIFICATION_KEYS[
+        key as keyof typeof LEGACY_OVERLAY_NOTIFICATION_KEYS
+    ];
 }
 
 function initNotificationPreferenceSubscription() {
@@ -98,7 +174,10 @@ function initNotificationPreferenceSubscription() {
     );
 }
 
-function applyLoadedNotificationPreferences(loadedPreferences: any, loadRevision: any) {
+function applyLoadedNotificationPreferences(
+    loadedPreferences: any,
+    loadRevision: any
+) {
     const nextPreferences: any = { ...loadedPreferences };
     if (preferenceRevision !== loadRevision) {
         for (const key of changedPreferenceKeys) {
@@ -143,6 +222,36 @@ async function loadNotificationPreferences() {
             configRepository.getBool(
                 'notificationTTSNickName',
                 DEFAULT_NOTIFICATION_PREFERENCES.notificationTTSNickName
+            ),
+            getBoolPreferenceWithLegacy(
+                'xsNotifications',
+                DEFAULT_NOTIFICATION_PREFERENCES.xsNotifications
+            ),
+            getBoolPreferenceWithLegacy(
+                'ovrtHudNotifications',
+                DEFAULT_NOTIFICATION_PREFERENCES.ovrtHudNotifications
+            ),
+            getBoolPreferenceWithLegacy(
+                'ovrtWristNotifications',
+                DEFAULT_NOTIFICATION_PREFERENCES.ovrtWristNotifications
+            ),
+            getBoolPreferenceWithLegacy(
+                'imageNotifications',
+                DEFAULT_NOTIFICATION_PREFERENCES.imageNotifications
+            ),
+            getIntPreferenceWithLegacy(
+                'notificationTimeout',
+                DEFAULT_NOTIFICATION_PREFERENCES.notificationTimeout
+            ),
+            getIntPreferenceWithLegacy(
+                'notificationOpacity',
+                DEFAULT_NOTIFICATION_PREFERENCES.notificationOpacity
+            ),
+            configRepository.getString(
+                'vrNotificationActivityFilters',
+                JSON.stringify(
+                    DEFAULT_NOTIFICATION_PREFERENCES.vrNotificationActivityFilters
+                )
             )
         ])
             .then(
@@ -152,7 +261,14 @@ async function loadNotificationPreferences() {
                     desktopNotificationSound,
                     notificationTTS,
                     notificationTTSVoice,
-                    notificationTTSNickName
+                    notificationTTSNickName,
+                    xsNotifications,
+                    ovrtHudNotifications,
+                    ovrtWristNotifications,
+                    imageNotifications,
+                    notificationTimeout,
+                    notificationOpacity,
+                    vrNotificationActivityFilters
                 ]: any) => {
                     return applyLoadedNotificationPreferences(
                         {
@@ -182,6 +298,39 @@ async function loadNotificationPreferences() {
                                 normalizeNotificationPreference(
                                     'notificationTTSNickName',
                                     notificationTTSNickName
+                                ),
+                            xsNotifications: normalizeNotificationPreference(
+                                'xsNotifications',
+                                xsNotifications
+                            ),
+                            ovrtHudNotifications:
+                                normalizeNotificationPreference(
+                                    'ovrtHudNotifications',
+                                    ovrtHudNotifications
+                                ),
+                            ovrtWristNotifications:
+                                normalizeNotificationPreference(
+                                    'ovrtWristNotifications',
+                                    ovrtWristNotifications
+                                ),
+                            imageNotifications: normalizeNotificationPreference(
+                                'imageNotifications',
+                                imageNotifications
+                            ),
+                            notificationTimeout:
+                                normalizeNotificationPreference(
+                                    'notificationTimeout',
+                                    notificationTimeout
+                                ),
+                            notificationOpacity:
+                                normalizeNotificationPreference(
+                                    'notificationOpacity',
+                                    notificationOpacity
+                                ),
+                            vrNotificationActivityFilters:
+                                normalizeNotificationPreference(
+                                    'vrNotificationActivityFilters',
+                                    vrNotificationActivityFilters
                                 )
                         },
                         loadRevision
@@ -205,6 +354,153 @@ function getNotificationUserId(notification: any) {
         notification?.sourceUserId ||
         ''
     );
+}
+
+function normalizeUserId(value: unknown) {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
+function arrayContainsUserId(values: unknown, userId: string) {
+    return Array.isArray(values)
+        ? values.some((value) => normalizeUserId(value) === userId)
+        : false;
+}
+
+function localFavoriteGroupContainsUser(
+    localFriendFavorites: Record<string, string[]>,
+    groupKey: string,
+    userId: string
+) {
+    const localGroupName = groupKey.startsWith('local:')
+        ? groupKey.slice(6)
+        : groupKey;
+    return arrayContainsUserId(localFriendFavorites?.[localGroupName], userId);
+}
+
+function remoteFavoriteGroupContainsUser(
+    groupedFavoriteFriendIdsByGroupKey: Record<string, string[]>,
+    groupKey: string,
+    userId: string
+) {
+    return arrayContainsUserId(groupedFavoriteFriendIdsByGroupKey?.[groupKey], userId);
+}
+
+function isUserInSelectedFavoriteGroups(
+    favoriteState: any,
+    groupKeys: unknown,
+    userId: string
+) {
+    const selectedGroupKeys = Array.isArray(groupKeys) ? groupKeys : [];
+    if (!selectedGroupKeys.length) {
+        return isUserInAnyFavoriteGroup(favoriteState, userId);
+    }
+    return selectedGroupKeys.some((groupKey) => {
+        const normalizedGroupKey = String(groupKey || '').trim();
+        if (!normalizedGroupKey) {
+            return false;
+        }
+        if (normalizedGroupKey.startsWith('local:')) {
+            return localFavoriteGroupContainsUser(
+                favoriteState.localFriendFavorites || {},
+                normalizedGroupKey,
+                userId
+            );
+        }
+        return remoteFavoriteGroupContainsUser(
+            favoriteState.groupedFavoriteFriendIdsByGroupKey || {},
+            normalizedGroupKey,
+            userId
+        );
+    });
+}
+
+function isUserInAnyFavoriteGroup(favoriteState: any, userId: string) {
+    if (arrayContainsUserId(favoriteState.favoriteFriendIds, userId)) {
+        return true;
+    }
+    if (arrayContainsUserId(favoriteState.localFriendFavoritesList, userId)) {
+        return true;
+    }
+    if (
+        Object.values(favoriteState.localFriendFavorites || {}).some(
+            (groupIds) => arrayContainsUserId(groupIds, userId)
+        )
+    ) {
+        return true;
+    }
+    return Object.values(
+        favoriteState.groupedFavoriteFriendIdsByGroupKey || {}
+    ).some((groupIds) => arrayContainsUserId(groupIds, userId));
+}
+
+function isUserInCurrentInstance(gameState: any, userId: string) {
+    if (arrayContainsUserId(gameState.currentLocationPlayerIds, userId)) {
+        return true;
+    }
+    return Array.isArray(gameState.currentLocationPlayers)
+        ? gameState.currentLocationPlayers.some(
+              (player: any) =>
+                  normalizeUserId(player?.id || player?.userId) === userId
+          )
+        : false;
+}
+
+function shouldDeliverVrNotificationForRule(
+    rule: OverlayActivityRule,
+    notification: any,
+    gameState: any
+) {
+    const userId = normalizeUserId(getNotificationUserId(notification));
+    switch (rule.scope) {
+        case 'off':
+            return false;
+        case 'on':
+            return true;
+        case 'friends':
+            return Boolean(
+                userId && useFriendRosterStore.getState().friendsById?.[userId]
+            );
+        case 'selectedFavorites':
+            return Boolean(
+                userId &&
+                    isUserInSelectedFavoriteGroups(
+                        useFavoriteStore.getState(),
+                        rule.favoriteGroupKeys,
+                        userId
+                    )
+            );
+        case 'allFavorites':
+            return Boolean(
+                userId &&
+                    isUserInAnyFavoriteGroup(useFavoriteStore.getState(), userId)
+            );
+        case 'everyoneInInstance':
+            return Boolean(userId && isUserInCurrentInstance(gameState, userId));
+        default:
+            return true;
+    }
+}
+
+function shouldDeliverVrNotification(
+    notification: any,
+    preferences: any,
+    gameState: any
+) {
+    const type = String(notification?.type || '').trim();
+    const definition = OVERLAY_ACTIVITY_DEFINITION_BY_NOTIFICATION_TYPE[type];
+    if (!definition) {
+        return true;
+    }
+    const filters = normalizeOverlayActivityFilterProfile(
+        preferences.vrNotificationActivityFilters
+    );
+    const rule = filters.types[definition.key] || {
+        scope: definition.defaultScope,
+        favoriteGroupKeys: 'all'
+    };
+    return shouldDeliverVrNotificationForRule(rule, notification, gameState);
 }
 
 function getDisplayName(notification: any, override: any = '') {
@@ -476,6 +772,15 @@ async function buildNotificationMessage(
                     `changed avatar to ${notification.name || ''}`.trim()
                 )
             };
+        case 'Bio':
+            return {
+                title: name,
+                body: await translated(
+                    'dashboard.widget.feed_bio',
+                    {},
+                    'updated bio'
+                )
+            };
         case 'ChatBoxMessage':
             return {
                 title: name,
@@ -627,8 +932,27 @@ function getNotificationImageUrl(notification: any) {
     );
 }
 
+async function getNotificationUserImageUrl(notification: any) {
+    const userId = getNotificationUserId(notification);
+    if (!userId || String(userId).startsWith('grp_')) {
+        return '';
+    }
+    const runtimeState = useRuntimeStore.getState();
+    const endpoint = runtimeState.auth.currentUserEndpoint;
+    const currentUserSnapshot = runtimeState.auth.currentUserSnapshot;
+    const user =
+        (String(currentUserSnapshot?.id || '') === String(userId)
+            ? currentUserSnapshot
+            : null) ||
+        useFriendRosterStore.getState().friendsById?.[userId] ||
+        getKnownUserFact(endpoint, userId);
+    return resolveUserImageUrl(user, true, '128');
+}
+
 async function resolveNotificationImage(notification: any) {
-    const imageUrl = getNotificationImageUrl(notification);
+    const imageUrl =
+        getNotificationImageUrl(notification) ||
+        (await getNotificationUserImageUrl(notification));
     if (!imageUrl || !String(imageUrl).startsWith('http')) {
         return '';
     }
@@ -657,7 +981,9 @@ async function resolveTtsDisplayName(notification: any, preferences: any) {
     if (!userId) {
         return '';
     }
-    const memo = await memoPersistenceRepository.getUserMemo(userId).catch(() => null);
+    const memo = await memoPersistenceRepository
+        .getUserMemo(userId)
+        .catch(() => null);
     const nickName =
         typeof memo?.memo === 'string' ? memo.memo.split('\n')[0]?.trim() : '';
     return nickName || '';
@@ -690,7 +1016,7 @@ function speakNotification(text: any, preferences: any) {
 
 export async function deliverRuntimeNotification(notification: any) {
     const preferences = await loadNotificationPreferences();
-    const gameState = useRuntimeStore.getState().gameState || {};
+    const gameState: any = useRuntimeStore.getState().gameState || {};
     const playNotificationTTS = shouldPlayForCondition(
         preferences.notificationTTS,
         gameState
@@ -698,8 +1024,26 @@ export async function deliverRuntimeNotification(notification: any) {
     const playDesktopToast =
         shouldPlayForCondition(preferences.desktopToast, gameState) ||
         shouldPlayAfkDesktopToast(preferences, gameState);
+    const playVrNotification =
+        Boolean(gameState.isSteamVRRunning) &&
+        shouldDeliverVrNotification(notification, preferences, gameState);
+    const playXSNotification = Boolean(
+        preferences.xsNotifications && playVrNotification
+    );
+    const playOvrtHudNotifications = Boolean(
+        preferences.ovrtHudNotifications && playVrNotification
+    );
+    const playOvrtWristNotifications = Boolean(
+        preferences.ovrtWristNotifications && playVrNotification
+    );
 
-    if (!playNotificationTTS && !playDesktopToast) {
+    if (
+        !playNotificationTTS &&
+        !playDesktopToast &&
+        !playXSNotification &&
+        !playOvrtHudNotifications &&
+        !playOvrtWristNotifications
+    ) {
         return;
     }
 
@@ -721,21 +1065,61 @@ export async function deliverRuntimeNotification(notification: any) {
         }
     }
 
-    if (!playDesktopToast) {
+    const playVisualNotification =
+        playDesktopToast ||
+        playXSNotification ||
+        playOvrtHudNotifications ||
+        playOvrtWristNotifications;
+    if (!playVisualNotification) {
         return;
     }
 
-    const image = await resolveNotificationImage(notification);
+    const image = preferences.imageNotifications
+        ? await resolveNotificationImage(notification)
+        : '';
+    const overlayText = toNotificationText(message, notification?.type);
+    const overlayTimeout = Math.floor(
+        normalizeInteger(preferences.notificationTimeout, 3000, 0, 600000) /
+            1000
+    );
+    const overlayOpacity =
+        normalizeInteger(preferences.notificationOpacity, 100, 0, 100) / 100;
 
     const deliveries = [];
-    deliveries.push(
-        tauriClient.app.DesktopNotification(
-            message.title,
-            message.body,
-            image,
-            Boolean(preferences.desktopNotificationSound)
-        )
-    );
+    if (playDesktopToast) {
+        deliveries.push(
+            tauriClient.app.DesktopNotification(
+                message.title,
+                message.body,
+                image,
+                Boolean(preferences.desktopNotificationSound)
+            )
+        );
+    }
+    if (playXSNotification) {
+        deliveries.push(
+            tauriClient.app.XSNotification(
+                'VRCX',
+                overlayText,
+                overlayTimeout,
+                overlayOpacity,
+                image
+            )
+        );
+    }
+    if (playOvrtHudNotifications || playOvrtWristNotifications) {
+        deliveries.push(
+            tauriClient.app.OVRTNotification(
+                playOvrtHudNotifications,
+                playOvrtWristNotifications,
+                'VRCX',
+                overlayText,
+                overlayTimeout,
+                overlayOpacity,
+                image
+            )
+        );
+    }
 
     const results = await Promise.allSettled(deliveries);
     for (const result of results) {

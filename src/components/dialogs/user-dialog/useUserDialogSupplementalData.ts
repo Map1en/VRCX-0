@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 
@@ -14,6 +15,7 @@ import {
     isSameLocationTag,
     resolvePresenceLocation
 } from './userDialogContentHelpers';
+import { normalizeUserId } from './userProfileFields';
 
 function normalizeMutualFriendCount(value: any) {
     const source = value && typeof value === 'object' ? value : {};
@@ -27,12 +29,24 @@ function normalizeMutualFriendCount(value: any) {
     );
 }
 
+function resolveFriendedAtFromHistoryRows(rows: any) {
+    const latestRelationshipRow = Array.isArray(rows)
+        ? rows.find(
+              (row: any) => row?.type === 'Friend' || row?.type === 'Unfriend'
+          )
+        : null;
+    return latestRelationshipRow?.type === 'Friend'
+        ? latestRelationshipRow.created_at || ''
+        : '';
+}
+
 export function useUserDialogSupplementalData({
     activeUserTargetRef,
     currentEndpoint,
     currentGameDestination,
     currentGameLocation,
     currentSnapshotLocation,
+    currentUserId,
     currentUserSnapshot,
     isTargetCurrentUser,
     normalizedUserId,
@@ -360,6 +374,60 @@ export function useUserDialogSupplementalData({
     }, [
         currentEndpoint,
         currentUserSnapshot?.hasSharedConnectionsOptOut,
+        isTargetCurrentUser,
+        profile?.id,
+        reloadToken,
+        setUserStatsForTarget,
+        targetKey
+    ]);
+
+    useEffect(() => {
+        let active = true;
+        const ownerUserId = normalizeUserId(
+            currentUserId ||
+                currentUserSnapshot?.id ||
+                currentUserSnapshot?.userId ||
+                currentUserSnapshot?.user_id
+        );
+        const targetUserId = normalizeUserId(profile?.id);
+
+        if (!ownerUserId || !targetUserId || isTargetCurrentUser) {
+            setUserStatsForTarget((current: any) => ({
+                ...current,
+                friendedAt: ''
+            }));
+            return () => {
+                active = false;
+            };
+        }
+
+        friendLogHistoryRepository
+            .getFriendLogHistory(ownerUserId, {
+                targetUserId,
+                types: ['Friend', 'Unfriend']
+            })
+            .then((rows: any) => {
+                if (!active) {
+                    return;
+                }
+                const friendedAt = resolveFriendedAtFromHistoryRows(rows);
+                setUserStatsForTarget((current: any) => ({
+                    ...current,
+                    friendedAt
+                }));
+            })
+            .catch(() => {
+                // Keep the visible activity summary while friend history is unavailable.
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [
+        currentUserId,
+        currentUserSnapshot?.id,
+        currentUserSnapshot?.userId,
+        currentUserSnapshot?.user_id,
         isTargetCurrentUser,
         profile?.id,
         reloadToken,

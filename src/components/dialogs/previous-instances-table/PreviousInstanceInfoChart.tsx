@@ -163,11 +163,13 @@ export function PreviousInstanceInfoChart({ rows }: any) {
         let cancelled = false;
 
         async function renderChart() {
-            const echarts = echartsRef.current || (await import('echarts'));
+            const echartsModule =
+                echartsRef.current || (await import('@/lib/echarts'));
             if (cancelled || chartElementRef.current !== chartElement) {
                 return;
             }
-            echartsRef.current = echarts;
+            echartsRef.current = echartsModule;
+            const { echarts } = echartsModule;
 
             const themeName = resolvedTheme === 'dark' ? 'dark' : null;
             let chart = chartInstanceRef.current;

@@ -22,6 +22,9 @@ export function SystemDialogsHost() {
     const changelogOpen = useRuntimeStore(
         (state: any) => state.systemHosts.changelogOpen
     );
+    const changelogTargetVersion = useRuntimeStore(
+        (state: any) => state.changelogTargetVersion
+    );
     const registryBackupOpen = useRuntimeStore(
         (state: any) => state.systemHosts.registryBackupOpen
     );
@@ -39,6 +42,9 @@ export function SystemDialogsHost() {
     );
     const setSystemHostOpen = useRuntimeStore(
         (state: any) => state.setSystemHostOpen
+    );
+    const setChangelogTargetVersion = useRuntimeStore(
+        (state: any) => state.setChangelogTargetVersion
     );
     const hostCapabilities = useRuntimeStore((state: any) => state.hostCapabilities);
 
@@ -75,9 +81,13 @@ export function SystemDialogsHost() {
             />
             <ChangelogDialog
                 open={Boolean(changelogOpen)}
-                onOpenChange={(open: any) =>
-                    setSystemHostOpen('changelogOpen', open)
-                }
+                targetVersion={changelogTargetVersion}
+                onOpenChange={(open: any) => {
+                    setSystemHostOpen('changelogOpen', open);
+                    if (!open) {
+                        setChangelogTargetVersion('');
+                    }
+                }}
             />
             <RegistryBackupDialog
                 open={Boolean(registryBackupOpen)}

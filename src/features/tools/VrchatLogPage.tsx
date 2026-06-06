@@ -57,6 +57,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { formatDateFilter } from '@/lib/dateTime';
 import { Input } from '@/ui/shadcn/input';
 import {
     Select,
@@ -970,9 +971,10 @@ export function VrchatLogPage() {
                             {selectedFile ? (
                                 <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                                     {selectedFile.modifiedAt
-                                        ? new Date(
-                                              selectedFile.modifiedAt
-                                          ).toLocaleString()
+                                        ? formatDateFilter(
+                                              selectedFile.modifiedAt,
+                                              'long'
+                                          )
                                         : ''}
                                 </span>
                             ) : null}

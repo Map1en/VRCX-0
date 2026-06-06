@@ -65,6 +65,15 @@ export const protectedRoutes = [
         )
     },
     {
+        path: '/instance-history',
+        titleKey: 'app.routes.instance_history',
+        descriptionKey: 'app.routes.local_instance_history_for_a_selected_user',
+        element: lazyRouteElement(
+            () => import('@/features/instance-history/InstanceHistoryPage'),
+            'InstanceHistoryPage'
+        )
+    },
+    {
         path: '/player-list',
         titleKey: 'app.routes.current_players',
         descriptionKey:

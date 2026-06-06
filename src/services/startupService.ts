@@ -95,7 +95,12 @@ export async function initializeReactRuntime() {
             'backgroundImage',
             initializeBackgroundImage()
         );
-        applyAppFontPreferences({ fontFamily, customFontFamily, cjkFontPack });
+        applyAppFontPreferences({
+            fontFamily,
+            customFontFamily,
+            cjkFontPack,
+            locale: normalizedLocale
+        });
         await runNonCriticalStartupSync('zoom', applyZoomLevel(zoomLevel));
         await databaseMaintenanceRepository.initGlobalTables();
         const databaseReady = await initializeDatabaseUpgradeFlow();

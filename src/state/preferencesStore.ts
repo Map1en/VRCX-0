@@ -3,8 +3,10 @@ import { create } from 'zustand';
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
+    parseOverlayActivityFilterProfile,
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
 import {
@@ -274,6 +276,12 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     notificationTTS: 'Never',
     notificationTTSNickName: false,
     notificationTTSVoice: '0',
+    xsNotifications: true,
+    ovrtHudNotifications: true,
+    ovrtWristNotifications: false,
+    imageNotifications: true,
+    notificationTimeout: 3000,
+    notificationOpacity: 100,
     wristOverlayEnabled: false,
     wristOverlayStartMode: 'vrchatVrMode',
     wristOverlayButton: 'grip',
@@ -312,6 +320,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
         noty: { ...sharedFeedFiltersDefaults.noty }
     },
     overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     feedTimeDisplayMode: 'relative',
     trustColor: { ...TRUST_COLOR_DEFAULTS },
     youtubeAPI: false,
@@ -400,6 +409,20 @@ export function normalizePreferenceSnapshot(
         notificationTTS: next.notificationTTS || 'Never',
         notificationTTSNickName: normalizeBool(next.notificationTTSNickName),
         notificationTTSVoice: String(next.notificationTTSVoice ?? '0'),
+        xsNotifications: normalizeBool(next.xsNotifications),
+        ovrtHudNotifications: normalizeBool(next.ovrtHudNotifications),
+        ovrtWristNotifications: normalizeBool(next.ovrtWristNotifications),
+        imageNotifications: normalizeBool(next.imageNotifications),
+        notificationTimeout: normalizeBoundedInt(next.notificationTimeout, {
+            min: 0,
+            max: 600000,
+            fallback: 3000
+        }),
+        notificationOpacity: normalizeBoundedInt(next.notificationOpacity, {
+            min: 0,
+            max: 100,
+            fallback: 100
+        }),
         wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             next.wristOverlayStartMode
@@ -457,6 +480,9 @@ export function normalizePreferenceSnapshot(
                 ? next.overlayActivityFilters
                 : undefined,
             next.sharedFeedFilters
+        ),
+        vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
+            next.vrNotificationActivityFilters
         ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(
             next.feedTimeDisplayMode

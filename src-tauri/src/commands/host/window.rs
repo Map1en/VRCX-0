@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
 
 use crate::error::AppError;
@@ -184,6 +184,20 @@ pub fn app__desktop_notification(
     notification
         .show()
         .map_err(|e| AppError::Custom(format!("notification: {e}")))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn app__auth_failure_notification_show(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    reason: Option<String>,
+) -> Result<(), AppError> {
+    crate::bootstrap::show_auth_failure_notification_once(
+        &app_handle,
+        &state,
+        reason.as_deref().unwrap_or("auto-login"),
+    );
     Ok(())
 }
 

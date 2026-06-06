@@ -1,23 +1,6 @@
-import { format } from 'date-fns';
-import {
-    cs,
-    enUS,
-    es,
-    fr,
-    hu,
-    ja,
-    ko,
-    pl,
-    pt,
-    ru,
-    th,
-    vi,
-    zhCN,
-    zhTW
-} from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 
-import { normalizeLanguageCode } from '@/localization/locales';
+import { formatDateFilter } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -26,24 +9,7 @@ import {
     HoverCardTrigger
 } from '@/ui/shadcn/hover-card';
 
-const DATE_FNS_LOCALE_BY_LANGUAGE: Record<string, any> = {
-    cs,
-    en: enUS,
-    es,
-    fr,
-    hu,
-    ja,
-    ko,
-    pl,
-    pt,
-    ru,
-    th,
-    vi,
-    'zh-CN': zhCN,
-    'zh-TW': zhTW
-};
-
-function formatUpdateReleaseDate(value: any, language: any) {
+function formatUpdateReleaseDate(value: any) {
     if (!value) {
         return '-';
     }
@@ -51,16 +17,11 @@ function formatUpdateReleaseDate(value: any, language: any) {
     if (!Number.isFinite(timestamp)) {
         return String(value);
     }
-    const normalizedLanguage = normalizeLanguageCode(language);
-    return format(new Date(timestamp), 'PP', {
-        locale:
-            DATE_FNS_LOCALE_BY_LANGUAGE[normalizedLanguage] ||
-            DATE_FNS_LOCALE_BY_LANGUAGE.en
-    });
+    return formatDateFilter(timestamp, 'date');
 }
 
 export function TitleBarUpdateButton({ onClick }: { onClick: () => void }) {
-    const { i18n, t } = useTranslation();
+    const { t } = useTranslation();
     const latestUpdaterRelease = useRuntimeStore(
         (state: any) => state.updateLoop.latestUpdaterRelease
     );
@@ -102,8 +63,7 @@ export function TitleBarUpdateButton({ onClick }: { onClick: () => void }) {
                         </dt>
                         <dd className="text-foreground truncate">
                             {formatUpdateReleaseDate(
-                                latestUpdaterRelease?.publishedAt,
-                                i18n.resolvedLanguage || i18n.language
+                                latestUpdaterRelease?.publishedAt
                             )}
                         </dd>
                     </dl>

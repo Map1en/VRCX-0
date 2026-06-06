@@ -1,12 +1,7 @@
-import type { Column } from '@tanstack/react-table';
-import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
-    ChevronRightIcon
-} from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { Button } from '@/ui/shadcn/button';
@@ -32,35 +27,6 @@ import {
 import { GameLogSessionsView } from './GameLogSessionsView';
 
 const SESSION_FILTER_TYPES = GAME_LOG_SESSION_FILTER_TYPES;
-
-function SortButton({
-    column,
-    label
-}: {
-    column: Column<GameLogRow, unknown>;
-    label: string;
-}) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
 
 function GameLogEmptyState({
     title,
@@ -257,7 +223,7 @@ export {
     GameLogLocationDetail,
     GameLogSessionsView,
     SESSION_FILTER_TYPES,
-    SortButton,
+    DataTableSortButton as SortButton,
     TypeFilterDropdown,
     TypeFilterToggleGroup
 };

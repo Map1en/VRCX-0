@@ -1,18 +1,9 @@
-import { timeToText } from '@/lib/dateTime';
+import { formatClock as formatAppClock, timeToText } from '@/lib/dateTime';
 
 export const INFO_CHART_BAR_WIDTH = 12;
 
 function formatClock(value: any, hour12: any, includeSeconds: any = false) {
-    try {
-        return new Intl.DateTimeFormat(undefined, {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: includeSeconds ? '2-digit' : undefined,
-            hour12
-        }).format(new Date(value));
-    } catch {
-        return '';
-    }
+    return formatAppClock(value, { hour12, includeSeconds });
 }
 
 function truncateLabel(value: any, maxLength: any = 20) {
@@ -22,10 +13,10 @@ function truncateLabel(value: any, maxLength: any = 20) {
 
 function markerForEntry(entry: any) {
     if (entry?.isFavorite) {
-        return '* ';
+        return '\u2b50 ';
     }
     if (entry?.isFriend) {
-        return '+ ';
+        return '\ud83d\udc9a ';
     }
     return '';
 }

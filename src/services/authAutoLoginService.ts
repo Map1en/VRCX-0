@@ -177,6 +177,14 @@ async function flashWindowSafely() {
     }
 }
 
+async function showAuthFailureNotificationSafely(reason: string) {
+    try {
+        await tauriClient.app.AuthFailureNotificationShow(reason);
+    } catch (error) {
+        console.warn('Failed to show auth failure notification:', error);
+    }
+}
+
 function setSignedOutSessionState() {
     useSessionStore.getState().setSessionState({
         isLoggedIn: false,
@@ -245,6 +253,9 @@ export async function executeReactAutoLogin(
                 `Automatic login paused for ${displayName} after ${AUTO_LOGIN_MAX_ATTEMPTS} attempts in the last hour.`
             );
             await flashWindowSafely();
+            await showAuthFailureNotificationSafely(
+                'frontend-auto-login-throttled'
+            );
             toast.error(await i18n.t('message.auth.auto_login_failed'));
             return {
                 status: 'throttled',
@@ -298,6 +309,9 @@ export async function executeReactAutoLogin(
                 'completed',
                 'The previous browser session expired and no saved credentials are available for fallback auto-login.'
             );
+            await showAuthFailureNotificationSafely(
+                'frontend-auto-login-expired'
+            );
             return {
                 status: 'expired',
                 snapshot
@@ -345,6 +359,7 @@ export async function executeReactAutoLogin(
                 await i18n.t('message.auth.auto_login_failed')
             )
         );
+        await showAuthFailureNotificationSafely('frontend-auto-login-failed');
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
             toast.error(await i18n.t('message.auth.offline'));

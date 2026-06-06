@@ -24,6 +24,11 @@ export interface OverlayActivityRule {
     favoriteGroupKeys: OverlayActivityFavoriteGroupKeys;
 }
 
+export interface OverlayActivityFilterProfilePreference {
+    version: 1;
+    types: Record<string, OverlayActivityRule>;
+}
+
 export interface OverlayActivityTypeDefinition {
     key: string;
     category: OverlayActivityCategory;
@@ -134,6 +139,12 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] 
             'OnPlayerLeft',
             INSTANCE_ACTOR_SCOPES,
             'everyoneInInstance'
+        ),
+        defineType(
+            'currentInstance',
+            'ChatBoxMessage',
+            INSTANCE_ACTOR_SCOPES,
+            'off'
         ),
 
         defineType(
@@ -253,13 +264,24 @@ export const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<
     ])
 );
 
+export const DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE: OverlayActivityFilterProfilePreference =
+    {
+        version: 1,
+        types: cloneOverlayActivityTypeRules(DEFAULT_OVERLAY_ACTIVITY_TYPES)
+    };
+
 export const DEFAULT_OVERLAY_ACTIVITY_FILTERS: OverlayActivityFiltersPreference =
     {
         version: 1,
         wrist: {
-            types: cloneOverlayActivityTypeRules(DEFAULT_OVERLAY_ACTIVITY_TYPES)
+            types: cloneOverlayActivityTypeRules(
+                DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE.types
+            )
         }
     };
+
+export const DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS =
+    DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE;
 
 export function overlayActivityCategoriesFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
@@ -308,16 +330,28 @@ export function defaultOverlayActivityTypeRulesFromDefinitions(
     );
 }
 
+export function defaultOverlayActivityFilterProfileFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFilterProfilePreference {
+    return {
+        version: 1,
+        types: cloneOverlayActivityTypeRules(
+            defaultOverlayActivityTypeRulesFromDefinitions(definitions),
+            definitions
+        )
+    };
+}
+
 export function defaultOverlayActivityFiltersFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): OverlayActivityFiltersPreference {
+    const profile = defaultOverlayActivityFilterProfileFromDefinitions(
+        definitions
+    );
     return {
         version: 1,
         wrist: {
-            types: cloneOverlayActivityTypeRules(
-                defaultOverlayActivityTypeRulesFromDefinitions(definitions),
-                definitions
-            )
+            types: profile.types
         }
     };
 }
@@ -544,16 +578,18 @@ export function normalizeOverlayActivityFilters(
     );
 }
 
-export function normalizeOverlayActivityFiltersWithDefinitions(
+export function normalizeOverlayActivityFilterProfileWithDefinitions(
     value: unknown = {},
     definitions: OverlayActivityTypeDefinition[]
-): OverlayActivityFiltersPreference {
+): OverlayActivityFilterProfilePreference {
     const source = isRecord(value) ? value : {};
-    const wrist = isRecord(source.wrist) ? source.wrist : {};
-    const types = isRecord(wrist.types) ? wrist.types : {};
-    const categories = isRecord(wrist.categories) ? wrist.categories : {};
+    const filterProfile = isRecord(source.wrist) ? source.wrist : source;
+    const types = isRecord(filterProfile.types) ? filterProfile.types : {};
+    const categories = isRecord(filterProfile.categories)
+        ? filterProfile.categories
+        : {};
     const legacyFavoriteGroupKeys = normalizeFavoriteGroupKeys(
-        wrist.favoriteGroupKeys
+        filterProfile.favoriteGroupKeys
     );
     const defaultTypes =
         defaultOverlayActivityTypeRulesFromDefinitions(definitions);
@@ -598,11 +634,35 @@ export function normalizeOverlayActivityFiltersWithDefinitions(
 
     return {
         version: 1,
+        types: Object.fromEntries([
+            ...normalizedKnownTypes,
+            ...normalizedUnknownTypes
+        ])
+    };
+}
+
+export function normalizeOverlayActivityFilterProfile(
+    value: unknown = {}
+): OverlayActivityFilterProfilePreference {
+    return normalizeOverlayActivityFilterProfileWithDefinitions(
+        value,
+        OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+    );
+}
+
+export function normalizeOverlayActivityFiltersWithDefinitions(
+    value: unknown = {},
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFiltersPreference {
+    const source = isRecord(value) ? value : {};
+    const profile = normalizeOverlayActivityFilterProfileWithDefinitions(
+        isRecord(source.wrist) ? source.wrist : source,
+        definitions
+    );
+    return {
+        version: 1,
         wrist: {
-            types: Object.fromEntries([
-                ...normalizedKnownTypes,
-                ...normalizedUnknownTypes
-            ])
+            types: profile.types
         }
     };
 }
@@ -661,5 +721,21 @@ export function parseOverlayActivityFilters(
         return normalizeOverlayActivityFilters(JSON.parse(String(value)));
     } catch {
         return normalizeOverlayActivityFilters();
+    }
+}
+
+export function parseOverlayActivityFilterProfile(
+    value: unknown
+): OverlayActivityFilterProfilePreference {
+    if (!value) {
+        return normalizeOverlayActivityFilterProfile();
+    }
+    if (typeof value === 'object') {
+        return normalizeOverlayActivityFilterProfile(value);
+    }
+    try {
+        return normalizeOverlayActivityFilterProfile(JSON.parse(String(value)));
+    } catch {
+        return normalizeOverlayActivityFilterProfile();
     }
 }

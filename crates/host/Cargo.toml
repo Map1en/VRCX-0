@@ -12,6 +12,7 @@ arboard = "3"
 base64 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
+futures-util = "0.3"
 hex = "0.4"
 open = "5"
 serde = { workspace = true, features = ["derive"] }
@@ -19,6 +20,8 @@ serde_json = { workspace = true }
 sha2 = "0.11"
 sysinfo = "0.39"
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["net", "rt", "sync"] }
+tokio-tungstenite = { version = "0.29", features = ["rustls-tls-native-roots"] }
 tracing = { workspace = true }
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }

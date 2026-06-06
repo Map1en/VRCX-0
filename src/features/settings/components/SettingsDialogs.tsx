@@ -4,7 +4,10 @@ import { FeedFilterDialog } from './settings-dialogs/FeedFilterDialog';
 import { PurgeConfirmDialog } from './settings-dialogs/PurgeConfirmDialog';
 import { TableLimitsDialog } from './settings-dialogs/TableLimitsDialog';
 import { TranslationApiDialog } from './settings-dialogs/TranslationApiDialog';
-import { WristFeedNotificationsDialog } from './settings-dialogs/WristFeedNotificationsDialog';
+import {
+    VrNotificationsDialog,
+    WristFeedNotificationsDialog
+} from './settings-dialogs/WristFeedNotificationsDialog';
 import { YoutubeApiDialog } from './settings-dialogs/YoutubeApiDialog';
 import { TablePageSizesDialog } from './SettingsViewParts';
 
@@ -17,7 +20,8 @@ export function SettingsDialogs({
     avatarProvider,
     purge,
     feedFilter,
-    wristFeedNotifications
+    wristFeedNotifications,
+    vrNotifications
 }: any) {
     return (
         <>
@@ -94,6 +98,12 @@ export function SettingsDialogs({
                 onOpenChange={wristFeedNotifications.setOpen}
                 value={wristFeedNotifications.value}
                 onSave={wristFeedNotifications.onSave}
+            />
+            <VrNotificationsDialog
+                open={vrNotifications.open}
+                onOpenChange={vrNotifications.setOpen}
+                value={vrNotifications.value}
+                onSave={vrNotifications.onSave}
             />
         </>
     );

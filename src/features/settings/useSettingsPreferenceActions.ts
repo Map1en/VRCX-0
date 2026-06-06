@@ -38,6 +38,7 @@ export function useSettingsPreferenceActions({
     setTableLimitsPreference,
     setTablePageSizesDialogOpen,
     setTrustColorPreference,
+    setVrNotificationActivityFiltersPreference,
     setWristOverlayEnabledPreference,
     t,
     tableLimitsDraft,
@@ -435,6 +436,36 @@ export function useSettingsPreferenceActions({
         toast.success(t('common.settings_saved'));
         return savedFilters;
     }
+    async function saveVrNotificationActivityFilters(value: any) {
+        let savedFilters;
+        const previousFilters = prefs.vrNotificationActivityFilters;
+        const saved = await commit(
+            async () => {
+                savedFilters =
+                    await setVrNotificationActivityFiltersPreference(value);
+            },
+            () => {
+                setPrefs((current: any) => ({
+                    ...current,
+                    vrNotificationActivityFilters: value
+                }));
+                return () =>
+                    setPrefs((current: any) => ({
+                        ...current,
+                        vrNotificationActivityFilters: previousFilters
+                    }));
+            }
+        );
+        if (!saved) {
+            return null;
+        }
+        setPrefs((current: any) => ({
+            ...current,
+            vrNotificationActivityFilters: savedFilters
+        }));
+        toast.success(t('common.settings_saved'));
+        return savedFilters;
+    }
     async function saveWristOverlayEnabled(value: any) {
         let savedValue = Boolean(value);
         const previousValue = prefs.wristOverlayEnabled;
@@ -509,6 +540,7 @@ export function useSettingsPreferenceActions({
         saveTableLimitsDialog,
         toggleLocalFavoriteFriendsGroup,
         saveOverlayActivityFilters,
+        saveVrNotificationActivityFilters,
         saveWristOverlayEnabled,
         speakNotificationTts
     };

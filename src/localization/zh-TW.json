@@ -78,6 +78,7 @@
         "friends_locations": "好友位置",
         "feed": "動態",
         "game_log": "遊戲紀錄",
+        "instance_history": "房間歷史",
         "player_list": "用戶列表",
         "search": "搜尋",
         "favorites": "收藏",
@@ -659,6 +660,30 @@
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "沒有找到 {value} 的使用者 ID"
+            }
+        },
+        "instance_history": {
+            "title": "房間歷史",
+            "placeholder": {
+                "user": "選擇使用者"
+            },
+            "label": {
+                "loaded_records": "已載入 {count} 筆記錄",
+                "selected_user": "所選使用者",
+                "unnamed_user": "未命名使用者",
+                "self": "自己",
+                "date_range": "日期範圍"
+            },
+            "action": {
+                "current_user": "自己",
+                "open_full": "開啟完整房間歷史"
+            },
+            "description": {
+                "viewing": "正在查看：{name}",
+                "no_current_user": "登入後才能查看房間歷史。"
+            },
+            "toast": {
+                "failed_to_load_instance_history": "載入房間歷史失敗"
             }
         },
         "my_avatars": {
@@ -1620,7 +1645,7 @@
                     "header": "VR 核心功能"
                 },
                 "vr_notifications": {
-                    "header": "VR 通知"
+                    "header": "VR 疊加通知"
                 },
                 "wrist_overlay": {
                     "header": "手腕嵌入介面",
@@ -1930,8 +1955,8 @@
                     "wrist_overlay_size_large": "大型",
                     "test_notification": "發送測試用通知",
                     "test_message": "測試通知。",
-                    "steamvr_notifications": {
-                        "header": "SteamVR 通知",
+                    "vr_notifications": {
+                        "header": "VR 疊加通知",
                         "steamvr_overlay": "SteamVR 嵌入介面",
                         "overlay_notifications": "嵌入介面通知",
                         "notification_position": "通知位置",
@@ -1939,6 +1964,7 @@
                         "wayvr_notifications": "WayVR 通知",
                         "ovrtoolkit_hud_notifications": "OVR Toolkit HUD 通知",
                         "ovrtoolkit_wrist_notifications": "OVR Toolkit 手腕通知",
+                        "notification_filters": "疊加通知過濾器",
                         "user_images": "用戶照片（較慢）",
                         "user_images_description": "可能會影響效能。",
                         "notification_opacity": "通知不透明度",
@@ -1956,7 +1982,7 @@
                     "desktop_notifications": {
                         "header": "桌面通知",
                         "when_to_display": "顯示時機",
-                        "when_to_display_vr": "顯示 VR 通知",
+                        "when_to_display_vr": "顯示 VR 疊加通知",
                         "desktop_notification_while_afk": "在 AFK 時顯示桌面通知",
                         "notification_sound": "通知音"
                     },
@@ -2819,6 +2845,8 @@
             "badges": {
                 "assigned": "給予",
                 "hidden": "隱藏",
+                "visible": "顯示",
+                "visibility": "顯示狀態",
                 "showcased": "展示"
             },
             "actions": {
@@ -2920,6 +2948,7 @@
                 "time_together": "一起遊玩時長",
                 "play_time": "遊玩時長",
                 "online_for": "上線時長",
+                "estimated_online_for": "已在線約 {duration}",
                 "offline_for": "離線時長",
                 "last_activity": "最後動態",
                 "last_login": "最後登入",
@@ -4430,6 +4459,10 @@
             "reset": "重設",
             "close": "關閉"
         },
+        "vr_notifications": {
+            "title": "VR 疊加通知過濾器",
+            "description": "選擇 SteamVR 執行時哪些通知會傳送到 XSOverlay 和 OVR Toolkit。"
+        },
         "wrist_feed_notifications": {
             "title": "手腕動態過濾器",
             "description": "選擇哪些內容顯示在手腕動態中。桌面通知使用單獨的篩選設定。",
@@ -4491,6 +4524,7 @@
                 "OnPlayerJoining": "玩家正在加入",
                 "OnPlayerJoined": "玩家已加入",
                 "OnPlayerLeft": "玩家已離開",
+                "ChatBoxMessage": "聊天框訊息",
                 "AvatarChange": "Avatar 變更",
                 "Online": "上線",
                 "Offline": "離線",
@@ -5941,6 +5975,8 @@
             "live_friend_location_board_for_finding_people": "用於找人的好友即時位置面板。",
             "game_log": "遊戲紀錄",
             "table_heavy_game_event_log": "表格密集型遊戲事件紀錄。",
+            "instance_history": "房間歷史",
+            "local_instance_history_for_a_selected_user": "所選使用者的房間歷史。",
             "current_players": "目前玩家",
             "search": "搜尋",
             "world_and_group_search_route": "世界和群組搜尋路由。",

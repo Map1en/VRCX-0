@@ -21,6 +21,8 @@ use vrcx_0_application::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
 use vrcx_0_host::host_capabilities::{is_host_capability_available, HostCapability};
 use vrcx_0_runtime_host::RuntimeHostActions;
 
+const AUTH_FAILURE_NOTIFICATION_COOLDOWN: Duration = Duration::from_secs(5);
+
 #[derive(Clone)]
 struct TauriRuntimeEventSink {
     app_handle: tauri::AppHandle,
@@ -35,12 +37,82 @@ impl TauriRuntimeEventSink {
 impl RuntimeEventSink for TauriRuntimeEventSink {
     fn emit(&self, event: &str, payload: serde_json::Value) {
         log_gui_background_runtime_info(&self.app_handle, event, &payload);
+        handle_runtime_auth_failure_notification(&self.app_handle, event, &payload);
         let frontend_event = match event {
             "runtimeGameLogEvent" => "addGameLogEvent",
             event => event,
         };
         emit_to_main_window_if_visible(&self.app_handle, frontend_event, payload);
     }
+}
+
+fn handle_runtime_auth_failure_notification(
+    app_handle: &tauri::AppHandle,
+    event: &str,
+    payload: &serde_json::Value,
+) {
+    if event != "realtimeWsStatus" || json_string_field(payload, "status") != "authFailure" {
+        return;
+    }
+    let Some(state) = app_handle.try_state::<AppState>() else {
+        return;
+    };
+    let snapshot = state.snapshot_backend_runtime();
+    if snapshot.phase != BackendRuntimePhase::Running
+        || snapshot.auth_status != "authenticated"
+        || snapshot.ws_status != "authFailure"
+        || snapshot.auth_user_id.trim().is_empty()
+    {
+        return;
+    }
+
+    let user_id = snapshot.auth_user_id.trim().to_string();
+    let reason = json_string_field(payload, "reason");
+    let notification_key = format!("{user_id}\n{reason}");
+    show_auth_failure_notification_once(app_handle, &state, &notification_key);
+}
+
+pub(crate) fn show_auth_failure_notification_once(
+    app_handle: &tauri::AppHandle,
+    state: &AppState,
+    key: &str,
+) {
+    let key = key.trim();
+    let notification_key = if key.is_empty() {
+        "auth-failure".to_string()
+    } else {
+        format!("auth-failure\n{key}")
+    };
+    if !state.should_emit_auth_failure_notification(
+        &notification_key,
+        AUTH_FAILURE_NOTIFICATION_COOLDOWN,
+    ) {
+        return;
+    }
+
+    let labels = auth_failure_notification_labels(state);
+    if let Err(error) = app_handle
+        .notification()
+        .builder()
+        .title(labels.title)
+        .body(labels.body)
+        .show()
+    {
+        tracing::warn!(error = %error, "failed to show auth failure notification");
+    }
+}
+
+pub(crate) fn show_auth_failure_notification_after_backend_start_error(
+    app_handle: &tauri::AppHandle,
+    state: &AppState,
+    reason: &str,
+) {
+    let snapshot = state.snapshot_backend_runtime();
+    if snapshot.phase != BackendRuntimePhase::Idle || snapshot.auth_status != "signedOut" {
+        return;
+    }
+
+    show_auth_failure_notification_once(app_handle, state, reason);
 }
 
 pub fn emit_to_main_window_if_visible<S>(
@@ -736,6 +808,11 @@ struct BackgroundModeNotificationLabels {
     body: &'static str,
 }
 
+struct AuthFailureNotificationLabels {
+    title: &'static str,
+    body: &'static str,
+}
+
 pub(crate) fn show_background_mode_started_notification(app: &tauri::AppHandle, state: &AppState) {
     let labels = background_mode_notification_labels(state);
     if let Err(error) = app
@@ -791,6 +868,36 @@ fn background_mode_notification_labels(state: &AppState) -> BackgroundModeNotifi
     BackgroundModeNotificationLabels {
         title: "Background Mode started",
         body: "VRCX-0 is running in Background Mode.",
+    }
+}
+
+fn auth_failure_notification_labels(state: &AppState) -> AuthFailureNotificationLabels {
+    auth_failure_notification_labels_for_language(&app_language(state))
+}
+
+fn auth_failure_notification_labels_for_language(language: &str) -> AuthFailureNotificationLabels {
+    let language = language.to_ascii_lowercase();
+    if language.starts_with("zh-tw") || language.starts_with("zh-hant") {
+        return AuthFailureNotificationLabels {
+            title: "VRChat 登入已失效",
+            body: "需要重新登入",
+        };
+    }
+    if language.starts_with("zh") {
+        return AuthFailureNotificationLabels {
+            title: "VRChat 登录已失效",
+            body: "需要重新登录",
+        };
+    }
+    if language.starts_with("ja") {
+        return AuthFailureNotificationLabels {
+            title: "VRChat ログインの有効期限が切れました",
+            body: "再ログインが必要です",
+        };
+    }
+    AuthFailureNotificationLabels {
+        title: "VRChat login expired",
+        body: "Sign in again to continue.",
     }
 }
 
@@ -850,6 +957,27 @@ fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
             "autostart",
             "skipped",
             "Autostart synchronization is unavailable on this platform.",
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auth_failure_notification_label_language_prefixes_are_localized() {
+        assert_eq!(
+            auth_failure_notification_labels_for_language("zh-CN").title,
+            "VRChat 登录已失效"
+        );
+        assert_eq!(
+            auth_failure_notification_labels_for_language("zh-TW").title,
+            "VRChat 登入已失效"
+        );
+        assert_eq!(
+            auth_failure_notification_labels_for_language("ja").title,
+            "VRChat ログインの有効期限が切れました"
         );
     }
 }

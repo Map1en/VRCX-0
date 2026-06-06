@@ -124,6 +124,13 @@ export const ConfigKeys = {
     notificationTTSVoice: { type: 'string', default: '0' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
+    xsNotifications: { type: 'bool', default: true },
+    ovrtHudNotifications: { type: 'bool', default: true },
+    ovrtWristNotifications: { type: 'bool', default: false },
+    imageNotifications: { type: 'bool', default: true },
+    notificationTimeout: { type: 'int', default: 3000 },
+    notificationOpacity: { type: 'int', default: 100 },
+    vrNotificationActivityFilters: { type: 'string', default: '' },
 
     // ── Settings - Overlay ───────────────────────────
     wristOverlayEnabled: { type: 'bool', default: false },

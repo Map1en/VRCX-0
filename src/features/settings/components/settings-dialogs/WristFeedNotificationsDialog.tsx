@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { buildFeedFavoriteGroupOptions } from '@/features/feed/feedColumnScope';
 import { tauriClient } from '@/platform/tauri/client';
 import {
-    DEFAULT_OVERLAY_ACTIVITY_FILTERS,
-    defaultOverlayActivityFiltersFromDefinitions,
+    DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
+    defaultOverlayActivityFilterProfileFromDefinitions,
+    normalizeOverlayActivityFilterProfile,
+    normalizeOverlayActivityFilterProfileWithDefinitions,
     normalizeOverlayActivityFilters,
     normalizeOverlayActivityFiltersWithDefinitions,
     overlayActivityCategoriesFromDefinitions,
@@ -14,6 +16,7 @@ import {
     overlayActivityRawTypesByCategoryFromDefinitions,
     overlayActivityTypeLabelKey,
     type OverlayActivityCategory,
+    type OverlayActivityFilterProfilePreference,
     type OverlayActivityFavoriteGroupKeys,
     type OverlayActivityFiltersPreference,
     type OverlayActivityRule,
@@ -61,13 +64,38 @@ type WristFeedNotificationsDialogProps = {
     ): Promise<unknown>;
 };
 
+type VrNotificationsDialogProps = {
+    open: boolean;
+    onOpenChange(open: boolean): void;
+    value: OverlayActivityFilterProfilePreference;
+    onSave(
+        value: OverlayActivityFilterProfilePreference,
+        definitions: OverlayActivityTypeDefinition[]
+    ): Promise<unknown>;
+};
+
+type OverlayActivityFilterDialogProps = {
+    open: boolean;
+    onOpenChange(open: boolean): void;
+    titleKey: string;
+    descriptionKey: string;
+    value: OverlayActivityFilterProfilePreference;
+    onSave(
+        value: OverlayActivityFilterProfilePreference,
+        definitions: OverlayActivityTypeDefinition[]
+    ): Promise<unknown>;
+};
+
 function normalizeDraft(
     value: unknown,
     definitions: OverlayActivityTypeDefinition[]
 ) {
     return definitions.length
-        ? normalizeOverlayActivityFiltersWithDefinitions(value, definitions)
-        : normalizeOverlayActivityFilters(value);
+        ? normalizeOverlayActivityFilterProfileWithDefinitions(
+              value,
+              definitions
+          )
+        : normalizeOverlayActivityFilterProfile(value);
 }
 
 function scopeUsesFavoriteGroups(scope: OverlayActivityScope) {
@@ -84,6 +112,58 @@ export function WristFeedNotificationsDialog({
     value,
     onSave
 }: WristFeedNotificationsDialogProps) {
+    const wristProfile = normalizeOverlayActivityFilters(value).wrist;
+    return (
+        <OverlayActivityFilterDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            titleKey="dialog.wrist_feed_notifications.title"
+            descriptionKey="dialog.wrist_feed_notifications.description"
+            value={{ version: 1, types: wristProfile.types }}
+            onSave={async (profile, definitions) =>
+                onSave(
+                    normalizeOverlayActivityFiltersWithDefinitions(
+                        {
+                            version: 1,
+                            wrist: {
+                                types: profile.types
+                            }
+                        },
+                        definitions
+                    ),
+                    definitions
+                )
+            }
+        />
+    );
+}
+
+export function VrNotificationsDialog({
+    open,
+    onOpenChange,
+    value,
+    onSave
+}: VrNotificationsDialogProps) {
+    return (
+        <OverlayActivityFilterDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            titleKey="dialog.vr_notifications.title"
+            descriptionKey="dialog.vr_notifications.description"
+            value={value}
+            onSave={onSave}
+        />
+    );
+}
+
+function OverlayActivityFilterDialog({
+    open,
+    onOpenChange,
+    titleKey,
+    descriptionKey,
+    value,
+    onSave
+}: OverlayActivityFilterDialogProps) {
     const { t } = useTranslation();
     const [activityDefinitions, setActivityDefinitions] = useState<
         OverlayActivityTypeDefinition[]
@@ -164,14 +244,11 @@ export function WristFeedNotificationsDialog({
             normalizeDraft(
                 {
                     ...current,
-                    wrist: {
-                        ...current.wrist,
-                        types: {
-                            ...current.wrist.types,
-                            [type]: {
-                                ...current.wrist.types[type],
-                                ...patch
-                            }
+                    types: {
+                        ...current.types,
+                        [type]: {
+                            ...current.types[type],
+                            ...patch
                         }
                     }
                 },
@@ -181,7 +258,7 @@ export function WristFeedNotificationsDialog({
     }
 
     function toggleFavoriteGroup(type: string, groupKey: string) {
-        const rule = draft.wrist.types[type];
+        const rule = draft.types[type];
         const currentGroupKeys = rule.favoriteGroupKeys;
         const currentSelectedGroups = selectedGroupKeys(currentGroupKeys);
         const nextSelectedGroups =
@@ -243,10 +320,10 @@ export function WristFeedNotificationsDialog({
         setDraft(
             normalizeDraft(
                 activityDefinitions.length
-                    ? defaultOverlayActivityFiltersFromDefinitions(
+                    ? defaultOverlayActivityFilterProfileFromDefinitions(
                           activityDefinitions
                       )
-                    : DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+                    : DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
                 activityDefinitions
             )
         );
@@ -259,12 +336,8 @@ export function WristFeedNotificationsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="grid max-h-[85vh] w-[min(94vw,64rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-5xl">
                 <DialogHeader>
-                    <DialogTitle>
-                        {t('dialog.wrist_feed_notifications.title')}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {t('dialog.wrist_feed_notifications.description')}
-                    </DialogDescription>
+                    <DialogTitle>{t(titleKey)}</DialogTitle>
+                    <DialogDescription>{t(descriptionKey)}</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid h-[min(62vh,36rem)] min-h-0 grid-cols-[18rem_minmax(0,1fr)] gap-5 overflow-hidden">
@@ -333,7 +406,7 @@ export function WristFeedNotificationsDialog({
                                     if (!definition) {
                                         return null;
                                     }
-                                    const rule = draft.wrist.types[type] || {
+                                    const rule = draft.types[type] || {
                                         scope: definition.defaultScope,
                                         favoriteGroupKeys: 'all'
                                     };

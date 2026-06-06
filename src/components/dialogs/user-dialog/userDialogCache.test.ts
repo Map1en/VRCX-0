@@ -27,6 +27,7 @@ describe('userDialogCache', () => {
         expect(readCachedUserStats(key)).toEqual({
             timeSpent: 0,
             lastSeen: '',
+            friendedAt: '',
             joinCount: 0,
             previousDisplayNames: []
         });
@@ -49,6 +50,7 @@ describe('userDialogCache', () => {
         expect(readCachedUserStats(key)).toEqual({
             timeSpent: 12345,
             lastSeen: '2026-01-02T03:04:05.000Z',
+            friendedAt: '',
             joinCount: 7,
             previousDisplayNames: [{ displayName: 'Old Name' }]
         });
@@ -74,6 +76,7 @@ describe('userDialogCache', () => {
         expect(readCachedUserStats(key)).toEqual({
             timeSpent: 2000,
             lastSeen: '2026-01-02T03:04:05.000Z',
+            friendedAt: '',
             joinCount: 3,
             previousDisplayNames: [{ displayName: 'Original' }]
         });

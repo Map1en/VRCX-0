@@ -1,8 +1,8 @@
-import * as echarts from 'echarts';
 import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { echarts } from '@/lib/echarts';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';

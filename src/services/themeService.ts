@@ -12,6 +12,7 @@ type AppFontPreferenceInput = {
     fontFamily?: unknown;
     customFontFamily?: unknown;
     cjkFontPack?: unknown;
+    locale?: unknown;
 };
 
 const VALID_THEME_MODES = new Set<ThemeMode>(['light', 'dark', 'system']);
@@ -28,6 +29,22 @@ const COMMUNITY_THEME_APPEARANCE_ATTR =
 
 export const APP_FONT_DEFAULT_KEY = 'geist';
 export const APP_CJK_FONT_PACK_DEFAULT_KEY = 'noto';
+const GOOGLE_NOTO_CJK_FONT_IMPORT =
+    "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap');";
+const LOCAL_NOTO_SANS_SC_FONTS = Object.freeze([
+    "'Noto Sans SC Variable'",
+    "'Noto Sans SC'"
+]);
+const GOOGLE_NOTO_SANS_JP_FONTS = Object.freeze(["'Noto Sans JP'"]);
+const GOOGLE_NOTO_SANS_TC_FONTS = Object.freeze(["'Noto Sans TC'"]);
+const GOOGLE_NOTO_SANS_KR_FONTS = Object.freeze(["'Noto Sans KR'"]);
+const MACOS_SYSTEM_CJK_FONT_STACKS = Object.freeze({
+    ja: Object.freeze(["'Hiragino Sans'", "'Hiragino Kaku Gothic ProN'"]),
+    'zh-CN': Object.freeze(["'PingFang SC'", "'Hiragino Sans GB'"]),
+    'zh-TW': Object.freeze(["'PingFang TC'", "'PingFang HK'"]),
+    ko: Object.freeze(["'Apple SD Gothic Neo'"]),
+    default: Object.freeze([])
+});
 
 export const APP_FONT_CONFIG = Object.freeze({
     inter: {
@@ -76,16 +93,7 @@ export const APP_FONT_CONFIG = Object.freeze({
 
 export const APP_CJK_FONT_PACK_CONFIG = Object.freeze({
     noto: {
-        cssNames: Object.freeze([
-            "'Noto Sans SC Variable'",
-            "'Noto Sans SC'",
-            "'Noto Sans TC Variable'",
-            "'Noto Sans TC'",
-            "'Noto Sans JP Variable'",
-            "'Noto Sans JP'",
-            "'Noto Sans KR Variable'",
-            "'Noto Sans KR'"
-        ]),
+        cssNames: Object.freeze([]),
         cssImport: null
     },
     puhuiti: {
@@ -116,7 +124,7 @@ export const APP_CJK_FONT_PACK_CONFIG = Object.freeze({
             ].join('\n')
     },
     system: {
-        cssNames: Object.freeze(['system-ui']),
+        cssNames: Object.freeze([]),
         cssImport: null
     }
 });
@@ -306,23 +314,106 @@ export function normalizeAppCjkFontPack(value: unknown): AppCjkFontPackKey {
         : APP_CJK_FONT_PACK_DEFAULT_KEY;
 }
 
+function normalizeFontLocale(locale: unknown): string {
+    const normalized = String(
+        locale || useShellStore.getState().locale || 'en'
+    ).trim();
+    return normalized || 'en';
+}
+
+function getMacosSystemCjkFonts(locale: string): readonly string[] {
+    switch (locale) {
+        case 'ja':
+            return MACOS_SYSTEM_CJK_FONT_STACKS.ja;
+        case 'zh-CN':
+            return MACOS_SYSTEM_CJK_FONT_STACKS['zh-CN'];
+        case 'zh-TW':
+            return MACOS_SYSTEM_CJK_FONT_STACKS['zh-TW'];
+        case 'ko':
+            return MACOS_SYSTEM_CJK_FONT_STACKS.ko;
+        default:
+            return MACOS_SYSTEM_CJK_FONT_STACKS.default;
+    }
+}
+
+function resolveNotoCjkFontConfig(locale: string): {
+    cssNames: readonly string[];
+    cssImport: string | null;
+    styleKey: string;
+} {
+    if (!VRCX_0_BUNDLED_CJK_FONTS_ENABLED) {
+        return {
+            cssNames: getMacosSystemCjkFonts(locale),
+            cssImport: null,
+            styleKey: `noto:macos:${locale}`
+        };
+    }
+
+    switch (locale) {
+        case 'ja':
+            return {
+                cssNames: GOOGLE_NOTO_SANS_JP_FONTS,
+                cssImport: GOOGLE_NOTO_CJK_FONT_IMPORT,
+                styleKey: 'noto:google:ja'
+            };
+        case 'zh-TW':
+            return {
+                cssNames: GOOGLE_NOTO_SANS_TC_FONTS,
+                cssImport: GOOGLE_NOTO_CJK_FONT_IMPORT,
+                styleKey: 'noto:google:zh-TW'
+            };
+        case 'ko':
+            return {
+                cssNames: GOOGLE_NOTO_SANS_KR_FONTS,
+                cssImport: GOOGLE_NOTO_CJK_FONT_IMPORT,
+                styleKey: 'noto:google:ko'
+            };
+        case 'zh-CN':
+        default:
+            return {
+                cssNames: LOCAL_NOTO_SANS_SC_FONTS,
+                cssImport: null,
+                styleKey: 'noto:local:sc'
+            };
+    }
+}
+
+function resolveCjkFontConfig(
+    normalizedCjk: AppCjkFontPackKey,
+    locale: string
+): {
+    cssNames: readonly string[];
+    cssImport: string | null;
+    styleKey: string;
+} {
+    if (normalizedCjk === 'noto') {
+        return resolveNotoCjkFontConfig(locale);
+    }
+
+    const cjkConfig = APP_CJK_FONT_PACK_CONFIG[normalizedCjk];
+    return {
+        cssNames: Array.isArray(cjkConfig.cssNames) ? cjkConfig.cssNames : [],
+        cssImport: cjkConfig.cssImport,
+        styleKey: normalizedCjk
+    };
+}
+
 export function applyAppFontPreferences({
     fontFamily = APP_FONT_DEFAULT_KEY,
     customFontFamily = '',
-    cjkFontPack = APP_CJK_FONT_PACK_DEFAULT_KEY
+    cjkFontPack = APP_CJK_FONT_PACK_DEFAULT_KEY,
+    locale
 }: AppFontPreferenceInput = {}) {
     const normalizedFont = normalizeAppFontFamily(fontFamily);
     const normalizedCjk = normalizeAppCjkFontPack(cjkFontPack);
+    const normalizedLocale = normalizeFontLocale(locale);
     const fontConfig = APP_FONT_CONFIG[normalizedFont];
-    const cjkConfig = APP_CJK_FONT_PACK_CONFIG[normalizedCjk];
+    const cjkConfig = resolveCjkFontConfig(normalizedCjk, normalizedLocale);
     const westernFont =
         normalizedFont === 'custom'
             ? String(customFontFamily || '').trim() ||
               APP_FONT_CONFIG[APP_FONT_DEFAULT_KEY].cssName
             : fontConfig.cssName;
-    const cjkFonts = Array.isArray(cjkConfig.cssNames)
-        ? cjkConfig.cssNames
-        : [];
 
     ensureDynamicStyle(
         APP_FONT_STYLE_ATTR,
@@ -331,13 +422,15 @@ export function applyAppFontPreferences({
     );
     ensureDynamicStyle(
         APP_CJK_FONT_STYLE_ATTR,
-        normalizedCjk,
+        cjkConfig.styleKey,
         cjkConfig.cssImport
     );
 
     document.documentElement.style.setProperty(
         '--vrcx-app-font-family',
-        [westernFont, ...cjkFonts, 'system-ui'].filter(Boolean).join(', ')
+        [westernFont, ...cjkConfig.cssNames, 'system-ui']
+            .filter(Boolean)
+            .join(', ')
     );
 
     return {

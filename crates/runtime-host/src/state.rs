@@ -822,6 +822,31 @@ impl RuntimeHostState {
             .and_then(|login_params| string_field(login_params, "websocket"))
             .unwrap_or_default();
 
+        match self
+            .probe_current_user_from_cookie(
+                last_user.clone(),
+                endpoint.clone(),
+                websocket.clone(),
+                false,
+            )
+            .await
+        {
+            Ok(CookieSessionProbe::Authenticated(session)) => {
+                self.record_non_interactive_login_success(&session)?;
+                return Ok(session);
+            }
+            Ok(CookieSessionProbe::Fallback) => {}
+            Err(NonInteractiveAuthError::InteractionRequired(reason)) => {
+                return Err(NonInteractiveAuthError::InteractionRequired(reason));
+            }
+            Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason }) => {
+                return Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason });
+            }
+            Err(NonInteractiveAuthError::Failed(reason)) => {
+                tracing::warn!(reason, "global cookie auth restore failed");
+            }
+        }
+
         if let Some(cookies) = saved_record
             .as_ref()
             .and_then(|record| record.get("cookies"))
@@ -832,14 +857,19 @@ impl RuntimeHostState {
                 tracing::warn!(error = %error, "failed to restore saved auth cookies");
             } else {
                 match self
-                    .current_user_from_cookie(
+                    .probe_current_user_from_cookie(
                         last_user.clone(),
                         endpoint.clone(),
                         websocket.clone(),
+                        true,
                     )
                     .await
                 {
-                    Ok(session) => return Ok(session),
+                    Ok(CookieSessionProbe::Authenticated(session)) => {
+                        self.record_non_interactive_login_success(&session)?;
+                        return Ok(session);
+                    }
+                    Ok(CookieSessionProbe::Fallback) => {}
                     Err(NonInteractiveAuthError::InteractionRequired(reason)) => {
                         return Err(NonInteractiveAuthError::InteractionRequired(reason));
                     }
@@ -890,22 +920,109 @@ impl RuntimeHostState {
             });
         }
         let user = parse_current_user_response(response)?;
+        let session = AuthenticatedRuntimeSession::from_user(user, endpoint, websocket);
+        self.record_non_interactive_login_success(&session)?;
+        Ok(session)
+    }
+
+    fn record_non_interactive_login_success(
+        &self,
+        session: &AuthenticatedRuntimeSession,
+    ) -> std::result::Result<(), NonInteractiveAuthError> {
         record_login_success(
             self.runtime_context.config(),
             self.web.as_ref(),
             LoginSuccessRecordInput {
-                user: user.clone(),
+                user: session.current_user.clone(),
                 login_params: serde_json::json!({
-                    "endpoint": endpoint,
-                    "websocket": websocket,
+                    "endpoint": session.endpoint,
+                    "websocket": session.websocket,
                 }),
                 stored_login_params: None,
                 save_credentials: false,
             },
         )
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-        Ok(AuthenticatedRuntimeSession::from_user(
-            user, endpoint, websocket,
+        Ok(())
+    }
+
+    async fn probe_current_user_from_cookie(
+        &self,
+        user_id: String,
+        endpoint: String,
+        websocket: String,
+        allow_unmatched_two_factor: bool,
+    ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
+        let config_response = self
+            .web
+            .execute_api(
+                config_get_input(endpoint.clone()),
+                ApiScope::Vrchat,
+                &self.db,
+            )
+            .await
+            .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
+        if response_allows_saved_credential_fallback(&config_response) {
+            return Ok(CookieSessionProbe::Fallback);
+        }
+        if config_response.status == 403 {
+            return Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id: user_id.clone(),
+                reason: auth_response_error_message(
+                    &config_response,
+                    format!(
+                        "VRChat config request failed with HTTP {}.",
+                        config_response.status
+                    ),
+                ),
+            });
+        }
+        if !(200..=399).contains(&config_response.status) {
+            return Err(NonInteractiveAuthError::Failed(
+                auth_response_error_message(
+                    &config_response,
+                    format!(
+                        "VRChat config request failed with HTTP {}.",
+                        config_response.status
+                    ),
+                ),
+            ));
+        }
+
+        let response = self
+            .web
+            .execute_api(
+                current_user_get_input(endpoint.clone()),
+                ApiScope::Vrchat,
+                &self.db,
+            )
+            .await
+            .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
+        if response_allows_saved_credential_fallback(&response) {
+            return Ok(CookieSessionProbe::Fallback);
+        }
+        if !allow_unmatched_two_factor && response_requires_two_factor(&response) {
+            return Ok(CookieSessionProbe::Fallback);
+        }
+        if response.status == 403 {
+            return Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason: auth_response_error_message(
+                    &response,
+                    format!(
+                        "VRChat current-user request failed with HTTP {}.",
+                        response.status
+                    ),
+                ),
+            });
+        }
+        let user = parse_current_user_response(response)?;
+        let response_user_id = string_field(&user, "id").unwrap_or_default();
+        if !user_id.trim().is_empty() && response_user_id != user_id.trim() {
+            return Ok(CookieSessionProbe::Fallback);
+        }
+        Ok(CookieSessionProbe::Authenticated(
+            AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
         ))
     }
 
@@ -2782,11 +2899,32 @@ enum NonInteractiveAuthError {
     Failed(String),
 }
 
+enum CookieSessionProbe {
+    Authenticated(AuthenticatedRuntimeSession),
+    Fallback,
+}
+
+fn response_allows_saved_credential_fallback(response: &HttpApiExecuteResponse) -> bool {
+    response.status == 401
+        && auth_response_error_message(response, String::new()).contains("Missing Credentials")
+}
+
+fn response_requires_two_factor(response: &HttpApiExecuteResponse) -> bool {
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(&response.data) else {
+        return false;
+    };
+    json.get("requiresTwoFactorAuth")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|methods| !methods.is_empty())
+}
+
 fn auth_response_error_message(response: &HttpApiExecuteResponse, fallback: String) -> String {
     let Ok(json) = serde_json::from_str::<serde_json::Value>(&response.data) else {
         return fallback;
     };
-    string_field(&json, "message")
+    json.as_str()
+        .map(ToOwned::to_owned)
+        .or_else(|| string_field(&json, "message"))
         .or_else(|| {
             json.get("error").and_then(|error| {
                 if let Some(message) = string_field(error, "message") {

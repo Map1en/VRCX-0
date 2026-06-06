@@ -1,12 +1,7 @@
-import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
-    HomeIcon,
-    UsersIcon
-} from 'lucide-react';
+import { HomeIcon, UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
@@ -39,6 +34,8 @@ import {
 } from '../playerListDisplay';
 import { parseTimeMs } from '../playerListRows';
 import { PLAYER_LIST_COLUMN_IDS as COLUMN_IDS } from '../playerListState';
+
+export { DataTableSortButton as SortButton };
 
 export function CurrentWorldHeader({
     cacheInfo = defaultWorldCacheInfo(),
@@ -274,28 +271,6 @@ export function CurrentWorldHeader({
                 </div>
             </div>
         </div>
-    );
-}
-
-export function SortButton({ column, label }: any) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start gap-1 p-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
     );
 }
 

@@ -1,13 +1,13 @@
-import { ShieldCheckIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, ShieldCheckIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Checkbox } from '@/ui/shadcn/checkbox';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { Separator } from '@/ui/shadcn/separator';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import { formatStatsDate } from '../userDialogRows';
 
@@ -143,7 +143,8 @@ export function UserDialogHeaderMediaBadges({
 }: any) {
     const { t } = useTranslation();
     const hiddenLabel = t('dialog.user.badges.hidden');
-    const showcasedLabel = t('dialog.user.badges.showcased');
+    const visibleLabel = t('dialog.user.badges.visible');
+    const visibilityLabel = t('dialog.user.badges.visibility');
     const assignedLabel = t('dialog.user.badges.assigned');
 
     if (!Array.isArray(profile.badges)) {
@@ -161,9 +162,15 @@ export function UserDialogHeaderMediaBadges({
                         profileTitle,
                         profile.id
                     );
-                    const badgeTitle = badge.hidden
+                    const isBadgeVisible =
+                        Boolean(badge.showcased) && !badge.hidden;
+                    const badgeTitle = !isBadgeVisible
                         ? `${badgeName} (${hiddenLabel})`
                         : badgeName;
+                    const visibilityValue = isBadgeVisible
+                        ? 'visible'
+                        : 'hidden';
+                    const actionsDisabled = actionStatus !== 'idle';
 
                     return (
                         <Popover
@@ -183,8 +190,16 @@ export function UserDialogHeaderMediaBadges({
                                     title={badgeTitle}
                                     className={
                                         badgeImageUrl
-                                            ? 'size-8 rounded-sm p-0'
-                                            : 'h-8 max-w-full rounded-sm px-2 text-xs'
+                                            ? cn(
+                                                  'size-8 rounded-sm p-0',
+                                                  !isBadgeVisible &&
+                                                      'opacity-60'
+                                              )
+                                            : cn(
+                                                  'h-8 max-w-full rounded-sm px-2 text-xs',
+                                                  !isBadgeVisible &&
+                                                      'opacity-60'
+                                              )
                                     }
                                     onClick={(event: any) => event.stopPropagation()}
                                 >
@@ -194,7 +209,7 @@ export function UserDialogHeaderMediaBadges({
                                             alt={badge.badgeName || ''}
                                             className={cn(
                                                 'size-8 rounded-sm object-cover',
-                                                badge.hidden && 'grayscale'
+                                                !isBadgeVisible && 'grayscale'
                                             )}
                                         />
                                     ) : (
@@ -206,27 +221,31 @@ export function UserDialogHeaderMediaBadges({
                             </PopoverTrigger>
                             <PopoverContent
                                 side="bottom"
-                                className="flex w-72 flex-col gap-3"
+                                className="w-80 gap-0 overflow-hidden p-0"
                             >
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto w-full p-0"
-                                    onClick={() =>
-                                        badgeImageUrl &&
-                                        onOpenImagePreview({
-                                            url: badgeImageUrl,
-                                            title: badgeName
-                                        })
-                                    }
-                                >
-                                    {badgeImageUrl ? (
+                                {badgeImageUrl ? (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="bg-muted/20 hover:bg-muted/30 h-auto w-full rounded-none p-3"
+                                        onClick={() =>
+                                            onOpenImagePreview?.({
+                                                url: badgeImageUrl,
+                                                title: badgeName
+                                            })
+                                        }
+                                    >
                                         <img
                                             src={badgeImageUrl}
                                             alt={badge.badgeName || ''}
-                                            className="max-h-56 w-full rounded-md object-contain"
+                                            className={cn(
+                                                'max-h-52 w-full rounded-md object-contain',
+                                                !isBadgeVisible && 'grayscale'
+                                            )}
                                         />
-                                    ) : (
+                                    </Button>
+                                ) : (
+                                    <div className="bg-muted/20 flex min-h-24 items-center justify-center p-3">
                                         <Badge
                                             variant="outline"
                                             className="mx-auto max-w-full"
@@ -235,76 +254,116 @@ export function UserDialogHeaderMediaBadges({
                                                 {badgeName || badge.badgeId}
                                             </span>
                                         </Badge>
-                                    )}
-                                </Button>
-                                <div className="flex flex-col gap-1 text-sm">
-                                    <div className="font-medium">
-                                        {badgeName}
-                                        {badge.hidden ? (
-                                            <span className="text-muted-foreground ml-1 text-xs">
-                                                ({hiddenLabel})
-                                            </span>
-                                        ) : null}
                                     </div>
-                                    {badge.badgeDescription ? (
-                                        <div className="text-muted-foreground text-xs">
-                                            {badge.badgeDescription}
+                                )}
+                                <div className="flex flex-col gap-3 p-3 text-sm">
+                                    <div className="flex min-w-0 items-start justify-between gap-3">
+                                        <div className="flex min-w-0 flex-col gap-1">
+                                            <div className="min-w-0 truncate font-medium">
+                                                {badgeName}
+                                            </div>
+                                            {badge.badgeDescription ? (
+                                                <div className="text-muted-foreground text-xs leading-relaxed">
+                                                    {badge.badgeDescription}
+                                                </div>
+                                            ) : null}
                                         </div>
-                                    ) : null}
+                                        <Badge
+                                            variant={
+                                                isBadgeVisible
+                                                    ? 'outline'
+                                                    : 'secondary'
+                                            }
+                                            className="shrink-0"
+                                        >
+                                            {isBadgeVisible
+                                                ? visibleLabel
+                                                : hiddenLabel}
+                                        </Badge>
+                                    </div>
                                     {badge.assignedAt ? (
-                                        <div className="text-muted-foreground font-mono text-xs">
-                                            {assignedLabel}{' '}
-                                            {formatStatsDate(badge.assignedAt)}
+                                        <div className="text-muted-foreground flex min-w-0 items-center justify-between gap-2 text-xs">
+                                            <span>{assignedLabel}</span>
+                                            <span className="min-w-0 truncate text-right font-mono">
+                                                {formatStatsDate(
+                                                    badge.assignedAt
+                                                )}
+                                            </span>
                                         </div>
                                     ) : null}
-                                </div>
-                                {isCurrentUser ? (
-                                    <FieldGroup
-                                        data-slot="checkbox-group"
-                                        className="border-t pt-3 text-sm"
-                                    >
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                checked={Boolean(badge.hidden)}
-                                                disabled={
-                                                    actionStatus !== 'idle' ||
-                                                    !onToggleBadgeVisibility
-                                                }
-                                                aria-label={hiddenLabel}
-                                                onCheckedChange={(checked: any) =>
+                                    {isCurrentUser ? (
+                                        <>
+                                            <Separator />
+                                            <ToggleGroup
+                                                type="single"
+                                                variant="outline"
+                                                size="sm"
+                                                spacing={1}
+                                                value={visibilityValue}
+                                                aria-label={visibilityLabel}
+                                                className="grid w-full grid-cols-2"
+                                                onValueChange={(
+                                                    nextValue: any
+                                                ) => {
+                                                    if (!nextValue) {
+                                                        return;
+                                                    }
+
+                                                    if (
+                                                        nextValue ===
+                                                        visibilityValue
+                                                    ) {
+                                                        return;
+                                                    }
+
+                                                    if (
+                                                        nextValue === 'visible'
+                                                    ) {
+                                                        onToggleBadgeShowcased?.(
+                                                            badge,
+                                                            true
+                                                        );
+                                                        return;
+                                                    }
+
                                                     onToggleBadgeVisibility?.(
                                                         badge,
-                                                        Boolean(checked)
-                                                    )
-                                                }
-                                            />
-                                            <FieldLabel>
-                                                {hiddenLabel}
-                                            </FieldLabel>
-                                        </Field>
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                checked={Boolean(
-                                                    badge.showcased
-                                                )}
-                                                disabled={
-                                                    actionStatus !== 'idle' ||
-                                                    !onToggleBadgeShowcased
-                                                }
-                                                aria-label={showcasedLabel}
-                                                onCheckedChange={(checked: any) =>
-                                                    onToggleBadgeShowcased?.(
-                                                        badge,
-                                                        Boolean(checked)
-                                                    )
-                                                }
-                                            />
-                                            <FieldLabel>
-                                                {showcasedLabel}
-                                            </FieldLabel>
-                                        </Field>
-                                    </FieldGroup>
-                                ) : null}
+                                                        true
+                                                    );
+                                                }}
+                                            >
+                                                <ToggleGroupItem
+                                                    value="visible"
+                                                    aria-label={visibleLabel}
+                                                    disabled={
+                                                        actionsDisabled ||
+                                                        !onToggleBadgeShowcased
+                                                    }
+                                                    className="min-w-0 justify-center"
+                                                >
+                                                    <EyeIcon data-icon="inline-start" />
+                                                    <span className="truncate">
+                                                        {visibleLabel}
+                                                    </span>
+                                                </ToggleGroupItem>
+                                                <ToggleGroupItem
+                                                    value="hidden"
+                                                    aria-label={hiddenLabel}
+                                                    disabled={
+                                                        actionsDisabled ||
+                                                        !onToggleBadgeVisibility
+                                                    }
+                                                    className="min-w-0 justify-center"
+                                                >
+                                                    <EyeOffIcon data-icon="inline-start" />
+                                                    <span className="truncate">
+                                                        {hiddenLabel}
+                                                    </span>
+                                                </ToggleGroupItem>
+                                            </ToggleGroup>
+                                        </>
+                                    ) : null}
+                                </div>
                             </PopoverContent>
                         </Popover>
                     );

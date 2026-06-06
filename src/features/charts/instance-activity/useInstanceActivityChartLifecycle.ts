@@ -1,6 +1,7 @@
-import * as echarts from 'echarts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { echarts } from '@/lib/echarts';
 
 import { buildChartOption } from './instanceActivityChart';
 

@@ -10,9 +10,18 @@ type DateFilterFormat = 'long' | 'short' | 'time' | 'date' | string;
 type TimeUnitLabels = typeof DEFAULT_TIME_UNIT_LABELS;
 
 type DateFilterPreferences = {
+    appLocale?: unknown;
     dateCulture?: unknown;
     dateIsoFormat?: unknown;
     dateHour12?: unknown;
+};
+
+type DateTimeFormatPreferences = Pick<
+    DateFilterPreferences,
+    'appLocale' | 'dateCulture' | 'dateHour12'
+> & {
+    hour12?: boolean;
+    fallback?: string;
 };
 
 function padZero(num: unknown) {
@@ -29,22 +38,36 @@ function toIsoLong(date: Date) {
     return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
 }
 
-function normalizeDateLocale(locale: unknown) {
+export function normalizeDateLocale(locale: unknown, fallback = 'en-gb') {
     if (!locale) {
-        return 'en-gb';
+        return fallback;
     }
 
-    const dateLocale = String(locale).replace('_', '-');
-    return dateLocale || 'en-gb';
+    const dateLocale = String(locale).replace(/_/g, '-').trim();
+    return dateLocale || fallback;
+}
+
+function toLocalClock(
+    date: Date,
+    dateFormat: string,
+    hour12: boolean,
+    includeSeconds = false
+) {
+    return date.toLocaleTimeString(dateFormat, {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: includeSeconds ? '2-digit' : undefined,
+        hourCycle: hour12 ? 'h12' : 'h23'
+    });
 }
 
 function toLocalShort(date: Date, dateFormat: string, hour12: boolean) {
     return date
         .toLocaleDateString(dateFormat, {
-            month: '2-digit',
-            day: '2-digit',
+            month: 'short',
+            day: 'numeric',
             hour: 'numeric',
-            minute: 'numeric',
+            minute: '2-digit',
             hourCycle: hour12 ? 'h12' : 'h23'
         })
         .replace(' AM', 'am')
@@ -54,28 +77,24 @@ function toLocalShort(date: Date, dateFormat: string, hour12: boolean) {
 
 function toLocalLong(date: Date, dateFormat: string, hour12: boolean) {
     return date.toLocaleDateString(dateFormat, {
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         year: 'numeric',
         hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
         hourCycle: hour12 ? 'h12' : 'h23'
     });
 }
 
 function toLocalTime(date: Date, dateFormat: string, hour12: boolean) {
-    return date.toLocaleTimeString(dateFormat, {
-        hour: 'numeric',
-        minute: 'numeric',
-        hourCycle: hour12 ? 'h12' : 'h23'
-    });
+    return toLocalClock(date, dateFormat, hour12);
 }
 
 function toLocalDate(date: Date, dateFormat: string) {
     return date.toLocaleDateString(dateFormat, {
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         year: 'numeric'
     });
 }
@@ -96,9 +115,9 @@ export function formatDateFilterWithPreferences(
 
     const dateIsoFormat = Boolean(preferences.dateIsoFormat);
     const dateHour12 = Boolean(preferences.dateHour12);
-    const dateFormat = dateIsoFormat
-        ? 'en-gb'
-        : normalizeDateLocale(preferences.dateCulture);
+    const dateFormat = normalizeDateLocale(
+        preferences.appLocale || preferences.dateCulture
+    );
 
     if (dateIsoFormat && format === 'long') {
         return toIsoLong(dt);
@@ -117,6 +136,109 @@ export function formatDateFilterWithPreferences(
     }
 
     return '-';
+}
+
+export function formatDateTimeWithPreferences(
+    value: unknown,
+    options: Intl.DateTimeFormatOptions,
+    preferences: DateTimeFormatPreferences = {}
+) {
+    if (!value) {
+        return preferences.fallback ?? '-';
+    }
+
+    const date = new Date(value as any);
+    if (Number.isNaN(date.getTime())) {
+        return preferences.fallback ?? '-';
+    }
+
+    const locale = normalizeDateLocale(
+        preferences.appLocale || preferences.dateCulture
+    );
+    const hour12 =
+        typeof preferences.hour12 === 'boolean'
+            ? preferences.hour12
+            : Boolean(preferences.dateHour12);
+    const formatOptions = { ...options };
+    if (
+        typeof formatOptions.hour !== 'undefined' ||
+        typeof formatOptions.minute !== 'undefined' ||
+        typeof formatOptions.second !== 'undefined'
+    ) {
+        formatOptions.hour12 = hour12;
+    }
+
+    try {
+        return new Intl.DateTimeFormat(locale, formatOptions).format(date);
+    } catch {
+        return preferences.fallback ?? '-';
+    }
+}
+
+export function formatClockWithPreferences(
+    value: unknown,
+    preferences: DateTimeFormatPreferences & { includeSeconds?: boolean } = {}
+) {
+    return formatDateTimeWithPreferences(
+        value,
+        {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: preferences.includeSeconds ? '2-digit' : undefined
+        },
+        {
+            ...preferences,
+            fallback: preferences.fallback ?? ''
+        }
+    );
+}
+
+export function formatRelativeTimeWithPreferences(
+    value: unknown,
+    preferences: DateTimeFormatPreferences & {
+        nowMs?: number;
+        style?: Intl.RelativeTimeFormatStyle;
+    } = {}
+) {
+    if (!value) {
+        return preferences.fallback ?? '';
+    }
+
+    const date = new Date(value as any);
+    if (Number.isNaN(date.getTime())) {
+        return preferences.fallback ?? '';
+    }
+
+    const nowMs = Number.isFinite(preferences.nowMs)
+        ? Number(preferences.nowMs)
+        : Date.now();
+    const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
+    const absSeconds = Math.abs(diffSeconds);
+    const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+        ['year', 31536000],
+        ['month', 2592000],
+        ['week', 604800],
+        ['day', 86400],
+        ['hour', 3600],
+        ['minute', 60],
+        ['second', 1]
+    ];
+    const [unit, unitSeconds] =
+        units.find(([, seconds]) => absSeconds >= seconds) ||
+        units[units.length - 1];
+    const amount = Math.round(diffSeconds / unitSeconds);
+    const locale = normalizeDateLocale(
+        preferences.appLocale || preferences.dateCulture
+    );
+
+    try {
+        return new Intl.RelativeTimeFormat(locale, {
+            numeric: 'auto',
+            style: preferences.style || 'long'
+        }).format(amount, unit);
+    } catch {
+        return preferences.fallback ?? '';
+    }
 }
 
 export function timeToTextWithLabels(
@@ -161,4 +283,9 @@ export function timeToTextWithLabels(
     return arr.join(' ');
 }
 
-export type { DateFilterFormat, DateFilterPreferences, TimeUnitLabels };
+export type {
+    DateFilterFormat,
+    DateFilterPreferences,
+    DateTimeFormatPreferences,
+    TimeUnitLabels
+};

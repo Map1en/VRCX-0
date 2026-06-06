@@ -1,4 +1,3 @@
-import * as echarts from 'echarts';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +6,7 @@ import {
     LoadingState as AppLoadingState
 } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
+import { echarts } from '@/lib/echarts';
 import { openUserDialog } from '@/services/dialogService';
 import { parseLocation } from '@/shared/utils/locationParser';
 

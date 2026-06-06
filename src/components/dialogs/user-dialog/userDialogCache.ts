@@ -3,6 +3,7 @@ import { normalizeUserId } from './userProfileFields';
 export const DEFAULT_USER_STATS = Object.freeze({
     timeSpent: 0,
     lastSeen: '',
+    friendedAt: '',
     joinCount: 0,
     previousDisplayNames: []
 });
@@ -26,6 +27,7 @@ function cloneUserStats(stats: any = DEFAULT_USER_STATS) {
     return {
         timeSpent: Number(stats?.timeSpent) || 0,
         lastSeen: stats?.lastSeen || '',
+        friendedAt: stats?.friendedAt || '',
         joinCount: Number(stats?.joinCount) || 0,
         previousDisplayNames
     };

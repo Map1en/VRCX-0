@@ -5,12 +5,12 @@ import {
     Share2Icon,
     StarIcon
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { openGroupDialog } from '@/services/dialogService';
@@ -124,9 +124,23 @@ function formatEventTimeRange(event: any, mode: any = 'timeline') {
     if (!event?.startsAt) {
         return '';
     }
-    const dateFormat = mode === 'grid' ? 'MM-dd EEE HH:mm' : 'HH:mm';
-    const start = format(new Date(event.startsAt), dateFormat);
-    const end = event.endsAt ? format(new Date(event.endsAt), dateFormat) : '';
+    const options: Intl.DateTimeFormatOptions =
+        mode === 'grid'
+            ? {
+                  month: '2-digit',
+                  day: '2-digit',
+                  weekday: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit'
+              }
+            : {
+                  hour: '2-digit',
+                  minute: '2-digit'
+              };
+    const start = formatDateTime(event.startsAt, options, { fallback: '' });
+    const end = event.endsAt
+        ? formatDateTime(event.endsAt, options, { fallback: '' })
+        : '';
     return end ? `${start} - ${end}` : start;
 }
 
@@ -407,10 +421,7 @@ export function GroupEventCard({
                         </div>
                         <div className="font-medium">
                             {event.createdAt
-                                ? format(
-                                      new Date(event.createdAt),
-                                      'yyyy-MM-dd HH:mm'
-                                  )
+                                ? formatDateFilter(event.createdAt, 'long')
                                 : '\u2014'}
                         </div>
                     </div>

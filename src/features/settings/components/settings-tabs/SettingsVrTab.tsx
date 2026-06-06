@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -10,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { Field } from '../SettingsField';
@@ -17,6 +19,13 @@ import { SettingsTabContent } from '../SettingsViewParts';
 
 export function SettingsVrTab({
     prefs,
+    onXsNotificationsChange,
+    onOvrtHudNotificationsChange,
+    onOvrtWristNotificationsChange,
+    onImageNotificationsChange,
+    onNotificationTimeoutSecondsChange,
+    onNotificationOpacityChange,
+    onOpenVrNotificationFiltersDialog,
     onWristOverlayEnabledChange,
     onWristOverlayStartModeChange,
     onWristOverlayButtonChange,
@@ -32,9 +41,141 @@ export function SettingsVrTab({
     const wristOverlayEnabled = Boolean(prefs.wristOverlayEnabled);
     const vrDeviceStatusEnabled =
         wristOverlayEnabled && Boolean(prefs.wristOverlayShowDevices);
+    const notificationTimeoutSeconds = Math.max(
+        0,
+        Math.floor(Number(prefs.notificationTimeout || 0) / 1000)
+    );
+    const notificationOpacity = Number.isFinite(
+        Number(prefs.notificationOpacity)
+    )
+        ? Math.min(
+              100,
+              Math.max(0, Math.round(Number(prefs.notificationOpacity)))
+          )
+        : 100;
 
     return (
         <SettingsTabContent value="vr">
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        {t(
+                            'view.settings.notifications.notifications.vr_notifications.header'
+                        )}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col">
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.xsoverlay_notifications'
+                        )}
+                    >
+                        <Switch
+                            checked={Boolean(prefs.xsNotifications)}
+                            onCheckedChange={onXsNotificationsChange}
+                        />
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.ovrtoolkit_hud_notifications'
+                        )}
+                    >
+                        <Switch
+                            checked={Boolean(prefs.ovrtHudNotifications)}
+                            onCheckedChange={onOvrtHudNotificationsChange}
+                        />
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.ovrtoolkit_wrist_notifications'
+                        )}
+                    >
+                        <Switch
+                            checked={Boolean(prefs.ovrtWristNotifications)}
+                            onCheckedChange={onOvrtWristNotificationsChange}
+                        />
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.notification_filters'
+                        )}
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onOpenVrNotificationFiltersDialog}
+                        >
+                            {t('common.actions.configure')}
+                        </Button>
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.user_images'
+                        )}
+                        description={t(
+                            'view.settings.notifications.notifications.vr_notifications.user_images_description'
+                        )}
+                    >
+                        <Switch
+                            checked={Boolean(prefs.imageNotifications)}
+                            onCheckedChange={onImageNotificationsChange}
+                        />
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.notification_timeout'
+                        )}
+                        controlId="settings-notification-timeout"
+                    >
+                        <div className="flex items-center justify-end gap-2">
+                            <Input
+                                id="settings-notification-timeout"
+                                type="number"
+                                min={0}
+                                max={600}
+                                step={1}
+                                value={notificationTimeoutSeconds}
+                                className="w-24"
+                                onChange={(event: any) =>
+                                    onNotificationTimeoutSecondsChange(
+                                        event.target.value
+                                    )
+                                }
+                            />
+                            <span className="text-muted-foreground w-8 text-sm">
+                                s
+                            </span>
+                        </div>
+                    </Field>
+
+                    <Field
+                        label={t(
+                            'view.settings.notifications.notifications.vr_notifications.notification_opacity'
+                        )}
+                    >
+                        <div className="flex w-56 max-w-full items-center justify-end gap-3">
+                            <Slider
+                                value={[notificationOpacity]}
+                                min={0}
+                                max={100}
+                                step={1}
+                                onValueChange={(value: any) =>
+                                    onNotificationOpacityChange(value?.[0])
+                                }
+                            />
+                            <span className="text-muted-foreground w-10 text-right text-sm">
+                                {notificationOpacity}%
+                            </span>
+                        </div>
+                    </Field>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>

@@ -1,7 +1,4 @@
 import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
     BanIcon,
     BellOffIcon,
     CalendarIcon,
@@ -18,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { Location } from '@/components/Location';
 import { BoopEmojiDialog } from '@/components/dialogs/BoopEmojiDialog';
 import { NOTIFICATION_TYPES } from '@/repositories/notificationPersistenceRepository';
@@ -84,27 +82,7 @@ export function notificationLinkIsInternal(link: any) {
     );
 }
 
-export function SortButton({ column, label }: any) {
-    const direction = column.getIsSorted();
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-auto justify-start px-1 py-0 text-left"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
+export { DataTableSortButton as SortButton };
 
 export function NotificationLocationLink({
     location,

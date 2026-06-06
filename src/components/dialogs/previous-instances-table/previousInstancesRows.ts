@@ -83,8 +83,38 @@ export function rowLocationObject(row: any) {
 }
 
 export function rowDuration(row: any) {
-    const value = Number(row?.time || row?.duration || 0);
+    const value = rowDurationValue(row);
     return Number.isFinite(value) && value > 0 ? timeToText(value) : '\u2014';
+}
+
+export function rowDurationValue(row: any) {
+    const value = Number(row?.time || row?.duration || 0);
+    return Number.isFinite(value) ? value : 0;
+}
+
+export function rowInstanceText(row: any) {
+    return [
+        row?.worldName,
+        row?.groupName,
+        row?.location,
+        row?.$location?.tag,
+        row?.worldId
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+}
+
+export function rowCreatorText(row: any) {
+    return (
+        row?.ownerDisplayName ||
+        row?.ownerName ||
+        row?.$location?.ownerDisplayName ||
+        rowOwnerUserId(row) ||
+        ''
+    )
+        .toString()
+        .toLowerCase();
 }
 
 export function rowSearchText(row: any) {
@@ -95,11 +125,42 @@ export function rowSearchText(row: any) {
         row?.$location?.tag,
         row?.worldId,
         row?.worldName,
-        row?.groupName
+        row?.groupName,
+        row?.ownerDisplayName,
+        row?.ownerName,
+        row?.$location?.ownerDisplayName,
+        rowOwnerUserId(row)
     ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+}
+
+export function sortPreviousInstanceRows(
+    rows: any,
+    sortKey = 'date',
+    sortDesc = true
+) {
+    if (!sortKey) {
+        return [...(Array.isArray(rows) ? rows : [])];
+    }
+    const direction = sortDesc ? -1 : 1;
+    return [...(Array.isArray(rows) ? rows : [])].sort((left: any, right: any) => {
+        let result = 0;
+        if (sortKey === 'duration') {
+            result = rowDurationValue(left) - rowDurationValue(right);
+        } else if (sortKey === 'location') {
+            result = rowInstanceText(left).localeCompare(rowInstanceText(right));
+        } else if (sortKey === 'creator') {
+            result = rowCreatorText(left).localeCompare(rowCreatorText(right));
+        } else {
+            result = createdTime(left) - createdTime(right);
+        }
+        if (result === 0 && sortKey !== 'date') {
+            result = createdTime(left) - createdTime(right);
+        }
+        return result * direction;
+    });
 }
 
 export function normalizePlayerRows(players: any) {

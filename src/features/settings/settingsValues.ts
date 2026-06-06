@@ -1,6 +1,7 @@
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 export {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     OVERLAY_ACTIVITY_CATEGORIES,
     OVERLAY_ACTIVITY_RAW_TYPES,
     OVERLAY_ACTIVITY_SCOPES,

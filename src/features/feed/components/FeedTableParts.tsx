@@ -1,8 +1,4 @@
-import type { Column } from '@tanstack/react-table';
 import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
     CopyIcon,
     ExternalLinkIcon,
     GlobeIcon,
@@ -13,6 +9,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -85,35 +82,6 @@ async function copyFeedText(text: unknown, successMessage: string) {
     }
     await copyTextToClipboard(value);
     toast.success(successMessage);
-}
-
-function SortButton({
-    column,
-    label
-}: {
-    column: Column<FeedRow, unknown>;
-    label: string;
-}) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-auto justify-start gap-1 px-1 py-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => column.toggleSorting(direction === 'asc')}
-        >
-            <span>{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
 }
 
 function FeedUserLink({
@@ -444,7 +412,7 @@ export {
     FeedExpandedRow,
     FeedUserAvatarButton,
     FeedUserLink,
-    SortButton,
+    DataTableSortButton as SortButton,
     formatTimestamp,
     formatTimestampLong
 };

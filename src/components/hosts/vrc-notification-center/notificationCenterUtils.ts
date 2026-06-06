@@ -10,6 +10,7 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import { formatDateTime } from '@/lib/dateTime';
 import { parseLocation } from '@/shared/utils/locationParser';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 
@@ -72,12 +73,12 @@ export function formatNotificationTime(notification: any) {
     if (!timestamp) {
         return '';
     }
-    return new Intl.DateTimeFormat(undefined, {
+    return formatDateTime(timestamp, {
         month: 'short',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-    }).format(new Date(timestamp));
+    });
 }
 
 export function isNotificationExpired(notification: any) {

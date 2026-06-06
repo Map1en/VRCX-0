@@ -18,6 +18,7 @@ import {
     formatZoomPercentage,
     normalizeZoomLevel
 } from '@/services/themeService';
+import { formatDateTime } from '@/lib/dateTime';
 import { refreshVrcStatusNow } from '@/services/vrcStatusService';
 import {
     queueZoomLevelPreference,
@@ -158,16 +159,12 @@ function formatAppUptime(ms: any) {
 }
 
 function formatStatusDate(value: any) {
-    const date = new Date(value || 0);
-    if (Number.isNaN(date.getTime())) {
-        return '-';
-    }
-    return new Intl.DateTimeFormat(undefined, {
+    return formatDateTime(value, {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-    }).format(date);
+    });
 }
 
 export function AppStatusBar() {

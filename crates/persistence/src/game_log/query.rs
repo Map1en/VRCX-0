@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sea_query::{Expr, Order, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, Order, Query, SqliteQueryBuilder};
 
 use crate::common::{ident, row_string, ParamsBuilder};
 use crate::database::DatabaseService;

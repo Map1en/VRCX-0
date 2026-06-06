@@ -18,6 +18,7 @@ import {
     setBackgroundImageMode,
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
+import { formatDateFilter } from '@/lib/dateTime';
 import { isBackgroundImageCustomSourceRotating } from '@/services/background-image/localSourceService';
 import type {
     BackgroundImageCustomSource,
@@ -49,14 +50,8 @@ function fileNameFromPath(path?: string): string {
 }
 
 function formatResolvedAt(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return value;
-    }
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    }).format(date);
+    const formatted = formatDateFilter(value, 'long');
+    return formatted === '-' ? value : formatted;
 }
 
 function resolveProviderName(providerId?: BackgroundImageProviderId): string {

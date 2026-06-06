@@ -1,15 +1,13 @@
 import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
     ListFilterIcon,
     MonitorIcon,
     MoreHorizontalIcon,
     RectangleGogglesIcon,
-    SettingsIcon,
+    SettingsIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { cn } from '@/lib/utils';
@@ -47,33 +45,7 @@ import {
 
 export { AvatarActionMenuItems, MyAvatarGridCard };
 
-export function SortButton({ column, label, descFirst = false }: any) {
-    const direction = column.getIsSorted();
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="text-muted-foreground hover:text-primary h-auto max-w-full min-w-0 gap-1 p-0 text-left text-xs tracking-wide uppercase"
-            onClick={() => {
-                if (!direction && descFirst) {
-                    column.toggleSorting(true);
-                    return;
-                }
-                column.toggleSorting(direction === 'asc');
-            }}
-        >
-            <span className="truncate">{label}</span>
-            {direction === 'asc' ? (
-                <ArrowUpIcon data-icon="inline-end" />
-            ) : direction === 'desc' ? (
-                <ArrowDownIcon data-icon="inline-end" />
-            ) : (
-                <ArrowUpDownIcon data-icon="inline-end" />
-            )}
-        </Button>
-    );
-}
+export { DataTableSortButton as SortButton };
 
 export function PlatformBadges({ unityPackages }: any) {
     const platforms = getAvailablePlatforms(unityPackages);

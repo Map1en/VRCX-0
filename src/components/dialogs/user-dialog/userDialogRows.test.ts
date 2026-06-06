@@ -262,7 +262,7 @@ describe('userDialogRows', () => {
 
     it('uses readable fallback text for empty stats and unavailable locations', () => {
         expect(formatDate('')).toBe('\u2014');
-        expect(formatDate('not-a-date')).toBe('not-a-date');
+        expect(formatDate('not-a-date')).toBe('\u2014');
         expect(formatStatsDate('2026-01-02T03:04:05')).toBe(
             '2026-01-02 03:04:05'
         );

@@ -1620,7 +1620,7 @@
                     "header": "VR 코어"
                 },
                 "vr_notifications": {
-                    "header": "VR 알림"
+                    "header": "VR 오버레이 알림"
                 },
                 "wrist_overlay": {
                     "header": "손목 오버레이"
@@ -1894,8 +1894,8 @@
                     "notification_filter": "알림 필터",
                     "test_notification": "테스트 알림 보내기",
                     "test_message": "테스트 알림",
-                    "steamvr_notifications": {
-                        "header": "SteamVR 알림",
+                    "vr_notifications": {
+                        "header": "VR 오버레이 알림",
                         "steamvr_overlay": "SteamVR 오버레이 사용",
                         "overlay_notifications": "오버레이 알림 사용",
                         "notification_position": "알림 위치 설정",
@@ -1903,6 +1903,7 @@
                         "wayvr_notifications": "WayVR 알림 사용",
                         "ovrtoolkit_hud_notifications": "OVR 툴킷 HUD 알림",
                         "ovrtoolkit_wrist_notifications": "OVR 툴킷 손목 알림",
+                        "notification_filters": "오버레이 알림 필터",
                         "user_images": "유저 이미지 표시 (느림)",
                         "user_images_description": "성능에 영향을 미칠 수 있습니다.",
                         "notification_opacity": "알림 불투명도",
@@ -1920,7 +1921,7 @@
                     "desktop_notifications": {
                         "header": "데스크톱 알림",
                         "when_to_display": "표시 조건",
-                        "when_to_display_vr": "VR 알림 표시",
+                        "when_to_display_vr": "VR 오버레이 알림 표시",
                         "desktop_notification_while_afk": "AFK 동안 알림 표시",
                         "notification_sound": "알림음"
                     },
@@ -4393,6 +4394,10 @@
             "everyone": "모두",
             "reset": "재설정",
             "close": "닫기"
+        },
+        "vr_notifications": {
+            "title": "VR 오버레이 알림 필터",
+            "description": "SteamVR가 실행 중일 때 XSOverlay 및 OVR Toolkit으로 보낼 알림을 선택합니다."
         },
         "previous_instances": {
             "header": "인스턴스 기록",

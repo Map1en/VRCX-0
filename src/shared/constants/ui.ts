@@ -23,6 +23,13 @@ const navDefinitions = [
         routeName: 'game-log'
     },
     {
+        key: 'instance-history',
+        icon: 'lucide:TextSearch',
+        tooltip: 'nav_tooltip.instance_history',
+        labelKey: 'nav_tooltip.instance_history',
+        routeName: 'instance-history'
+    },
+    {
         key: 'player-list',
         icon: 'lucide:UsersRound',
         tooltip: 'nav_tooltip.player_list',

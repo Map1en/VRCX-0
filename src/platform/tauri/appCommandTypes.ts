@@ -804,6 +804,30 @@ export interface AppTauriCommandNamespace extends TauriCommandNamespace {
     EnsureMainWindow(): Promise<void>;
     RefreshTrayMenu(): Promise<void>;
     OpenDevtools(): Promise<void>;
+    DesktopNotification(
+        boldText: string,
+        text?: string | null,
+        image?: string | null,
+        playSound?: boolean | null
+    ): Promise<void>;
+    XSNotification(
+        title: string,
+        content: string,
+        timeout: number,
+        opacity: number,
+        image?: string | null
+    ): Promise<void>;
+    OVRTNotification(
+        hudNotification: boolean,
+        wristNotification: boolean,
+        title: string,
+        body: string,
+        timeout: number,
+        opacity: number,
+        image?: string | null
+    ): Promise<void>;
+    AuthFailureNotificationShow(reason?: string | null): Promise<void>;
+    GetImage(url: string, fileId: string, version: string): Promise<string>;
     CommunityThemeDebugLoadLocalTheme(
         folderPath: string
     ): Promise<CommunityThemeDebugLocalThemeOutput>;
