@@ -521,6 +521,96 @@ function normalizeFriendEntry(
     };
 }
 
+function buildFriendLogRowsById(rows: any[] = []) {
+    const rowsById = new Map<string, Record<string, any>>();
+    if (!Array.isArray(rows)) {
+        return rowsById;
+    }
+
+    for (const row of rows) {
+        const userId = normalizeUserId(row?.userId || row?.user_id);
+        if (!userId) {
+            continue;
+        }
+        rowsById.set(userId, row);
+    }
+    return rowsById;
+}
+
+function buildSeedRosterFriendsById(
+    stateById: Map<string, string>,
+    friendLogRows: any[] = []
+) {
+    const rowsById = buildFriendLogRowsById(friendLogRows);
+    const friendsById: Record<string, any> = {};
+
+    for (const [userId, stateBucket] of stateById.entries()) {
+        const row = rowsById.get(userId) ?? {};
+        const trustLevel = normalizeUserId(row?.trustLevel) || 'Visitor';
+        const friendNumber =
+            Number.parseInt(
+                row?.friendNumber ?? row?.$friendNumber ?? 0,
+                10
+            ) || 0;
+        const displayName = normalizeUserId(row?.displayName) || userId;
+        friendsById[userId] = {
+            id: userId,
+            displayName,
+            username: '',
+            tags: [],
+            developerType: '',
+            platform: 'offline',
+            last_platform: '',
+            location: 'offline',
+            state: stateBucket,
+            stateBucket,
+            trustLevel,
+            $trustLevel: trustLevel,
+            friendNumber,
+            $friendNumber: friendNumber
+        };
+    }
+
+    return friendsById;
+}
+
+async function seedFriendRosterFromCurrentUserSnapshot({
+    normalizedUserId,
+    endpoint,
+    currentUserSnapshot,
+    detail
+}: {
+    normalizedUserId: string;
+    endpoint: string;
+    currentUserSnapshot: any;
+    detail: string;
+}) {
+    if (!hasCompleteFriendStateSnapshot(currentUserSnapshot)) {
+        return false;
+    }
+
+    const stateById = buildFriendStateMap(currentUserSnapshot);
+    let friendLogRows: any[] = [];
+    try {
+        friendLogRows = (await friendLogRepository.getFriendLogCurrent(
+            normalizedUserId
+        )) as any[];
+    } catch (error) {
+        console.warn('Failed to seed friend roster from friend log:', error);
+    }
+
+    if (!isCurrentBootstrapTarget(normalizedUserId, endpoint)) {
+        return false;
+    }
+
+    useFriendRosterStore.getState().setRosterSeedSnapshot({
+        currentUserId: normalizedUserId,
+        friendsById: buildSeedRosterFriendsById(stateById, friendLogRows),
+        detail
+    });
+    return true;
+}
+
 function bootstrapTargetKey(userId: any, endpoint: any = '') {
     return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
 }
@@ -565,6 +655,12 @@ async function runFriendBootstrap({
         );
     if (!preserveLoadedState) {
         useSessionStore.getState().setFriendsLoaded(false);
+        await seedFriendRosterFromCurrentUserSnapshot({
+            normalizedUserId,
+            endpoint,
+            currentUserSnapshot,
+            detail: `Loading the full friend roster baseline for ${displayName}.`
+        });
     }
 
     const bootstrapResult = await enqueueFriendLogMutation(

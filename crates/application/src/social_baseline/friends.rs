@@ -113,7 +113,7 @@ async fn fetch_all_friends(
     let rows = fetch_paged_array(
         deps,
         FRIEND_PAGE_SIZE,
-        Some(FRIEND_MAX_OFFSET),
+        None,
         |n, offset| remote_friends::friends_get_input(endpoint.to_string(), offline, n, offset),
     )
     .await?;

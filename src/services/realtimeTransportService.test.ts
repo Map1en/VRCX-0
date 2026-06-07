@@ -209,6 +209,48 @@ describe('realtime transport runtime routing', () => {
         REALTIME_TRANSPORT_TEST_TIMEOUT_MS
     );
 
+    it('does not start runtime realtime from a seeded roster before friends are fully loaded', async () => {
+        const { useFriendRosterStore } =
+            await import('@/state/friendRosterStore');
+        const { useRuntimeStore } = await import('@/state/runtimeStore');
+        const { useSessionStore } = await import('@/state/sessionStore');
+        const { startRealtimeTransport } =
+            await import('./realtimeTransportService');
+
+        useRuntimeStore.getState().resetRuntimeState();
+        useFriendRosterStore.getState().resetRoster();
+        useFriendRosterStore.getState().setRosterSeedSnapshot({
+            currentUserId: 'usr_1',
+            friendsById: {
+                usr_2: {
+                    id: 'usr_2',
+                    displayName: 'Seed Friend',
+                    stateBucket: 'online'
+                }
+            }
+        });
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1',
+            currentUserEndpoint: '',
+            currentUserWebsocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            isFriendsLoaded: false,
+            sessionPhase: 'ready'
+        });
+
+        await startRealtimeTransport({
+            userId: 'usr_1',
+            endpoint: '',
+            websocket: '',
+            currentUserSnapshot: { id: 'usr_1' }
+        });
+
+        expect(runtimeState.app.StartRealtimeTransport).not.toHaveBeenCalled();
+    });
+
     it('routes only typed runtime projections', async () => {
         await prepareReadySession();
         const { startRealtimeTransport } =

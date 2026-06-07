@@ -108,6 +108,56 @@ describe('friendRosterStore', () => {
         });
     });
 
+    it('seeds a running roster from current-user buckets and cached friend log rows', () => {
+        const store = useFriendRosterStore.getState();
+
+        store.setRosterSeedSnapshot({
+            currentUserId: 'usr_current',
+            friendsById: {
+                usr_offline: {
+                    id: 'usr_offline',
+                    displayName: 'Offline Cache',
+                    trustLevel: 'Known User',
+                    friendNumber: 2,
+                    stateBucket: 'offline'
+                },
+                usr_online: {
+                    id: 'usr_online',
+                    displayName: 'Online Cache',
+                    trustLevel: 'Trusted User',
+                    friendNumber: 1,
+                    stateBucket: 'online'
+                },
+                usr_active: {
+                    id: 'usr_active',
+                    displayName: 'usr_active',
+                    stateBucket: 'active'
+                }
+            },
+            detail: 'seeded friends'
+        });
+
+        const state = useFriendRosterStore.getState();
+
+        expect(state.loadStatus).toBe('running');
+        expect(state.detail).toBe('seeded friends');
+        expect(state.onlineIds).toEqual(['usr_online']);
+        expect(state.activeIds).toEqual(['usr_active']);
+        expect(state.offlineIds).toEqual(['usr_offline']);
+        expect(state.orderedFriendIds).toEqual([
+            'usr_online',
+            'usr_active',
+            'usr_offline'
+        ]);
+        expect(state.friendsById.usr_online).toMatchObject({
+            id: 'usr_online',
+            displayName: 'Online Cache',
+            stateBucket: 'online',
+            friendNumber: 1,
+            $trustLevel: 'Trusted User'
+        });
+    });
+
     it('preserves bucket membership for location-only friend patches', () => {
         const store = useFriendRosterStore.getState();
         store.applyFriendPatch({

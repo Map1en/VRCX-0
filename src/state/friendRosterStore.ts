@@ -35,6 +35,11 @@ type FriendRosterSnapshot = FriendRosterOrdering & {
     friendsById: Record<string, FriendRecord>;
     detail?: string;
 };
+type FriendRosterSeedSnapshot = {
+    currentUserId: string | null;
+    friendsById: Record<string, FriendRecord>;
+    detail?: string;
+};
 type FriendPatchEntry = {
     userId?: unknown;
     patch?: FriendRecord;
@@ -46,6 +51,7 @@ type FriendRosterStore = FriendRosterSnapshot & {
     detail: string;
     lastLoadedAt: string | null;
     setRosterLoading(currentUserId: unknown, detail?: string): void;
+    setRosterSeedSnapshot(snapshot: FriendRosterSeedSnapshot): void;
     setRosterSnapshot(snapshot: FriendRosterSnapshot): void;
     setRosterError(detail: string): void;
     applyFriendPatch(entry: FriendPatchEntry & { detail?: string }): void;
@@ -385,6 +391,26 @@ export const useFriendRosterStore = create<FriendRosterStore>((set: any) => ({
         set({
             currentUserId,
             loadStatus: 'ready',
+            detail,
+            lastLoadedAt: new Date().toISOString(),
+            friendsById: normalizedFriendsById,
+            orderedFriendIds: ordering.orderedFriendIds,
+            onlineIds: ordering.onlineIds,
+            activeIds: ordering.activeIds,
+            offlineIds: ordering.offlineIds
+        });
+    },
+    setRosterSeedSnapshot({
+        currentUserId,
+        friendsById,
+        detail = ''
+    }: any) {
+        const normalizedFriendsById =
+            normalizeRosterSnapshotFriends(friendsById);
+        const ordering = buildRosterOrdering(normalizedFriendsById);
+        set({
+            currentUserId: normalizeUserId(currentUserId) || null,
+            loadStatus: 'running',
             detail,
             lastLoadedAt: new Date().toISOString(),
             friendsById: normalizedFriendsById,
