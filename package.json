@@ -89,7 +89,7 @@
         "@vitejs/plugin-react": "^6.0.2",
         "browserslist": "^4.28.2",
         "lightningcss": "^1.32.0",
-        "oxfmt": "^0.53.0",
+        "oxfmt": "^0.54.0",
         "oxlint": "^1.69.0",
         "shadcn": "^4.11.0",
         "tailwindcss": "^4.3.0",
