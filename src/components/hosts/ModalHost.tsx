@@ -229,7 +229,10 @@ export function ModalHost() {
                     }
                 }}
             >
-                <DialogContent>
+                <DialogContent
+                    onPointerDownOutside={(event) => event.preventDefault()}
+                    onInteractOutside={(event) => event.preventDefault()}
+                >
                     <DialogHeader>
                         <DialogTitle>{otpDialog.title}</DialogTitle>
                         <DialogDescription>
