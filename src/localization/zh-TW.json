@@ -224,8 +224,8 @@
             "current_instance_player_page": "目前房間玩家頁面。",
             "search": "搜尋",
             "search_worlds_and_groups": "搜尋世界和群組。",
-            "favorite_friends": "星標好友",
-            "favorite_friends_page": "星標好友頁面。",
+            "favorite_friends": "收藏好友",
+            "favorite_friends_page": "收藏好友頁面",
             "favorite_worlds": "世界收藏",
             "favorite_worlds_page": "收藏世界頁面。",
             "favorite_avatars": "角色收藏",
@@ -254,8 +254,8 @@
         "tools": "工具",
         "help": "說明",
         "test_build_badge": "測試版",
-        "preview_build_badge": "Preview Build",
-        "theme_devkit_build_badge": "Theme Dev Kit",
+        "preview_build_badge": "預覽版本",
+        "theme_devkit_build_badge": "主題開發套件",
         "settings": "設定...",
         "check_updates": "檢查更新",
         "restart": "重新啟動 VRCX-0",
@@ -303,7 +303,7 @@
         "search_no_results": "沒有找到結果",
         "search_min_chars": "請至少輸入 2 個字元",
         "search_categories": "搜尋...",
-        "search_scope_all": "名稱、本機備註與備註",
+        "search_scope_all": "名稱、備註與筆記",
         "search_scope_avatars": "自己的與收藏",
         "search_scope_worlds": "自己的與收藏",
         "search_scope_joined": "自己的與已加入",
@@ -414,7 +414,7 @@
     "support_vrcx": {
         "title": "支持 VRCX-0",
         "description": "透過 GitHub Sponsors 或 Ko-fi 支持 VRCX-0 後續開發。",
-        "github_sponsors": "GitHub Sponsors",
+        "github_sponsors": "GitHub 贊助者",
         "kofi": "Ko-fi"
     },
     "view": {
@@ -1667,8 +1667,8 @@
                     "start_when_steamvr": "SteamVR 啟動時",
                     "start_when_vrchat_vr_mode": "VRChat 啟動時",
                     "overlay_button": "嵌入介面按鍵",
-                    "overlay_button_grip": "Grip",
-                    "overlay_button_menu": "Menu",
+                    "overlay_button_grip": "握感",
+                    "overlay_button_menu": "選單",
                     "display_on": "顯示在",
                     "display_on_left": "左手",
                     "display_on_right": "右手",
@@ -1819,7 +1819,7 @@
                     "theme_mode": "主題",
                     "font_family": "字型",
                     "cjk_font_pack": "CJK 字型包",
-                    "font_family_inter": "Inter",
+                    "font_family_inter": "Inter（預設）",
                     "font_family_noto_sans": "Noto Sans",
                     "font_family_geist": "Geist（預設）",
                     "font_family_nunito_sans": "Nunito Sans",
@@ -1832,7 +1832,7 @@
                     "font_family_custom_dialog_description": "輸入有效的 CSS font-family 值",
                     "font_family_custom_invalid": "無效的 font-family。請使用逗號分隔字型名稱，例如：'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
-                    "cjk_font_pack_puhuiti": "PuHuiTi CJK",
+                    "cjk_font_pack_puhuiti": "普惠提 CJK",
                     "theme_mode_system": "系統",
                     "theme_mode_light": "淺色",
                     "theme_mode_dark": "深色",
@@ -2149,8 +2149,8 @@
                         "default_launch_mode": "預設啟動模式",
                         "default_launch_mode_vr": "VR 模式",
                         "default_launch_mode_desktop": "桌面模式",
-                        "show_confirmation_on_switch_avatar_enable": "切換虛擬形象前顯示確認對話框",
-                        "show_confirmation_on_switch_avatar_tooltip": "停用時，切換虛擬形象時 VRCX-0 不會跳出並要求確認"
+                        "show_confirmation_on_switch_avatar_enable": "切換角色前顯示確認對話框",
+                        "show_confirmation_on_switch_avatar_tooltip": "停用時，切換角色時 VRCX-0 不會跳出並要求確認"
                     },
                     "screenshot_helper": {
                         "header": "螢幕截圖助理",
@@ -2313,7 +2313,7 @@
                 "status": "狀態變動",
                 "friends": "好友",
                 "online": "上線",
-                "favorites": "收藏&星標",
+                "favorites": "收藏",
                 "notifications": "通知",
                 "panel_not_configured": "未設定面板",
                 "sign_in_before_the_dashboard_can_query_feed_rows": "登入後儀錶板才能查詢動態行",
@@ -2591,7 +2591,7 @@
             "tabs": {
                 "browse": "瀏覽",
                 "installed": "已安裝",
-                "override": "Override",
+                "override": "覆寫",
                 "developer": "開發"
             },
             "status": {
@@ -2823,7 +2823,7 @@
             "stop_policy_short_keepRunning": "保持",
             "stop_policy_short_closeByVrcx": "關閉",
             "delete": "刪除",
-            "steam_app_id": "Steam App ID",
+            "steam_app_id": "Steam 應用程式 ID",
             "delay_seconds": "啟動延遲秒數",
             "args": "參數",
             "close": "關閉",
@@ -4535,7 +4535,7 @@
                 "inviteResponse": "邀請回覆",
                 "requestInviteResponse": "請求邀請回覆",
                 "friendRequest": "好友請求",
-                "boop": "Boop",
+                "boop": "噗",
                 "group_queueReady": "房間排隊就緒",
                 "instance_closed": "房間已關閉",
                 "OnPlayerJoining": "玩家正在加入",
@@ -5271,7 +5271,7 @@
             "load_failed": "載入好友清單失敗，正在登出"
         },
         "vrcplus": {
-            "required": "VRChat+"
+            "required": "需要 VRCPlus"
         },
         "screenshot_metadata": {
             "deleted": "刪除截圖附加資料",
@@ -6003,7 +6003,7 @@
             "world_and_group_search_route": "世界和群組搜尋路由。",
             "dashboard": "儀錶板",
             "dashboard_shell_with_embedded_widgets_and_suppor": "包含小工具和受支援頁面面板的儀錶板外殼。",
-            "favorite_friends": "星標好友",
+            "favorite_friends": "收藏好友",
             "favorite_friends_groups_and_local_cache_view": "收藏好友分組和本機快取檢視。",
             "favorite_worlds": "世界收藏",
             "favorite_worlds_groups_and_local_cache_view": "收藏世界分組和本機快取檢視。",
