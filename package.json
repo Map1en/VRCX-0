@@ -89,7 +89,7 @@
         "@typescript/native-preview": "^7.0.0-dev.20260619.1",
         "@vitejs/plugin-react": "^6.0.2",
         "babel-plugin-react-compiler": "^1.0.0",
-        "browserslist": "^4.28.2",
+        "browserslist": "^4.28.4",
         "lightningcss": "^1.32.0",
         "oxfmt": "^0.55.0",
         "oxlint": "^1.70.0",
