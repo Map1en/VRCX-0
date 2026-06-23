@@ -7,7 +7,7 @@ edition = "2021"
 axum = "0.8"
 base64 = { workspace = true }
 chrono = { workspace = true }
-constant_time_eq = "0.4"
+constant_time_eq = "0.5"
 getrandom = "0.3"
 http = "1"
 http-body = "1"
