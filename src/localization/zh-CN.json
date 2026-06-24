@@ -3095,11 +3095,11 @@
                 "edit_language": "语言",
                 "edit_bio": "个人简介",
                 "edit_pronouns": "人称代词",
-                "report_hacking": "举报这个玩家的开挂/盗模行为",
+                "report_hacking": "举报此玩家盗模/开挂",
                 "unfriend": "删除好友",
                 "unfriend_success_msg": "已成功删除好友",
                 "logout": "退出登录",
-                "edit_note_memo": "编辑备注与本地备注",
+                "edit_note_memo": "编辑在线备注与本地备注",
                 "reset_home": "重置出生点"
             },
             "profile_media": {
@@ -3437,10 +3437,10 @@
                 "edit_vrchat_note": "编辑 VRChat 备注",
                 "next": "下一页",
                 "edit_local_memo": "编辑本地备注",
-                "report_hacking": "确定要举报此用户 作弊/开挂 吗？",
+                "report_hacking": "确定要举报此玩家 盗模/开挂 吗？",
                 "report": "举报",
-                "send_invite": "发送邀请？",
-                "request_invite": "请求加入？",
+                "send_invite": "确定要发送邀请吗？",
+                "request_invite": "确定要发送加入申请吗？",
                 "send_boop": "发送戳一戳",
                 "send": "发送",
                 "group_moderation": "群组管理",
@@ -3909,12 +3909,12 @@
             "overview": {
                 "header": "概览",
                 "description": "描述",
-                "basics": "基础",
+                "basics": "基本信息",
                 "recent_events": "最近活动",
-                "open_events": "打开活动",
-                "no_active_instances": "没有活跃房间",
-                "no_active_instances_description": "当前没有列出此群组的公开房间或群组房间。",
-                "no_recent_events": "没有最近的群组活动",
+                "open_events": "打开活动列表",
+                "no_active_instances": "没有房间",
+                "no_active_instances_description": "此群组目前没有可进入的房间",
+                "no_recent_events": "最近没有组织群组活动",
                 "preview_banner": "预览 {value} 横幅"
             },
             "events": {
@@ -4006,12 +4006,12 @@
                 "json": "原始 JSON 信息"
             },
             "loading": {
-                "loading_group_profile": "正在加载群组个人资料",
+                "loading_group_profile": "正在加载群组资料",
                 "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "正在获取此弹窗的当前 VRChat 群组快照",
                 "loading": "加载中..."
             },
             "error": {
-                "group_profile_unavailable": "群组个人资料不可用",
+                "group_profile_unavailable": "群组资料不可用",
                 "failed_to_refresh_the_remote_group_snapshot": "刷新远程群组快照失败",
                 "failed_to_load_the_group_profile": "加载群组资料失败",
                 "title_and_text_are_required": "需要标题和正文"
@@ -4033,16 +4033,16 @@
                 "actions": "操作",
                 "page": "页",
                 "gallery_image_id": "图库图片 ID",
-                "subscribed_to_announcements": "已订阅公告",
+                "subscribed_to_announcements": "接收群组通知",
                 "owner": "所有者：",
-                "membership": "成员资格",
+                "membership": "所属身份组",
                 "languages": "语言",
                 "privacy": "隐私",
                 "owner_2": "所有者",
                 "name_a_z": "名称 A-Z",
                 "name_z_a": "名称 Z-A",
-                "role": "角色",
-                "all_roles": "所有角色"
+                "role": "身份组",
+                "all_roles": "所有身份组"
             },
             "success": {
                 "group_join_request_cancelled": "已取消加入群组请求",
@@ -4055,7 +4055,7 @@
             "action": {
                 "refresh_to_load_gallery_images": "刷新以加载图库图片",
                 "open_group_owner_profile": "打开群组所有者资料",
-                "join_state": "加入状态",
+                "join_state": "加入方式",
                 "load_all": "全部加载"
             },
             "toast": {
@@ -4193,8 +4193,8 @@
             "confirm_yes": "是，确认启动",
             "confirm_no": "否，我再想想",
             "action": {
-                "open_copy_invite_or_self_invite_to_this_vrchat_instance": "打开、复制、邀请或向自己发送此 VRChat 房间邀请",
-                "open_in_game": "游戏内打开",
+                "open_copy_invite_or_self_invite_to_this_vrchat_instance": "你可以从此房间启动游戏、复制链接、邀请他人或向自己发送邀请",
+                "open_in_game": "在游戏内打开",
                 "start_as_desktop": "以桌面模式启动"
             },
             "label": {
@@ -4781,10 +4781,10 @@
             "table_view": "玩家",
             "chart_view": "时间线",
             "empty": {
-                "no_player_detail_rows": "没有玩家详情行",
+                "no_player_detail_rows": "未找到玩家详情",
                 "there_are_no_timeline_rows_for_this_instance": "这个房间没有时间线记录",
                 "no_instance_selected": "未选择房间",
-                "no_player_detail_rows_for_this_instance": "此房间没有玩家详情行",
+                "no_player_detail_rows_for_this_instance": "此房间没有玩家详情",
                 "no_instance_records": "没有房间记录"
             },
             "description": {
