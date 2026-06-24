@@ -100,12 +100,12 @@
         },
         "duration": "持续时间",
         "load_more": "加载更多",
-        "no_more": "没有更多条目",
+        "no_more": "没有更多了~",
         "current_session": "当前会话",
         "settings_saved": "设置已保存",
         "settings": "设置",
         "loading": "加载中",
-        "no_matching_entries": "没有匹配的条目。",
+        "no_matching_entries": "这里空空如也~",
         "status": {
             "database_initialization_is_still_pending": "数据库仍在初始化"
         },
@@ -1222,15 +1222,15 @@
         "friend_list": {
             "bulk_unfriend": "批量删除模式",
             "bulk_unfriend_selection": "批量删除已选择的好友",
-            "load": "读取缺失的项目",
-            "load_dialog_title": "获取缺失条目",
+            "load": "拉取缺失的字段",
+            "load_dialog_title": "拉取缺失条目",
             "load_dialog_message": "正在获取好友的缺失资料字段。",
             "load_cancel": "取消",
-            "load_complete": "缺失条目已加载",
+            "load_complete": "缺失字段已拉取完毕",
             "favorites_only_tooltip": "仅显示具有分组的好友",
             "search_placeholder": "搜索好友",
             "filter_placeholder": "筛选好友",
-            "load_mutual_friends": "查看关系网",
+            "load_mutual_friends": "刷新关系网数据",
             "mutual_loading_hint": "跳转到好友关系网页面",
             "search_filters": {
                 "display_name": "显示名称",
@@ -1242,7 +1242,7 @@
                 "memo": "本地备注"
             },
             "label": {
-                "friend_details_are_already_loaded": "好友详情已加载",
+                "friend_details_are_already_loaded": "已加载好友详情",
                 "shared_connections_are_opted_out_for_the_current_account": "当前账号已关闭共同关系功能",
                 "mutual_friends_loaded": "共同好友已加载",
                 "showing": "显示",
@@ -1257,7 +1257,7 @@
                 "group": "群组"
             },
             "success": {
-                "friend_detail_loading_cancelled": "好友详情加载已取消",
+                "friend_detail_loading_cancelled": "已取消好友详情加载",
                 "roster_bootstrap_did_not_complete": "好友列表初始化未完成",
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
                 "invite_request_sent": "邀请请求已发送",
@@ -1326,7 +1326,7 @@
                 },
                 "prompt": {
                     "title": "好友关系网",
-                    "message": "已经在后台开始拉取，进度显示在状态栏。",
+                    "message": "已在后台启动拉取工作，完成进度将显示在状态栏",
                     "confirm": "立刻开始拉取",
                     "cancel": "待会再说"
                 },
@@ -1514,7 +1514,7 @@
                 "crash_dumps_description": "打开崩溃转储文件夹"
             },
             "system_tools": {
-                "header": "VRChat 与系统",
+                "header": "调试与备份",
                 "vrchat_config": "VRChat 配置选项",
                 "vrchat_config_description": "打开 VRChat 的 config.json 设置",
                 "vrchat_log": "VRChat 日志查看器",
@@ -3372,11 +3372,11 @@
                 "no_status_history": "暂无状态历史",
                 "no_languages_selected": "未选择语言",
                 "no_groups_to_export": "没有可导出的群组",
-                "no_users": "没有用户",
-                "no_worlds": "没有世界",
-                "no_avatars": "没有模型",
-                "no_groups": "没有群组",
-                "no_results": "没有结果"
+                "no_users": "暂无用户",
+                "no_worlds": "暂无世界",
+                "no_avatars": "暂无模型",
+                "no_groups": "暂无群组",
+                "no_results": "暂无结果"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前位置不可用或不可传送",
@@ -4037,7 +4037,7 @@
                 "owner": "所有者：",
                 "membership": "所属身份组",
                 "languages": "语言",
-                "privacy": "隐私",
+                "privacy": "可见性",
                 "owner_2": "所有者",
                 "name_a_z": "名称 A-Z",
                 "name_z_a": "名称 Z-A",
@@ -4087,7 +4087,7 @@
                 "invite_to_group": "邀请加入群组"
             },
             "dynamic": {
-                "leave_value": "退出 {value}？",
+                "leave_value": "要退出 {value} 吗？",
                 "value_group_user": "{value} 群组用户？",
                 "value_completed": "{value} 已完成",
                 "search_value": "搜索 {value}",
@@ -4108,7 +4108,7 @@
             "update": "更新",
             "presets": "预设",
             "save_preset": "保存为预设",
-            "preset_saved": "预设已保存",
+            "preset_saved": "已保存预设",
             "preset_exists": "预设已存在",
             "preset_limit": "目前最多可以存储 {max} 个预设，请删除一些不需要的预设后再试。"
         },
@@ -5920,16 +5920,16 @@
     "component": {
         "favorite_action_menu": {
             "toast": {
-                "failed_to_add_favorite": "添加收藏失败",
-                "failed_to_remove_favorite": "移除收藏失败",
+                "failed_to_add_favorite": "添加在线收藏失败",
+                "failed_to_remove_favorite": "移除在线收藏失败",
                 "failed_to_add_local_favorite": "添加本地收藏失败",
                 "failed_to_remove_local_favorite": "移除本地收藏失败"
             },
             "modal": {
-                "remove_vrchat_favorite": "移除 VRChat 收藏？"
+                "remove_vrchat_favorite": "移除在线收藏？"
             },
             "dynamic": {
-                "remove_value_from_vrchat_favorites": "要从 VRChat 收藏中移除 {value} 吗？"
+                "remove_value_from_vrchat_favorites": "要从在线收藏中移除 {value} 吗？"
             }
         },
         "friend_location_card": {
@@ -5986,7 +5986,7 @@
                 "failed_to_save_custom_navigation": "保存自定义导航失败",
                 "failed_to_save_dashboard_navigation": "保存仪表盘导航失败",
                 "failed_to_unpin_tool_from_navigation": "从导航取消固定工具失败",
-                "failed_to_sign_out_of_vrcx_0": "退出 VRCX-0 登录失败"
+                "failed_to_sign_out_of_vrcx_0": "退出登录失败"
             }
         },
         "app_status_bar": {
@@ -6028,9 +6028,9 @@
                 "failed_to_update_status": "更新状态失败"
             },
             "modal": {
-                "send_invite": "发送邀请？",
+                "send_invite": "确定要发送邀请吗？",
                 "invite": "邀请",
-                "request_invite": "请求加入？",
+                "request_invite": "确定要发送加入申请吗？",
                 "request_invite_2": "申请加入",
                 "send_boop": "发送戳一戳",
                 "send": "发送",
@@ -6054,7 +6054,7 @@
             "modal": {
                 "launch_vrchat": "启动 VRChat",
                 "launch": "启动",
-                "vrchat_is_already_running_continue_launching_this_instance": "VRChat 已在运行。VRCX-0 会向运行中的客户端再次发送启动请求。如果已经打开多个客户端，GameLog、当前位置、玩家列表以及部分后台服务可能变得不可靠。确定要继续吗？"
+                "vrchat_is_already_running_continue_launching_this_instance": "VRChat 已在运行。VRCX-0 会向运行中的客户端再次发送启动请求。如果已经打开多个客户端，游戏日志、当前位置追踪、玩家列表以及部分后台服务可能变得不可靠。确定要继续吗？"
             },
             "dynamic": {
                 "value_copied": "已复制{value}"
@@ -6094,16 +6094,16 @@
                 "delete_the_local_value_log_entry": "删除本地 {value} 日志条目？"
             },
             "dynamic": {
-                "accept_the_friend_request_from_value": "接受来自 {value} 的好友请求？",
-                "decline_the_value_notification": "拒绝 {value} 通知？",
-                "send_an_invite_to_value": "向 {value} 发送邀请？"
+                "accept_the_friend_request_from_value": "要接受来自 {value} 的好友请求吗？",
+                "decline_the_value_notification": "要拒绝 {value} 的通知吗？",
+                "send_an_invite_to_value": "要向 {value} 发送邀请吗？"
             }
         },
         "tools_dialogs": {
             "toast": {
                 "failed_to_export_friends_list": "导出好友列表失败",
                 "failed_to_export_avatar_list": "导出模型列表失败",
-                "failed_to_load_memo_export_rows": "加载本地备注导出行失败",
+                "failed_to_load_memo_export_rows": "加载本地备注导出信息失败",
                 "failed_to_load_group_events": "加载群组活动失败",
                 "failed_to_update_group_event_follow_state": "更新群组活动关注状态失败",
                 "failed_to_download_ics_file": "下载 .ics 文件失败",
@@ -6133,7 +6133,7 @@
                 "database_update_complete": "数据库更新完成"
             },
             "action": {
-                "refresh_config_failed_after_upgrade": "VRCX-0 已成功升级数据库，但刷新本地配置失败。请重启程序。",
+                "refresh_config_failed_after_upgrade": "VRCX-0 已成功升级数据库，但刷新本地配置失败，请重启程序。",
                 "requesting_legacy_migration": "正在准备迁移已有的 VRCX 数据……",
                 "skipping_legacy_migration": "正在跳过迁移并初始化数据库……"
             },
