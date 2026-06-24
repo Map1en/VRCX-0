@@ -5707,7 +5707,7 @@
             "reset_columns": "重置列"
         },
         "empty": {
-            "no_rows_yet": "暂无行。"
+            "no_rows_yet": "空空如也~"
         }
     },
     "vr": {
@@ -5833,7 +5833,7 @@
                 },
                 "dashboard": {
                     "title": "自定义仪表板",
-                    "description": "通过组合适合你的面板来自定义工作区"
+                    "description": "通过自定义适合你的面板来组合工作区"
                 },
                 "quick_search": {
                     "title": "快速搜索",
@@ -5858,7 +5858,7 @@
                     "items": {
                         "quick_search": {
                             "title": "快速搜索",
-                            "description": "按 Ctrl+K（⌘K）可快速查找各种东西（包括你的好友、收藏的世界、加入的群组和模型）。"
+                            "description": "按 Ctrl+K（⌘K）可快速查找各种东西（包括你的好友、收藏的世界、加入的群组和你的模型）。"
                         },
                         "local_favorite_groups": {
                             "title": "本地收藏夹/好友分组",
