@@ -1,12 +1,12 @@
 {
     "assistant": {
-        "title": "社交 AI",
+        "title": "AI 助手",
         "new_chat": "新建对话",
         "sessions_empty": "还没有对话",
         "composer_placeholder": "问点什么",
         "send": "发送",
         "stop": "停止",
-        "empty_title": "聊聊你的社交生活",
+        "empty_title": "聊聊你的社交动态",
         "example_1": "这周我和谁玩得最多？",
         "example_2": "我正在和谁疏远？",
         "example_3": "什么时候最容易碰到我的好友在线？",
@@ -23,25 +23,25 @@
             "unconfigured": "未配置"
         },
         "settings": {
-            "title": "社交 AI",
-            "description": "用你自己的 OpenAI 兼容接口驱动应用内助手。它可以通过 VRCX-0 的工具读取你本地的 VRChat 社交记录。",
+            "title": "AI 助手",
+            "description": "用你自己的 LLM 模型驱动应用内助手。它可以通过 VRCX-0 提供的工具读取本地社交记录。",
             "base_url": "API 基础地址",
             "base_url_placeholder": "https://api.openai.com/v1",
             "api_key": "API 密钥",
             "api_key_placeholder": "sk-…",
-            "api_key_set": "已保存密钥。留空则保持不变。",
+            "api_key_set": "密钥已保存（留空保持不变）",
             "model": "模型",
             "model_placeholder": "gpt-4o-mini",
             "detect": "检测",
             "detecting": "检测中…",
-            "detect_success": "检测成功",
-            "detect_failed": "检测失败",
+            "detect_success": "测试成功",
+            "detect_failed": "测试失败",
             "save": "保存",
             "saved": "已保存",
-            "allow_writes": "允许写操作",
+            "allow_writes": "允许编辑操作",
             "allow_writes_description": "允许助手修改备注和收藏。默认关闭；恶意好友的简介可能诱导它做出非预期改动。",
             "privacy_title": "隐私",
-            "privacy_local": "请求发送到本机的本地接口，你的社交数据不会离开你的电脑。",
+            "privacy_local": "请求发送到本机的本地接口，你的社交数据不会离开你的计算机。",
             "privacy_remote": "使用在线 AI 服务可能会泄露你的数据，请谨慎操作。"
         }
     },
@@ -110,7 +110,7 @@
             "database_initialization_is_still_pending": "数据库仍在初始化"
         },
         "label": {
-            "authenticated_and_prepared_the_session": "已验证并准备好会话",
+            "authenticated_and_prepared_the_session": "登录成功，欢迎使用",
             "auto_login": "自动登录",
             "vrchat_launched": "已启动 VRChat"
         },
@@ -118,7 +118,7 @@
             "retry": "重试"
         },
         "error": {
-            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，改用自我邀请"
+            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，将向自身发送游戏内邀请"
         },
         "affinity": {
             "friend": "好友",
@@ -331,8 +331,8 @@
         "tools": "工具",
         "help": "帮助",
         "test_build_badge": "测试版",
-        "preview_build_badge": "Preview Build",
-        "devkit_build_badge": "Dev Kit",
+        "preview_build_badge": "预览版",
+        "devkit_build_badge": "开发版",
         "settings": "设置...",
         "check_updates": "检查更新",
         "restart": "重启 VRCX-0",
@@ -410,7 +410,7 @@
         "search_result_offline": "离线",
         "search_result_more": "更多：",
         "refresh_tooltip": "刷新好友列表",
-        "refresh_available_in_seconds": "已同步，请 {count} 秒后再试",
+        "refresh_available_in_seconds": "你刚刚才同步过，请 {count} 秒后再试",
         "groups": "群组房间",
         "friends": "好友",
         "me": "我",
@@ -515,7 +515,7 @@
             "forgotPassword": "忘记密码？",
             "updater": "检查更新",
             "proxy_settings": "代理设置",
-            "proxy_description": "设置登录前使用的代理服务器。支持 127.0.0.1:7890、http://127.0.0.1:7890 和 socks5://127.0.0.1:7890。",
+            "proxy_description": "设置登录前使用的代理服务器。支持 Socks5 和 Http 协议",
             "settings": "设置",
             "language": "语言",
             "field": {
@@ -624,32 +624,32 @@
             },
             "success": {
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "invite_request_sent": "请求加入已发送",
-                "boop_sent": "戳一戳已发送"
+                "invite_request_sent": "已发送加入请求",
+                "boop_sent": "已发送戳一戳"
             },
             "loading": {
                 "loading_feed_rows": "正在加载动态行"
             },
             "empty": {
-                "no_feed_rows_match_the_current_filters": "没有符合当前筛选的动态"
+                "no_feed_rows_match_the_current_filters": "没有符合当前筛选设置的动态"
             },
             "toast": {
-                "failed_to_resolve_avatar_author": "解析模型作者失败",
+                "failed_to_resolve_avatar_author": "无法解析模型作者信息",
                 "failed_to_load_instance_history": "加载房间历史失败",
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败",
                 "failed_to_send_invite": "发送邀请失败",
-                "failed_to_request_invite": "请求加入失败",
+                "failed_to_request_invite": "申请加入失败",
                 "failed_to_send_boop": "发送戳一戳失败"
             },
             "modal": {
-                "send_invite": "发送邀请？",
+                "send_invite": "确定要发送邀请吗？",
                 "invite": "邀请",
-                "request_invite": "请求加入？",
-                "request_invite_2": "请求加入",
+                "request_invite": "确定要发送加入申请吗？",
+                "request_invite_2": "申请加入",
                 "send_boop": "发送戳一戳",
                 "send": "发送",
-                "optional_emoji_id_leave_blank_to_send_the_default": "可选表情 ID，留空则发送默认戳一戳"
+                "optional_emoji_id_leave_blank_to_send_the_default": "可选表情 ID，留空则发送默认的戳一戳表情"
             },
             "dynamic": {
                 "value_copied": "已复制{value}"
@@ -2586,21 +2586,21 @@
                 "no_current_instance_detected": "未检测到当前房间",
                 "no_players_reconstructed_for_this_instance_yet": "还没有为当前房间重建出玩家",
                 "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "请先在设置中启用游戏日志记录，之后才能重建当前玩家。",
-                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "启动 VRChat 并让 VRCX-0 接收到游戏日志事件后，此页面才能重建当前房间。",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "请在房间中停留到本地加入/离开事件被记录，之后此列表会自动填充。",
+                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "请启动 VRChat 并让 VRCX-0 能收到游戏日志事件，之后此页面才可用。",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "请在房间中停留，直到本地加入/离开事件被记录完毕，之后此列表会自动填充。",
                 "current_players_follow_live_instance_locations": "当前玩家跟随实时房间位置；下一个位置事件到达后会重新填充。",
                 "local_join_leave_history_has_no_current_players": "本地加入/离开历史中还没有当前房间的玩家。"
             },
             "label": {
-                "instance_master": "房间主人",
+                "instance_master": "房间创建者",
                 "moderator": "管理员",
                 "favorite": "收藏",
                 "muted": "已静音",
                 "avatar_interaction_disabled": "模型交互已禁用",
-                "chatbox_muted": "聊天框已静音",
+                "chatbox_muted": "已屏蔽聊天气泡",
                 "timeout": "超时",
-                "age_verified": "已年龄验证",
-                "rebuilding_the_current_instance_roster_from_game_log_history": "正在从游戏日志历史重建当前房间玩家列表"
+                "age_verified": "已通过年龄验证",
+                "rebuilding_the_current_instance_roster_from_game_log_history": "正在从游戏日志历史中重建当前房间的玩家列表"
             },
             "error": {
                 "blocked": "已屏蔽",
@@ -2616,13 +2616,13 @@
                 "preparing_login_for": "正在为 {name} 准备自动登录",
                 "preparing_restore_for": "正在为 {userId} 准备自动恢复会话",
                 "starts_in": "自动登录将在 {seconds} 秒后开始",
-                "authenticating": "正在认证 {name}",
-                "restoring_session_for": "正在为 {name} 恢复已有浏览器会话",
-                "logged_in_as": "已自动登录为 {name}",
-                "restored_session_for": "已为 {name} 自动恢复上次浏览器会话",
+                "authenticating": "正在以 {name} 的身份登录",
+                "restoring_session_for": "正在为 {name} 恢复已有会话",
+                "logged_in_as": "已作为 {name} 自动登录",
+                "restored_session_for": "已为 {name} 自动恢复上次会话",
                 "skipped_before_request": "认证请求开始前已跳过自动登录",
-                "throttled": "过去一小时内多次失败，自动登录已停用。",
-                "expired": "上一个浏览器会话已过期，且没有可用的已保存账号作为回退。",
+                "throttled": "由于过去一小时内多次失败，自动登录已停用。",
+                "expired": "上一个会话已过期，且没有可用的已保存账号作为回退。",
                 "failed_manual": "自动登录失败，仍可在下方手动登录",
                 "failed_unexpectedly": "自动登录意外失败",
                 "skipped_form_changed": "登录表单已更改，已跳过自动登录",
@@ -2688,7 +2688,7 @@
                 "request_invite_2": "请求加入",
                 "send_boop": "发送戳一戳",
                 "send": "发送",
-                "select_avatar": "切换到该模型？",
+                "select_avatar": "确定要切换到该模型吗？",
                 "delete_value_favorites": "删除 {value} 个收藏？",
                 "this_action_cannot_be_undone": "此操作无法撤销",
                 "optional_emoji_id_leave_blank_to_send_the_default": "可选表情 ID，留空则发送默认戳一戳",
