@@ -4601,7 +4601,7 @@
             "cache_expiry_delay": "缓存保存时长 [天]（至少 30 天）",
             "cache_directory": "缓存文件夹位置",
             "picture_directory": "截图文件夹位置",
-            "fpv_steadycam_fov": "第一人称镜头的FOV",
+            "fpv_steadycam_fov": "第一人称镜头的 FOV",
             "camera_resolution": "相机分辨率",
             "spout_resolution": "直播相机分辨率",
             "screenshot_resolution": "截图分辨率",
@@ -4656,7 +4656,7 @@
         },
         "shared_feed_filters": {
             "notification": "通知筛选器",
-            "wrist": "手腕动态过滤器",
+            "wrist": "叠加界面通知筛选器",
             "on": "开启",
             "off": "关闭",
             "favorite": "分组好友",
@@ -4666,7 +4666,7 @@
             "close": "关闭并保存"
         },
         "vr_notifications": {
-            "title": "VR 叠加通知过滤器",
+            "title": "VR 叠加界面通知过滤器",
             "description": "选择 SteamVR 运行时哪些通知会发送到 XSOverlay 和 OVR Toolkit。"
         },
         "desktop_notifications": {
@@ -4678,22 +4678,22 @@
             "description": "选择哪些运行时通知会发送到已配置的 Webhook。"
         },
         "wrist_feed_notifications": {
-            "title": "腕表叠加通知过滤器",
+            "title": "叠加界面通知过滤器",
             "description": "选择哪些内容显示在手腕动态中。桌面通知使用单独的过滤设置。",
             "reset_recommended": "重置",
             "scopes": {
                 "off": "关闭",
                 "on": "开启",
-                "friends": "好友",
-                "selectedFavorites": "选中的收藏好友",
-                "allFavorites": "所有收藏好友",
+                "friends": "所有好友",
+                "selectedFavorites": "仅选中的分组",
+                "allFavorites": "所有具有分组的好友",
                 "everyoneInInstance": "当前房间所有人"
             },
             "categories": {
                 "actionRequired": {
-                    "label": "需要处理",
-                    "description": "在 VR 中可能需要注意的请求和回复。",
-                    "example": "邀请、请求"
+                    "label": "值得注意",
+                    "description": "需要马上处理的各类邀请/加入申请",
+                    "example": "邀请、请求加入"
                 },
                 "currentInstance": {
                     "label": "当前房间",
@@ -4701,23 +4701,23 @@
                     "example": "加入、离开"
                 },
                 "favoriteMovement": {
-                    "label": "收藏好友动态",
-                    "description": "收藏好友的上线、离线、位置和状态变化。",
-                    "example": "上线、位置"
+                    "label": "分组好友动态",
+                    "description": "分组好友的上线、离线、位置和状态变化。",
+                    "example": "上线通知、位置变动"
                 },
                 "profileChange": {
                     "label": "资料变化",
-                    "description": "名称、信任等级、Avatar、简介、添加好友和取消好友变化。",
-                    "example": "名称、Avatar"
+                    "description": "有关昵称、模型、简介和信誉等级之类的变化。",
+                    "example": "昵称、模型变动"
                 },
                 "groupSocial": {
                     "label": "群组与社交",
-                    "description": "群组公告、邀请、加入请求和所有权变化。",
+                    "description": "群组公告、邀请、加入申请和所有权变化。",
                     "example": "群组"
                 },
                 "systemSafety": {
                     "label": "系统与安全",
-                    "description": "系统事件、外部应用项目和屏蔽/静音相关活动。",
+                    "description": "系统、外部事件以及屏蔽/静音相关活动。",
                     "example": "事件、屏蔽"
                 },
                 "media": {
@@ -4732,7 +4732,7 @@
                 "inviteResponse": "拒绝邀请",
                 "requestInviteResponse": "拒绝加入申请",
                 "friendRequest": "好友请求",
-                "boop": "Boop",
+                "boop": "戳一戳",
                 "group_queueReady": "房间排队就绪",
                 "instance_closed": "房间已关闭",
                 "OnPlayerJoining": "玩家正在加入",
@@ -4756,7 +4756,7 @@
                 "group_joinRequest": "群组加入请求",
                 "group_transfer": "群组转让请求",
                 "Event": "事件",
-                "External": "外部应用",
+                "External": "外部事件",
                 "Blocked": "屏蔽",
                 "Unblocked": "取消屏蔽",
                 "Muted": "静音",
