@@ -1209,7 +1209,7 @@
                 "cannot_send_invite_response_no_current_user_session_is_available": "无法发送邀请回应：当前没有可用的已登录会话"
             },
             "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "未选择自定义 Emoji，将发送默认戳一戳"
+                "no_custom_emoji_selected_the_default_boop_will_be_sent": "未选择自定义表情，将发送默认戳一戳"
             },
             "loading": {
                 "loading_emojis": "正在加载Emoji"
@@ -1675,7 +1675,7 @@
             },
             "loading": {
                 "deleting_metadata": "正在删除元数据",
-                "uploading_screenshot": "正在上传到图库",
+                "uploading_screenshot": "正在上传到在线相册",
                 "searching_screenshots": "正在搜索截图",
                 "resolving_file_list_and_metadata_summaries": "正在解析文件列表和元数据摘要",
                 "loading_screenshot": "正在加载截图",
@@ -3291,11 +3291,11 @@
                 },
                 "preparing_data": "正在准备活动数据...",
                 "preparing_data_hint": "首次加载时可能需要一些时间。",
-                "data_ready": "已准备好活动数据",
+                "data_ready": "活动数据已准备好",
                 "failed_to_load": "加载活动失败"
             },
             "note_memo": {
-                "header": "编辑备注与本地备注",
+                "header": "编辑在线备注与本地备注",
                 "cancel": "取消",
                 "confirm": "确定"
             },
@@ -4504,7 +4504,7 @@
             "copy_image": "复制图片",
             "open_folder": "在资源管理器中显示",
             "delete_metadata": "删除当前图片的元数据",
-            "upload": "上传到图库",
+            "upload": "上传到在线相册",
             "search_placeholder": "搜索",
             "search_type_placeholder": "搜索类型",
             "search_types": {
@@ -4533,13 +4533,13 @@
             "folders": "文件夹",
             "scanning": "正在扫描截图",
             "image_count": "{count} 张图片",
-            "empty_gallery": "此文件夹没有截图",
-            "empty_gallery_description": "选择其他文件夹，或刷新截图图库。",
-            "empty_folders": "没有截图文件夹",
-            "empty_folders_description": "VRChat 保存截图后再刷新。",
+            "empty_gallery": "此文件夹内没有截图",
+            "empty_gallery_description": "选择其他文件夹，或刷新图库。",
+            "empty_folders": "文件夹为空",
+            "empty_folders_description": "请在相应位置保存截图后再刷新。",
             "loading_gallery": "正在加载截图",
             "loading_gallery_description": "正在读取已索引的截图列表。",
-            "gallery_load_failed": "加载截图图库失败",
+            "gallery_load_failed": "加载图库失败",
             "scan_failed": "扫描截图图库失败",
             "thumbnail_failed": "缩略图不可用"
         },
@@ -4775,7 +4775,7 @@
             }
         },
         "previous_instances": {
-            "header": "曾加入的房间",
+            "header": "一起游玩的房间",
             "info": "房间详情",
             "search_placeholder": "搜索",
             "table_view": "玩家",
@@ -5179,7 +5179,7 @@
         "direct_access_omni": {
             "header": "直接打开",
             "description": "输入玩家 / 世界 / 房间 / 模型链接 或 UUID",
-            "description_failed": "直接打开失败，请检查链接或 ID 后重试。",
+            "description_failed": "打开内容失败，请检查链接或 ID 后重试。",
             "cancel": "取消",
             "ok": "确定",
             "input_error": "请输入链接或 ID",
