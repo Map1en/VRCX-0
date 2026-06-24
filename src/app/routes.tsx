@@ -183,16 +183,7 @@ export const protectedRoutes = [
         path: '/charts',
         titleKey: 'app.routes.charts',
         descriptionKey: 'app.routes.charts_landing_route',
-        element: <Navigate to="/charts/instance" replace />
-    },
-    {
-        path: '/charts/instance',
-        titleKey: 'app.routes.charts_instance',
-        descriptionKey: 'app.routes.instance_activity_timeline_chart',
-        element: lazyRouteElement(
-            () => import('@/features/charts/InstanceActivityPage'),
-            'InstanceActivityPage'
-        )
+        element: <Navigate to="/charts/mutual" replace />
     },
     {
         path: '/charts/mutual',

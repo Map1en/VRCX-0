@@ -52,7 +52,7 @@ export class RouteErrorBoundary extends Component<
     }
 
     componentDidCatch(error: unknown): void {
-        recordRouteError(classifyRouteError(error));
+        recordRouteError(classifyRouteError(error), error);
     }
 
     render(): ReactNode {

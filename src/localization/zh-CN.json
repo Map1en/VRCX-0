@@ -317,8 +317,6 @@
             "notification_center_page": "通知中心页面。",
             "my_avatars": "我的模型",
             "avatar_collection_page": "模型收藏页面。",
-            "instance_activity": "活动记录",
-            "instance_activity_chart": "房间活动图表。",
             "mutual_friends": "共同好友",
             "mutual_friends_chart": "共同好友图表。",
             "tools": "工具",
@@ -768,6 +766,14 @@
         },
         "instance_history": {
             "title": "房间历史",
+            "mode": {
+                "search": "查询",
+                "day": "按日"
+            },
+            "day": {
+                "expand_chart": "展开活动图表",
+                "collapse_chart": "收起活动图表"
+            },
             "placeholder": {
                 "user": "选择用户"
             },
@@ -1283,10 +1289,10 @@
         },
         "charts": {
             "instance_activity": {
-                "header": "活动记录",
                 "online_time": "在线时长",
                 "previous_day": "前一天",
                 "next_day": "后一天",
+                "no_activity": "无活动",
                 "refresh": "刷新",
                 "tips": {
                     "online_time": "在线时长是指 VRCX-0 记录的，在当天的游戏时长",
@@ -1416,15 +1422,12 @@
             "empty": {
                 "no_detail_rows": "没有详情行",
                 "no_instance_activity_on_this_day": "这一天没有房间活动",
-                "selected_date_outside_activity_set": "这一天不在已记录的活动范围内",
-                "no_detail_charts_match_the_current_filters": "没有符合当前筛选的详情图表",
                 "no_friends_are_available_for_mutual_graph_fetching": "没有可用于获取共同好友图谱的好友",
                 "no_selection": "未选择",
                 "no_friends_match_this_search": "没有好友符合此搜索",
                 "no_cached_mutual_graph_yet": "还没有缓存的共同好友图谱",
                 "no_graph_nodes_match_the_current_search": "没有图谱节点符合当前搜索",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "这次房间访问没有匹配的玩家活动行",
-                "turn_on_solo_or_no_friend_instances_to_show_the_hidden_detail_groups": "开启单人或无好友房间以显示隐藏的详情分组"
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "这次房间访问没有匹配的玩家活动行"
             },
             "error": {
                 "instance_activity_failed_to_load": "房间活动加载失败",
@@ -4808,7 +4811,10 @@
                 "recorded_instance_visits_count": "{count} 条房间访问记录",
                 "rows": "行",
                 "location": "位置变动",
-                "page": "页"
+                "page": "页",
+                "sort_by": "排序方式",
+                "sort_descending": "降序",
+                "sort_ascending": "升序"
             },
             "success": {
                 "instance_record_deleted": "房间记录已删除"
@@ -6221,8 +6227,6 @@
             "friend_management_table_and_roster_details": "好友管理表格和列表详情。",
             "charts": "图表",
             "charts_landing_route": "图表入口页面。",
-            "charts_instance": "图表：房间",
-            "instance_activity_timeline_chart": "房间活动时间线图表。",
             "charts_mutual": "图表：共同好友",
             "mutual_friends_graph_over_cached_data": "基于缓存数据的共同好友图谱。",
             "tools": "工具",

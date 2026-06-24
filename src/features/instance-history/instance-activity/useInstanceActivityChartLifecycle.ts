@@ -3,34 +3,58 @@ import { useTranslation } from 'react-i18next';
 
 import { echarts } from '@/lib/echarts';
 
-import { buildChartOption } from './instanceActivityChart';
+import {
+    buildChartOption,
+    getMainChartClickedRow,
+    type ChartEventParams
+} from './instanceActivityChart';
+import type { InstanceActivityChartRow } from './instanceActivityTypes';
+
+type InstanceActivityChartLifecycleOptions = {
+    barWidth: number;
+    chartRows: InstanceActivityChartRow[];
+    hour12: boolean;
+    onRowActivate?: (row: InstanceActivityChartRow) => void;
+    onYAxisClick?: (row: InstanceActivityChartRow) => void;
+    resolvedTheme: string;
+    selectedActivityKey?: string;
+    selectedDate: string;
+};
 
 export function useInstanceActivityChartLifecycle({
     barWidth,
     chartRows,
     hour12,
+    onRowActivate,
     onYAxisClick,
     resolvedTheme,
+    selectedActivityKey = '',
     selectedDate
-}: any) {
+}: InstanceActivityChartLifecycleOptions) {
     const { t } = useTranslation();
-    const [mainChartElement, setMainChartElement] = useState(null);
-    const chartElementRef = useRef<any>(null);
-    const chartInstanceRef = useRef<any>(null);
-    const chartThemeRef = useRef<any>(null);
-    const resizeObserverRef = useRef<any>(null);
+    const [mainChartElement, setMainChartElement] =
+        useState<HTMLDivElement | null>(null);
+    const chartElementRef = useRef<HTMLDivElement | null>(null);
+    const chartInstanceRef = useRef<ReturnType<typeof echarts.init> | null>(
+        null
+    );
+    const chartThemeRef = useRef<string | null>(null);
+    const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-    const setMainChartElementRef = useCallback((node: any) => {
-        if (chartElementRef.current && chartElementRef.current !== node) {
-            resizeObserverRef.current?.disconnect();
-            chartInstanceRef.current?.dispose();
-            resizeObserverRef.current = null;
-            chartInstanceRef.current = null;
-            chartThemeRef.current = null;
-        }
-        chartElementRef.current = node;
-        setMainChartElement(node);
-    }, []);
+    const setMainChartElementRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            if (chartElementRef.current && chartElementRef.current !== node) {
+                resizeObserverRef.current?.disconnect();
+                chartInstanceRef.current?.dispose();
+                resizeObserverRef.current = null;
+                chartInstanceRef.current = null;
+                chartThemeRef.current = null;
+            }
+            chartElementRef.current = node;
+            setMainChartElement(node);
+        },
+        []
+    );
 
     useEffect(() => {
         return () => {
@@ -82,24 +106,32 @@ export function useInstanceActivityChartLifecycle({
                 selectedDate,
                 barWidth,
                 hour12,
+                selectedActivityKey,
                 t
             }),
             true
         );
-        chart.on('click', (params: any) => {
-            if (params.componentType !== 'yAxis') {
+        chart.on('click', (params: ChartEventParams) => {
+            const row = getMainChartClickedRow(params, chartRows);
+            if (!row) {
                 return;
             }
 
-            onYAxisClick(chartRows[params.dataIndex]);
+            if (typeof onRowActivate === 'function') {
+                onRowActivate(row);
+                return;
+            }
+            onYAxisClick?.(row);
         });
     }, [
         barWidth,
         chartRows,
         hour12,
         mainChartElement,
+        onRowActivate,
         onYAxisClick,
         resolvedTheme,
+        selectedActivityKey,
         selectedDate,
         t
     ]);

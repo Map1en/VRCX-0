@@ -1,3 +1,4 @@
+import { normalizeCheckedState } from '../settingsValues';
 import { SettingsVrTab } from './settings-tabs/SettingsVrTab';
 
 export function SettingsVrSection({ vr }: any) {
@@ -43,31 +44,35 @@ export function SettingsVrSection({ vr }: any) {
         <SettingsVrTab
             prefs={prefs}
             onXsNotificationsChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'xsNotifications',
                     'xsNotifications',
-                    checked
+                    enabled
                 );
             }}
             onOvrtHudNotificationsChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'ovrtHudNotifications',
                     'ovrtHudNotifications',
-                    checked
+                    enabled
                 );
             }}
             onOvrtWristNotificationsChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'ovrtWristNotifications',
                     'ovrtWristNotifications',
-                    checked
+                    enabled
                 );
             }}
             onImageNotificationsChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'imageNotifications',
                     'imageNotifications',
-                    checked
+                    enabled
                 );
             }}
             onNotificationTimeoutSecondsChange={saveNotificationTimeoutSeconds}
@@ -75,7 +80,9 @@ export function SettingsVrSection({ vr }: any) {
             onOpenVrNotificationFiltersDialog={() =>
                 setVrNotificationsDialogOpen(true)
             }
-            onWristOverlayEnabledChange={saveWristOverlayEnabled}
+            onWristOverlayEnabledChange={(checked: any) =>
+                saveWristOverlayEnabled(normalizeCheckedState(checked))
+            }
             onWristOverlayStartModeChange={(value: any) => {
                 saveStringPreference(
                     'wristOverlayStartMode',
@@ -105,31 +112,35 @@ export function SettingsVrSection({ vr }: any) {
                 );
             }}
             onWristOverlayDarkBackgroundChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'wristOverlayDarkBackground',
                     'wristOverlayDarkBackground',
-                    checked
+                    enabled
                 );
             }}
             onWristOverlayHidePrivateWorldsChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'wristOverlayHidePrivateWorlds',
                     'wristOverlayHidePrivateWorlds',
-                    checked
+                    enabled
                 );
             }}
             onWristOverlayShowDevicesChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'wristOverlayShowDevices',
                     'wristOverlayShowDevices',
-                    checked
+                    enabled
                 );
             }}
             onWristOverlayShowBatteryPercentChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'wristOverlayShowBatteryPercent',
                     'wristOverlayShowBatteryPercent',
-                    checked
+                    enabled
                 );
             }}
             onOpenWristFeedNotificationsDialog={() =>

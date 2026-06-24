@@ -6,9 +6,27 @@ import {
     filterDetailGroups,
     getLocalDayBounds
 } from './instanceActivityRows';
+import type { InstanceActivityDetailRow } from './instanceActivityTypes';
 
-function iso(value: any) {
+function iso(value: number | string | Date) {
     return new Date(value).toISOString();
+}
+
+function detailRow(id: string, isFriend: boolean): InstanceActivityDetailRow {
+    return {
+        id,
+        user_id: id,
+        display_name: id,
+        location: 'wrld_filter:1',
+        displayName: id,
+        userId: id,
+        joinMs: 0,
+        leaveMs: 1,
+        durationMs: 1,
+        isCurrentUser: id === 'self',
+        isFriend,
+        isFavorite: false
+    };
 }
 
 describe('instanceActivityRows', () => {
@@ -60,7 +78,7 @@ describe('instanceActivityRows', () => {
         );
 
         expect(rows).toHaveLength(2);
-        expect(rows.map((row: any) => row.id)).toEqual(['cross-midnight', 'late']);
+        expect(rows.map((row) => row.id)).toEqual(['cross-midnight', 'late']);
         expect(rows[0]).toMatchObject({
             worldId: 'wrld_known',
             worldName: 'Known World',
@@ -115,33 +133,39 @@ describe('instanceActivityRows', () => {
             }
         ];
 
+        const chartRows = buildChartRows(
+            rawRows,
+            '2024-01-02',
+            currentUserId,
+            {}
+        );
         const groups = buildDetailGroups(
             rawRows,
-            rawRows.filter((row: any) => row.user_id === currentUserId),
+            chartRows,
             currentUserId,
             new Set(['usr_friend']),
             new Set(['usr_favorite'])
         );
 
         expect(groups).toHaveLength(2);
-        expect(groups.map((group: any) => group.map((entry: any) => entry.id))).toEqual([
+        expect(groups.map((group) => group.map((entry) => entry.id))).toEqual([
             ['self-1', 'friend-1'],
             ['self-2', 'favorite-1']
         ]);
         expect(
-            groups[0].find((entry: any) => entry.userId === 'usr_friend')
+            groups[0].find((entry) => entry.userId === 'usr_friend')
         ).toMatchObject({
             isFriend: true,
             isFavorite: false
         });
         expect(
-            groups[1].find((entry: any) => entry.userId === 'usr_favorite')
+            groups[1].find((entry) => entry.userId === 'usr_favorite')
         ).toMatchObject({
             isFriend: true,
             isFavorite: true
         });
         expect(
-            groups.flat().filter((entry: any) => entry.userId === currentUserId)
+            groups.flat().filter((entry) => entry.userId === currentUserId)
         ).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
@@ -154,14 +178,14 @@ describe('instanceActivityRows', () => {
     });
 
     it('filters detail groups according to visibility toggles', () => {
-        const soloGroup = [{ id: 'solo', isFriend: false }];
+        const soloGroup = [detailRow('solo', false)];
         const noFriendGroup = [
-            { id: 'self', isFriend: false },
-            { id: 'stranger', isFriend: false }
+            detailRow('self', false),
+            detailRow('stranger', false)
         ];
         const friendGroup = [
-            { id: 'self', isFriend: false },
-            { id: 'friend', isFriend: true }
+            detailRow('self', false),
+            detailRow('friend', true)
         ];
         const groups = [soloGroup, noFriendGroup, friendGroup];
 

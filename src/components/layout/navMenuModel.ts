@@ -1,4 +1,5 @@
 import configRepository from '@/repositories/configRepository';
+import type { Dashboard } from '@/repositories/dashboardRepository';
 import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
@@ -17,14 +18,57 @@ import {
     publishNavLayoutUpdated
 } from '@/shared/events/navLayoutEvents';
 
+type TranslateKey = (key: string) => string;
+
+type NavDefinition = {
+    key: string;
+    icon?: string;
+    tooltip?: string;
+    labelKey?: string;
+    titleIsCustom?: boolean;
+    isDashboard?: boolean;
+    routeName?: string;
+    routeParams?: Record<string, string>;
+    path?: string;
+};
+
+type NavLayoutItem = {
+    type: 'item';
+    key: string;
+    icon?: string;
+};
+
+type NavFolderItem = string | { key: string; icon?: string };
+
+type NavLayoutFolder = {
+    type: 'folder';
+    id: string;
+    name: string;
+    nameKey?: string | null;
+    icon: string;
+    items: NavFolderItem[];
+};
+
+type NavLayoutEntry = NavLayoutItem | NavLayoutFolder;
+
+type MenuItem = Partial<NavDefinition> & {
+    index: string;
+    title?: string;
+    titleIsCustom?: boolean;
+    label?: string;
+    children?: MenuItem[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
     publishNavCustomizeRequested
 };
-
-const CHART_KEYS = ['charts-instance', 'charts-mutual'];
 
 export const routePathByName = Object.freeze({
     feed: '/feed',
@@ -41,7 +85,6 @@ export const routePathByName = Object.freeze({
     moderation: '/social/moderation',
     notification: '/notification',
     'my-avatars': '/my-avatars',
-    'charts-instance': '/charts/instance',
     'charts-mutual': '/charts/mutual',
     tools: '/tools',
     gallery: '/tools/gallery',
@@ -53,10 +96,12 @@ export const routePathByName = Object.freeze({
     settings: '/settings'
 });
 
-export function buildDashboardNavDefinitions(dashboards: any[] = []) {
+export function buildDashboardNavDefinitions(
+    dashboards: Dashboard[] = []
+): NavDefinition[] {
     return dashboards
-        .filter((dashboard: any) => dashboard?.id)
-        .map((dashboard: any) => ({
+        .filter((dashboard) => dashboard?.id)
+        .map((dashboard) => ({
             key: `${DASHBOARD_NAV_KEY_PREFIX}${dashboard.id}`,
             icon: normalizeNavIconKey(dashboard.icon, DEFAULT_DASHBOARD_ICON),
             tooltip: dashboard.name || 'Dashboard',
@@ -68,7 +113,7 @@ export function buildDashboardNavDefinitions(dashboards: any[] = []) {
         }));
 }
 
-export function createBaseDefaultNavLayout(t: any) {
+export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
     return [
         { type: 'item', key: 'feed' },
         { type: 'item', key: 'friends-locations' },
@@ -94,37 +139,32 @@ export function createBaseDefaultNavLayout(t: any) {
         },
         { type: 'item', key: 'notification' },
         { type: 'item', key: 'my-avatars' },
-        {
-            type: 'folder',
-            id: 'default-folder-charts',
-            nameKey: 'nav_tooltip.charts',
-            name: t('nav_tooltip.charts'),
-            icon: 'lucide:ChartBar',
-            items: CHART_KEYS
-        },
+        { type: 'item', key: 'charts-mutual' },
         { type: 'item', key: 'tools' }
     ];
 }
 
 export function insertDashboardEntries(
-    layout: any,
-    dashboardDefinitions: any[] = [],
-    hiddenKeys: any[] = []
+    layout: unknown,
+    dashboardDefinitions: NavDefinition[] = [],
+    hiddenKeys: string[] = []
 ) {
     const nextLayout = Array.isArray(layout) ? [...layout] : [];
     const existingKeys = collectLayoutKeys(nextLayout);
     const hiddenSet = new Set(Array.isArray(hiddenKeys) ? hiddenKeys : []);
     const dashboardEntries = dashboardDefinitions
         .filter(
-            (definition: any) =>
+            (definition) =>
                 definition?.key &&
                 !existingKeys.has(definition.key) &&
                 !hiddenSet.has(definition.key)
         )
-        .map((definition: any) => ({
-            type: 'item',
-            key: definition.key
-        }));
+        .map(
+            (definition): NavLayoutItem => ({
+                type: 'item',
+                key: definition.key
+            })
+        );
 
     if (!dashboardEntries.length) {
         return nextLayout;
@@ -133,23 +173,28 @@ export function insertDashboardEntries(
     return [...nextLayout, ...dashboardEntries];
 }
 
-export function createNavDefinitionMap(definitions: any[] = []) {
+export function createNavDefinitionMap(
+    definitions: NavDefinition[] = []
+): Map<string, NavDefinition> {
     return new Map(
         definitions
-            .filter((definition: any) => definition?.key)
-            .map((definition: any) => [definition.key, definition])
+            .filter((definition) => definition?.key)
+            .map((definition) => [definition.key, definition])
     );
 }
 
-function collectLayoutKeys(layout: any) {
-    const keys = new Set();
+function collectLayoutKeys(layout: unknown) {
+    const keys = new Set<string>();
     if (!Array.isArray(layout)) {
         return keys;
     }
     for (const entry of layout) {
-        if (entry?.type === 'item' && entry.key) {
+        if (!isRecord(entry)) {
+            continue;
+        }
+        if (entry.type === 'item' && typeof entry.key === 'string') {
             keys.add(entry.key);
-        } else if (entry?.type === 'folder' && Array.isArray(entry.items)) {
+        } else if (entry.type === 'folder' && Array.isArray(entry.items)) {
             for (const item of entry.items) {
                 const key = getFolderItemKey(item);
                 if (key) {
@@ -161,22 +206,44 @@ function collectLayoutKeys(layout: any) {
     return keys;
 }
 
-function getFolderItemKey(item: any) {
-    return typeof item === 'string' ? item : item?.key;
+function getFolderItemKey(item: unknown): string {
+    return typeof item === 'string'
+        ? item
+        : isRecord(item) && typeof item.key === 'string'
+          ? item.key
+          : '';
 }
 
-function getFolderItemIcon(item: any) {
-    return typeof item === 'object' && item ? item.icon : undefined;
+function getFolderItemIcon(item: unknown) {
+    return isRecord(item) ? item.icon : undefined;
 }
 
-function normalizeHiddenKeys(hiddenKeys: any, definitionMap: any) {
-    const seen = new Set();
-    const normalized = [];
+function isDefaultChartsFolder(entry: unknown) {
+    if (!isRecord(entry)) {
+        return false;
+    }
+    return (
+        entry.id === 'default-folder-charts' ||
+        entry.nameKey === 'nav_tooltip.charts'
+    );
+}
+
+function normalizeHiddenKeys(
+    hiddenKeys: unknown,
+    definitionMap: Map<string, NavDefinition>
+) {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
     if (!Array.isArray(hiddenKeys)) {
         return normalized;
     }
     for (const key of hiddenKeys) {
-        if (!key || seen.has(key) || !definitionMap.has(key)) {
+        if (
+            typeof key !== 'string' ||
+            !key ||
+            seen.has(key) ||
+            !definitionMap.has(key)
+        ) {
             continue;
         }
         seen.add(key);
@@ -186,19 +253,19 @@ function normalizeHiddenKeys(hiddenKeys: any, definitionMap: any) {
 }
 
 function buildAppendDefinitions(
-    baseDefinitions: any,
-    dashboardDefinitions: any,
-    layout: any,
-    hiddenKeys: any
+    baseDefinitions: NavDefinition[],
+    dashboardDefinitions: NavDefinition[],
+    layout: unknown,
+    hiddenKeys: unknown
 ) {
     const keysInLayout = collectLayoutKeys(layout);
     const hiddenSet = new Set(Array.isArray(hiddenKeys) ? hiddenKeys : []);
     const visibleBaseDefinitions = baseDefinitions.filter(
-        (definition: any) =>
+        (definition) =>
             !isToolNavKey(definition.key) || keysInLayout.has(definition.key)
     );
     const visibleDashboardDefinitions = dashboardDefinitions.filter(
-        (definition: any) =>
+        (definition) =>
             keysInLayout.has(definition.key) || hiddenSet.has(definition.key)
     );
     return [...visibleBaseDefinitions, ...visibleDashboardDefinitions];
@@ -210,14 +277,25 @@ export function sanitizeNavLayout({
     definitions,
     appendDefinitions,
     t
-}: any) {
+}: {
+    layout: unknown;
+    hiddenKeys?: unknown;
+    definitions: NavDefinition[];
+    appendDefinitions: NavDefinition[];
+    t: TranslateKey;
+}): NavLayoutEntry[] {
     const definitionMap = createNavDefinitionMap(definitions);
     const hiddenSet = new Set(normalizeHiddenKeys(hiddenKeys, definitionMap));
-    const usedKeys = new Set();
-    const normalized = [];
+    const usedKeys = new Set<string>();
+    const normalized: NavLayoutEntry[] = [];
 
-    const appendItemEntry = (key: any, target: any = normalized, sourceEntry: any = null) => {
+    const appendItemEntry = (
+        key: unknown,
+        target: NavLayoutEntry[] = normalized,
+        sourceEntry: unknown = null
+    ) => {
         if (
+            typeof key !== 'string' ||
             !key ||
             usedKeys.has(key) ||
             hiddenSet.has(key) ||
@@ -230,8 +308,11 @@ export function sanitizeNavLayout({
             definition?.icon,
             DEFAULT_NAV_ICON_KEY
         );
-        const icon = normalizeNavIconKey(sourceEntry?.icon, defaultIcon);
-        const entry: any = { type: 'item', key };
+        const icon = normalizeNavIconKey(
+            isRecord(sourceEntry) ? sourceEntry.icon : undefined,
+            defaultIcon
+        );
+        const entry: NavLayoutItem = { type: 'item', key };
         if (icon && icon !== defaultIcon) {
             entry.icon = icon;
         }
@@ -239,38 +320,28 @@ export function sanitizeNavLayout({
         usedKeys.add(key);
     };
 
-    const appendChartsFolder = (target: any = normalized) => {
-        if (CHART_KEYS.some((key: any) => usedKeys.has(key) || hiddenSet.has(key))) {
-            return;
-        }
-        if (!CHART_KEYS.every((key: any) => definitionMap.has(key))) {
-            return;
-        }
-        CHART_KEYS.forEach((key: any) => usedKeys.add(key));
-        target.push({
-            type: 'folder',
-            id: 'default-folder-charts',
-            nameKey: 'nav_tooltip.charts',
-            name: t('nav_tooltip.charts'),
-            icon: 'lucide:ChartBar',
-            items: [...CHART_KEYS]
-        });
-    };
-
     if (Array.isArray(layout)) {
         for (const entry of layout) {
-            if (entry?.type === 'item') {
-                if (entry.key === 'charts') {
-                    appendChartsFolder();
-                } else {
-                    appendItemEntry(entry.key, normalized, entry);
-                }
+            if (!isRecord(entry)) {
+                continue;
+            }
+            if (entry.type === 'item') {
+                appendItemEntry(entry.key, normalized, entry);
                 continue;
             }
 
-            if (entry?.type === 'folder') {
-                const folderItems = [];
-                for (const item of entry.items || []) {
+            if (entry.type === 'folder') {
+                if (isDefaultChartsFolder(entry)) {
+                    const items = Array.isArray(entry.items) ? entry.items : [];
+                    for (const item of items) {
+                        appendItemEntry(getFolderItemKey(item));
+                    }
+                    continue;
+                }
+
+                const folderItems: NavFolderItem[] = [];
+                const items = Array.isArray(entry.items) ? entry.items : [];
+                for (const item of items) {
                     const key = getFolderItemKey(item);
                     if (
                         !key ||
@@ -295,13 +366,18 @@ export function sanitizeNavLayout({
                     usedKeys.add(key);
                 }
                 if (folderItems.length) {
-                    const nameKey = entry.nameKey || null;
+                    const nameKey =
+                        typeof entry.nameKey === 'string'
+                            ? entry.nameKey
+                            : null;
+                    const fallbackName =
+                        typeof entry.name === 'string' ? entry.name : '';
                     normalized.push({
                         type: 'folder',
                         id:
-                            entry.id ||
+                            (typeof entry.id === 'string' && entry.id) ||
                             `nav-folder-${Math.random().toString(36).slice(2, 8)}`,
-                        name: nameKey ? t(nameKey) : entry.name || '',
+                        name: nameKey ? t(nameKey) : fallbackName,
                         nameKey,
                         icon: normalizeNavIconKey(
                             entry.icon,
@@ -315,18 +391,18 @@ export function sanitizeNavLayout({
     }
 
     for (const definition of appendDefinitions) {
-        if (CHART_KEYS.includes(definition.key)) {
-            continue;
-        }
         appendItemEntry(definition.key);
     }
-    appendChartsFolder();
 
     return normalized;
 }
 
-export function buildMenuItems(layout: any, definitionMap: any, t: any) {
-    const items = [];
+export function buildMenuItems(
+    layout: NavLayoutEntry[],
+    definitionMap: Map<string, NavDefinition>,
+    t: TranslateKey
+): MenuItem[] {
+    const items: MenuItem[] = [];
     for (const entry of layout || []) {
         if (entry.type === 'item') {
             const definition = definitionMap.get(entry.key);
@@ -349,7 +425,7 @@ export function buildMenuItems(layout: any, definitionMap: any, t: any) {
 
         if (entry.type === 'folder') {
             const children = (entry.items || [])
-                .map((item: any) => {
+                .map((item) => {
                     const key = getFolderItemKey(item);
                     const definition = definitionMap.get(key);
                     if (!definition) {
@@ -385,7 +461,15 @@ export function buildMenuItems(layout: any, definitionMap: any, t: any) {
     return items;
 }
 
-export async function loadNavMenuModel({ dashboards, notificationLayout, t }: any) {
+export async function loadNavMenuModel({
+    dashboards,
+    notificationLayout,
+    t
+}: {
+    dashboards?: Dashboard[];
+    notificationLayout?: string;
+    t: TranslateKey;
+}) {
     const dashboardDefinitions = buildDashboardNavDefinitions(dashboards);
     const definitions = [...navDefinitions, ...dashboardDefinitions];
     const definitionMap = createNavDefinitionMap(definitions);
@@ -394,18 +478,21 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }: an
         dashboardDefinitions
     );
 
-    let layout = defaultLayout;
-    let hiddenKeys = [];
+    let layout: unknown = defaultLayout;
+    let hiddenKeys: string[] = [];
     const storedValue = await configRepository.getString(NAV_CONFIG_KEY, '');
 
     if (storedValue) {
         try {
-            const parsed = JSON.parse(storedValue);
+            const parsed = JSON.parse(storedValue) as unknown;
             if (Array.isArray(parsed)) {
                 layout = insertDashboardEntries(parsed, dashboardDefinitions);
-            } else if (Array.isArray(parsed?.layout)) {
+            } else if (isRecord(parsed) && Array.isArray(parsed.layout)) {
                 hiddenKeys = Array.isArray(parsed.hiddenKeys)
-                    ? parsed.hiddenKeys.filter((key: any) => !isToolNavKey(key))
+                    ? parsed.hiddenKeys.filter(
+                          (key): key is string =>
+                              typeof key === 'string' && !isToolNavKey(key)
+                      )
                     : [];
                 layout = insertDashboardEntries(
                     parsed.layout,
@@ -435,18 +522,18 @@ export async function loadNavMenuModel({ dashboards, notificationLayout, t }: an
     let menuItems = buildMenuItems(sanitizedLayout, definitionMap, t);
     if (notificationLayout === 'notification-center') {
         menuItems = menuItems
-            .map((item: any) =>
+            .map((item) =>
                 item.children
                     ? {
                           ...item,
                           children: item.children.filter(
-                              (child: any) => child.index !== 'notification'
+                              (child) => child.index !== 'notification'
                           )
                       }
                     : item
             )
             .filter(
-                (item: any) =>
+                (item) =>
                     item.index !== 'notification' &&
                     (!item.children || item.children.length)
             );
@@ -468,13 +555,20 @@ export async function saveNavMenuModel({
     dashboards,
     notificationLayout,
     t
-}: any) {
+}: {
+    layout: unknown;
+    hiddenKeys?: unknown;
+    dashboards?: Dashboard[];
+    notificationLayout?: string;
+    t: TranslateKey;
+}) {
     const dashboardDefinitions = buildDashboardNavDefinitions(dashboards);
     const definitions = [...navDefinitions, ...dashboardDefinitions];
     const definitionMap = createNavDefinitionMap(definitions);
     const normalizedHiddenKeys = normalizeHiddenKeys(
         (Array.isArray(hiddenKeys) ? hiddenKeys : []).filter(
-            (key: any) => !isToolNavKey(key)
+            (key): key is string =>
+                typeof key === 'string' && !isToolNavKey(key)
         ),
         definitionMap
     );
@@ -503,18 +597,18 @@ export async function saveNavMenuModel({
     let menuItems = buildMenuItems(sanitizedLayout, definitionMap, t);
     if (notificationLayout === 'notification-center') {
         menuItems = menuItems
-            .map((item: any) =>
+            .map((item) =>
                 item.children
                     ? {
                           ...item,
                           children: item.children.filter(
-                              (child: any) => child.index !== 'notification'
+                              (child) => child.index !== 'notification'
                           )
                       }
                     : item
             )
             .filter(
-                (item: any) =>
+                (item) =>
                     item.index !== 'notification' &&
                     (!item.children || item.children.length)
             );
@@ -534,15 +628,15 @@ export async function saveNavMenuModel({
     };
 }
 
-export function getPathForNavEntry(entry: any) {
+export function getPathForNavEntry(entry: NavDefinition | MenuItem | null) {
     if (!entry) {
         return '';
     }
     if (entry.routeName === 'dashboard' && entry.routeParams?.id) {
         return `/dashboard/${entry.routeParams.id}`;
     }
-    if (entry.routeName && routePathByName[entry.routeName]) {
-        return routePathByName[entry.routeName];
+    if (entry.routeName && entry.routeName in routePathByName) {
+        return routePathByName[entry.routeName as keyof typeof routePathByName];
     }
     return entry.path || '';
 }

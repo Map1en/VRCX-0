@@ -14,6 +14,10 @@ import {
     resolveCommunityThemeAssetUrl
 } from '@/repositories/communityThemeRepository';
 import configRepository from '@/repositories/configRepository';
+import {
+    APP_THEME_CONFIG_KEYS,
+    COMMUNITY_THEME_CONFIG_KEYS
+} from '@/repositories/configKeys';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import {
     communityThemeControlsAccent,
@@ -43,17 +47,6 @@ const COMMUNITY_THEME_ACCENT_ATTR = 'data-vrcx-0-community-theme-accent';
 const LEGACY_NASA_APOD_WALLPAPER_THEME_ID = 'nasa-apod-wallpaper';
 const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
 const LOCAL_PREVIEW_WATCH_INTERVAL_MS = 1200;
-
-const CONFIG_KEYS = {
-    enabled: 'VRCX_communityThemeEnabled',
-    id: 'VRCX_communityThemeId',
-    version: 'VRCX_communityThemeVersion',
-    cssSnapshot: 'VRCX_communityThemeCssSnapshot',
-    overrideCss: 'VRCX_communityThemeOverrideCss',
-    overrideCssEnabled: 'VRCX_communityThemeOverrideEnabled',
-    installMetadata: 'VRCX_communityThemeInstallMetadata',
-    installedThemes: 'VRCX_communityThemeInstalledThemes'
-};
 
 type CommunityThemeInstalledSnapshot = CommunityThemeInstallMetadata & {
     cssSnapshot: string;
@@ -90,7 +83,7 @@ function syncCommunityStyleLayers(): void {
 
 async function applySavedThemeColor(): Promise<void> {
     const savedThemeColor = await configRepository.getString(
-        'VRCX_themeColor',
+        APP_THEME_CONFIG_KEYS.themeColor,
         'default'
     );
     applyThemeColor(resolveThemeColor(savedThemeColor));
@@ -98,7 +91,7 @@ async function applySavedThemeColor(): Promise<void> {
 
 async function applySavedThemeMode(): Promise<void> {
     const savedThemeMode = await configRepository.getString(
-        'ThemeMode',
+        APP_THEME_CONFIG_KEYS.themeMode,
         'system'
     );
     await setCommunityThemeAppearanceControl(
@@ -296,12 +289,12 @@ function isInstallRecordFromCurrentCatalog(
 
 async function clearStoredCommunityThemeInstallState(): Promise<void> {
     await Promise.all([
-        configRepository.setBool(CONFIG_KEYS.enabled, false),
-        configRepository.remove(CONFIG_KEYS.id),
-        configRepository.remove(CONFIG_KEYS.version),
-        configRepository.remove(CONFIG_KEYS.cssSnapshot),
-        configRepository.remove(CONFIG_KEYS.installMetadata),
-        configRepository.remove(CONFIG_KEYS.installedThemes)
+        configRepository.setBool(COMMUNITY_THEME_CONFIG_KEYS.enabled, false),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.id),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.version),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.cssSnapshot),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.installMetadata),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.installedThemes)
     ]);
 }
 
@@ -317,29 +310,29 @@ async function persistCommunityThemeInstallState({
     const installedThemesJson = JSON.stringify(records);
     if (enabled && activeRecord) {
         await configRepository.setMany([
-            [CONFIG_KEYS.enabled, 'true'],
-            [CONFIG_KEYS.id, activeRecord.themeId],
-            [CONFIG_KEYS.version, activeRecord.version],
-            [CONFIG_KEYS.cssSnapshot, activeRecord.cssSnapshot],
+            [COMMUNITY_THEME_CONFIG_KEYS.enabled, 'true'],
+            [COMMUNITY_THEME_CONFIG_KEYS.id, activeRecord.themeId],
+            [COMMUNITY_THEME_CONFIG_KEYS.version, activeRecord.version],
+            [COMMUNITY_THEME_CONFIG_KEYS.cssSnapshot, activeRecord.cssSnapshot],
             [
-                CONFIG_KEYS.installMetadata,
+                COMMUNITY_THEME_CONFIG_KEYS.installMetadata,
                 JSON.stringify(stripCssSnapshot(activeRecord))
             ],
-            [CONFIG_KEYS.installedThemes, installedThemesJson]
+            [COMMUNITY_THEME_CONFIG_KEYS.installedThemes, installedThemesJson]
         ]);
         return;
     }
 
     await Promise.all([
-        configRepository.setBool(CONFIG_KEYS.enabled, false),
+        configRepository.setBool(COMMUNITY_THEME_CONFIG_KEYS.enabled, false),
         configRepository.setString(
-            CONFIG_KEYS.installedThemes,
+            COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
             installedThemesJson
         ),
-        configRepository.remove(CONFIG_KEYS.id),
-        configRepository.remove(CONFIG_KEYS.version),
-        configRepository.remove(CONFIG_KEYS.cssSnapshot),
-        configRepository.remove(CONFIG_KEYS.installMetadata)
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.id),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.version),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.cssSnapshot),
+        configRepository.remove(COMMUNITY_THEME_CONFIG_KEYS.installMetadata)
     ]);
 }
 
@@ -381,14 +374,16 @@ export async function initializeCommunityThemes(): Promise<void> {
         overrideCss,
         overrideCssEnabledRaw
     ] = await Promise.all([
-        configRepository.getBool(CONFIG_KEYS.enabled, false),
-        configRepository.getString(CONFIG_KEYS.id, ''),
-        configRepository.getObject(CONFIG_KEYS.installMetadata, null),
-        configRepository.getString(CONFIG_KEYS.cssSnapshot, ''),
-        configRepository.getObject(CONFIG_KEYS.installedThemes, null),
-        configRepository.getString(CONFIG_KEYS.overrideCss, ''),
-        configRepository.getRawValue(CONFIG_KEYS.overrideCssEnabled),
-        configRepository.remove('VRCX_themeMarketplaceCatalogUrl')
+        configRepository.getBool(COMMUNITY_THEME_CONFIG_KEYS.enabled, false),
+        configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.id, ''),
+        configRepository.getObject(COMMUNITY_THEME_CONFIG_KEYS.installMetadata, null),
+        configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.cssSnapshot, ''),
+        configRepository.getObject(COMMUNITY_THEME_CONFIG_KEYS.installedThemes, null),
+        configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.overrideCss, ''),
+        configRepository.getRawValue(COMMUNITY_THEME_CONFIG_KEYS.overrideCssEnabled),
+        configRepository.remove(
+            COMMUNITY_THEME_CONFIG_KEYS.legacyMarketplaceCatalogUrl
+        )
     ]);
 
     const legacyInstallMetadata = normalizeInstallMetadata(legacyMetadata);
@@ -506,7 +501,7 @@ export async function installCommunityTheme(
             ),
             ...normalizeInstallRecords(
                 await configRepository.getObject(
-                    CONFIG_KEYS.installedThemes,
+                    COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
                     null
                 )
             ),
@@ -548,7 +543,10 @@ export async function enableInstalledCommunityTheme(
 ): Promise<void> {
     const store = useCommunityThemeStore.getState();
     const records = normalizeInstallRecords(
-        await configRepository.getObject(CONFIG_KEYS.installedThemes, null)
+        await configRepository.getObject(
+            COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
+            null
+        )
     )
         .filter(isInstallRecordFromCurrentCatalog)
         .filter(isInstallRecordCssSnapshotAllowed);
@@ -586,7 +584,10 @@ export async function enableInstalledCommunityTheme(
 export async function disableInstalledCommunityTheme(): Promise<void> {
     const store = useCommunityThemeStore.getState();
     const records = normalizeInstallRecords(
-        await configRepository.getObject(CONFIG_KEYS.installedThemes, null)
+        await configRepository.getObject(
+            COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
+            null
+        )
     )
         .filter(isInstallRecordFromCurrentCatalog)
         .filter(isInstallRecordCssSnapshotAllowed);
@@ -616,7 +617,10 @@ export async function deleteInstalledCommunityTheme(
         return;
     }
     const records = normalizeInstallRecords(
-        await configRepository.getObject(CONFIG_KEYS.installedThemes, null)
+        await configRepository.getObject(
+            COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
+            null
+        )
     )
         .filter(isInstallRecordFromCurrentCatalog)
         .filter(isInstallRecordCssSnapshotAllowed)
@@ -651,11 +655,11 @@ export async function saveCommunityThemeOverrideCss(
     overrideCssEnabled = Boolean(overrideCssSnapshot.trim());
     await Promise.all([
         configRepository.setString(
-            CONFIG_KEYS.overrideCss,
+            COMMUNITY_THEME_CONFIG_KEYS.overrideCss,
             overrideCssSnapshot
         ),
         configRepository.setBool(
-            CONFIG_KEYS.overrideCssEnabled,
+            COMMUNITY_THEME_CONFIG_KEYS.overrideCssEnabled,
             overrideCssEnabled
         )
     ]);
@@ -673,7 +677,10 @@ export async function clearCommunityThemeOverrideCss(): Promise<void> {
 
 export async function disableCommunityThemeOverrideCss(): Promise<void> {
     overrideCssEnabled = false;
-    await configRepository.setBool(CONFIG_KEYS.overrideCssEnabled, false);
+    await configRepository.setBool(
+        COMMUNITY_THEME_CONFIG_KEYS.overrideCssEnabled,
+        false
+    );
     useCommunityThemeStore.getState().setOverrideCssLength(0);
     syncCommunityStyleLayers();
 }

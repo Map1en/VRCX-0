@@ -219,4 +219,70 @@ describe('favoriteStore', () => {
             ]
         });
     });
+
+    it('normalizes dirty local favorite snapshot maps and lists', () => {
+        const store = useFavoriteStore.getState();
+
+        store.setFavoritesSnapshot({
+            localWorldFavorites: {
+                Worlds: ['wrld_1', 42, '', null],
+                '  ': ['wrld_blank'],
+                Broken: 'wrld_not_array'
+            },
+            localWorldFavoriteGroups: ['Worlds', '', 12],
+            localWorldFavoritesList: ['wrld_1', 42, ''],
+            localAvatarFavorites: {
+                Avatars: ['avtr_1', false, undefined]
+            },
+            localAvatarFavoriteGroups: ['Avatars', null],
+            localAvatarFavoritesList: ['avtr_1', false, undefined],
+            localFriendFavorites: {
+                Friends: ['usr_1', 123, '']
+            },
+            localFriendFavoriteGroups: ['Friends', undefined],
+            localFriendFavoritesList: ['usr_1', 123, '']
+        } as any);
+
+        expect(useFavoriteStore.getState()).toMatchObject({
+            localWorldFavorites: {
+                Worlds: ['wrld_1', '42'],
+                Broken: []
+            },
+            localWorldFavoriteGroups: ['Worlds', '12'],
+            localWorldFavoritesList: ['wrld_1', '42'],
+            localAvatarFavorites: {
+                Avatars: ['avtr_1', 'false']
+            },
+            localAvatarFavoriteGroups: ['Avatars'],
+            localAvatarFavoritesList: ['avtr_1', 'false'],
+            localFriendFavorites: {
+                Friends: ['usr_1', '123']
+            },
+            localFriendFavoriteGroups: ['Friends'],
+            localFriendFavoritesList: ['usr_1', '123']
+        });
+    });
+
+    it('ignores invalid local favorite action kinds', () => {
+        const store = useFavoriteStore.getState();
+
+        store.addLocalFavorite({
+            kind: 'friend',
+            groupName: 'Friends',
+            entityId: 'usr_1'
+        });
+        store.addLocalFavorite({
+            kind: 'invalid',
+            groupName: 'Friends',
+            entityId: 'usr_2'
+        } as any);
+
+        expect(useFavoriteStore.getState()).toMatchObject({
+            localFriendFavorites: {
+                Friends: ['usr_1']
+            },
+            localWorldFavorites: {},
+            localAvatarFavorites: {}
+        });
+    });
 });

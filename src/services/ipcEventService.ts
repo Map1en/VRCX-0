@@ -21,6 +21,26 @@ import { openFavoriteImportDialog } from './favoriteImportService';
 
 let ipcTimeoutId = null;
 
+type IpcRecord = Record<string, unknown>;
+type IpcPingPayload = { type: 'Ping' };
+type IpcMsgPingPayload = { type: 'MsgPing'; version: string };
+type IpcVrcxMessagePayload = IpcRecord & {
+    type: 'VrcxMessage';
+    MsgType: string;
+};
+type IpcLaunchCommandPayload = { type: 'LaunchCommand'; command: string };
+type IpcVrcxLaunchPayload = IpcRecord & { type: 'VRCXLaunch' };
+type IpcUnknownTypedPayload = IpcRecord & { type: string };
+
+type IpcKnownEventPayload =
+    | IpcPingPayload
+    | IpcMsgPingPayload
+    | IpcVrcxMessagePayload
+    | IpcLaunchCommandPayload
+    | IpcVrcxLaunchPayload;
+
+export type IpcEventPayload = IpcKnownEventPayload | IpcUnknownTypedPayload;
+
 function scheduleIpcTimeout() {
     if (ipcTimeoutId) {
         globalThis.clearTimeout(ipcTimeoutId);
@@ -34,14 +54,20 @@ function scheduleIpcTimeout() {
     }, 60_000);
 }
 
-function parseIpcPayload(payload: unknown): Record<string, any> {
-    if (typeof payload === 'string') {
-        return JSON.parse(payload);
+function isRecord(value: unknown): value is IpcRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function parseIpcPayload(payload: unknown): IpcRecord | null {
+    try {
+        if (typeof payload === 'string') {
+            const parsed = JSON.parse(payload);
+            return isRecord(parsed) ? parsed : null;
+        }
+        return isRecord(payload) ? payload : null;
+    } catch {
+        return null;
     }
-    if (payload && typeof payload === 'object') {
-        return payload as Record<string, any>;
-    }
-    throw new Error('Unsupported IPC payload shape.');
 }
 
 function normalizeString(value: unknown) {
@@ -50,7 +76,51 @@ function normalizeString(value: unknown) {
         : String(value ?? '').trim();
 }
 
-async function persistVrcxMessage(data: Record<string, any>) {
+function isKnownIpcEventPayload(
+    payload: IpcEventPayload
+): payload is IpcKnownEventPayload {
+    switch (payload.type) {
+        case 'Ping':
+        case 'MsgPing':
+        case 'VrcxMessage':
+        case 'LaunchCommand':
+        case 'VRCXLaunch':
+            return true;
+        default:
+            return false;
+    }
+}
+
+export function parseIpcEventPayload(payload: unknown): IpcEventPayload | null {
+    const record = parseIpcPayload(payload);
+    const type = normalizeString(record?.type);
+    if (!record || !type) {
+        return null;
+    }
+
+    switch (type) {
+        case 'Ping':
+            return { type };
+        case 'MsgPing': {
+            const version = normalizeString(record.version);
+            return version ? { type, version } : null;
+        }
+        case 'VrcxMessage': {
+            const MsgType = normalizeString(record.MsgType);
+            return MsgType ? { ...record, type, MsgType } : null;
+        }
+        case 'LaunchCommand': {
+            const command = normalizeString(record.command);
+            return command ? { type, command } : null;
+        }
+        case 'VRCXLaunch':
+            return { ...record, type };
+        default:
+            return { ...record, type };
+    }
+}
+
+async function persistVrcxMessage(data: IpcVrcxMessagePayload) {
     const runtimeState = useRuntimeStore.getState();
     const location =
         runtimeState.gameState.currentLocation ||
@@ -254,11 +324,14 @@ export async function handleIpcEvent(payload: unknown) {
         return;
     }
 
-    let data;
-    try {
-        data = parseIpcPayload(payload);
-    } catch (error) {
-        console.warn('IPC invalid payload:', payload, error);
+    const data = parseIpcEventPayload(payload);
+    if (!data) {
+        console.warn('IPC invalid payload:', payload);
+        return;
+    }
+
+    if (!isKnownIpcEventPayload(data)) {
+        console.log('IPC:', data);
         return;
     }
 
@@ -272,7 +345,8 @@ export async function handleIpcEvent(payload: unknown) {
             break;
         case 'MsgPing':
             useRuntimeStore.getState().setGameState({
-                externalNotifierVersion: Number.parseInt(data.version, 10) || 0
+                externalNotifierVersion:
+                    Number.parseInt(data.version, 10) || 0
             });
             break;
         case 'VrcxMessage':
@@ -283,9 +357,6 @@ export async function handleIpcEvent(payload: unknown) {
             break;
         case 'VRCXLaunch':
             console.log('VRCXLaunch:', data);
-            break;
-        default:
-            console.log('IPC:', data);
             break;
     }
 }

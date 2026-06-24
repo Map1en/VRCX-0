@@ -317,8 +317,6 @@
             "notification_center_page": "Notification center page.",
             "my_avatars": "My Avatars",
             "avatar_collection_page": "Avatar collection page.",
-            "instance_activity": "Instance Activity",
-            "instance_activity_chart": "Instance activity chart.",
             "mutual_friends": "Mutual Friends",
             "mutual_friends_chart": "Mutual-friends chart.",
             "tools": "Tools",
@@ -768,6 +766,14 @@
         },
         "instance_history": {
             "title": "Instance History",
+            "mode": {
+                "search": "Search",
+                "day": "Day"
+            },
+            "day": {
+                "expand_chart": "Expand activity chart",
+                "collapse_chart": "Collapse activity chart"
+            },
             "placeholder": {
                 "user": "Select user"
             },
@@ -1283,10 +1289,10 @@
         },
         "charts": {
             "instance_activity": {
-                "header": "Instance Activity",
                 "online_time": "Online Time",
                 "previous_day": "Previous Day",
                 "next_day": "Next Day",
+                "no_activity": "no activity",
                 "refresh": "Refresh",
                 "tips": {
                     "online_time": "Online time refers to the game time recorded by VRCX-0 for the current day.",
@@ -1416,15 +1422,12 @@
             "empty": {
                 "no_detail_rows": "No detail rows",
                 "no_instance_activity_on_this_day": "No instance activity on this day",
-                "selected_date_outside_activity_set": "This date is outside the known activity set",
-                "no_detail_charts_match_the_current_filters": "No detail charts match the current filters",
                 "no_friends_are_available_for_mutual_graph_fetching": "No friends are available for mutual graph fetching",
                 "no_selection": "No selection",
                 "no_friends_match_this_search": "No friends match this search",
                 "no_cached_mutual_graph_yet": "No cached mutual graph yet",
                 "no_graph_nodes_match_the_current_search": "No graph nodes match the current search",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "No matching player activity rows were found for this instance visit",
-                "turn_on_solo_or_no_friend_instances_to_show_the_hidden_detail_groups": "Turn on solo or no-friend instances to show the hidden detail groups"
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "No matching player activity rows were found for this instance visit"
             },
             "error": {
                 "instance_activity_failed_to_load": "Instance activity failed to load",
@@ -4808,7 +4811,10 @@
                 "recorded_instance_visits_count": "{count} recorded instance visits.",
                 "rows": "Rows",
                 "location": "Location",
-                "page": "Page"
+                "page": "Page",
+                "sort_by": "Sort by",
+                "sort_descending": "Sort descending",
+                "sort_ascending": "Sort ascending"
             },
             "success": {
                 "instance_record_deleted": "Instance record deleted"
@@ -6221,8 +6227,6 @@
             "friend_management_table_and_roster_details": "Friend management table and roster details.",
             "charts": "Charts",
             "charts_landing_route": "Charts landing route.",
-            "charts_instance": "Charts Instance",
-            "instance_activity_timeline_chart": "Instance activity timeline chart.",
             "charts_mutual": "Charts Mutual",
             "mutual_friends_graph_over_cached_data": "Mutual-friends graph over cached data.",
             "tools": "Tools",

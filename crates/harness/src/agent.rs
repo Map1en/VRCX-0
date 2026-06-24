@@ -11,7 +11,6 @@ use crate::session::{ActiveTurn, Message, Role, SessionStore, TurnStatus};
 
 const MAX_TOOL_ROUNDS: usize = 6;
 const HISTORY_LIMIT: usize = 16;
-const SURFACE_CAP: usize = 5;
 const SUMMARY_LIMIT: usize = 240;
 
 pub const SYSTEM_PROMPT: &str = "\
@@ -29,7 +28,11 @@ include myself in friend lists, counts, or rankings.
 figures as exact.
 - Stay focused on VRChat social topics. Be concise and refer to people by name.
 - Format replies in Markdown (headings, bold, bullet lists, and tables where they \
-help) and use tasteful emoji to keep the tone warm and friendly.";
+help) and use tasteful emoji to keep the tone warm and friendly.
+- For comparative or ranked numbers (activity by weekday/hour, top friends, time \
+spent), use a Markdown table with a column for the value. Do NOT draw bar charts or \
+graphs out of block/box characters (▇ █ ▁ ─ ━ etc.) or other ASCII art — they \
+misalign in proportional fonts and many glyphs render as missing-character boxes.";
 
 pub(crate) struct TurnContext {
     pub tools: Arc<InProcessMcpTools>,
@@ -117,7 +120,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
     ctx.sessions
         .push_message(&ctx.session_id, Role::Assistant, final_answer.clone());
 
-    let surfaced = surfaced_entities(dedup_entities(collected), &final_answer, SURFACE_CAP);
+    let surfaced = surfaced_entities(dedup_entities(collected), &final_answer);
     if !surfaced.is_empty() {
         ctx.sessions
             .set_surfaced_entities(&ctx.session_id, &surfaced);

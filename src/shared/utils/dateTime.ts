@@ -1,3 +1,9 @@
+import {
+    formatDateTimeValue,
+    formatIsoDateTime,
+    normalizeDateLocale
+} from './dateTimeFormatters';
+
 export const DEFAULT_TIME_UNIT_LABELS = Object.freeze({
     y: 'y',
     d: 'd',
@@ -23,29 +29,6 @@ type DateTimeFormatPreferences = Pick<
     hour12?: boolean;
     fallback?: string;
 };
-
-function padZero(num: unknown) {
-    return String(num).padStart(2, '0');
-}
-
-function toIsoLong(date: Date) {
-    const y = date.getFullYear();
-    const m = padZero(date.getMonth() + 1);
-    const d = padZero(date.getDate());
-    const hh = padZero(date.getHours());
-    const mm = padZero(date.getMinutes());
-    const ss = padZero(date.getSeconds());
-    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
-}
-
-export function normalizeDateLocale(locale: unknown, fallback = 'en-gb') {
-    if (!locale) {
-        return fallback;
-    }
-
-    const dateLocale = String(locale).replace(/_/g, '-').trim();
-    return dateLocale || fallback;
-}
 
 function toLocalClock(
     date: Date,
@@ -120,7 +103,7 @@ export function formatDateFilterWithPreferences(
     );
 
     if (dateIsoFormat && format === 'long') {
-        return toIsoLong(dt);
+        return formatIsoDateTime(dt);
     }
     if (format === 'long') {
         return toLocalLong(dt, dateFormat, dateHour12);
@@ -168,11 +151,10 @@ export function formatDateTimeWithPreferences(
         formatOptions.hour12 = hour12;
     }
 
-    try {
-        return new Intl.DateTimeFormat(locale, formatOptions).format(date);
-    } catch {
-        return preferences.fallback ?? '-';
-    }
+    return formatDateTimeValue(date, formatOptions, {
+        locale,
+        fallback: preferences.fallback ?? '-'
+    });
 }
 
 export function formatClockWithPreferences(
@@ -291,3 +273,4 @@ export type {
     DateTimeFormatPreferences,
     TimeUnitLabels
 };
+export { normalizeDateLocale };

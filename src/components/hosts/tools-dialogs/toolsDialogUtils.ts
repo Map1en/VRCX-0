@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import { formatCsvField } from '@/shared/utils/csv';
+import { windowDelay } from '@/shared/utils/delays';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export const statusOptions = ['join me', 'active', 'ask me', 'busy'];
@@ -76,9 +77,7 @@ export async function getUserMemoMap() {
 }
 
 export function delay(ms: any) {
-    return new Promise((resolve: any) => {
-        window.setTimeout(resolve, ms);
-    });
+    return windowDelay(Number(ms) || 0);
 }
 
 export function normalizeAutoAcceptValue(value: any) {

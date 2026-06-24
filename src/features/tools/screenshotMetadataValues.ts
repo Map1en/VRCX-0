@@ -1,4 +1,9 @@
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot';
+import {
+    formatDateTimeValue,
+    formatIsoDateTime,
+    normalizeDateLocale
+} from '@/shared/utils/dateTimeFormatters';
 import { useShellStore } from '@/state/shellStore';
 
 export const SCREENSHOT_METADATA_SEARCH_TYPES = [
@@ -114,22 +119,6 @@ export function formatScreenshotBytes(bytes: any) {
     return `${size.toFixed(precision)} ${units[unitIndex]}`;
 }
 
-function normalizeDateLocale(locale: any) {
-    const dateLocale = String(locale || '')
-        .trim()
-        .replace('_', '-');
-    return dateLocale || 'en';
-}
-
-function formatIsoDateTime(date: any) {
-    const pad = (value: any) => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-        date.getDate()
-    )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-        date.getSeconds()
-    )}`;
-}
-
 export function formatScreenshotDateTime(value: any, locale: any = undefined) {
     if (!value) {
         return '—';
@@ -147,11 +136,18 @@ export function formatScreenshotDateTime(value: any, locale: any = undefined) {
         return formatIsoDateTime(date);
     }
 
-    return new Intl.DateTimeFormat(normalizeDateLocale(locale || appLocale), {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        hour12: Boolean(dateHour12)
-    }).format(date);
+    return formatDateTimeValue(
+        date,
+        {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        },
+        {
+            locale: normalizeDateLocale(locale || appLocale, 'en'),
+            hour12: Boolean(dateHour12),
+            fallback: '—'
+        }
+    );
 }
 
 export function getFileNameFromPath(path: any) {

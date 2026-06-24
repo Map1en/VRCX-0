@@ -59,6 +59,7 @@ export const ConfigKeys = {
     ThemeMode: { type: 'string', default: null },
     themeColor: { type: 'string', default: 'default' },
     lastDarkTheme: { type: 'string', default: null },
+    ZoomLevel: { type: 'int', default: 100 },
     fontFamily: { type: 'string', default: 'geist' },
     customFontFamily: { type: 'string', default: '' },
     customFontPrimary: { type: 'string', default: '' },
@@ -68,6 +69,9 @@ export const ConfigKeys = {
     dtHour12: { type: 'bool', default: false },
     dtIsoFormat: { type: 'bool', default: false },
     hideNicknames: { type: 'bool', default: false },
+    showInstanceIdInLocation: { type: 'bool', default: false },
+    isAgeGatedInstancesVisible: { type: 'bool', default: true },
+    displayVRCPlusIconsAsAvatar: { type: 'bool', default: true },
     hideUserMemos: { type: 'bool', default: false },
     hideUserNotes: { type: 'bool', default: false },
     compactTableMode: { type: 'bool', default: false },
@@ -80,7 +84,18 @@ export const ConfigKeys = {
     backgroundImageProviderId: { type: 'string', default: 'nasa-epic' },
     backgroundImageSnapshots: { type: 'string', default: '{}' },
     backgroundImageCustomSource: { type: 'string', default: '{}' },
+    officialBackgroundEnabled: { type: 'bool', default: false },
+    officialBackgroundProviderId: { type: 'string', default: 'nasa-epic' },
+    officialBackgroundSnapshots: { type: 'string', default: '{}' },
+    communityThemeEnabled: { type: 'bool', default: false },
+    communityThemeId: { type: 'string', default: '' },
+    communityThemeVersion: { type: 'string', default: '' },
+    communityThemeCssSnapshot: { type: 'string', default: '' },
+    communityThemeOverrideCss: { type: 'string', default: '' },
     communityThemeOverrideEnabled: { type: 'bool', default: true },
+    communityThemeInstallMetadata: { type: 'string', default: '{}' },
+    communityThemeInstalledThemes: { type: 'string', default: '[]' },
+    themeMarketplaceCatalogUrl: { type: 'string', default: '' },
 
     // ── Settings - Advanced ──────────────────────────
     bioLanguage: { type: 'string', default: null },
@@ -103,6 +118,7 @@ export const ConfigKeys = {
     logResourceLoad: { type: 'bool', default: false },
     udonExceptionLogging: { type: 'bool', default: false },
     showNewDashboardButton: { type: 'bool', default: true },
+    backgroundModeEnabled: { type: 'bool', default: false },
 
     // ── Settings - Integrations ──────────────────────
     youtubeAPI: { type: 'bool', default: false },
@@ -123,6 +139,7 @@ export const ConfigKeys = {
     notificationTTSVoice: { type: 'string', default: '0' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
+    showPostUpdateChangelogToast: { type: 'bool', default: true },
     xsNotifications: { type: 'bool', default: true },
     ovrtHudNotifications: { type: 'bool', default: true },
     ovrtWristNotifications: { type: 'bool', default: false },
@@ -204,6 +221,15 @@ export const ConfigKeys = {
     FavoritesFriendSort: { type: 'string', default: 'date' },
     FavoritesWorldSort: { type: 'string', default: 'date' },
     FavoritesAvatarSort: { type: 'string', default: 'date' },
+    FavoritesFriendSplitter: { type: 'string', default: '260' },
+    FavoritesWorldSplitter: { type: 'string', default: '260' },
+    FavoritesAvatarSplitter: { type: 'string', default: '260' },
+    FavoritesFriendCardScale: { type: 'string', default: '1' },
+    FavoritesWorldCardScale: { type: 'string', default: '1' },
+    FavoritesAvatarCardScale: { type: 'string', default: '1' },
+    FavoritesFriendCardSpacing: { type: 'string', default: '1' },
+    FavoritesWorldCardSpacing: { type: 'string', default: '1' },
+    FavoritesAvatarCardSpacing: { type: 'string', default: '1' },
 
     // ── Table Filters ────────────────────────────────
     notificationTableFilters: { type: 'string', default: '[]' },
@@ -272,6 +298,65 @@ export const ConfigKeys = {
 export type ConfigKeyName = keyof typeof ConfigKeys;
 
 export const DB_KEY_PREFIX = 'config:vrcx_';
+
+export const APP_THEME_CONFIG_KEYS = Object.freeze({
+    themeMode: 'ThemeMode',
+    themeColor: 'VRCX_themeColor',
+    zoomLevel: 'VRCX_ZoomLevel',
+    fontFamily: 'VRCX_fontFamily'
+});
+
+export const COMMUNITY_THEME_CONFIG_KEYS = Object.freeze({
+    enabled: 'VRCX_communityThemeEnabled',
+    id: 'VRCX_communityThemeId',
+    version: 'VRCX_communityThemeVersion',
+    cssSnapshot: 'VRCX_communityThemeCssSnapshot',
+    overrideCss: 'VRCX_communityThemeOverrideCss',
+    overrideCssEnabled: 'VRCX_communityThemeOverrideEnabled',
+    installMetadata: 'VRCX_communityThemeInstallMetadata',
+    installedThemes: 'VRCX_communityThemeInstalledThemes',
+    legacyMarketplaceCatalogUrl: 'VRCX_themeMarketplaceCatalogUrl'
+});
+
+export const BACKGROUND_IMAGE_CONFIG_KEYS = Object.freeze({
+    enabled: 'VRCX_backgroundImageEnabled',
+    mode: 'VRCX_backgroundImageMode',
+    providerId: 'VRCX_backgroundImageProviderId',
+    snapshots: 'VRCX_backgroundImageSnapshots',
+    customSource: 'VRCX_backgroundImageCustomSource',
+    legacyEnabled: 'VRCX_officialBackgroundEnabled',
+    legacyProviderId: 'VRCX_officialBackgroundProviderId',
+    legacySnapshots: 'VRCX_officialBackgroundSnapshots'
+});
+
+export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
+    splitter: Object.freeze({
+        friend: 'VRCX_FavoritesFriendSplitter',
+        world: 'VRCX_FavoritesWorldSplitter',
+        avatar: 'VRCX_FavoritesAvatarSplitter'
+    }),
+    cardScale: Object.freeze({
+        friend: 'VRCX_FavoritesFriendCardScale',
+        world: 'VRCX_FavoritesWorldCardScale',
+        avatar: 'VRCX_FavoritesAvatarCardScale'
+    }),
+    cardSpacing: Object.freeze({
+        friend: 'VRCX_FavoritesFriendCardSpacing',
+        world: 'VRCX_FavoritesWorldCardSpacing',
+        avatar: 'VRCX_FavoritesAvatarCardSpacing'
+    }),
+    sort: Object.freeze({
+        friend: 'VRCX_FavoritesFriendSort',
+        world: 'VRCX_FavoritesWorldSort',
+        avatar: 'VRCX_FavoritesAvatarSort'
+    })
+});
+
+export const STATUS_BAR_CONFIG_KEYS = Object.freeze({
+    visibility: 'VRCX_statusBarVisibility',
+    clocks: 'VRCX_statusBarClocks',
+    clockCount: 'VRCX_statusBarClockCount'
+});
 
 export function toDbKey(name: string): string {
     return `${DB_KEY_PREFIX}${name.toLowerCase()}`;

@@ -13,6 +13,7 @@ import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { normalizeCheckedState } from '../../settingsValues';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { AssistantSettingsGroup } from './AssistantSettingsGroup';
@@ -181,7 +182,11 @@ export function SettingsIntegrationsTab({ integrations }: any) {
     }
 
     function saveWebhookEnabled(checked: boolean) {
-        saveBoolPreference('webhookEnabled', 'webhookEnabled', checked);
+        saveBoolPreference(
+            'webhookEnabled',
+            'webhookEnabled',
+            normalizeCheckedState(checked)
+        );
     }
 
     function setWebhookUrlDraft(value: string) {

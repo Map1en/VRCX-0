@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository';
+import { STATUS_BAR_CONFIG_KEYS } from '@/repositories/configKeys';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
 import {
     loadPreferenceSnapshot,
@@ -34,9 +35,6 @@ import { ContextMenu, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
 import { StatusBarContextMenuContent } from './status-bar/StatusBarContextMenuContent';
 import { StatusBarFooter } from './status-bar/StatusBarFooter';
 
-const VISIBILITY_KEY = 'VRCX_statusBarVisibility';
-const CLOCKS_KEY = 'VRCX_statusBarClocks';
-const CLOCK_COUNT_KEY = 'VRCX_statusBarClockCount';
 const STATUS_PAGE_URL = 'https://status.vrchat.com/';
 
 const DEFAULT_VISIBILITY: any = {
@@ -424,9 +422,9 @@ export function AppStatusBar() {
         let active = true;
 
         Promise.all([
-            configRepository.getString(VISIBILITY_KEY, null),
-            configRepository.getString(CLOCKS_KEY, null),
-            configRepository.getString(CLOCK_COUNT_KEY, null)
+            configRepository.getString(STATUS_BAR_CONFIG_KEYS.visibility, null),
+            configRepository.getString(STATUS_BAR_CONFIG_KEYS.clocks, null),
+            configRepository.getString(STATUS_BAR_CONFIG_KEYS.clockCount, null)
         ])
             .then(([savedVisibility, savedClocks, savedClockCount]: any) => {
                 if (!active) {
@@ -481,7 +479,10 @@ export function AppStatusBar() {
     function persistVisibility(nextVisibility: any) {
         setVisibility(nextVisibility);
         configRepository
-            .setString(VISIBILITY_KEY, JSON.stringify(nextVisibility))
+            .setString(
+                STATUS_BAR_CONFIG_KEYS.visibility,
+                JSON.stringify(nextVisibility)
+            )
             .catch((error: any) => {
                 toast.error(
                     error instanceof Error
@@ -511,7 +512,7 @@ export function AppStatusBar() {
             });
         }
         configRepository
-            .setString(CLOCK_COUNT_KEY, String(parsed))
+            .setString(STATUS_BAR_CONFIG_KEYS.clockCount, String(parsed))
             .catch((error: any) => {
                 toast.error(
                     error instanceof Error
@@ -540,7 +541,10 @@ export function AppStatusBar() {
             );
             nextClocks[index] = { offset: parseClockOffset(offsetValue) };
             configRepository
-                .setString(CLOCKS_KEY, JSON.stringify(nextClocks))
+                .setString(
+                    STATUS_BAR_CONFIG_KEYS.clocks,
+                    JSON.stringify(nextClocks)
+                )
                 .catch((error: any) => {
                     toast.error(
                         error instanceof Error

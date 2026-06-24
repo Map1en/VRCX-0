@@ -1,6 +1,28 @@
+import type { DashboardPanel } from '@/repositories/dashboardRepository';
 import { DASHBOARD_BLOCKED_PANEL_KEYS } from '@/shared/constants/dashboard';
 
-function cloneDefaultConfig(value: any) {
+export type DashboardPanelDefinition = {
+    key: string;
+    category: 'widget' | 'page';
+    labelKey: string;
+    descriptionKey?: string;
+    path?: string;
+    defaultConfig?: Record<string, unknown>;
+};
+
+type DashboardColumnDefinition = {
+    key: string;
+    labelKey: string;
+    required?: boolean;
+};
+
+type TranslateKey = (key: string) => string;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function cloneDefaultConfig(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== 'object') {
         return {};
     }
@@ -8,7 +30,7 @@ function cloneDefaultConfig(value: any) {
     return JSON.parse(JSON.stringify(value));
 }
 
-export const DASHBOARD_WIDGET_DEFINITIONS = [
+export const DASHBOARD_WIDGET_DEFINITIONS: DashboardPanelDefinition[] = [
     {
         key: 'widget:feed',
         category: 'widget',
@@ -37,19 +59,20 @@ export const DASHBOARD_WIDGET_DEFINITIONS = [
     }
 ];
 
-export const DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS = Object.freeze([
-    { key: 'icon', labelKey: 'dashboard.registry.icon' },
-    {
-        key: 'displayName',
-        labelKey: 'dashboard.registry.display_name',
-        required: true
-    },
-    { key: 'rank', labelKey: 'dashboard.registry.rank' },
-    { key: 'timer', labelKey: 'dashboard.registry.timer' },
-    { key: 'platform', labelKey: 'dashboard.registry.platform' },
-    { key: 'language', labelKey: 'dashboard.registry.language' },
-    { key: 'status', labelKey: 'dashboard.registry.status' }
-]);
+export const DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS: readonly DashboardColumnDefinition[] =
+    Object.freeze([
+        { key: 'icon', labelKey: 'dashboard.registry.icon' },
+        {
+            key: 'displayName',
+            labelKey: 'dashboard.registry.display_name',
+            required: true
+        },
+        { key: 'rank', labelKey: 'dashboard.registry.rank' },
+        { key: 'timer', labelKey: 'dashboard.registry.timer' },
+        { key: 'platform', labelKey: 'dashboard.registry.platform' },
+        { key: 'language', labelKey: 'dashboard.registry.language' },
+        { key: 'status', labelKey: 'dashboard.registry.status' }
+    ]);
 
 export const DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS = Object.freeze([
     'icon',
@@ -57,7 +80,7 @@ export const DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS = Object.freeze([
     'timer'
 ]);
 
-export const DASHBOARD_PAGE_DEFINITIONS = [
+export const DASHBOARD_PAGE_DEFINITIONS: DashboardPanelDefinition[] = [
     {
         key: 'feed',
         category: 'page',
@@ -150,20 +173,6 @@ export const DASHBOARD_PAGE_DEFINITIONS = [
         descriptionKey: 'dashboard.registry.avatar_collection_page'
     },
     {
-        key: 'charts-instance',
-        category: 'page',
-        labelKey: 'dashboard.registry.instance_activity',
-        path: '/charts/instance',
-        descriptionKey: 'dashboard.registry.instance_activity_chart'
-    },
-    {
-        key: 'charts-mutual',
-        category: 'page',
-        labelKey: 'dashboard.registry.mutual_friends',
-        path: '/charts/mutual',
-        descriptionKey: 'dashboard.registry.mutual_friends_chart'
-    },
-    {
         key: 'tools',
         category: 'page',
         labelKey: 'dashboard.registry.tools',
@@ -174,27 +183,27 @@ export const DASHBOARD_PAGE_DEFINITIONS = [
 
 export const DASHBOARD_SELECTABLE_PAGE_DEFINITIONS =
     DASHBOARD_PAGE_DEFINITIONS.filter(
-        (definition: any) => !DASHBOARD_BLOCKED_PANEL_KEYS.has(definition.key)
+        (definition) => !DASHBOARD_BLOCKED_PANEL_KEYS.has(definition.key)
     );
 
-const DASHBOARD_DEFINITION_MAP = new Map(
+const DASHBOARD_DEFINITION_MAP = new Map<string, DashboardPanelDefinition>(
     [...DASHBOARD_WIDGET_DEFINITIONS, ...DASHBOARD_PAGE_DEFINITIONS].map(
-        (definition: any) => [definition.key, definition]
+        (definition) => [definition.key, definition]
     )
 );
 
-const DASHBOARD_PANEL_KEY_ALIASES: any = {
+const DASHBOARD_PANEL_KEY_ALIASES: Record<string, string> = {
     'social/friend-log': 'friend-log',
     'social/friend-list': 'friend-list',
     'social/moderation': 'moderation'
 };
 
-function normalizeDashboardPanelKey(key: any) {
+function normalizeDashboardPanelKey(key: unknown): string {
     const normalizedKey = String(key || '').trim();
     return DASHBOARD_PANEL_KEY_ALIASES[normalizedKey] || normalizedKey;
 }
 
-export function resolveDashboardPanelKey(panel: any) {
+export function resolveDashboardPanelKey(panel: unknown): string | null {
     if (!panel) {
         return null;
     }
@@ -203,29 +212,43 @@ export function resolveDashboardPanelKey(panel: any) {
         return panel;
     }
 
-    if (typeof panel === 'object' && typeof panel.key === 'string') {
+    if (isRecord(panel) && typeof panel.key === 'string') {
         return panel.key;
     }
 
     return null;
 }
 
-export function resolveDashboardPanelConfig(panel: any) {
+export function resolveDashboardPanelConfig(
+    panel: unknown
+): Record<string, unknown> {
     if (!panel || typeof panel === 'string') {
         return {};
     }
 
-    return panel.config && typeof panel.config === 'object' ? panel.config : {};
+    if (!isRecord(panel)) {
+        return {};
+    }
+
+    return panel.config && typeof panel.config === 'object'
+        ? (panel.config as Record<string, unknown>)
+        : {};
 }
 
-export function getDashboardPanelDefinition(key: any) {
+export function getDashboardPanelDefinition(
+    key: unknown
+): DashboardPanelDefinition | null {
     const normalizedKey = normalizeDashboardPanelKey(key);
     return normalizedKey
         ? (DASHBOARD_DEFINITION_MAP.get(normalizedKey) ?? null)
         : null;
 }
 
-function translateDashboardKey(t: any, key: any, fallback: any = '') {
+function translateDashboardKey(
+    t: TranslateKey,
+    key: string | undefined,
+    fallback = ''
+) {
     if (!key) {
         return fallback;
     }
@@ -240,7 +263,10 @@ function translateDashboardKey(t: any, key: any, fallback: any = '') {
         : fallback || key;
 }
 
-export function getDashboardPanelLabel(definition: any, t: any) {
+export function getDashboardPanelLabel(
+    definition: DashboardPanelDefinition | null,
+    t: TranslateKey
+) {
     return translateDashboardKey(
         t,
         definition?.labelKey,
@@ -248,7 +274,10 @@ export function getDashboardPanelLabel(definition: any, t: any) {
     );
 }
 
-export function getDashboardPanelDescription(definition: any, t: any) {
+export function getDashboardPanelDescription(
+    definition: DashboardPanelDefinition | null,
+    t: TranslateKey
+) {
     return translateDashboardKey(
         t,
         definition?.descriptionKey,
@@ -256,11 +285,14 @@ export function getDashboardPanelDescription(definition: any, t: any) {
     );
 }
 
-export function getDashboardInstanceWidgetColumnLabel(column: any, t: any) {
+export function getDashboardInstanceWidgetColumnLabel(
+    column: DashboardColumnDefinition,
+    t: TranslateKey
+) {
     return translateDashboardKey(t, column?.labelKey, column?.key || '');
 }
 
-export function createDashboardPanelValue(key: any) {
+export function createDashboardPanelValue(key: unknown): DashboardPanel | null {
     const normalizedKey = normalizeDashboardPanelKey(key);
     if (!normalizedKey || normalizedKey === '__none__') {
         return null;

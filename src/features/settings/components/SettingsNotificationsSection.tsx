@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '@/services/changelogService';
 import { showDesktopNotification } from '@/services/shellIntegrationService';
 
+import { normalizeCheckedState } from '../settingsValues';
 import { SettingsNotificationsTab } from './settings-tabs/SettingsNotificationsTab';
 
 export function SettingsNotificationsSection({ notifications }: any) {
@@ -63,17 +64,19 @@ export function SettingsNotificationsSection({ notifications }: any) {
                 );
             }}
             onNotificationIconDotChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'notificationIconDot',
                     'notificationIconDot',
-                    checked
+                    enabled
                 );
             }}
             onPostUpdateChangelogToastChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'showPostUpdateChangelogToast',
                     POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
-                    checked
+                    enabled
                 );
             }}
             onOpenFeedFilterDialog={() => setFeedFilterDialogOpen(true)}
@@ -92,17 +95,19 @@ export function SettingsNotificationsSection({ notifications }: any) {
                 saveStringPreference('desktopToast', 'desktopToast', value);
             }}
             onAfkDesktopToastChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'afkDesktopToast',
                     'afkDesktopToast',
-                    checked
+                    enabled
                 );
             }}
             onDesktopNotificationSoundChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'desktopNotificationSound',
                     'desktopNotificationSound',
-                    checked
+                    enabled
                 );
             }}
             onNotificationTtsModeChange={(value: any) => {
@@ -112,10 +117,11 @@ export function SettingsNotificationsSection({ notifications }: any) {
                 saveNotificationTtsVoice(value);
             }}
             onNotificationTtsNicknameChange={(checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'notificationTTSNickName',
                     'notificationTTSNickName',
-                    checked
+                    enabled
                 );
             }}
             onNotificationTtsTestVisibleChange={setNotificationTtsTestVisible}

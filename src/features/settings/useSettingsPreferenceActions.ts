@@ -2,12 +2,48 @@ import {
     consumeSystemFontsUnavailableWarning,
     loadSystemFonts
 } from '@/services/systemFontsService';
+import type {
+    BoolConfigPreferenceKey,
+    StringConfigPreferenceKey
+} from '@/services/preferencesService';
+import type { PreferencesSnapshot } from '@/state/preferencesStore';
 
 import {
     composeCustomFontFamily,
     createCustomFontDraftFromPrefs,
     type CustomFontDraft
 } from './settingsValues';
+
+type PreferenceKey = Extract<keyof PreferencesSnapshot, string>;
+type NormalizedConfigKey<Key extends string> = Key extends `VRCX_${infer Name}`
+    ? Name
+    : Key;
+type BoolPreferenceKey =
+    NormalizedConfigKey<BoolConfigPreferenceKey> & PreferenceKey;
+type StringPreferenceKey =
+    NormalizedConfigKey<StringConfigPreferenceKey> & PreferenceKey;
+type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceRollback = void | (() => void);
+type SettingsPrefs = PreferencesSnapshot & Record<string, unknown>;
+type SetSettingsPrefs = (
+    updater: (current: SettingsPrefs) => SettingsPrefs | Record<string, unknown>
+) => void;
+type SettingsPreferenceActionsDeps = Record<string, any> & {
+    commit: (
+        action: PreferenceAction,
+        optimistic?: () => PreferenceRollback
+    ) => Promise<boolean>;
+    prefs: SettingsPrefs;
+    setBoolConfigPreference: (
+        key: BoolConfigPreferenceKey,
+        value: boolean
+    ) => Promise<unknown>;
+    setPrefs: SetSettingsPrefs;
+    setStringConfigPreference: (
+        key: StringConfigPreferenceKey,
+        value: string
+    ) => Promise<unknown>;
+};
 
 export function useSettingsPreferenceActions({
     APP_FONT_DEFAULT_KEY,
@@ -61,7 +97,7 @@ export function useSettingsPreferenceActions({
     toast,
     usePreferencesStore,
     vrchatAuthRepository
-}: any) {
+}: SettingsPreferenceActionsDeps) {
     function applyPreferenceSnapshotToLocalState(snapshot: any) {
         const normalizedSnapshot = normalizePreferenceSnapshot(snapshot);
         setPrefs((current: any) => ({
@@ -94,7 +130,11 @@ export function useSettingsPreferenceActions({
             normalizedSnapshot.localFavoriteFriendsGroups
         );
     }
-    async function savePreferenceValue(key: any, value: any, action: any) {
+    async function savePreferenceValue<K extends PreferenceKey>(
+        key: K,
+        value: PreferencesSnapshot[K],
+        action: PreferenceAction
+    ) {
         await commit(action, () => {
             const previous = prefs[key];
             setPrefs((current: any) => ({
@@ -108,13 +148,22 @@ export function useSettingsPreferenceActions({
                 }));
         });
     }
-    async function saveBoolPreference(key: any, configKey: any, value: any) {
-        await savePreferenceValue(key, value, () =>
-            setBoolConfigPreference(configKey, value)
+    async function saveBoolPreference(
+        key: BoolPreferenceKey,
+        configKey: BoolConfigPreferenceKey,
+        value: boolean
+    ) {
+        const enabled = value === true;
+        await savePreferenceValue(key, enabled as PreferencesSnapshot[typeof key], () =>
+            setBoolConfigPreference(configKey, enabled)
         );
     }
-    async function saveStringPreference(key: any, configKey: any, value: any) {
-        await savePreferenceValue(key, value, () =>
+    async function saveStringPreference(
+        key: StringPreferenceKey,
+        configKey: StringConfigPreferenceKey,
+        value: string
+    ) {
+        await savePreferenceValue(key, value as PreferencesSnapshot[typeof key], () =>
             setStringConfigPreference(configKey, value)
         );
     }
@@ -528,17 +577,17 @@ export function useSettingsPreferenceActions({
         'webhookActivityFilters',
         setWebhookActivityFiltersPreference
     );
-    async function saveWristOverlayEnabled(value: any) {
-        let savedValue = Boolean(value);
+    async function saveWristOverlayEnabled(value: boolean) {
+        let savedValue = value === true;
         const previousValue = prefs.wristOverlayEnabled;
         const saved = await commit(
             async () => {
-                savedValue = await setWristOverlayEnabledPreference(value);
+                savedValue = await setWristOverlayEnabledPreference(savedValue);
             },
             () => {
                 setPrefs((current: any) => ({
                     ...current,
-                    wristOverlayEnabled: Boolean(value)
+                    wristOverlayEnabled: savedValue
                 }));
                 return () =>
                     setPrefs((current: any) => ({

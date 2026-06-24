@@ -15,6 +15,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import { formatDateTimeValue } from '@/shared/utils/dateTimeFormatters';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
@@ -203,10 +204,17 @@ function formatLocalizedActivityDate(
     if (Number.isNaN(date.getTime())) {
         return '\u2014';
     }
-    return new Intl.DateTimeFormat(locale || undefined, {
-        dateStyle: 'medium',
-        ...(dateOnly ? {} : { timeStyle: 'medium' })
-    }).format(date);
+    return formatDateTimeValue(
+        date,
+        {
+            dateStyle: 'medium',
+            ...(dateOnly ? {} : { timeStyle: 'medium' })
+        },
+        {
+            locale: locale || undefined,
+            fallback: '\u2014'
+        }
+    );
 }
 
 function TextScroll({

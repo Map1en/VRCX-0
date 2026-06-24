@@ -4,42 +4,60 @@ import instanceActivityRepository from '@/repositories/instanceActivityRepositor
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/locationParser';
 
-import {
-    toLocalDayKey
-} from './instanceActivityDate';
-import {
-    getLocalDayBounds
-} from './instanceActivityRows';
+import { toLocalDayKey } from './instanceActivityDate';
+import { getLocalDayBounds } from './instanceActivityRows';
+import type {
+    InstanceActivityRawRow,
+    WorldDetailsById
+} from './instanceActivityTypes';
 
-function hasWorldName(world: any) {
-    return Boolean(String(world?.name || '').trim());
+type UseInstanceActivityDataOptions = {
+    currentEndpoint: string;
+    currentUserId: string;
+    reloadToken: number;
+    selectedDate: string;
+};
+
+function hasWorldName(world: unknown): world is { name: string } {
+    if (!world || typeof world !== 'object') {
+        return false;
+    }
+    return Boolean(String((world as { name?: unknown }).name || '').trim());
 }
 
-async function loadMissingWorldProfiles(worldIds: any, worldDetailsById: any, endpoint: any) {
+async function loadMissingWorldProfiles(
+    worldIds: string[],
+    worldDetailsById: WorldDetailsById,
+    endpoint: string
+): Promise<WorldDetailsById> {
     const missingWorldIds = worldIds.filter(
-        (worldId: any) => !hasWorldName(worldDetailsById[worldId])
+        (worldId) => !hasWorldName(worldDetailsById[worldId])
     );
     if (!missingWorldIds.length) {
         return worldDetailsById;
     }
 
     const results = await Promise.allSettled(
-        missingWorldIds.map((worldId: any) =>
+        missingWorldIds.map((worldId) =>
             worldProfileRepository.getWorldProfile({ worldId, endpoint })
         )
     );
-    const nextWorldDetailsById: any = { ...worldDetailsById };
+    const nextWorldDetailsById: WorldDetailsById = { ...worldDetailsById };
     for (const result of results) {
         if (result.status !== 'fulfilled' || !hasWorldName(result.value)) {
             continue;
         }
-        const worldId = String(result.value.id || '').trim();
+        const world = result.value as Record<string, unknown> & {
+            id?: string;
+            name: string;
+        };
+        const worldId = String(world.id || '').trim();
         if (!worldId) {
             continue;
         }
         nextWorldDetailsById[worldId] = {
             ...(nextWorldDetailsById[worldId] || {}),
-            ...result.value
+            ...world
         };
     }
     return nextWorldDetailsById;
@@ -50,12 +68,14 @@ export function useInstanceActivityData({
     currentUserId,
     reloadToken,
     selectedDate
-}: any) {
-    const [availableDates, setAvailableDates] = useState<any[]>([]);
+}: UseInstanceActivityDataOptions) {
+    const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [dataStatus, setDataStatus] = useState('idle');
     const [dataDetail, setDataDetail] = useState('');
-    const [rawRows, setRawRows] = useState<any[]>([]);
-    const [worldDetailsById, setWorldDetailsById] = useState<any>({});
+    const [rawRows, setRawRows] = useState<InstanceActivityRawRow[]>([]);
+    const [worldDetailsById, setWorldDetailsById] = useState<WorldDetailsById>(
+        {}
+    );
 
     useEffect(() => {
         let active = true;
@@ -69,7 +89,7 @@ export function useInstanceActivityData({
 
         instanceActivityRepository
             .getAvailableDates(currentUserId)
-            .then((rows: any) => {
+            .then((rows) => {
                 if (!active) {
                     return;
                 }
@@ -77,13 +97,15 @@ export function useInstanceActivityData({
                 const uniqueDates = Array.from(
                     new Set(
                         rows
-                            .map((value: any) => toLocalDayKey(value))
+                            .map((value) =>
+                                toLocalDayKey(value as string | number | Date)
+                            )
                             .filter(Boolean)
                     )
-                ).sort((left: any, right: any) => right.localeCompare(left));
+                ).sort((left, right) => right.localeCompare(left));
                 setAvailableDates(uniqueDates);
             })
-            .catch((error: any) => {
+            .catch((error: unknown) => {
                 if (!active) {
                     return;
                 }
@@ -118,7 +140,7 @@ export function useInstanceActivityData({
 
         instanceActivityRepository
             .getInstanceActivityRows(start.toISOString(), end.toISOString())
-            .then(async (rows: any) => {
+            .then(async (rows) => {
                 if (!active) {
                     return;
                 }
@@ -126,10 +148,10 @@ export function useInstanceActivityData({
                 const worldIds = Array.from(
                     new Set(
                         rows
-                            .map((row: any) => parseLocation(row.location).worldId)
+                            .map((row) => parseLocation(row.location).worldId)
                             .filter(Boolean)
                     )
-                );
+                ) as string[];
                 const nextWorldDetailsById =
                     await instanceActivityRepository.getWorldSummariesByIds(
                         worldIds
@@ -144,11 +166,11 @@ export function useInstanceActivityData({
                     return;
                 }
 
-                setRawRows(Array.isArray(rows) ? rows : []);
+                setRawRows(rows);
                 setWorldDetailsById(resolvedWorldDetailsById);
                 setDataStatus('ready');
             })
-            .catch((error: any) => {
+            .catch((error: unknown) => {
                 if (!active) {
                     return;
                 }

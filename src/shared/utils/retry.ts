@@ -1,3 +1,5 @@
+import { delay as waitForDelay } from './delays';
+
 type BackoffOptions = {
     maxRetries?: number;
     baseDelay?: number;
@@ -37,7 +39,7 @@ async function sleepWithCancel(
     isCancelled: CancelCheck
 ): Promise<void> {
     if (!isCancelled) {
-        await new Promise((resolve: any) => setTimeout(resolve, delay));
+        await waitForDelay(delay);
         return;
     }
 
@@ -45,7 +47,7 @@ async function sleepWithCancel(
     while (remaining > 0) {
         throwIfCancelled(isCancelled);
         const wait = Math.min(remaining, BACKOFF_CANCEL_CHECK_INTERVAL_MS);
-        await new Promise((resolve: any) => setTimeout(resolve, wait));
+        await waitForDelay(wait);
         remaining -= wait;
     }
     throwIfCancelled(isCancelled);
