@@ -483,8 +483,8 @@
         },
         "success": {
             "vrchat_launch_request_sent": "已在 VRChat 中打开",
-            "invite_request_sent": "邀请请求已发送",
-            "boop_sent": "戳一戳已发送",
+            "invite_request_sent": "已发送加入申请",
+            "boop_sent": "已发送戳一戳",
             "friend_and_favorite_snapshots_refreshed": "好友已刷新"
         },
         "error": {
@@ -492,7 +492,7 @@
             "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前没有可用的 VRChat 位置",
             "cannot_invite_from_the_current_instance_type": "无法从当前房间类型发出邀请",
             "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：当前位置不是具体房间",
-            "cannot_update_profile_no_current_user_session_is_available": "无法更新个人资料：当前没有可用的用户会话"
+            "cannot_update_profile_no_current_user_session_is_available": "无法更新个人资料：当前没有可用的已登录会话"
         },
         "empty": {
             "no_authenticated_user_snapshot_is_available": "登录后才能刷新好友"
@@ -727,7 +727,7 @@
                 "game_log_rows": "游戏日志行"
             },
             "success": {
-                "game_log_row_deleted": "游戏日志行已删除",
+                "game_log_row_deleted": "已删除游戏日志内选定内容",
                 "copied_game_log_detail": "已复制游戏日志详情"
             },
             "action": {
@@ -754,11 +754,11 @@
             },
             "toast": {
                 "failed_to_look_up_value": "查找 {value} 失败",
-                "failed_to_delete_game_log_row": "删除游戏日志行失败",
+                "failed_to_delete_game_log_row": "删除日志内容时失败",
                 "failed_to_load_instance_history": "加载房间历史失败"
             },
             "modal": {
-                "delete_game_log_row": "删除游戏日志行？"
+                "delete_game_log_row": "要从日志中删除选中内容吗？"
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "没有找到 {value} 的用户 ID"
@@ -857,7 +857,7 @@
             },
             "empty": {
                 "this_avatar_has_no_local_tags_yet": "这个模型还没有本地标签",
-                "no_avatars_match_the_current_filters": "没有符合当前筛选的模型",
+                "no_avatars_match_the_current_filters": "没有符合当前筛选器设置的模型",
                 "no_authenticated_user_is_available_for_the_avatar_inventory": "当前没有已登录用户，无法加载模型列表。"
             },
             "loading": {
@@ -1206,7 +1206,7 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前没有可用的 VRChat 位置",
                 "cannot_invite_from_the_current_instance_type": "无法从当前房间类型发出邀请",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：当前位置不是具体房间",
-                "cannot_send_invite_response_no_current_user_session_is_available": "无法发送邀请回应：当前没有可用的用户会话"
+                "cannot_send_invite_response_no_current_user_session_is_available": "无法发送邀请回应：当前没有可用的已登录会话"
             },
             "empty": {
                 "no_custom_emoji_selected_the_default_boop_will_be_sent": "未选择自定义 Emoji，将发送默认戳一戳"
@@ -1450,19 +1450,19 @@
                 "failed_to_refresh_selected_mutuals": "刷新所选共同好友失败"
             },
             "modal": {
-                "refresh_non_friend_mutuals": "刷新非好友共同好友",
+                "refresh_non_friend_mutuals": "刷新非好友的共同好友",
                 "this_node_is_not_currently_in_the_friend_roster_continue_refreshing_its_mutual_friends_cache": "此节点当前不在好友列表中，仍要刷新其共同好友缓存吗？"
             },
             "dynamic": {
                 "refreshed_mutuals_for_value": "已刷新 {value} 的共同好友",
-                "value_has_opted_out_of_shared_connections": "{value} 已关闭共享连接"
+                "value_has_opted_out_of_shared_connections": "{value} 已关闭共同关系功能"
             }
         },
         "tools": {
             "header": "工具",
             "quick_access": {
                 "header": "常用工具",
-                "edit": "编辑常用",
+                "edit": "编辑常用工具列表",
                 "done": "完成",
                 "add": "添加到常用",
                 "remove": "从常用移除",
@@ -1518,7 +1518,7 @@
                 "vrchat_config": "VRChat 配置选项",
                 "vrchat_config_description": "打开 VRChat 的 config.json 设置",
                 "vrchat_log": "VRChat 日志查看器",
-                "vrchat_log_description": "查看本地 VRChat Output Log",
+                "vrchat_log_description": "查看本地 VRChat 客户端日志",
                 "launch_options_description": "编辑 VRChat 的启动选项",
                 "app_launcher": "应用启动器",
                 "app_launcher_description": "管理会在 VRChat 启动时自动启动的应用和快捷方式。",
@@ -1548,7 +1548,7 @@
                 "loading": "正在加载日志条目",
                 "load_more": "加载更多",
                 "unavailable": "VRChat 数据文件夹不可用",
-                "no_files": "没有找到 VRChat output log",
+                "no_files": "没有找到 VRChat 客户端日志文件",
                 "no_files_description": "启动一次 VRChat，等 output_log_*.txt 出现后刷新本页。",
                 "no_entries": "没有符合当前筛选的条目",
                 "no_entries_description": "调整等级、分类或搜索文本。",
@@ -1566,7 +1566,7 @@
                 "room_status_rules": "房间状态规则",
                 "room_status_rules_description": "VRChat 运行时，按房间和同行好友自动改状态。",
                 "invite_request_auto_reply": "自动回应加入申请",
-                "invite_request_auto_reply_description": "VRChat 运行时，白名单好友申请加入时自动邀请。",
+                "invite_request_auto_reply_description": "VRChat 处于运行状态，且白名单好友申请加入时自动邀请。",
                 "schedule_rules": "时间规则",
                 "schedule_rules_description": "按时间窗口切换状态、签名，或同时切换两者。",
                 "add_rule": "添加规则",
@@ -1595,7 +1595,7 @@
                 "remove_schedule_rule": "删除时间规则",
                 "remove_room_rule": "删除房间规则",
                 "no_schedule_rules": "尚未配置时间规则。",
-                "legacy_alone_company_mode": "现有独处/有人模式",
+                "legacy_alone_company_mode": "独处/同行模式（传统）",
                 "legacy_mode_description": "这些设置会保留原来的自动状态切换行为。",
                 "enable_legacy_auto_status": "启用房间状态规则",
                 "enable_legacy_auto_status_description": "根据你是否独处或和其他人在一起自动修改状态。",
@@ -6238,7 +6238,7 @@
             "screenshot_metadata": "截图",
             "screenshot_metadata_browser_and_file_actions": "截图浏览器和文件操作。",
             "vrchat_log": "VRChat 日志查看器",
-            "vrchat_log_viewer_for_local_output_logs": "本地 VRChat 输出日志查看器。",
+            "vrchat_log_viewer_for_local_output_logs": "VRChat 客户端日志查看器。",
             "settings": "设置",
             "settings_and_diagnostics": "设置和诊断。",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "已根据本地活动数据重建当前房间玩家列表。",
