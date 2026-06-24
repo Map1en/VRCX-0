@@ -1562,13 +1562,13 @@
             "social_automation": {
                 "header": "社交自动化",
                 "status_schedule": "状态定时切换",
-                "status_schedule_description": "按时间自动改状态和签名，可限制为仅 VRChat 运行时生效。",
+                "status_schedule_description": "根据时间自动修改状态和签名，拥有详细的配置选项。",
                 "room_status_rules": "房间状态规则",
-                "room_status_rules_description": "VRChat 运行时，按房间和同行好友自动改状态。",
+                "room_status_rules_description": "VRChat 运行时，根据房间状态和同行好友自动更改状态。",
                 "invite_request_auto_reply": "自动回应加入申请",
-                "invite_request_auto_reply_description": "VRChat 处于运行状态，且白名单好友申请加入时自动邀请。",
+                "invite_request_auto_reply_description": "VRChat 处于运行状态，且白名单好友申请加入时自动发送邀请。",
                 "schedule_rules": "时间规则",
-                "schedule_rules_description": "按时间窗口切换状态、签名，或同时切换两者。",
+                "schedule_rules_description": "根据时间切换状态、签名，或同时切换两者。",
                 "add_rule": "添加规则",
                 "scheduled_presence_default": "定时状态",
                 "schedule_rule_default": "时间规则",
@@ -1599,10 +1599,10 @@
                 "legacy_mode_description": "这些设置会保留原来的自动状态切换行为。",
                 "enable_legacy_auto_status": "启用房间状态规则",
                 "enable_legacy_auto_status_description": "根据你是否独处或和其他人在一起自动修改状态。",
-                "alone_condition": "什么时候算独处？",
+                "alone_condition": "什么时候才算独处？",
                 "any_player_counts_as_company": "有任意玩家就算有人同行",
                 "only_friends_count_as_company": "只有好友算有人同行",
-                "friend_groups_counted_as_company": "计为有人同行的好友分组",
+                "friend_groups_counted_as_company": "计为同行的好友分组",
                 "allowed_room_types": "允许运行的房间类型",
                 "alone_status": "独处时状态",
                 "company_status": "有人同行时状态",
@@ -1614,7 +1614,7 @@
                 "minimum_players": "最少玩家数",
                 "friend_user_ids": "好友用户 ID",
                 "room_types": "房间类型",
-                "room_types_hint": "留空表示任意房间类型。会让你看起来可加入的规则应保持限制。",
+                "room_types_hint": "留空表示任意房间类型。会让你看起来可被加入的规则应谨慎对待。",
                 "no_custom_room_rules": "尚未配置自定义房间规则。",
                 "preset_alone": "独处",
                 "preset_with_anyone": "和任意玩家在一起",
@@ -1648,11 +1648,11 @@
             },
             "success": {
                 "media_item_deleted": "媒体项目已删除",
-                "print_deleted": "「拍立得」已删除"
+                "print_deleted": "“拍立得”已删除"
             },
             "empty": {
                 "no_current_user_is_available": "当前没有可用的用户",
-                "no_prints_loaded": "未加载「拍立得」",
+                "no_prints_loaded": "未加载“拍立得”",
                 "no_inventory_items_loaded": "未加载物品库物品",
                 "no_player_metadata": "没有玩家元数据",
                 "no_screenshot_selected": "未选择截图"
@@ -1666,7 +1666,7 @@
             },
             "action": {
                 "preview": "预览",
-                "refresh_this_tab_to_load_your_vrchat_prints": "刷新此标签页以加载你的 VRChat「拍立得」",
+                "refresh_this_tab_to_load_your_vrchat_prints": "刷新此标签页以加载你的 VRChat“拍立得”",
                 "refresh_this_tab_to_load_inventory_items": "刷新此标签页以加载物品库项目",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "加载截图以查看嵌入的世界、玩家和文件元数据"
             },
@@ -1687,10 +1687,10 @@
             },
             "toast": {
                 "failed_to_load_value": "加载{value}失败",
-                "failed_to_load_prints": "加载「拍立得」失败",
+                "failed_to_load_prints": "加载“拍立得”失败",
                 "failed_to_load_inventory": "加载物品库失败",
                 "failed_to_delete_media_item": "删除媒体项目失败",
-                "failed_to_delete_print": "删除「拍立得」失败",
+                "failed_to_delete_print": "删除“拍立得”失败",
                 "failed_to_update_profile_media": "更新个人资料媒体失败",
                 "failed_to_consume_inventory_bundle": "使用物品库礼包失败",
                 "failed_to_redeem_reward": "兑换奖励失败",
@@ -1702,7 +1702,7 @@
             },
             "modal": {
                 "delete_value_item": "删除 {value} 项目",
-                "delete_print": "删除「拍立得」"
+                "delete_print": "删除“拍立得”"
             },
             "dynamic": {
                 "no_value_loaded": "未加载{value}",
@@ -3323,7 +3323,7 @@
                 "search_mutual_friends": "搜索共同好友",
                 "search_groups": "搜索群组",
                 "search_worlds": "搜索世界",
-                "search_favorite_worlds": "搜索收藏夹里的世界",
+                "search_favorite_worlds": "搜索收藏的世界",
                 "search_avatars": "搜索模型",
                 "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "删除好友请求已被发送，但本地状态与当前活动的会话状态不一致，可能是活动会话发生了变更"
             },
