@@ -618,7 +618,7 @@
                 "previous_avatar": "上一个模型",
                 "rows": "行",
                 "favorites_are_still_hydrating": "收藏仍在加载",
-                "favorites_only": "仅收藏"
+                "favorites_only": "仅显示收藏（分组）"
             },
             "success": {
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
@@ -714,7 +714,7 @@
                 "time_spent_in_this_instance": "在这个房间停留的时间",
                 "sessions": "会话",
                 "table": "表格",
-                "favorites_only": "仅收藏",
+                "favorites_only": "仅显示收藏（分组）",
                 "session_date_range": "会话日期范围",
                 "start": "开始",
                 "end": "结束",
@@ -1249,7 +1249,7 @@
                 "of": "共",
                 "friend": "个好友",
                 "friends": "个好友",
-                "try_turning_off_favorites_only_or_broadening_the_search_query": "请关闭仅收藏，或放宽搜索条件。",
+                "try_turning_off_favorites_only_or_broadening_the_search_query": "请关闭仅收藏（分组）选项，或放宽搜索条件。",
                 "favorites_are_still_hydrating": "收藏仍在加载",
                 "try_a_different_segment_or_broaden_the_search_query": "尝试其他分段或放宽搜索条件",
                 "the_current_search_filters_excluded_every_friend_in_the_roster": "当前筛选条件排除了列表中的所有好友。",
@@ -1653,12 +1653,12 @@
             "empty": {
                 "no_current_user_is_available": "当前没有可用的用户",
                 "no_prints_loaded": "未加载拍立得照片",
-                "no_inventory_items_loaded": "未加载物品库物品",
+                "no_inventory_items_loaded": "未加载库存物品",
                 "no_player_metadata": "没有玩家元数据",
                 "no_screenshot_selected": "未选择截图"
             },
             "label": {
-                "inventory_bundle_consumed": "已使用物品库礼包",
+                "inventory_bundle_consumed": "已使用库存礼包",
                 "fps": "fps",
                 "frames": "帧",
                 "prev": "上一个",
@@ -1667,7 +1667,7 @@
             "action": {
                 "preview": "预览",
                 "refresh_this_tab_to_load_your_vrchat_prints": "刷新此标签页以加载你的“拍立得”",
-                "refresh_this_tab_to_load_inventory_items": "刷新此标签页以加载物品库项目",
+                "refresh_this_tab_to_load_inventory_items": "刷新此标签页以加载库存项目",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "加载截图以查看嵌入的世界、玩家和文件元数据"
             },
             "error": {
@@ -1688,11 +1688,11 @@
             "toast": {
                 "failed_to_load_value": "加载{value}失败",
                 "failed_to_load_prints": "加载“拍立得”失败",
-                "failed_to_load_inventory": "加载物品库失败",
+                "failed_to_load_inventory": "加载库存失败",
                 "failed_to_delete_media_item": "删除媒体项目失败",
                 "failed_to_delete_print": "删除“拍立得”失败",
                 "failed_to_update_profile_media": "更新个人资料媒体失败",
-                "failed_to_consume_inventory_bundle": "使用物品库礼包失败",
+                "failed_to_consume_inventory_bundle": "使用库存礼包失败",
                 "failed_to_redeem_reward": "兑换奖励失败",
                 "failed_to_open_screenshot_picker": "打开截图选择器失败",
                 "failed_to_open_folder": "打开文件夹失败",
@@ -2104,7 +2104,7 @@
                     "layout_table": "通知标签页",
                     "notification_filter": "通知筛选器",
                     "post_update_changelog_prompt": "显示更新后的更新内容提示",
-                    "post_update_changelog_prompt_description": "升级后首次启动新版本时，在右下角提示查看更新内容。",
+                    "post_update_changelog_prompt_description": "升级后首次启动新版本时，在右下角查看更新内容。",
                     "wrist_overlay": "手腕动态叠加界面",
                     "wrist_overlay_description": "仅在 VRChat 处于 VR 模式且 SteamVR 正在运行时启动手腕动态。",
                     "wrist_feed_notifications": "手腕动态过滤器",
@@ -2122,7 +2122,7 @@
                     "test_notification": "发送测试通知",
                     "test_message": "这是一个测试通知。",
                     "vr_notifications": {
-                        "header": "VR 叠加通知",
+                        "header": "VR 叠加界面通知",
                         "steamvr_overlay": "SteamVR 叠加界面",
                         "overlay_notifications": "叠加界面通知",
                         "notification_position": "通知位置",
@@ -2442,7 +2442,7 @@
                         "legacy_migration_confirm_description": "这会删除当前 VRCX-0 设置和本地数据库，并替换为在 {path} 找到的数据。VRCX-0 将重启以完成迁移。原始 VRCX 数据不会被修改。",
                         "legacy_migration_confirm": "迁移并重启",
                         "legacy_migration_not_available": "未找到支持的 VRCX 数据库。",
-                        "legacy_migration_restart_manually": "迁移已准备好。请重启 VRCX-0 以完成迁移。",
+                        "legacy_migration_restart_manually": "已准备好迁移，重启 VRCX-0 以完成迁移。",
                         "legacy_migration_failed": "启动 VRCX 迁移失败：{error}"
                     },
                     "user_content": {
@@ -2480,7 +2480,7 @@
                 "failed_to_crop_existing_prints": "裁剪已有拍立得失败",
                 "failed_to_save_translation_settings": "保存翻译设置失败",
                 "failed_to_fetch_translation_models": "获取翻译模型失败",
-                "failed_to_save_feed_filters": "保存动态筛选失败"
+                "failed_to_save_feed_filters": "保存动态筛选器设置失败"
             },
             "modal": {
                 "crop_existing_prints": "裁剪现有照片",
@@ -5187,7 +5187,7 @@
                 "error": "无效的链接或 ID",
                 "failed": "直接访问失败",
                 "opening": "正在打开...",
-                "opened": "已打开直接访问目标",
+                "opened": "已打开目标",
                 "opened_from_clipboard": "已自动识别并打开剪贴板内的内容"
             }
         },
@@ -5414,7 +5414,7 @@
         "file": {
             "not_image": "文件不是有效的图片格式",
             "too_large": "文件大小过大",
-            "folder_opened": "文件夹已打开",
+            "folder_opened": "已打开文件夹",
             "folder_missing": "文件夹不存在"
         },
         "group": {
