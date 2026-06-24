@@ -1083,7 +1083,7 @@
                 "broaden_the_type_filters_or_search_query_to_see_more_history": "放宽类型筛选或搜索词以查看更多历史记录"
             },
             "empty": {
-                "no_friend_history_rows_match_the_current_filters": "没有符合当前筛选的好友历史行"
+                "no_friend_history_rows_match_the_current_filters": "没有符合当前筛选器设置的好友历史"
             }
         },
         "moderation": {
@@ -1243,7 +1243,7 @@
             },
             "label": {
                 "friend_details_are_already_loaded": "好友详情已加载",
-                "shared_connections_are_opted_out_for_the_current_account": "当前账号已关闭共享连接",
+                "shared_connections_are_opted_out_for_the_current_account": "当前账号已关闭共同关系功能",
                 "mutual_friends_loaded": "共同好友已加载",
                 "showing": "显示",
                 "of": "共",
