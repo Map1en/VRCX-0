@@ -1632,7 +1632,7 @@
                 "all_favorite_friends": "所有收藏好友",
                 "selected_favorite_groups": "指定收藏分组",
                 "selected_favorite_groups_label": "指定收藏分组",
-                "automatic_replies_note": "自动回应只会在 VRChat 运行中且当前位置可发送邀请时运行。冷却按发送者单独计算，并且只有邀请 API 成功后才会隐藏通知。",
+                "automatic_replies_note": "自动回应只会在 VRChat 运行中且当前位置可发送邀请时运行。冷却按发送者单独计算，并且只有邀请 API 返回成功后才会隐藏通知。",
                 "failed_to_load_schedule_rules": "加载时间规则失败。",
                 "failed_to_save_schedule_rules": "保存时间规则失败。",
                 "failed_to_load_room_rules": "加载房间规则失败。",
@@ -1778,7 +1778,7 @@
                     "hide_private_worlds": "隐藏私人世界",
                     "vr_device_status": "VR 设备状态",
                     "battery_percentage": "显示电量百分比",
-                    "wrist_feed_notifications": "腕表叠加通知过滤器"
+                    "wrist_feed_notifications": "叠加界面通知过滤"
                 },
                 "vr_extras": {
                     "header": "附加功能"
@@ -1797,25 +1797,25 @@
                 "header": "集成",
                 "mcp_server": {
                     "header": "VRCX-0 MCP 服务器",
-                    "description": "通过本机 localhost 把 VRCX-0 的本地社交事实暴露给可信 MCP 客户端。",
+                    "description": "通过本机 localhost 把 VRCX-0 的本地社交数据暴露给可信 MCP 客户端。",
                     "enable": "启用 MCP 服务器",
                     "enable_description": "启动仅监听本机的 HTTP MCP 服务器，并使用 Bearer token 保护。",
-                    "allow_vrchat_writes": "允许写入 VRChat 账号",
-                    "allow_vrchat_writes_description": "关闭时，收藏到 VRChat 的工具调用会被强制为预演模式（dry-run）。开启后才允许 AI 把收藏写入你的真实 VRChat 账号。每次服务启动都会重置为关闭。",
+                    "allow_vrchat_writes": "允许写入到账号",
+                    "allow_vrchat_writes_description": "关闭时，有关 VRChat 的工具调用会被强制设置为预演模式（dry-run）。开启后才允许 AI 把收藏等数据真正写入你的账号。每次服务启动时，该选项都会重置为关闭。",
                     "port_label": "服务器端口",
-                    "port_description": "修改会重启服务。若 8798 被占用，改成空闲端口并重新复制客户端配置即可。",
+                    "port_description": "修改服务端口，默认 8798。若被占用，改成空闲端口并重新复制配置即可。",
                     "port_apply": "应用",
                     "port_invalid": "端口需在 1024–65535 之间",
                     "status_label": "状态",
                     "port_active_connections": "端口 {port}；活动连接 {count}",
                     "client_config": "客户端配置",
-                    "client_config_description": "按客户端选择。Claude Code：一次性 `claude mcp add` 终端命令。通用 (HTTP)：直连 HTTP 的 JSON 配置，无需额外工具。通用 (mcp-remote)：经 Node.js 代理隧道的 JSON 配置,适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。",
+                    "client_config_description": "按客户端选择: Claude Code：执行一次性 `claude mcp add` 命令。\nHTTP 方式：直连 HTTP 的 JSON 配置，无需额外工具。mcp-remote 方式：经 Node.js 代理隧道的 JSON 配置,适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。",
                     "copy_claude_code": "Claude Code",
-                    "copy_mcp_remote": "通用 (mcp-remote)",
-                    "copy_generic": "通用 (HTTP)",
-                    "security_note": "客户端配置包含明文 token。只提供给你信任的本机工具。",
+                    "copy_mcp_remote": "mcp-remote 方式",
+                    "copy_generic": "HTTP 方式",
+                    "security_note": "客户端配置包含明文 token。应只提供给你信任的工具。",
                     "rotate_token": "重新生成 Token",
-                    "rotate_token_description": "重新生成后，旧客户端配置会立即失效。",
+                    "rotate_token_description": "重新生成后，旧客户端配置将会立即失效。",
                     "token_rotated": "MCP token 已重新生成",
                     "copied": "已复制 {target} 配置",
                     "status": {
@@ -1837,7 +1837,7 @@
                 "diagnostics": {
                     "header": "诊断",
                     "refresh_online_users": "刷新在线人数",
-                    "refresh_config_json": "读取 Config JSON",
+                    "refresh_config_json": "获取 API 配置",
                     "clear_config_json": "清除显示结果",
                     "runtime_lifecycle": "后端运行态",
                     "refresh_runtime_lifecycle": "刷新后端运行态"
@@ -1848,9 +1848,9 @@
                     "configure_auto_clear": "设置自动清理周期",
                     "refresh_cache_size": "刷新缓存大小",
                     "not_refreshed": "未刷新",
-                    "purge_avatar_history_description": "打开确认弹窗后再删除旧的模型变动记录。",
+                    "purge_avatar_history_description": "确认后再删除旧的模型变动记录。",
                     "purge_avatar_history": "清理模型记录",
-                    "refresh_sqlite_tables": "刷新表大小",
+                    "refresh_sqlite_tables": "刷新 SQLite 表",
                     "migrate_legacy_vrcx": "迁移旧版 VRCX 数据"
                 },
                 "danger": {
@@ -1916,12 +1916,12 @@
                 "automation": {
                     "auto_change_status": "房间状态规则",
                     "auto_change_status_switch": "启用房间状态规则",
-                    "auto_state_change_tooltip": "根据当前房间和与你在一起的人自动修改状态",
-                    "auto_state_change_switch_tooltip": "当房间中有其他符合条件的人时自动切换状态（独自一人 / 有其它人时）",
-                    "alone_condition": "判断为“独自一人”的条件",
+                    "auto_state_change_tooltip": "根据当前房间状态和同伴数量自动修改状态",
+                    "auto_state_change_switch_tooltip": "当房间中有符合条件的人时自动切换状态（独处 / 有同伴时）",
+                    "alone_condition": "判断为独处的条件",
                     "alone": "房间内只有自己时",
                     "no_friends": "房间内没有好友时",
-                    "alone_status": "“独自一人”时使用的社交状态",
+                    "alone_status": "独处时使用的社交状态",
                     "company_status": "有其他符合条件的人时",
                     "allowed_instance_types": "允许生效的房间类型",
                     "instance_type_placeholder": "所有类型都生效",
@@ -1942,7 +1942,7 @@
                     "info": "VRCX-0 是一个提供 VRChat 好友管理信息的辅助应用。这个程序使用了非官方的 VRChat API (VRCSDK)。",
                     "disclaimer1": "VRCX-0 不受 VRChat 的认可，也不反映 VRChat 或者任何正式参与制作或管理 VRChat 的人员/团体的观点或意见。VRChat 是 VRChat Inc. 的商标。 VRChat © VRChat Inc.",
                     "disclaimer2": "本项目的全体贡献者均不对使用 VRCX-0 引起的任何问题负责。使用时请自负风险！",
-                    "open_source_software_notice": "第三方声明"
+                    "open_source_software_notice": "开放源代码许可条款"
                 },
                 "contributors": {
                     "header": "贡献者们"
@@ -2285,8 +2285,8 @@
                         "header": "帮助改进 VRCX-0"
                     },
                     "anonymous_usage_telemetry": {
-                        "header": "收集匿名使用信息",
-                        "description": "仅收集用于改进 VRCX-0 所必需的匿名信息。"
+                        "header": "启用诊断数据收集（匿名）",
+                        "description": "仅收集用于改进 VRCX-0 所必需的匿名信息（如应用性能）。"
                     },
                     "save_instance_prints_to_file": {
                         "header": "“拍立得”照片保存选项",
@@ -2472,19 +2472,19 @@
                 "failed_to_save_setting": "保存设置失败",
                 "failed_to_load_settings": "加载设置失败",
                 "failed_to_save_trust_color": "保存信任颜色失败",
-                "failed_to_refresh_sqlite_table_sizes": "刷新 SQLite 表大小失败",
-                "failed_to_refresh_config_json": "刷新 config JSON 失败",
+                "failed_to_refresh_sqlite_table_sizes": "刷新 SQLite 表失败",
+                "failed_to_refresh_config_json": "刷新 API 配置失败",
                 "failed_to_refresh_online_user_count": "刷新在线用户数失败",
                 "failed_to_load_proxy_settings": "加载代理设置失败",
                 "failed_to_save_proxy_settings": "保存代理设置失败",
-                "failed_to_crop_existing_prints": "裁剪已有 Print失败",
+                "failed_to_crop_existing_prints": "裁剪已有拍立得失败",
                 "failed_to_save_translation_settings": "保存翻译设置失败",
                 "failed_to_fetch_translation_models": "获取翻译模型失败",
                 "failed_to_save_feed_filters": "保存动态筛选失败"
             },
             "modal": {
                 "crop_existing_prints": "裁剪现有照片",
-                "crop_already_saved_instance_prints_in_the_config": "现在裁剪配置的 UGC 文件夹中已保存的房间照片？",
+                "crop_already_saved_instance_prints_in_the_config": "确定要裁剪配置的文件夹中已保存的“拍立得”照片吗？",
                 "crop_prints": "裁剪照片",
                 "skip": "跳过"
             },
@@ -2538,8 +2538,8 @@
                 "current_players_are_not_available_yet": "当前玩家暂不可用"
             },
             "empty": {
-                "no_feed_rows": "没有动态行",
-                "no_game_log_rows": "没有游戏日志行",
+                "no_feed_rows": "没有动态",
+                "no_game_log_rows": "没有游戏日志",
                 "that_dashboard_no_longer_exists_in_the_stored_config": "该仪表板已不在保存的配置中",
                 "no_dashboard_definitions_are_stored_yet": "还没有保存仪表板定义"
             },
