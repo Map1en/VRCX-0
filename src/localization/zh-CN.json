@@ -2471,7 +2471,7 @@
             "toast": {
                 "failed_to_save_setting": "保存设置失败",
                 "failed_to_load_settings": "加载设置失败",
-                "failed_to_save_trust_color": "保存信任颜色失败",
+                "failed_to_save_trust_color": "保存信誉等级颜色失败",
                 "failed_to_refresh_sqlite_table_sizes": "刷新 SQLite 表失败",
                 "failed_to_refresh_config_json": "刷新 API 配置失败",
                 "failed_to_refresh_online_user_count": "刷新在线用户数失败",
