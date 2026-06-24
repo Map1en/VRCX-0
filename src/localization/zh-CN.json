@@ -1647,26 +1647,26 @@
                 "edit_invite_message_description": "编辑邀请或申请加入时使用的消息"
             },
             "success": {
-                "media_item_deleted": "媒体项目已删除",
-                "print_deleted": "“拍立得”已删除"
+                "media_item_deleted": "已删除媒体项目",
+                "print_deleted": "已删除拍立得照片"
             },
             "empty": {
                 "no_current_user_is_available": "当前没有可用的用户",
-                "no_prints_loaded": "未加载“拍立得”",
+                "no_prints_loaded": "未加载拍立得照片",
                 "no_inventory_items_loaded": "未加载物品库物品",
                 "no_player_metadata": "没有玩家元数据",
                 "no_screenshot_selected": "未选择截图"
             },
             "label": {
-                "inventory_bundle_consumed": "物品库礼包已使用",
+                "inventory_bundle_consumed": "已使用物品库礼包",
                 "fps": "fps",
                 "frames": "帧",
                 "prev": "上一个",
-                "metadata_extracted_from_the_selected_vrchat_screenshot": "从所选 VRChat 截图中提取的元数据"
+                "metadata_extracted_from_the_selected_vrchat_screenshot": "从所选截图中提取的元数据"
             },
             "action": {
                 "preview": "预览",
-                "refresh_this_tab_to_load_your_vrchat_prints": "刷新此标签页以加载你的 VRChat“拍立得”",
+                "refresh_this_tab_to_load_your_vrchat_prints": "刷新此标签页以加载你的“拍立得”",
                 "refresh_this_tab_to_load_inventory_items": "刷新此标签页以加载物品库项目",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "加载截图以查看嵌入的世界、玩家和文件元数据"
             },
@@ -1702,7 +1702,7 @@
             },
             "modal": {
                 "delete_value_item": "删除 {value} 项目",
-                "delete_print": "删除“拍立得”"
+                "delete_print": "删除拍立得照片"
             },
             "dynamic": {
                 "no_value_loaded": "未加载{value}",
@@ -1813,7 +1813,7 @@
                     "copy_claude_code": "Claude Code",
                     "copy_mcp_remote": "mcp-remote 方式",
                     "copy_generic": "HTTP 方式",
-                    "security_note": "客户端配置包含明文 token。应只提供给你信任的工具。",
+                    "security_note": "客户端配置包含明文 token，应只提供给你信任的工具。",
                     "rotate_token": "重新生成 Token",
                     "rotate_token_description": "重新生成后，旧客户端配置将会立即失效。",
                     "token_rotated": "MCP token 已重新生成",
@@ -1966,7 +1966,7 @@
                     "font_family_system_ui": "跟随系统字体",
                     "font_family_custom": "自定义字体",
                     "font_family_custom_dialog_title": "自定义字体",
-                    "font_family_custom_dialog_description": "从已安装字体中选择第一/第二顺位，或使用高级 CSS font-family override。",
+                    "font_family_custom_dialog_description": "从已安装字体中选择第一/第二顺位，或使用高级选项进行设置。",
                     "font_family_custom_invalid": "无效的字体，请检查输入。注意：字体名称使用逗号分隔，例如 'My Font', Arial, sans-serif",
                     "font_family_custom_primary": "第一顺位字体",
                     "font_family_custom_primary_description": "优先用于西文文本。",
@@ -1974,15 +1974,15 @@
                     "font_family_custom_secondary_description": "用作 CJK 回退字体。",
                     "font_family_custom_search_placeholder": "搜索已安装字体",
                     "font_family_custom_no_results": "没有匹配字体",
-                    "font_family_custom_detection_unavailable": "字体检测不可用，可使用高级手写 override。",
-                    "font_family_custom_detection_unavailable_toast": "字体检测不可用，可使用高级手写 override。",
+                    "font_family_custom_detection_unavailable": "字体检测不可用，可使用高级选项进行设置。",
+                    "font_family_custom_detection_unavailable_toast": "字体检测不可用，可使用高级选项进行设置。",
                     "font_family_custom_preview": "预览",
                     "font_family_custom_preview_sample": "The quick brown fox / 那只敏捷的棕色狐狸 / あの機敏な茶色のキツネ / 그 민첩한 갈색 여우",
-                    "font_family_custom_advanced": "高级",
-                    "font_family_custom_override": "原始 CSS font-family",
+                    "font_family_custom_advanced": "高级选项",
+                    "font_family_custom_override": "CSS font-family 覆盖",
                     "font_family_custom_override_description": "非空时会直接使用这一整串，并忽略上面的选择。",
                     "font_family_custom_override_hint": "留空即可使用第一/第二顺位字体。",
-                    "font_family_custom_override_active": "高级 override 已生效，上面的字体选择会被忽略。",
+                    "font_family_custom_override_active": "高级选项配置已生效，上面的字体选择会被忽略。",
                     "font_family_custom_override_placeholder": "'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
                     "cjk_font_pack_puhuiti": "PuHuiTi CJK",
@@ -2069,7 +2069,7 @@
                     "header": "玩家信息",
                     "vrchat_notes": "显示线上备注",
                     "vrchat_notes_description": "显示 VRChat 服务器上保存的备注",
-                    "vrcx_memos": "本地备注",
+                    "vrcx_memos": "显示本地备注",
                     "vrcx_memos_description": "显示在 VRCX-0 中本地保存的备注",
                     "recent_action_cooldown": "显示“最近操作”图标",
                     "recent_action_cooldown_description": "在最近的邀请和加入申请操作上显示一个时钟图标。",
@@ -2079,8 +2079,8 @@
                     "header": "好友名称显示颜色",
                     "random_colors_from_user_id": "从玩家 ID 随机挑选颜色",
                     "random_colors_from_user_id_description": "根据 ID 为每个玩家分配一个随机颜色。",
-                    "trust_colors": "信任等级颜色",
-                    "trust_colors_description": "调整按信任等级显示的玩家名称颜色。",
+                    "trust_colors": "信誉等级颜色",
+                    "trust_colors_description": "调整按信誉等级显示的玩家名称颜色。",
                     "trust_levels": {
                         "visitor": "游客",
                         "new_user": "萌新",
