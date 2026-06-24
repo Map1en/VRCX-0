@@ -1,3 +1,5 @@
+import { delay } from '@/shared/utils/delays';
+
 type RawGameLogRow = unknown[];
 type ParsedGameLog = Record<string, unknown> & {
     dt: string;
@@ -12,12 +14,6 @@ function normalizeString(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
 }
 
 function parseRawGameLog(

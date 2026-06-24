@@ -2,6 +2,7 @@ import { Trash2Icon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDefaultLayout } from 'react-resizable-panels';
+import { useShallow } from 'zustand/react/shallow';
 
 import { DashboardPanelPreview } from '@/components/dashboard/DashboardPanelPreview';
 import {
@@ -16,6 +17,9 @@ import {
 import { cn } from '@/lib/utils';
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
+import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
+import { useNotificationStore } from '@/state/notificationStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -49,6 +53,10 @@ import {
     getNextDashboardInstanceColumnConfig,
     isDashboardFilterActive
 } from '../dashboardConfig';
+import {
+    createDashboardPanelPreviewProps,
+    type DashboardPageMetrics
+} from '../dashboardPanelPreviewModel';
 
 export function DashboardFilterConfig({
     title,
@@ -481,6 +489,49 @@ export function DashboardEditorRow({
     );
 }
 
+function useDashboardPagePreviewMetrics(): DashboardPageMetrics {
+    const { friendCount, onlineCount } = useFriendRosterStore(
+        useShallow((state: any) => ({
+            friendCount: state.orderedFriendIds.length,
+            onlineCount: state.onlineIds.length
+        }))
+    );
+    const {
+        favoriteFriendCount,
+        favoriteWorldCount,
+        favoriteAvatarCount
+    } = useFavoriteStore(
+        useShallow((state: any) => ({
+            favoriteFriendCount: state.favoriteFriendIds.length,
+            favoriteWorldCount: state.favoriteWorldIds.length,
+            favoriteAvatarCount: state.favoriteAvatarIds.length
+        }))
+    );
+    const notificationCount = useNotificationStore(
+        (state: any) => state.items.length
+    );
+
+    return {
+        friendCount,
+        onlineCount,
+        favoriteFriendCount,
+        favoriteWorldCount,
+        favoriteAvatarCount,
+        notificationCount
+    };
+}
+
+function DashboardPanelPreviewForPanel({ panel, onPanelChange }: any) {
+    const pageMetrics = useDashboardPagePreviewMetrics();
+    const previewProps = createDashboardPanelPreviewProps({
+        panel,
+        pageMetrics,
+        onPanelChange
+    });
+
+    return <DashboardPanelPreview {...previewProps} />;
+}
+
 export function DashboardReadRow({ row, dashboardId, onPanelChange }: any) {
     const direction = row?.direction === 'vertical' ? 'vertical' : 'horizontal';
     const panels = Array.isArray(row?.panels) ? row.panels.slice(0, 2) : [];
@@ -508,7 +559,7 @@ export function DashboardReadRow({ row, dashboardId, onPanelChange }: any) {
                         minSize="20%"
                     >
                         <div className="h-full min-h-[180px] min-w-0">
-                            <DashboardPanelPreview
+                            <DashboardPanelPreviewForPanel
                                 panel={panels[0]}
                                 onPanelChange={(nextPanel: any) =>
                                     onPanelChange?.(0, nextPanel)
@@ -523,7 +574,7 @@ export function DashboardReadRow({ row, dashboardId, onPanelChange }: any) {
                         minSize="20%"
                     >
                         <div className="h-full min-h-[180px] min-w-0">
-                            <DashboardPanelPreview
+                            <DashboardPanelPreviewForPanel
                                 panel={panels[1]}
                                 onPanelChange={(nextPanel: any) =>
                                     onPanelChange?.(1, nextPanel)
@@ -538,7 +589,7 @@ export function DashboardReadRow({ row, dashboardId, onPanelChange }: any) {
 
     return (
         <div className="relative h-full min-h-[180px]">
-            <DashboardPanelPreview
+            <DashboardPanelPreviewForPanel
                 panel={panels[0]}
                 onPanelChange={(nextPanel: any) => onPanelChange?.(0, nextPanel)}
             />

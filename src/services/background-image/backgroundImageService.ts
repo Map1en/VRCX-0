@@ -1,6 +1,10 @@
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
+    APP_THEME_CONFIG_KEYS,
+    BACKGROUND_IMAGE_CONFIG_KEYS
+} from '@/repositories/configKeys';
+import {
     disableInstalledCommunityTheme,
     stopLocalCommunityThemePreview
 } from '@/services/communityThemeService';
@@ -47,17 +51,6 @@ const COMMUNITY_CSS_LAYERS: VrcxCssLayer[] = [
     'installed-theme',
     'local-theme-preview'
 ];
-
-const CONFIG_KEYS = {
-    enabled: 'VRCX_backgroundImageEnabled',
-    mode: 'VRCX_backgroundImageMode',
-    providerId: 'VRCX_backgroundImageProviderId',
-    snapshots: 'VRCX_backgroundImageSnapshots',
-    customSource: 'VRCX_backgroundImageCustomSource',
-    legacyEnabled: 'VRCX_officialBackgroundEnabled',
-    legacyProviderId: 'VRCX_officialBackgroundProviderId',
-    legacySnapshots: 'VRCX_officialBackgroundSnapshots'
-};
 
 type SnapshotMap = Partial<
     Record<BackgroundImageProviderId, BackgroundImageSnapshot>
@@ -239,13 +232,16 @@ function scheduleCustomRotation(): void {
 }
 
 async function applySavedThemeMode(): Promise<void> {
-    const savedThemeMode = await configRepository.getString('ThemeMode', 'system');
+    const savedThemeMode = await configRepository.getString(
+        APP_THEME_CONFIG_KEYS.themeMode,
+        'system'
+    );
     await setCommunityThemeAppearanceControl(false, resolveThemeMode(savedThemeMode));
 }
 
 async function applySavedThemeColor(): Promise<void> {
     const savedThemeColor = await configRepository.getString(
-        'VRCX_themeColor',
+        APP_THEME_CONFIG_KEYS.themeColor,
         'default'
     );
     applyThemeColor(resolveThemeColor(savedThemeColor));
@@ -294,15 +290,23 @@ async function syncBackgroundImageAppearance(
 }
 
 async function loadSnapshots(): Promise<SnapshotMap> {
-    const currentRaw = await configRepository.getRawValue(CONFIG_KEYS.snapshots);
+    const currentRaw = await configRepository.getRawValue(
+        BACKGROUND_IMAGE_CONFIG_KEYS.snapshots
+    );
     if (currentRaw !== null) {
         return normalizeSnapshots(
-            await configRepository.getObject(CONFIG_KEYS.snapshots, null)
+            await configRepository.getObject(
+                BACKGROUND_IMAGE_CONFIG_KEYS.snapshots,
+                null
+            )
         );
     }
 
     return normalizeSnapshots(
-        await configRepository.getObject(CONFIG_KEYS.legacySnapshots, null)
+        await configRepository.getObject(
+            BACKGROUND_IMAGE_CONFIG_KEYS.legacySnapshots,
+            null
+        )
     );
 }
 
@@ -312,12 +316,18 @@ async function persistSnapshot(snapshot: BackgroundImageSnapshot): Promise<void>
     }
     const snapshots = await loadSnapshots();
     snapshots[snapshot.providerId] = snapshot;
-    await configRepository.setObject(CONFIG_KEYS.snapshots, snapshots);
+    await configRepository.setObject(
+        BACKGROUND_IMAGE_CONFIG_KEYS.snapshots,
+        snapshots
+    );
 }
 
 async function loadCustomSource(): Promise<BackgroundImageCustomSource | null> {
     return normalizeBackgroundImageCustomSource(
-        await configRepository.getObject(CONFIG_KEYS.customSource, null)
+        await configRepository.getObject(
+            BACKGROUND_IMAGE_CONFIG_KEYS.customSource,
+            null
+        )
     );
 }
 
@@ -325,10 +335,13 @@ async function persistCustomSource(
     customSource: BackgroundImageCustomSource | null
 ): Promise<void> {
     if (!customSource) {
-        await configRepository.remove(CONFIG_KEYS.customSource);
+        await configRepository.remove(BACKGROUND_IMAGE_CONFIG_KEYS.customSource);
         return;
     }
-    await configRepository.setObject(CONFIG_KEYS.customSource, customSource);
+    await configRepository.setObject(
+        BACKGROUND_IMAGE_CONFIG_KEYS.customSource,
+        customSource
+    );
 }
 
 async function resolveProviderSnapshot(
@@ -383,32 +396,35 @@ async function persistState({
     providerId: BackgroundImageProviderId;
 }): Promise<void> {
     await Promise.all([
-        configRepository.setBool(CONFIG_KEYS.enabled, enabled),
-        configRepository.setString(CONFIG_KEYS.mode, mode),
-        configRepository.setString(CONFIG_KEYS.providerId, providerId)
+        configRepository.setBool(BACKGROUND_IMAGE_CONFIG_KEYS.enabled, enabled),
+        configRepository.setString(BACKGROUND_IMAGE_CONFIG_KEYS.mode, mode),
+        configRepository.setString(
+            BACKGROUND_IMAGE_CONFIG_KEYS.providerId,
+            providerId
+        )
     ]);
 }
 
 export async function initializeBackgroundImage(): Promise<void> {
     const legacyEnabled = await configRepository.getBool(
-        CONFIG_KEYS.legacyEnabled,
+        BACKGROUND_IMAGE_CONFIG_KEYS.legacyEnabled,
         false
     );
     const enabled = await configRepository.getBool(
-        CONFIG_KEYS.enabled,
+        BACKGROUND_IMAGE_CONFIG_KEYS.enabled,
         legacyEnabled
     );
     const mode = normalizeMode(
         await configRepository.getString(
-            CONFIG_KEYS.mode,
+            BACKGROUND_IMAGE_CONFIG_KEYS.mode,
             enabled ? 'daily' : 'off'
         )
     );
     const providerId = normalizeProviderId(
         await configRepository.getString(
-            CONFIG_KEYS.providerId,
+            BACKGROUND_IMAGE_CONFIG_KEYS.providerId,
             await configRepository.getString(
-                CONFIG_KEYS.legacyProviderId,
+                BACKGROUND_IMAGE_CONFIG_KEYS.legacyProviderId,
                 DEFAULT_BACKGROUND_IMAGE_PROVIDER_ID
             )
         )
@@ -542,7 +558,10 @@ export async function setBackgroundImageProvider(
         return;
     }
 
-    await configRepository.setString(CONFIG_KEYS.providerId, providerId);
+    await configRepository.setString(
+        BACKGROUND_IMAGE_CONFIG_KEYS.providerId,
+        providerId
+    );
     const snapshots = await loadSnapshots();
     useBackgroundImageStore.getState().setStateSnapshot({
         mode: state.mode === 'daily' ? 'daily' : state.mode,

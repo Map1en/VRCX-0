@@ -133,6 +133,10 @@ export function parseIntegerInput(value: any, fallback: any) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function normalizeCheckedState(value: unknown): boolean {
+    return value === true;
+}
+
 export function isValidFontFamilyList(value: any): boolean {
     const normalized = String(value ?? '').trim();
     if (!normalized || normalized.length > MAX_CUSTOM_FONT_FAMILY_LENGTH) {

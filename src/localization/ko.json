@@ -316,8 +316,6 @@
             "notification_center_page": "알림 센터 페이지.",
             "my_avatars": "내 아바타",
             "avatar_collection_page": "아바타 컬렉션 페이지.",
-            "instance_activity": "인스턴스 활동",
-            "instance_activity_chart": "인스턴스 활동 차트.",
             "mutual_friends": "상호 친구",
             "mutual_friends_chart": "서로 친구 차트.",
             "tools": "도구",
@@ -764,6 +762,10 @@
                 "date_range": "날짜 범위",
                 "start": "시작",
                 "end": "종료"
+            },
+            "mode": {
+                "search": "검색",
+                "day": "일별"
             }
         },
         "my_avatars": {
@@ -1257,10 +1259,10 @@
         },
         "charts": {
             "instance_activity": {
-                "header": "인스턴스 활동",
                 "online_time": "온라인 시간",
                 "previous_day": "전날",
                 "next_day": "다음 날",
+                "no_activity": "활동 없음",
                 "refresh": "새로고침",
                 "tips": {
                     "click_Y_axis": "Y축 레이블을 클릭하여 인스턴스 세부정보로 이동하거나 사용자 대화 상자를 엽니다.",
@@ -1390,15 +1392,12 @@
             "empty": {
                 "no_detail_rows": "세부정보 행 없음",
                 "no_instance_activity_on_this_day": "이 날에는 인스턴스 활동이 없습니다.",
-                "selected_date_outside_activity_set": "이 날짜는 알려진 활동 세트를 벗어났습니다.",
-                "no_detail_charts_match_the_current_filters": "현재 필터와 일치하는 세부정보 차트가 없습니다.",
                 "no_friends_are_available_for_mutual_graph_fetching": "상호 그래프 가져오기에 사용할 수 있는 친구가 없습니다.",
                 "no_selection": "선택사항 없음",
                 "no_friends_match_this_search": "이 검색과 일치하는 친구가 없습니다.",
                 "no_cached_mutual_graph_yet": "아직 캐시된 상호 그래프가 없습니다.",
                 "no_graph_nodes_match_the_current_search": "현재 검색과 일치하는 그래프 노드가 없습니다.",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "이 인스턴스 방문에서 일치하는 플레이어 활동 행을 찾을 수 없습니다.",
-                "turn_on_solo_or_no_friend_instances_to_show_the_hidden_detail_groups": "숨겨진 세부 그룹을 표시하려면 솔로 또는 친구 없음 인스턴스를 켜십시오."
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "이 인스턴스 방문에서 일치하는 플레이어 활동 행을 찾을 수 없습니다."
             },
             "error": {
                 "instance_activity_failed_to_load": "인스턴스 활동을 로드하지 못했습니다.",
@@ -6131,8 +6130,6 @@
             "friend_management_table_and_roster_details": "친구 관리 테이블 및 명단 세부정보입니다.",
             "charts": "차트",
             "charts_landing_route": "차트 랜딩 경로.",
-            "charts_instance": "차트 인스턴스",
-            "instance_activity_timeline_chart": "인스턴스 활동 타임라인 차트",
             "charts_mutual": "차트 상호",
             "mutual_friends_graph_over_cached_data": "캐시된 데이터에 대한 상호 친구 그래프.",
             "tools": "도구",

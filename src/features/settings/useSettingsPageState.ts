@@ -49,7 +49,10 @@ import {
     sqliteTableSizeRows,
     translationProviderOptions
 } from './settingsOptions';
-import { normalizeSharedFeedFilters } from './settingsValues';
+import {
+    normalizeCheckedState,
+    normalizeSharedFeedFilters
+} from './settingsValues';
 import { useAvatarProviderConfig } from './useAvatarProviderConfig';
 import { useSettingsActions } from './useSettingsActions';
 import { useSettingsCommit } from './useSettingsCommit';
@@ -417,42 +420,52 @@ export function useSettingsPageState() {
                 );
             },
             onDataTableStripedChange: (checked: any) => {
-                savePreferenceValue('dataTableStriped', checked, () =>
-                    setDataTableStripedPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('dataTableStriped', enabled, () =>
+                    setDataTableStripedPreference(enabled)
                 );
             },
             onAccessibleStatusIndicatorsChange: (checked: any) => {
-                savePreferenceValue('accessibleStatusIndicators', checked, () =>
-                    setAccessibleStatusIndicatorsPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('accessibleStatusIndicators', enabled, () =>
+                    setAccessibleStatusIndicatorsPreference(enabled)
                 );
             },
             onShowInstanceIdInLocationChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'showInstanceIdInLocation',
                     'VRCX_showInstanceIdInLocation',
-                    checked
+                    enabled
                 );
             },
             onAgeGatedInstancesVisibleChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'isAgeGatedInstancesVisible',
                     'VRCX_isAgeGatedInstancesVisible',
-                    checked
+                    enabled
                 );
             },
             onHideNicknamesChange: (checked: any) => {
-                saveBoolPreference('hideNicknames', 'hideNicknames', !checked);
+                saveBoolPreference(
+                    'hideNicknames',
+                    'hideNicknames',
+                    !normalizeCheckedState(checked)
+                );
             },
             onDisplayVrcPlusIconsAsAvatarChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'displayVRCPlusIconsAsAvatar',
                     'displayVRCPlusIconsAsAvatar',
-                    checked
+                    enabled
                 );
             },
             onShowNewDashboardButtonChange: (checked: any) => {
-                savePreferenceValue('showNewDashboardButton', checked, () =>
-                    setShowNewDashboardButtonPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('showNewDashboardButton', enabled, () =>
+                    setShowNewDashboardButtonPreference(enabled)
                 );
             },
             onOpenTablePageSizes: () => {
@@ -465,7 +478,11 @@ export function useSettingsPageState() {
                 saveBoolPreference('dtHour12', 'dtHour12', value === '12');
             },
             onIsoFormatChange: (checked: any) => {
-                saveBoolPreference('dtIsoFormat', 'dtIsoFormat', checked);
+                saveBoolPreference(
+                    'dtIsoFormat',
+                    'dtIsoFormat',
+                    normalizeCheckedState(checked)
+                );
             },
             onWeekStartsOnChange: (value: any) => {
                 const nextValue = Number.parseInt(value, 10);
@@ -487,19 +504,32 @@ export function useSettingsPageState() {
                 recordViewModeUsage('feedTimeDisplayMode', nextValue);
             },
             onHideUserNotesChange: (checked: any) => {
-                saveBoolPreference('hideUserNotes', 'hideUserNotes', !checked);
+                saveBoolPreference(
+                    'hideUserNotes',
+                    'hideUserNotes',
+                    !normalizeCheckedState(checked)
+                );
             },
             onHideUserMemosChange: (checked: any) => {
-                saveBoolPreference('hideUserMemos', 'hideUserMemos', !checked);
+                saveBoolPreference(
+                    'hideUserMemos',
+                    'hideUserMemos',
+                    !normalizeCheckedState(checked)
+                );
             },
             onHideUnfriendsChange: (checked: any) => {
-                saveBoolPreference('hideUnfriends', 'hideUnfriends', checked);
+                saveBoolPreference(
+                    'hideUnfriends',
+                    'hideUnfriends',
+                    normalizeCheckedState(checked)
+                );
             },
             onRandomUserColoursChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'randomUserColours',
                     'randomUserColours',
-                    checked
+                    enabled
                 );
             },
             onResetTrustColors: () => {
@@ -533,22 +563,25 @@ export function useSettingsPageState() {
             setSaveInstanceEmojiPreference,
             setPrefs,
             onScreenshotHelperChange: (checked: any) => {
-                savePreferenceValue('screenshotHelper', checked, () =>
-                    setScreenshotHelperPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('screenshotHelper', enabled, () =>
+                    setScreenshotHelperPreference(enabled)
                 );
             },
             onScreenshotHelperModifyFilenameChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 savePreferenceValue(
                     'screenshotHelperModifyFilename',
-                    checked,
-                    () => setScreenshotHelperModifyFilenamePreference(checked)
+                    enabled,
+                    () => setScreenshotHelperModifyFilenamePreference(enabled)
                 );
             },
             onScreenshotHelperCopyToClipboardChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 savePreferenceValue(
                     'screenshotHelperCopyToClipboard',
-                    checked,
-                    () => setScreenshotHelperCopyToClipboardPreference(checked)
+                    enabled,
+                    () => setScreenshotHelperCopyToClipboardPreference(enabled)
                 );
             },
             onDeleteAllScreenshotMetadata: () => {
@@ -566,21 +599,24 @@ export function useSettingsPageState() {
                 resetUgcFolder();
             },
             onSaveInstancePrintsChange: (checked: any) => {
-                savePreferenceValue('saveInstancePrints', checked, () =>
-                    setSaveInstancePrintsPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('saveInstancePrints', enabled, () =>
+                    setSaveInstancePrintsPreference(enabled)
                 );
             },
             onCropInstancePrintsChange: (checked: any) => {
-                handleCropInstancePrintsChange(checked);
+                handleCropInstancePrintsChange(normalizeCheckedState(checked));
             },
             onSaveInstanceStickersChange: (checked: any) => {
-                savePreferenceValue('saveInstanceStickers', checked, () =>
-                    setSaveInstanceStickersPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('saveInstanceStickers', enabled, () =>
+                    setSaveInstanceStickersPreference(enabled)
                 );
             },
             onSaveInstanceEmojiChange: (checked: any) => {
-                savePreferenceValue('saveInstanceEmoji', checked, () =>
-                    setSaveInstanceEmojiPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                savePreferenceValue('saveInstanceEmoji', enabled, () =>
+                    setSaveInstanceEmojiPreference(enabled)
                 );
             }
         },
@@ -605,50 +641,73 @@ export function useSettingsPageState() {
             applyAvatarProviderConfig,
             setAvatarProviderDialogOpen,
             onDiscordActiveChange: (checked: any) => {
-                saveDiscordBoolPreference('discordActive', checked);
+                saveDiscordBoolPreference(
+                    'discordActive',
+                    normalizeCheckedState(checked)
+                );
             },
             onDiscordWorldIntegrationChange: (checked: any) => {
-                saveDiscordBoolPreference('discordWorldIntegration', checked);
+                saveDiscordBoolPreference(
+                    'discordWorldIntegration',
+                    normalizeCheckedState(checked)
+                );
             },
             onDiscordInstanceChange: (checked: any) => {
-                saveDiscordBoolPreference('discordInstance', checked);
+                saveDiscordBoolPreference(
+                    'discordInstance',
+                    normalizeCheckedState(checked)
+                );
             },
             onDiscordShowPlatformChange: (checked: any) => {
-                saveDiscordBoolPreference('discordShowPlatform', checked);
+                saveDiscordBoolPreference(
+                    'discordShowPlatform',
+                    normalizeCheckedState(checked)
+                );
             },
             onDiscordShowPrivateDetailsChange: (checked: any) => {
-                saveDiscordBoolPreference('discordHideInvite', !checked);
+                saveDiscordBoolPreference(
+                    'discordHideInvite',
+                    !normalizeCheckedState(checked)
+                );
             },
             onDiscordJoinButtonChange: (checked: any) => {
-                saveDiscordBoolPreference('discordJoinButton', checked);
+                saveDiscordBoolPreference(
+                    'discordJoinButton',
+                    normalizeCheckedState(checked)
+                );
             },
             onDiscordShowImagesChange: (checked: any) => {
-                saveDiscordBoolPreference('discordHideImage', !checked);
+                saveDiscordBoolPreference(
+                    'discordHideImage',
+                    !normalizeCheckedState(checked)
+                );
             },
             onDiscordWorldNameAsStatusChange: (checked: any) => {
                 saveDiscordBoolPreference(
                     'discordWorldNameAsDiscordStatus',
-                    checked
+                    normalizeCheckedState(checked)
                 );
             },
             onTranslationApiEnabledChange: (checked: any) => {
-                saveIntegrationBoolPreference('translationAPI', checked, () =>
-                    setTranslationApiEnabledPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                saveIntegrationBoolPreference('translationAPI', enabled, () =>
+                    setTranslationApiEnabledPreference(enabled)
                 );
             },
             onOpenTranslationApiDialog: () => {
                 openTranslationApiDialog();
             },
             onYoutubeApiEnabledChange: (checked: any) => {
-                saveIntegrationBoolPreference('youtubeAPI', checked, () =>
-                    setYoutubeApiEnabledPreference(checked)
+                const enabled = normalizeCheckedState(checked);
+                saveIntegrationBoolPreference('youtubeAPI', enabled, () =>
+                    setYoutubeApiEnabledPreference(enabled)
                 );
             },
             onOpenYoutubeApiDialog: () => {
                 openYoutubeApiDialog();
             },
             onAvatarProviderEnabledChange: (checked: any) => {
-                saveAvatarProviderEnabled(checked);
+                saveAvatarProviderEnabled(normalizeCheckedState(checked));
             },
             onOpenAvatarProviderDialog: () => {
                 setAvatarProviderDialogOpen(true);
@@ -667,10 +726,11 @@ export function useSettingsPageState() {
             toggleLocalFavoriteFriendsGroup,
             setPrefs,
             onRecentActionCooldownEnabledChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 savePreferenceValue(
                     'recentActionCooldownEnabled',
-                    checked,
-                    () => setRecentActionCooldownEnabledPreference(checked)
+                    enabled,
+                    () => setRecentActionCooldownEnabledPreference(enabled)
                 );
             },
             onRecentActionCooldownMinutesChange: (value: any) => {
@@ -691,7 +751,10 @@ export function useSettingsPageState() {
                 groupKey: any,
                 checked: any
             ) => {
-                toggleLocalFavoriteFriendsGroup(groupKey, checked);
+                toggleLocalFavoriteFriendsGroup(
+                    groupKey,
+                    normalizeCheckedState(checked)
+                );
             }
         },
         notifications: {
@@ -753,10 +816,11 @@ export function useSettingsPageState() {
             setConfigTreeData,
             migrateLegacyVrcxData,
             onAnonymousUsageTelemetryChange: (checked: any) => {
+                const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
                     'anonymousUsageTelemetry',
                     'anonymousUsageTelemetry',
-                    checked
+                    enabled
                 );
             }
         },

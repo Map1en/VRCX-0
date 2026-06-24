@@ -550,12 +550,15 @@ export type PreferencesSnapshot = ReturnType<
 export type PreferencesStoreState = PreferencesSnapshot & {
     preferencesHydrated: boolean;
     hydratePreferences(snapshot: unknown): void;
-    patchPreferences(patch: Record<string, unknown>): void;
-    setPreferenceValue(key: string, value: unknown): void;
+    patchPreferences(patch: Partial<PreferencesSnapshot>): void;
+    setPreferenceValue<K extends keyof PreferencesSnapshot>(
+        key: K,
+        value: PreferencesSnapshot[K]
+    ): void;
 };
 
 export const usePreferencesStore = create<PreferencesStoreState>(
-    (set: any) => ({
+    (set) => ({
         ...normalizePreferenceSnapshot(DEFAULT_PREFERENCES),
         preferencesHydrated: false,
         hydratePreferences(snapshot: unknown) {
@@ -566,16 +569,16 @@ export const usePreferencesStore = create<PreferencesStoreState>(
                 preferencesHydrated: true
             });
         },
-        patchPreferences(patch: Record<string, unknown>) {
-            set((state: any) =>
+        patchPreferences(patch: Partial<PreferencesSnapshot>) {
+            set((state) =>
                 normalizePreferenceSnapshot({
                     ...state,
                     ...patch
                 } as PreferenceInputSnapshot)
             );
         },
-        setPreferenceValue(key: string, value: unknown) {
-            set((state: any) =>
+        setPreferenceValue(key, value) {
+            set((state) =>
                 normalizePreferenceSnapshot({
                     ...state,
                     [key]: value

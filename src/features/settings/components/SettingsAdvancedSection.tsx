@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { normalizeCheckedState } from '../settingsValues';
 import { SettingsAdvancedTab } from './settings-tabs/SettingsAdvancedTab';
 
 export function SettingsAdvancedSection({ advanced }: any) {
@@ -48,37 +49,49 @@ export function SettingsAdvancedSection({ advanced }: any) {
             'view.settings.advanced.advanced.cache_debug.disable_gamelog'
         ),
         onRelaunchVRChatAfterCrashChange: (checked: any) => {
+            const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
                 'relaunchVRChatAfterCrash',
                 'VRCX_relaunchVRChatAfterCrash',
-                checked
+                enabled
             );
         },
         onVrcQuitFixChange: (checked: any) => {
-            saveBoolPreference('vrcQuitFix', 'vrcQuitFix', checked);
+            saveBoolPreference(
+                'vrcQuitFix',
+                'vrcQuitFix',
+                normalizeCheckedState(checked)
+            );
         },
         onAutoSweepVRChatCacheChange: (checked: any) => {
+            const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
                 'autoSweepVRChatCache',
                 'VRCX_autoSweepVRChatCache',
-                checked
+                enabled
             );
         },
         onUdonExceptionLoggingChange: (checked: any) => {
+            const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
                 'udonExceptionLogging',
                 'VRCX_udonExceptionLogging',
-                checked
+                enabled
             );
         },
         onLogResourceLoadChange: (checked: any) => {
-            saveBoolPreference('logResourceLoad', 'logResourceLoad', checked);
+            saveBoolPreference(
+                'logResourceLoad',
+                'logResourceLoad',
+                normalizeCheckedState(checked)
+            );
         },
         onAnonymousUsageTelemetryChange: (checked: any) => {
+            const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
                 'anonymousUsageTelemetry',
                 'anonymousUsageTelemetry',
-                checked
+                enabled
             );
         },
         onDefaultLaunchModeChange: (value: any) => {
@@ -89,10 +102,11 @@ export function SettingsAdvancedSection({ advanced }: any) {
             );
         },
         onShowConfirmationOnSwitchAvatarChange: (checked: any) => {
+            const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
                 'showConfirmationOnSwitchAvatar',
                 'showConfirmationOnSwitchAvatar',
-                checked
+                enabled
             );
         },
         onClearVrcxCache: () => {
@@ -105,7 +119,7 @@ export function SettingsAdvancedSection({ advanced }: any) {
             refreshCacheSize();
         },
         onGameLogDisabledChange: (checked: any) => {
-            handleGameLogDisabledChange(checked);
+            handleGameLogDisabledChange(normalizeCheckedState(checked));
         },
         onAvatarAutoCleanupChange: (value: any) => {
             saveStringPreference(

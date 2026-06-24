@@ -1,7 +1,12 @@
 import { postTelemetry } from './telemetryClient';
 import { isAnonymousUsageTelemetryEnabled } from './telemetryConfig';
+import {
+    recordTelemetryErrorDetail,
+    serializeTelemetryErrorDetails
+} from './telemetryErrorDetails';
 import { buildTelemetryContext } from './telemetryPayload';
 import type {
+    TelemetryErrorDetail,
     TelemetryPageRouteKey,
     TelemetryPageUsageEntry,
     TelemetryRouteErrorClass,
@@ -22,7 +27,6 @@ const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
     '/my-avatars': 'my_avatars',
     '/notification': 'notification',
     '/social/friend-list': 'friend_list',
-    '/charts/instance': 'charts_instance',
     '/charts/mutual': 'charts_mutual',
     '/tools': 'tools',
     '/tools/gallery': 'gallery',
@@ -50,6 +54,7 @@ export function normalizeRouteKey(
 type RouteUsage = {
     visits: number;
     errors: Record<TelemetryRouteErrorClass, number>;
+    details: Map<string, TelemetryErrorDetail>;
 };
 
 const usage = new Map<TelemetryPageRouteKey, RouteUsage>();
@@ -58,7 +63,11 @@ let currentRoute: TelemetryPageRouteKey | null = null;
 function ensureUsage(route: TelemetryPageRouteKey): RouteUsage {
     let entry = usage.get(route);
     if (!entry) {
-        entry = { visits: 0, errors: { load_fail: 0, render_crash: 0 } };
+        entry = {
+            visits: 0,
+            errors: { load_fail: 0, render_crash: 0 },
+            details: new Map()
+        };
         usage.set(route, entry);
     }
     return entry;
@@ -75,11 +84,20 @@ export function recordRouteEnter(pathname: string): void {
     }
 }
 
-export function recordRouteError(errorClass: TelemetryRouteErrorClass): void {
+export function recordRouteError(
+    errorClass: TelemetryRouteErrorClass,
+    error?: unknown
+): void {
     if (!isAnonymousUsageTelemetryEnabled() || !currentRoute) {
         return;
     }
-    ensureUsage(currentRoute).errors[errorClass] += 1;
+    const entry = ensureUsage(currentRoute);
+    entry.errors[errorClass] += 1;
+    recordTelemetryErrorDetail(entry.details, {
+        kind: errorClass,
+        name: error instanceof Error ? error.name : typeof error,
+        summary: error instanceof Error ? error.message : String(error ?? '')
+    });
 }
 
 export async function sendPageReach(
@@ -99,6 +117,10 @@ export async function sendPageReach(
         }
         if (entry.errors.render_crash > 0) {
             result.renderCrash = entry.errors.render_crash;
+        }
+        const details = serializeTelemetryErrorDetails(entry.details);
+        if (details) {
+            result.details = details;
         }
         routes.push(result);
     }

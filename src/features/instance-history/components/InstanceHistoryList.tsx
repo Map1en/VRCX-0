@@ -1,10 +1,12 @@
 import {
-    ArrowDownIcon,
-    ArrowUpIcon,
+    ArrowDownUpIcon,
+    ArrowDownWideNarrowIcon,
+    ArrowUpNarrowWideIcon,
     ListXIcon,
     Trash2Icon,
     XIcon
 } from 'lucide-react';
+import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -15,6 +17,8 @@ import {
 import { DialogEmptyState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
+import type { PreviousInstanceRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
+import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatClock, formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
@@ -28,22 +32,30 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 
-const SORT_FIELDS = ['date', 'location', 'duration'];
+const SORT_FIELDS = ['date', 'location', 'duration'] as const;
+type SortField = (typeof SORT_FIELDS)[number];
 
-function rowKey(row: any, index: any) {
+function rowKey(row: PreviousInstanceRow, index: number): string {
     return `${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || index}`;
 }
 
-function dayLabel(row: any) {
+function dayLabel(row: PreviousInstanceRow): string {
     return formatDateFilter(row?.created_at || row?.createdAt, 'date');
 }
+
+type InstanceHistoryRowProps = {
+    row: PreviousInstanceRow;
+    selected: boolean;
+    onOpenDetails: (row: PreviousInstanceRow) => void;
+    onDeleteRow: (row: PreviousInstanceRow) => void;
+};
 
 function InstanceHistoryRow({
     row,
     selected,
     onOpenDetails,
     onDeleteRow
-}: any) {
+}: InstanceHistoryRowProps) {
     const { t } = useTranslation();
     const location = rowLocation(row);
 
@@ -53,7 +65,7 @@ function InstanceHistoryRow({
             tabIndex={0}
             aria-pressed={selected}
             onClick={() => onOpenDetails(row)}
-            onKeyDown={(event: any) => {
+            onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     onOpenDetails(row);
@@ -90,7 +102,9 @@ function InstanceHistoryRow({
                 </span>
                 <div
                     className="bg-muted invisible absolute right-0 flex items-center gap-1 pl-3 group-hover:visible"
-                    onClick={(event: any) => event.stopPropagation()}
+                    onClick={(event: MouseEvent<HTMLDivElement>) =>
+                        event.stopPropagation()
+                    }
                     role="presentation"
                 >
                     <InstanceActionBar
@@ -117,9 +131,35 @@ function InstanceHistoryRow({
     );
 }
 
+type InstanceHistoryListProps = {
+    mode?: InstanceHistoryMode;
+    totalCount?: number;
+    filteredCount?: number;
+    visibleRows: PreviousInstanceRow[];
+    selectedRow: PreviousInstanceRow | null;
+    search: string;
+    onSearchChange: (value: string) => void;
+    pageSize: number;
+    onPageSizeChange: (value: number) => void;
+    sortKey: string;
+    sortDesc: boolean;
+    onSortSelect: (sortKey: SortField, sortDesc: boolean) => void;
+    currentPageIndex: number;
+    totalPages: number;
+    onPreviousPage: () => void;
+    onNextPage: () => void;
+    onOpenDetails: (row: PreviousInstanceRow) => void;
+    onDeleteRow: (row: PreviousInstanceRow) => void;
+    dateRangeControl?: ReactNode;
+    dateActive?: boolean;
+    dateRangeLabel?: string;
+    onClearDate?: () => void;
+};
+
 export function InstanceHistoryList({
-    rows,
-    filteredRows,
+    mode = 'search',
+    totalCount = 0,
+    filteredCount = 0,
     visibleRows,
     selectedRow,
     search,
@@ -139,12 +179,16 @@ export function InstanceHistoryList({
     dateActive = false,
     dateRangeLabel = '',
     onClearDate
-}: any) {
+}: InstanceHistoryListProps) {
     const { t } = useTranslation();
-    const activeSortKey = SORT_FIELDS.includes(sortKey) ? sortKey : 'date';
-    const grouped = activeSortKey === 'date';
-    const searchActive = Boolean(search && search.trim());
-    const anyFilterActive = searchActive || dateActive;
+    const isDayMode = mode === 'day';
+    const activeSortKey = SORT_FIELDS.includes(sortKey as SortField)
+        ? (sortKey as SortField)
+        : 'date';
+    const grouped = !isDayMode && activeSortKey === 'date';
+    const searchActive = !isDayMode && Boolean(search && search.trim());
+    const dayRangeActive = !isDayMode && dateActive;
+    const anyFilterActive = searchActive || dayRangeActive;
 
     const sortFieldLabel: Record<string, string> = {
         date: t('table.previous_instances.date'),
@@ -156,75 +200,79 @@ export function InstanceHistoryList({
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-                <Input
-                    value={search}
-                    onChange={(event: any) =>
-                        onSearchChange(event.target.value)
-                    }
-                    placeholder={t(
-                        'dialog.previous_instances.search_placeholder'
-                    )}
-                    className="min-w-40 flex-1"
-                />
-                {dateRangeControl}
-                <Select
-                    value={activeSortKey}
-                    onValueChange={(value: any) =>
-                        onSortSelect(value, sortDesc)
-                    }
-                >
-                    <SelectTrigger size="sm" className="w-32">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {SORT_FIELDS.map((field: any) => (
-                                <SelectItem key={field} value={field}>
-                                    {sortFieldLabel[field]}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={t('table.previous_instances.action')}
-                    onClick={() => onSortSelect(activeSortKey, !sortDesc)}
-                >
-                    {sortDesc ? (
-                        <ArrowDownIcon data-icon="icon" />
-                    ) : (
-                        <ArrowUpIcon data-icon="icon" />
-                    )}
-                </Button>
-                <Select
-                    value={String(pageSize)}
-                    onValueChange={(value: any) =>
-                        onPageSizeChange(Number.parseInt(value, 10) || 10)
-                    }
-                >
-                    <SelectTrigger size="sm" className="w-20">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {[10, 25, 50, 100].map((size: any) => (
-                                <SelectItem key={size} value={String(size)}>
-                                    {size}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
+            {!isDayMode ? (
+                <div className="flex flex-col gap-2">
+                    <Input
+                        value={search}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            onSearchChange(event.target.value)
+                        }
+                        placeholder={t(
+                            'dialog.previous_instances.search_placeholder'
+                        )}
+                        className="w-full"
+                    />
+                    <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">{dateRangeControl}</div>
+                        <div className="flex shrink-0 items-center">
+                            <Select
+                                value={activeSortKey}
+                                onValueChange={(value: string) =>
+                                    onSortSelect(value as SortField, sortDesc)
+                                }
+                            >
+                                <SelectTrigger
+                                    size="sm"
+                                    className="w-32 rounded-r-none border-r-0"
+                                    aria-label={t(
+                                        'dialog.previous_instances.label.sort_by'
+                                    )}
+                                >
+                                    <ArrowDownUpIcon className="text-muted-foreground size-3.5" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {SORT_FIELDS.map((field) => (
+                                            <SelectItem
+                                                key={field}
+                                                value={field}
+                                            >
+                                                {sortFieldLabel[field]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-l-none px-2"
+                                aria-label={t(
+                                    sortDesc
+                                        ? 'dialog.previous_instances.label.sort_descending'
+                                        : 'dialog.previous_instances.label.sort_ascending'
+                                )}
+                                onClick={() =>
+                                    onSortSelect(activeSortKey, !sortDesc)
+                                }
+                            >
+                                {sortDesc ? (
+                                    <ArrowDownWideNarrowIcon data-icon="icon" />
+                                ) : (
+                                    <ArrowUpNarrowWideIcon data-icon="icon" />
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="text-muted-foreground">
-                    {formatPreviousInstanceCount(filteredRows.length)}/
-                    {formatPreviousInstanceCount(rows.length)}{' '}
+                    {formatPreviousInstanceCount(filteredCount)}/
+                    {formatPreviousInstanceCount(totalCount)}{' '}
                     {t(
                         'dialog.previous_instances.label.recorded_instance_visits'
                     )}
@@ -239,7 +287,7 @@ export function InstanceHistoryList({
                         <XIcon className="text-muted-foreground size-3" />
                     </button>
                 ) : null}
-                {dateActive ? (
+                {dayRangeActive ? (
                     <button
                         type="button"
                         className="bg-card text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-0.5"
@@ -268,7 +316,7 @@ export function InstanceHistoryList({
 
             {visibleRows.length ? (
                 <div className="min-h-0 flex-1 overflow-auto rounded-md border p-1">
-                    {visibleRows.map((row: any, index: any) => {
+                    {visibleRows.map((row, index) => {
                         const label = grouped ? dayLabel(row) : '';
                         const showHeader = grouped && label !== lastDayLabel;
                         lastDayLabel = label;
@@ -301,32 +349,60 @@ export function InstanceHistoryList({
                 />
             )}
 
-            <div className="flex items-center justify-between">
-                <div className="text-muted-foreground text-sm">
-                    {t('dialog.previous_instances.label.page')}{' '}
-                    {currentPageIndex + 1} / {totalPages}
+            {!isDayMode ? (
+                <div className="flex items-center justify-between gap-2">
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <Select
+                            value={String(pageSize)}
+                            onValueChange={(value: string) =>
+                                onPageSizeChange(
+                                    Number.parseInt(value, 10) || 10
+                                )
+                            }
+                        >
+                            <SelectTrigger size="sm" className="w-20">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {[10, 25, 50, 100].map((size) => (
+                                        <SelectItem
+                                            key={size}
+                                            value={String(size)}
+                                        >
+                                            {size}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <span>
+                            {t('dialog.previous_instances.label.page')}{' '}
+                            {currentPageIndex + 1} / {totalPages}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPageIndex <= 0}
+                            onClick={onPreviousPage}
+                        >
+                            {t('table.pagination.previous')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPageIndex >= totalPages - 1}
+                            onClick={onNextPage}
+                        >
+                            {t('table.pagination.next')}
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={currentPageIndex <= 0}
-                        onClick={onPreviousPage}
-                    >
-                        {t('table.pagination.previous')}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={currentPageIndex >= totalPages - 1}
-                        onClick={onNextPage}
-                    >
-                        {t('table.pagination.next')}
-                    </Button>
-                </div>
-            </div>
+            ) : null}
         </div>
     );
 }

@@ -5,7 +5,5 @@ export const DEFAULT_DASHBOARD_ICON = 'lucide:LayoutDashboard';
 export const DASHBOARD_BLOCKED_PANEL_KEYS = new Set([
     'friend-list',
     'moderation',
-    'charts-instance',
-    'charts-mutual',
     'tools'
 ]);

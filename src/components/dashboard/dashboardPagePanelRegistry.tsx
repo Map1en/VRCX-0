@@ -1,5 +1,5 @@
-import { InstanceActivityPage } from '@/features/charts/InstanceActivityPage';
-import { MutualFriendsPage } from '@/features/charts/MutualFriendsPage';
+import type { ElementType } from 'react';
+
 import {
     FavoriteAvatarsPage,
     FavoriteFriendsPage,
@@ -17,7 +17,7 @@ import { PlayerListPage } from '@/features/player-list/PlayerListPage';
 import { SearchPage } from '@/features/search/SearchPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
 
-const dashboardPagePanelComponentMap: any = {
+const dashboardPagePanelComponentMap: Record<string, ElementType> = {
     feed: FeedPage,
     'friends-locations': FriendsLocationsPage,
     'game-log': GameLogPage,
@@ -34,18 +34,16 @@ const dashboardPagePanelComponentMap: any = {
     'friend-log': FriendLogPage,
     'friend-list': FriendListPage,
     moderation: ModerationPage,
-    'charts-instance': InstanceActivityPage,
-    'charts-mutual': MutualFriendsPage,
     tools: ToolsPage
 };
 
-export function getDashboardPagePanelComponent(key: any) {
+export function getDashboardPagePanelComponent(key: unknown) {
     const normalizedKey = String(key || '').trim();
     return normalizedKey
         ? (dashboardPagePanelComponentMap[normalizedKey] ?? null)
         : null;
 }
 
-export function canEmbedDashboardPagePanel(key: any) {
+export function canEmbedDashboardPagePanel(key: unknown) {
     return Boolean(getDashboardPagePanelComponent(key));
 }

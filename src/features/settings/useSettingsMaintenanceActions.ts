@@ -14,6 +14,8 @@ import {
     validateAppDataDir
 } from '@/services/shellIntegrationService';
 
+import { normalizeCheckedState } from './settingsValues';
+
 export function useSettingsMaintenanceActions({
     auth,
     avatarProfileRepository,
@@ -437,21 +439,22 @@ export function useSettingsMaintenanceActions({
         toast.success(t('view.settings.label.existing_saved_prints_cropped'));
     }
     async function handleCropInstancePrintsChange(checked: any) {
+        const enabled = normalizeCheckedState(checked);
         const saved = await commit(
-            () => setCropInstancePrintsPreference(checked),
+            () => setCropInstancePrintsPreference(enabled),
             () => {
                 setPrefs((current: any) => ({
                     ...current,
-                    cropInstancePrints: checked
+                    cropInstancePrints: enabled
                 }));
                 return () =>
                     setPrefs((current: any) => ({
                         ...current,
-                        cropInstancePrints: !checked
+                        cropInstancePrints: !enabled
                     }));
             }
         );
-        if (saved && checked) {
+        if (saved && enabled) {
             await promptCropExistingPrints().catch((error: any) => {
                 toast.error(
                     error instanceof Error
@@ -464,11 +467,12 @@ export function useSettingsMaintenanceActions({
         }
     }
     async function handleGameLogDisabledChange(checked: any) {
+        const enabled = normalizeCheckedState(checked);
         if (gameState.isGameRunning) {
             toast.error(t('message.gamelog.vrchat_must_be_closed'));
             return;
         }
-        if (checked) {
+        if (enabled) {
             const result = await confirm({
                 title: t('confirm.title'),
                 description: t('confirm.disable_gamelog')
@@ -480,7 +484,7 @@ export function useSettingsMaintenanceActions({
         await saveBoolPreference(
             'gameLogDisabled',
             'VRCX_gameLogDisabled',
-            checked
+            enabled
         );
     }
     function saveSharedFeedFilters(nextFilters: any) {

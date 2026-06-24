@@ -35,6 +35,7 @@ export function useAssistantEvents(): void {
         // A fast model streams 20-60 tokens/sec; without this each token would
         // trigger a full store update + markdown re-parse + re-render.
         const pendingDeltas = new Map<string, AssistantDeltaEvent>();
+        const toolNamesById = new Map<string, string>();
         let rafHandle = 0;
         const flushDeltas = () => {
             rafHandle = 0;
@@ -65,15 +66,18 @@ export function useAssistantEvents(): void {
             },
             assistantToolCall: (payload) => {
                 flushNow();
-                store.applyToolCall(payload as AssistantToolCallEvent);
+                const event = payload as AssistantToolCallEvent;
+                toolNamesById.set(event.toolCallId, event.name);
+                store.applyToolCall(event);
             },
             assistantToolResult: (payload) => {
                 flushNow();
                 const event = payload as AssistantToolResultEvent;
                 store.applyToolResult(event);
                 if (!event.ok) {
-                    recordAssistantToolError();
+                    recordAssistantToolError(toolNamesById.get(event.toolCallId));
                 }
+                toolNamesById.delete(event.toolCallId);
             },
             assistantTurnEntities: (payload) =>
                 store.applyTurnEntities(payload as AssistantTurnEntitiesEvent),
@@ -85,7 +89,7 @@ export function useAssistantEvents(): void {
                 flushNow();
                 const event = payload as AssistantErrorEvent;
                 store.applyError(event);
-                recordAssistantTurnError(event.code);
+                recordAssistantTurnError(event.code, event.message);
             }
         };
 
@@ -110,6 +114,7 @@ export function useAssistantEvents(): void {
             for (const unsubscribe of unsubscribers) {
                 unsubscribe();
             }
+            toolNamesById.clear();
         };
     }, []);
 }

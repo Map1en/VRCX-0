@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { createDefaultFavoriteCachedRef } from '@/shared/utils/entityTransforms';
 
+export type FavoriteKind = 'friend' | 'avatar' | 'world';
 type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
 type FavoriteLimits = {
     maxFavoriteGroups: Record<string, unknown>;
@@ -20,15 +21,20 @@ type FavoriteGroup = Record<string, unknown> & {
 };
 type FavoriteGroupMap = Record<string, string[]>;
 type FavoriteDetailsById = Record<string, Record<string, unknown>>;
-type FavoriteSnapshot = Partial<FavoriteStoreState> &
+export type FavoriteSnapshot = Partial<Record<keyof FavoriteStoreState, unknown>> &
     Record<string, unknown> & {
         favoriteLimits?: unknown;
     };
-type LocalFavoriteAction = {
-    kind?: unknown;
-    groupName?: unknown;
+export type LocalFavoriteGroupAction = {
+    kind: FavoriteKind;
+    groupName: unknown;
+};
+export type LocalFavoriteAction = LocalFavoriteGroupAction & {
     entityId?: unknown;
     entity?: unknown;
+};
+export type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
+    newGroupName?: unknown;
 };
 type RemoteFavoriteCollections = {
     remoteFavoritesByObjectId: Record<string, FavoriteRecord>;
@@ -38,7 +44,7 @@ type RemoteFavoriteCollections = {
     favoriteAvatarIds: string[];
     groupedFavoriteFriendIdsByGroupKey: Record<string, string[]>;
 };
-type FavoriteStoreState = {
+export type FavoriteStoreState = {
     currentUserId: string | null;
     loadStatus: LoadStatus;
     detail: string;
@@ -67,20 +73,16 @@ type FavoriteStoreState = {
     localWorldDetailsById: FavoriteDetailsById;
     localAvatarDetailsById: FavoriteDetailsById;
 };
-type FavoriteStore = FavoriteStoreState & {
+export type FavoriteStore = FavoriteStoreState & {
     setFavoritesLoading(currentUserId: unknown, detail?: string): void;
     setFavoritesSnapshot(snapshot?: FavoriteSnapshot): void;
     setFavoritesError(detail: string): void;
     resetFavorites(): void;
     addLocalFavorite(action: LocalFavoriteAction): void;
     removeLocalFavorite(action: LocalFavoriteAction): void;
-    createLocalFavoriteGroup(action: Omit<LocalFavoriteAction, 'entityId' | 'entity'>): void;
-    renameLocalFavoriteGroup(
-        action: Omit<LocalFavoriteAction, 'entityId' | 'entity'> & {
-            newGroupName?: unknown;
-        }
-    ): void;
-    deleteLocalFavoriteGroup(action: Omit<LocalFavoriteAction, 'entityId' | 'entity'>): void;
+    createLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
+    renameLocalFavoriteGroup(action: RenameLocalFavoriteGroupAction): void;
+    deleteLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
     removeRemoteFavorite(objectId: unknown): void;
     addRemoteFavorite(json?: Record<string, unknown> | null): void;
     getRemoteFavoriteByObjectId(objectId: unknown): FavoriteRecord | null;
@@ -103,7 +105,7 @@ export const DEFAULT_FAVORITE_LIMITS = Object.freeze({
 }) satisfies FavoriteLimits;
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function cloneFavoriteLimits(limits: unknown = DEFAULT_FAVORITE_LIMITS): FavoriteLimits {
@@ -175,7 +177,7 @@ function removeFromFavoriteGroups(
     for (const [key, values] of Object.entries(source || {})) {
         const nextValues = Array.isArray(values)
             ? values.filter(
-                  (value: any) => normalizeUserId(value) !== normalizedEntityId
+                  (value) => normalizeUserId(value) !== normalizedEntityId
               )
             : [];
 
@@ -217,7 +219,7 @@ function renameLocalFavoriteGroupState(
         return source || {};
     }
 
-    const next: any = { ...(source || {}) };
+    const next: FavoriteGroupMap = { ...(source || {}) };
     if (next[normalizedNewGroupName]) {
         return next;
     }
@@ -237,7 +239,7 @@ function deleteLocalFavoriteGroupState(
         return source || {};
     }
 
-    const next: any = { ...(source || {}) };
+    const next: FavoriteGroupMap = { ...(source || {}) };
     delete next[normalizedGroupName];
     return next;
 }
@@ -247,7 +249,7 @@ function flattenFavoriteGroups(source: FavoriteGroupMap | null | undefined): str
         new Set(
             Object.values(source || {})
                 .flat()
-                .map((value: any) => normalizeUserId(value))
+                .map((value) => normalizeUserId(value))
                 .filter(Boolean)
         )
     );
@@ -259,12 +261,12 @@ function getSortedLocalGroupNames(source: FavoriteGroupMap | null | undefined): 
 
 function normalizeStringArray(source: unknown): string[] {
     return Array.isArray(source)
-        ? source.map((value: any) => normalizeUserId(value)).filter(Boolean)
+        ? source.map((value) => normalizeUserId(value)).filter(Boolean)
         : [];
 }
 
 function normalizeFavoriteGroupMap(source: unknown): FavoriteGroupMap {
-    if (!source || typeof source !== 'object') {
+    if (!isObjectRecord(source)) {
         return {};
     }
 
@@ -275,6 +277,52 @@ function normalizeFavoriteGroupMap(source: unknown): FavoriteGroupMap {
             continue;
         }
         next[groupKey] = normalizeStringArray(values);
+    }
+    return next;
+}
+
+function normalizeRecord(source: unknown): Record<string, unknown> {
+    return isObjectRecord(source) ? { ...source } : {};
+}
+
+function normalizeFavoriteRecordMap(
+    source: unknown
+): Record<string, FavoriteRecord> {
+    if (!isObjectRecord(source)) {
+        return {};
+    }
+
+    const next: Record<string, FavoriteRecord> = {};
+    for (const [key, value] of Object.entries(source)) {
+        const recordKey = normalizeUserId(key);
+        if (!recordKey || !isObjectRecord(value)) {
+            continue;
+        }
+        next[recordKey] = { ...value } as FavoriteRecord;
+    }
+    return next;
+}
+
+function normalizeFavoriteGroups(source: unknown): FavoriteGroup[] {
+    return Array.isArray(source)
+        ? source
+              .filter(isObjectRecord)
+              .map((group) => ({ ...group }) as FavoriteGroup)
+        : [];
+}
+
+function normalizeFavoriteDetailsById(source: unknown): FavoriteDetailsById {
+    if (!isObjectRecord(source)) {
+        return {};
+    }
+
+    const next: FavoriteDetailsById = {};
+    for (const [key, value] of Object.entries(source)) {
+        const normalizedKey = normalizeUserId(key);
+        if (!normalizedKey || !isObjectRecord(value)) {
+            continue;
+        }
+        next[normalizedKey] = { ...value };
     }
     return next;
 }
@@ -293,8 +341,7 @@ function recomputeGroupCounts(
         counts[groupKey] = (counts[groupKey] || 0) + 1;
     }
 
-    return (Array.isArray(groups) ? groups : []).map((group: any) => {
-        const groupRecord = group as FavoriteGroup;
+    return normalizeFavoriteGroups(groups).map((groupRecord) => {
         return {
             ...groupRecord,
             count: counts[normalizeUserId(groupRecord.key)] || 0
@@ -306,8 +353,7 @@ function recomputeGroupCountsFromMap(
     groups: unknown,
     groupedIdsByGroupKey: FavoriteGroupMap
 ): FavoriteGroup[] {
-    return (Array.isArray(groups) ? groups : []).map((group: any) => {
-        const groupRecord = group as FavoriteGroup;
+    return normalizeFavoriteGroups(groups).map((groupRecord) => {
         return {
             ...groupRecord,
             count:
@@ -386,10 +432,10 @@ function buildRemoteFavoriteCollections(
     };
 }
 
-export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
+export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
     ...initialState,
-    setFavoritesLoading(currentUserId: any, detail: any = '') {
-        set((state: any) => {
+    setFavoritesLoading(currentUserId, detail = '') {
+        set((state) => {
             const normalizedCurrentUserId =
                 normalizeUserId(currentUserId) || null;
             const isSameUser =
@@ -428,12 +474,10 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             };
         });
     },
-    setFavoritesSnapshot(snapshot: any = {}) {
-        const remoteFavoritesById =
-            snapshot.remoteFavoritesById &&
-            typeof snapshot.remoteFavoritesById === 'object'
-                ? { ...snapshot.remoteFavoritesById }
-                : {};
+    setFavoritesSnapshot(snapshot = {}) {
+        const remoteFavoritesById = normalizeFavoriteRecordMap(
+            snapshot.remoteFavoritesById
+        );
         const remoteCollections = buildRemoteFavoriteCollections(
             remoteFavoritesById,
             snapshot.favoritesSortOrder
@@ -441,11 +485,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
         const hasSnapshotFavoriteFriendIds = Array.isArray(
             snapshot.favoriteFriendIds
         );
-        const hasSnapshotGroupedFavoriteFriendIds = Boolean(
-            snapshot.groupedFavoriteFriendIdsByGroupKey &&
-                typeof snapshot.groupedFavoriteFriendIdsByGroupKey ===
-                    'object' &&
-                !Array.isArray(snapshot.groupedFavoriteFriendIdsByGroupKey)
+        const hasSnapshotGroupedFavoriteFriendIds = isObjectRecord(
+            snapshot.groupedFavoriteFriendIdsByGroupKey
         );
         const favoriteFriendIds = hasSnapshotFavoriteFriendIds
             ? normalizeStringArray(snapshot.favoriteFriendIds)
@@ -456,35 +497,29 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                       snapshot.groupedFavoriteFriendIdsByGroupKey
                   )
                 : remoteCollections.groupedFavoriteFriendIdsByGroupKey;
-        const favoriteFriendGroups = Array.isArray(
+        const favoriteFriendGroups = normalizeFavoriteGroups(
             snapshot.favoriteFriendGroups
-        )
-            ? snapshot.favoriteFriendGroups
-            : [];
-        const favoriteWorldGroups = Array.isArray(snapshot.favoriteWorldGroups)
-            ? snapshot.favoriteWorldGroups
-            : [];
-        const favoriteAvatarGroups = Array.isArray(
+        );
+        const favoriteWorldGroups = normalizeFavoriteGroups(
+            snapshot.favoriteWorldGroups
+        );
+        const favoriteAvatarGroups = normalizeFavoriteGroups(
             snapshot.favoriteAvatarGroups
-        )
-            ? snapshot.favoriteAvatarGroups
-            : [];
+        );
 
         set({
             currentUserId: normalizeUserId(snapshot.currentUserId) || null,
             loadStatus: 'ready',
-            detail: snapshot.detail || '',
+            detail: typeof snapshot.detail === 'string' ? snapshot.detail : '',
             lastLoadedAt: new Date().toISOString(),
             favoriteLimits: cloneFavoriteLimits(snapshot.favoriteLimits),
             remoteFavoritesById,
             ...remoteCollections,
             favoriteFriendIds,
             groupedFavoriteFriendIdsByGroupKey,
-            cachedFavoriteGroupsById:
-                snapshot.cachedFavoriteGroupsById &&
-                typeof snapshot.cachedFavoriteGroupsById === 'object'
-                    ? snapshot.cachedFavoriteGroupsById
-                    : {},
+            cachedFavoriteGroupsById: normalizeRecord(
+                snapshot.cachedFavoriteGroupsById
+            ),
             favoriteFriendGroups: hasSnapshotGroupedFavoriteFriendIds
                 ? recomputeGroupCountsFromMap(
                       favoriteFriendGroups,
@@ -502,65 +537,43 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                 favoriteAvatarGroups,
                 remoteFavoritesById
             ),
-            localWorldFavorites:
-                snapshot.localWorldFavorites &&
-                typeof snapshot.localWorldFavorites === 'object'
-                    ? snapshot.localWorldFavorites
-                    : {},
-            localAvatarFavorites:
-                snapshot.localAvatarFavorites &&
-                typeof snapshot.localAvatarFavorites === 'object'
-                    ? snapshot.localAvatarFavorites
-                    : {},
-            localFriendFavorites:
-                snapshot.localFriendFavorites &&
-                typeof snapshot.localFriendFavorites === 'object'
-                    ? snapshot.localFriendFavorites
-                    : {},
-            localWorldFavoriteGroups: Array.isArray(
+            localWorldFavorites: normalizeFavoriteGroupMap(
+                snapshot.localWorldFavorites
+            ),
+            localAvatarFavorites: normalizeFavoriteGroupMap(
+                snapshot.localAvatarFavorites
+            ),
+            localFriendFavorites: normalizeFavoriteGroupMap(
+                snapshot.localFriendFavorites
+            ),
+            localWorldFavoriteGroups: normalizeStringArray(
                 snapshot.localWorldFavoriteGroups
-            )
-                ? snapshot.localWorldFavoriteGroups
-                : [],
-            localAvatarFavoriteGroups: Array.isArray(
+            ),
+            localAvatarFavoriteGroups: normalizeStringArray(
                 snapshot.localAvatarFavoriteGroups
-            )
-                ? snapshot.localAvatarFavoriteGroups
-                : [],
-            localFriendFavoriteGroups: Array.isArray(
+            ),
+            localFriendFavoriteGroups: normalizeStringArray(
                 snapshot.localFriendFavoriteGroups
-            )
-                ? snapshot.localFriendFavoriteGroups
-                : [],
-            localWorldFavoritesList: Array.isArray(
+            ),
+            localWorldFavoritesList: normalizeStringArray(
                 snapshot.localWorldFavoritesList
-            )
-                ? snapshot.localWorldFavoritesList
-                : [],
-            localAvatarFavoritesList: Array.isArray(
+            ),
+            localAvatarFavoritesList: normalizeStringArray(
                 snapshot.localAvatarFavoritesList
-            )
-                ? snapshot.localAvatarFavoritesList
-                : [],
-            localFriendFavoritesList: Array.isArray(
+            ),
+            localFriendFavoritesList: normalizeStringArray(
                 snapshot.localFriendFavoritesList
+            ),
+            localWorldDetailsById: normalizeFavoriteDetailsById(
+                snapshot.localWorldDetailsById
+            ),
+            localAvatarDetailsById: normalizeFavoriteDetailsById(
+                snapshot.localAvatarDetailsById
             )
-                ? snapshot.localFriendFavoritesList
-                : [],
-            localWorldDetailsById:
-                snapshot.localWorldDetailsById &&
-                typeof snapshot.localWorldDetailsById === 'object'
-                    ? snapshot.localWorldDetailsById
-                    : {},
-            localAvatarDetailsById:
-                snapshot.localAvatarDetailsById &&
-                typeof snapshot.localAvatarDetailsById === 'object'
-                    ? snapshot.localAvatarDetailsById
-                    : {}
         });
     },
-    setFavoritesError(detail: any) {
-        set((state: any) => ({
+    setFavoritesError(detail) {
+        set((state) => ({
             ...state,
             loadStatus: 'error',
             detail,
@@ -570,8 +583,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
     resetFavorites() {
         set(initialState);
     },
-    addLocalFavorite({ kind, groupName, entityId, entity }: any) {
-        set((state: any) => {
+    addLocalFavorite({ kind, groupName, entityId, entity }) {
+        set((state) => {
             const normalizedGroupName = normalizeUserId(groupName);
             const normalizedEntityId = normalizeUserId(entityId);
             if (!normalizedGroupName || !normalizedEntityId) {
@@ -579,7 +592,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             }
 
             if (kind === 'friend') {
-                const localFriendFavorites: any = {
+                const localFriendFavorites: FavoriteGroupMap = {
                     ...state.localFriendFavorites,
                     [normalizedGroupName]: Array.from(
                         new Set([
@@ -605,7 +618,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             }
 
             if (kind === 'avatar') {
-                const localAvatarFavorites: any = {
+                const localAvatarFavorites: FavoriteGroupMap = {
                     ...state.localAvatarFavorites,
                     [normalizedGroupName]: Array.from(
                         new Set([
@@ -628,7 +641,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                     localAvatarFavoritesList:
                         flattenFavoriteGroups(localAvatarFavorites),
                     localAvatarDetailsById:
-                        entity && typeof entity === 'object'
+                        isObjectRecord(entity)
                             ? {
                                   ...state.localAvatarDetailsById,
                                   [normalizedEntityId]: {
@@ -641,7 +654,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             }
 
             if (kind === 'world') {
-                const localWorldFavorites: any = {
+                const localWorldFavorites: FavoriteGroupMap = {
                     ...state.localWorldFavorites,
                     [normalizedGroupName]: Array.from(
                         new Set([
@@ -662,7 +675,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                     localWorldFavoritesList:
                         flattenFavoriteGroups(localWorldFavorites),
                     localWorldDetailsById:
-                        entity && typeof entity === 'object'
+                        isObjectRecord(entity)
                             ? {
                                   ...state.localWorldDetailsById,
                                   [normalizedEntityId]: {
@@ -677,8 +690,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             return state;
         });
     },
-    removeLocalFavorite({ kind, groupName, entityId }: any) {
-        set((state: any) => {
+    removeLocalFavorite({ kind, groupName, entityId }) {
+        set((state) => {
             if (kind === 'friend') {
                 const localFriendFavorites = removeFromFavoriteGroups(
                     state.localFriendFavorites,
@@ -703,7 +716,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                 );
                 const localAvatarFavoritesList =
                     flattenFavoriteGroups(localAvatarFavorites);
-                const localAvatarDetailsById: any = {
+                const localAvatarDetailsById: FavoriteDetailsById = {
                     ...state.localAvatarDetailsById
                 };
                 const normalizedEntityId = normalizeUserId(entityId);
@@ -731,7 +744,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
                 );
                 const localWorldFavoritesList =
                     flattenFavoriteGroups(localWorldFavorites);
-                const localWorldDetailsById: any = {
+                const localWorldDetailsById: FavoriteDetailsById = {
                     ...state.localWorldDetailsById
                 };
                 const normalizedEntityId = normalizeUserId(entityId);
@@ -754,8 +767,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             return state;
         });
     },
-    createLocalFavoriteGroup({ kind, groupName }: any) {
-        set((state: any) => {
+    createLocalFavoriteGroup({ kind, groupName }) {
+        set((state) => {
             if (kind === 'friend') {
                 const localFriendFavorites = createLocalFavoriteGroupState(
                     state.localFriendFavorites,
@@ -798,8 +811,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             return state;
         });
     },
-    renameLocalFavoriteGroup({ kind, groupName, newGroupName }: any) {
-        set((state: any) => {
+    renameLocalFavoriteGroup({ kind, groupName, newGroupName }) {
+        set((state) => {
             if (kind === 'friend') {
                 const localFriendFavorites = renameLocalFavoriteGroupState(
                     state.localFriendFavorites,
@@ -851,8 +864,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             return state;
         });
     },
-    deleteLocalFavoriteGroup({ kind, groupName }: any) {
-        set((state: any) => {
+    deleteLocalFavoriteGroup({ kind, groupName }) {
+        set((state) => {
             if (kind === 'friend') {
                 const localFriendFavorites = deleteLocalFavoriteGroupState(
                     state.localFriendFavorites,
@@ -901,8 +914,8 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             return state;
         });
     },
-    removeRemoteFavorite(objectId: any) {
-        set((state: any) => {
+    removeRemoteFavorite(objectId) {
+        set((state) => {
             const normalizedObjectId = normalizeUserId(objectId);
             if (!normalizedObjectId) {
                 return state;
@@ -917,7 +930,9 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             }
 
             const favoriteRecordId = normalizeUserId(ref.id);
-            const remoteFavoritesById: any = { ...state.remoteFavoritesById };
+            const remoteFavoritesById: Record<string, FavoriteRecord> = {
+                ...state.remoteFavoritesById
+            };
             if (favoriteRecordId) {
                 delete remoteFavoritesById[favoriteRecordId];
             }
@@ -946,14 +961,18 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             };
         });
     },
-    addRemoteFavorite(json: any) {
-        set((state: any) => {
-            const ref = createDefaultFavoriteCachedRef(json ?? {});
+    addRemoteFavorite(json) {
+        set((state) => {
+            const ref = createDefaultFavoriteCachedRef(
+                isObjectRecord(json) ? json : {}
+            ) as FavoriteRecord;
             if (!ref.id || !ref.favoriteId) {
                 return state;
             }
 
-            const remoteFavoritesById: any = { ...state.remoteFavoritesById };
+            const remoteFavoritesById: Record<string, FavoriteRecord> = {
+                ...state.remoteFavoritesById
+            };
             const previousRef = state.remoteFavoritesByObjectId[ref.favoriteId];
             if (previousRef?.id && previousRef.id !== ref.id) {
                 delete remoteFavoritesById[previousRef.id];
@@ -984,7 +1003,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
             };
         });
     },
-    getRemoteFavoriteByObjectId(objectId: any) {
+    getRemoteFavoriteByObjectId(objectId) {
         const normalizedObjectId =
             typeof objectId === 'string'
                 ? objectId.trim()
@@ -994,7 +1013,7 @@ export const useFavoriteStore = create<FavoriteStore>((set: any, get: any) => ({
         }
         return get().remoteFavoritesByObjectId[normalizedObjectId] ?? null;
     },
-    isInAnyLocalFriendGroup(userId: any) {
+    isInAnyLocalFriendGroup(userId) {
         const normalizedUserId =
             typeof userId === 'string'
                 ? userId.trim()

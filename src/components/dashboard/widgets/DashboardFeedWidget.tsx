@@ -1,6 +1,7 @@
 import { HeartIcon, SettingsIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
@@ -37,27 +38,40 @@ import {
 
 const FEED_WIDGET_MAX_ROWS = 100;
 
-export function DashboardFeedWidget({
-    config = {},
-    configUpdater = null
-}: any) {
-    const { t } = useTranslation();
-    const currentUserId = useRuntimeStore(
-        (state: any) => state.auth.currentUserId
-    );
-    const addGameLogEventCount = useRuntimeStore(
-        (state: any) => state.runtimeEvents.addGameLogEvent.count
-    );
-    const liveFeedEntries = useFeedLiveStore((state: any) => state.entries);
-    const remoteFavoriteFriendIds = useFavoriteStore(
-        (state: any) => state.favoriteFriendIds
-    );
-    const localFriendFavorites = useFavoriteStore(
-        (state: any) => state.localFriendFavorites
-    );
-    const friendsById = useFriendRosterStore((state: any) => state.friendsById);
+type DashboardFeedWidgetViewProps = {
+    config?: Record<string, unknown>;
+    configUpdater?: ((nextConfig: Record<string, unknown>) => void) | null;
+    currentUserId: string | null;
+    addGameLogEventCount: number;
+    liveFeedEntries: unknown[];
+    liveFeedVersion: number;
+    remoteFavoriteFriendIds: unknown[];
+    localFriendFavorites: unknown;
+    friendsById: Record<string, unknown>;
+};
 
+type DashboardFeedWidgetProps = Pick<
+    DashboardFeedWidgetViewProps,
+    'config' | 'configUpdater'
+>;
+
+export function DashboardFeedWidgetView({
+    config = {},
+    configUpdater = null,
+    currentUserId,
+    addGameLogEventCount,
+    liveFeedEntries,
+    liveFeedVersion,
+    remoteFavoriteFriendIds,
+    localFriendFavorites,
+    friendsById
+}: DashboardFeedWidgetViewProps) {
+    const { t } = useTranslation();
     const lastLiveFeedSequenceRef = useRef(0);
+    const liveFeedSnapshotRef = useRef({
+        entries: liveFeedEntries,
+        version: liveFeedVersion
+    });
     const rowsRef = useRef<any[]>([]);
     const liveMergeRequestIdRef = useRef(0);
     const [rows, setRows] = useState<any[]>([]);
@@ -75,7 +89,14 @@ export function DashboardFeedWidget({
     );
 
     useEffect(() => {
-        lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
+        liveFeedSnapshotRef.current = {
+            entries: liveFeedEntries,
+            version: liveFeedVersion
+        };
+    }, [liveFeedEntries, liveFeedVersion]);
+
+    useEffect(() => {
+        lastLiveFeedSequenceRef.current = liveFeedVersion;
     }, [currentUserId]);
 
     useEffect(() => {
@@ -93,7 +114,7 @@ export function DashboardFeedWidget({
         };
         let previousMaxSequence = minLiveSequence;
         while (requestIsCurrent()) {
-            const liveFeedSnapshot = useFeedLiveStore.getState();
+            const liveFeedSnapshot = liveFeedSnapshotRef.current;
             result = await feedRepository.mergeLiveRows({
                 rows: result.rows,
                 userId: currentUserId,
@@ -105,7 +126,7 @@ export function DashboardFeedWidget({
             if (!requestIsCurrent()) {
                 return null;
             }
-            const liveVersion = useFeedLiveStore.getState().version;
+            const liveVersion = liveFeedSnapshotRef.current.version;
             if (
                 liveVersion <= result.maxSequence ||
                 result.maxSequence <= previousMaxSequence
@@ -124,7 +145,7 @@ export function DashboardFeedWidget({
         let nextResult = result;
         while (requestIsCurrent()) {
             liveMergeRequestIdRef.current += 1;
-            if (useFeedLiveStore.getState().version <= nextResult.maxSequence) {
+            if (liveFeedSnapshotRef.current.version <= nextResult.maxSequence) {
                 return nextResult;
             }
             const mergedResult = await mergeWidgetRowsWithLatestLive({
@@ -144,8 +165,7 @@ export function DashboardFeedWidget({
         let active = true;
 
         if (!currentUserId) {
-            lastLiveFeedSequenceRef.current =
-                useFeedLiveStore.getState().version;
+            lastLiveFeedSequenceRef.current = liveFeedVersion;
             setRows([]);
             setLoadStatus('idle');
             setDetail('');
@@ -158,7 +178,7 @@ export function DashboardFeedWidget({
         setDetail('');
 
         const liveFeedSequenceAtRequestStart =
-            useFeedLiveStore.getState().version;
+            liveFeedSnapshotRef.current.version;
         feedRepository
             .queryFeedReadModel({
                 userId: currentUserId,
@@ -252,7 +272,7 @@ export function DashboardFeedWidget({
                     )
                 );
             });
-    }, [activeFilters, currentUserId, liveFeedEntries]);
+    }, [activeFilters, currentUserId, liveFeedEntries, liveFeedVersion]);
 
     const annotatedRows = useMemo(
         () =>
@@ -449,5 +469,44 @@ export function DashboardFeedWidget({
                 </Table>
             </div>
         </>
+    );
+}
+
+export function DashboardFeedWidget({
+    config = {},
+    configUpdater = null
+}: DashboardFeedWidgetProps) {
+    const { currentUserId, addGameLogEventCount } = useRuntimeStore(
+        useShallow((state: any) => ({
+            currentUserId: state.auth.currentUserId,
+            addGameLogEventCount: state.runtimeEvents.addGameLogEvent.count
+        }))
+    );
+    const { liveFeedEntries, liveFeedVersion } = useFeedLiveStore(
+        useShallow((state: any) => ({
+            liveFeedEntries: state.entries,
+            liveFeedVersion: state.version
+        }))
+    );
+    const { remoteFavoriteFriendIds, localFriendFavorites } = useFavoriteStore(
+        useShallow((state: any) => ({
+            remoteFavoriteFriendIds: state.favoriteFriendIds,
+            localFriendFavorites: state.localFriendFavorites
+        }))
+    );
+    const friendsById = useFriendRosterStore((state: any) => state.friendsById);
+
+    return (
+        <DashboardFeedWidgetView
+            config={config}
+            configUpdater={configUpdater}
+            currentUserId={currentUserId}
+            addGameLogEventCount={addGameLogEventCount}
+            liveFeedEntries={liveFeedEntries}
+            liveFeedVersion={liveFeedVersion}
+            remoteFavoriteFriendIds={remoteFavoriteFriendIds}
+            localFriendFavorites={localFriendFavorites}
+            friendsById={friendsById}
+        />
     );
 }

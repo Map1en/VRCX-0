@@ -10,11 +10,17 @@ export async function refreshSessions(): Promise<void> {
 export async function openSession(sessionId: string): Promise<void> {
     const store = useAssistantChatStore.getState();
     store.setActiveSession(sessionId);
+    // A session already loaded this run is kept current by the live event
+    // stream. Re-fetching would overwrite it with the DB snapshot, which lacks
+    // the still-streaming (not-yet-persisted) assistant message — wiping text
+    // already shown. Only hydrate on first open (incl. after a restart).
+    if (store.messagesBySession[sessionId]) {
+        return;
+    }
     const session = await commands.appAssistantGetSession(sessionId);
     if (session) {
         store.hydrateSession(session);
-        const busy = session.activeTurn?.status === 'running';
-        store.markBusy(sessionId, busy);
+        store.markBusy(sessionId, session.activeTurn?.status === 'running');
     }
 }
 

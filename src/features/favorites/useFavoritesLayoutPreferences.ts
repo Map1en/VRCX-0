@@ -1,29 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 import configRepository from '@/repositories/configRepository';
+import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
 
-const SPLITTER_CONFIG_KEYS: any = {
-    friend: 'VRCX_FavoritesFriendSplitter',
-    world: 'VRCX_FavoritesWorldSplitter',
-    avatar: 'VRCX_FavoritesAvatarSplitter'
-};
 const SPLITTER_DEFAULT_SIZE_PX = 260;
 const SPLITTER_MIN_SIZE_PX = 0;
-const CARD_SCALE_CONFIG_KEYS: any = {
-    friend: 'VRCX_FavoritesFriendCardScale',
-    world: 'VRCX_FavoritesWorldCardScale',
-    avatar: 'VRCX_FavoritesAvatarCardScale'
-};
-const CARD_SPACING_CONFIG_KEYS: any = {
-    friend: 'VRCX_FavoritesFriendCardSpacing',
-    world: 'VRCX_FavoritesWorldCardSpacing',
-    avatar: 'VRCX_FavoritesAvatarCardSpacing'
-};
-const SORT_CONFIG_KEYS: any = {
-    friend: 'VRCX_FavoritesFriendSort',
-    world: 'VRCX_FavoritesWorldSort',
-    avatar: 'VRCX_FavoritesAvatarSort'
-};
 const SORT_VALUES_BY_KIND: any = {
     friend: new Set(['name', 'date']),
     world: new Set(['name', 'date', 'players']),
@@ -71,7 +52,7 @@ export function useFavoritesLayoutPreferences(kind: any) {
 
     useEffect(() => {
         let active = true;
-        const configKey = SPLITTER_CONFIG_KEYS[kind];
+        const configKey = FAVORITES_LAYOUT_CONFIG_KEYS.splitter[kind];
         configRepository
             .getString(configKey, '260')
             .then((value: any) => {
@@ -101,8 +82,8 @@ export function useFavoritesLayoutPreferences(kind: any) {
 
     useEffect(() => {
         let active = true;
-        const scaleKey = CARD_SCALE_CONFIG_KEYS[kind];
-        const spacingKey = CARD_SPACING_CONFIG_KEYS[kind];
+        const scaleKey = FAVORITES_LAYOUT_CONFIG_KEYS.cardScale[kind];
+        const spacingKey = FAVORITES_LAYOUT_CONFIG_KEYS.cardSpacing[kind];
 
         Promise.all([
             configRepository.getString(scaleKey, '1'),
@@ -145,7 +126,7 @@ export function useFavoritesLayoutPreferences(kind: any) {
     useEffect(() => {
         let active = true;
         const loadVersion = sortLoadVersionRef.current;
-        const sortKey = SORT_CONFIG_KEYS[kind];
+        const sortKey = FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind];
 
         setSortValue((current: any) =>
             normalizeFavoriteSortValue(kind, current)
@@ -178,7 +159,7 @@ export function useFavoritesLayoutPreferences(kind: any) {
         );
         setCardScale(nextValue);
         configRepository.setString(
-            CARD_SCALE_CONFIG_KEYS[kind],
+            FAVORITES_LAYOUT_CONFIG_KEYS.cardScale[kind],
             String(nextValue)
         );
     };
@@ -192,7 +173,7 @@ export function useFavoritesLayoutPreferences(kind: any) {
         );
         setCardSpacing(nextValue);
         configRepository.setString(
-            CARD_SPACING_CONFIG_KEYS[kind],
+            FAVORITES_LAYOUT_CONFIG_KEYS.cardSpacing[kind],
             String(nextValue)
         );
     };
@@ -201,14 +182,17 @@ export function useFavoritesLayoutPreferences(kind: any) {
         const nextValue = normalizeFavoriteSortValue(kind, value);
         sortLoadVersionRef.current += 1;
         setSortValue(nextValue);
-        configRepository.setString(SORT_CONFIG_KEYS[kind], nextValue);
+        configRepository.setString(
+            FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind],
+            nextValue
+        );
     };
 
     function persistSplitterSizePx(nextSizePx: any) {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
         setSplitterSizePx(normalizedSizePx);
         configRepository.setString(
-            SPLITTER_CONFIG_KEYS[kind],
+            FAVORITES_LAYOUT_CONFIG_KEYS.splitter[kind],
             String(normalizedSizePx)
         );
     }

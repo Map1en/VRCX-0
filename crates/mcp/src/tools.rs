@@ -1701,12 +1701,17 @@ struct MutualGraphFreshness {
 }
 
 fn normalize_favorite_kind(kind: &str) -> Result<String, String> {
-    let kind = kind.trim().to_ascii_lowercase();
-    if favorite_kind_metadata(&kind).is_some() {
-        Ok(kind)
-    } else {
-        Err("favorite kind must be world, friend, or avatar".into())
-    }
+    // The tool description lists "worlds, friends, or avatars", so models often
+    // pass the plural (and sometimes "user(s)" for friends). Accept those and
+    // map them to the canonical singular form.
+    let lowered = kind.trim().to_ascii_lowercase();
+    let canonical = match lowered.strip_suffix('s').unwrap_or(&lowered) {
+        "world" => "world",
+        "friend" | "user" => "friend",
+        "avatar" => "avatar",
+        _ => return Err("favorite kind must be world, friend, or avatar".into()),
+    };
+    Ok(canonical.to_string())
 }
 
 fn validate_favorite_entity_id(kind: &str, entity_id: &str) -> Result<(), String> {
@@ -1990,6 +1995,30 @@ fn vrchat_favorite_caveats(blocked_by_setting: bool) -> Vec<String> {
         );
     }
     caveats
+}
+
+#[cfg(test)]
+mod favorite_kind_tests {
+    use super::*;
+
+    #[test]
+    fn accepts_singular_plural_and_user_synonym() {
+        for input in ["world", "worlds", "World"] {
+            assert_eq!(normalize_favorite_kind(input).unwrap(), "world");
+        }
+        for input in ["friend", "friends", "user", "users"] {
+            assert_eq!(normalize_favorite_kind(input).unwrap(), "friend");
+        }
+        for input in ["avatar", "avatars"] {
+            assert_eq!(normalize_favorite_kind(input).unwrap(), "avatar");
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_kind() {
+        assert!(normalize_favorite_kind("group").is_err());
+        assert!(normalize_favorite_kind("").is_err());
+    }
 }
 
 #[cfg(test)]

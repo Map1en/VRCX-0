@@ -7,20 +7,20 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
-export function useInstanceActivityRuntime() {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+export function useInstanceActivityRuntime(userIdOverride = '') {
+    const authUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
-        (state: any) => state.auth.currentUserEndpoint
+        (state) => state.auth.currentUserEndpoint
     );
-    const friendsById = useFriendRosterStore((state: any) => state.friendsById);
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
     const favoriteFriendIds = useFavoriteStore(
-        (state: any) => state.favoriteFriendIds
+        (state) => state.favoriteFriendIds
     );
     const localFriendFavoritesList = useFavoriteStore(
-        (state: any) => state.localFriendFavoritesList
+        (state) => state.localFriendFavoritesList
     );
-    const shellThemeMode = useShellStore((state: any) => state.themeMode);
-    const hour12 = usePreferencesStore((state: any) => state.dtHour12);
+    const shellThemeMode = useShellStore((state) => state.themeMode);
+    const hour12 = usePreferencesStore((state) => state.dtHour12);
     const resolvedTheme = getResolvedThemeMode(shellThemeMode);
     const friendIdSet = useMemo(
         () => new Set(Object.keys(friendsById)),
@@ -37,7 +37,7 @@ export function useInstanceActivityRuntime() {
 
     return {
         currentEndpoint,
-        currentUserId,
+        currentUserId: userIdOverride || authUserId,
         favoriteIdSet,
         friendIdSet,
         hour12,

@@ -8,8 +8,9 @@ const DETAIL_VISIBLE_KEY = 'VRCX_InstanceActivityDetailVisible';
 const SOLO_INSTANCE_VISIBLE_KEY = 'VRCX_InstanceActivitySoloInstanceVisible';
 const NO_FRIEND_INSTANCE_VISIBLE_KEY =
     'VRCX_InstanceActivityNoFriendInstanceVisible';
+const CHART_COLLAPSED_KEY = 'VRCX_InstanceActivityChartCollapsed';
 
-function normalizeBarWidth(value: any) {
+function normalizeBarWidth(value: number) {
     return Number.isFinite(value)
         ? Math.min(50, Math.max(1, value))
         : DEFAULT_BAR_WIDTH;
@@ -21,6 +22,7 @@ export function useInstanceActivitySettings() {
     const [isSoloInstanceVisible, setIsSoloInstanceVisible] = useState(true);
     const [isNoFriendInstanceVisible, setIsNoFriendInstanceVisible] =
         useState(true);
+    const [isChartCollapsed, setIsChartCollapsed] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -29,15 +31,17 @@ export function useInstanceActivitySettings() {
             configRepository.getInt(BAR_WIDTH_KEY, DEFAULT_BAR_WIDTH),
             configRepository.getBool(DETAIL_VISIBLE_KEY, true),
             configRepository.getBool(SOLO_INSTANCE_VISIBLE_KEY, true),
-            configRepository.getBool(NO_FRIEND_INSTANCE_VISIBLE_KEY, true)
+            configRepository.getBool(NO_FRIEND_INSTANCE_VISIBLE_KEY, true),
+            configRepository.getBool(CHART_COLLAPSED_KEY, false)
         ])
             .then(
                 ([
                     nextBarWidth,
                     nextDetailVisible,
                     nextSoloVisible,
-                    nextNoFriendVisible
-                ]: any) => {
+                    nextNoFriendVisible,
+                    nextChartCollapsed
+                ]: [number, boolean, boolean, boolean, boolean]) => {
                     if (!active) {
                         return;
                     }
@@ -46,6 +50,7 @@ export function useInstanceActivitySettings() {
                     setIsDetailVisible(Boolean(nextDetailVisible));
                     setIsSoloInstanceVisible(Boolean(nextSoloVisible));
                     setIsNoFriendInstanceVisible(Boolean(nextNoFriendVisible));
+                    setIsChartCollapsed(Boolean(nextChartCollapsed));
                 }
             )
             .catch(() => {});
@@ -55,27 +60,32 @@ export function useInstanceActivitySettings() {
         };
     }, []);
 
-    function handleBarWidthCommit(value: any) {
+    function handleBarWidthCommit(value: number | string) {
         const nextValue = normalizeBarWidth(
-            Number.parseInt(value, 10) || DEFAULT_BAR_WIDTH
+            Number.parseInt(String(value), 10) || DEFAULT_BAR_WIDTH
         );
         setBarWidth(nextValue);
         configRepository.setInt(BAR_WIDTH_KEY, nextValue);
     }
 
-    function setDetailVisible(value: any) {
+    function setDetailVisible(value: boolean) {
         setIsDetailVisible(value);
         configRepository.setBool(DETAIL_VISIBLE_KEY, value);
     }
 
-    function setSoloInstanceVisible(value: any) {
+    function setSoloInstanceVisible(value: boolean) {
         setIsSoloInstanceVisible(value);
         configRepository.setBool(SOLO_INSTANCE_VISIBLE_KEY, value);
     }
 
-    function setNoFriendInstanceVisible(value: any) {
+    function setNoFriendInstanceVisible(value: boolean) {
         setIsNoFriendInstanceVisible(value);
         configRepository.setBool(NO_FRIEND_INSTANCE_VISIBLE_KEY, value);
+    }
+
+    function setChartCollapsed(value: boolean) {
+        setIsChartCollapsed(value);
+        configRepository.setBool(CHART_COLLAPSED_KEY, value);
     }
 
     return {
@@ -83,9 +93,11 @@ export function useInstanceActivitySettings() {
         isDetailVisible,
         isSoloInstanceVisible,
         isNoFriendInstanceVisible,
+        isChartCollapsed,
         handleBarWidthCommit,
         setDetailVisible,
         setSoloInstanceVisible,
-        setNoFriendInstanceVisible
+        setNoFriendInstanceVisible,
+        setChartCollapsed
     };
 }

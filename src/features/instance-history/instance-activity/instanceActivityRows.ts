@@ -1,13 +1,32 @@
 import { parseLocation } from '@/shared/utils/locationParser';
 
-export function parseLocalDayKey(dayKey: any) {
+import type {
+    InstanceActivityChartRow,
+    InstanceActivityDetailGroup,
+    InstanceActivityDetailRow,
+    InstanceActivityGroupsFilterOptions,
+    InstanceActivityRawRow,
+    WorldDetailsById
+} from './instanceActivityTypes';
+
+function timestampMs(value: unknown): number {
+    if (value instanceof Date) {
+        return value.getTime();
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+        return new Date(value).getTime();
+    }
+    return 0;
+}
+
+export function parseLocalDayKey(dayKey: string) {
     const [year, month, day] = String(dayKey || '')
         .split('-')
-        .map((value: any) => Number.parseInt(value, 10) || 0);
+        .map((value: string) => Number.parseInt(value, 10) || 0);
     return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
 }
 
-export function getLocalDayBounds(dayKey: any) {
+export function getLocalDayBounds(dayKey: string) {
     const start = parseLocalDayKey(dayKey);
     const end = new Date(start);
     end.setHours(23, 59, 59, 999);
@@ -19,7 +38,7 @@ export function getLocalDayBounds(dayKey: any) {
     };
 }
 
-export function isValidActivityLocation(location: any) {
+export function isValidActivityLocation(location: unknown): boolean {
     const normalizedLocation = String(location ?? '').trim();
     if (!normalizedLocation) {
         return false;
@@ -28,16 +47,18 @@ export function isValidActivityLocation(location: any) {
 }
 
 export function normalizeInstanceRow(
-    row: any,
-    selectedDate: any,
-    currentUserId: any,
-    worldDetailsById: any
-) {
+    row: InstanceActivityRawRow,
+    selectedDate: string,
+    currentUserId: string,
+    worldDetailsById: WorldDetailsById
+): InstanceActivityChartRow {
     const safeDuration = Math.max(0, Number(row.time) || 0);
-    const leaveMs = new Date(row.created_at).getTime();
+    const leaveMs = timestampMs(row.created_at);
     const joinMs = Math.max(0, leaveMs - safeDuration);
     const { startMs, endMs } = getLocalDayBounds(selectedDate);
-    const parsedLocation = parseLocation(row.location);
+    const location = String(row.location || '');
+    const userId = String(row.user_id || '');
+    const parsedLocation = parseLocation(location);
     const worldId = parsedLocation.worldId || '';
     const world = worldId ? worldDetailsById[worldId] : null;
     const worldName = world?.name || '';
@@ -46,13 +67,11 @@ export function normalizeInstanceRow(
     const visibleDurationMs = Math.max(0, visibleEndMs - visibleStartMs);
 
     return {
-        id: String(
-            row.id || `${row.location}:${row.created_at}:${row.user_id}`
-        ),
+        id: String(row.id || `${location}:${row.created_at}:${row.user_id}`),
         currentUserId,
-        displayName: row.display_name || '',
-        location: row.location,
-        userId: row.user_id || '',
+        displayName: String(row.display_name || ''),
+        location,
+        userId,
         parsedLocation,
         worldId,
         worldName,
@@ -60,34 +79,38 @@ export function normalizeInstanceRow(
         joinMs,
         leaveMs,
         visibleStartMs,
-        visibleDurationMs
+        visibleDurationMs,
+        activityKey: getActivityDetailKey(location, joinMs)
     };
 }
 
-export function getActivityDetailKey(location: any, joinMs: any) {
+export function getActivityDetailKey(location: string, joinMs: number): string {
     return `${location || ''}:${Number.isFinite(joinMs) ? joinMs : 0}`;
 }
 
-export function getDetailGroupKeys(group: any, currentUserId: any) {
+export function getDetailGroupKeys(
+    group: InstanceActivityDetailGroup,
+    currentUserId: string
+): string[] {
     const currentUserEntries = group.filter(
-        (entry: any) => entry.userId === currentUserId
+        (entry) => entry.userId === currentUserId
     );
     const entries = currentUserEntries.length ? currentUserEntries : [group[0]];
-    return entries.map((entry: any) =>
+    return entries.map((entry) =>
         getActivityDetailKey(entry?.location, entry?.joinMs)
     );
 }
 
 export function buildChartRows(
-    rawRows: any,
-    selectedDate: any,
-    currentUserId: any,
-    worldDetailsById: any
-) {
+    rawRows: InstanceActivityRawRow[],
+    selectedDate: string,
+    currentUserId: string,
+    worldDetailsById: WorldDetailsById
+): InstanceActivityChartRow[] {
     return rawRows
-        .filter((row: any) => row.user_id === currentUserId)
-        .filter((row: any) => isValidActivityLocation(row.location))
-        .map((row: any) =>
+        .filter((row) => String(row.user_id || '') === currentUserId)
+        .filter((row) => isValidActivityLocation(row.location))
+        .map((row) =>
             normalizeInstanceRow(
                 row,
                 selectedDate,
@@ -95,25 +118,27 @@ export function buildChartRows(
                 worldDetailsById
             )
         )
-        .sort((left: any, right: any) => left.joinMs - right.joinMs);
+        .sort((left, right) => left.joinMs - right.joinMs);
 }
 
 export function normalizeDetailRow(
-    row: any,
-    currentUserId: any,
-    friendIdSet: any,
-    favoriteIdSet: any
-) {
+    row: InstanceActivityRawRow,
+    currentUserId: string,
+    friendIdSet: Set<string>,
+    favoriteIdSet: Set<string>
+): InstanceActivityDetailRow {
     const durationMs = Math.max(0, Number(row.time) || 0);
-    const leaveMs = new Date(row.created_at).getTime();
+    const leaveMs = timestampMs(row.created_at);
     const joinMs = Math.max(0, leaveMs - durationMs);
-    const userId = row.user_id || '';
+    const userId = String(row.user_id || '');
+    const location = String(row.location || '');
 
     return {
         ...row,
-        id: String(row.id || `${row.location}:${row.created_at}:${userId}`),
-        displayName: row.display_name || '',
+        id: String(row.id || `${location}:${row.created_at}:${userId}`),
+        displayName: String(row.display_name || ''),
         userId,
+        location,
         joinMs,
         leaveMs,
         durationMs,
@@ -126,23 +151,32 @@ export function normalizeDetailRow(
     };
 }
 
-export function doIntervalsOverlap(left: any, right: any) {
+export function doIntervalsOverlap(
+    left: { joinMs: number; leaveMs: number },
+    right: { joinMs: number; leaveMs: number }
+): boolean {
     return !(left.leaveMs < right.joinMs || right.leaveMs < left.joinMs);
 }
 
-export function splitDetailGroupsByCurrentUserOverlap(groups: any, currentUserId: any) {
-    const result = [];
+export function splitDetailGroupsByCurrentUserOverlap(
+    groups: InstanceActivityDetailGroup[],
+    currentUserId: string
+): InstanceActivityDetailGroup[] {
+    const result: InstanceActivityDetailGroup[] = [];
 
     for (const group of groups) {
         const currentUserCount = group.filter(
-            (entry: any) => entry.userId === currentUserId
+            (entry) => entry.userId === currentUserId
         ).length;
         if (currentUserCount <= 1) {
             result.push(group);
             continue;
         }
 
-        const adjacency = Array.from({ length: group.length }, () => []);
+        const adjacency: number[][] = Array.from(
+            { length: group.length },
+            () => []
+        );
         for (let leftIndex = 0; leftIndex < group.length; leftIndex += 1) {
             for (
                 let rightIndex = leftIndex + 1;
@@ -156,17 +190,17 @@ export function splitDetailGroupsByCurrentUserOverlap(groups: any, currentUserId
             }
         }
 
-        const visited = new Set();
+        const visited = new Set<number>();
         for (let index = 0; index < group.length; index += 1) {
             if (visited.has(index)) {
                 continue;
             }
 
             const stack = [index];
-            const component = [];
+            const component: InstanceActivityDetailRow[] = [];
             visited.add(index);
             while (stack.length) {
-                const current = stack.pop();
+                const current = stack.pop() as number;
                 component.push(group[current]);
                 for (const next of adjacency[current]) {
                     if (!visited.has(next)) {
@@ -176,33 +210,33 @@ export function splitDetailGroupsByCurrentUserOverlap(groups: any, currentUserId
                 }
             }
             result.push(
-                component.sort((left: any, right: any) => left.joinMs - right.joinMs)
+                component.sort((left, right) => left.joinMs - right.joinMs)
             );
         }
     }
 
     return result.sort(
-        (left: any, right: any) => (left[0]?.joinMs || 0) - (right[0]?.joinMs || 0)
+        (left, right) => (left[0]?.joinMs || 0) - (right[0]?.joinMs || 0)
     );
 }
 
 export function buildDetailGroups(
-    rawRows: any,
-    chartRows: any,
-    currentUserId: any,
-    friendIdSet: any,
-    favoriteIdSet: any
-) {
-    const currentLocations = new Set(
-        chartRows.map((row: any) => row.location).filter(Boolean)
+    rawRows: InstanceActivityRawRow[],
+    chartRows: InstanceActivityChartRow[],
+    currentUserId: string,
+    friendIdSet: Set<string>,
+    favoriteIdSet: Set<string>
+): InstanceActivityDetailGroup[] {
+    const currentLocations = new Set<string>(
+        chartRows.map((row) => row.location).filter(Boolean)
     );
     if (!currentUserId || !currentLocations.size) {
         return [];
     }
 
-    const groupsByLocation = new Map();
+    const groupsByLocation = new Map<string, InstanceActivityDetailRow[]>();
     for (const row of rawRows) {
-        if (!currentLocations.has(row.location)) {
+        if (!currentLocations.has(String(row.location || ''))) {
             continue;
         }
 
@@ -218,30 +252,34 @@ export function buildDetailGroups(
     }
 
     const groups = Array.from(groupsByLocation.values())
-        .map((group: any) =>
-            group.sort((left: any, right: any) => {
+        .map((group) =>
+            group.sort((left, right) => {
                 const joinDiff = Math.abs(left.joinMs - right.joinMs);
                 return joinDiff < 3000
                     ? left.leaveMs - right.leaveMs
                     : left.joinMs - right.joinMs;
             })
         )
-        .filter((group: any) =>
-            group.some((entry: any) => entry.userId === currentUserId)
+        .filter((group) =>
+            group.some((entry) => entry.userId === currentUserId)
         );
 
     return splitDetailGroupsByCurrentUserOverlap(groups, currentUserId);
 }
 
 export function filterDetailGroups(
-    groups: any,
-    { isDetailVisible, isSoloInstanceVisible, isNoFriendInstanceVisible }: any
-) {
+    groups: InstanceActivityDetailGroup[],
+    {
+        isDetailVisible,
+        isSoloInstanceVisible,
+        isNoFriendInstanceVisible
+    }: InstanceActivityGroupsFilterOptions
+): InstanceActivityDetailGroup[] {
     if (!isDetailVisible) {
         return [];
     }
 
-    return groups.filter((group: any) => {
+    return groups.filter((group) => {
         if (!isSoloInstanceVisible && group.length <= 1) {
             return false;
         }
@@ -249,7 +287,7 @@ export function filterDetailGroups(
         if (
             !isNoFriendInstanceVisible &&
             group.length > 1 &&
-            !group.some((entry: any) => entry.isFriend)
+            !group.some((entry) => entry.isFriend)
         ) {
             return false;
         }

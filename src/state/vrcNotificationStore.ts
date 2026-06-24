@@ -5,6 +5,7 @@ import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
+import { windowDelay } from '@/shared/utils/delays';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -217,12 +218,6 @@ function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
               }
             : row
     );
-}
-
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve: any) => {
-        window.setTimeout(resolve, ms);
-    });
 }
 
 function syncShellUnseenCount(unseenCount: unknown) {
@@ -453,7 +448,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                                 error
                             );
                         });
-                    await delay(250);
+                    await windowDelay(250);
                 }
                 await get().loadForCurrentUser();
             } finally {

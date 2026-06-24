@@ -9,7 +9,21 @@ updates:
       directory: '/' # Location of package manifests
       schedule:
           interval: 'weekly'
+      ignore:
+          # Pinned at 1.5.0 — radix-ui 1.6.0's react-dismissable-layer 1.1.13
+          # closes the parent modal Dialog when a nested Dropdown/Select dismisses.
+          # Tracking: #<radix-issue>
+          - dependency-name: 'radix-ui'
+            versions: ['>=1.6.0']
     - package-ecosystem: 'cargo'
       directory: '/'
       schedule:
           interval: 'weekly'
+      ignore:
+          # Pinned pre-specta-serde — rc.24+ breaks bindings codegen
+          # (skip_serializing_if rejection + serde_json::Value recursion).
+          # Any bump must be coordinated with rewriting the Type impls.
+          # Tracking: #<specta-issue>
+          - dependency-name: 'specta'
+          - dependency-name: 'tauri-specta'
+          - dependency-name: 'specta-typescript'

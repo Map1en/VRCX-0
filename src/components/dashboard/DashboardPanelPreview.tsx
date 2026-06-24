@@ -2,23 +2,30 @@ import { ArrowRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { useFavoriteStore } from '@/state/favoriteStore';
-import { useFriendRosterStore } from '@/state/friendRosterStore';
-import { useNotificationStore } from '@/state/notificationStore';
+import type {
+    DashboardPageMetrics,
+    DashboardPanelPreviewProps
+} from '@/features/dashboard/dashboardPanelPreviewModel';
 import { Button } from '@/ui/shadcn/button';
 
 import { DashboardEmbeddedPagePanel } from './DashboardEmbeddedPagePanel';
 import { canEmbedDashboardPagePanel } from './dashboardPagePanelRegistry';
-import {
-    getDashboardPanelDefinition,
-    resolveDashboardPanelConfig,
-    resolveDashboardPanelKey
-} from './dashboardRegistry';
 import { DashboardFeedWidget } from './widgets/DashboardFeedWidget';
 import { DashboardGameLogWidget } from './widgets/DashboardGameLogWidget';
 import { DashboardInstanceWidget } from './widgets/DashboardInstanceWidget';
 
-function PreviewMetric({ label, value }: any) {
+type PreviewMetricProps = {
+    label: string;
+    value: number | string;
+};
+
+type DashboardWidgetPreviewProps = {
+    definition: NonNullable<DashboardPanelPreviewProps['definition']>;
+    config: Record<string, unknown>;
+    onConfigChange?: DashboardPanelPreviewProps['onConfigChange'];
+};
+
+function PreviewMetric({ label, value }: PreviewMetricProps) {
     return (
         <div className="bg-muted/20 rounded-md border px-3 py-2">
             <div className="text-muted-foreground text-xs tracking-wide uppercase">
@@ -29,12 +36,16 @@ function PreviewMetric({ label, value }: any) {
     );
 }
 
-function DashboardWidgetPreview({ definition, config, configUpdater }: any) {
+function DashboardWidgetPreview({
+    definition,
+    config,
+    onConfigChange
+}: DashboardWidgetPreviewProps) {
     if (definition.key === 'widget:instance') {
         return (
             <DashboardInstanceWidget
                 config={config}
-                configUpdater={configUpdater}
+                configUpdater={onConfigChange ?? null}
             />
         );
     }
@@ -43,36 +54,29 @@ function DashboardWidgetPreview({ definition, config, configUpdater }: any) {
         return (
             <DashboardGameLogWidget
                 config={config}
-                configUpdater={configUpdater}
+                configUpdater={onConfigChange ?? null}
             />
         );
     }
 
     return (
-        <DashboardFeedWidget config={config} configUpdater={configUpdater} />
+        <DashboardFeedWidget
+            config={config}
+            configUpdater={onConfigChange ?? null}
+        />
     );
 }
 
-function DashboardPagePreview({ definition }: any) {
+function DashboardPagePreview({
+    definition,
+    pageMetrics
+}: {
+    definition: NonNullable<DashboardPanelPreviewProps['definition']>;
+    pageMetrics: DashboardPageMetrics;
+}) {
     const { t } = useTranslation();
 
     const navigate = useNavigate();
-    const friendCount = useFriendRosterStore(
-        (state: any) => state.orderedFriendIds.length
-    );
-    const onlineCount = useFriendRosterStore((state: any) => state.onlineIds.length);
-    const favoriteFriendCount = useFavoriteStore(
-        (state: any) => state.favoriteFriendIds.length
-    );
-    const favoriteWorldCount = useFavoriteStore(
-        (state: any) => state.favoriteWorldIds.length
-    );
-    const favoriteAvatarCount = useFavoriteStore(
-        (state: any) => state.favoriteAvatarIds.length
-    );
-    const notificationCount = useNotificationStore(
-        (state: any) => state.items.length
-    );
 
     let metrics = [
         <PreviewMetric
@@ -87,12 +91,12 @@ function DashboardPagePreview({ definition }: any) {
             <PreviewMetric
                 key="friends"
                 label={t('view.dashboard.label.friends')}
-                value={friendCount}
+                value={pageMetrics.friendCount}
             />,
             <PreviewMetric
                 key="online"
                 label={t('view.dashboard.label.online')}
-                value={onlineCount}
+                value={pageMetrics.onlineCount}
             />
         ];
     } else if (definition.key === 'favorite-friends') {
@@ -100,7 +104,7 @@ function DashboardPagePreview({ definition }: any) {
             <PreviewMetric
                 key="favorites"
                 label={t('view.dashboard.label.favorites')}
-                value={favoriteFriendCount}
+                value={pageMetrics.favoriteFriendCount}
             />
         ];
     } else if (definition.key === 'favorite-worlds') {
@@ -108,7 +112,7 @@ function DashboardPagePreview({ definition }: any) {
             <PreviewMetric
                 key="favorites"
                 label={t('view.dashboard.label.favorites')}
-                value={favoriteWorldCount}
+                value={pageMetrics.favoriteWorldCount}
             />
         ];
     } else if (definition.key === 'favorite-avatars') {
@@ -116,7 +120,7 @@ function DashboardPagePreview({ definition }: any) {
             <PreviewMetric
                 key="favorites"
                 label={t('view.dashboard.label.favorites')}
-                value={favoriteAvatarCount}
+                value={pageMetrics.favoriteAvatarCount}
             />
         ];
     } else if (definition.key === 'notification') {
@@ -124,7 +128,7 @@ function DashboardPagePreview({ definition }: any) {
             <PreviewMetric
                 key="notifications"
                 label={t('view.dashboard.label.notifications')}
-                value={notificationCount}
+                value={pageMetrics.notificationCount}
             />
         ];
     }
@@ -148,12 +152,15 @@ function DashboardPagePreview({ definition }: any) {
     );
 }
 
-export function DashboardPanelPreview({ panel, onPanelChange }: any) {
+export function DashboardPanelPreview({
+    panelKey,
+    definition,
+    config,
+    pageMetrics,
+    onConfigChange
+}: DashboardPanelPreviewProps) {
     const { t } = useTranslation();
 
-    const panelKey = resolveDashboardPanelKey(panel);
-    const panelConfig = resolveDashboardPanelConfig(panel);
-    const definition = getDashboardPanelDefinition(panelKey);
     const canEmbedPagePanel =
         definition?.category === 'page' && canEmbedDashboardPagePanel(panelKey);
 
@@ -191,16 +198,8 @@ export function DashboardPanelPreview({ panel, onPanelChange }: any) {
                 <div className="h-full w-full overflow-y-auto">
                     <DashboardWidgetPreview
                         definition={definition}
-                        config={panelConfig}
-                        configUpdater={
-                            onPanelChange
-                                ? (nextConfig: any) =>
-                                      onPanelChange({
-                                          key: definition.key,
-                                          config: nextConfig
-                                      })
-                                : null
-                        }
+                        config={config}
+                        onConfigChange={onConfigChange}
                     />
                 </div>
             </div>
@@ -209,7 +208,10 @@ export function DashboardPanelPreview({ panel, onPanelChange }: any) {
 
     return (
         <div className="bg-card relative flex h-full min-h-[180px] overflow-hidden rounded-md border p-3">
-            <DashboardPagePreview definition={definition} />
+            <DashboardPagePreview
+                definition={definition}
+                pageMetrics={pageMetrics}
+            />
         </div>
     );
 }

@@ -87,19 +87,63 @@ fn name_field(map: &serde_json::Map<String, Value>) -> Option<String> {
     None
 }
 
-/// Keep the entities the final answer actually names, capped, with a fallback to
-/// the first few candidates when the answer mentions nobody by name.
-pub fn surfaced_entities(candidates: Vec<Entity>, answer: &str, cap: usize) -> Vec<Entity> {
+/// Entities the final answer actually names, ordered by where they first appear
+/// in the answer (earlier mention = higher priority). No cap — the panel shows
+/// everyone the answer surfaced. Empty when the answer names nobody.
+pub fn surfaced_entities(candidates: Vec<Entity>, answer: &str) -> Vec<Entity> {
     let lowered_answer = answer.to_ascii_lowercase();
-    let named: Vec<Entity> = candidates
-        .iter()
-        .filter(|entity| {
-            !entity.display_name.is_empty()
-                && lowered_answer.contains(&entity.display_name.to_ascii_lowercase())
+    let mut named: Vec<(usize, Entity)> = candidates
+        .into_iter()
+        .filter_map(|entity| {
+            if entity.display_name.is_empty() {
+                return None;
+            }
+            let position = lowered_answer.find(&entity.display_name.to_ascii_lowercase())?;
+            Some((position, entity))
         })
-        .cloned()
         .collect();
-    let mut selected = if named.is_empty() { candidates } else { named };
-    selected.truncate(cap);
-    selected
+    named.sort_by_key(|(position, _)| *position);
+    named.into_iter().map(|(_, entity)| entity).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn user(id: &str, name: &str) -> Entity {
+        Entity {
+            kind: "user".into(),
+            id: id.into(),
+            display_name: name.into(),
+        }
+    }
+
+    #[test]
+    fn orders_by_first_mention_and_keeps_all() {
+        // Candidate order (Bob, Alice, Carol) differs from mention order in the
+        // answer (Alice, Carol, Bob); the result follows the answer, uncapped.
+        let candidates = vec![
+            user("usr_b", "Bob"),
+            user("usr_a", "Alice"),
+            user("usr_c", "Carol"),
+        ];
+        let answer = "Alice plays the most, then Carol, and sometimes Bob.";
+        let surfaced = surfaced_entities(candidates, answer);
+        let ids: Vec<&str> = surfaced.iter().map(|e| e.id.as_str()).collect();
+        assert_eq!(ids, ["usr_a", "usr_c", "usr_b"]);
+    }
+
+    #[test]
+    fn drops_entities_the_answer_does_not_name() {
+        let candidates = vec![user("usr_a", "Alice"), user("usr_b", "Bob")];
+        let surfaced = surfaced_entities(candidates, "You mostly play with Alice.");
+        assert_eq!(surfaced.len(), 1);
+        assert_eq!(surfaced[0].id, "usr_a");
+    }
+
+    #[test]
+    fn empty_when_answer_names_nobody() {
+        let candidates = vec![user("usr_a", "Alice")];
+        assert!(surfaced_entities(candidates, "No friends were observed.").is_empty());
+    }
 }

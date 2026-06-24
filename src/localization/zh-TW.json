@@ -317,8 +317,6 @@
             "notification_center_page": "通知中心頁面。",
             "my_avatars": "我的角色",
             "avatar_collection_page": "角色收藏頁面。",
-            "instance_activity": "活動紀錄",
-            "instance_activity_chart": "房間活動圖表。",
             "mutual_friends": "共同好友",
             "mutual_friends_chart": "共同好友圖表。",
             "tools": "工具",
@@ -768,6 +766,10 @@
         },
         "instance_history": {
             "title": "房間歷史",
+            "mode": {
+                "search": "查詢",
+                "day": "按日"
+            },
             "placeholder": {
                 "user": "選擇使用者"
             },
@@ -1283,10 +1285,10 @@
         },
         "charts": {
             "instance_activity": {
-                "header": "房間活動",
                 "online_time": "上線時間",
                 "previous_day": "前一天",
                 "next_day": "後一天",
+                "no_activity": "無活動",
                 "refresh": "重新整理",
                 "tips": {
                     "online_time": "上線時間是指 VRCX-0 為當天記錄的遊戲時間",
@@ -1416,15 +1418,12 @@
             "empty": {
                 "no_detail_rows": "沒有詳細資訊行",
                 "no_instance_activity_on_this_day": "這一天沒有房間活動",
-                "selected_date_outside_activity_set": "這一天不在已紀錄的活動範圍內",
-                "no_detail_charts_match_the_current_filters": "沒有符合目前篩選的詳細資訊圖表",
                 "no_friends_are_available_for_mutual_graph_fetching": "沒有可用於取得共同好友圖譜的好友",
                 "no_selection": "未選擇",
                 "no_friends_match_this_search": "沒有好友符合此搜尋",
                 "no_cached_mutual_graph_yet": "還沒有快取的共同好友圖譜",
                 "no_graph_nodes_match_the_current_search": "沒有圖譜節點符合目前搜尋",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "這次房間訪問沒有符合的玩家活動行",
-                "turn_on_solo_or_no_friend_instances_to_show_the_hidden_detail_groups": "開啟單人或無好友房間以顯示隱藏的詳細資訊分組"
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "這次房間訪問沒有符合的玩家活動行"
             },
             "error": {
                 "instance_activity_failed_to_load": "房間活動載入失敗",
@@ -6221,8 +6220,6 @@
             "friend_management_table_and_roster_details": "好友管理表格和列表詳細資訊。",
             "charts": "圖表",
             "charts_landing_route": "圖表入口頁面。",
-            "charts_instance": "圖表：房間",
-            "instance_activity_timeline_chart": "房間活動時間線圖表。",
             "charts_mutual": "圖表：共同好友",
             "mutual_friends_graph_over_cached_data": "基於快取資料的共同好友圖譜。",
             "tools": "工具",

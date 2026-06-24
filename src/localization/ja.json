@@ -317,8 +317,6 @@
             "notification_center_page": "通知センターのページです。",
             "my_avatars": "自分のアバター",
             "avatar_collection_page": "アバターコレクションのページです。",
-            "instance_activity": "インスタンスログ",
-            "instance_activity_chart": "インスタンス活動チャートです。",
             "mutual_friends": "共通のフレンド",
             "mutual_friends_chart": "共通フレンドチャートです。",
             "tools": "ツール",
@@ -768,6 +766,10 @@
         },
         "instance_history": {
             "title": "インスタンス履歴",
+            "mode": {
+                "search": "検索",
+                "day": "日別"
+            },
             "placeholder": {
                 "user": "ユーザーを選択"
             },
@@ -1283,10 +1285,10 @@
         },
         "charts": {
             "instance_activity": {
-                "header": "インスタンスログ",
                 "online_time": "オンライン時間",
                 "previous_day": "前日",
                 "next_day": "翌日",
+                "no_activity": "活動なし",
                 "refresh": "更新",
                 "tips": {
                     "online_time": "オンライン時間とは、VRCX-0 が記録した当日のゲームプレイ時間です。",
@@ -1416,15 +1418,12 @@
             "empty": {
                 "no_detail_rows": "詳細行はありません",
                 "no_instance_activity_on_this_day": "この日のインスタンス活動はありません",
-                "selected_date_outside_activity_set": "この日は記録済みの活動範囲外です",
-                "no_detail_charts_match_the_current_filters": "現在のフィルターに一致する詳細チャートはありません",
                 "no_friends_are_available_for_mutual_graph_fetching": "共通フレンドグラフの取得に使えるフレンドがいません",
                 "no_selection": "未選択",
                 "no_friends_match_this_search": "この検索に一致するフレンドはいません",
                 "no_cached_mutual_graph_yet": "共通フレンドグラフはまだキャッシュされていません",
                 "no_graph_nodes_match_the_current_search": "現在の検索に一致するグラフノードはありません",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "このインスタンス訪問に一致するプレイヤー活動行はありません",
-                "turn_on_solo_or_no_friend_instances_to_show_the_hidden_detail_groups": "ソロまたはフレンドなしインスタンスを有効にすると、非表示の詳細グループを表示できます"
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "このインスタンス訪問に一致するプレイヤー活動行はありません"
             },
             "error": {
                 "instance_activity_failed_to_load": "インスタンス活動の読み込みに失敗しました",
@@ -6220,8 +6219,6 @@
             "friend_management_table_and_roster_details": "フレンド管理テーブルと一覧詳細です。",
             "charts": "チャート",
             "charts_landing_route": "チャートのランディングルートです。",
-            "charts_instance": "チャート: インスタンス",
-            "instance_activity_timeline_chart": "インスタンスアクティビティのタイムラインチャートです。",
             "charts_mutual": "チャート: 共通フレンド",
             "mutual_friends_graph_over_cached_data": "キャッシュデータに基づく共通フレンドグラフです。",
             "tools": "ツール",

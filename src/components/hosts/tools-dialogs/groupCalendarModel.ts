@@ -10,6 +10,8 @@ import { enUS } from 'react-day-picker/locale/en-US';
 import { ja } from 'react-day-picker/locale/ja';
 import { zhCN } from 'react-day-picker/locale/zh-CN';
 
+import { getTimeZoneDateParts } from '@/shared/utils/dateTimeFormatters';
+
 import { getEventId } from './toolsDialogUtils';
 
 export const DATE_KEY_FORMAT = 'yyyy-MM-dd';
@@ -27,25 +29,9 @@ export function monthDateFromKey(dateKey: any) {
 
 export function calendarDateKey(value: any, timeZone: any) {
     const sourceValue = value || new Date();
-    try {
-        const intlValue =
-            sourceValue instanceof Date ? sourceValue : new Date(sourceValue);
-        const parts = new Intl.DateTimeFormat('en-US', {
-            timeZone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).formatToParts(intlValue);
-        const values = Object.fromEntries(
-            parts
-                .filter((part: any) => part.type !== 'literal')
-                .map((part: any) => [part.type, part.value])
-        );
-        if (values.year && values.month && values.day) {
-            return `${values.year}-${values.month}-${values.day}`;
-        }
-    } catch {
-        // Fall back to local formatting if Intl cannot resolve the zone.
+    const dateParts = getTimeZoneDateParts(sourceValue, timeZone);
+    if (dateParts) {
+        return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
     }
     return format(sourceValue, DATE_KEY_FORMAT);
 }
