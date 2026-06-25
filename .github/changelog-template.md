@@ -15,7 +15,8 @@ Current version note: replace this with one short global message for this releas
 **What's Fixed:**
 
 - TODO
-    <!-- vrcx-0-changelog:end -->
+
+<!-- vrcx-0-changelog:end -->
 
 <a id="vrcx-0-v000-changelog-zh-cn"></a>
 
@@ -26,7 +27,8 @@ Current version note: replace this with one short global message for this releas
 **修复内容：**
 
 - TODO
-    <!-- vrcx-0-changelog:end -->
+
+<!-- vrcx-0-changelog:end -->
 
 <a id="vrcx-0-v000-changelog-zh-tw"></a>
 
@@ -37,7 +39,8 @@ Current version note: replace this with one short global message for this releas
 **修正內容：**
 
 - TODO
-    <!-- vrcx-0-changelog:end -->
+
+<!-- vrcx-0-changelog:end -->
 
 <a id="vrcx-0-v000-changelog-ja"></a>
 
@@ -48,7 +51,8 @@ Current version note: replace this with one short global message for this releas
 **修正内容：**
 
 - TODO
-    <!-- vrcx-0-changelog:end -->
+
+<!-- vrcx-0-changelog:end -->
 
 <a id="vrcx-0-v000-changelog-ko"></a>
 
@@ -59,4 +63,5 @@ Current version note: replace this with one short global message for this releas
 **수정 사항:**
 
 - TODO
-    <!-- vrcx-0-changelog:end -->
+
+<!-- vrcx-0-changelog:end -->

@@ -7,7 +7,7 @@ import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { copyTextToClipboard } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import {
     findGroupOption,

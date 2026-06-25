@@ -11,7 +11,7 @@ import {
 import { requireHostCapabilitySupported } from '@/services/hostCapabilityService';
 import i18n from '@/services/i18nService';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
 type InstanceShortNameResponse = {

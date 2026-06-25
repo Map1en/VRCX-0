@@ -11,7 +11,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 
 export const categoryOrder = ['friend', 'group', 'other'];

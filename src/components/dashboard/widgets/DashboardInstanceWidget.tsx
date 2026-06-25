@@ -15,7 +15,7 @@ import { timeToText } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import { useFavoriteStore } from '@/state/favoriteStore';

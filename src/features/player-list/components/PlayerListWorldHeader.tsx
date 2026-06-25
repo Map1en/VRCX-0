@@ -7,7 +7,7 @@ import {
 } from '@/lib/worldAssetBundle';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 

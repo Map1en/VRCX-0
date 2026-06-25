@@ -71,6 +71,21 @@ pub fn user_groups_get_input(
     ))
 }
 
+pub fn user_group_permissions_get_input(
+    endpoint: String,
+    user_id: String,
+) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+    let user_id = require_text(user_id, "VrchatGroupUserPermissionsGet requires userId.")?;
+    Ok((
+        user_id.clone(),
+        get_input(
+            endpoint,
+            format!("users/{}/groups/permissions", encode_path_segment(&user_id)),
+            HashMap::new(),
+        ),
+    ))
+}
+
 pub fn group_paged_get_input(
     endpoint: String,
     group_id: String,
@@ -103,6 +118,27 @@ pub fn group_get_no_params_input(
     Ok((
         group_id.clone(),
         get_input(endpoint, group_path(&group_id, suffix), HashMap::new()),
+    ))
+}
+
+pub fn member_get_input(
+    endpoint: String,
+    group_id: String,
+    user_id: String,
+) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+    let group_id = require_text(group_id, "VrchatGroupMemberGet requires groupId.")?;
+    let user_id = require_text(user_id, "VrchatGroupMemberGet requires userId.")?;
+    Ok((
+        group_id.clone(),
+        user_id.clone(),
+        get_input(
+            endpoint,
+            group_path(
+                &group_id,
+                &format!("members/{}", encode_path_segment(&user_id)),
+            ),
+            HashMap::new(),
+        ),
     ))
 }
 
@@ -487,7 +523,7 @@ pub fn member_unban_input(
         group_message: "VrchatGroupMemberUnban requires groupId.",
         user_message: "VrchatGroupMemberUnban requires userId.",
         method: "DELETE",
-        suffix: format!("members/{}", encode_path_segment(&suffix_user_id)),
+        suffix: format!("bans/{}", encode_path_segment(&suffix_user_id)),
         body: None,
     })
 }
@@ -595,4 +631,49 @@ pub fn member_props_set_input(
             Some(object_body(params)),
         ),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn endpoint() -> String {
+        "https://api.vrchat.cloud/api/1".to_string()
+    }
+
+    #[test]
+    fn user_group_permissions_get_uses_permissions_endpoint() {
+        let (user_id, request) =
+            user_group_permissions_get_input(endpoint(), "usr me".into()).unwrap();
+
+        assert_eq!(user_id, "usr me");
+        assert_eq!(
+            request.path.as_deref(),
+            Some("users/usr%20me/groups/permissions")
+        );
+        assert_eq!(request.method.as_deref(), Some("GET"));
+    }
+
+    #[test]
+    fn member_get_reads_one_group_member() {
+        let (group_id, user_id, request) =
+            member_get_input(endpoint(), "grp 1".into(), "usr 1".into()).unwrap();
+
+        assert_eq!(group_id, "grp 1");
+        assert_eq!(user_id, "usr 1");
+        assert_eq!(
+            request.path.as_deref(),
+            Some("groups/grp%201/members/usr%201")
+        );
+        assert_eq!(request.method.as_deref(), Some("GET"));
+    }
+
+    #[test]
+    fn member_unban_deletes_ban_row_not_member_row() {
+        let (_, _, request) =
+            member_unban_input(endpoint(), "grp 1".into(), "usr 1".into()).unwrap();
+
+        assert_eq!(request.path.as_deref(), Some("groups/grp%201/bans/usr%201"));
+        assert_eq!(request.method.as_deref(), Some("DELETE"));
+    }
 }

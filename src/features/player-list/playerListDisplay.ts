@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 

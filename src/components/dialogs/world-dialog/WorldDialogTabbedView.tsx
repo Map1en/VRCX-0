@@ -17,7 +17,7 @@ import {
     copyTextToClipboard,
     openExternalLink
 } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 
 import {

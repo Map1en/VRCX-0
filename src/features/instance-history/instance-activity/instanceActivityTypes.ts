@@ -1,4 +1,4 @@
-import type { parseLocation } from '@/shared/utils/locationParser';
+import type { parseLocation } from '@/shared/utils/location';
 
 export type ActivityLocation = ReturnType<typeof parseLocation>;
 

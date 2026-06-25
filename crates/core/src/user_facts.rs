@@ -97,7 +97,7 @@ fn insert_derived_location_fields(object: &mut Map<String, Value>) {
         let Some(tag) = object.get(source).and_then(Value::as_str) else {
             continue;
         };
-        let value = crate::location::parse_location(tag).to_minimal_value(tag);
+        let value = crate::location::parse_location(tag).to_frontend_value(tag);
         object.insert(derived.into(), value);
     }
 }
@@ -555,7 +555,7 @@ mod tests {
     }
 
     #[test]
-    fn to_object_derives_location_matching_minimal_value() {
+    fn to_object_derives_full_location_projection() {
         let tag = "wrld_a:1~group(grp_a)~groupAccessType(plus)";
         let result = merge_user_fact(
             None,
@@ -563,8 +563,20 @@ mod tests {
             &opts("realtime"),
         );
         let object = result.fact.to_object();
-        let expected = crate::location::parse_location(tag).to_minimal_value(tag);
-        assert_eq!(object.get("$location"), Some(&expected));
+        let location = object.get("$location").expect("derived location");
+
+        assert_eq!(object.get("location"), Some(&json!(tag)));
+        assert_eq!(location["tag"], json!(tag));
+        assert_eq!(location["isRealInstance"], json!(true));
+        assert_eq!(location["worldId"], json!("wrld_a"));
+        assert_eq!(
+            location["instanceId"],
+            json!("1~group(grp_a)~groupAccessType(plus)")
+        );
+        assert_eq!(location["accessType"], json!("group"));
+        assert_eq!(location["accessTypeName"], json!("groupPlus"));
+        assert_eq!(location["groupId"], json!("grp_a"));
+        assert_eq!(location["groupAccessType"], json!("plus"));
     }
 
     #[test]

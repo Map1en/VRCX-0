@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { openGroupDialog } from '@/services/dialogService';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
@@ -85,7 +86,6 @@ export function UserDialogContent({
         isLocalUserVrcPlusSupporter,
         knownTargetUser,
         localFriendFavorites,
-        prompt,
         remoteFavoriteFriendIds,
         updateEntityDialogMetadata
     } = useUserDialogRuntimeState(normalizedUserId);
@@ -118,6 +118,8 @@ export function UserDialogContent({
     const targetKey = dialogTargetKey(currentEndpoint, normalizedUserId);
     const actionStatusRef = useRef('idle');
     const [actionStatus, setActionStatus] = useState('idle');
+    const [groupQuickModerationOpen, setGroupQuickModerationOpen] =
+        useState(false);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
 
     const {
@@ -147,6 +149,9 @@ export function UserDialogContent({
         profileIsLoading,
         targetIdentity
     );
+    useEffect(() => {
+        setGroupQuickModerationOpen(false);
+    }, [targetIdentity]);
 
     const currentGameLocation = normalizeUserId(gameState?.currentLocation);
     const currentGameDestination = normalizeUserId(
@@ -320,11 +325,13 @@ export function UserDialogContent({
         isFriend,
         normalizedCurrentUserId,
         normalizedUserId,
+        openGroupQuickModerationDialog: () => {
+            setGroupQuickModerationOpen(true);
+        },
         moderationRevisionRef,
         moderationState,
         openNonce,
         profile,
-        prompt,
         setActionStatus,
         setAvatarOverrideState,
         setBaseProfile,
@@ -482,6 +489,18 @@ export function UserDialogContent({
                     allowImageUpload: isLocalUserVrcPlusSupporter,
                     targetLabel: profile?.displayName || profile?.id,
                     onUse: selectInviteMessage
+                }}
+                groupQuickModerationDialog={{
+                    open: groupQuickModerationOpen,
+                    endpoint: currentEndpoint,
+                    currentUserId: normalizedCurrentUserId,
+                    targetUserId: normalizedUserId,
+                    targetLabel: profile?.displayName || profile?.id,
+                    targetImageUrl: imageUrl,
+                    onOpenChange: setGroupQuickModerationOpen,
+                    onDetailedManagement: (groupId: string) => {
+                        openGroupDialog({ groupId });
+                    }
                 }}
             />
         </>

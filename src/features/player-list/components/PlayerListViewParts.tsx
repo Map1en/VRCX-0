@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';

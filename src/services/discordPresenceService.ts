@@ -16,7 +16,7 @@ import {
 } from '@/shared/utils/discordPresence';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { normalizeLocationValue } from '@/shared/utils/location';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import i18n from './i18nService';

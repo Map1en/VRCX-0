@@ -36,7 +36,6 @@ api_execute_command!(execute_vrchat_favorite_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_search_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_avatar_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_world_api, VrchatScope::Vrchat);
-api_execute_command!(execute_vrchat_group_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_instance_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_notification_api, VrchatScope::Vrchat);
 api_execute_command!(execute_vrchat_media_api, VrchatScope::VrchatMedia);

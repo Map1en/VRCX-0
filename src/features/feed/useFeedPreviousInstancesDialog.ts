@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import gameLogRepository from '@/repositories/gameLogRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import { normalizeFeedId as normalizeId } from './feedRows';
 import type {

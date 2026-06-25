@@ -18,7 +18,7 @@ import {
     recordLocationHintsFromInstances
 } from '@/services/domainIngestionService';
 import { checkCanInvite } from '@/shared/utils/invite';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import {
     buildCachedInstanceMap,

@@ -1,7 +1,7 @@
 import configRepository from '@/repositories/configRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import mediaRepository from '@/repositories/mediaRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';

@@ -16,7 +16,7 @@ import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
-import { translateAccessType } from '@/shared/utils/locationParser';
+import { translateAccessType } from '@/shared/utils/location';
 import { useLaunchStore } from '@/state/launchStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';

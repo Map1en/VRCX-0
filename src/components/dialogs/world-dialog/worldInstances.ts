@@ -1,5 +1,5 @@
 import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 export function normalizeEntityId(value: any) {
     return typeof value === 'string'

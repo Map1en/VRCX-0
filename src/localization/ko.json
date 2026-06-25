@@ -3029,6 +3029,28 @@
                 "edit_note_memo": "메모 및 로컬 메모 편집",
                 "reset_home": "홈 재설정"
             },
+            "group_moderation": {
+                "title": "Manage in your groups",
+                "target": "Target user",
+                "member": "Member",
+                "loading": "Loading group permissions...",
+                "kick_section": "Kick from group",
+                "ban_section": "Ban from a group",
+                "groups_count": "{count} groups",
+                "no_kickable": "Not a member of any group you manage",
+                "no_bannable": "No groups where you can manage bans",
+                "select_group": "Select a group...",
+                "select_group_hint": "Select a group to ban from",
+                "ban_ready": "Ban this user from the selected group",
+                "detailed": "Detailed management",
+                "load_failed": "Failed to load group moderation",
+                "stale": "The active account changed before group moderation finished loading.",
+                "membership_partial": "{count} membership checks failed. Other groups are still shown.",
+                "kick_success": "Removed from {value}",
+                "ban_success": "Banned in {value}",
+                "kick_failed": "Failed to kick user",
+                "ban_failed": "Failed to ban user"
+            },
             "profile_media": {
                 "banner": "배너",
                 "banner_description": "이 이미지는 프로필 카드와 공개 프로필에 표시됩니다.",
@@ -3311,8 +3333,7 @@
                 "avatar_author_unavailable": "아바타 작성자를 사용할 수 없습니다.",
                 "blocked": "차단됨",
                 "cannot_load_message_templates_no_current_user_session_is_available": "메시지 템플릿을 로드할 수 없습니다. 현재 사용자 세션을 사용할 수 없습니다.",
-                "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다.",
-                "group_id_is_required": "그룹 ID는 필수 항목입니다."
+                "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
             "description": {
                 "update_your_social_status_and_status_description": "소셜 상태 및 상태 메시지 업데이트",
@@ -3368,7 +3389,6 @@
                 "request_invite": "초대를 요청하시겠습니까?",
                 "send_boop": "삑삑 보내기",
                 "send": "보내기",
-                "group_moderation": "그룹 중재",
                 "leave_group": "그룹 탈퇴",
                 "leave": "나가기",
                 "leave_selected_groups": "선택한 그룹 탈퇴",
@@ -3384,7 +3404,6 @@
                 "value_user": "{value} 사용자?",
                 "value_request_sent": "{value} 요청이 전송되었습니다.",
                 "value_updated": "{value} 업데이트됨",
-                "enter_a_group_id_to_open_moderation_for_value": "{value}에 대한 검토를 열려면 그룹 ID를 입력하세요.",
                 "value_copied": "{value} 복사됨",
                 "leave_value": "{value}을(를) 떠나시겠습니까?",
                 "exported_value_groups": "{value} 그룹을 내보냈습니다.",

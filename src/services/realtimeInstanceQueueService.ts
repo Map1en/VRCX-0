@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 
 import type { RealtimeInstanceQueueProjection } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
-import { displayLocation, parseLocation } from '@/shared/utils/locationParser';
+import { displayLocation, parseLocation } from '@/shared/utils/location';
 import {
     locationHintKey,
     useLocationHintStore

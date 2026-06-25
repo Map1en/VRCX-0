@@ -1,5 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
 type RowRecord = Record<string, unknown>;

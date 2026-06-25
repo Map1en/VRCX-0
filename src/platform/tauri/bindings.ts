@@ -1784,6 +1784,20 @@ export const commands = {
             { input }
         );
     },
+    async appUserGroupQuickModerationAction(
+        input: GroupQuickModerationActionInput
+    ): Promise<GroupQuickModerationActionOutput> {
+        return await TAURI_INVOKE('app__user_group_quick_moderation_action', {
+            input
+        });
+    },
+    async appUserGroupQuickModerationGet(
+        input: GroupQuickModerationInput
+    ): Promise<GroupQuickModerationOutput> {
+        return await TAURI_INVOKE('app__user_group_quick_moderation_get', {
+            input
+        });
+    },
     async appModerationSyncRefresh(
         input: ModerationSyncRefreshInput
     ): Promise<ModerationSyncRefreshOutput> {
@@ -3176,6 +3190,41 @@ export type GameLogRuntimeSnapshotDto = {
     destination: string;
     players: PlayerState[];
 };
+export type GroupQuickModerationActionInput = {
+    currentUserId?: string;
+    targetUserId?: string;
+    groupId?: string;
+    endpoint?: string;
+    action?: string;
+};
+export type GroupQuickModerationActionOutput = {
+    groupId: string;
+    targetUserId: string;
+    action: string;
+    status: number;
+};
+export type GroupQuickModerationGroup = {
+    groupId: string;
+    name: string;
+    shortCode: string;
+    iconUrl: string;
+    ownerId: string;
+    membershipLabel: string;
+    roleLabel: string;
+};
+export type GroupQuickModerationInput = {
+    currentUserId?: string;
+    targetUserId?: string;
+    endpoint?: string;
+};
+export type GroupQuickModerationOutput = {
+    currentUserId: string;
+    targetUserId: string;
+    stale: boolean;
+    kickGroups: GroupQuickModerationGroup[];
+    banGroups: GroupQuickModerationGroup[];
+    membershipErrorCount: number;
+};
 export type HostCapabilities = {
     platform: string;
     arch: string;
@@ -3487,6 +3536,29 @@ export type OverlayActivityTypeDefinition = {
     allowedScopes: OverlayActivityScope[];
     defaultScope: OverlayActivityScope;
     aliases: string[];
+};
+export type ParsedLocation = {
+    tag: string;
+    isOffline: boolean;
+    isPrivate: boolean;
+    isTraveling: boolean;
+    isRealInstance: boolean;
+    worldId: string;
+    instanceId: string;
+    instanceName: string;
+    accessType: string;
+    accessTypeName: string;
+    region: string;
+    shortName: string;
+    userId: string | null;
+    hiddenId: string | null;
+    privateId: string | null;
+    friendsId: string | null;
+    groupId: string | null;
+    groupAccessType: string | null;
+    canRequestInvite: boolean;
+    strict: boolean;
+    ageGate: boolean;
 };
 export type PlayerDetail = {
     id?: string;

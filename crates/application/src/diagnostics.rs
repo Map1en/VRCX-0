@@ -119,7 +119,7 @@ fn command_groups() -> Vec<RuntimeCommandGroupSnapshot> {
             name: "vrchat-api".into(),
             boundary: "typed Rust API and API-backed local actions grouped by business domain"
                 .into(),
-            command_count: 146,
+            command_count: 149,
             examples: vec![
                 "app__runtime_auth_scope_current_user_get".into(),
                 "app__vrchat_search_worlds_get".into(),
@@ -135,6 +135,7 @@ fn command_groups() -> Vec<RuntimeCommandGroupSnapshot> {
                 "app__vrchat_avatar_save".into(),
                 "app__vrchat_group_members_get".into(),
                 "app__vrchat_group_join".into(),
+                "app__user_group_quick_moderation_get".into(),
                 "app__social_friend_roster_baseline_get".into(),
                 "app__vrchat_world_get".into(),
             ],

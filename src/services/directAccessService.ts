@@ -8,7 +8,7 @@ import {
     openWorldDialog
 } from '@/services/dialogService';
 import { isHostCapabilityAvailable } from '@/services/hostCapabilityService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
 type LooseRecord = Record<string, unknown>;

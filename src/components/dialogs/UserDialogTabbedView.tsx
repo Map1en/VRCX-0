@@ -9,7 +9,7 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import { isActionRecent } from '@/services/recentActionService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {

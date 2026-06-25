@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { convertFileSrc } from '@/platform/tauri/assets';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';

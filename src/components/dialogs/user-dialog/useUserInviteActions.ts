@@ -7,7 +7,7 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { recordRecentAction } from '@/services/recentActionService';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import { normalizeUserId } from './userProfileFields';
 

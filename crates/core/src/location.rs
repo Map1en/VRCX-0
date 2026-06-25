@@ -36,12 +36,29 @@ pub struct ParsedLocation {
 }
 
 impl ParsedLocation {
-    pub fn to_minimal_value(&self, tag: &str) -> Value {
+    pub fn to_frontend_value(&self, tag: &str) -> Value {
         json!({
             "tag": tag,
+            "isOffline": self.is_offline,
+            "isPrivate": self.is_private,
+            "isTraveling": self.is_traveling,
+            "isRealInstance": self.is_real_instance,
             "worldId": self.world_id,
             "instanceId": self.instance_id,
-            "groupId": self.group_id.clone().unwrap_or_default(),
+            "instanceName": self.instance_name,
+            "accessType": self.access_type,
+            "accessTypeName": self.access_type_name,
+            "region": self.region,
+            "shortName": self.short_name,
+            "userId": self.user_id,
+            "hiddenId": self.hidden_id,
+            "privateId": self.private_id,
+            "friendsId": self.friends_id,
+            "groupId": self.group_id,
+            "groupAccessType": self.group_access_type,
+            "canRequestInvite": self.can_request_invite,
+            "strict": self.strict,
+            "ageGate": self.age_gate,
         })
     }
 }
@@ -358,28 +375,83 @@ mod tests {
     }
 
     #[test]
-    fn minimal_value_matches_presence_contract() {
+    fn frontend_value_matches_presence_contract() {
         let parsed = parse_location("wrld_a:1~group(grp_a)~groupAccessType(plus)");
         assert_eq!(
-            parsed.to_minimal_value("wrld_a:1~group(grp_a)~groupAccessType(plus)"),
+            parsed.to_frontend_value("wrld_a:1~group(grp_a)~groupAccessType(plus)"),
             json!({
                 "tag": "wrld_a:1~group(grp_a)~groupAccessType(plus)",
+                "isOffline": false,
+                "isPrivate": false,
+                "isTraveling": false,
+                "isRealInstance": true,
                 "worldId": "wrld_a",
                 "instanceId": "1~group(grp_a)~groupAccessType(plus)",
+                "instanceName": "1",
+                "accessType": "group",
+                "accessTypeName": "groupPlus",
+                "region": "",
+                "shortName": "",
+                "userId": null,
+                "hiddenId": null,
+                "privateId": null,
+                "friendsId": null,
                 "groupId": "grp_a",
+                "groupAccessType": "plus",
+                "canRequestInvite": false,
+                "strict": false,
+                "ageGate": false,
             })
         );
 
         let public = parse_location("wrld_a:1~region(use)");
         assert_eq!(
-            public.to_minimal_value("wrld_a:1~region(use)")["groupId"],
-            json!("")
+            public.to_frontend_value("wrld_a:1~region(use)")["region"],
+            json!("use")
+        );
+
+        let strict = parse_location("wrld_a:1~region(eu)~strict~ageGate&shortName=ab12");
+        assert_eq!(
+            strict.to_frontend_value("wrld_a:1~region(eu)~strict~ageGate&shortName=ab12")
+                ["shortName"],
+            json!("ab12")
+        );
+        assert_eq!(
+            strict.to_frontend_value("wrld_a:1~region(eu)~strict~ageGate&shortName=ab12")["strict"],
+            json!(true)
+        );
+        assert_eq!(
+            strict.to_frontend_value("wrld_a:1~region(eu)~strict~ageGate&shortName=ab12")
+                ["ageGate"],
+            json!(true)
         );
 
         let offline = parse_location("offline");
         assert_eq!(
-            offline.to_minimal_value("  offline  "),
-            json!({"tag": "  offline  ", "worldId": "", "instanceId": "", "groupId": ""})
+            offline.to_frontend_value("  offline  "),
+            json!({
+                "tag": "  offline  ",
+                "isOffline": true,
+                "isPrivate": false,
+                "isTraveling": false,
+                "isRealInstance": false,
+                "worldId": "",
+                "instanceId": "",
+                "instanceName": "",
+                "accessType": "",
+                "accessTypeName": "",
+                "region": "",
+                "shortName": "",
+                "userId": null,
+                "hiddenId": null,
+                "privateId": null,
+                "friendsId": null,
+                "groupId": null,
+                "groupAccessType": null,
+                "canRequestInvite": false,
+                "strict": false,
+                "ageGate": false,
+            })
         );
     }
 

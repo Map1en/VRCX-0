@@ -1,6 +1,7 @@
 pub mod assistant;
 pub mod auth_scope;
 pub mod background_mode;
+pub mod group_quick_moderation;
 pub mod lifecycle;
 pub mod mcp_server;
 pub mod moderation_sync;

@@ -22,7 +22,7 @@ import {
     sendNotificationButtonResponse
 } from '@/services/notificationActionService';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
 
 import type {

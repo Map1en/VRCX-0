@@ -14,7 +14,7 @@ import {
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 

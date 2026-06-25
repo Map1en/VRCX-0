@@ -2,8 +2,8 @@ use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
     BackendRuntimeTelemetry, FriendProjection, GameLogProjection, HostSessionProjection,
-    OverlayActivitySnapshot, RealtimeCurrentUserProjection, RealtimeEntryCorrection,
-    RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
+    OverlayActivitySnapshot, ParsedLocation, RealtimeCurrentUserProjection,
+    RealtimeEntryCorrection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
     RealtimeNotificationProjection, RealtimeWsStatusPayload,
 };
 use vrcx_0_harness::{
@@ -29,6 +29,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<HostSessionProjection>()
         .typ::<McpServerStatus>()
         .typ::<OverlayActivitySnapshot>()
+        .typ::<ParsedLocation>()
         .typ::<RealtimeCurrentUserProjection>()
         .typ::<RealtimeEntryCorrection>()
         .typ::<RealtimeInstanceClosedProjection>()
@@ -344,6 +345,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::media::service::app__vrchat_media_vrc_plus_icon_upload,
             commands::vrchat::media::service::app__vrchat_media_world_image_set,
             commands::vrchat::media::service::app__vrchat_media_world_image_upload_legacy,
+            commands::application::group_quick_moderation::app__user_group_quick_moderation_action,
+            commands::application::group_quick_moderation::app__user_group_quick_moderation_get,
             commands::application::moderation_sync::app__moderation_sync_refresh,
             commands::application::moderation_sync::app__moderation_sync_update,
             commands::vrchat::notifications::service::app__vrchat_boop_send,

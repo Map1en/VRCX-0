@@ -395,10 +395,10 @@ fn game_log_authority_patch(
         "travelingToInstance".into(),
         Value::String(parsed_traveling.instance_id.clone()),
     );
-    patch.insert("$location".into(), parsed.to_minimal_value(location));
+    patch.insert("$location".into(), parsed.to_frontend_value(location));
     patch.insert(
         "$travelingToLocation".into(),
-        parsed_traveling.to_minimal_value(traveling_to_location),
+        parsed_traveling.to_frontend_value(traveling_to_location),
     );
     let world_name = authority.game_log_world_name.trim();
     if !world_name.is_empty() {
@@ -519,11 +519,11 @@ fn build_location_patch(
     );
     patch.insert(
         "$location".into(),
-        parsed_location.to_minimal_value(&location),
+        parsed_location.to_frontend_value(&location),
     );
     patch.insert(
         "$travelingToLocation".into(),
-        parsed_traveling.to_minimal_value(&traveling),
+        parsed_traveling.to_frontend_value(&traveling),
     );
     patch
 }
@@ -741,6 +741,20 @@ mod tests {
         assert_eq!(
             serialized["gameStatePatch"]["currentLocation"],
             json!("wrld_1:123~group(grp_1)")
+        );
+        assert_eq!(
+            serialized["patch"]["$location"]["tag"],
+            json!("wrld_1:123~group(grp_1)")
+        );
+        assert_eq!(serialized["patch"]["$location"]["worldId"], json!("wrld_1"));
+        assert_eq!(
+            serialized["patch"]["$location"]["accessType"],
+            json!("group")
+        );
+        assert_eq!(serialized["patch"]["$location"]["groupId"], json!("grp_1"));
+        assert_eq!(
+            serialized["patch"]["$travelingToLocation"]["isRealInstance"],
+            json!(false)
         );
     }
 }

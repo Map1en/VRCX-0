@@ -774,6 +774,28 @@
                 "unfriend": "Supprimer des amis",
                 "logout": "Se déconnecter"
             },
+            "group_moderation": {
+                "title": "Manage in your groups",
+                "target": "Target user",
+                "member": "Member",
+                "loading": "Loading group permissions...",
+                "kick_section": "Kick from group",
+                "ban_section": "Ban from a group",
+                "groups_count": "{count} groups",
+                "no_kickable": "Not a member of any group you manage",
+                "no_bannable": "No groups where you can manage bans",
+                "select_group": "Select a group...",
+                "select_group_hint": "Select a group to ban from",
+                "ban_ready": "Ban this user from the selected group",
+                "detailed": "Detailed management",
+                "load_failed": "Failed to load group moderation",
+                "stale": "The active account changed before group moderation finished loading.",
+                "membership_partial": "{count} membership checks failed. Other groups are still shown.",
+                "kick_success": "Removed from {value}",
+                "ban_success": "Banned in {value}",
+                "kick_failed": "Failed to kick user",
+                "ban_failed": "Failed to ban user"
+            },
             "info": {
                 "header": "Infos",
                 "launch_invite_tooltip": "Lancer / inviter",

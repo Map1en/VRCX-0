@@ -1,6 +1,6 @@
 import { Location } from '@/components/Location';
 import { cn } from '@/lib/utils';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { normalizeFeedId as normalizeId } from '../feedRows';

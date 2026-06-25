@@ -6,7 +6,7 @@ import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
-import { parseLocation, resolveRegion } from '@/shared/utils/locationParser';
+import { parseLocation, resolveRegion } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useLocationHintStore } from '@/state/locationHintStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

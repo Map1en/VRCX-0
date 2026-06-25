@@ -86,6 +86,7 @@ pub async fn app__check_tauri_update(
 
 #[tauri::command]
 #[specta::specta]
+#[allow(clippy::too_many_arguments)]
 pub async fn app__download_tauri_update(
     app_handle: AppHandle,
     state: State<'_, AppState>,

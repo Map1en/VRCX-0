@@ -19,7 +19,7 @@ import {
     sendNotificationButtonResponse
 } from '@/services/notificationActionService';
 import { checkCanInvite } from '@/shared/utils/invite';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';

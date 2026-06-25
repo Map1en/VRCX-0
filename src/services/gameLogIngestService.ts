@@ -9,7 +9,7 @@ import {
     createPortalSpawnEntry,
     createResourceLoadEntry
 } from '@/shared/utils/gameLog';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';

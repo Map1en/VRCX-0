@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
-import { openGroupDialog } from '@/services/dialogService';
 import friendRelationshipService from '@/services/friendRelationshipService';
 import { sendBoopToUser } from '@/services/inviteDeliveryService';
 import {
@@ -35,11 +34,11 @@ export function useUserDialogActions({
     isFriend,
     normalizedCurrentUserId,
     normalizedUserId,
+    openGroupQuickModerationDialog,
     moderationRevisionRef,
     moderationState,
     openNonce,
     profile,
-    prompt,
     setActionStatus,
     setAvatarOverrideState,
     setBaseProfile,
@@ -523,7 +522,7 @@ export function useUserDialogActions({
         }
     }
 
-    async function openGroupModerationForUser() {
+    function openGroupModerationForUser() {
         const rosterUserId = normalizeUserId(profile?.id);
         if (
             !rosterUserId ||
@@ -533,25 +532,7 @@ export function useUserDialogActions({
             return;
         }
 
-        const result = await prompt({
-            title: t('dialog.user.modal.group_moderation'),
-            description: t(
-                'dialog.user.dynamic.enter_a_group_id_to_open_moderation_for_value',
-                { value: profile?.displayName || rosterUserId }
-            ),
-            inputValue: '',
-            confirmText: t('common.actions.open'),
-            cancelText: t('common.actions.cancel')
-        });
-        if (!result.ok) {
-            return;
-        }
-        const groupId = normalizeUserId(result.value);
-        if (!groupId) {
-            toast.error(t('dialog.user.error.group_id_is_required'));
-            return;
-        }
-        openGroupDialog({ groupId });
+        openGroupQuickModerationDialog?.();
     }
 
     return {

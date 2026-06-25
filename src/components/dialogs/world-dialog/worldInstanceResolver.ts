@@ -1,5 +1,5 @@
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import { buildCreatedInstanceDetails } from './worldInstances';
 

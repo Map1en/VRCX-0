@@ -3,7 +3,7 @@ import type {
     UserFactMergeOptions,
     UserFactSource
 } from '@/domain/users/userFacts';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useInstancePresenceStore } from '@/state/instancePresenceStore';
 import { useLocationHintStore } from '@/state/locationHintStore';
 import { useUserFactsStore } from '@/state/userFactsStore';

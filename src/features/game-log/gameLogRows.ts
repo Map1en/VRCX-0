@@ -1,4 +1,4 @@
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 export const GAME_LOG_TYPE_LABELS: Record<string, string> = {
     Location: 'Location',

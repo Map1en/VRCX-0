@@ -757,11 +757,11 @@ pub(super) fn online_patch(
     );
     patch.insert(
         "$location".into(),
-        parsed_location.to_minimal_value(&location),
+        parsed_location.to_frontend_value(&location),
     );
     patch.insert(
         "$travelingToLocation".into(),
-        parsed_traveling.to_minimal_value(&string_field(patch.get("travelingToLocation"))),
+        parsed_traveling.to_frontend_value(&string_field(patch.get("travelingToLocation"))),
     );
     add_location_metadata(&mut patch, previous, now.timestamp_ms);
     Value::Object(patch)
@@ -789,6 +789,15 @@ pub(super) fn offline_like_patch(content: &Value, user_id: &str, state_bucket: &
     );
     patch.insert("travelingToWorld".into(), Value::String("offline".into()));
     patch.insert("travelingToInstance".into(), Value::String("".into()));
+    let parsed_offline = parse_location("offline");
+    patch.insert(
+        "$location".into(),
+        parsed_offline.to_frontend_value("offline"),
+    );
+    patch.insert(
+        "$travelingToLocation".into(),
+        parsed_offline.to_frontend_value("offline"),
+    );
     Value::Object(patch)
 }
 
@@ -950,5 +959,44 @@ mod tests {
 
         assert_eq!(record.status_description, "hi");
         assert_eq!(record.location, "wrld_a:1");
+    }
+
+    #[test]
+    fn online_patch_emits_full_location_projection() {
+        let now = EventTime {
+            iso: "2026-06-25T00:00:00Z".into(),
+            timestamp_ms: 1_772_000_000_000,
+        };
+        let tag = "wrld_a:1~hidden(usr_owner)~region(jp)";
+        let patch = online_patch(
+            &json!({ "location": tag }),
+            json!({ "id": "usr_friend" }),
+            None,
+            &now,
+            "online",
+        );
+
+        assert_eq!(patch["location"], json!(tag));
+        assert_eq!(patch["$location"]["tag"], json!(tag));
+        assert_eq!(patch["$location"]["worldId"], json!("wrld_a"));
+        assert_eq!(
+            patch["$location"]["instanceId"],
+            json!("1~hidden(usr_owner)~region(jp)")
+        );
+        assert_eq!(patch["$location"]["accessType"], json!("friends+"));
+        assert_eq!(patch["$location"]["userId"], json!("usr_owner"));
+        assert_eq!(patch["$location"]["region"], json!("jp"));
+    }
+
+    #[test]
+    fn offline_like_patch_emits_structured_offline_locations() {
+        let patch = offline_like_patch(&json!({}), "usr_friend", "offline");
+
+        assert_eq!(patch["location"], json!("offline"));
+        assert_eq!(patch["travelingToLocation"], json!("offline"));
+        assert_eq!(patch["$location"]["tag"], json!("offline"));
+        assert_eq!(patch["$location"]["isOffline"], json!(true));
+        assert_eq!(patch["$travelingToLocation"]["tag"], json!("offline"));
+        assert_eq!(patch["$travelingToLocation"]["isOffline"], json!(true));
     }
 }

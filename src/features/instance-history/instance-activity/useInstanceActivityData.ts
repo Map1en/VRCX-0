@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import instanceActivityRepository from '@/repositories/instanceActivityRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import { toLocalDayKey } from './instanceActivityDate';
 import { getLocalDayBounds } from './instanceActivityRows';

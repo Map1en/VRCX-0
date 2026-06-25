@@ -5,7 +5,7 @@ import {
     getLaunchURL,
     isRealInstance
 } from './instance';
-import { parseLocation } from './locationParser';
+import { parseLocation } from './location';
 
 describe('instance utils', () => {
     it('filters sentinel and local locations from real instance logic', () => {

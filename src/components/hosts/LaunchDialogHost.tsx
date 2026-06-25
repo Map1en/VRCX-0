@@ -13,7 +13,7 @@ import {
     selfInviteToInstance
 } from '@/services/launchService';
 import { checkCanInvite } from '@/shared/utils/invite';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useLaunchStore } from '@/state/launchStore';
 import { useModalStore } from '@/state/modalStore';

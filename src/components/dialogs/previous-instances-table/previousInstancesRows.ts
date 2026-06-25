@@ -1,5 +1,5 @@
 import { timeToText } from '@/lib/dateTime';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 const PREVIOUS_INSTANCE_COUNT_CAP = 10000;
 

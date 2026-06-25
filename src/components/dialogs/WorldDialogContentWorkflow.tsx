@@ -7,7 +7,7 @@ import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';

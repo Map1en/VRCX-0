@@ -9,6 +9,7 @@ mod error;
 mod event_bus;
 mod game_client;
 mod game_log;
+pub mod groups;
 mod image_cache;
 mod interruptible_sleep;
 mod local_favorites;
@@ -79,6 +80,22 @@ pub use game_log::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent,
     GameLogProjection, GameLogRuntime, GameLogRuntimeDeps, GameLogRuntimeState, GameLogSideEffect,
     NoopGameLogHostActions, PlayerState, RuntimeSnapshot, ScreenshotInput,
+};
+pub use groups::{
+    ban_member, block_group, cancel_request, create_post, delete_invite, delete_post, edit_post,
+    get_audit_log_types, get_bans, get_gallery, get_group, get_group_instances,
+    get_group_quick_moderation, get_invites, get_join_requests, get_logs, get_members, get_posts,
+    get_user_groups, get_user_instances, join_group, kick_member, leave_group,
+    respond_join_request, run_group_quick_moderation_action, search_members, send_invite,
+    set_member_props, set_representation, unban_member, unblock_group, GroupApiDeps,
+    GroupQuickModerationActionInput, GroupQuickModerationActionOutput, GroupQuickModerationDeps,
+    GroupQuickModerationGroup, GroupQuickModerationInput, GroupQuickModerationOutput,
+    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
+    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
+    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupPagedInput,
+    VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput, VrchatGroupPostEditInput,
+    VrchatGroupProfileInput, VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput,
+    VrchatGroupUserInput,
 };
 pub use image_cache::{save_ugc_image_to_file, ImageCache};
 pub use local_favorites::{

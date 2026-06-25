@@ -766,7 +766,7 @@ async function unbanGroupMember({
             userId: normalizedUserId,
             endpoint
         }),
-        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
+        `groups/${encodeURIComponent(normalizedGroupId)}/bans/${encodeURIComponent(normalizedUserId)}`
     );
 }
 

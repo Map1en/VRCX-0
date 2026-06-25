@@ -11,7 +11,7 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

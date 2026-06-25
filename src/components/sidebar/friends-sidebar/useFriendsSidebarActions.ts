@@ -13,7 +13,7 @@ import {
 import { selfInviteToInstance } from '@/services/launchService';
 import { recordRecentAction } from '@/services/recentActionService';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

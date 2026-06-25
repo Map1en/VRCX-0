@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseLocation } from '@/shared/utils/locationParser';
+import { parseLocation } from '@/shared/utils/location';
 
 import {
     buildChartOption,

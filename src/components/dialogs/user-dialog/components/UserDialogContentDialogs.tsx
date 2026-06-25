@@ -4,11 +4,13 @@ import {
     UserProfileDetailsDialog,
     UserSocialStatusDialog
 } from '../UserSelfEditDialogs';
+import { UserDialogGroupQuickModerationDialog } from './UserDialogGroupQuickModerationDialog';
 import { UserNoteMemoDialog } from './UserNoteMemoDialog';
 
 export function UserDialogContentDialogs({
     actionStatus,
     boopDialog,
+    groupQuickModerationDialog,
     noteMemoDialog,
     socialStatusDialog,
     profileDetailsDialog,
@@ -99,6 +101,18 @@ export function UserDialogContentDialogs({
                 sendDisabled={actionStatus !== 'idle'}
                 onOpenChange={boopDialog.onOpenChange}
                 onSend={boopDialog.onSend}
+            />
+            <UserDialogGroupQuickModerationDialog
+                open={Boolean(groupQuickModerationDialog.open)}
+                endpoint={groupQuickModerationDialog.endpoint}
+                currentUserId={groupQuickModerationDialog.currentUserId}
+                targetUserId={groupQuickModerationDialog.targetUserId}
+                targetLabel={groupQuickModerationDialog.targetLabel}
+                targetImageUrl={groupQuickModerationDialog.targetImageUrl}
+                onOpenChange={groupQuickModerationDialog.onOpenChange}
+                onDetailedManagement={
+                    groupQuickModerationDialog.onDetailedManagement
+                }
             />
         </>
     );
