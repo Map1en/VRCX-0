@@ -1440,7 +1440,9 @@
             },
             "label": {
                 "connections": "连接",
-                "hidden_nodes": "隐藏节点：",
+                "hidden_nodes": "被隐藏节点：",
+                "visible_nodes": "可见节点：",
+                "visible_links": "可见连接：",
                 "try_a_broader_search_term_or_clear_the_node_filter": "尝试更宽泛的搜索词或清除节点筛选",
                 "mutual_graph_fetch_cancelled_the_cached_graph_was_not_replaced": "共同好友图谱获取已取消，缓存图谱未被替换"
             },
@@ -4918,6 +4920,8 @@
         },
         "group_calendar": {
             "header": "活动日历",
+            "loading_events": "正在加载活动列表...",
+            "description": "展示所选日期的群组活动",
             "list_view": "列表视图",
             "calendar_view": "日历视图",
             "no_events": "目前没有任何活动",

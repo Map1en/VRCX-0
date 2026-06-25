@@ -412,8 +412,8 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                     </DialogTitle>
                     <DialogDescription>
                         {loading
-                            ? 'Loading group events.'
-                            : 'Group calendar events for the selected date and month.'}
+                            ? t('dialog.group_calendar.loading_events')
+                            : t('dialog.group_calendar.description')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-wrap items-center gap-3">

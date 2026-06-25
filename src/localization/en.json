@@ -1441,6 +1441,8 @@
             "label": {
                 "connections": "connections",
                 "hidden_nodes": "Hidden nodes:",
+                "visible_nodes": "Visible nodes:",
+                "visible_links": "Visible links:",
                 "try_a_broader_search_term_or_clear_the_node_filter": "Try a broader search term or clear the node filter",
                 "mutual_graph_fetch_cancelled_the_cached_graph_was_not_replaced": "Mutual graph fetch cancelled. The cached graph was not replaced"
             },
@@ -4918,6 +4920,8 @@
         },
         "group_calendar": {
             "header": "Group Calendar",
+            "loading_events": "Loading events...",
+            "description": "Display group events for the selected date.",
             "list_view": "List View",
             "calendar_view": "Calendar View",
             "no_events": "No events found",
