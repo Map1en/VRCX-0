@@ -67,6 +67,35 @@ function defaultFavoriteDetailSubtitle(kind: any, isUnavailable: any, t: any) {
         : translate('view.favorites.loading.loading_avatar_details');
 }
 
+function hasNonEmptyString(value: unknown) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function hasUsableCachedWorldDetail(value: unknown) {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const displayFields = [
+        'name',
+        'authorName',
+        'thumbnailImageUrl',
+        'imageUrl',
+        'description',
+        'releaseStatus'
+    ];
+    if (
+        displayFields.some((field) =>
+            hasNonEmptyString(Reflect.get(value, field))
+        )
+    ) {
+        return true;
+    }
+
+    const tags = Reflect.get(value, 'tags');
+    return Array.isArray(tags) && tags.length > 0;
+}
+
 function resolveFavoriteSubtitle(friend: any, location: any) {
     if (!friend) {
         return '';
@@ -298,9 +327,13 @@ export function buildFavoriteRemoteItemsByGroup({
 
         const detail = remoteEntityDetailsData[favoriteId];
         const cachedWorldDetail =
-            kind === 'world' ? localWorldDetailsById[favoriteId] : null;
+            kind === 'world' &&
+            hasUsableCachedWorldDetail(localWorldDetailsById[favoriteId])
+                ? localWorldDetailsById[favoriteId]
+                : null;
         const displayDetail = detail || cachedWorldDetail;
-        const isUnavailable = remoteEntityDetailsStatus === 'ready' && !detail;
+        const isUnavailable =
+            remoteEntityDetailsStatus === 'ready' && !displayDetail;
         const playerCount = Number(displayDetail?.occupants) || 0;
         const subtitle =
             kind === 'world'
