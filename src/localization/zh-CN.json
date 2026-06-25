@@ -3844,8 +3844,8 @@
                 "avatar_deleted_but_current_user_snapshot_refresh": "模型已删除，但当前用户快照刷新失败"
             },
             "modal": {
-                "select_fallback_avatar": "选择备用模型？",
-                "select_fallback": "选择备用模型",
+                "select_fallback_avatar": "要将该模型作为备用模型使用吗？",
+                "select_fallback": "作为备用模型",
                 "delete_avatar": "删除模型？",
                 "edit_local_memo": "编辑本地备注",
                 "create_impostor_title": "创建 Impostor？",
@@ -3914,15 +3914,15 @@
                 "open_events": "打开活动列表",
                 "no_active_instances": "没有房间",
                 "no_active_instances_description": "此群组目前没有可进入的房间",
-                "no_recent_events": "最近没有组织群组活动",
+                "no_recent_events": "此群组最近没有组织活动",
                 "preview_banner": "预览 {value} 横幅"
             },
             "events": {
                 "header": "活动",
                 "failed_to_load": "加载群组活动失败",
-                "no_events": "没有群组活动",
-                "no_upcoming_events": "没有即将开始的活动",
-                "no_past_events": "没有过去的活动"
+                "no_events": "暂无进行中的活动",
+                "no_upcoming_events": "即将开始的活动",
+                "no_past_events": "暂无之前举办的活动信息"
             },
             "info": {
                 "header": "信息",
@@ -4007,7 +4007,7 @@
             },
             "loading": {
                 "loading_group_profile": "正在加载群组资料",
-                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "正在获取此弹窗的当前 VRChat 群组快照",
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "正在获取当前群组的快照信息",
                 "loading": "加载中..."
             },
             "error": {
@@ -4514,7 +4514,7 @@
                 "world_id": "世界 ID"
             },
             "no_results": "未找到结果",
-            "invalid_file": "选择的文件无效。请选择有效的 VRChat 截图。",
+            "invalid_file": "选择的文件无效。请选择有效的截图。",
             "section_location": "位置",
             "section_players": "玩家",
             "section_file_info": "文件信息",
@@ -4667,7 +4667,7 @@
         },
         "vr_notifications": {
             "title": "VR 叠加界面通知过滤器",
-            "description": "选择 SteamVR 运行时哪些通知会发送到 XSOverlay 和 OVR Toolkit。"
+            "description": "选择在 SteamVR 运行时哪些通知会发送到 XSOverlay 和 OVR Toolkit。"
         },
         "desktop_notifications": {
             "title": "桌面通知过滤器",
@@ -4679,7 +4679,7 @@
         },
         "wrist_feed_notifications": {
             "title": "叠加界面通知过滤器",
-            "description": "选择哪些内容显示在手腕动态中。桌面通知使用单独的过滤设置。",
+            "description": "选择哪些内容会显示在手腕叠加界面中。桌面通知使用单独的过滤设置。",
             "reset_recommended": "重置",
             "scopes": {
                 "off": "关闭",
@@ -4771,7 +4771,7 @@
                 "menu_label": "收藏分组",
                 "all_groups": "所有收藏分组",
                 "group_count": "{count} 个分组",
-                "empty": "没有可用的收藏好友分组。"
+                "empty": "没有可用的好友分组。"
             }
         },
         "previous_instances": {
@@ -4817,7 +4817,7 @@
                 "sort_ascending": "升序"
             },
             "success": {
-                "instance_record_deleted": "房间记录已删除"
+                "instance_record_deleted": "已删除房间记录"
             }
         },
         "group_member_moderation": {
