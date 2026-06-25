@@ -1318,7 +1318,8 @@
                     "fetch_again": "再次拉取",
                     "stop": "停止",
                     "stop_fetching": "停止拉取",
-                    "go_to_friend": "选择好友"
+                    "go_to_friend": "选择好友",
+                    "canceling": "正在取消操作..."
                 },
                 "status": {
                     "no_friends_to_process": "目前没有好友需要处理",
@@ -4040,7 +4041,8 @@
                 "group_profile_unavailable": "群组资料不可用",
                 "failed_to_refresh_the_remote_group_snapshot": "刷新远程群组快照失败",
                 "failed_to_load_the_group_profile": "加载群组资料失败",
-                "title_and_text_are_required": "需要标题和正文"
+                "title_and_text_are_required": "需要标题和正文",
+                "failed_to_load_details": "加载详情失败"
             },
             "empty": {
                 "no_group_id_was_provided_for_this_dialog": "这个弹窗没有提供群组 ID",

@@ -1318,7 +1318,8 @@
                     "fetch_again": "Fetch Again",
                     "stop": "Stop",
                     "stop_fetching": "Stop fetching",
-                    "go_to_friend": "Go to friend"
+                    "go_to_friend": "Go to friend",
+                    "canceling": "Cancelling...",
                 },
                 "status": {
                     "no_friends_to_process": "You have no friends to process",
@@ -4040,7 +4041,8 @@
                 "group_profile_unavailable": "Group profile unavailable",
                 "failed_to_refresh_the_remote_group_snapshot": "Failed to refresh the remote group snapshot",
                 "failed_to_load_the_group_profile": "Failed to load the group profile",
-                "title_and_text_are_required": "Title and text are required"
+                "title_and_text_are_required": "Title and text are required",
+                "failed_to_load_details": "Failed to load details"
             },
             "empty": {
                 "no_group_id_was_provided_for_this_dialog": "No group id was provided for this dialog",

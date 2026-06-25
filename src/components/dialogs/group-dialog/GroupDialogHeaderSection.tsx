@@ -476,7 +476,7 @@ export function GroupDialogHeaderSection(props: any) {
                             ? detail
                             : userFacingErrorMessage(
                                   detail,
-                                  'Failed to load group details.'
+                                  t('dialog.group.error.failed_to_load_details')
                               )}
                     </div>
                 </>
