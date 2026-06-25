@@ -49,12 +49,12 @@
         "note_local": "本地备注",
         "note_synced": "线上备注",
         "last_online": "最后在线 {duration} 前",
-        "in_private_world": "在私人世界"
+        "in_private_world": "目前位于私人房间"
     },
     "language": "中文（简体） (zh-CN)",
     "translator": "flower_elf, Yingxue, Map1en, Stabrinai, xxKawa, Anteness",
     "common": {
-        "no_data": "无数据",
+        "no_data": "这里空空如也~",
         "no_matching_records": "无匹配记录",
         "feature_relocated": {
             "title": "弃用通知",
@@ -743,13 +743,13 @@
                 "game_log_failed_to_load": "游戏日志加载失败"
             },
             "empty": {
-                "no_game_log_sessions_match_the_current_filters": "没有符合当前筛选的游戏日志会话",
-                "no_game_log_rows_match_the_current_filters": "没有符合当前筛选的游戏日志行",
+                "no_game_log_sessions_match_the_current_filters": "没有符合条件的会话",
+                "no_game_log_rows_match_the_current_filters": "没有符合条件的日志记录",
                 "no_authenticated_user_is_available_for_the_game_log_snapshot": "当前没有已登录用户，无法加载游戏日志快照。"
             },
             "description": {
                 "favorites_are_still_hydrating": "收藏仍在加载中。",
-                "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "放宽筛选条件或搜索词以查看更多最近会话。",
+                "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "放宽筛选条件或搜索词以查看更多会话。",
                 "broaden_the_filters_or_search_query_to_see_more_results": "放宽筛选条件或搜索词以查看更多结果。"
             },
             "toast": {
