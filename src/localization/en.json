@@ -4527,6 +4527,7 @@
             "col_resolution": "Resolution",
             "col_match": "Match",
             "col_author": "Author",
+            "source": "Source",
             "back_to_results": "Back to {count} results",
             "result_count": "{count} results",
             "gallery": "Gallery",
@@ -4790,7 +4791,7 @@
             "description": {
                 "select_an_instance_row_to_view_its_details": "Select an instance row to view its details",
                 "instance_details": "Instance details",
-                "leave_details": "Leave Details (",
+                "leave_details": "Leave Details",
                 "open_instance_details": "Open instance details",
                 "details": "Details"
             },

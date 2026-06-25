@@ -4525,8 +4525,9 @@
             "col_world": "世界",
             "col_players": "玩家",
             "col_resolution": "分辨率",
-            "col_match": "匹配",
+            "col_match": "匹配人员",
             "col_author": "作者",
+            "source": "来源",
             "back_to_results": "返回 {count} 个结果",
             "result_count": "{count} 个结果",
             "gallery": "图库",
@@ -4775,7 +4776,7 @@
             }
         },
         "previous_instances": {
-            "header": "一起游玩的房间",
+            "header": "游玩过的房间",
             "info": "房间详情",
             "search_placeholder": "搜索",
             "table_view": "玩家",
@@ -4790,7 +4791,7 @@
             "description": {
                 "select_an_instance_row_to_view_its_details": "选择一条房间记录以查看详情",
                 "instance_details": "房间详情",
-                "leave_details": "离开详情（",
+                "leave_details": "离开详情",
                 "open_instance_details": "打开房间详情",
                 "details": "详情"
             },
@@ -5097,8 +5098,8 @@
                 "invite": "邀请"
             },
             "dynamic": {
-                "send_invite_to_value_user": "向 {value} 名玩家发送邀请？",
-                "send_invites_to_value_users": "向 {value} 名玩家发送邀请？"
+                "send_invite_to_value_user": "确定要向 {value} 名玩家发送邀请吗？",
+                "send_invites_to_value_users": "确定要向 {value} 名玩家发送邀请吗？"
             }
         },
         "previous_instances_table": {
@@ -5106,7 +5107,7 @@
                 "failed_to_delete_instance_record": "删除房间记录失败"
             },
             "modal": {
-                "delete_instance_record": "删除房间记录？"
+                "delete_instance_record": "要删除房间记录吗？"
             }
         }
     },
@@ -5283,7 +5284,7 @@
         },
         "new_local_favorite_group": {
             "message": {
-                "error": "名称为 {name} 的收藏夹已存在"
+                "error": "已存在名称为 {name} 的收藏夹"
             }
         },
         "local_favorite_group_rename": {
@@ -5466,7 +5467,7 @@
             "display_name_copied": "玩家昵称已复制到剪贴板",
             "home_reset": "出生点已重置",
             "request_invite_sent": "加入申请已发送",
-            "no_fallback_avatar": "未设置后备模型"
+            "no_fallback_avatar": "未设置备用模型"
         },
         "friend": {
             "load_failed": "加载好友列表失败，即将登出"
