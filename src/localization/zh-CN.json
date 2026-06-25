@@ -2592,8 +2592,8 @@
                 "created": "创建时间"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "这个玩家行没有用户 ID",
-                "currently_traveling_between_instances": "正在切换房间",
+                "no_user_id_was_found_for_this_player_row": "选中的日志中没有用户 ID",
+                "currently_traveling_between_instances": "目前正在切换房间",
                 "no_current_instance_detected": "未检测到当前房间",
                 "no_players_reconstructed_for_this_instance_yet": "无法显示房内玩家：尚未有足够的日志数据",
                 "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "请先在设置中启用游戏日志记录，之后才能重建当前玩家。",
@@ -2618,7 +2618,7 @@
                 "current_players_failed_to_load": "当前玩家加载失败"
             },
             "toast": {
-                "failed_to_look_up_this_player": "查找这个玩家失败"
+                "failed_to_look_up_this_player": "查找玩家失败"
             }
         },
         "auth": {
@@ -3636,11 +3636,11 @@
                 "add_domain": "添加域名"
             },
             "loading": {
-                "loading_world_profile": "正在加载世界个人资料",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "正在获取此弹窗的当前 VRChat 世界快照"
+                "loading_world_profile": "正在加载世界详情",
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "正在获取当前世界的快照"
             },
             "error": {
-                "world_profile_unavailable": "世界个人资料不可用",
+                "world_profile_unavailable": "世界资料不可用",
                 "unable_to_open_this_instance_in_vrchat": "无法在 VRChat 中打开这个房间",
                 "world_cache_location_unavailable": "世界缓存位置不可用",
                 "group_id_is_required_for_group_instances": "群组房间需要群组 ID",
@@ -3674,14 +3674,14 @@
                 "world_snapshot_unavailable_description": "VRCX-0 无法解析此弹窗的世界快照"
             },
             "empty": {
-                "no_world_id_was_provided_for_this_dialog": "这个弹窗没有提供世界 ID",
+                "no_world_id_was_provided_for_this_dialog": "没有提供世界 ID",
                 "no_active_instances": "没有活跃房间",
                 "no_public_or_group_instances_are_currently_listed": "当前没有公开或群组房间"
             },
             "toast": {
                 "failed_to_refresh_world": "刷新世界失败",
                 "failed_to_launch_vrchat_instance": "启动 VRChat 房间失败",
-                "home_world_reset": "出生点世界已重置",
+                "home_world_reset": "已重置出生点",
                 "failed_to_update_home_world": "更新出生点世界失败",
                 "memo_saved": "本地备注已保存",
                 "memo_cleared": "本地备注已清除",
