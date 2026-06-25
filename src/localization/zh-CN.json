@@ -3462,7 +3462,7 @@
                 "failed_to_update_group_order": "更新群组排序失败"
             },
             "modal": {
-                "edit_vrchat_note": "编辑 VRChat 备注",
+                "edit_vrchat_note": "编辑在线备注",
                 "next": "下一页",
                 "edit_local_memo": "编辑本地备注",
                 "report_hacking": "确定要举报此玩家 盗模/开挂 吗？",
@@ -3471,11 +3471,11 @@
                 "request_invite": "确定要发送加入申请吗？",
                 "send_boop": "发送戳一戳",
                 "send": "发送",
-                "enter_the_vrchat_group_id_to_invite_this_user_to": "输入要邀请此玩家加入的 VRChat 群组 ID",
+                "enter_the_vrchat_group_id_to_invite_this_user_to": "输入要邀请此玩家加入的群组 ID",
                 "leave_group": "退出群组",
                 "leave": "退出",
                 "leave_selected_groups": "退出所选群组",
-                "unfriend_user": "解除好友关系？",
+                "unfriend_user": "确定要删除好友吗？",
                 "optional_emoji_id_leave_blank_to_send_the_default": "可选 Emoji ID，留空则发送默认戳一戳"
             },
             "dynamic": {
@@ -3490,9 +3490,9 @@
                 "exported_value_groups": "已导出 {value} 个群组",
                 "failed_to_update_value_groups": "更新 {value} 个群组失败",
                 "updated_value_groups": "已更新 {value} 个群组",
-                "leave_value_selected_groups": "退出选中的 {value} 个群组？",
-                "failed_to_leave_value_groups": "退出 {value} 个群组失败",
-                "left_value_groups": "已退出 {value} 个群组",
+                "leave_value_selected_groups": "要退出选中的 {value} 个群组吗？",
+                "failed_to_leave_value_groups": "退出 {value} 个群组时失败",
+                "left_value_groups": "已成功退出 {value} 个群组",
                 "enable_value": "启用 {value}",
                 "disable_value": "禁用 {value}"
             }
