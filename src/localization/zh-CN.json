@@ -2226,7 +2226,7 @@
                     "show_cpu_usage": "显示 CPU 使用率",
                     "show_game_uptime": "显示游戏启动时长",
                     "show_pc_uptime": "显示计算机启动时长",
-                    "wrist_feed_filters": "手腕动态过滤器"
+                    "wrist_feed_filters": "叠加界面动态过滤器"
                 }
             },
             "discord_presence": {
@@ -2551,16 +2551,16 @@
                 "open_first_dashboard": "打开第一个仪表板",
                 "back_to_feed": "返回动态",
                 "add_a_row_to_start_building_this_dashboard": "添加一行开始构建此仪表板",
-                "add_row": "添加行：",
+                "add_row": "添加：",
                 "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "启动 VRChat 后仪表板才能重建当前房间玩家列表"
             },
             "description": {
                 "matches_the_stored_feed_widget_config": "与保存的动态小组件配置一致",
-                "expands_the_compact_game_log_description": "展开紧凑游戏日志描述"
+                "expands_the_compact_game_log_description": "展开游戏日志描述"
             },
             "success": {
                 "panel_not_selected": "未选择面板",
-                "dashboard_saved": "仪表板已保存"
+                "dashboard_saved": "已保存仪表板"
             },
             "toast": {
                 "failed_to_update_dashboard_panel": "更新仪表板面板失败",
@@ -2647,7 +2647,7 @@
                 "failed_to_restore_the_saved_account": "恢复已保存账号失败"
             },
             "dynamic": {
-                "authenticated_and_prepared_the_session_for_value": "登录成功，并已为 {value} 准备好会话"
+                "authenticated_and_prepared_the_session_for_value": "登录成功，已为 {value} 准备好会话"
             }
         },
         "favorites": {
@@ -2766,7 +2766,7 @@
             },
             "modal": {
                 "delete_notification_log_entry": "删除通知日志条目",
-                "delete_the_local_value_log_entry": "删除本地 {value} 日志条目？",
+                "delete_the_local_value_log_entry": "要删除本地 {value} 日志条目吗？",
                 "accept_friend_request": "接受好友请求",
                 "decline_notification": "拒绝通知",
                 "decline": "拒绝",
@@ -2784,7 +2784,7 @@
             "tabs": {
                 "browse": "浏览",
                 "installed": "已安装",
-                "override": "Override",
+                "override": "覆盖",
                 "developer": "开发"
             },
             "status": {
@@ -2824,10 +2824,10 @@
             "installed": {
                 "header": "已安装主题",
                 "empty": "还没有安装社区主题。",
-                "accent_controlled": "当前社区主题接管强调色，内置强调色选择器已禁用。"
+                "accent_controlled": "当前主题会接管强调色，内置强调色选择器已禁用。"
             },
             "override": {
-                "header": "用户 override CSS",
+                "header": "用户 CSS 覆盖设置",
                 "placeholder": ":root {\n  --vrcx-0-main-content-surface: transparent;\n}"
             },
             "developer": {
