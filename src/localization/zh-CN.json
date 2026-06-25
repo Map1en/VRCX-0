@@ -1319,7 +1319,7 @@
                     "stop": "停止",
                     "stop_fetching": "停止拉取",
                     "go_to_friend": "选择好友",
-                    "canceling": "正在取消操作..."
+                    "cancelling": "正在取消操作..."
                 },
                 "status": {
                     "no_friends_to_process": "目前没有好友需要处理",

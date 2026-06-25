@@ -1319,7 +1319,7 @@
                     "stop": "Stop",
                     "stop_fetching": "Stop fetching",
                     "go_to_friend": "Go to friend",
-                    "canceling": "Cancelling..."
+                    "cancelling": "Cancelling..."
                 },
                 "status": {
                     "no_friends_to_process": "You have no friends to process",

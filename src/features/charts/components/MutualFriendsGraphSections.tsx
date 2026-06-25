@@ -292,7 +292,8 @@ function MutualFriendsSettingsSheet({
                     </div>
                     <div className="text-muted-foreground text-xs">
                         {t('view.charts.label.hidden_nodes')} {excludedCount}.
-                        {t('view.charts.label.visible_nodes')} {nodeCount}. {t('view.charts.label.visible_links')} {edgeCount}.
+                        {t('view.charts.label.visible_nodes')} {nodeCount}.
+                        {t('view.charts.label.visible_links')} {edgeCount}.
                     </div>
                     <Button
                         type="button"
