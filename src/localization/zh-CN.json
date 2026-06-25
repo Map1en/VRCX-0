@@ -1000,7 +1000,7 @@
                 "favorite_added": "已添加收藏",
                 "local_favorite_added": "已添加本地收藏",
                 "vrchat_favorites": "VRChat 收藏",
-                "review_the_csv_content_before_copying_it_to_the_clipboard": "复制到剪贴板前先检查 CSV 内容",
+                "review_the_csv_content_before_copying_it_to_the_clipboard": "复制到剪贴板前请先检查 CSV 内容",
                 "vrchat_group": "VRChat 分组",
                 "all_vrchat_favorites": "所有 VRChat 收藏",
                 "local_group": "本地分组",
@@ -1010,25 +1010,25 @@
                 "sort_by_players": "按玩家数量排序",
                 "visibility": "可见性",
                 "group": "分组",
-                "favorite_group_renamed": "收藏分组已重命名",
-                "group_visibility_changed": "分组可见性已更改",
-                "local_favorite_group_renamed": "本地收藏分组已重命名",
-                "the_favorites_baseline_did_not_finish_loading": "收藏基线数据尚未加载完成",
+                "favorite_group_renamed": "重命名收藏分组成功",
+                "group_visibility_changed": "已更改分组可见性",
+                "local_favorite_group_renamed": "重命名本地收藏分组成功",
+                "the_favorites_baseline_did_not_finish_loading": "收藏分组数据尚未加载完成",
                 "try_a_different_search_term": "尝试其他搜索词"
             },
             "success": {
-                "favorite_removed": "收藏已移除",
-                "local_favorite_removed": "本地收藏已移除",
+                "favorite_removed": "已移除收藏",
+                "local_favorite_removed": "已移除本地收藏",
                 "copied_favorite_export_data": "已复制收藏导出数据",
-                "favorites_refreshed": "收藏已刷新",
+                "favorites_refreshed": "已刷新收藏",
                 "vrchat_favorite_removed": "VRChat 收藏已移除",
-                "favorite_group_cleared": "收藏分组已清空",
+                "favorite_group_cleared": "已清空收藏分组",
                 "local_favorite_group_deleted": "本地收藏分组已删除",
-                "avatar_history_cleared": "模型历史已清空",
+                "avatar_history_cleared": "已清空模型历史",
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "invite_request_sent": "邀请请求已发送",
-                "boop_sent": "戳一戳已发送",
-                "avatar_selected": "模型已选择",
+                "invite_request_sent": "已发送邀请请求",
+                "boop_sent": "已发送戳一戳",
+                "avatar_selected": "已选择模型",
                 "copied_selected_favorite_ids": "已复制所选收藏 ID",
                 "selected_favorites_removed": "已移除所选收藏",
                 "selected_favorites_moved": "已移动所选收藏",
@@ -1042,7 +1042,7 @@
                 "move_to": "移动到"
             },
             "empty": {
-                "no_favorite_groups_loaded": "未加载到收藏分组",
+                "no_favorite_groups_loaded": "收藏分组未被加载",
                 "no_local_favorite_groups_loaded": "未加载到本地收藏分组",
                 "no_local_group": "无本地分组",
                 "no_favorites_available_to_export": "没有可导出的收藏",
@@ -1119,7 +1119,7 @@
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "放宽类型筛选或搜索词以查看更多结果"
             },
             "empty": {
-                "no_moderation_rows_match_the_current_filters": "没有符合当前筛选的玩家管理记录"
+                "no_moderation_rows_match_the_current_filters": "没有符合当前筛选设置的管理记录"
             },
             "dynamic": {
                 "deleted_value_for_value": "已删除 {value2} 的 {value}",
@@ -1199,12 +1199,12 @@
                 "send": "发送"
             },
             "success": {
-                "friend_request_accepted": "好友请求已接受",
-                "notification_declined": "通知已拒绝",
-                "invite_response_sent": "邀请回应已发送",
-                "boop_sent": "戳一戳已发送",
-                "notification_response_sent": "通知回应已发送",
-                "notification_log_entry_deleted": "通知日志条目已删除"
+                "friend_request_accepted": "已接受好友请求",
+                "notification_declined": "已拒绝此通知",
+                "invite_response_sent": "已发送拒绝回复",
+                "boop_sent": "已发送戳一戳",
+                "notification_response_sent": "已发送通知回应",
+                "notification_log_entry_deleted": "已删除通知日志条目"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前没有可用的 VRChat 位置",
@@ -1248,7 +1248,7 @@
             "label": {
                 "friend_details_are_already_loaded": "已加载好友详情",
                 "shared_connections_are_opted_out_for_the_current_account": "当前账号已关闭共同关系功能",
-                "mutual_friends_loaded": "共同好友已加载",
+                "mutual_friends_loaded": "已加载共同好友",
                 "showing": "显示",
                 "of": "共",
                 "friend": "个好友",
@@ -3654,24 +3654,24 @@
                 "selected_file_is_not_an_image": "所选文件不是图片"
             },
             "success": {
-                "world_refreshed": "世界已刷新",
+                "world_refreshed": "已刷新世界",
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",
-                "world_cache_deleted": "世界缓存已删除",
-                "world_persistent_data_deleted": "世界持久化数据已删除",
+                "world_cache_deleted": "已删除此世界缓存",
+                "world_persistent_data_deleted": "已删除在此世界的持久化数据",
                 "world_deleted": "世界已删除",
                 "instance_created": "房间已创建",
-                "instance_created_and_self_invite_sent": "房间已创建并已发送自我邀请",
+                "instance_created_and_self_invite_sent": "房间已创建，并已发送自我邀请",
                 "instance_url_copied": "已复制房间 URL",
-                "world_details_updated": "世界详情已更新",
-                "world_image_updated": "世界图片已更新",
-                "world_description_updated": "世界描述已更新",
-                "youtube_preview_updated": "YouTube 预览已更新",
-                "world_tags_updated": "世界标签已更新",
-                "allowed_domains_updated": "允许的域名已更新"
+                "world_details_updated": "已更新世界详情",
+                "world_image_updated": "已更新世界图片",
+                "world_description_updated": "已更新世界描述",
+                "youtube_preview_updated": "已更新 YouTube 预览",
+                "world_tags_updated": "已更新世界标签",
+                "allowed_domains_updated": "已更新允许的域名列表"
             },
             "description": {
                 "edit_world_details": "编辑世界详情",
-                "world_snapshot_unavailable_description": "VRCX-0 无法解析此弹窗的世界快照"
+                "world_snapshot_unavailable_description": "VRCX-0 无法解析此世界的快照"
             },
             "empty": {
                 "no_world_id_was_provided_for_this_dialog": "没有提供世界 ID",
