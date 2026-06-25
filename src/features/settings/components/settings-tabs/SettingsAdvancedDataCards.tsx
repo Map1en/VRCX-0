@@ -107,7 +107,7 @@ export function SettingsAdvancedDataCards({
                 </Field>
                 <Field
                     label={t(
-                        'view.settings.advanced.advanced.sqlite_table_size.refresh'
+                        'view.settings.advanced_groups.diagnostics_maintenance.refresh'
                     )}
                 >
                     <Button

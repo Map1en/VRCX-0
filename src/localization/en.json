@@ -1850,6 +1850,7 @@
                     "not_refreshed": "Not refreshed",
                     "purge_avatar_history_description": "Open the cleanup confirmation before deleting old avatar change records.",
                     "purge_avatar_history": "Purge avatar history",
+                    "refresh": "Refresh database status",
                     "refresh_sqlite_tables": "Refresh table sizes",
                     "migrate_legacy_vrcx": "Migrate legacy VRCX data"
                 },

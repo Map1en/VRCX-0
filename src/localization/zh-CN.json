@@ -1850,11 +1850,12 @@
                     "not_refreshed": "未刷新",
                     "purge_avatar_history_description": "确认后再删除旧的模型变动记录。",
                     "purge_avatar_history": "清理模型记录",
+                    "refresh":"刷新数据库状态",
                     "refresh_sqlite_tables": "刷新 SQLite 表",
                     "migrate_legacy_vrcx": "迁移旧版 VRCX 数据"
                 },
                 "danger": {
-                    "header": "危险区",
+                    "header": "危险操作",
                     "cannot_be_undone": "此操作不可撤销。"
                 },
                 "database": {
