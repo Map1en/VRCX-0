@@ -1304,7 +1304,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "共同好友網路",
+                "tab_label": "共同好友關係圖",
                 "actions": {
                     "start_fetch": "開始取得",
                     "fetch_again": "重新取得",
@@ -1321,7 +1321,7 @@
                     "no_relationships_discovered": "未找到任何關聯"
                 },
                 "prompt": {
-                    "title": "共同好友網路",
+                    "title": "共同好友關係圖",
                     "message": "已在背景開始取得，進度會顯示在狀態列。",
                     "confirm": "開始取得",
                     "cancel": "稍後再說"
@@ -1337,9 +1337,9 @@
                 },
                 "notifications": {
                     "start_fetching": "開始取得",
-                    "mutual_friend_graph_ready_title": "共同好友網路圖",
-                    "mutual_friend_graph_ready_message": "共同好友網路圖已準備完成",
-                    "friend_list_changed_fetch_again": "好友清單已變更，請重新取得共同好友網路"
+                    "mutual_friend_graph_ready_title": "共同好友關係圖",
+                    "mutual_friend_graph_ready_message": "共同好友關係圖已準備完成",
+                    "friend_list_changed_fetch_again": "好友清單已變更，請重新取得共同好友關係圖"
                 },
                 "settings": {
                     "title": "圖形佈局設定",

@@ -296,7 +296,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "Sieć wspólnych znajomych",
+                "tab_label": "Graf wspólnych znajomych",
                 "actions": {
                     "start_fetch": "Rozpocznij pobieranie",
                     "fetch_again": "Pobierz ponownie",
@@ -311,7 +311,7 @@
                     "no_relationships_discovered": "Nie znaleziono relacji"
                 },
                 "prompt": {
-                    "title": "Sieć wspólnych znajomych",
+                    "title": "Graf wspólnych znajomych",
                     "message": "Nie znaleziono zapamiętanych wspólnych znajomych. Rozpocząć pobieranie teraz? Może to zająć chwilę, powiadomimy cię o ukończeniu",
                     "confirm": "Rozpocznij pobieranie",
                     "cancel": "Może później"
@@ -327,9 +327,9 @@
                 },
                 "notifications": {
                     "start_fetching": "Rozpocznij pobieranie",
-                    "mutual_friend_graph_ready_title": "Wykres sieci wspólnych znajomych",
-                    "mutual_friend_graph_ready_message": "Wykres sieci wspólnych znajomych jest gotowy",
-                    "friend_list_changed_fetch_again": "Nastąpiła zmiana listy znajomych. Pobierz ponownie sieć wspólnych znajomych"
+                    "mutual_friend_graph_ready_title": "Graf wspólnych znajomych",
+                    "mutual_friend_graph_ready_message": "Graf wspólnych znajomych jest gotowy",
+                    "friend_list_changed_fetch_again": "Nastąpiła zmiana listy znajomych. Pobierz ponownie graf wspólnych znajomych"
                 }
             }
         },

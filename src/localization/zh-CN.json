@@ -1230,8 +1230,8 @@
             "favorites_only_tooltip": "仅显示具有分组的好友",
             "search_placeholder": "搜索好友",
             "filter_placeholder": "筛选好友",
-            "load_mutual_friends": "刷新关系网数据",
-            "mutual_loading_hint": "跳转到好友关系网页面",
+            "load_mutual_friends": "查看关系图",
+            "mutual_loading_hint": "跳转到好友关系图页面",
             "search_filters": {
                 "display_name": "显示名称",
                 "username": "用户名",
@@ -1308,7 +1308,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "好友关系网",
+                "tab_label": "好友关系图",
                 "actions": {
                     "start_fetch": "开始拉取",
                     "fetch_again": "再次拉取",
@@ -1325,7 +1325,7 @@
                     "no_relationships_discovered": "尚未发现任何关系"
                 },
                 "prompt": {
-                    "title": "好友关系网",
+                    "title": "好友关系图",
                     "message": "已在后台启动拉取工作，完成进度将显示在状态栏",
                     "confirm": "立刻开始拉取",
                     "cancel": "待会再说"
@@ -1341,16 +1341,16 @@
                 },
                 "notifications": {
                     "start_fetching": "开始拉取",
-                    "mutual_friend_graph_ready_title": "关系网更新成功",
-                    "mutual_friend_graph_ready_message": "已完成共同好友数据的拉取，关系网现已更新",
+                    "mutual_friend_graph_ready_title": "关系图更新成功",
+                    "mutual_friend_graph_ready_message": "已完成共同好友数据的拉取，关系图现已更新",
                     "friend_list_changed_fetch_again": "好友列表已更改。请再次拉取共同好友数据。"
                 },
                 "settings": {
-                    "title": "关系网布局设置",
+                    "title": "关系图布局设置",
                     "layout_iterations": "位置迭代次数",
                     "layout_iterations_help": "好友节点的位置的计算时间。数值越高，节点的位置越稳定和有序。",
                     "layout_spacing": "节点间距",
-                    "layout_spacing_help": "好友节点的分布范围。数值越高，关系网内的节点距离越远。",
+                    "layout_spacing_help": "好友节点的分布范围。数值越高，关系图内的节点距离越远。",
                     "edge_curvature": "连接线曲率",
                     "edge_curvature_help": "连接线的弯曲程度。数值越高，密集区域的线条越平滑。",
                     "community_separation": "圈子间间距",
@@ -1358,11 +1358,11 @@
                     "reset_defaults": "重置为默认值",
                     "exclude_friends": "排除好友",
                     "exclude_friends_placeholder": "选择好友",
-                    "exclude_friends_help": "选中的好友将从关系网中隐藏。"
+                    "exclude_friends_help": "选中的好友将从关系图中隐藏。"
                 },
                 "context_menu": {
                     "view_details": "查看详情",
-                    "hide_friend": "从关系网中隐藏",
+                    "hide_friend": "从关系图中隐藏",
                     "refresh_mutuals": "刷新共同好友数据",
                     "confirm_non_friend_title": "这个人不是你的好友",
                     "confirm_non_friend_message": "这个玩家不再是你的好友。是否仍然要获取他们的共同好友数据？",

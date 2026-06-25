@@ -7,6 +7,7 @@ import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderR
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
 
 import {
     buildAvatarSearchRequest,
@@ -225,7 +226,7 @@ export function useSearchResults({
         }
 
         if (activeTab === 'avatar') {
-            if (searchText.trim().length < 3) {
+            if (!isAvatarSearchQueryLongEnough(searchText)) {
                 toast.warning(t('view.search.avatar.min_chars_warning'));
                 return;
             }

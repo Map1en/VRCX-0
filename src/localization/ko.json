@@ -1278,7 +1278,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "상호 친구 네트워크",
+                "tab_label": "상호 친구 그래프",
                 "actions": {
                     "start_fetch": "가져오기 시작",
                     "fetch_again": "다시 가져오기",
@@ -1295,7 +1295,7 @@
                     "no_relationships_discovered": "발견된 관계 없음"
                 },
                 "prompt": {
-                    "title": "상호 친구 네트워크",
+                    "title": "상호 친구 그래프",
                     "message": "백그라운드에서 가져오기가 시작되었습니다. 상태 표시줄에 진행 상황이 표시됩니다.",
                     "confirm": "가져오기 시작",
                     "cancel": "어쩌면 나중에"
@@ -1311,9 +1311,9 @@
                 },
                 "notifications": {
                     "start_fetching": "가져오기 시작함",
-                    "mutual_friend_graph_ready_title": "상호 친구 네트워크 그래프",
-                    "mutual_friend_graph_ready_message": "상호 친구 네트워크 그래프가 준비되었습니다",
-                    "friend_list_changed_fetch_again": "친구들이 변했어요. 상호 친구 네트워크를 다시 가져오세요."
+                    "mutual_friend_graph_ready_title": "상호 친구 그래프",
+                    "mutual_friend_graph_ready_message": "상호 친구 그래프가 준비되었습니다",
+                    "friend_list_changed_fetch_again": "친구들이 변했어요. 상호 친구 그래프를 다시 가져오세요."
                 },
                 "settings": {
                     "title": "그래프 레이아웃 설정",

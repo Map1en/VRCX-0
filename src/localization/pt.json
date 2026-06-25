@@ -507,7 +507,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "Rede de Amigos Mútuos",
+                "tab_label": "Grafo de Amigos Mútuos",
                 "actions": {
                     "start_fetch": "Iniciar Busca",
                     "fetch_again": "Buscar Novamente",
@@ -524,7 +524,7 @@
                     "no_relationships_discovered": "Nenhuma relação descoberta"
                 },
                 "prompt": {
-                    "title": "Rede de Amigos Mútuos",
+                    "title": "Grafo de Amigos Mútuos",
                     "message": "Nenhum dado de amigos mútuos em cache foi encontrado. Iniciar busca agora? Isso pode demorar um pouco, iremos notificá-lo quando terminar",
                     "confirm": "Iniciar Busca",
                     "cancel": "Talvez Depois"
@@ -540,9 +540,9 @@
                 },
                 "notifications": {
                     "start_fetching": "Busca iniciada",
-                    "mutual_friend_graph_ready_title": "Grafo de Rede de Amigos Mútuos",
-                    "mutual_friend_graph_ready_message": "O grafo de rede de amigos mútuos está pronto",
-                    "friend_list_changed_fetch_again": "A lista de amigos mudou. Por favor, busque a rede de amigos mútuos novamente."
+                    "mutual_friend_graph_ready_title": "Grafo de Amigos Mútuos",
+                    "mutual_friend_graph_ready_message": "O grafo de amigos mútuos está pronto",
+                    "friend_list_changed_fetch_again": "A lista de amigos mudou. Por favor, busque o grafo de amigos mútuos novamente."
                 },
                 "settings": {
                     "title": "Configurações de Layout do Grafo",

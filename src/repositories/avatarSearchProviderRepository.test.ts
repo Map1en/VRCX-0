@@ -212,7 +212,7 @@ describe('AvatarSearchProviderRepository', () => {
         );
     });
 
-    it('validates provider and query before calling the network', async () => {
+    it('validates provider and English-equivalent query length', async () => {
         await expect(
             avatarSearchProviderRepository.search({
                 provider: '',
@@ -224,11 +224,20 @@ describe('AvatarSearchProviderRepository', () => {
                 provider: DEFAULT_PROVIDER,
                 query: 'ab'
             })
-        ).rejects.toThrow('at least 3 characters');
+        ).rejects.toThrow('3 English characters');
+        await expect(
+            avatarSearchProviderRepository.search({
+                provider: DEFAULT_PROVIDER,
+                query: '你好'
+            })
+        ).resolves.toMatchObject({
+            query: '你好',
+            status: 200
+        });
 
         expect(
             externalApiRepository.searchAvatarProvider
-        ).not.toHaveBeenCalled();
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('publishes normalized config after saving provider preferences', async () => {

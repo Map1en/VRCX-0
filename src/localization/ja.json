@@ -1337,8 +1337,8 @@
                 },
                 "notifications": {
                     "start_fetching": "取得を開始",
-                    "mutual_friend_graph_ready_title": "共通のフレンドのネットワーク図",
-                    "mutual_friend_graph_ready_message": "共通のフレンドのネットワーク図が準備できました",
+                    "mutual_friend_graph_ready_title": "共通のフレンドのグラフ",
+                    "mutual_friend_graph_ready_message": "共通のフレンドのグラフが準備できました",
                     "friend_list_changed_fetch_again": "フレンドリストが変更されました。共通のフレンドのつながりを再取得してください。"
                 },
                 "settings": {

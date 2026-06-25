@@ -1,4 +1,5 @@
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
+import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
 
 import avatarProfileRepository from './avatarProfileRepository';
 import { safeJsonParse } from './baseRepository';
@@ -270,8 +271,10 @@ async function search({ provider, query }: SearchInput) {
     if (!normalizedProvider) {
         throw new Error('Avatar provider is not configured.');
     }
-    if (normalizedQuery.length < 3) {
-        throw new Error('Avatar search requires at least 3 characters.');
+    if (!isAvatarSearchQueryLongEnough(normalizedQuery)) {
+        throw new Error(
+            'Avatar search requires at least 3 English characters or equivalent.'
+        );
     }
 
     const [url, vrcxId] = await Promise.all([

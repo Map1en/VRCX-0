@@ -322,7 +322,7 @@
                 }
             },
             "mutual_friend": {
-                "tab_label": "Mutual Friend Network",
+                "tab_label": "Mutual Friend Graph",
                 "actions": {
                     "start_fetch": "Start Fetch",
                     "fetch_again": "Fetch Again",
@@ -339,7 +339,7 @@
                     "no_relationships_discovered": "No relationships discovered"
                 },
                 "prompt": {
-                    "title": "Mutual Friend Network",
+                    "title": "Mutual Friend Graph",
                     "message": "No cached mutual friend data was found. Start fetching now? This may take a while, we will notify you when it is finishes",
                     "confirm": "Start Fetch",
                     "cancel": "Maybe Later"
@@ -355,9 +355,9 @@
                 },
                 "notifications": {
                     "start_fetching": "Started fetching",
-                    "mutual_friend_graph_ready_title": "Mutual Friend Network Graph",
-                    "mutual_friend_graph_ready_message": "Mutual friend network graph is ready",
-                    "friend_list_changed_fetch_again": "Friend list changed. Please fetch the mutual friend network again."
+                    "mutual_friend_graph_ready_title": "Mutual Friend Graph",
+                    "mutual_friend_graph_ready_message": "Mutual friend graph is ready",
+                    "friend_list_changed_fetch_again": "Friend list changed. Please fetch the mutual friend graph again."
                 },
                 "settings": {
                     "title": "Graph Layout Settings",
