@@ -58,10 +58,10 @@ export function VrcNotificationCenterHost() {
     const isLocalUserVrcPlusSupporter = useRuntimeStore((state: any) =>
         Boolean(
             state.auth.currentUserSnapshot?.$isVRCPlus ||
-                state.auth.currentUserSnapshot?.tags?.includes?.(
-                    'system_supporter'
-                ) ||
-                globalThis?.$debug?.debugVrcPlus
+            state.auth.currentUserSnapshot?.tags?.includes?.(
+                'system_supporter'
+            ) ||
+            globalThis?.$debug?.debugVrcPlus
         )
     );
     const currentLocation = useRuntimeStore(
@@ -104,7 +104,10 @@ export function VrcNotificationCenterHost() {
     const markAllSeen = useVrcNotificationStore(
         (state: any) => state.markAllSeen
     );
-    const [inviteResponseRequest, setInviteResponseRequest] = useState(null);
+    const [inviteResponseRequest, setInviteResponseRequest] = useState<{
+        notification: any;
+        messageType: any;
+    } | null>(null);
     const [boopReplyRequest, setBoopReplyRequest] = useState<any>(null);
     const groupInstanceRows =
         groupInstancesUserId === currentUserId &&

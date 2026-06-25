@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
+import { windowDelay } from '@/shared/utils/delays';
 import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
-import { windowDelay } from '@/shared/utils/delays';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -113,6 +113,9 @@ function isNotificationExpired(notification?: NotificationRow | null): boolean {
 }
 
 function isUnseenNotification(notification?: NotificationRow | null): boolean {
+    if (!notification) {
+        return false;
+    }
     const version = Number(notification?.version ?? 1);
     const type = String(notification?.type || '');
     const isTransientV1Unseen =
@@ -126,7 +129,9 @@ function isUnseenNotification(notification?: NotificationRow | null): boolean {
     );
 }
 
-function shouldMarkSeenOnCenterClose(notification?: NotificationRow | null): boolean {
+function shouldMarkSeenOnCenterClose(
+    notification?: NotificationRow | null
+): boolean {
     const version = Number(notification?.version ?? 1);
     const type = String(notification?.type || '');
     return !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type));
@@ -145,7 +150,9 @@ function buildCategories(rows: NotificationRow[]): NotificationCategories {
     const recentCutoff = Date.now() - RECENT_WINDOW_MS;
 
     for (const notification of Array.isArray(rows) ? rows : []) {
-        const category = getNotificationCategory(notification?.type as string);
+        const category = getNotificationCategory(
+            String(notification?.type || '')
+        );
         const bucket = categories[category] || categories.other;
         if (isUnseenNotification(notification)) {
             bucket.unseen.push(notification);

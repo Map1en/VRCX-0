@@ -234,7 +234,12 @@ impl RuntimeHostState {
         let db = Arc::new(DatabaseService::new(&paths.db_file)?);
         let discord_rpc = Arc::new(DiscordRpc::new());
         let process_monitor = ProcessMonitor::new();
-        let web = Arc::new(WebClient::new(&storage, &db, realtime_origin, &app_version)?);
+        let web = Arc::new(WebClient::new(
+            &storage,
+            &db,
+            realtime_origin,
+            &app_version,
+        )?);
         let image_fetcher = web.image_fetcher()?;
         let image_cache = Arc::new(ImageCache::new(paths.image_cache.clone(), image_fetcher)?);
         let host_file_access = HostFileAccess::new();

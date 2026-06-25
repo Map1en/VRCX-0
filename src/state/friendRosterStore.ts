@@ -170,15 +170,13 @@ function normalizeFriendEntry(
                   existingRow?.trustLevel || existingRow?.$trustLevel || ''
               )) ||
         trust.trustLevel;
-    const friendNumber =
-        Number.parseInt(
-            (source?.friendNumber ??
-                source?.$friendNumber ??
-                existingRow?.friendNumber ??
-                existingRow?.$friendNumber ??
-                0) as string,
-            10
-        ) || 0;
+    const friendNumberSource =
+        source?.friendNumber ??
+        source?.$friendNumber ??
+        existingRow?.friendNumber ??
+        existingRow?.$friendNumber ??
+        0;
+    const friendNumber = Number.parseInt(String(friendNumberSource), 10) || 0;
     const displayName =
         getDisplayName(source) || existingRow?.displayName || source.id;
 
@@ -198,8 +196,8 @@ function normalizeFriendEntry(
         $isTroll: trust.isTroll,
         $isProbableTroll: trust.isProbableTroll,
         $platform: computeUserPlatform(
-            source.platform as string,
-            source.last_platform as string
+            typeof source.platform === 'string' ? source.platform : '',
+            typeof source.last_platform === 'string' ? source.last_platform : ''
         )
     };
 }
@@ -210,12 +208,12 @@ function compareFriendEntries(
 ): number {
     const leftNumber =
         Number.parseInt(
-            (left?.friendNumber ?? left?.$friendNumber ?? 0) as string,
+            String(left?.friendNumber ?? left?.$friendNumber ?? 0),
             10
         ) || 0;
     const rightNumber =
         Number.parseInt(
-            (right?.friendNumber ?? right?.$friendNumber ?? 0) as string,
+            String(right?.friendNumber ?? right?.$friendNumber ?? 0),
             10
         ) || 0;
     const leftHasNumber = leftNumber > 0;
@@ -338,11 +336,11 @@ const initialState: Pick<
     loadStatus: 'idle',
     detail: '',
     lastLoadedAt: null,
-    friendsById: {} as Record<string, FriendRecord>,
-    orderedFriendIds: [] as string[],
-    onlineIds: [] as string[],
-    activeIds: [] as string[],
-    offlineIds: [] as string[]
+    friendsById: {},
+    orderedFriendIds: [],
+    onlineIds: [],
+    activeIds: [],
+    offlineIds: []
 };
 
 export const useFriendRosterStore = create<FriendRosterStore>((set: any) => ({

@@ -1,27 +1,64 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type PointerEvent as ReactPointerEvent,
+    type WheelEvent as ReactWheelEvent
+} from 'react';
+
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 10;
 const ZOOM_STEP = 1.2;
 const WHEEL_ZOOM_STEP = 1.1;
-const INITIAL_TRANSFORM = Object.freeze({
+
+type FullscreenImageTransform = {
+    scale: number;
+    rotate: number;
+    tx: number;
+    ty: number;
+};
+
+type FullscreenImageDragState = {
+    active: boolean;
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    startTx: number;
+    startTy: number;
+};
+
+type PointerPosition = {
+    clientX: number;
+    clientY: number;
+};
+
+const INITIAL_TRANSFORM: FullscreenImageTransform = Object.freeze({
     scale: 1,
     rotate: 0,
     tx: 0,
     ty: 0
 });
 
-function clamp(value: any, min: any, max: any) {
+function clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
 }
 
-function degToRad(value: any) {
+function degToRad(value: number): number {
     return (value * Math.PI) / 180;
 }
 
-export function useFullscreenImageTransform({ open, url }: any) {
-    const viewerRef = useRef(null);
+export function useFullscreenImageTransform({
+    open,
+    url
+}: {
+    open: boolean;
+    url?: string | null;
+}) {
+    const viewerRef = useRef<HTMLDivElement | null>(null);
     const transformRef = useRef(INITIAL_TRANSFORM);
-    const dragRef = useRef<any>({
+    const dragRef = useRef<FullscreenImageDragState>({
         active: false,
         pointerId: null,
         startX: 0,
@@ -45,8 +82,8 @@ export function useFullscreenImageTransform({ open, url }: any) {
         }
     }, [open, resetTransform, url]);
 
-    const zoomBy = useCallback((factor: any) => {
-        setTransform((current: any) => ({
+    const zoomBy = useCallback((factor: number) => {
+        setTransform((current) => ({
             ...current,
             scale: clamp(current.scale * factor, MIN_SCALE, MAX_SCALE)
         }));
@@ -61,7 +98,7 @@ export function useFullscreenImageTransform({ open, url }: any) {
     }, [zoomBy]);
 
     const zoomAtPointer = useCallback(
-        (event: any, factor: any) => {
+        (event: PointerPosition, factor: number) => {
             const element = viewerRef.current;
             if (!element) {
                 zoomBy(factor);
@@ -74,7 +111,7 @@ export function useFullscreenImageTransform({ open, url }: any) {
             const cx = rect.width / 2;
             const cy = rect.height / 2;
 
-            setTransform((current: any) => {
+            setTransform((current) => {
                 const oldScale = current.scale;
                 const newScale = clamp(oldScale * factor, MIN_SCALE, MAX_SCALE);
                 const radians = degToRad(current.rotate);
@@ -99,21 +136,21 @@ export function useFullscreenImageTransform({ open, url }: any) {
     );
 
     const rotateClockwise = useCallback(() => {
-        setTransform((current: any) => ({
+        setTransform((current) => ({
             ...current,
             rotate: (current.rotate + 90) % 360
         }));
     }, []);
 
     const rotateCounterClockwise = useCallback(() => {
-        setTransform((current: any) => ({
+        setTransform((current) => ({
             ...current,
             rotate: (current.rotate - 90 + 360) % 360
         }));
     }, []);
 
     const handleWheel = useCallback(
-        (event: any) => {
+        (event: ReactWheelEvent<HTMLDivElement>) => {
             event.preventDefault();
             event.stopPropagation();
             zoomAtPointer(
@@ -124,56 +161,65 @@ export function useFullscreenImageTransform({ open, url }: any) {
         [zoomAtPointer]
     );
 
-    const handlePointerDown = useCallback((event: any) => {
-        if (event.button !== 0) {
-            return;
-        }
+    const handlePointerDown = useCallback(
+        (event: ReactPointerEvent<HTMLImageElement>) => {
+            if (event.button !== 0) {
+                return;
+            }
 
-        event.stopPropagation();
-        event.currentTarget.setPointerCapture?.(event.pointerId);
+            event.stopPropagation();
+            event.currentTarget.setPointerCapture?.(event.pointerId);
 
-        const current = transformRef.current;
-        dragRef.current = {
-            active: true,
-            pointerId: event.pointerId,
-            startX: event.clientX,
-            startY: event.clientY,
-            startTx: current.tx,
-            startTy: current.ty
-        };
-    }, []);
+            const current = transformRef.current;
+            dragRef.current = {
+                active: true,
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                startTx: current.tx,
+                startTy: current.ty
+            };
+        },
+        []
+    );
 
-    const handlePointerMove = useCallback((event: any) => {
-        const drag = dragRef.current;
-        if (!drag.active || drag.pointerId !== event.pointerId) {
-            return;
-        }
+    const handlePointerMove = useCallback(
+        (event: ReactPointerEvent<HTMLImageElement>) => {
+            const drag = dragRef.current;
+            if (!drag.active || drag.pointerId !== event.pointerId) {
+                return;
+            }
 
-        event.stopPropagation();
-        const dx = event.clientX - drag.startX;
-        const dy = event.clientY - drag.startY;
+            event.stopPropagation();
+            const dx = event.clientX - drag.startX;
+            const dy = event.clientY - drag.startY;
 
-        setTransform((current: any) => ({
-            ...current,
-            tx: drag.startTx + dx,
-            ty: drag.startTy + dy
-        }));
-    }, []);
+            setTransform((current) => ({
+                ...current,
+                tx: drag.startTx + dx,
+                ty: drag.startTy + dy
+            }));
+        },
+        []
+    );
 
-    const handlePointerUp = useCallback((event: any) => {
-        const drag = dragRef.current;
-        if (!drag.active || drag.pointerId !== event.pointerId) {
-            return;
-        }
+    const handlePointerUp = useCallback(
+        (event: ReactPointerEvent<HTMLImageElement>) => {
+            const drag = dragRef.current;
+            if (!drag.active || drag.pointerId !== event.pointerId) {
+                return;
+            }
 
-        event.stopPropagation();
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-        dragRef.current = {
-            ...dragRef.current,
-            active: false,
-            pointerId: null
-        };
-    }, []);
+            event.stopPropagation();
+            event.currentTarget.releasePointerCapture?.(event.pointerId);
+            dragRef.current = {
+                ...dragRef.current,
+                active: false,
+                pointerId: null
+            };
+        },
+        []
+    );
 
     const transformStyle = useMemo(
         () => ({

@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import { formatCsvField } from '@/shared/utils/csv';
 import { windowDelay } from '@/shared/utils/delays';
@@ -68,7 +69,9 @@ export function updateArrayValue(values: any, value: any, checked: any) {
 }
 
 export async function getUserMemoMap() {
-    const rows = await memoPersistenceRepository.getAllUserMemos().catch(() => []);
+    const rows = await memoPersistenceRepository
+        .getAllUserMemos()
+        .catch((): never[] => []);
     return new Map(
         (Array.isArray(rows) ? rows : [])
             .filter((row: any) => typeof row?.userId === 'string' && row.userId)

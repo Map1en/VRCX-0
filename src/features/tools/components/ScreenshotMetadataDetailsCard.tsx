@@ -5,10 +5,7 @@ import { Location } from '@/components/Location';
 import { openUserDialog } from '@/services/dialogService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    Card,
-    CardContent
-} from '@/ui/shadcn/card';
+import { Card, CardContent } from '@/ui/shadcn/card';
 
 import {
     formatScreenshotBytes,
@@ -128,9 +125,7 @@ export function ScreenshotMetadataDetailsCard({
                                 </div>
                             ) : (
                                 <div className="text-muted-foreground text-sm">
-                                    {t(
-                                        'view.tools.empty.no_player_metadata'
-                                    )}
+                                    {t('view.tools.empty.no_player_metadata')}
                                 </div>
                             )}
                         </section>

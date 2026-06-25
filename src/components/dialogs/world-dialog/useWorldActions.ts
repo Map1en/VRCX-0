@@ -241,7 +241,7 @@ export function useWorldActions({
         try {
             const configResponse = await vrchatAuthRepository
                 .getConfig({ endpoint: targetEndpoint })
-                .catch(() => null);
+                .catch((): null => null);
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }

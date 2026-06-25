@@ -1,7 +1,11 @@
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-export function GroupDialogEmptyState({ title, description, loading = false }: any) {
+export function GroupDialogEmptyState({
+    title,
+    description,
+    loading = false
+}: any) {
     return (
         <AppEmptyState
             className="min-h-56"

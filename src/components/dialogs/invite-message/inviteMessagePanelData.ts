@@ -86,7 +86,12 @@ export function dialogTitle(mode: any, messageType: any, t: any) {
         : t('dialog.invite_message.header');
 }
 
-export function dialogDescription(mode: any, messageType: any, _targetLabel: any, t: any) {
+export function dialogDescription(
+    mode: any,
+    messageType: any,
+    _targetLabel: any,
+    t: any
+) {
     if (mode === 'manage') {
         return t('view.tools.other.edit_invite_message_description');
     }
@@ -136,9 +141,7 @@ export async function saveInviteMessage({
         { endpoint }
     );
     if (json?.[slot]?.message === previousMessage) {
-        throw new Error(
-            t('dialog.edit_invite_messages.error.update_failed')
-        );
+        throw new Error(t('dialog.edit_invite_messages.error.update_failed'));
     }
     return json;
 }

@@ -1,5 +1,6 @@
 import { Trash2Icon, XIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter } from '@/lib/dateTime';
@@ -34,8 +35,8 @@ export function useFriendLogColumns({
                 maxSize: 20,
                 enableSorting: false,
                 enableResizing: false,
-                header: () => null,
-                cell: () => null
+                header: (): ReactNode => null,
+                cell: (): ReactNode => null
             },
             {
                 id: 'created_at',
@@ -164,8 +165,8 @@ export function useFriendLogColumns({
                 size: 5,
                 enableSorting: false,
                 enableResizing: false,
-                header: () => null,
-                cell: () => null
+                header: (): ReactNode => null,
+                cell: (): ReactNode => null
             }
         ],
         [

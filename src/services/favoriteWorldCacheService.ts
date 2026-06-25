@@ -34,7 +34,8 @@ function buildWorldCacheEntry(
         return null;
     }
 
-    const id = normalizeEntityId(world.id) || normalizeEntityId(fallbackWorldId);
+    const id =
+        normalizeEntityId(world.id) || normalizeEntityId(fallbackWorldId);
     if (!id) {
         return null;
     }

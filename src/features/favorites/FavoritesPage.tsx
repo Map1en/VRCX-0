@@ -48,7 +48,9 @@ function FavoritesPage({
     const handleGroupRailRefresh = useStableEvent(() =>
         actions.refreshFavorites()
     );
-    const handleImportFavorites = useStableEvent(() => actions.importFavorites());
+    const handleImportFavorites = useStableEvent(() =>
+        actions.importFavorites()
+    );
     const handleExportFavorites = useStableEvent(() =>
         actions.exportCurrentFavorites()
     );

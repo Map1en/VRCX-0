@@ -5,13 +5,7 @@ import {
     SettingsIcon,
     Trash2Icon
 } from 'lucide-react';
-import {
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState
-} from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -81,7 +75,9 @@ function useColumnViewport(
         if (!previousKey) {
             return;
         }
-        const nextIndex = rows.findIndex((row) => getFeedRowId(row) === previousKey);
+        const nextIndex = rows.findIndex(
+            (row) => getFeedRowId(row) === previousKey
+        );
         if (nextIndex < 0 || nextIndex === previousIndex) {
             return;
         }
@@ -128,7 +124,10 @@ function useColumnViewport(
         if (!viewport.height || !rows.length) {
             return;
         }
-        if (viewport.scrollTop + viewport.height >= totalHeight - itemStep * 8) {
+        if (
+            viewport.scrollTop + viewport.height >=
+            totalHeight - itemStep * 8
+        ) {
             loadOlder();
         }
     }, [
@@ -337,9 +336,12 @@ export function FeedColumnPane({
                         variant="ghost"
                         size="icon-sm"
                         className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab opacity-0 transition-opacity group-hover/feed-column-header:opacity-100 focus-visible:opacity-100"
-                        aria-label={t('nav_menu.custom_nav.dynamic.drag_value', {
-                            value: column.title
-                        })}
+                        aria-label={t(
+                            'nav_menu.custom_nav.dynamic.drag_value',
+                            {
+                                value: column.title
+                            }
+                        )}
                         {...dragHandleProps?.attributes}
                         {...dragHandleProps?.listeners}
                     >
@@ -403,7 +405,10 @@ export function FeedColumnPane({
                             {t('view.feed.loading.loading_feed_rows')}
                         </div>
                     ) : rows.length ? (
-                        <div className="relative" style={{ height: totalHeight }}>
+                        <div
+                            className="relative"
+                            style={{ height: totalHeight }}
+                        >
                             {virtualItems.map((item) => (
                                 <div
                                     key={item.key}
@@ -425,7 +430,9 @@ export function FeedColumnPane({
                                             onOpenPreviousInstances
                                         }
                                         row={item.row}
-                                        showTypeHint={column.feedTypes.length > 1}
+                                        showTypeHint={
+                                            column.feedTypes.length > 1
+                                        }
                                         timeDisplayMode={timeDisplayMode}
                                     />
                                 </div>

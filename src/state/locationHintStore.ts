@@ -53,51 +53,57 @@ function hintKey(endpoint: unknown, location: unknown): string {
     return key ? `${text(endpoint) || 'default'}::${key}` : '';
 }
 
-export const useLocationHintStore = create<LocationHintStoreState>((set: any) => ({
-    ...initialState,
-    upsertLocationHint(input: any) {
-        set((state: any) => {
-            const key = hintKey(input.endpoint, input.location);
-            if (!key) {
-                return state;
-            }
-            const [endpoint, locationKey] = key.split('::');
-            const existing = state.hintsByKey[key];
-            const next: LocationHint = {
-                endpoint,
-                locationKey,
-                location: text(input.location) || existing?.location || '',
-                worldId: text(input.worldId) || existing?.worldId || '',
-                groupId: text(input.groupId) || existing?.groupId || '',
-                worldName: text(input.worldName) || existing?.worldName || '',
-                groupName: text(input.groupName) || existing?.groupName || '',
-                instanceName:
-                    text(input.instanceName) || existing?.instanceName || '',
-                region: text(input.region) || existing?.region || '',
-                isClosed: Boolean(input.isClosed || existing?.isClosed),
-                ageGate: Boolean(input.ageGate || existing?.ageGate),
-                updatedAt: new Date().toISOString()
-            };
-            if (
-                existing &&
-                JSON.stringify({ ...existing, updatedAt: '' }) ===
-                    JSON.stringify({ ...next, updatedAt: '' })
-            ) {
-                return state;
-            }
-            return {
-                version: state.version + 1,
-                hintsByKey: {
-                    ...state.hintsByKey,
-                    [key]: next
+export const useLocationHintStore = create<LocationHintStoreState>(
+    (set: any) => ({
+        ...initialState,
+        upsertLocationHint(input: any) {
+            set((state: any) => {
+                const key = hintKey(input.endpoint, input.location);
+                if (!key) {
+                    return state;
                 }
-            };
-        });
-    },
-    resetLocationHints() {
-        set(initialState);
-    }
-}));
+                const [endpoint, locationKey] = key.split('::');
+                const existing = state.hintsByKey[key];
+                const next: LocationHint = {
+                    endpoint,
+                    locationKey,
+                    location: text(input.location) || existing?.location || '',
+                    worldId: text(input.worldId) || existing?.worldId || '',
+                    groupId: text(input.groupId) || existing?.groupId || '',
+                    worldName:
+                        text(input.worldName) || existing?.worldName || '',
+                    groupName:
+                        text(input.groupName) || existing?.groupName || '',
+                    instanceName:
+                        text(input.instanceName) ||
+                        existing?.instanceName ||
+                        '',
+                    region: text(input.region) || existing?.region || '',
+                    isClosed: Boolean(input.isClosed || existing?.isClosed),
+                    ageGate: Boolean(input.ageGate || existing?.ageGate),
+                    updatedAt: new Date().toISOString()
+                };
+                if (
+                    existing &&
+                    JSON.stringify({ ...existing, updatedAt: '' }) ===
+                        JSON.stringify({ ...next, updatedAt: '' })
+                ) {
+                    return state;
+                }
+                return {
+                    version: state.version + 1,
+                    hintsByKey: {
+                        ...state.hintsByKey,
+                        [key]: next
+                    }
+                };
+            });
+        },
+        resetLocationHints() {
+            set(initialState);
+        }
+    })
+);
 
 export { hintKey as locationHintKey };
 export type { LocationHint, LocationHintInput, LocationHintStoreState };

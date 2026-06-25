@@ -1,11 +1,11 @@
-import {
-    consumeSystemFontsUnavailableWarning,
-    loadSystemFonts
-} from '@/services/systemFontsService';
 import type {
     BoolConfigPreferenceKey,
     StringConfigPreferenceKey
 } from '@/services/preferencesService';
+import {
+    consumeSystemFontsUnavailableWarning,
+    loadSystemFonts
+} from '@/services/systemFontsService';
 import type { PreferencesSnapshot } from '@/state/preferencesStore';
 
 import {
@@ -18,10 +18,10 @@ type PreferenceKey = Extract<keyof PreferencesSnapshot, string>;
 type NormalizedConfigKey<Key extends string> = Key extends `VRCX_${infer Name}`
     ? Name
     : Key;
-type BoolPreferenceKey =
-    NormalizedConfigKey<BoolConfigPreferenceKey> & PreferenceKey;
-type StringPreferenceKey =
-    NormalizedConfigKey<StringConfigPreferenceKey> & PreferenceKey;
+type BoolPreferenceKey = NormalizedConfigKey<BoolConfigPreferenceKey> &
+    PreferenceKey;
+type StringPreferenceKey = NormalizedConfigKey<StringConfigPreferenceKey> &
+    PreferenceKey;
 type PreferenceAction = () => unknown | Promise<unknown>;
 type PreferenceRollback = void | (() => void);
 type SettingsPrefs = PreferencesSnapshot & Record<string, unknown>;
@@ -154,8 +154,10 @@ export function useSettingsPreferenceActions({
         value: boolean
     ) {
         const enabled = value === true;
-        await savePreferenceValue(key, enabled as PreferencesSnapshot[typeof key], () =>
-            setBoolConfigPreference(configKey, enabled)
+        await savePreferenceValue(
+            key,
+            enabled as PreferencesSnapshot[typeof key],
+            () => setBoolConfigPreference(configKey, enabled)
         );
     }
     async function saveStringPreference(
@@ -163,8 +165,10 @@ export function useSettingsPreferenceActions({
         configKey: StringConfigPreferenceKey,
         value: string
     ) {
-        await savePreferenceValue(key, value as PreferencesSnapshot[typeof key], () =>
-            setStringConfigPreference(configKey, value)
+        await savePreferenceValue(
+            key,
+            value as PreferencesSnapshot[typeof key],
+            () => setStringConfigPreference(configKey, value)
         );
     }
     async function saveFontPreferences({
@@ -461,7 +465,9 @@ export function useSettingsPreferenceActions({
             tableLimitsDraft.searchLimit,
             10
         );
-        let savedLimits;
+        let savedLimits:
+            | Awaited<ReturnType<typeof setTableLimitsPreference>>
+            | undefined;
         const saved = await commit(async () => {
             savedLimits = await setTableLimitsPreference({
                 maxTableSize: nextMaxTableSize,
@@ -499,7 +505,9 @@ export function useSettingsPreferenceActions({
         );
     }
     async function saveOverlayActivityFilters(value: any, definitions?: any) {
-        let savedFilters;
+        let savedFilters:
+            | Awaited<ReturnType<typeof setOverlayActivityFiltersPreference>>
+            | undefined;
         const previousFilters = prefs.overlayActivityFilters;
         const saved = await commit(
             async () => {
@@ -538,7 +546,7 @@ export function useSettingsPreferenceActions({
         setPreference: (value: any) => Promise<any>
     ) {
         return async function saveActivityFilterSurface(value: any) {
-            let savedFilters;
+            let savedFilters: Awaited<ReturnType<typeof setPreference>>;
             const previousFilters = prefs[field];
             const saved = await commit(
                 async () => {

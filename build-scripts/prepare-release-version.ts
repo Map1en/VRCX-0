@@ -76,9 +76,7 @@ function syncVersionToManifests(buildVersion) {
     const lockVersionPattern =
         /(\[\[package\]\]\r?\nname = "vrcx-0"\r?\nversion = )"[^"]+"/;
     if (!lockVersionPattern.test(cargoLock)) {
-        throw new Error(
-            'Failed to update Cargo.lock package version'
-        );
+        throw new Error('Failed to update Cargo.lock package version');
     }
     fs.writeFileSync(
         cargoLockPath,

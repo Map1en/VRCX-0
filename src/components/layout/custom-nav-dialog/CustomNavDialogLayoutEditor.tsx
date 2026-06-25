@@ -304,7 +304,9 @@ export function CustomNavDialogLayoutEditor({
                                                             'icon_for_value',
                                                             entry.name
                                                         )}
-                                                        onValueChange={(icon: any) =>
+                                                        onValueChange={(
+                                                            icon: any
+                                                        ) =>
                                                             onFolderIconChange(
                                                                 index,
                                                                 icon
@@ -352,7 +354,10 @@ export function CustomNavDialogLayoutEditor({
                                         {entry.items?.length ? (
                                             <div className="flex flex-col gap-1">
                                                 {entry.items.map(
-                                                    (item: any, childIndex: any) => {
+                                                    (
+                                                        item: any,
+                                                        childIndex: any
+                                                    ) => {
                                                         const key =
                                                             getFolderItemKey(
                                                                 item
@@ -371,7 +376,9 @@ export function CustomNavDialogLayoutEditor({
                                                                     key
                                                                 )}
                                                             >
-                                                                {(rowProps: any) => (
+                                                                {(
+                                                                    rowProps: any
+                                                                ) => (
                                                                     <NavItemRow
                                                                         {...rowProps}
                                                                         indent

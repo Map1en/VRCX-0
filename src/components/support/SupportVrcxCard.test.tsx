@@ -35,7 +35,8 @@ vi.mock('@/ui/shadcn/card', async () => {
     const React = await import('react');
 
     return {
-        Card: ({ children }: any) => React.createElement('section', null, children),
+        Card: ({ children }: any) =>
+            React.createElement('section', null, children),
         CardContent: ({ children }: any) =>
             React.createElement('div', null, children),
         CardDescription: ({ children }: any) =>
@@ -51,17 +52,13 @@ import { SupportVrcxCard } from './SupportVrcxCard';
 
 describe('SupportVrcxCard', () => {
     it('renders the hardcoded Afdian support action', () => {
-        const html = renderToStaticMarkup(
-            React.createElement(SupportVrcxCard)
-        );
+        const html = renderToStaticMarkup(React.createElement(SupportVrcxCard));
 
         expect(html).toContain('爱发电');
     });
 
     it('renders GitHub Sponsors and Ko-fi support actions', () => {
-        const html = renderToStaticMarkup(
-            React.createElement(SupportVrcxCard)
-        );
+        const html = renderToStaticMarkup(React.createElement(SupportVrcxCard));
 
         expect(html).toContain('Support VRCX-0');
         expect(html).toContain('GitHub Sponsors');

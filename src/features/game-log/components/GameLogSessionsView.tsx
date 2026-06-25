@@ -438,7 +438,7 @@ export function GameLogSessionsView({
     onLoadMore
 }: any) {
     const { t } = useTranslation();
-    const scrollRef = useRef(null);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
     const sentinelRef = useRef(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);
     const [sessionOpenOverrides, setSessionOpenOverrides] = useState(

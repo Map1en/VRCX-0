@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
-import { normalizeId } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 

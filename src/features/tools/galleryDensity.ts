@@ -22,9 +22,12 @@ const DENSITY_VALUES = new Set(
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
         value: 'standard',
-        fileGridClass: 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
-        printsGridClass: 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
-        inventoryGridClass: 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
+        fileGridClass:
+            'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
+        printsGridClass:
+            'grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+        inventoryGridClass:
+            'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
         contentClass: 'flex flex-col gap-2.5 p-3',
         metaClass: 'flex flex-col gap-1',
         actionsClass: 'flex flex-wrap gap-1.5',
@@ -32,9 +35,12 @@ const DENSITY_CONFIGS = Object.freeze({
     }),
     compact: Object.freeze({
         value: 'compact',
-        fileGridClass: 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6',
-        printsGridClass: 'grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5',
-        inventoryGridClass: 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6',
+        fileGridClass:
+            'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6',
+        printsGridClass:
+            'grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5',
+        inventoryGridClass:
+            'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6',
         contentClass: 'flex flex-col gap-2 p-2.5',
         metaClass: 'flex flex-col gap-0.5',
         actionsClass: 'flex flex-wrap gap-1.5',
@@ -42,9 +48,12 @@ const DENSITY_CONFIGS = Object.freeze({
     }),
     dense: Object.freeze({
         value: 'dense',
-        fileGridClass: 'grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7',
-        printsGridClass: 'grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6',
-        inventoryGridClass: 'grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7',
+        fileGridClass:
+            'grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7',
+        printsGridClass:
+            'grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6',
+        inventoryGridClass:
+            'grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7',
         contentClass: 'flex flex-col gap-1.5 p-2',
         metaClass: 'flex flex-col gap-0.5',
         actionsClass: 'flex flex-wrap gap-1',
@@ -60,5 +69,7 @@ export function sanitizeGalleryGridDensity(value: any = '') {
 }
 
 export function getGalleryGridDensityConfig(value: any) {
-    return DENSITY_CONFIGS[sanitizeGalleryGridDensity(value)];
+    return DENSITY_CONFIGS[
+        sanitizeGalleryGridDensity(value) as keyof typeof DENSITY_CONFIGS
+    ];
 }

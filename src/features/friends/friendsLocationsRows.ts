@@ -12,7 +12,7 @@ const SENTINEL_LOCATION_VALUES = new Set([
     'traveling:traveling'
 ]);
 
-export function normalizeFriendsLocationId(value: any) {
+export function normalizeFriendsLocationId(value: any): string {
     if (typeof value === 'string') {
         return value.trim();
     }
@@ -208,8 +208,7 @@ export function resolveFriendsLocationsCurrentInviteLocation(
 
 export function isOnlineFriend(friend: any) {
     return Boolean(
-        friend?.stateBucket === 'online' ||
-            friend?.state === 'online'
+        friend?.stateBucket === 'online' || friend?.state === 'online'
     );
 }
 
@@ -225,7 +224,10 @@ export function isShareableInstanceLocation(location: any) {
     );
 }
 
-export function buildSameInstanceGroups(friends: any, lastLocation: any = null) {
+export function buildSameInstanceGroups(
+    friends: any,
+    lastLocation: any = null
+) {
     const groupsByLocation = new Map();
 
     for (const friend of friends ?? []) {
@@ -410,7 +412,11 @@ export function buildFavoriteGroupLabelsByFriendId({
     return labelsByFriendId;
 }
 
-export function compareFavoriteGroups(left: any, right: any, order: any[] = []) {
+export function compareFavoriteGroups(
+    left: any,
+    right: any,
+    order: any[] = []
+) {
     const leftIndex = order.indexOf(left.key);
     const rightIndex = order.indexOf(right.key);
     if (leftIndex >= 0 && rightIndex >= 0) {

@@ -38,7 +38,7 @@ function GameLogEmptyState({
     return <EmptyState title={title} description={description} />;
 }
 
-function EmptyTableValue() {
+function EmptyTableValue(): null {
     return null;
 }
 

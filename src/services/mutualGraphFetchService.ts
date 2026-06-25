@@ -1,5 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import type { MutualGraphFetchStatus } from '@/platform/tauri/bindings';
+import { normalizeNumber } from '@/shared/utils/coerce';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type StartMutualGraphFetchInput = {
@@ -15,11 +16,6 @@ const TERMINAL_RESET_DELAY_MS = 5000;
 let pollTimer: number | null = null;
 let resetTimer: number | null = null;
 const sessionStartedRunIds = new Set<number>();
-
-function normalizeNumber(value: unknown) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function normalizeString(value: unknown) {
     return typeof value === 'string' ? value : String(value ?? '');
@@ -68,7 +64,9 @@ function scheduleTerminalReset() {
     }, TERMINAL_RESET_DELAY_MS);
 }
 
-function applyStatus(status: Partial<MutualGraphFetchStatus> | null | undefined) {
+function applyStatus(
+    status: Partial<MutualGraphFetchStatus> | null | undefined
+) {
     const normalized = normalizeStatus(status);
     useRuntimeStore.getState().setMutualGraphState(normalized);
     if (ACTIVE_STATUSES.has(normalized.status)) {

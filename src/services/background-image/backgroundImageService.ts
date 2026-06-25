@@ -1,19 +1,30 @@
 import { commands } from '@/platform/tauri/bindings';
-import configRepository from '@/repositories/configRepository';
 import {
     APP_THEME_CONFIG_KEYS,
     BACKGROUND_IMAGE_CONFIG_KEYS
 } from '@/repositories/configKeys';
+import configRepository from '@/repositories/configRepository';
 import {
     disableInstalledCommunityTheme,
     stopLocalCommunityThemePreview
 } from '@/services/communityThemeService';
+import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import {
     communityThemeControlsAppearance,
     useCommunityThemeStore
 } from '@/state/communityThemeStore';
-import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 
+import {
+    applyThemeColor,
+    resolveThemeColor,
+    resolveThemeMode,
+    setCommunityThemeAppearanceControl
+} from '../themeService';
+import {
+    type VrcxCssLayer,
+    setVrcxCssLayer,
+    setVrcxCssLayersSuppressed
+} from '../vrcxCssLayerService';
 import {
     createBackgroundImageFilesSource,
     createBackgroundImageFolderSource,
@@ -34,17 +45,6 @@ import type {
     BackgroundImageRotationInterval,
     BackgroundImageSnapshot
 } from './types';
-import {
-    applyThemeColor,
-    resolveThemeColor,
-    resolveThemeMode,
-    setCommunityThemeAppearanceControl
-} from '../themeService';
-import {
-    type VrcxCssLayer,
-    setVrcxCssLayer,
-    setVrcxCssLayersSuppressed
-} from '../vrcxCssLayerService';
 
 const BACKGROUND_IMAGE_LAYER = 'background-image';
 const COMMUNITY_CSS_LAYERS: VrcxCssLayer[] = [
@@ -94,7 +94,9 @@ function normalizeSnapshot(
         license: String(entry.license || ''),
         source: String(entry.source || ''),
         resolvedAt: String(entry.resolvedAt || ''),
-        resolvedForKey: String(entry.resolvedForKey || entry.resolvedForDate || '')
+        resolvedForKey: String(
+            entry.resolvedForKey || entry.resolvedForDate || ''
+        )
     };
 }
 
@@ -192,7 +194,9 @@ function clearRotationTimer(): void {
     }
 }
 
-function msUntilNextRotation(interval: BackgroundImageRotationInterval): number {
+function msUntilNextRotation(
+    interval: BackgroundImageRotationInterval
+): number {
     const now = new Date();
     const next = new Date(now);
     if (interval === 'hourly') {
@@ -236,7 +240,10 @@ async function applySavedThemeMode(): Promise<void> {
         APP_THEME_CONFIG_KEYS.themeMode,
         'system'
     );
-    await setCommunityThemeAppearanceControl(false, resolveThemeMode(savedThemeMode));
+    await setCommunityThemeAppearanceControl(
+        false,
+        resolveThemeMode(savedThemeMode)
+    );
 }
 
 async function applySavedThemeColor(): Promise<void> {
@@ -269,12 +276,11 @@ async function syncBackgroundImageAppearance(
     const shouldApply = Boolean(state.enabled && state.snapshot);
     setVrcxCssLayer(
         BACKGROUND_IMAGE_LAYER,
-        shouldApply && state.snapshot ? buildBackgroundImageCss(state.snapshot) : ''
+        shouldApply && state.snapshot
+            ? buildBackgroundImageCss(state.snapshot)
+            : ''
     );
-    setVrcxCssLayersSuppressed(
-        COMMUNITY_CSS_LAYERS,
-        suppressCommunityLayers
-    );
+    setVrcxCssLayersSuppressed(COMMUNITY_CSS_LAYERS, suppressCommunityLayers);
 
     if (shouldApply) {
         await setCommunityThemeAppearanceControl(true);
@@ -310,7 +316,9 @@ async function loadSnapshots(): Promise<SnapshotMap> {
     );
 }
 
-async function persistSnapshot(snapshot: BackgroundImageSnapshot): Promise<void> {
+async function persistSnapshot(
+    snapshot: BackgroundImageSnapshot
+): Promise<void> {
     if (!snapshot.providerId) {
         return;
     }
@@ -335,7 +343,9 @@ async function persistCustomSource(
     customSource: BackgroundImageCustomSource | null
 ): Promise<void> {
     if (!customSource) {
-        await configRepository.remove(BACKGROUND_IMAGE_CONFIG_KEYS.customSource);
+        await configRepository.remove(
+            BACKGROUND_IMAGE_CONFIG_KEYS.customSource
+        );
         return;
     }
     await configRepository.setObject(
@@ -442,10 +452,15 @@ export async function initializeBackgroundImage(): Promise<void> {
         });
         nextEnabled = Boolean(snapshot && !isCommunityAppearanceActive());
     } else if (nextEnabled && mode === 'custom') {
-        snapshot = await resolveCustomSnapshot(customSource, true).catch((error) => {
-            console.warn('Unable to initialize custom Background Image:', error);
-            return null;
-        });
+        snapshot = await resolveCustomSnapshot(customSource, true).catch(
+            (error: unknown): null => {
+                console.warn(
+                    'Unable to initialize custom Background Image:',
+                    error
+                );
+                return null;
+            }
+        );
         if (!snapshot || isCommunityAppearanceActive()) {
             nextEnabled = false;
             nextMode = 'off';
@@ -595,7 +610,11 @@ export async function enableBackgroundImageDaily(
         if (enabled) {
             await disableCommunityThemesForBackgroundImage();
         }
-        await persistState({ enabled, mode: enabled ? 'daily' : 'off', providerId });
+        await persistState({
+            enabled,
+            mode: enabled ? 'daily' : 'off',
+            providerId
+        });
         useBackgroundImageStore.getState().setStateSnapshot({
             mode: enabled ? 'daily' : 'off',
             enabled,

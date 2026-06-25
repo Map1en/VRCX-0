@@ -1,9 +1,4 @@
-import {
-    ImageIcon,
-    RefreshCwIcon,
-    Trash2Icon,
-    UploadIcon
-} from 'lucide-react';
+import { ImageIcon, RefreshCwIcon, Trash2Icon, UploadIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';

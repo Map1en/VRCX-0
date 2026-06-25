@@ -2,10 +2,7 @@ import { StarIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
-import {
-    PageToolbar,
-    PageToolbarRow
-} from '@/components/layout/PageScaffold';
+import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
@@ -29,8 +26,7 @@ export function FriendListToolbar({
         isFavoritesLoaded,
         searchQuery
     } = filterModel;
-    const { bulkUnfriendMode, isBulkDeleting, selectedFriendCount } =
-        bulkModel;
+    const { bulkUnfriendMode, isBulkDeleting, selectedFriendCount } = bulkModel;
     const {
         currentUserId,
         isLoadingUserDetails,
@@ -91,7 +87,9 @@ export function FriendListToolbar({
                     />
                     <Input
                         value={searchQuery}
-                        onChange={(event: any) => onSearchChange(event.target.value)}
+                        onChange={(event: any) =>
+                            onSearchChange(event.target.value)
+                        }
                         placeholder={t('view.friend_list.search_placeholder')}
                         aria-label={t('view.friend_list.search_placeholder')}
                         className="h-9 w-64"

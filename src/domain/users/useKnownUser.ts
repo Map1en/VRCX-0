@@ -4,7 +4,12 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
 import { getKnownUserFact } from './userFactAccess';
-import { normalizeEndpoint, normalizeUserId, userFactKey } from './userFacts';
+import {
+    normalizeEndpoint,
+    normalizeUserId,
+    userFactKey,
+    type UserFact
+} from './userFacts';
 
 interface UseKnownUserOptions {
     endpoint?: unknown;
@@ -69,7 +74,7 @@ function useKnownUserFacts(
     );
 
     return useMemo(() => {
-        const usersById: Record<string, any> = {};
+        const usersById: Record<string, UserFact> = {};
         for (const userId of normalizedUserIds) {
             if (userId === currentUserId && currentUserSnapshot) {
                 usersById[userId] = currentUserSnapshot;

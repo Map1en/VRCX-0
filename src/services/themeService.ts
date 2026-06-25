@@ -106,25 +106,24 @@ export const APP_CJK_FONT_PACK_CONFIG = Object.freeze({
             "'PHT Sans JP'",
             "'PHT Sans KR'"
         ]),
-        cssImport:
-            [
-                '/* Simplified Chinese */',
-                "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }",
-                '/* Traditional Chinese */',
-                "@font-face { font-family: 'PHT Sans TC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/tc/phtsansTC-55.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans TC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/tc/phtsansTC-75.woff2') format('woff2'); font-weight: 600; font-display: swap; }",
-                '/* Japanese */',
-                "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }",
-                '/* Korean */',
-                "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
-                "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }"
-            ].join('\n')
+        cssImport: [
+            '/* Simplified Chinese */',
+            "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans SC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/sc/phtsansSC-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }",
+            '/* Traditional Chinese */',
+            "@font-face { font-family: 'PHT Sans TC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/tc/phtsansTC-55.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans TC'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/tc/phtsansTC-75.woff2') format('woff2'); font-weight: 600; font-display: swap; }",
+            '/* Japanese */',
+            "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans JP'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/jp/phtsansJP-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }",
+            '/* Korean */',
+            "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }",
+            "@font-face { font-family: 'PHT Sans KR'; src: url('https://cdn.jsdelivr.net/gh/map1en/pht@1.0.0/kr/phtsansKR-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }"
+        ].join('\n')
     },
     system: {
         cssNames: Object.freeze([]),
@@ -140,6 +139,15 @@ export const APP_CJK_FONT_PACKS = Object.freeze(
 type AppFontKey = keyof typeof APP_FONT_CONFIG;
 type AppCjkFontPackKey = keyof typeof APP_CJK_FONT_PACK_CONFIG;
 type ThemeColorStyleToken = keyof typeof THEME_COLOR_STYLE_PROPERTIES;
+
+const THEME_COLOR_STYLE_ENTRIES: Array<[ThemeColorStyleToken, string]> = [
+    ['primary', THEME_COLOR_STYLE_PROPERTIES.primary],
+    ['primaryDark', THEME_COLOR_STYLE_PROPERTIES.primaryDark],
+    ['foreground', THEME_COLOR_STYLE_PROPERTIES.foreground],
+    ['foregroundDark', THEME_COLOR_STYLE_PROPERTIES.foregroundDark],
+    ['ring', THEME_COLOR_STYLE_PROPERTIES.ring],
+    ['ringDark', THEME_COLOR_STYLE_PROPERTIES.ringDark]
+];
 
 export function resolveThemeColor(value: unknown): string {
     const normalized = String(value || '')
@@ -167,7 +175,9 @@ export function isCommunityThemeAppearanceControlled(): boolean {
         return false;
     }
 
-    return document.documentElement.hasAttribute(COMMUNITY_THEME_APPEARANCE_ATTR);
+    return document.documentElement.hasAttribute(
+        COMMUNITY_THEME_APPEARANCE_ATTR
+    );
 }
 
 export function getCommunityThemeAppearanceThemeMode(): ThemeMode {
@@ -256,12 +266,10 @@ export function applyThemeColor(themeColor: unknown): string {
         root.getAttribute('data-vrcx-0-community-theme-accent') !== 'theme' &&
         normalized !== DEFAULT_THEME_COLOR_KEY
     ) {
-        Object.entries(THEME_COLOR_STYLE_PROPERTIES).forEach(
-            ([tokenName, propertyName]: any) => {
-                const cssValue = theme[tokenName as ThemeColorStyleToken];
-                root.style.setProperty(propertyName, cssValue as string);
-            }
-        );
+        THEME_COLOR_STYLE_ENTRIES.forEach(([tokenName, propertyName]) => {
+            const cssValue = theme[tokenName];
+            root.style.setProperty(propertyName, String(cssValue));
+        });
     }
 
     useShellStore.getState().setThemeColor(normalized);
@@ -277,11 +285,13 @@ function ensureDynamicStyle(
         return;
     }
 
-    document.querySelectorAll(`style[${attrName}]`).forEach((styleElement: any) => {
-        if (styleElement.getAttribute(attrName) !== styleKey) {
-            styleElement.remove();
-        }
-    });
+    document
+        .querySelectorAll(`style[${attrName}]`)
+        .forEach((styleElement: any) => {
+            if (styleElement.getAttribute(attrName) !== styleKey) {
+                styleElement.remove();
+            }
+        });
 
     if (
         !cssText ||
@@ -409,10 +419,7 @@ function resolveCjkFontConfig(
     cssImport: string | null;
     styleKey: string;
 } {
-    const effectiveCjk = resolveAppCjkFontPackForLocale(
-        normalizedCjk,
-        locale
-    );
+    const effectiveCjk = resolveAppCjkFontPackForLocale(normalizedCjk, locale);
 
     if (effectiveCjk === 'noto') {
         return resolveNotoCjkFontConfig(locale);
@@ -518,7 +525,9 @@ export async function setCommunityThemeAppearanceControl(
     const root = document.documentElement;
     if (enabled) {
         const normalizedControlledThemeMode =
-            resolveThemeMode(controlledThemeMode) === 'light' ? 'light' : 'dark';
+            resolveThemeMode(controlledThemeMode) === 'light'
+                ? 'light'
+                : 'dark';
         root.setAttribute(
             COMMUNITY_THEME_APPEARANCE_ATTR,
             normalizedControlledThemeMode

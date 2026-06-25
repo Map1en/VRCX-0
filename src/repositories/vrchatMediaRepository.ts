@@ -1,9 +1,9 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 
 import { normalizePlatformError } from '../platform/tauri/errors';

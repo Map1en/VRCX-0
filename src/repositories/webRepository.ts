@@ -10,7 +10,7 @@ async function clearAuthCookies(): Promise<unknown> {
 
 const webRepository = Object.freeze({
     clearCookies,
-    clearAuthCookies,
+    clearAuthCookies
 });
 
 export { clearCookies, clearAuthCookies };

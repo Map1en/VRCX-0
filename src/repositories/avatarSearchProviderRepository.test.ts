@@ -58,27 +58,30 @@ describe('AvatarSearchProviderRepository', () => {
             }
         );
         vi.mocked(avatarProfileRepository.normalize).mockImplementation(
-            (avatar: Record<string, unknown>) => ({
-                ...avatar,
-                id: String(avatar.id ?? ''),
-                name: String(avatar.name ?? ''),
-                description: '',
-                authorId: String(avatar.authorId ?? ''),
-                authorName: String(avatar.authorName ?? ''),
-                releaseStatus: String(avatar.releaseStatus ?? 'public'),
-                thumbnailImageUrl: String(avatar.thumbnailImageUrl ?? ''),
-                imageUrl: String(avatar.imageUrl ?? ''),
-                created_at: avatar.created_at ?? '',
-                updated_at: avatar.updated_at ?? '',
-                version: 0,
-                tags: [],
-                unityPackages: [],
-                $tags: [],
-                $timeSpent: 0,
-                $memo: '',
-                $isCached: false,
-                normalized: true
-            })
+            (avatarInput: unknown) => {
+                const avatar = (avatarInput ?? {}) as Record<string, unknown>;
+                return {
+                    ...avatar,
+                    id: String(avatar.id ?? ''),
+                    name: String(avatar.name ?? ''),
+                    description: '',
+                    authorId: String(avatar.authorId ?? ''),
+                    authorName: String(avatar.authorName ?? ''),
+                    releaseStatus: String(avatar.releaseStatus ?? 'public'),
+                    thumbnailImageUrl: String(avatar.thumbnailImageUrl ?? ''),
+                    imageUrl: String(avatar.imageUrl ?? ''),
+                    created_at: avatar.created_at ?? '',
+                    updated_at: avatar.updated_at ?? '',
+                    version: 0,
+                    tags: [],
+                    unityPackages: [],
+                    $tags: [],
+                    $timeSpent: 0,
+                    $memo: '',
+                    $isCached: false,
+                    normalized: true
+                };
+            }
         );
     });
 

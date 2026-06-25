@@ -75,7 +75,9 @@ export function useAssistantEvents(): void {
                 const event = payload as AssistantToolResultEvent;
                 store.applyToolResult(event);
                 if (!event.ok) {
-                    recordAssistantToolError(toolNamesById.get(event.toolCallId));
+                    recordAssistantToolError(
+                        toolNamesById.get(event.toolCallId)
+                    );
                 }
                 toolNamesById.delete(event.toolCallId);
             },

@@ -79,7 +79,7 @@ function parseResponse(data: unknown): unknown {
     if (typeof data === 'object') {
         return data;
     }
-    return JSON.parse(data as string);
+    return JSON.parse(String(data));
 }
 
 async function getJson(path: string): Promise<VrcStatusResponse | null> {
@@ -196,7 +196,8 @@ export function refreshVrcStatus(): Promise<void> {
 
 async function deferNextVrcStatusRefresh(): Promise<void> {
     const interval = useRuntimeStore.getState().vrcStatus.pollingIntervalMs;
-    await commands.appRuntimeFrontendScheduleJobDefer({
+    await commands
+        .appRuntimeFrontendScheduleJobDefer({
             name: VRC_STATUS_REFRESH_JOB,
             delaySeconds: pollingCadenceSeconds(interval)
         })
@@ -207,7 +208,8 @@ async function deferNextVrcStatusRefresh(): Promise<void> {
 
 async function claimVrcStatusRefreshDue(): Promise<boolean> {
     const interval = useRuntimeStore.getState().vrcStatus.pollingIntervalMs;
-    return commands.appRuntimeFrontendScheduleJobDueClaim({
+    return commands
+        .appRuntimeFrontendScheduleJobDueClaim({
             name: VRC_STATUS_REFRESH_JOB,
             cadenceSeconds: pollingCadenceSeconds(interval),
             initialDelaySeconds: 0
@@ -220,7 +222,7 @@ async function claimVrcStatusRefreshDue(): Promise<boolean> {
 
 export function handleBrowserFocus(): Promise<void> {
     const { vrcStatus } = useRuntimeStore.getState();
-    const lastFetchedAt = Date.parse((vrcStatus.lastFetchedAt || '') as string);
+    const lastFetchedAt = Date.parse(String(vrcStatus.lastFetchedAt || ''));
     if (
         Number.isFinite(lastFetchedAt) &&
         Date.now() - lastFetchedAt < FOCUS_REFRESH_MS

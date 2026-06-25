@@ -15,7 +15,7 @@ describe('notificationTransforms', () => {
     });
 
     it('removes empty keys and normalizes message/title bio symbols in place', () => {
-        const json = {
+        const json: Record<string, unknown> = {
             id: 'notif_1',
             message: 'Hello ＠Maple',
             title: 'Look ≺here≻',

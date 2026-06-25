@@ -270,7 +270,10 @@ class FeedRepository {
     }
 
     async addStatusEntryForUser(userId: unknown, entry: FeedEntry) {
-        return feedPersistenceRepository.addStatusToDatabaseForUser(userId, entry);
+        return feedPersistenceRepository.addStatusToDatabaseForUser(
+            userId,
+            entry
+        );
     }
 
     async addBioEntryForUser(userId: unknown, entry: FeedEntry) {
@@ -278,7 +281,10 @@ class FeedRepository {
     }
 
     async addAvatarEntryForUser(userId: unknown, entry: FeedEntry) {
-        return feedPersistenceRepository.addAvatarToDatabaseForUser(userId, entry);
+        return feedPersistenceRepository.addAvatarToDatabaseForUser(
+            userId,
+            entry
+        );
     }
 
     async addOnlineOfflineEntryForUser(userId: unknown, entry: FeedEntry) {
@@ -288,8 +294,14 @@ class FeedRepository {
         );
     }
 
-    async purgeAvatarFeedData(userId: unknown, cutoffDate: string | null = null) {
-        return feedPersistenceRepository.purgeAvatarFeedData(userId, cutoffDate);
+    async purgeAvatarFeedData(
+        userId: unknown,
+        cutoffDate: string | null = null
+    ) {
+        return feedPersistenceRepository.purgeAvatarFeedData(
+            userId,
+            cutoffDate
+        );
     }
 }
 

@@ -4,6 +4,7 @@ import type {
     BackendRuntimeSnapshot,
     RuntimeAuthScopeSnapshot
 } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -16,20 +17,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function isAuthenticatedBackendRuntime(
     snapshot: BackendRuntimeSnapshot | Record<string, unknown> | null
 ): snapshot is BackendRuntimeSnapshot {
     return Boolean(
         isRecord(snapshot) &&
-            snapshot.phase === 'running' &&
-            snapshot.authStatus === 'authenticated' &&
-            normalizeString(snapshot.authUserId)
+        snapshot.phase === 'running' &&
+        snapshot.authStatus === 'authenticated' &&
+        normalizeString(snapshot.authUserId)
     );
 }
 
@@ -37,7 +32,7 @@ function isCurrentAuthenticatedBackendRuntimeUser(userId: string): boolean {
     const snapshot = useRuntimeStore.getState().backendRuntime;
     return Boolean(
         isAuthenticatedBackendRuntime(snapshot) &&
-            normalizeString(snapshot.authUserId) === userId
+        normalizeString(snapshot.authUserId) === userId
     );
 }
 
@@ -67,7 +62,7 @@ function authScopeMatchesUser(
 ): boolean {
     return Boolean(
         scope?.active === true &&
-            normalizeString(scope.currentUserId) === userId
+        normalizeString(scope.currentUserId) === userId
     );
 }
 
@@ -77,10 +72,7 @@ function buildMinimalCurrentUserSnapshot(
 ): CurrentUserSnapshot {
     const userId = normalizeString(snapshot.authUserId);
     const displayName = normalizeString(snapshot.authDisplayName) || userId;
-    if (
-        previousSnapshot &&
-        normalizeString(previousSnapshot.id) === userId
-    ) {
+    if (previousSnapshot && normalizeString(previousSnapshot.id) === userId) {
         return {
             ...previousSnapshot,
             id: userId,
@@ -94,8 +86,9 @@ function buildMinimalCurrentUserSnapshot(
 }
 
 async function getBackendFrontendSessionSnapshot() {
-    return commands.appGetBackendRuntimeFrontendSessionSnapshot()
-        .catch(() => null);
+    return commands
+        .appGetBackendRuntimeFrontendSessionSnapshot()
+        .catch((): null => null);
 }
 
 function buildCurrentUserSnapshotForResume({
@@ -147,7 +140,7 @@ export async function resumeFrontendSessionFromBackendRuntime(
 
     const userId = normalizeString(snapshot.authUserId);
     const [scope, frontendSessionSnapshot] = await Promise.all([
-        commands.appRuntimeAuthScopeGet().catch(() => null),
+        commands.appRuntimeAuthScopeGet().catch((): null => null),
         getBackendFrontendSessionSnapshot()
     ]);
     const latestSessionState = useSessionStore.getState();
@@ -181,7 +174,9 @@ export async function resumeFrontendSessionFromBackendRuntime(
             : null
     });
     if (latestSessionState.sessionPhase === 'ready') {
-        if (normalizeString(currentRuntimeState.auth.currentUserId) !== userId) {
+        if (
+            normalizeString(currentRuntimeState.auth.currentUserId) !== userId
+        ) {
             return false;
         }
         if (

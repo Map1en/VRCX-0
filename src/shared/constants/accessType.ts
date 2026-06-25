@@ -1,4 +1,4 @@
-const accessTypeLocaleKeyMap: any = {
+const accessTypeLocaleKeyMap: Record<string, string> = {
     public: 'dialog.new_instance.access_type_public',
     group: 'dialog.new_instance.access_type_group',
     'friends+': 'dialog.new_instance.access_type_friend_plus',

@@ -9,9 +9,7 @@ import { useEffect } from 'react';
 
 import { useFeedColumns } from './components/FeedColumns';
 import { getFeedRowId } from './feedRows';
-import {
-    resolveFeedPageSize as resolvePageSize
-} from './feedTableState';
+import { resolveFeedPageSize as resolvePageSize } from './feedTableState';
 import { useFeedFilters } from './useFeedFilters';
 import { useFeedFriendActions } from './useFeedFriendActions';
 import { useFeedPreviousInstancesDialog } from './useFeedPreviousInstancesDialog';

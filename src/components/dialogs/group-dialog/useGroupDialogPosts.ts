@@ -13,7 +13,7 @@ export function useGroupDialogPosts({
     setRemoteStatus,
     t
 }: any) {
-    const [postEditor, setPostEditor] = useState(null);
+    const [postEditor, setPostEditor] = useState<any>(null);
     const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
 
     function createGroupPost() {
@@ -36,9 +36,7 @@ export function useGroupDialogPosts({
         const title = String(form.title || '').trim();
         const text = String(form.text || '').trim();
         if (!title || !text) {
-            toast.warning(
-                t('dialog.group.error.title_and_text_are_required')
-            );
+            toast.warning(t('dialog.group.error.title_and_text_are_required'));
             return;
         }
 
@@ -89,9 +87,7 @@ export function useGroupDialogPosts({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.group.toast.failed_to_save_group_post'
-                      )
+                    : t('dialog.group.toast.failed_to_save_group_post')
             );
         } finally {
             setPostEditorSubmitting(false);
@@ -137,9 +133,7 @@ export function useGroupDialogPosts({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.group.toast.failed_to_delete_group_post'
-                      )
+                    : t('dialog.group.toast.failed_to_delete_group_post')
             );
         }
     }

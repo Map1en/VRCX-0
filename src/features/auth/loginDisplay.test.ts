@@ -53,9 +53,9 @@ describe('login display helpers', () => {
 
     it('shows the legacy migration action only after loading when there are no saved accounts', () => {
         expect(shouldShowLegacyMigrationAction(true, [])).toBe(false);
-        expect(shouldShowLegacyMigrationAction(false, [{ user: { id: 'u1' } }])).toBe(
-            false
-        );
+        expect(
+            shouldShowLegacyMigrationAction(false, [{ user: { id: 'u1' } }])
+        ).toBe(false);
         expect(shouldShowLegacyMigrationAction(false, [])).toBe(true);
     });
 });

@@ -51,6 +51,8 @@ describe('vrcNotificationStore', () => {
         });
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
         expect(notificationRepositoryMock.markSeen).not.toHaveBeenCalled();
-        expect(notificationRepositoryMock.markSeenLocalBulk).not.toHaveBeenCalled();
+        expect(
+            notificationRepositoryMock.markSeenLocalBulk
+        ).not.toHaveBeenCalled();
     });
 });

@@ -1,4 +1,4 @@
-type UserStatusSource = Record<string, any>;
+type UserStatusSource = Record<string, unknown>;
 
 type UserStatusIndicatorOptions = {
     showOffline?: boolean;
@@ -13,9 +13,8 @@ type TranslateFn = (
 ) => string;
 
 function asUserStatusSource(value: unknown): UserStatusSource {
-    return value !== null &&
-        (typeof value === 'object' || typeof value === 'function')
-        ? (value as UserStatusSource)
+    return value !== null && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
         : {};
 }
 
@@ -46,8 +45,9 @@ function normalizeUserStatus(value: unknown) {
         return normalizePresenceText(value);
     }
     const record = asUserStatusSource(value);
-    const source =
-        record.ref && typeof record.ref === 'object' ? record.ref : record;
+    const source = asUserStatusSource(
+        record.ref && typeof record.ref === 'object' ? record.ref : record
+    );
     if (record.pendingOffline || source?.pendingOffline) {
         return 'offline';
     }
@@ -58,6 +58,9 @@ function normalizeUserStatus(value: unknown) {
         source?.lastLocation ||
         source?.last_location ||
         source?.$lastLocation;
+    const recordLocation = asUserStatusSource(record.$location);
+    const sourceLocation = asUserStatusSource(source.$location);
+    const lastLocationRecord = asUserStatusSource(lastLocation);
     const status = normalizePresenceText(record.status || source?.status);
     const state = normalizePresenceText(
         record.stateBucket ||
@@ -67,16 +70,16 @@ function normalizeUserStatus(value: unknown) {
     );
     const location = normalizePresenceText(
         record.location ||
-            record.$location?.tag ||
+            recordLocation.tag ||
             record.$locationTag ||
             source?.location ||
-            source?.$location?.tag ||
+            sourceLocation.tag ||
             source?.$locationTag ||
             (typeof lastLocation === 'string'
                 ? lastLocation
-                : lastLocation?.location ||
-                  lastLocation?.tag ||
-                  lastLocation?.$location?.tag)
+                : lastLocationRecord.location ||
+                  lastLocationRecord.tag ||
+                  asUserStatusSource(lastLocationRecord.$location).tag)
     );
     if (state === 'offline' || status === 'offline' || location === 'offline') {
         return 'offline';
@@ -191,7 +194,7 @@ function userStatusSortRank(value: unknown) {
     return 4;
 }
 
-const statusLabelKeys = Object.freeze({
+const statusLabelKeys: Readonly<Record<string, string>> = Object.freeze({
     active: 'dialog.user.status.online',
     'state-active': 'dialog.user.status.active',
     'join me': 'dialog.user.status.join_me',
@@ -202,7 +205,7 @@ const statusLabelKeys = Object.freeze({
     traveling: 'location.traveling'
 });
 
-const statusLabelFallbacks = Object.freeze({
+const statusLabelFallbacks: Readonly<Record<string, string>> = Object.freeze({
     active: 'Online',
     'state-active': 'Active',
     'join me': 'Join Me',

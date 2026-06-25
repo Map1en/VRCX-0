@@ -34,8 +34,8 @@ import {
 import { Kbd, KbdGroup } from '@/ui/shadcn/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { TitleBarUpdateButton } from './TitleBarUpdateButton';
 import { useDirectAccessAction } from './directAccessAction';
+import { TitleBarUpdateButton } from './TitleBarUpdateButton';
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
 function MacTitleBarButton({
@@ -228,7 +228,10 @@ export function MacOverlayTitleBar() {
                             {buildBadgeLabel}
                         </Badge>
                     ) : null}
-                    <div data-tauri-drag-region className="h-full min-w-0 flex-1" />
+                    <div
+                        data-tauri-drag-region
+                        className="h-full min-w-0 flex-1"
+                    />
                 </div>
                 {isSessionReady ? (
                     <div className="flex h-full min-w-0 shrink-0 items-center gap-1 px-2">

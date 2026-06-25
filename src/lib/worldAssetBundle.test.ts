@@ -20,13 +20,13 @@ vi.mock('@/repositories/vrchatAuthRepository', () => ({
     }
 }));
 
+import { assetBundleRepository } from '@/repositories/assetBundleRepository';
+
 import {
     defaultWorldCacheInfo,
     readWorldCacheInfo,
     resolveWorldAssetBundleArgs
 } from './worldAssetBundle';
-import { assetBundleRepository } from '@/repositories/assetBundleRepository';
-
 
 function assetUrl(fileId: any, version: any, variantVersion: any = 0) {
     return `https://api.vrchat.cloud/api/1/file/${fileId}/${version}/file?v=${variantVersion}`;

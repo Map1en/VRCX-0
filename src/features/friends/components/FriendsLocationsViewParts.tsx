@@ -87,7 +87,10 @@ export function FriendsLocationsSectionHeader({
     );
 }
 
-export function FriendsLocationsFavoriteGroupHeader({ section, onToggle }: any) {
+export function FriendsLocationsFavoriteGroupHeader({
+    section,
+    onToggle
+}: any) {
     return (
         <Button
             type="button"

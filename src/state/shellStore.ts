@@ -63,27 +63,7 @@ type ShellStore = {
     clearAllNotifications(): void;
 };
 
-const initialState = {
-    sidebarOpen: true,
-    rightSidebarOpen: true,
-    navWidth: 240,
-    locale: 'en',
-    themeMode: 'system',
-    themeColor: DEFAULT_THEME_COLOR_KEY,
-    tableDensity: 'standard',
-    notificationLayout: 'notification-center',
-    notificationIconDot: true,
-    displayVRCPlusIconsAsAvatar: true,
-    hideNicknames: false,
-    zoomLevel: null,
-    dateCulture: 'en-gb',
-    dateIsoFormat: false,
-    dateHour12: false,
-    timeUnitLabels: DEFAULT_TIME_UNIT_LABELS,
-    notifiedMenus: [],
-    vrcUnseenNotificationCount: 0,
-    trayIconNotify: false
-} satisfies Omit<
+type ShellStoreState = Omit<
     ShellStore,
     | 'setSidebarOpen'
     | 'setNavWidth'
@@ -106,6 +86,28 @@ const initialState = {
     | 'removeNotify'
     | 'clearAllNotifications'
 >;
+
+const initialState: ShellStoreState = {
+    sidebarOpen: true,
+    rightSidebarOpen: true,
+    navWidth: 240,
+    locale: 'en',
+    themeMode: 'system',
+    themeColor: DEFAULT_THEME_COLOR_KEY,
+    tableDensity: 'standard',
+    notificationLayout: 'notification-center',
+    notificationIconDot: true,
+    displayVRCPlusIconsAsAvatar: true,
+    hideNicknames: false,
+    zoomLevel: null,
+    dateCulture: 'en-gb',
+    dateIsoFormat: false,
+    dateHour12: false,
+    timeUnitLabels: DEFAULT_TIME_UNIT_LABELS,
+    notifiedMenus: [],
+    vrcUnseenNotificationCount: 0,
+    trayIconNotify: false
+};
 
 const themeModeValues = new Set<unknown>(['system', 'light', 'dark']);
 const themeColorValues = new Set(Object.keys(THEME_COLOR_CONFIG));
@@ -135,14 +137,14 @@ export function normalizeTableDensity(value: unknown): TableDensity {
 }
 
 export function normalizeNavWidth(value: unknown): number {
-    const width = Number.parseInt(value as string, 10);
+    const width = Number.parseInt(String(value), 10);
     if (!Number.isFinite(width)) {
         return 240;
     }
     return Math.min(MAX_NAV_WIDTH, Math.max(MIN_NAV_WIDTH, width));
 }
 
-const routePathByMenuKey = Object.freeze({
+const routePathByMenuKey: Readonly<Record<string, string>> = Object.freeze({
     notification: '/notification',
     'friend-log': '/social/friend-log'
 });
@@ -254,7 +256,7 @@ export const useShellStore = create<ShellStore>((set: any, get: any) => ({
         });
     },
     setVrcUnseenNotificationCount(unseenCount: any) {
-        const nextCount = Number.parseInt(unseenCount as string, 10);
+        const nextCount = Number.parseInt(String(unseenCount), 10);
         set({
             vrcUnseenNotificationCount: Number.isFinite(nextCount)
                 ? nextCount

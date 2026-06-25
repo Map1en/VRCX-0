@@ -25,7 +25,9 @@ async function getAllLocalModerations(ownerUserId: unknown) {
         return [];
     }
 
-    const rows = (await commands.appLocalModerationList(normalizedOwnerUserId)) as LocalModerationRow[];
+    const rows = (await commands.appLocalModerationList(
+        normalizedOwnerUserId
+    )) as LocalModerationRow[];
     return Array.isArray(rows)
         ? rows.map((row) => ({
               userId: row.userId,
@@ -44,7 +46,10 @@ async function getLocalModerationRow(ownerUserId: unknown, userId: unknown) {
         return {};
     }
 
-    const row = (await commands.appLocalModerationGet(normalizedOwnerUserId, normalizedUserId)) as LocalModerationRow | null;
+    const row = (await commands.appLocalModerationGet(
+        normalizedOwnerUserId,
+        normalizedUserId
+    )) as LocalModerationRow | null;
     if (!row) {
         return {};
     }
@@ -83,8 +88,5 @@ const vrchatModerationRepository = Object.freeze({
     getLocalModeration
 });
 
-export {
-    getAllLocalModerations,
-    getLocalModeration
-};
+export { getAllLocalModerations, getLocalModeration };
 export default vrchatModerationRepository;

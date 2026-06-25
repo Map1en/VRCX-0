@@ -75,7 +75,9 @@ function uniqueStrings(values: unknown): string[] {
         return [];
     }
     return Array.from(
-        new Set(values.map((value: any) => normalizeText(value)).filter(Boolean))
+        new Set(
+            values.map((value: any) => normalizeText(value)).filter(Boolean)
+        )
     );
 }
 
@@ -221,7 +223,9 @@ export function createFavoriteCollectionTab(
 export function getVisibleSidebarTabs(
     layout: SidebarTabLayout
 ): SidebarTabLayout {
-    return normalizeSidebarTabLayout(layout).filter((item: any) => item.visible);
+    return normalizeSidebarTabLayout(layout).filter(
+        (item: any) => item.visible
+    );
 }
 
 export function getVisibleFavoriteCollectionSourceGroupKeys(
@@ -231,7 +235,9 @@ export function getVisibleFavoriteCollectionSourceGroupKeys(
         new Set(
             normalizeSidebarTabLayout(layout)
                 .filter(
-                    (item: any): item is SidebarFavoriteCollectionTabLayoutItem =>
+                    (
+                        item: any
+                    ): item is SidebarFavoriteCollectionTabLayoutItem =>
                         item.type === 'favoriteCollection' && item.visible
                 )
                 .flatMap((item: any) => item.sourceGroupKeys)

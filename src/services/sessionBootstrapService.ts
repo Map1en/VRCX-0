@@ -33,7 +33,7 @@ async function runAvatarAutoCleanup(userId: string): Promise<boolean> {
         return false;
     }
 
-    const days = Number.parseInt(cleanupSetting as string, 10);
+    const days = Number.parseInt(cleanupSetting, 10);
     if (Number.isNaN(days) || days <= 0) {
         return false;
     }
@@ -43,7 +43,7 @@ async function runAvatarAutoCleanup(userId: string): Promise<boolean> {
     const now = new Date();
 
     if (lastCleanupStr) {
-        const lastCleanup = new Date(lastCleanupStr as string | number);
+        const lastCleanup = new Date(lastCleanupStr);
         const daysSinceLastCleanup =
             (now.getTime() - lastCleanup.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceLastCleanup < 7) {

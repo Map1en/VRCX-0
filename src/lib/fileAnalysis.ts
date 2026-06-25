@@ -7,7 +7,7 @@ import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils';
 
-type UnityPackage = Record<string, any> & {
+type UnityPackage = Record<string, unknown> & {
     assetUrl?: string;
     platform?: string;
     unitySortNumber?: string | number;
@@ -15,7 +15,7 @@ type UnityPackage = Record<string, any> & {
 };
 
 type RepositoryResponse = {
-    json?: any;
+    json?: unknown;
 };
 
 type FileAnalysisOptions = {
@@ -31,6 +31,12 @@ function formatMiB(value: unknown) {
 
 function normalizePlatform(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(
+        value && (typeof value === 'object' || typeof value === 'function')
+    );
 }
 
 function isAnalyzablePackage(
@@ -54,20 +60,25 @@ function isAnalyzablePackage(
     if (
         sdkUnityVersion &&
         source.unitySortNumber &&
-        !compareUnityVersion(source.unitySortNumber as string, sdkUnityVersion)
+        !compareUnityVersion(String(source.unitySortNumber), sdkUnityVersion)
     ) {
         return false;
     }
     return true;
 }
 
-function formatFileAnalysis(json: unknown): (Record<string, any> & {
-    success?: boolean;
-}) | null {
-    if (!json || typeof json !== 'object') {
+function formatFileAnalysis(json: unknown):
+    | (Record<string, unknown> & {
+          success?: boolean;
+      })
+    | null {
+    if (!isRecord(json)) {
         return null;
     }
-    const source = json as Record<string, any>;
+    const source = json;
+    const avatarStats = isRecord(source.avatarStats)
+        ? source.avatarStats
+        : null;
     return {
         ...source,
         ...(typeof source.fileSize !== 'undefined'
@@ -76,11 +87,9 @@ function formatFileAnalysis(json: unknown): (Record<string, any> & {
         ...(typeof source.uncompressedSize !== 'undefined'
             ? { _uncompressedSize: formatMiB(source.uncompressedSize) }
             : {}),
-        ...(typeof source.avatarStats?.totalTextureUsage !== 'undefined'
+        ...(typeof avatarStats?.totalTextureUsage !== 'undefined'
             ? {
-                  _totalTextureUsage: formatMiB(
-                      source.avatarStats.totalTextureUsage
-                  )
+                  _totalTextureUsage: formatMiB(avatarStats.totalTextureUsage)
               }
             : {})
     };
@@ -91,7 +100,7 @@ export async function getFileAnalysisForUnityPackages({
     sdkUnityVersion = '',
     endpoint = ''
 }: FileAnalysisOptions = {}) {
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     const packages = Array.isArray(unityPackages) ? unityPackages : [];
 
     for (const unityPackage of packages) {

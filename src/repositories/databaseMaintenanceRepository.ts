@@ -42,18 +42,20 @@ async function optimize(): Promise<void> {
 
 async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
     return Number(
-        (await commands.appDatabaseMaintenanceMaxFriendLogNumberGet(typeof userId === 'string'
-                    ? userId.trim()
-                    : String(userId ?? '').trim())) ?? 0
+        (await commands.appDatabaseMaintenanceMaxFriendLogNumberGet(
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim()
+        )) ?? 0
     );
 }
 
 async function getRuntimeTableSizes(
     userId: unknown = ''
 ): Promise<MaintenanceTableSizes> {
-    const sizes = (await commands.appDatabaseMaintenanceTableSizesGet(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim())) as MaintenanceTableSizes;
+    const sizes = (await commands.appDatabaseMaintenanceTableSizesGet(
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
+    )) as MaintenanceTableSizes;
     return sizes;
 }
 
@@ -112,9 +114,7 @@ async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
     };
 }
 
-async function getTableSizes(
-    userId: unknown
-): Promise<MaintenanceTableSizes> {
+async function getTableSizes(userId: unknown): Promise<MaintenanceTableSizes> {
     return getRuntimeTableSizes(userId);
 }
 
@@ -183,9 +183,10 @@ async function getBrokenGameLogDisplayNames(): Promise<
     BrokenGameLogDisplayNameEntry[]
 > {
     const rows =
-        (await commands.appDatabaseMaintenanceBrokenGameLogDisplayNamesGet()) as
-            | Array<{ id?: LocalDbValue; displayName?: unknown }>
-            | null;
+        (await commands.appDatabaseMaintenanceBrokenGameLogDisplayNamesGet()) as Array<{
+            id?: LocalDbValue;
+            displayName?: unknown;
+        }> | null;
     return (Array.isArray(rows) ? rows : []).map((row) => ({
         id: row.id,
         displayName: row.displayName

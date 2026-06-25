@@ -6,7 +6,6 @@ import { ImageCropDialog } from '@/components/media/ImageCropDialog';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { ManageAvatarTagsDialog } from '../ManageAvatarTagsDialog';
-
 import type {
     MyAvatarImageCropRequest,
     MyAvatarRow,
@@ -45,7 +44,9 @@ export function MyAvatarsDialogs({
     onContentTagsSaved
 }: MyAvatarsDialogsProps) {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );

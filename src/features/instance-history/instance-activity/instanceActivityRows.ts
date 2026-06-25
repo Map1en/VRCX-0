@@ -175,7 +175,7 @@ export function splitDetailGroupsByCurrentUserOverlap(
 
         const adjacency: number[][] = Array.from(
             { length: group.length },
-            () => []
+            (): number[] => []
         );
         for (let leftIndex = 0; leftIndex < group.length; leftIndex += 1) {
             for (
@@ -200,7 +200,10 @@ export function splitDetailGroupsByCurrentUserOverlap(
             const component: InstanceActivityDetailRow[] = [];
             visited.add(index);
             while (stack.length) {
-                const current = stack.pop() as number;
+                const current = stack.pop();
+                if (current === undefined) {
+                    continue;
+                }
                 component.push(group[current]);
                 for (const next of adjacency[current]) {
                     if (!visited.has(next)) {

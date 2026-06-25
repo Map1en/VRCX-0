@@ -56,12 +56,12 @@ describe('favorite item helpers', () => {
             { id: 'c', title: 'Alpha', orderIndex: 3, playerCount: 2 }
         ];
 
-        expect(sortFavoriteItems(items, 'date').map((item: any) => item.id)).toEqual(
-            ['a', 'b', 'c']
-        );
-        expect(sortFavoriteItems(items, 'name').map((item: any) => item.id)).toEqual(
-            ['a', 'c', 'b']
-        );
+        expect(
+            sortFavoriteItems(items, 'date').map((item: any) => item.id)
+        ).toEqual(['a', 'b', 'c']);
+        expect(
+            sortFavoriteItems(items, 'name').map((item: any) => item.id)
+        ).toEqual(['a', 'c', 'b']);
         expect(
             sortFavoriteItems(items, 'players').map((item: any) => item.id)
         ).toEqual(['a', 'b', 'c']);

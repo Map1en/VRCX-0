@@ -12,7 +12,9 @@ import { FriendLogPageToolbar } from './components/FriendLogPageToolbar';
 import { FriendLogEmptyState } from './components/FriendLogViewParts';
 import { useFriendLogPageController } from './useFriendLogPageController';
 
-export function FriendLogPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function FriendLogPage({
+    embedded = false
+}: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
     const { filters, isError, isLoading, rows, table, tableState } =
         useFriendLogPageController();

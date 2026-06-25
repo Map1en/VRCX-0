@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -20,12 +21,6 @@ let crashRelaunchDecisionWaiters: Array<(received: boolean) => void> = [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
-}
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 export function isRuntimeGameClientLifecycleActive(): boolean {

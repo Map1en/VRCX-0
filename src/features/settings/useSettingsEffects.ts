@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
-import { getAppDataDirState } from '@/services/shellIntegrationService';
 import { loadPreferenceSnapshot } from '@/services/preferencesService';
+import { getAppDataDirState } from '@/services/shellIntegrationService';
 import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
     APP_FONT_DEFAULT_KEY,
@@ -51,9 +51,7 @@ export function useSettingsEffects({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.settings.toast.failed_to_load_settings'
-                          )
+                        : t('view.settings.toast.failed_to_load_settings')
                 );
             })
             .finally(() => {
@@ -85,26 +83,27 @@ export function useSettingsEffects({
                     customFontSecondary,
                     customFontOverride
                 ]: any) => {
-                if (!active) {
-                    return;
-                }
-                const normalizedFont = normalizeAppFontFamily(appFontFamily);
-                const normalizedCjkFont =
-                    normalizeAppCjkFontPack(appCjkFontPack);
-                setPrefs((current: any) => ({
-                    ...current,
-                    appFontFamily: normalizedFont,
-                    appCjkFontPack: normalizedCjkFont,
-                    customFontFamily: customFontFamily || '',
-                    customFontPrimary: customFontPrimary || '',
-                    customFontSecondary: customFontSecondary || '',
-                    customFontOverride: customFontOverride || ''
-                }));
-                applyAppFontPreferences({
-                    fontFamily: normalizedFont,
-                    customFontFamily: customFontFamily || '',
-                    cjkFontPack: normalizedCjkFont
-                });
+                    if (!active) {
+                        return;
+                    }
+                    const normalizedFont =
+                        normalizeAppFontFamily(appFontFamily);
+                    const normalizedCjkFont =
+                        normalizeAppCjkFontPack(appCjkFontPack);
+                    setPrefs((current: any) => ({
+                        ...current,
+                        appFontFamily: normalizedFont,
+                        appCjkFontPack: normalizedCjkFont,
+                        customFontFamily: customFontFamily || '',
+                        customFontPrimary: customFontPrimary || '',
+                        customFontSecondary: customFontSecondary || '',
+                        customFontOverride: customFontOverride || ''
+                    }));
+                    applyAppFontPreferences({
+                        fontFamily: normalizedFont,
+                        customFontFamily: customFontFamily || '',
+                        cjkFontPack: normalizedCjkFont
+                    });
                 }
             )
             .catch(() => {});

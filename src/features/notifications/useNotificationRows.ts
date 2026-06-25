@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
-import { filterNotificationRows } from './notificationRows';
 import type { NotificationRow } from './notificationPageTypes';
+import { filterNotificationRows } from './notificationRows';
 
 export function useNotificationRows({
     activeTypes,
@@ -62,9 +62,7 @@ export function useNotificationRows({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.notifications.toast.failed_to_load_notifications'
-                      )
+                    : t('view.notifications.toast.failed_to_load_notifications')
             );
         });
         return () => {

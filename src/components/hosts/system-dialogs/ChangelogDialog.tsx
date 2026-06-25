@@ -5,13 +5,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import { openExternalLink } from '@/services/entityMediaService';
 import {
     fetchChangelogRelease,
     parseChangelog,
     resolvePreferredChangelogLanguage,
     type LocalizedChangelogEntry
 } from '@/services/changelogService';
+import { openExternalLink } from '@/services/entityMediaService';
 import { links } from '@/shared/constants/link';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -31,7 +31,7 @@ function MarkdownLink({ href, children, ...props }: any) {
         <a
             {...props}
             href={href}
-            className="text-primary underline underline-offset-3 hover:text-primary/80"
+            className="text-primary hover:text-primary/80 underline underline-offset-3"
             onClick={(event) => {
                 event.preventDefault();
                 openExternalLink(href);
@@ -177,9 +177,7 @@ export function ChangelogDialog({ open, onOpenChange, targetVersion }: any) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>
-                        {t('dialog.change_log.header')}
-                    </DialogTitle>
+                    <DialogTitle>{t('dialog.change_log.header')}</DialogTitle>
                     <div className="text-muted-foreground text-sm">
                         {releaseName}
                     </div>

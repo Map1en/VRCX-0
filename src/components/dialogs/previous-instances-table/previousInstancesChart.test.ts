@@ -31,6 +31,10 @@ describe('previousInstancesChart', () => {
             ]
         });
 
+        if (chartPayload === null) {
+            throw new Error('expected chart payload to be present');
+        }
+
         expect(chartPayload.option.yAxis.data).toEqual([
             'Same Name',
             'Same Name'

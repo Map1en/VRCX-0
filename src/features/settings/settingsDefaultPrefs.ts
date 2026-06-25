@@ -20,6 +20,8 @@ import {
 } from './settingsValues';
 
 export function createDefaultSettingsPrefs() {
+    const localFavoriteFriendsGroups: string[] = [];
+
     return {
         notificationLayout: 'notification-center',
         dataTableStriped: false,
@@ -101,7 +103,7 @@ export function createDefaultSettingsPrefs() {
             maxTableSize: DEFAULT_MAX_TABLE_SIZE,
             searchLimit: DEFAULT_SEARCH_LIMIT
         },
-        localFavoriteFriendsGroups: [],
+        localFavoriteFriendsGroups,
         sharedFeedFilters: normalizeSharedFeedFilters(
             sharedFeedFiltersDefaults
         ),

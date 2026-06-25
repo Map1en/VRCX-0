@@ -20,7 +20,9 @@ describe('favorite export helpers', () => {
             )
         ).toEqual(['id', 'name', 'status', 'group', 'source']);
         expect(
-            getFavoriteExportFieldOptions('world').map((option: any) => option.value)
+            getFavoriteExportFieldOptions('world').map(
+                (option: any) => option.value
+            )
         ).toEqual(['id', 'name', 'author', 'thumbnail', 'group', 'source']);
     });
 

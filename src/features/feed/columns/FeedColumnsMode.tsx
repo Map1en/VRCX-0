@@ -15,19 +15,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ListPlusIcon, Settings2Icon } from 'lucide-react';
-import {
-    type CSSProperties,
-    type ReactNode,
-    useEffect,
-    useState
-} from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
-import {
-    PageToolbar,
-    PageToolbarRow
-} from '@/components/layout/PageScaffold';
+import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import {
     AlertDialog,
@@ -110,10 +102,13 @@ function useFeedTimeTicker() {
     useEffect(() => {
         const updateNow = () => setNowMs(Date.now());
         let intervalId: number | undefined;
-        const timeoutId = window.setTimeout(() => {
-            updateNow();
-            intervalId = window.setInterval(updateNow, 1000);
-        }, 1000 - (Date.now() % 1000));
+        const timeoutId = window.setTimeout(
+            () => {
+                updateNow();
+                intervalId = window.setInterval(updateNow, 1000);
+            },
+            1000 - (Date.now() % 1000)
+        );
 
         return () => {
             window.clearTimeout(timeoutId);
@@ -151,12 +146,16 @@ function FeedColumnsSettingsMenu({
                         </Button>
                     </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent>{t('view.feed.columns.settings')}</TooltipContent>
+                <TooltipContent>
+                    {t('view.feed.columns.settings')}
+                </TooltipContent>
             </Tooltip>
             <DropdownMenuContent className="w-72 p-3" align="end">
                 <FieldGroup>
                     <Field>
-                        <FieldLabel>{t('view.feed.columns.density')}</FieldLabel>
+                        <FieldLabel>
+                            {t('view.feed.columns.density')}
+                        </FieldLabel>
                         <ToggleGroup
                             type="single"
                             variant="outline"
@@ -261,7 +260,9 @@ export function FeedColumnsMode({
         const nextOrder = arrayMove(currentOrder, oldIndex, newIndex);
         const byId = new Map(columns.map((column) => [column.id, column]));
         onColumnsChange(
-            nextOrder.map((columnId) => byId.get(columnId)).filter(Boolean) as FeedColumnConfig[]
+            nextOrder
+                .map((columnId) => byId.get(columnId))
+                .filter(Boolean) as FeedColumnConfig[]
         );
     };
 
@@ -343,13 +344,17 @@ export function FeedColumnsMode({
                                                 nowMs={nowMs}
                                                 onDelete={deleteColumn}
                                                 onEdit={(columnId) => {
-                                                    setSelectedColumnId(columnId);
+                                                    setSelectedColumnId(
+                                                        columnId
+                                                    );
                                                     setManagerOpen(true);
                                                 }}
                                                 onOpenPreviousInstances={
                                                     previousInstancesDialog.openPreviousInstancesForLocation
                                                 }
-                                                timeDisplayMode={timeDisplayMode}
+                                                timeDisplayMode={
+                                                    timeDisplayMode
+                                                }
                                             />
                                         </div>
                                     )}

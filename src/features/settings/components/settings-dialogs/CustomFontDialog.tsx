@@ -200,9 +200,7 @@ export function CustomFontDialog({
             open={customFontDialogOpen}
             onOpenChange={setCustomFontDialogOpen}
         >
-            <DialogContent
-                className="grid max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-xl"
-            >
+            <DialogContent className="grid max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
                         {t(

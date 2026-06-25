@@ -131,7 +131,11 @@ function clampGameSessionStartTime(
     return startTime;
 }
 
-function createActivityAssets(bigIcon: unknown, statusImage: unknown, statusName: unknown) {
+function createActivityAssets(
+    bigIcon: unknown,
+    statusImage: unknown,
+    statusName: unknown
+) {
     const assets: Record<string, unknown> = {};
     if (bigIcon) {
         assets.large_image = bigIcon;
@@ -145,7 +149,11 @@ function createActivityAssets(bigIcon: unknown, statusImage: unknown, statusName
     return Object.keys(assets).length ? assets : undefined;
 }
 
-function createActivityParty(partyId: unknown, partySize: number, partyMaxSize: number) {
+function createActivityParty(
+    partyId: unknown,
+    partySize: number,
+    partyMaxSize: number
+) {
     if (!partyId || partySize <= 0 || partyMaxSize <= 0) {
         return undefined;
     }
@@ -402,10 +410,11 @@ async function getPartySize({
         : 0;
 
     try {
-        const snapshot = await playerListPersistenceRepository.getCurrentInstanceSnapshot({
-            currentUserId,
-            currentLocation
-        });
+        const snapshot =
+            await playerListPersistenceRepository.getCurrentInstanceSnapshot({
+                currentUserId,
+                currentLocation
+            });
         const snapshotPartySize = Array.isArray(snapshot.players)
             ? snapshot.players.length
             : 0;
@@ -623,9 +632,10 @@ export async function refreshDiscordPresence({
     let startTime = rawStartTime;
     let endTime = 0;
     let activityType: ActivityTypeValue = ActivityType.Playing;
-    let statusDisplayType: StatusDisplayTypeValue = config.discordWorldNameAsDiscordStatus
-        ? StatusDisplayType.Details
-        : StatusDisplayType.Name;
+    let statusDisplayType: StatusDisplayTypeValue =
+        config.discordWorldNameAsDiscordStatus
+            ? StatusDisplayType.Details
+            : StatusDisplayType.Name;
     let appId = DEFAULT_APP_ID;
     let bigIcon = 'vrchat';
     let detailsUrl = locationDetails.worldLink;

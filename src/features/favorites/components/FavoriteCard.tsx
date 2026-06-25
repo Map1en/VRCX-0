@@ -12,13 +12,13 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
 import {
     openAvatarDialog,
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import { copyTextToClipboard } from '@/services/entityMediaService';
 import { checkCanInvite } from '@/shared/utils/invite';
 import {
     parseLocation,

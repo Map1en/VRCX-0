@@ -1,12 +1,13 @@
 import { useQueries } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { instanceLocationKey } from '@/domain/presence/instancePresence';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation, resolveRegion } from '@/shared/utils/locationParser';
-import { instanceLocationKey } from '@/domain/presence/instancePresence';
+import { normalizeString } from '@/shared/utils/string';
 import { useLocationHintStore } from '@/state/locationHintStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -15,18 +16,16 @@ const WORLD_ID_PATTERN =
 const GROUP_ID_PATTERN =
     /^grp_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function normalizeString(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function isRawWorldReference(value: any) {
     const normalizedValue = normalizeString(value);
     return Boolean(normalizedValue && WORLD_ID_PATTERN.test(normalizedValue));
 }
 
-function normalizeWorldNameHint(hint: any, parsedLocation: any, currentLocation: any) {
+function normalizeWorldNameHint(
+    hint: any,
+    parsedLocation: any,
+    currentLocation: any
+) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
         return '';
@@ -231,7 +230,11 @@ function resolveEntryCachedInstance(entry: any, cachedInstances: any) {
     ]);
 }
 
-function resolveEntryLocationHint(entry: any, locationHintsByKey: any, currentEndpoint: any) {
+function resolveEntryLocationHint(
+    entry: any,
+    locationHintsByKey: any,
+    currentEndpoint: any
+) {
     const locationKey = instanceLocationKey(
         entry.locationTag || entry.currentLocation || entry.locationValue
     );
@@ -239,7 +242,9 @@ function resolveEntryLocationHint(entry: any, locationHintsByKey: any, currentEn
         return null;
     }
     return (
-        locationHintsByKey?.[`${currentEndpoint || 'default'}::${locationKey}`] ||
+        locationHintsByKey?.[
+            `${currentEndpoint || 'default'}::${locationKey}`
+        ] ||
         locationHintsByKey?.[`default::${locationKey}`] ||
         null
     );
@@ -283,13 +288,14 @@ function resolveEntryMetadata(
         entry.locationInfo,
         entry.currentLocation
     );
-    const queryGroupName = groupProfileName(groupProfilesById.get(entry.groupId));
+    const queryGroupName = groupProfileName(
+        groupProfilesById.get(entry.groupId)
+    );
     const cachedGroupName =
         normalizeGroupNameHint(
             readInstanceGroupName(cachedInstance),
             entry.groupId
-        ) ||
-        normalizeGroupNameHint(locationHint?.groupName, entry.groupId);
+        ) || normalizeGroupNameHint(locationHint?.groupName, entry.groupId);
     const resolvedInstanceName =
         readInstanceDisplayName(cachedInstance) ||
         normalizeString(entry.instanceName) ||
@@ -330,7 +336,7 @@ function resolveEntryMetadata(
             resolvedInstanceName || normalizeString(locationHint?.instanceName),
         isClosed: Boolean(
             (cachedInstance && isInstanceClosed(cachedInstance)) ||
-                locationHint?.isClosed
+            locationHint?.isClosed
         ),
         groupName,
         worldName,
@@ -357,7 +363,10 @@ function entryHasWorldNameFromQueryOrCache(
     return Boolean(cachedWorldName || queriedWorldName);
 }
 
-export function useLocationMetadataBatch(entries: any[] = [], { endpoint = '' }: any = {}) {
+export function useLocationMetadataBatch(
+    entries: any[] = [],
+    { endpoint = '' }: any = {}
+) {
     const storeEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
@@ -389,8 +398,8 @@ export function useLocationMetadataBatch(entries: any[] = [], { endpoint = '' }:
     );
     const normalizedEntries = useMemo(
         () =>
-            (Array.isArray(entries) ? entries : []).map((entry: any, index: any) =>
-                normalizeMetadataEntry(entry, index)
+            (Array.isArray(entries) ? entries : []).map(
+                (entry: any, index: any) => normalizeMetadataEntry(entry, index)
             ),
         [entries]
     );

@@ -9,8 +9,8 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { openUserDialog } from '@/services/dialogService';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
@@ -150,7 +150,9 @@ function PhotoGalleryRows({ rows, loading, error, onPreviewImage }: any) {
     useEffect(() => {
         if (
             galleryEntries.length &&
-            !galleryEntries.some((entry: any) => entry.gallery.id === activeGallery)
+            !galleryEntries.some(
+                (entry: any) => entry.gallery.id === activeGallery
+            )
         ) {
             setActiveGallery(galleryEntries[0].gallery.id);
         }

@@ -8,7 +8,7 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
-type LooseRecord = Record<string, any>;
+type LooseRecord = Record<string, unknown>;
 
 type ImageUser = LooseRecord & {
     userIcon?: string;
@@ -33,9 +33,9 @@ export function convertFileUrlToImageUrl(
 
 export function userImage(
     user: ImageUser | null | undefined,
-    isIcon: any = false,
+    isIcon = false,
     resolution: string | number = '128',
-    isUserDialogIcon: any = false,
+    isUserDialogIcon = false,
     displayVRCPlusIconsAsAvatar: boolean | null = null
 ) {
     return userImageWithOptions(

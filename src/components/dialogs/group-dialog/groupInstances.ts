@@ -122,7 +122,9 @@ export function mergeGroupInstances(
         }
     }
 
-    Object.values(friendsById || {}).forEach((friend: any) => addUser(friend, true));
+    Object.values(friendsById || {}).forEach((friend: any) =>
+        addUser(friend, true)
+    );
     if (currentUserSnapshot) {
         addUser(currentUserSnapshot, false);
     }

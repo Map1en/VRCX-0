@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { FavoriteItem, FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteItem,
+    FavoriteKind,
+    FavoriteSource
+} from './favoritesTypes';
 
 export function useFavoritesSelectionState({
     contentItems,
@@ -14,16 +18,16 @@ export function useFavoritesSelectionState({
     selectedSource: FavoriteSource;
 }) {
     const [editMode, setEditMode] = useState(false);
-    const [selectedKeys, setSelectedKeys] = useState<any[]>([]);
+    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const selectedKeysSet = useMemo(
         () => new Set(selectedKeys),
         [selectedKeys]
     );
     const isAllSelected =
         contentItems.length > 0 &&
-        contentItems.every((item: any) => selectedKeysSet.has(item.key));
+        contentItems.every((item) => selectedKeysSet.has(item.key));
     const selectedContentItems = useMemo(
-        () => contentItems.filter((item: any) => selectedKeysSet.has(item.key)),
+        () => contentItems.filter((item) => selectedKeysSet.has(item.key)),
         [contentItems, selectedKeysSet]
     );
     const avatarEditSelectionDisabled =
@@ -42,9 +46,9 @@ export function useFavoritesSelectionState({
     }, [editMode, isSearchActive]);
 
     useEffect(() => {
-        setSelectedKeys((keys: any) => {
-            const nextKeys = keys.filter((key: any) =>
-                contentItems.some((item: any) => item.key === key)
+        setSelectedKeys((keys) => {
+            const nextKeys = keys.filter((key) =>
+                contentItems.some((item) => item.key === key)
             );
             return nextKeys.length === keys.length ? keys : nextKeys;
         });
@@ -55,7 +59,7 @@ export function useFavoritesSelectionState({
             setSelectedKeys([]);
             return;
         }
-        setSelectedKeys(contentItems.map((item: any) => item.key));
+        setSelectedKeys(contentItems.map((item) => item.key));
     }
 
     return {

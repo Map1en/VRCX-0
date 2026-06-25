@@ -61,11 +61,12 @@ vi.mock('@/ui/shadcn/checkbox', async () => {
     const React = await import('react');
 
     return {
-        Checkbox: (props: any) => React.createElement('input', {
-            ...props,
-            type: 'checkbox',
-            checked: props.checked
-        })
+        Checkbox: (props: any) =>
+            React.createElement('input', {
+                ...props,
+                type: 'checkbox',
+                checked: props.checked
+            })
     };
 });
 

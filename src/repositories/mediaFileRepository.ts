@@ -50,8 +50,8 @@ async function addScreenshotMetadata(
     metadataString: string,
     worldId: string,
     changeFilename = false
-) {
-    return invokeApp(
+): Promise<string> {
+    return invokeApp<string>(
         'AddScreenshotMetadata',
         path,
         metadataString,
@@ -149,8 +149,8 @@ async function savePrintToFile(
     ugcFolderPath: string,
     monthFolder: string,
     fileName: string
-) {
-    return invokeApp(
+): Promise<string> {
+    return invokeApp<string>(
         'SavePrintToFile',
         url,
         ugcFolderPath,
@@ -164,8 +164,8 @@ async function saveStickerToFile(
     ugcFolderPath: string,
     monthFolder: string,
     fileName: string
-) {
-    return invokeApp(
+): Promise<string> {
+    return invokeApp<string>(
         'SaveStickerToFile',
         url,
         ugcFolderPath,
@@ -179,8 +179,8 @@ async function saveEmojiToFile(
     ugcFolderPath: string,
     monthFolder: string,
     fileName: string
-) {
-    return invokeApp(
+): Promise<string> {
+    return invokeApp<string>(
         'SaveEmojiToFile',
         url,
         ugcFolderPath,
@@ -189,8 +189,8 @@ async function saveEmojiToFile(
     );
 }
 
-async function cropPrintImage(path: string) {
-    return invokeApp('CropPrintImage', path);
+async function cropPrintImage(path: string): Promise<boolean> {
+    return invokeApp<boolean>('CropPrintImage', path);
 }
 
 async function cropAllPrints(ugcFolderPath: string) {

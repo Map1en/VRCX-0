@@ -181,7 +181,9 @@ describe('authExecutionService characterization', () => {
         mocks.clearAuthCookies.mockResolvedValue(undefined);
         mocks.restoreCookieSession.mockResolvedValue({ json: user() });
         mocks.loginWithBasicAuth.mockResolvedValue({ json: user() });
-        mocks.loginWithSavedCredential.mockResolvedValue({ json: user('usr_saved') });
+        mocks.loginWithSavedCredential.mockResolvedValue({
+            json: user('usr_saved')
+        });
         mocks.verifyEmailOTP.mockResolvedValue({ json: {} });
         mocks.verifyOTP.mockResolvedValue({ json: {} });
         mocks.verifyTOTP.mockResolvedValue({ json: {} });
@@ -189,7 +191,9 @@ describe('authExecutionService characterization', () => {
         mocks.runWithRuntimeAuthFailureRecoverySuppressed.mockImplementation(
             async (task: () => Promise<unknown>) => task()
         );
-        mocks.applySavedAuthSnapshot.mockImplementation((snapshot: unknown) => snapshot);
+        mocks.applySavedAuthSnapshot.mockImplementation(
+            (snapshot: unknown) => snapshot
+        );
         mocks.refreshSavedAuthSnapshot.mockResolvedValue(savedSnapshot());
         mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
             ({ nextSnapshot }: { nextSnapshot: unknown }) => ({
@@ -248,7 +252,9 @@ describe('authExecutionService characterization', () => {
             currentUserWebsocket: ''
         });
         expect(useSessionStore.getState().sessionPhase).toBe('bootstrapping');
-        expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(user());
+        expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(
+            user()
+        );
         expect(mocks.appRuntimeAuthScopeSet).toHaveBeenCalledWith({
             userId: 'usr_self',
             endpoint: ''
@@ -290,7 +296,9 @@ describe('authExecutionService characterization', () => {
 
     it('restores authenticated cookie sessions without clearing auth state', async () => {
         await expect(
-            executeCookieSessionRestore({ endpoint: 'https://api.example.test' })
+            executeCookieSessionRestore({
+                endpoint: 'https://api.example.test'
+            })
         ).resolves.toMatchObject(savedSnapshot());
 
         expect(mocks.restoreCookieSession).toHaveBeenCalledWith({

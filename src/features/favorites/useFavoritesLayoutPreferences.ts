@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 
-import configRepository from '@/repositories/configRepository';
 import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
+import configRepository from '@/repositories/configRepository';
+
+import type { FavoriteKind } from './favoritesTypes';
 
 const SPLITTER_DEFAULT_SIZE_PX = 260;
 const SPLITTER_MIN_SIZE_PX = 0;
-const SORT_VALUES_BY_KIND: any = {
+const SORT_VALUES_BY_KIND: Record<FavoriteKind, Set<string>> = {
     friend: new Set(['name', 'date']),
     world: new Set(['name', 'date', 'players']),
     avatar: new Set(['name', 'date'])
 };
 const DEFAULT_SORT_VALUE = 'date';
-const CARD_SCALE_SLIDER: any = { min: 0.6, max: 1, step: 0.01 };
-const CARD_SPACING_SLIDER: any = { min: 0.5, max: 1.5, step: 0.05 };
+const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
+const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
 
 function clampNumber(value: any, min: any, max: any, fallback: any) {
     const parsed = Number(value);
@@ -30,7 +32,7 @@ function normalizeSplitterSizePx(value: any) {
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
 
-function normalizeFavoriteSortValue(kind: any, value: any) {
+function normalizeFavoriteSortValue(kind: FavoriteKind, value: any) {
     const normalizedValue = String(value ?? '').trim();
     const allowedValues =
         SORT_VALUES_BY_KIND[kind] || SORT_VALUES_BY_KIND.friend;
@@ -39,7 +41,7 @@ function normalizeFavoriteSortValue(kind: any, value: any) {
         : DEFAULT_SORT_VALUE;
 }
 
-export function useFavoritesLayoutPreferences(kind: any) {
+export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
     const [splitterSizePx, setSplitterSizePx] = useState(
         SPLITTER_DEFAULT_SIZE_PX
     );
@@ -47,7 +49,7 @@ export function useFavoritesLayoutPreferences(kind: any) {
     const [cardScale, setCardScale] = useState(1);
     const [cardSpacing, setCardSpacing] = useState(1);
     const [sortValue, setSortValue] = useState(DEFAULT_SORT_VALUE);
-    const pendingSplitterSizePxRef = useRef(null);
+    const pendingSplitterSizePxRef = useRef<number | null>(null);
     const sortLoadVersionRef = useRef(0);
 
     useEffect(() => {

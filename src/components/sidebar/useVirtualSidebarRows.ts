@@ -3,27 +3,47 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 const DEFAULT_ROW_SIZE = 48;
 const DEFAULT_OVERSCAN = 8;
 
-export function useVirtualSidebarRows(
-    rows: any,
-    estimateSize: any,
-    options: any = {}
+type VirtualSidebarRow = {
+    key?: unknown;
+};
+
+type VirtualSidebarViewport = {
+    height: number;
+    scrollTop: number;
+};
+
+type VirtualSidebarOptions = {
+    overscan?: number;
+};
+
+type RowRefCallback = (element: HTMLElement | null) => void;
+
+export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
+    rows: T[],
+    estimateSize: (row: T, index: number) => unknown,
+    options: VirtualSidebarOptions = {}
 ) {
-    const viewportRef = useRef(null);
-    const measuredSizesRef = useRef(new Map());
-    const rowObserversRef = useRef(new Map());
-    const rowRefCallbacksRef = useRef(new Map());
-    const [viewport, setViewport] = useState<any>({ scrollTop: 0, height: 0 });
+    const viewportRef = useRef<HTMLDivElement | null>(null);
+    const measuredSizesRef = useRef(new Map<unknown, number>());
+    const rowObserversRef = useRef(new Map<unknown, ResizeObserver>());
+    const rowRefCallbacksRef = useRef(new Map<unknown, RowRefCallback>());
+    const [viewport, setViewport] = useState<VirtualSidebarViewport>({
+        scrollTop: 0,
+        height: 0
+    });
     const [measureVersion, setMeasureVersion] = useState(0);
-    const overscan = Number.isFinite(options.overscan)
-        ? options.overscan
-        : DEFAULT_OVERSCAN;
+    const overscan =
+        typeof options.overscan === 'number' &&
+        Number.isFinite(options.overscan)
+            ? options.overscan
+            : DEFAULT_OVERSCAN;
 
     const rowMetrics = useMemo(() => {
         let totalSize = 0;
-        const offsets = [];
-        const sizes = [];
+        const offsets: number[] = [];
+        const sizes: number[] = [];
 
-        rows.forEach((row: any, index: any) => {
+        rows.forEach((row, index) => {
             const key = row?.key ?? index;
             const measuredSize = Number(measuredSizesRef.current.get(key));
             const estimatedSize = Number(estimateSize?.(row, index));
@@ -41,46 +61,49 @@ export function useVirtualSidebarRows(
         return { offsets, sizes, totalSize };
     }, [estimateSize, measureVersion, rows]);
 
-    const measureElement = useCallback((key: any, element: any) => {
-        const previousObserver = rowObserversRef.current.get(key);
-        if (previousObserver) {
-            previousObserver.disconnect();
-            rowObserversRef.current.delete(key);
-        }
+    const measureElement = useCallback(
+        (key: unknown, element: HTMLElement | null) => {
+            const previousObserver = rowObserversRef.current.get(key);
+            if (previousObserver) {
+                previousObserver.disconnect();
+                rowObserversRef.current.delete(key);
+            }
 
-        if (!element) {
-            return;
-        }
-
-        const updateSize = () => {
-            const nextSize = element.offsetHeight;
-            if (!Number.isFinite(nextSize) || nextSize <= 0) {
+            if (!element) {
                 return;
             }
 
-            if (measuredSizesRef.current.get(key) === nextSize) {
-                return;
+            const updateSize = () => {
+                const nextSize = element.offsetHeight;
+                if (!Number.isFinite(nextSize) || nextSize <= 0) {
+                    return;
+                }
+
+                if (measuredSizesRef.current.get(key) === nextSize) {
+                    return;
+                }
+
+                measuredSizesRef.current.set(key, nextSize);
+                setMeasureVersion((version) => version + 1);
+            };
+
+            updateSize();
+
+            if (typeof ResizeObserver !== 'undefined') {
+                const observer = new ResizeObserver(updateSize);
+                observer.observe(element);
+                rowObserversRef.current.set(key, observer);
             }
-
-            measuredSizesRef.current.set(key, nextSize);
-            setMeasureVersion((version: any) => version + 1);
-        };
-
-        updateSize();
-
-        if (typeof ResizeObserver !== 'undefined') {
-            const observer = new ResizeObserver(updateSize);
-            observer.observe(element);
-            rowObserversRef.current.set(key, observer);
-        }
-    }, []);
+        },
+        []
+    );
 
     const getRowRef = useCallback(
-        (key: any) => {
+        (key: unknown) => {
             const cache = rowRefCallbacksRef.current;
             let callback = cache.get(key);
             if (!callback) {
-                callback = (element: any) => measureElement(key, element);
+                callback = (element) => measureElement(key, element);
                 cache.set(key, callback);
             }
             return callback;
@@ -89,8 +112,8 @@ export function useVirtualSidebarRows(
     );
 
     useEffect(() => {
-        const liveKeys = new Set(
-            rows.map((row: any, index: any) => row?.key ?? index)
+        const liveKeys = new Set<unknown>(
+            rows.map((row, index) => row?.key ?? index)
         );
         let changed = false;
 
@@ -111,7 +134,7 @@ export function useVirtualSidebarRows(
         }
 
         if (changed) {
-            setMeasureVersion((version: any) => version + 1);
+            setMeasureVersion((version) => version + 1);
         }
     }, [rows]);
 
@@ -139,7 +162,7 @@ export function useVirtualSidebarRows(
                 frameId = 0;
                 const nextTop = element.scrollTop;
                 const nextHeight = element.clientHeight || 0;
-                setViewport((prev: any) =>
+                setViewport((prev) =>
                     prev.scrollTop === nextTop && prev.height === nextHeight
                         ? prev
                         : { scrollTop: nextTop, height: nextHeight }
@@ -150,7 +173,7 @@ export function useVirtualSidebarRows(
         updateViewport();
         element.addEventListener('scroll', updateViewport, { passive: true });
 
-        let observer = null;
+        let observer: ResizeObserver | null = null;
         if (typeof ResizeObserver !== 'undefined') {
             observer = new ResizeObserver(updateViewport);
             observer.observe(element);
@@ -178,7 +201,7 @@ export function useVirtualSidebarRows(
         }
         const nextTop = element.scrollTop;
         const nextHeight = element.clientHeight || 0;
-        setViewport((prev: any) =>
+        setViewport((prev) =>
             prev.scrollTop === nextTop && prev.height === nextHeight
                 ? prev
                 : { scrollTop: nextTop, height: nextHeight }
@@ -209,7 +232,7 @@ export function useVirtualSidebarRows(
         const startIndex = Math.max(0, firstIndex - overscan);
         const endIndex = Math.min(rows.length, lastIndex + overscan);
 
-        return rows.slice(startIndex, endIndex).map((row: any, offset: any) => {
+        return rows.slice(startIndex, endIndex).map((row, offset) => {
             const index = startIndex + offset;
             return {
                 index,

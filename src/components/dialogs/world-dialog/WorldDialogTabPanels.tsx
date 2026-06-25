@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
-import { timeToText } from '@/lib/dateTime';
-import { openExternalLink } from '@/services/entityMediaService';
 import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
+import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
+import { openExternalLink } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -25,13 +25,18 @@ import {
     EntityMemoTextarea,
     EntityRawJson
 } from '../EntityDialogScaffold';
-import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
 import { formatPreviousInstanceCount } from '../previous-instances-table/previousInstancesRows';
+import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
 import {
     InstanceUserTiles,
     WorldInstancesEmptyState,
     resolveLaunchLocation
 } from './WorldDialogViewParts';
+
+const WORLD_DATE_FALLBACKS = {
+    empty: '',
+    invalid: String
+};
 
 function firstKnownValue(...values: any[]) {
     for (const value of values) {
@@ -49,9 +54,7 @@ function WorldScreenshotsEmptyState({ loading = false, message = '' }: any) {
         <Empty className="min-h-32 border">
             <EmptyHeader>
                 {loading ? <Spinner /> : null}
-                <EmptyTitle>
-                    {t('dialog.world.screenshots.header')}
-                </EmptyTitle>
+                <EmptyTitle>{t('dialog.world.screenshots.header')}</EmptyTitle>
                 <EmptyDescription>
                     {message ||
                         t(
@@ -93,7 +96,10 @@ function WorldScreenshotsGrid({
                     count: safeScreenshots.length
                 })}
             </Badge>
-            <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto pr-1">
+            <div
+                ref={viewportRef}
+                className="min-h-0 flex-1 overflow-auto pr-1"
+            >
                 <div className="relative" style={{ height: totalHeight }}>
                     {visibleRows.map((row: any) => (
                         <div
@@ -126,7 +132,6 @@ export function WorldDialogTabPanels(props: any) {
     const { t } = useTranslation();
     const model = props?.tabModel || props || {};
     const commands = props?.tabCommands || props || {};
-    const { formatDate } = props || {};
     const {
         activeTab,
         authorTags,
@@ -394,28 +399,46 @@ export function WorldDialogTabPanels(props: any) {
                     />
                     <EntityInfoBlock
                         label={t('dialog.world.info.created_at')}
-                        value={formatDate(world.createdAt || world.created_at)}
+                        value={formatDateFilterOrFallback(
+                            world.createdAt || world.created_at,
+                            'long',
+                            WORLD_DATE_FALLBACKS
+                        )}
                     />
                     <EntityInfoBlock
                         label={t('dialog.world.info.last_updated')}
-                        value={formatDate(world.updatedAt || world.updated_at)}
+                        value={formatDateFilterOrFallback(
+                            world.updatedAt || world.updated_at,
+                            'long',
+                            WORLD_DATE_FALLBACKS
+                        )}
                     />
                     {world.labsPublicationDate &&
                     world.labsPublicationDate !== 'none' ? (
                         <EntityInfoBlock
                             label={t('dialog.world.info.labs_publication_date')}
-                            value={formatDate(world.labsPublicationDate)}
+                            value={formatDateFilterOrFallback(
+                                world.labsPublicationDate,
+                                'long',
+                                WORLD_DATE_FALLBACKS
+                            )}
                         />
                     ) : null}
                     <EntityInfoBlock
                         label={t('dialog.world.info.publication_date')}
-                        value={formatDate(world.publicationDate)}
+                        value={formatDateFilterOrFallback(
+                            world.publicationDate,
+                            'long',
+                            WORLD_DATE_FALLBACKS
+                        )}
                     />
                     <EntityInfoBlock
                         label={t('dialog.world.info.last_visited')}
-                        value={formatDate(
+                        value={formatDateFilterOrFallback(
                             lastVisitedInstance?.created_at ||
-                                lastVisitedInstance?.createdAt
+                                lastVisitedInstance?.createdAt,
+                            'long',
+                            WORLD_DATE_FALLBACKS
                         )}
                     />
                     <EntityInfoBlock

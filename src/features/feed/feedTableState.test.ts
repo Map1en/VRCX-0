@@ -39,7 +39,7 @@ describe('feed table state helpers', () => {
 
     afterEach(() => {
         vi.useRealTimers();
-        delete globalThis.window;
+        Reflect.deleteProperty(globalThis, 'window');
     });
 
     it('safely reads and writes persisted feed table state', () => {
@@ -57,7 +57,7 @@ describe('feed table state helpers', () => {
             'vrcx-0:table:feed',
             expect.any(String)
         );
-        expect(JSON.parse(values.get('vrcx-0:table:feed'))).toEqual({
+        expect(JSON.parse(values.get('vrcx-0:table:feed') ?? '')).toEqual({
             pageSize: 25,
             columnOrder: ['type'],
             updatedAt: new Date('2026-02-03T04:05:06Z').getTime()

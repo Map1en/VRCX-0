@@ -1,6 +1,6 @@
 import type { UserFact } from '@/domain/users/userFacts';
 
-type FriendRecord = Record<string, any>;
+type FriendRecord = Record<string, unknown>;
 
 const FACT_DERIVED_FIELDS = [
     '$trustLevel',
@@ -19,10 +19,9 @@ function applyFactDerivedFields(
     if (!fact) {
         return friend;
     }
-    const factRecord = fact as Record<string, any>;
     let next: FriendRecord | null = null;
     for (const field of FACT_DERIVED_FIELDS) {
-        const value = factRecord[field];
+        const value = fact[field];
         if (value === undefined || value === null || value === friend[field]) {
             continue;
         }

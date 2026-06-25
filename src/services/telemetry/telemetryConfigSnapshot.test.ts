@@ -91,9 +91,9 @@ describe('buildConfigSnapshot', () => {
             'light'
         );
         vi.resetModules();
-        expect(await themeCategory({ strings: { ThemeMode: 'midnight' } })).toBe(
-            'dark'
-        );
+        expect(
+            await themeCategory({ strings: { ThemeMode: 'midnight' } })
+        ).toBe('dark');
     });
 
     it('resolves system theme mode against the OS preference', async () => {

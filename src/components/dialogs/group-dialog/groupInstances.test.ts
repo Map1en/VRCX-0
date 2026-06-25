@@ -170,6 +170,8 @@ describe('groupInstances', () => {
             friendCount: 4,
             ref: explicitRef
         });
-        expect(rows[0].users.map((user: any) => user.id)).toEqual(['usr_first']);
+        expect(rows[0].users.map((user: any) => user.id)).toEqual([
+            'usr_first'
+        ]);
     });
 });

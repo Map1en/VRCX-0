@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 
 import { useModalStore } from '@/state/modalStore';
 
+import type { FavoriteItem } from './favoritesTypes';
+
 export function useFavoritesBulkActions({
     handleRemoveLocalFavorite,
     handleRemoveRemoteFavorite,
@@ -10,11 +12,17 @@ export function useFavoritesBulkActions({
     setEditMode,
     setSelectedKeys
 }: {
-    handleRemoveLocalFavorite(item: any, options?: any): Promise<boolean>;
-    handleRemoveRemoteFavorite(item: any, options?: any): Promise<boolean>;
-    selectedContentItems: any[];
+    handleRemoveLocalFavorite(
+        item: FavoriteItem,
+        options?: { silent?: boolean }
+    ): Promise<boolean>;
+    handleRemoveRemoteFavorite(
+        item: FavoriteItem,
+        options?: { silent?: boolean }
+    ): Promise<boolean>;
+    selectedContentItems: FavoriteItem[];
     setEditMode(value: boolean): void;
-    setSelectedKeys(value: any[] | ((current: any[]) => any[])): void;
+    setSelectedKeys(value: string[] | ((current: string[]) => string[])): void;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state: any) => state.confirm);
@@ -37,7 +45,7 @@ export function useFavoritesBulkActions({
         }
         let removedCount = 0;
         let failedCount = 0;
-        const removedKeys = new Set();
+        const removedKeys = new Set<string>();
         for (const item of selectedContentItems) {
             try {
                 const removed =
@@ -59,13 +67,15 @@ export function useFavoritesBulkActions({
             }
         }
         if (removedCount > 0) {
-            setSelectedKeys((current: any) =>
-                current.filter((key: any) => !removedKeys.has(key))
+            setSelectedKeys((current) =>
+                current.filter((key) => !removedKeys.has(key))
             );
         }
         if (failedCount === 0) {
             setEditMode(false);
-            toast.success(t('view.favorite.success.selected_favorites_removed'));
+            toast.success(
+                t('view.favorite.success.selected_favorites_removed')
+            );
             return;
         }
         toast.error(

@@ -29,7 +29,7 @@ export function readPersistedPlayerListState() {
     return readPersistedTableState(PLAYER_LIST_STORAGE_KEY);
 }
 
-export function writePersistedPlayerListState(patch: any) {
+export function writePersistedPlayerListState(patch: Record<string, unknown>) {
     writePersistedTableState(PLAYER_LIST_STORAGE_KEY, patch);
 }
 
@@ -49,7 +49,7 @@ export function sanitizePlayerListSorting(value: any) {
 }
 
 export function sanitizePlayerListColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (value && typeof value === 'object') {
         for (const columnId of PLAYER_LIST_COLUMN_IDS) {
             if (typeof value[columnId] === 'boolean') {
@@ -66,7 +66,7 @@ export function sanitizePlayerListColumnOrder(value: any) {
         return [...PLAYER_LIST_COLUMN_IDS];
     }
 
-    const ordered = [];
+    const ordered: string[] = [];
     const seen = new Set();
     for (const columnId of value) {
         if (!PLAYER_LIST_COLUMN_IDS.includes(columnId) || seen.has(columnId)) {

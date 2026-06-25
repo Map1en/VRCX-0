@@ -312,7 +312,11 @@ export function mergeLocationUserRows(existing: any, incoming: any) {
     return merged;
 }
 
-export function mergeLocationUser(rowsById: any, user: any, fallback: any = {}) {
+export function mergeLocationUser(
+    rowsById: any,
+    user: any,
+    fallback: any = {}
+) {
     const row = createLocationUserRow(user, fallback);
     const key = row.id || `display:${row.displayName}`;
     if (!key) {
@@ -369,7 +373,10 @@ export function pushLocationUserSource(source: any, push: any) {
     push(source);
 }
 
-export function resolveCurrentInviteLocation(gameState: any, currentUserSnapshot: any) {
+export function resolveCurrentInviteLocation(
+    gameState: any,
+    currentUserSnapshot: any
+) {
     const currentLocation = normalizeUserId(gameState?.currentLocation);
     if (currentLocation === 'traveling') {
         return normalizeUserId(gameState?.currentDestination);

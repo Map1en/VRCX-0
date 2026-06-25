@@ -1,14 +1,12 @@
 import { formatDateFilter } from '@/lib/dateTime';
+import { normalizeString } from '@/shared/utils/string';
 
 export const MAX_WIDGET_ROWS = 50;
 
-export function normalizeString(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-export function buildFavoriteIdSet(remoteFavoriteIds: any, localFriendFavorites: any) {
+export function buildFavoriteIdSet(
+    remoteFavoriteIds: any,
+    localFriendFavorites: any
+) {
     const ids = new Set();
 
     for (const id of remoteFavoriteIds ?? []) {
@@ -58,7 +56,7 @@ export function formatWidgetExactTime(value: any) {
     }
 }
 
-export function joinCompactParts(values: any[] = []) {
+export function joinCompactParts(values: unknown[] = []) {
     return values.filter(Boolean).join(' • ');
 }
 

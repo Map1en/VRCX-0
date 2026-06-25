@@ -4,6 +4,7 @@ import {
     parseLocation,
     resolveFriendPresenceLocation
 } from './location';
+import { normalizeString } from './string';
 
 export type CurrentUserPresenceRecord = Record<string, unknown>;
 
@@ -48,12 +49,6 @@ const CURRENT_USER_PRESENCE_FIELDS = [
     'state',
     'stateBucket'
 ];
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
 
 function normalizeLocationStatus(value: unknown): string {
     const normalized = normalizeString(value).toLowerCase();

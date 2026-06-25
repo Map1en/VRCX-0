@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -6,7 +8,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { useTranslation } from 'react-i18next';
 
 export function FriendListUserLoadDialog({
     open,

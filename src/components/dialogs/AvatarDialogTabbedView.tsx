@@ -1,18 +1,14 @@
-import {
-    CopyIcon,
-    ExternalLinkIcon,
-    PersonStandingIcon
-} from 'lucide-react';
+import { CopyIcon, ExternalLinkIcon, PersonStandingIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
+import { cn } from '@/lib/utils';
+import { openUserDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
-import { cn } from '@/lib/utils';
-import { openUserDialog } from '@/services/dialogService';
+import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';

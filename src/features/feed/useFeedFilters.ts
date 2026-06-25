@@ -12,10 +12,7 @@ import {
     type FeedFilterType
 } from '@/repositories/feedRepository';
 
-import {
-    parseDateInput,
-    toDateInputValue
-} from './feedRows';
+import { parseDateInput, toDateInputValue } from './feedRows';
 import type { FeedDateRange } from './feedTypes';
 
 function normalizeFeedFilters(filters: readonly unknown[]): FeedFilterType[] {

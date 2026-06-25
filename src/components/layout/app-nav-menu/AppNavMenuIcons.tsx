@@ -1,3 +1,4 @@
+import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
@@ -6,7 +7,6 @@ import {
     DEFAULT_FOLDER_ICON,
     DEFAULT_NAV_ICON_KEY
 } from '@/shared/constants/navIcons';
-import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 
 function NavIcon({ entry, className = undefined }: any) {
     const fallback = String(entry?.index || '').startsWith(

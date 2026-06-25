@@ -38,7 +38,7 @@ const toolRouteMap = {
     'vrchat-log': '/tools/vrchat-log'
 } satisfies Record<string, string>;
 
-const toolDialogHostMap = {
+const toolDialogHostMap: Record<string, ToolDialogHostKey> = {
     'app-launcher': 'appLauncherOpen',
     'presence-schedule': 'presenceScheduleOpen',
     'presence-room-rules': 'presenceRoomRulesOpen',
@@ -49,11 +49,11 @@ const toolDialogHostMap = {
     'export-friends-list': 'exportFriendsListOpen',
     'export-avatars-list': 'exportAvatarsListOpen',
     'edit-invite-messages': 'editInviteMessagesOpen'
-} satisfies Record<string, ToolDialogHostKey>;
+};
 
-const legacyToolAliases = {
+const legacyToolAliases: Record<string, string> = {
     'auto-change-status': 'presence-room-rules'
-} satisfies Record<string, string>;
+};
 
 export function isToolCapabilityAvailable(
     tool?: ToolDefinition | null
@@ -153,7 +153,8 @@ export async function triggerToolByKey(
     }
 
     if (action.type === 'dialog') {
-        const hostKey = toolDialogHostMap[action.dialogKey as string];
+        const dialogKey = String(action.dialogKey || '');
+        const hostKey = toolDialogHostMap[dialogKey];
         if (hostKey) {
             useRuntimeStore.getState().setSystemHostOpen(hostKey, true);
             return;

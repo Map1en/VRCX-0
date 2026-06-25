@@ -505,7 +505,7 @@ export async function recordFriendLogFriendByUserId({
             normalizedCurrentUserId,
             currentEntry,
             {
-                historyEntry,
+                historyEntry: historyEntry ?? undefined,
                 forceHistory: hasExplicitAddIntent && wasHandledByBootstrap
             }
         );

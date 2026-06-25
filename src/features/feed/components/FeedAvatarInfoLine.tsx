@@ -3,11 +3,11 @@ import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { openAvatarDialog, openUserDialog } from '@/services/dialogService';
-import { cn } from '@/lib/utils';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -21,9 +21,9 @@ async function findAvatarByImageUrl({ imageUrl, avatarName }: any) {
         return null;
     }
 
-    const cachedAvatars = await favoritePersistenceRepository
+    const cachedAvatars: unknown[] = await favoritePersistenceRepository
         .getAvatarCache()
-        .catch(() => []);
+        .catch((): unknown[] => []);
     const cachedMatch = cachedAvatars.find(
         (avatar: any) =>
             avatar?.id &&

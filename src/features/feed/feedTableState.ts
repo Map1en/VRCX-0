@@ -1,3 +1,5 @@
+import type { SortingState } from '@tanstack/react-table';
+
 import {
     getDataTableStorageKey,
     readPersistedTableState,
@@ -9,7 +11,7 @@ import {
 export { safeJsonParse };
 
 export const FEED_TABLE_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
-export const FEED_TABLE_DEFAULT_SORTING = [];
+export const FEED_TABLE_DEFAULT_SORTING: SortingState = [];
 export const FEED_TABLE_COLUMN_IDS = [
     'created_at',
     'type',
@@ -27,7 +29,7 @@ export function readPersistedFeedTableState() {
     return readPersistedTableState(STORAGE_KEY);
 }
 
-export function writePersistedFeedTableState(patch: any) {
+export function writePersistedFeedTableState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
@@ -60,7 +62,7 @@ export function sanitizeFeedPageSizes(value: any) {
 }
 
 export function sanitizeFeedColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (!value || typeof value !== 'object') {
         return visibility;
     }

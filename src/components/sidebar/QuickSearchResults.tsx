@@ -62,7 +62,9 @@ function ResultRow({ item, onSelect }: any) {
                     <span
                         className="truncate"
                         style={
-                            item.userColour ? { color: item.userColour } : null
+                            item.userColour
+                                ? { color: item.userColour }
+                                : undefined
                         }
                     >
                         {item.name || entityTypeLabel(item.type)}

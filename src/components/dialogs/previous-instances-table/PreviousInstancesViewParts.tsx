@@ -16,7 +16,11 @@ import {
     useKnownUserFacts
 } from '@/domain/users/useKnownUser';
 import { openGameLogUser } from '@/features/game-log/gameLogUserLookup';
-import { formatClock, formatDateFilter, timeToText } from '@/lib/dateTime';
+import {
+    formatClock,
+    formatDateFilterOrFallback,
+    timeToText
+} from '@/lib/dateTime';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
@@ -52,10 +56,6 @@ import {
     rowOwnerUserId,
     rowWorldId
 } from './previousInstancesRows';
-
-export function formatDate(value: any) {
-    return formatDateFilter(value, 'long');
-}
 
 function playerLeaveMs(player: any) {
     const value = new Date(
@@ -106,7 +106,10 @@ function instanceDetailsSummary(row: any, t: any) {
     if (parts.length) {
         return parts.join(' / ');
     }
-    const dateText = formatDate(row?.created_at || row?.createdAt);
+    const dateText = formatDateFilterOrFallback(
+        row?.created_at || row?.createdAt,
+        'long'
+    );
     return dateText !== '-'
         ? dateText
         : t('dialog.previous_instances.description.instance_details');
@@ -451,7 +454,10 @@ export function PreviousInstanceDetailsPanel({
                             {t('table.previous_instances.date')}
                         </span>
                         <div>
-                            {formatDate(row?.created_at || row?.createdAt)}
+                            {formatDateFilterOrFallback(
+                                row?.created_at || row?.createdAt,
+                                'long'
+                            )}
                         </div>
                     </div>
                     <div>
@@ -646,9 +652,10 @@ export function PreviousInstanceDetailsPanel({
                                                                     : '-'}
                                                             </TableCell>
                                                             <TableCell className="text-muted-foreground align-top text-xs">
-                                                                {formatDate(
+                                                                {formatDateFilterOrFallback(
                                                                     player?.created_at ||
-                                                                        player?.createdAt
+                                                                        player?.createdAt,
+                                                                    'long'
                                                                 )}
                                                             </TableCell>
                                                         </TableRow>

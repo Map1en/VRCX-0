@@ -6,19 +6,19 @@ import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
-import { useShellStore } from '@/state/shellStore';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
+import { useShellStore } from '@/state/shellStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    normalizeId,
     normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
@@ -29,10 +29,7 @@ import {
     timestampMsFromValue
 } from './friendsSidebarModel';
 
-export function FriendInstanceTimer({
-    epoch,
-    traveling = false
-}: any) {
+export function FriendInstanceTimer({ epoch, traveling = false }: any) {
     const timeUnitLabels = useShellStore((state: any) => state.timeUnitLabels);
     const [now, setNow] = useState(() => Date.now());
     const normalizedEpoch = timestampMsFromValue(epoch);
@@ -157,7 +154,11 @@ export function resolveFriendRowLocationState({
     };
 }
 
-function StaticLocationTooltip({ disabled = false, content = '', children }: any) {
+function StaticLocationTooltip({
+    disabled = false,
+    content = '',
+    children
+}: any) {
     if (disabled || !content) {
         return children;
     }

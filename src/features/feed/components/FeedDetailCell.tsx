@@ -1,7 +1,7 @@
 import { ArrowRightIcon } from 'lucide-react';
 
-import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
 import { resolveFeedLocationForDisplay } from '../feedRows';
+import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
 import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { FeedLocationLink } from './FeedLocationLink';
 import { FeedStatusBadge } from './FeedStatusBadge';

@@ -61,10 +61,9 @@ export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
         }
         if (statusPresets.length >= maxStatusPresets) {
             toast.warning(
-                t(
-                    'dialog.user.dynamic.status_presets_are_limited_to_value',
-                    { value: maxStatusPresets }
-                )
+                t('dialog.user.dynamic.status_presets_are_limited_to_value', {
+                    value: maxStatusPresets
+                })
             );
             return;
         }
@@ -83,9 +82,7 @@ export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_save_status_preset'
-                      )
+                    : t('dialog.user.toast.failed_to_save_status_preset')
             );
         }
     }
@@ -106,9 +103,7 @@ export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_remove_status_preset'
-                      )
+                    : t('dialog.user.toast.failed_to_remove_status_preset')
             );
         }
     }

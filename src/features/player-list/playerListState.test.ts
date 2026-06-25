@@ -28,7 +28,7 @@ function installLocalStorage(initial: any = {}) {
 
 describe('playerListState', () => {
     afterEach(() => {
-        delete globalThis.window;
+        Reflect.deleteProperty(globalThis, 'window');
     });
 
     it('uses the default player-list table shape when saved state is missing or invalid', () => {

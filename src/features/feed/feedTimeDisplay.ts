@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
+import { dateFromUnknown } from '@/shared/utils/dateTime';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 
 function parseTimestampMs(value: unknown) {
@@ -8,8 +9,7 @@ function parseTimestampMs(value: unknown) {
         return null;
     }
 
-    const timestampMs = new Date(value as any).getTime();
-    return Number.isFinite(timestampMs) ? timestampMs : null;
+    return dateFromUnknown(value)?.getTime() ?? null;
 }
 
 export function formatFeedRelativeTime(

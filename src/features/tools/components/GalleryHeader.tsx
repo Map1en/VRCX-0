@@ -103,7 +103,9 @@ export function GalleryHeader({
                         onClick={onBack}
                     />
                     <PageHeader className="min-w-0 p-0">
-                        <PageTitle>{t('dialog.gallery_icons.header')}</PageTitle>
+                        <PageTitle>
+                            {t('dialog.gallery_icons.header')}
+                        </PageTitle>
                     </PageHeader>
                     {uploadingTab ? (
                         <Badge variant="outline">

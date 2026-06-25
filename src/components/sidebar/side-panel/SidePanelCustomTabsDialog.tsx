@@ -299,7 +299,9 @@ export function SidePanelCustomTabsDialog({
     ) {
         setDraftLayout((current: any) =>
             normalizeSidebarTabLayout(
-                current.map((item: any) => (item.id === id ? updater(item) : item))
+                current.map((item: any) =>
+                    item.id === id ? updater(item) : item
+                )
             )
         );
     }
@@ -310,8 +312,12 @@ export function SidePanelCustomTabsDialog({
             return;
         }
         setDraftLayout((current: any) => {
-            const oldIndex = current.findIndex((item: any) => item.id === active.id);
-            const newIndex = current.findIndex((item: any) => item.id === over.id);
+            const oldIndex = current.findIndex(
+                (item: any) => item.id === active.id
+            );
+            const newIndex = current.findIndex(
+                (item: any) => item.id === over.id
+            );
             if (oldIndex < 0 || newIndex < 0) {
                 return current;
             }
@@ -429,273 +435,276 @@ export function SidePanelCustomTabsDialog({
                                 strategy={verticalListSortingStrategy}
                             >
                                 <div className="flex flex-col gap-2">
-                                    {draftLayout.map((item: any, index: any) => {
-                                        const label = getTabLabel(item, t);
-                                        const Icon = getNavIconComponent(
-                                            item.icon,
-                                            sidebarTabFallbackIcon(item)
-                                        );
-                                        const canHide =
-                                            item.type ===
-                                                'favoriteCollection' ||
-                                            item.systemTab === 'groups';
-                                        return (
-                                            <SortableTabRow
-                                                key={item.id}
-                                                id={item.id}
-                                            >
-                                                {({
-                                                    dragHandleProps,
-                                                    isDragging,
-                                                    rowRef,
-                                                    rowStyle
-                                                }: any) => (
-                                                    <div
-                                                        ref={rowRef}
-                                                        style={rowStyle}
-                                                        className={cn(
-                                                            'flex flex-col gap-2 rounded-md border p-2 text-sm transition-colors',
-                                                            isDragging &&
-                                                                'opacity-50'
-                                                        )}
-                                                    >
-                                                        <div className="flex min-w-0 items-center gap-2">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon-sm"
-                                                                className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
-                                                                aria-label={tabActionLabel(
-                                                                    t,
-                                                                    'drag_value',
-                                                                    label
-                                                                )}
-                                                                {...dragHandleProps}
-                                                            >
-                                                                <GripVerticalIcon data-icon="inline-start" />
-                                                            </Button>
-                                                            <NavIconSelect
-                                                                value={
-                                                                    item.icon
-                                                                }
-                                                                fallbackIcon={sidebarTabFallbackIcon(
-                                                                    item
-                                                                )}
-                                                                ariaLabel={tabActionLabel(
-                                                                    t,
-                                                                    'icon_for_value',
-                                                                    label
-                                                                )}
-                                                                onValueChange={(
-                                                                    icon: any
-                                                                ) =>
-                                                                    updateItem(
-                                                                        item.id,
-                                                                        (
-                                                                            current: any
-                                                                        ) => ({
-                                                                            ...current,
-                                                                            icon
-                                                                        })
-                                                                    )
-                                                                }
-                                                            />
-                                                            <Icon data-icon="inline-start" />
-                                                            {item.type ===
-                                                            'favoriteCollection' ? (
-                                                                <Input
-                                                                    value={
-                                                                        item.name
-                                                                    }
-                                                                    className="min-w-0 flex-1"
-                                                                    aria-label={t(
-                                                                        'side_panel.settings.custom_tabs.tab_name'
+                                    {draftLayout.map(
+                                        (item: any, index: any) => {
+                                            const label = getTabLabel(item, t);
+                                            const Icon = getNavIconComponent(
+                                                item.icon,
+                                                sidebarTabFallbackIcon(item)
+                                            );
+                                            const canHide =
+                                                item.type ===
+                                                    'favoriteCollection' ||
+                                                item.systemTab === 'groups';
+                                            return (
+                                                <SortableTabRow
+                                                    key={item.id}
+                                                    id={item.id}
+                                                >
+                                                    {({
+                                                        dragHandleProps,
+                                                        isDragging,
+                                                        rowRef,
+                                                        rowStyle
+                                                    }: any) => (
+                                                        <div
+                                                            ref={rowRef}
+                                                            style={rowStyle}
+                                                            className={cn(
+                                                                'flex flex-col gap-2 rounded-md border p-2 text-sm transition-colors',
+                                                                isDragging &&
+                                                                    'opacity-50'
+                                                            )}
+                                                        >
+                                                            <div className="flex min-w-0 items-center gap-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon-sm"
+                                                                    className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
+                                                                    aria-label={tabActionLabel(
+                                                                        t,
+                                                                        'drag_value',
+                                                                        label
                                                                     )}
-                                                                    onChange={(
-                                                                        event: any
+                                                                    {...dragHandleProps}
+                                                                >
+                                                                    <GripVerticalIcon data-icon="inline-start" />
+                                                                </Button>
+                                                                <NavIconSelect
+                                                                    value={
+                                                                        item.icon
+                                                                    }
+                                                                    fallbackIcon={sidebarTabFallbackIcon(
+                                                                        item
+                                                                    )}
+                                                                    ariaLabel={tabActionLabel(
+                                                                        t,
+                                                                        'icon_for_value',
+                                                                        label
+                                                                    )}
+                                                                    onValueChange={(
+                                                                        icon: any
                                                                     ) =>
                                                                         updateItem(
                                                                             item.id,
                                                                             (
                                                                                 current: any
-                                                                            ) =>
-                                                                                current.type ===
-                                                                                'favoriteCollection'
-                                                                                    ? {
-                                                                                          ...current,
-                                                                                          name: event
-                                                                                              .target
-                                                                                              .value
-                                                                                      }
-                                                                                    : current
+                                                                            ) => ({
+                                                                                ...current,
+                                                                                icon
+                                                                            })
                                                                         )
                                                                     }
                                                                 />
-                                                            ) : (
-                                                                <span className="min-w-0 flex-1 truncate font-medium">
-                                                                    {label}
+                                                                <Icon data-icon="inline-start" />
+                                                                {item.type ===
+                                                                'favoriteCollection' ? (
+                                                                    <Input
+                                                                        value={
+                                                                            item.name
+                                                                        }
+                                                                        className="min-w-0 flex-1"
+                                                                        aria-label={t(
+                                                                            'side_panel.settings.custom_tabs.tab_name'
+                                                                        )}
+                                                                        onChange={(
+                                                                            event: any
+                                                                        ) =>
+                                                                            updateItem(
+                                                                                item.id,
+                                                                                (
+                                                                                    current: any
+                                                                                ) =>
+                                                                                    current.type ===
+                                                                                    'favoriteCollection'
+                                                                                        ? {
+                                                                                              ...current,
+                                                                                              name: event
+                                                                                                  .target
+                                                                                                  .value
+                                                                                          }
+                                                                                        : current
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                ) : (
+                                                                    <span className="min-w-0 flex-1 truncate font-medium">
+                                                                        {label}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-muted-foreground text-xs">
+                                                                    {t(
+                                                                        'side_panel.settings.custom_tabs.visible'
+                                                                    )}
                                                                 </span>
-                                                            )}
-                                                            <span className="text-muted-foreground text-xs">
-                                                                {t(
-                                                                    'side_panel.settings.custom_tabs.visible'
-                                                                )}
-                                                            </span>
-                                                            <Checkbox
-                                                                checked={
-                                                                    item.visible
-                                                                }
-                                                                disabled={
-                                                                    !canHide
-                                                                }
-                                                                aria-label={tabActionLabel(
-                                                                    t,
-                                                                    item.visible
-                                                                        ? 'hide_value'
-                                                                        : 'show_value',
-                                                                    label
-                                                                )}
-                                                                onCheckedChange={(
-                                                                    checked: any
-                                                                ) =>
-                                                                    updateItem(
-                                                                        item.id,
-                                                                        (
-                                                                            current: any
-                                                                        ) => ({
-                                                                            ...current,
-                                                                            visible:
-                                                                                current.type ===
-                                                                                    'system' &&
-                                                                                current.systemTab ===
-                                                                                    'friends'
-                                                                                    ? true
-                                                                                    : Boolean(
-                                                                                          checked
-                                                                                      )
-                                                                        })
-                                                                    )
-                                                                }
-                                                            />
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon-sm"
-                                                                aria-label={tabActionLabel(
-                                                                    t,
-                                                                    'move_value_up',
-                                                                    label
-                                                                )}
-                                                                disabled={
-                                                                    index === 0
-                                                                }
-                                                                onClick={() =>
-                                                                    moveItem(
-                                                                        index,
-                                                                        -1
-                                                                    )
-                                                                }
-                                                            >
-                                                                <ArrowUpIcon data-icon="inline-start" />
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon-sm"
-                                                                aria-label={tabActionLabel(
-                                                                    t,
-                                                                    'move_value_down',
-                                                                    label
-                                                                )}
-                                                                disabled={
-                                                                    index ===
-                                                                    draftLayout.length -
-                                                                        1
-                                                                }
-                                                                onClick={() =>
-                                                                    moveItem(
-                                                                        index,
-                                                                        1
-                                                                    )
-                                                                }
-                                                            >
-                                                                <ArrowDownIcon data-icon="inline-start" />
-                                                            </Button>
-                                                            {item.type ===
-                                                            'favoriteCollection' ? (
+                                                                <Checkbox
+                                                                    checked={
+                                                                        item.visible
+                                                                    }
+                                                                    disabled={
+                                                                        !canHide
+                                                                    }
+                                                                    aria-label={tabActionLabel(
+                                                                        t,
+                                                                        item.visible
+                                                                            ? 'hide_value'
+                                                                            : 'show_value',
+                                                                        label
+                                                                    )}
+                                                                    onCheckedChange={(
+                                                                        checked: any
+                                                                    ) =>
+                                                                        updateItem(
+                                                                            item.id,
+                                                                            (
+                                                                                current: any
+                                                                            ) => ({
+                                                                                ...current,
+                                                                                visible:
+                                                                                    current.type ===
+                                                                                        'system' &&
+                                                                                    current.systemTab ===
+                                                                                        'friends'
+                                                                                        ? true
+                                                                                        : Boolean(
+                                                                                              checked
+                                                                                          )
+                                                                            })
+                                                                        )
+                                                                    }
+                                                                />
                                                                 <Button
                                                                     type="button"
                                                                     variant="ghost"
                                                                     size="icon-sm"
                                                                     aria-label={tabActionLabel(
                                                                         t,
-                                                                        'delete_value',
+                                                                        'move_value_up',
                                                                         label
                                                                     )}
+                                                                    disabled={
+                                                                        index ===
+                                                                        0
+                                                                    }
                                                                     onClick={() =>
-                                                                        removeFavoriteCollection(
-                                                                            item.id
+                                                                        moveItem(
+                                                                            index,
+                                                                            -1
                                                                         )
                                                                     }
                                                                 >
-                                                                    <Trash2Icon data-icon="inline-start" />
+                                                                    <ArrowUpIcon data-icon="inline-start" />
                                                                 </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon-sm"
+                                                                    aria-label={tabActionLabel(
+                                                                        t,
+                                                                        'move_value_down',
+                                                                        label
+                                                                    )}
+                                                                    disabled={
+                                                                        index ===
+                                                                        draftLayout.length -
+                                                                            1
+                                                                    }
+                                                                    onClick={() =>
+                                                                        moveItem(
+                                                                            index,
+                                                                            1
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ArrowDownIcon data-icon="inline-start" />
+                                                                </Button>
+                                                                {item.type ===
+                                                                'favoriteCollection' ? (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon-sm"
+                                                                        aria-label={tabActionLabel(
+                                                                            t,
+                                                                            'delete_value',
+                                                                            label
+                                                                        )}
+                                                                        onClick={() =>
+                                                                            removeFavoriteCollection(
+                                                                                item.id
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Trash2Icon data-icon="inline-start" />
+                                                                    </Button>
+                                                                ) : null}
+                                                            </div>
+                                                            {item.type ===
+                                                            'favoriteCollection' ? (
+                                                                <FavoriteSourceChecklist
+                                                                    item={item}
+                                                                    favoriteGroupItems={
+                                                                        favoriteGroupItems
+                                                                    }
+                                                                    onToggleSource={(
+                                                                        key: any,
+                                                                        checked: any
+                                                                    ) =>
+                                                                        updateItem(
+                                                                            item.id,
+                                                                            (
+                                                                                current: any
+                                                                            ) => {
+                                                                                if (
+                                                                                    current.type !==
+                                                                                    'favoriteCollection'
+                                                                                ) {
+                                                                                    return current;
+                                                                                }
+                                                                                const selected =
+                                                                                    new Set(
+                                                                                        current.sourceGroupKeys
+                                                                                    );
+                                                                                if (
+                                                                                    checked
+                                                                                ) {
+                                                                                    selected.add(
+                                                                                        key
+                                                                                    );
+                                                                                } else {
+                                                                                    selected.delete(
+                                                                                        key
+                                                                                    );
+                                                                                }
+                                                                                return {
+                                                                                    ...current,
+                                                                                    sourceGroupKeys:
+                                                                                        [
+                                                                                            ...selected
+                                                                                        ]
+                                                                                };
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                />
                                                             ) : null}
                                                         </div>
-                                                        {item.type ===
-                                                        'favoriteCollection' ? (
-                                                            <FavoriteSourceChecklist
-                                                                item={item}
-                                                                favoriteGroupItems={
-                                                                    favoriteGroupItems
-                                                                }
-                                                                onToggleSource={(
-                                                                    key: any,
-                                                                    checked: any
-                                                                ) =>
-                                                                    updateItem(
-                                                                        item.id,
-                                                                        (
-                                                                            current: any
-                                                                        ) => {
-                                                                            if (
-                                                                                current.type !==
-                                                                                'favoriteCollection'
-                                                                            ) {
-                                                                                return current;
-                                                                            }
-                                                                            const selected =
-                                                                                new Set(
-                                                                                    current.sourceGroupKeys
-                                                                                );
-                                                                            if (
-                                                                                checked
-                                                                            ) {
-                                                                                selected.add(
-                                                                                    key
-                                                                                );
-                                                                            } else {
-                                                                                selected.delete(
-                                                                                    key
-                                                                                );
-                                                                            }
-                                                                            return {
-                                                                                ...current,
-                                                                                sourceGroupKeys:
-                                                                                    [
-                                                                                        ...selected
-                                                                                    ]
-                                                                            };
-                                                                        }
-                                                                    )
-                                                                }
-                                                            />
-                                                        ) : null}
-                                                    </div>
-                                                )}
-                                            </SortableTabRow>
-                                        );
-                                    })}
+                                                    )}
+                                                </SortableTabRow>
+                                            );
+                                        }
+                                    )}
                                 </div>
                             </SortableContext>
                         </DndContext>

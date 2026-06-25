@@ -101,7 +101,10 @@ export function resolveFeedLocationForDisplay(row: any) {
     return location;
 }
 
-export function resolveFeedFriendStateBucket(friend: any, currentUserSnapshot: any) {
+export function resolveFeedFriendStateBucket(
+    friend: any,
+    currentUserSnapshot: any
+) {
     const friendId = normalizeFeedId(friend?.id || friend?.userId);
     const explicitState = normalizePresenceState(
         friend?.stateBucket || friend?.state
@@ -128,7 +131,10 @@ export function resolveFeedFriendStateBucket(friend: any, currentUserSnapshot: a
     return '';
 }
 
-export function canRequestInviteFromFeedFriend(friend: any, currentUserSnapshot: any) {
+export function canRequestInviteFromFeedFriend(
+    friend: any,
+    currentUserSnapshot: any
+) {
     return (
         resolveFeedFriendStateBucket(friend, currentUserSnapshot) === 'online'
     );
@@ -158,6 +164,13 @@ export function buildFeedFavoriteIdSet(
     selectedFavoriteGroupIds: any[] = []
 ) {
     const ids = new Set();
+    const remoteFavorites =
+        remoteFavoritesById && typeof remoteFavoritesById === 'object'
+            ? Object.values(remoteFavoritesById).filter(
+                  (favorite): favorite is Record<string, unknown> =>
+                      Boolean(favorite && typeof favorite === 'object')
+              )
+            : [];
     const selectedGroups = Array.isArray(selectedFavoriteGroupIds)
         ? selectedFavoriteGroupIds
         : [];
@@ -165,7 +178,7 @@ export function buildFeedFavoriteIdSet(
         (groupKey: any) => !String(groupKey || '').startsWith('local:')
     );
 
-    for (const favorite of Object.values(remoteFavoritesById ?? {}) as any[]) {
+    for (const favorite of remoteFavorites) {
         if (favorite?.type !== 'friend') {
             continue;
         }

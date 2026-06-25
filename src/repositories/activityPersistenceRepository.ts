@@ -300,12 +300,15 @@ async function getFriendPresenceSlice({
     toDateIso = '',
     ownerUserId
 }: FriendPresenceSliceInput) {
-    const rows = (await commands.appActivityFriendPresenceSlice({
-        ownerUserId,
-        userId,
-        fromDateIso,
-        toDateIso
-    } as ActivityFriendPresenceSliceInput)) as PresenceRow[];
+    const input: ActivityFriendPresenceSliceInput = {
+        ownerUserId: String(ownerUserId ?? ''),
+        userId: String(userId ?? ''),
+        fromDateIso: String(fromDateIso ?? ''),
+        toDateIso: String(toDateIso ?? '')
+    };
+    const rows = (await commands.appActivityFriendPresenceSlice(
+        input
+    )) as PresenceRow[];
 
     const output = Array.isArray(rows)
         ? rows.map(normalizePresenceRow).filter(hasCreatedAt)
@@ -323,11 +326,14 @@ async function getFriendPresenceAfter({
     afterCreatedAt,
     ownerUserId
 }: FriendPresenceAfterInput) {
-    const rows = (await commands.appActivityFriendPresenceAfter({
-        ownerUserId,
-        userId,
-        afterCreatedAt
-    } as ActivityFriendPresenceAfterInput)) as PresenceRow[];
+    const input: ActivityFriendPresenceAfterInput = {
+        ownerUserId: String(ownerUserId ?? ''),
+        userId: String(userId ?? ''),
+        afterCreatedAt: String(afterCreatedAt ?? '')
+    };
+    const rows = (await commands.appActivityFriendPresenceAfter(
+        input
+    )) as PresenceRow[];
     return Array.isArray(rows)
         ? rows.map(normalizePresenceRow).filter(hasCreatedAt)
         : [];

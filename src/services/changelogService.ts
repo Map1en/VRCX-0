@@ -10,8 +10,7 @@ const DEFAULT_CHANGELOG_LABEL = 'English';
 const MARKER_BLOCK_PATTERN =
     /<!--\s*vrcx-0-changelog:start\s+tag\s*=\s*(vrcx-0-v\d+-[a-z]{2}(?:-[a-z]{2})?)\s*-->([\s\S]*?)<!--\s*vrcx-0-changelog:end\s*-->/gi;
 const NOTE_MARKER_PATTERN = /<!--\s*vrcx-0-changelog:note\s*([\s\S]*?)-->/i;
-const CHANGELOG_TAG_PATTERN =
-    /^vrcx-0-v\d+-([a-z]{2}(?:-[a-z]{2})?)$/i;
+const CHANGELOG_TAG_PATTERN = /^vrcx-0-v\d+-([a-z]{2}(?:-[a-z]{2})?)$/i;
 const MARKDOWN_ANCHOR_PATTERN =
     /^\s*<a\s+(?:name|id)=["'][^"']+["']\s*><\/a>\s*(?:\r?\n)?/gim;
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -71,7 +70,9 @@ function normalizeChangelogLanguage(language: string) {
 
 function resolveChangelogLanguageFromTag(tag: string) {
     const match = CHANGELOG_TAG_PATTERN.exec(tag);
-    const lang = normalizeChangelogLanguage(match?.[1] || DEFAULT_CHANGELOG_LANG);
+    const lang = normalizeChangelogLanguage(
+        match?.[1] || DEFAULT_CHANGELOG_LANG
+    );
     return {
         lang,
         label: LANGUAGE_LABELS[lang] || lang

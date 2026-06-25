@@ -33,10 +33,52 @@ import {
     sendViewModeUsage
 } from './telemetryViewModeUsage';
 
+type HeartbeatCollector = {
+    seed?: () => Promise<void>;
+    flush: (session: TelemetrySessionState) => Promise<void>;
+    reset: () => void;
+};
+
+const HEARTBEAT_COLLECTORS: HeartbeatCollector[] = [
+    {
+        seed: seedViewModeUsage,
+        flush: sendViewModeUsage,
+        reset: resetViewModeUsage
+    },
+    {
+        flush: sendPageReach,
+        reset: resetPageReach
+    },
+    {
+        flush: sendAssistantHealth,
+        reset: resetAssistantHealth
+    }
+];
+
 let activeSession: TelemetrySessionState | null = null;
 
 function silently(task: Promise<unknown>): void {
     task.catch(() => {});
+}
+
+async function seedHeartbeatCollectors(): Promise<void> {
+    const seedTasks: Promise<void>[] = [];
+    for (const collector of HEARTBEAT_COLLECTORS) {
+        if (collector.seed) {
+            seedTasks.push(collector.seed());
+        }
+    }
+    await Promise.all(seedTasks);
+}
+
+function flushHeartbeatCollectors(session: TelemetrySessionState): void {
+    HEARTBEAT_COLLECTORS.forEach((collector) =>
+        silently(collector.flush(session))
+    );
+}
+
+function resetHeartbeatCollectors(): void {
+    HEARTBEAT_COLLECTORS.forEach((collector) => collector.reset());
 }
 
 async function sendSessionStart(session: TelemetrySessionState): Promise<void> {
@@ -191,7 +233,7 @@ export function startTelemetryLifecycle(): () => void {
         if (disposed) {
             return;
         }
-        await seedViewModeUsage().catch(() => {});
+        await seedHeartbeatCollectors().catch(() => {});
         silently(sendConfigSnapshot(session));
         const initialVrchatRunning =
             buildTelemetryContext(session).vrchatRunning;
@@ -213,9 +255,7 @@ export function startTelemetryLifecycle(): () => void {
         heartbeatTimer = window.setInterval(() => {
             requestHeartbeat();
             if (activeSession) {
-                silently(sendViewModeUsage(activeSession));
-                silently(sendPageReach(activeSession));
-                silently(sendAssistantHealth(activeSession));
+                flushHeartbeatCollectors(activeSession);
             }
         }, TELEMETRY_HEARTBEAT_INTERVAL_MS);
     })().catch(() => {});
@@ -233,15 +273,11 @@ export function startTelemetryLifecycle(): () => void {
         }
         if (activeSession) {
             silently(sendSessionEndHeartbeat(activeSession));
-            silently(sendViewModeUsage(activeSession));
-            silently(sendPageReach(activeSession));
-            silently(sendAssistantHealth(activeSession));
+            flushHeartbeatCollectors(activeSession);
         }
         if (lastVrchatRunning === true && activeSession) {
             requestVrchatLifecycle(false, { force: true });
         }
-        resetViewModeUsage();
-        resetPageReach();
-        resetAssistantHealth();
+        resetHeartbeatCollectors();
     };
 }

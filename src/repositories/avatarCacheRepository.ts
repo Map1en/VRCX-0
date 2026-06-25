@@ -3,6 +3,7 @@ import type {
     AvatarTagInput,
     AvatarTagsPatchInput
 } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 
 type ObjectRow = Record<string, unknown>;
 
@@ -29,14 +30,8 @@ function asObjectRow(row: ObjectRow | unknown[] | null | undefined): ObjectRow {
     return row && !Array.isArray(row) ? row : {};
 }
 
-function normalizeId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function parseInteger(value: unknown, fallback: number) {
-    return Number.parseInt((value ?? fallback) as string, 10) || fallback;
+    return Number.parseInt(String(value ?? fallback), 10) || fallback;
 }
 
 function normalizeAvatarCacheRow(
@@ -92,7 +87,7 @@ async function addAvatarToCache(entry: AvatarCacheInput) {
 }
 
 async function getCachedAvatarById(id: unknown) {
-    const normalizedId = normalizeId(id);
+    const normalizedId = normalizeString(id);
     if (!normalizedId) {
         return null;
     }
@@ -109,7 +104,7 @@ async function getAvatarCache() {
 }
 
 async function removeAvatarFromCache(avatarId: unknown) {
-    const normalizedAvatarId = normalizeId(avatarId);
+    const normalizedAvatarId = normalizeString(avatarId);
     if (!normalizedAvatarId) {
         return;
     }
@@ -117,7 +112,7 @@ async function removeAvatarFromCache(avatarId: unknown) {
 }
 
 async function addAvatarToHistory(userId: unknown, avatarId: unknown) {
-    const normalizedAvatarId = normalizeId(avatarId);
+    const normalizedAvatarId = normalizeString(avatarId);
     if (!normalizedAvatarId) {
         return;
     }
@@ -130,7 +125,7 @@ async function addAvatarTimeSpent(
     avatarId: unknown,
     timeSpent: unknown
 ) {
-    const normalizedAvatarId = normalizeId(avatarId);
+    const normalizedAvatarId = normalizeString(avatarId);
     const normalizedTimeSpent = parseInteger(timeSpent, 0);
     if (!normalizedAvatarId) {
         return;
@@ -144,7 +139,7 @@ async function addAvatarTimeSpent(
 }
 
 async function getAvatarTimeSpent(userId: unknown, avatarId: unknown) {
-    const normalizedAvatarId = normalizeId(avatarId);
+    const normalizedAvatarId = normalizeString(avatarId);
     const ref = {
         timeSpent: 0,
         avatarId: normalizedAvatarId
@@ -177,7 +172,7 @@ async function getAllAvatarTimeSpent(userId: unknown) {
 
 async function getAvatarHistory(userId: unknown, limit: unknown = 100) {
     const rows = (await commands.appAvatarHistoryList(
-        normalizeId(userId),
+        normalizeString(userId),
         parseInteger(limit, 100)
     )) as ObjectRow[];
     return Array.isArray(rows) ? rows.map(normalizeAvatarCacheRow) : [];
@@ -189,7 +184,7 @@ async function clearAvatarHistory(userId: unknown) {
 
 async function getAvatarTags(avatarId: unknown) {
     const rows = (await commands.appAvatarTagsGet(
-        normalizeId(avatarId)
+        normalizeString(avatarId)
     )) as ObjectRow[];
     return (Array.isArray(rows) ? rows : []).map((row) => ({
         tag: row.tag,
@@ -222,7 +217,7 @@ async function addAvatarTag(
     tag: unknown,
     color: unknown = null
 ) {
-    await commands.appAvatarTagAdd(normalizeId(avatarId), tag, color);
+    await commands.appAvatarTagAdd(normalizeString(avatarId), tag, color);
 }
 
 async function updateAvatarTagColor(
@@ -230,20 +225,24 @@ async function updateAvatarTagColor(
     tag: unknown,
     color: unknown
 ) {
-    await commands.appAvatarTagUpdateColor(normalizeId(avatarId), tag, color);
+    await commands.appAvatarTagUpdateColor(
+        normalizeString(avatarId),
+        tag,
+        color
+    );
 }
 
 async function removeAvatarTag(avatarId: unknown, tag: unknown) {
-    await commands.appAvatarTagRemove(normalizeId(avatarId), tag);
+    await commands.appAvatarTagRemove(normalizeString(avatarId), tag);
 }
 
 async function removeAllAvatarTags(avatarId: unknown) {
-    await commands.appAvatarTagsRemoveAll(normalizeId(avatarId));
+    await commands.appAvatarTagsRemoveAll(normalizeString(avatarId));
 }
 
 async function replaceAvatarTags(avatarId: unknown, entries: AvatarTag[] = []) {
     await commands.appAvatarTagsReplace(
-        normalizeId(avatarId),
+        normalizeString(avatarId),
         (Array.isArray(entries) ? entries : []) as AvatarTagInput[]
     );
 }
@@ -253,7 +252,7 @@ async function patchAvatarTags(
     previousEntries: AvatarTag[] = [],
     nextEntries: AvatarTag[] = []
 ) {
-    await commands.appAvatarTagsPatch(normalizeId(avatarId), {
+    await commands.appAvatarTagsPatch(normalizeString(avatarId), {
         previousEntries: Array.isArray(previousEntries) ? previousEntries : [],
         nextEntries: Array.isArray(nextEntries) ? nextEntries : []
     } as AvatarTagsPatchInput);

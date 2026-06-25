@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useKnownUserFacts } from '@/domain/users/useKnownUser';
 import avatarCacheRepository from '@/repositories/avatarCacheRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
-import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
+import {
+    buildFavoriteAvatarTags,
+    buildFavoriteFriendFactIds,
+    selectFavoritesCollectionsState
+} from './favoritesCollectionsState';
 import type { FavoriteKind } from './favoritesTypes';
 import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails';
 
@@ -18,56 +23,11 @@ export function useFavoritesCollectionsState({
     currentUserId: string;
     kind: FavoriteKind;
 }) {
-    const favoriteLoadStatus = useFavoriteStore((state: any) => state.loadStatus);
-    const favoriteDetail = useFavoriteStore((state: any) => state.detail);
-    const favoritesSortOrder = useFavoriteStore(
-        (state: any) => state.favoritesSortOrder
+    const favoriteSelector = useMemo(
+        () => selectFavoritesCollectionsState(kind),
+        [kind]
     );
-    const remoteFavoritesById = useFavoriteStore(
-        (state: any) => state.remoteFavoritesById
-    );
-    const favoriteFriendGroups = useFavoriteStore(
-        (state: any) => state.favoriteFriendGroups
-    );
-    const favoriteWorldGroups = useFavoriteStore(
-        (state: any) => state.favoriteWorldGroups
-    );
-    const favoriteAvatarGroups = useFavoriteStore(
-        (state: any) => state.favoriteAvatarGroups
-    );
-    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
-        (state: any) => state.groupedFavoriteFriendIdsByGroupKey
-    );
-    const localWorldFavorites = useFavoriteStore(
-        (state: any) => state.localWorldFavorites
-    );
-    const localAvatarFavorites = useFavoriteStore(
-        (state: any) => state.localAvatarFavorites
-    );
-    const localFriendFavorites = useFavoriteStore(
-        (state: any) => state.localFriendFavorites
-    );
-    const localWorldFavoriteGroups = useFavoriteStore(
-        (state: any) => state.localWorldFavoriteGroups
-    );
-    const localAvatarFavoriteGroups = useFavoriteStore(
-        (state: any) => state.localAvatarFavoriteGroups
-    );
-    const localFriendFavoriteGroups = useFavoriteStore(
-        (state: any) => state.localFriendFavoriteGroups
-    );
-    const localWorldDetailsById = useFavoriteStore(
-        (state: any) => state.localWorldDetailsById
-    );
-    const localAvatarDetailsById = useFavoriteStore(
-        (state: any) => state.localAvatarDetailsById
-    );
-    const favoriteWorldIds = useFavoriteStore(
-        (state: any) => state.favoriteWorldIds
-    );
-    const favoriteAvatarIds = useFavoriteStore(
-        (state: any) => state.favoriteAvatarIds
-    );
+    const favoriteState = useFavoriteStore(useShallow(favoriteSelector));
     const friendsById = useFriendRosterStore((state: any) => state.friendsById);
     const [avatarHistoryLoading, setAvatarHistoryLoading] = useState(false);
     const [avatarHistory, setAvatarHistory] = useState<any[]>([]);
@@ -77,68 +37,47 @@ export function useFavoritesCollectionsState({
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]
     );
-    const favoriteFriendFactIds = useMemo(() => {
-        if (kind !== 'friend') {
-            return [];
-        }
-        const ids = new Set();
-        for (const groupIds of Object.values(
-            groupedFavoriteFriendIdsByGroupKey || {}
-        )) {
-            for (const friendId of Array.isArray(groupIds) ? groupIds : []) {
-                const normalizedId = normalizeEntityId(friendId);
-                if (normalizedId) {
-                    ids.add(normalizedId);
-                }
-            }
-        }
-        for (const groupIds of Object.values(localFriendFavorites || {})) {
-            for (const friendId of Array.isArray(groupIds) ? groupIds : []) {
-                const normalizedId = normalizeEntityId(friendId);
-                if (normalizedId) {
-                    ids.add(normalizedId);
-                }
-            }
-        }
-        return Array.from(ids);
-    }, [groupedFavoriteFriendIdsByGroupKey, kind, localFriendFavorites]);
+    const favoriteFriendFactIds = useMemo(
+        () =>
+            buildFavoriteFriendFactIds({
+                groupedFavoriteFriendIdsByGroupKey:
+                    favoriteState.groupedFavoriteFriendIdsByGroupKey,
+                kind,
+                localFriendFavorites: favoriteState.localFriendFavorites
+            }),
+        [
+            favoriteState.groupedFavoriteFriendIdsByGroupKey,
+            favoriteState.localFriendFavorites,
+            kind
+        ]
+    );
     const knownFavoriteUsersById = useKnownUserFacts(favoriteFriendFactIds, {
         endpoint: currentEndpoint
     });
     const avatarTags = useMemo(
         () =>
-            kind === 'avatar'
-                ? Array.from(
-                      new Set(
-                          Object.values(remoteFavoritesById)
-                              .filter((favorite: any) => favorite?.type === 'avatar')
-                              .map((favorite: any) =>
-                                  typeof favorite?.tags?.[0] === 'string'
-                                      ? favorite.tags[0].trim()
-                                      : ''
-                              )
-                              .filter(Boolean)
-                      )
-                  )
-                : [],
-        [kind, remoteFavoritesById]
+            buildFavoriteAvatarTags({
+                kind,
+                remoteFavoritesById: favoriteState.remoteFavoritesById
+            }),
+        [favoriteState.remoteFavoritesById, kind]
     );
     const remoteEntityDetails = useFavoriteRemoteDetails({
         type: kind === 'avatar' ? 'avatar' : 'world',
         favoriteIds:
             kind === 'world'
-                ? favoriteWorldIds
+                ? favoriteState.favoriteWorldIds
                 : kind === 'avatar'
-                  ? favoriteAvatarIds
+                  ? favoriteState.favoriteAvatarIds
                   : [],
         avatarTags,
         refreshToken: remoteDetailsRefreshToken,
         enabled:
             kind !== 'friend' &&
-            favoriteLoadStatus === 'ready' &&
+            favoriteState.favoriteLoadStatus === 'ready' &&
             (kind === 'world'
-                ? favoriteWorldIds.length > 0
-                : favoriteAvatarIds.length > 0)
+                ? favoriteState.favoriteWorldIds.length > 0
+                : favoriteState.favoriteAvatarIds.length > 0)
     });
 
     useEffect(() => {
@@ -179,28 +118,40 @@ export function useFavoritesCollectionsState({
     return {
         avatarHistory,
         avatarHistoryLoading,
-        favoriteAvatarGroups,
-        favoriteDetail,
-        favoriteFriendGroups,
-        favoriteLoadStatus,
-        favoritesSortOrder,
-        favoriteWorldGroups,
-        friendsById,
-        friendsMap,
-        groupedFavoriteFriendIdsByGroupKey,
-        knownFavoriteUsersById,
-        localAvatarDetailsById,
-        localAvatarFavoriteGroups,
-        localAvatarFavorites,
-        localFriendFavoriteGroups,
-        localFriendFavorites,
-        localWorldDetailsById,
-        localWorldFavoriteGroups,
-        localWorldFavorites,
+        favoriteDetail: favoriteState.favoriteDetail,
+        favoriteLoadStatus: favoriteState.favoriteLoadStatus,
         refreshRemoteDetails,
         remoteEntityDetails,
-        remoteFavoritesById,
         setAvatarHistory,
-        setAvatarHistoryLoading
+        setAvatarHistoryLoading,
+        actionInputs: {
+            avatarHistoryLoading,
+            friendsById,
+            friendsMap,
+            refreshRemoteDetails,
+            setAvatarHistory,
+            setAvatarHistoryLoading
+        },
+        viewDataInputs: {
+            avatarHistory,
+            favoriteAvatarGroups: favoriteState.favoriteAvatarGroups,
+            favoriteFriendGroups: favoriteState.favoriteFriendGroups,
+            favoriteWorldGroups: favoriteState.favoriteWorldGroups,
+            favoritesSortOrder: favoriteState.favoritesSortOrder,
+            friendsById,
+            groupedFavoriteFriendIdsByGroupKey:
+                favoriteState.groupedFavoriteFriendIdsByGroupKey,
+            knownUsersById: knownFavoriteUsersById,
+            localAvatarDetailsById: favoriteState.localAvatarDetailsById,
+            localAvatarFavoriteGroups: favoriteState.localAvatarFavoriteGroups,
+            localAvatarFavorites: favoriteState.localAvatarFavorites,
+            localFriendFavoriteGroups: favoriteState.localFriendFavoriteGroups,
+            localFriendFavorites: favoriteState.localFriendFavorites,
+            localWorldDetailsById: favoriteState.localWorldDetailsById,
+            localWorldFavoriteGroups: favoriteState.localWorldFavoriteGroups,
+            localWorldFavorites: favoriteState.localWorldFavorites,
+            remoteEntityDetails,
+            remoteFavoritesById: favoriteState.remoteFavoritesById
+        }
     };
 }

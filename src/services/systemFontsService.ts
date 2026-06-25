@@ -14,7 +14,7 @@ export function loadSystemFonts(): Promise<string[]> {
                 }
                 return list;
             })
-            .catch(() => {
+            .catch((): string[] => {
                 cache = null;
                 return [];
             });

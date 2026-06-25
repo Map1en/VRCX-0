@@ -46,7 +46,7 @@ export function readModerationPersistedState() {
     return readPersistedTableState(MODERATION_STORAGE_KEY);
 }
 
-export function writeModerationPersistedState(patch: any) {
+export function writeModerationPersistedState(patch: Record<string, unknown>) {
     writePersistedTableState(MODERATION_STORAGE_KEY, patch);
 }
 
@@ -91,7 +91,7 @@ export function sanitizeModerationPageSizes(value: any) {
 }
 
 export function sanitizeModerationColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (!value || typeof value !== 'object') {
         return visibility;
     }
@@ -154,7 +154,8 @@ export function normalizeModerationSelectedTypes(value: any) {
         return [];
     }
     return value.filter(
-        (entry: any) => typeof entry === 'string' && moderationTypes.includes(entry)
+        (entry: any) =>
+            typeof entry === 'string' && moderationTypes.includes(entry)
     );
 }
 

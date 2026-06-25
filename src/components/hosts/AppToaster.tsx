@@ -29,7 +29,9 @@ function hasVrchatStatusUrl(message: string) {
 
     return urls.some((urlText) => {
         try {
-            return new URL(urlText).hostname.toLowerCase() === VRCHAT_STATUS_HOST;
+            return (
+                new URL(urlText).hostname.toLowerCase() === VRCHAT_STATUS_HOST
+            );
         } catch {
             return false;
         }

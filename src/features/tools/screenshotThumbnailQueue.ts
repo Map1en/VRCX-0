@@ -2,14 +2,28 @@ import mediaRepository from '@/repositories/mediaRepository';
 
 const MAX_ACTIVE_THUMBNAIL_REQUESTS = 2;
 
+interface ThumbnailTask {
+    path: string;
+    resolve: ((value: unknown) => void) | null;
+    reject: ((reason?: unknown) => void) | null;
+    promise: Promise<unknown> | null;
+    subscribers: number;
+    started: boolean;
+    cancelled: boolean;
+    sequence: number;
+}
+
 let activeRequests = 0;
 let requestSequence = 0;
-const queue = [];
-const inFlightByPath = new Map();
+const queue: ThumbnailTask[] = [];
+const inFlightByPath = new Map<string, ThumbnailTask>();
 
 function runNextThumbnailRequest() {
     while (activeRequests < MAX_ACTIVE_THUMBNAIL_REQUESTS && queue.length) {
         const task = queue.shift();
+        if (!task) {
+            continue;
+        }
         if (task.cancelled) {
             if (inFlightByPath.get(task.path) === task) {
                 inFlightByPath.delete(task.path);
@@ -41,7 +55,7 @@ export function requestScreenshotThumbnail(path: any) {
     }
 
     const existing = inFlightByPath.get(filePath);
-    if (existing) {
+    if (existing && existing.promise) {
         existing.subscribers += 1;
         return {
             promise: existing.promise,
@@ -49,7 +63,7 @@ export function requestScreenshotThumbnail(path: any) {
         };
     }
 
-    const task: any = {
+    const task: ThumbnailTask = {
         path: filePath,
         resolve: null,
         reject: null,
@@ -57,7 +71,7 @@ export function requestScreenshotThumbnail(path: any) {
         subscribers: 1,
         started: false,
         cancelled: false,
-        sequence: requestSequence += 1
+        sequence: (requestSequence += 1)
     };
     const promise = new Promise((resolve: any, reject: any) => {
         task.resolve = resolve;

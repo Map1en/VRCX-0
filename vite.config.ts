@@ -132,9 +132,8 @@ export default defineConfig(({ mode }) => {
         optimizeDeps: {
             include: [
                 '@base-ui/react',
-                "i18next",
+                'i18next',
                 'radix-ui',
-
                 'react',
                 'react-dom',
                 'react-router-dom',

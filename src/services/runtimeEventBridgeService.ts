@@ -13,6 +13,7 @@ import type {
     RealtimeNotificationProjection
 } from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
+import { normalizeString } from '@/shared/utils/string';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useNotificationStore } from '@/state/notificationStore';
 import {
@@ -180,12 +181,6 @@ function hydrateBackendRuntimeSnapshot(
         });
     }
     return backendRuntimeHydrationPromise;
-}
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function isRuntimePersistedGameLogMirror(payload: unknown): boolean {

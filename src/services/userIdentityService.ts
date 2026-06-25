@@ -1,11 +1,11 @@
-import defaultGameLogRepository from '@/repositories/gameLogRepository';
-import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import {
     getKnownUserFact,
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile
 } from '@/domain/users/userFactAccess';
+import defaultGameLogRepository from '@/repositories/gameLogRepository';
+import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
@@ -115,7 +115,9 @@ function findKnownUserByDisplayName(
     return null;
 }
 
-function findFriendByDisplayName(displayName: unknown): UserIdentityRecord | null {
+function findFriendByDisplayName(
+    displayName: unknown
+): UserIdentityRecord | null {
     const targetDisplayName = text(displayName).toLowerCase();
     if (!targetDisplayName) {
         return null;
@@ -123,10 +125,10 @@ function findFriendByDisplayName(displayName: unknown): UserIdentityRecord | nul
 
     const { friendsById } = useFriendRosterStore.getState();
     return (
-        Object.values(friendsById || {}).find((friend: any) =>
+        (Object.values(friendsById || {}).find((friend: any) =>
             displayNameMatches(friend, targetDisplayName)
-        ) as UserIdentityRecord | undefined
-    ) || null;
+        ) as UserIdentityRecord | undefined) || null
+    );
 }
 
 async function resolveUserByDisplayName(
@@ -187,17 +189,16 @@ async function resolveUserByDisplayName(
             : ''
     );
     if (loggedUserId) {
-        const user =
-            asUserRecord(
+        const user = asUserRecord(
             getKnownUserFact(normalizedEndpoint, loggedUserId) ||
                 useFriendRosterStore.getState().friendsById?.[loggedUserId] || {
                     id: loggedUserId,
                     displayName: normalizedDisplayName
                 }
-            ) ?? {
-                id: loggedUserId,
-                displayName: normalizedDisplayName
-            };
+        ) ?? {
+            id: loggedUserId,
+            displayName: normalizedDisplayName
+        };
         recordUserProfile(user, {
             endpoint: normalizedEndpoint,
             source: user.isFriend ? 'friend' : 'seed',
@@ -241,8 +242,4 @@ async function resolveUserByDisplayName(
     return resolvedUser(recorded, 'search', normalizedDisplayName);
 }
 
-export {
-    findKnownUserByDisplayName,
-    resolveUserByDisplayName,
-    resolvedUser
-};
+export { findKnownUserByDisplayName, resolveUserByDisplayName, resolvedUser };

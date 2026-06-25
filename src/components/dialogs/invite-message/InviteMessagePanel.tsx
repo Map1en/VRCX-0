@@ -62,8 +62,8 @@ export function InviteMessagePanel({
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState('');
-    const [confirmRow, setConfirmRow] = useState(null);
-    const [editingRow, setEditingRow] = useState(null);
+    const [confirmRow, setConfirmRow] = useState<any>(null);
+    const [editingRow, setEditingRow] = useState<any>(null);
     const [editMessage, setEditMessage] = useState('');
     const [imageData, setImageData] = useState('');
     const [imageName, setImageName] = useState('');

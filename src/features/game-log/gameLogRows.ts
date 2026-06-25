@@ -1,6 +1,6 @@
 import { parseLocation } from '@/shared/utils/locationParser';
 
-export const GAME_LOG_TYPE_LABELS: any = {
+export const GAME_LOG_TYPE_LABELS: Record<string, string> = {
     Location: 'Location',
     OnPlayerJoined: 'Player Joined',
     OnPlayerLeft: 'Player Left',

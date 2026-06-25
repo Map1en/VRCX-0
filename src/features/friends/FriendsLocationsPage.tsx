@@ -9,15 +9,8 @@ export function FriendsLocationsPage({
 }: {
     embedded?: boolean;
 } = {}) {
-    const {
-        actions,
-        derived,
-        filters,
-        load,
-        preferences,
-        runtime,
-        scroll
-    } = useFriendsLocationsPageController();
+    const { actions, derived, filters, load, preferences, runtime, scroll } =
+        useFriendsLocationsPageController();
 
     return (
         <PageScaffold

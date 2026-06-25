@@ -83,7 +83,11 @@ async function getCurrentUser({ endpoint = '' }: EndpointOptions = {}) {
     const response = await commands.appVrchatAuthCurrentUserGet({
         endpoint: normalizeVrchatEndpoint(endpoint)
     });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user', endpoint);
+    return unwrapVrchatAuthResponse<AuthRecord>(
+        response,
+        'auth/user',
+        endpoint
+    );
 }
 
 async function getAuthSession({ endpoint = '' }: EndpointOptions = {}) {
@@ -97,7 +101,11 @@ async function restoreCookieSession({ endpoint = '' }: EndpointOptions = {}) {
     const response = await commands.appVrchatAuthCookieSessionRestore({
         endpoint: normalizeVrchatEndpoint(endpoint)
     });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user', endpoint);
+    return unwrapVrchatAuthResponse<AuthRecord>(
+        response,
+        'auth/user',
+        endpoint
+    );
 }
 
 async function loginWithBasicAuth({
@@ -107,10 +115,16 @@ async function loginWithBasicAuth({
 }: BasicAuthInput) {
     const response = await commands.appVrchatAuthLoginBasicStart({
         endpoint: normalizeVrchatEndpoint(endpoint),
-        username: typeof username === 'string' ? username : String(username ?? ''),
-        password: typeof password === 'string' ? password : String(password ?? '')
+        username:
+            typeof username === 'string' ? username : String(username ?? ''),
+        password:
+            typeof password === 'string' ? password : String(password ?? '')
     });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user', endpoint);
+    return unwrapVrchatAuthResponse<AuthRecord>(
+        response,
+        'auth/user',
+        endpoint
+    );
 }
 
 async function loginWithSavedCredential({
@@ -121,7 +135,11 @@ async function loginWithSavedCredential({
         endpoint: normalizeVrchatEndpoint(endpoint),
         userId: typeof userId === 'string' ? userId : String(userId ?? '')
     });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user', endpoint);
+    return unwrapVrchatAuthResponse<AuthRecord>(
+        response,
+        'auth/user',
+        endpoint
+    );
 }
 
 async function verifyTOTP({ code, endpoint = '' }: AuthCodeInput) {

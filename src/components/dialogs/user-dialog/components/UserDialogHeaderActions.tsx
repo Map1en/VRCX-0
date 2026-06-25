@@ -57,7 +57,7 @@ export function UserDialogHeaderActions(props: any) {
         currentAvatarTarget,
         fallbackAvatarTarget,
         previousInstances = [],
-        recentDialogShortcut = () => null
+        recentDialogShortcut = (): null => null
     } = model;
     const {
         onRefresh,

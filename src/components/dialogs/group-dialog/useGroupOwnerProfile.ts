@@ -4,7 +4,11 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 
 import { normalizeEntityId } from './groupInstances';
 
-export function useGroupOwnerProfile({ currentEndpoint, friendsById, group }: any) {
+export function useGroupOwnerProfile({
+    currentEndpoint,
+    friendsById,
+    group
+}: any) {
     const [ownerProfile, setOwnerProfile] = useState(null);
 
     useEffect(() => {

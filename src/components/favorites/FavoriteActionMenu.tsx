@@ -7,6 +7,13 @@ import favoritePersistenceRepository from '@/repositories/favoritePersistenceRep
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import type {
+    FavoriteGroup as FavoriteStoreGroup,
+    FavoriteGroupMap,
+    FavoriteKind,
+    FavoriteRecord,
+    FavoriteStore
+} from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -22,16 +29,29 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-const EMPTY_GROUPS = Object.freeze([]);
-const EMPTY_FAVORITES = Object.freeze({});
+const EMPTY_GROUPS: FavoriteStoreGroup[] = [];
+const EMPTY_LOCAL_GROUPS: string[] = [];
+const EMPTY_FAVORITES: FavoriteGroupMap = {};
 
-function normalizeEntityId(value: any) {
+type FavoriteActionMenuProps = {
+    kind: FavoriteKind;
+    entityId: unknown;
+    entity?: unknown;
+    label?: string;
+    iconOnly?: boolean;
+};
+
+function normalizeEntityId(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
-function resolveGroups(kind: any, state: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function resolveGroups(kind: FavoriteKind, state: FavoriteStore) {
     if (kind === 'friend') {
         return state.favoriteFriendGroups;
     }
@@ -44,7 +64,7 @@ function resolveGroups(kind: any, state: any) {
     return EMPTY_GROUPS;
 }
 
-function resolveLocalGroups(kind: any, state: any) {
+function resolveLocalGroups(kind: FavoriteKind, state: FavoriteStore) {
     if (kind === 'friend') {
         return state.localFriendFavoriteGroups;
     }
@@ -54,10 +74,10 @@ function resolveLocalGroups(kind: any, state: any) {
     if (kind === 'world') {
         return state.localWorldFavoriteGroups;
     }
-    return EMPTY_GROUPS;
+    return EMPTY_LOCAL_GROUPS;
 }
 
-function resolveLocalFavorites(kind: any, state: any) {
+function resolveLocalFavorites(kind: FavoriteKind, state: FavoriteStore) {
     if (kind === 'friend') {
         return state.localFriendFavorites || {};
     }
@@ -70,21 +90,21 @@ function resolveLocalFavorites(kind: any, state: any) {
     return EMPTY_FAVORITES;
 }
 
-function formatGroupLabel(group: any) {
+function formatGroupLabel(group: FavoriteStoreGroup) {
     const count = Number(group.count) || 0;
     const capacity = Number(group.capacity) || 0;
     const suffix =
         capacity > 0 ? ` (${count}/${capacity})` : count ? ` (${count})` : '';
-    return `${group.displayName || group.name || group.key}${suffix}`;
+    return `${String(group.displayName || group.name || group.key)}${suffix}`;
 }
 
-function groupDisplayLabel(group: any) {
-    return group?.displayName || group?.name || group?.key || '';
+function groupDisplayLabel(group: FavoriteStoreGroup | undefined) {
+    return String(group?.displayName || group?.name || group?.key || '');
 }
 
 export function resolveRemoteFavoriteGroupLabel(
-    remoteFavorite: any,
-    groups: any[]
+    remoteFavorite: FavoriteRecord | null | undefined,
+    groups: readonly FavoriteStoreGroup[] | null | undefined
 ) {
     const groupKey = normalizeEntityId(remoteFavorite?.$groupKey);
     const type = normalizeEntityId(remoteFavorite?.type);
@@ -98,23 +118,27 @@ export function resolveRemoteFavoriteGroupLabel(
             type && tag ? `${type}:${tag}` : ''
         ].filter(Boolean)
     );
-    const group = (Array.isArray(groups) ? groups : []).find((item: any) =>
+    const group = (Array.isArray(groups) ? groups : EMPTY_GROUPS).find((item) =>
         candidates.has(normalizeEntityId(item?.key))
     );
 
     return groupDisplayLabel(group) || groupKey || tag || 'Current group';
 }
 
-function hasLocalFavorite(localFavorites: any, groupName: any, entityId: any) {
+function hasLocalFavorite(
+    localFavorites: FavoriteGroupMap,
+    groupName: string,
+    entityId: string
+) {
     return (
         Array.isArray(localFavorites?.[groupName]) &&
         localFavorites[groupName].some(
-            (value: any) => normalizeEntityId(value) === entityId
+            (value) => normalizeEntityId(value) === entityId
         )
     );
 }
 
-function localGroupLabel(localFavorites: any, groupName: any) {
+function localGroupLabel(localFavorites: FavoriteGroupMap, groupName: string) {
     const count = Array.isArray(localFavorites?.[groupName])
         ? localFavorites[groupName].length
         : 0;
@@ -127,19 +151,19 @@ export function FavoriteActionMenu({
     entity = null,
     label = '',
     iconOnly = false
-}: any) {
+}: FavoriteActionMenuProps) {
     const { t } = useTranslation();
 
     const normalizedEntityId = normalizeEntityId(entityId);
     const currentEndpoint = useRuntimeStore(
-        (state: any) => state.auth.currentUserEndpoint
+        (state) => state.auth.currentUserEndpoint
     );
-    const confirm = useModalStore((state: any) => state.confirm);
-    const groups = useFavoriteStore((state: any) => resolveGroups(kind, state));
-    const storedLocalGroups = useFavoriteStore((state: any) =>
+    const confirm = useModalStore((state) => state.confirm);
+    const groups = useFavoriteStore((state) => resolveGroups(kind, state));
+    const storedLocalGroups = useFavoriteStore((state) =>
         resolveLocalGroups(kind, state)
     );
-    const localFavorites = useFavoriteStore((state: any) =>
+    const localFavorites = useFavoriteStore((state) =>
         resolveLocalFavorites(kind, state)
     );
     const localGroups = useMemo(
@@ -151,35 +175,34 @@ export function FavoriteActionMenu({
     );
     const localFavoriteActive = useMemo(
         () =>
-            localGroups.some((groupName: any) =>
+            localGroups.some((groupName) =>
                 hasLocalFavorite(localFavorites, groupName, normalizedEntityId)
             ),
         [localFavorites, localGroups, normalizedEntityId]
     );
     const remoteFavorite = useFavoriteStore(
-        (state: any) =>
-            state.remoteFavoritesByObjectId[normalizedEntityId] || null
+        (state) => state.remoteFavoritesByObjectId[normalizedEntityId] || null
     );
     const remoteFavoriteGroupLabel = useMemo(
         () => resolveRemoteFavoriteGroupLabel(remoteFavorite, groups),
         [groups, remoteFavorite]
     );
     const addRemoteFavorite = useFavoriteStore(
-        (state: any) => state.addRemoteFavorite
+        (state) => state.addRemoteFavorite
     );
     const removeRemoteFavorite = useFavoriteStore(
-        (state: any) => state.removeRemoteFavorite
+        (state) => state.removeRemoteFavorite
     );
     const addLocalFavorite = useFavoriteStore(
-        (state: any) => state.addLocalFavorite
+        (state) => state.addLocalFavorite
     );
     const removeLocalFavorite = useFavoriteStore(
-        (state: any) => state.removeLocalFavorite
+        (state) => state.removeLocalFavorite
     );
     const [actionStatus, setActionStatus] = useState('idle');
     const actionStatusRef = useRef('idle');
 
-    async function addFavorite(group: any) {
+    async function addFavorite(group: FavoriteStoreGroup) {
         if (!normalizedEntityId || actionStatusRef.current !== 'idle') {
             return;
         }
@@ -193,10 +216,10 @@ export function FavoriteActionMenu({
                 favoriteId: normalizedEntityId,
                 tags: group.name
             });
-            if (response.json && typeof response.json === 'object') {
+            if (isRecord(response.json)) {
                 addRemoteFavorite(response.json);
             }
-            if (kind === 'world' && entity && typeof entity === 'object') {
+            if (kind === 'world' && isRecord(entity)) {
                 persistWorldDetails(entity, normalizedEntityId);
             }
             toast.success(t('view.favorite.label.favorite_added'));
@@ -269,7 +292,7 @@ export function FavoriteActionMenu({
         actionStatusRef.current = 'local-favorite';
         setActionStatus('local-favorite');
         try {
-            if (kind === 'world' && entity && typeof entity === 'object') {
+            if (kind === 'world' && isRecord(entity)) {
                 persistWorldDetails(entity, normalizedEntityId);
             }
             await favoritePersistenceRepository.addLocalFavorite({
@@ -387,7 +410,7 @@ export function FavoriteActionMenu({
                         <DropdownMenuGroup>
                             <DropdownMenuItem
                                 variant="destructive"
-                                onSelect={(event: any) => {
+                                onSelect={(event) => {
                                     event.preventDefault();
                                     deleteFavorite();
                                 }}
@@ -398,7 +421,7 @@ export function FavoriteActionMenu({
                     </>
                 ) : groups.length ? (
                     <DropdownMenuGroup>
-                        {groups.map((group: any) => {
+                        {groups.map((group) => {
                             const isFull =
                                 Number(group.capacity) > 0 &&
                                 (Number(group.count) || 0) >=
@@ -406,9 +429,9 @@ export function FavoriteActionMenu({
 
                             return (
                                 <DropdownMenuItem
-                                    key={group.key}
+                                    key={String(group.key ?? '')}
                                     disabled={isFull}
-                                    onSelect={(event: any) => {
+                                    onSelect={(event) => {
                                         event.preventDefault();
                                         addFavorite(group);
                                     }}
@@ -429,7 +452,7 @@ export function FavoriteActionMenu({
                 <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>
                 {localGroups.length ? (
                     <DropdownMenuGroup>
-                        {localGroups.map((groupName: any) => {
+                        {localGroups.map((groupName) => {
                             const isLocalFavorite = hasLocalFavorite(
                                 localFavorites,
                                 groupName,
@@ -439,9 +462,7 @@ export function FavoriteActionMenu({
                                 <DropdownMenuCheckboxItem
                                     key={groupName}
                                     checked={isLocalFavorite}
-                                    onSelect={(event: any) =>
-                                        event.preventDefault()
-                                    }
+                                    onSelect={(event) => event.preventDefault()}
                                     onCheckedChange={() => {
                                         if (isLocalFavorite) {
                                             removeLocalFavoriteFromGroup(

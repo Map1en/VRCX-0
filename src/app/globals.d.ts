@@ -7,6 +7,8 @@ declare global {
     const VRCX_0_BUNDLED_CJK_FONTS_ENABLED: boolean;
     const VRCX_0_MACOS_SYSTEM_FONTS_ENABLED: boolean;
 
+    var $debug: AppDebug | undefined;
+
     interface Window {
         $debug?: AppDebug;
         __TAURI_INTERNALS__?: unknown;

@@ -23,7 +23,9 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentUserSnapshot = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot
     );
@@ -91,9 +93,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
             setGroup(null);
             setLoadStatus('error');
             setDetail(
-                t(
-                    'dialog.group.empty.no_group_id_was_provided_for_this_dialog'
-                )
+                t('dialog.group.empty.no_group_id_was_provided_for_this_dialog')
             );
             return () => {
                 active = false;
@@ -152,7 +152,13 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         return () => {
             active = false;
         };
-    }, [currentEndpoint, normalizedGroupId, seedData, setRawActiveInstances, t]);
+    }, [
+        currentEndpoint,
+        normalizedGroupId,
+        seedData,
+        setRawActiveInstances,
+        t
+    ]);
 
     useEffect(() => {
         let active = true;
@@ -343,7 +349,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         const result = await confirm({
             title: t('dialog.group.modal.leave_group'),
             description: t('dialog.group.dynamic.leave_value', {
-                value: group.name || group.id
+                value: group?.name || group?.id
             }),
             destructive: true,
             confirmText: t('dialog.group.modal.leave'),
@@ -468,7 +474,11 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
     }
 
     async function updateGroupMemberProps(params: any, label: any) {
-        if (!viewState.isMember || !currentUserId || actionStatusRef.current !== 'idle') {
+        if (
+            !viewState.isMember ||
+            !currentUserId ||
+            actionStatusRef.current !== 'idle'
+        ) {
             return;
         }
 
@@ -498,7 +508,11 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
     }
 
     async function updateGroupBlock(enabled: any) {
-        if (viewState.isMember || !currentUserId || actionStatusRef.current !== 'idle') {
+        if (
+            viewState.isMember ||
+            !currentUserId ||
+            actionStatusRef.current !== 'idle'
+        ) {
             return;
         }
 
@@ -506,7 +520,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
             title: enabled
                 ? t('dialog.group.modal.block_group')
                 : t('dialog.group.modal.unblock_group'),
-            description: group.name || group.id,
+            description: group?.name || group?.id,
             confirmText: enabled
                 ? t('dialog.group.actions.block')
                 : t('dialog.group.actions.unblock'),
@@ -542,9 +556,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
             toast.error(
                 userFacingErrorMessage(
                     error,
-                    t(
-                        'dialog.group.toast.failed_to_update_group_block_state'
-                    )
+                    t('dialog.group.toast.failed_to_update_group_block_state')
                 )
             );
         } finally {

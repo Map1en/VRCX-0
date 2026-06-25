@@ -70,7 +70,8 @@ vi.mock('@/shared/buildLabel', () => ({
 vi.mock('./background-image/backgroundImageService', () => ({
     disableBackgroundImage: mocks.disableBackgroundImage,
     isBackgroundImageActive: mocks.isBackgroundImageActive,
-    migrateLegacyNasaApodCommunityTheme: mocks.migrateLegacyNasaApodCommunityTheme
+    migrateLegacyNasaApodCommunityTheme:
+        mocks.migrateLegacyNasaApodCommunityTheme
 }));
 
 vi.mock('./themeService', () => ({
@@ -254,10 +255,7 @@ describe('communityThemeService characterization', () => {
         const staleRecord = themeRecord('theme-stale', '.stale{}', {
             sourceUrl: 'https://old.example.test/theme.css'
         });
-        const legacyApodRecord = themeRecord(
-            'nasa-apod-wallpaper',
-            '.apod{}'
-        );
+        const legacyApodRecord = themeRecord('nasa-apod-wallpaper', '.apod{}');
         mocks.getBool.mockImplementation((key: string) =>
             Promise.resolve(key === 'VRCX_communityThemeEnabled')
         );
@@ -544,9 +542,8 @@ describe('communityThemeService characterization', () => {
             ].join('\n')
         });
 
-        const preview = await service.loadLocalCommunityThemePreview(
-            'C:\\themes\\local'
-        );
+        const preview =
+            await service.loadLocalCommunityThemePreview('C:\\themes\\local');
 
         expect(preview).toMatchObject({
             folderPath: 'C:\\themes\\local',
@@ -555,9 +552,10 @@ describe('communityThemeService characterization', () => {
             accentMode: false,
             loadedAt: '2026-05-02T03:04:05.000Z'
         });
-        const previewLayer = mocks.setVrcxCssLayers.mock.calls.at(-1)?.[0][
-            'local-theme-preview'
-        ];
+        const previewLayer =
+            mocks.setVrcxCssLayers.mock.calls.at(-1)?.[0][
+                'local-theme-preview'
+            ];
         expect(previewLayer).toContain(
             'file:///converted/C:/themes/local/images/bg.png?vrcx0ThemePreview=2026-05-02T03%3A04%3A05.000Z'
         );
@@ -566,7 +564,9 @@ describe('communityThemeService characterization', () => {
 
         service.startLocalCommunityThemePreviewWatch(' C:\\themes\\local ');
 
-        expect(useCommunityThemeStore.getState().localPreviewWatch).toMatchObject({
+        expect(
+            useCommunityThemeStore.getState().localPreviewWatch
+        ).toMatchObject({
             enabled: true,
             folderPath: 'C:\\themes\\local',
             error: null
@@ -579,7 +579,9 @@ describe('communityThemeService characterization', () => {
         service.stopLocalCommunityThemePreviewWatch();
 
         expect(window.clearInterval).toHaveBeenCalledTimes(1);
-        expect(useCommunityThemeStore.getState().localPreviewWatch).toMatchObject({
+        expect(
+            useCommunityThemeStore.getState().localPreviewWatch
+        ).toMatchObject({
             enabled: false,
             error: null
         });
@@ -594,7 +596,9 @@ describe('communityThemeService characterization', () => {
         ).rejects.toThrow(
             'Local theme preview is only available in dev or Theme Dev Kit builds.'
         );
-        expect(mocks.appCommunityThemeDebugLoadLocalTheme).not.toHaveBeenCalled();
+        expect(
+            mocks.appCommunityThemeDebugLoadLocalTheme
+        ).not.toHaveBeenCalled();
     });
 
     it('records local preview watch reload errors in the store', async () => {
@@ -608,7 +612,9 @@ describe('communityThemeService characterization', () => {
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(useCommunityThemeStore.getState().localPreviewWatch).toMatchObject({
+        expect(
+            useCommunityThemeStore.getState().localPreviewWatch
+        ).toMatchObject({
             enabled: true,
             folderPath: 'C:\\themes\\broken',
             error: 'manifest missing'

@@ -142,29 +142,31 @@ export function DashboardInstanceColumnConfig({ config, onConfigChange }: any) {
                 {t('view.dashboard.label.visible_columns')}
             </div>
             <div className="flex flex-wrap gap-2">
-                {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column: any) => (
-                    <Button
-                        key={column.key}
-                        type="button"
-                        size="sm"
-                        variant={
-                            activeColumns.includes(column.key)
-                                ? 'default'
-                                : 'outline'
-                        }
-                        disabled={column.required}
-                        onClick={() =>
-                            onConfigChange(
-                                getNextDashboardInstanceColumnConfig(
-                                    config,
-                                    column.key
+                {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
+                    (column: any) => (
+                        <Button
+                            key={column.key}
+                            type="button"
+                            size="sm"
+                            variant={
+                                activeColumns.includes(column.key)
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            disabled={column.required}
+                            onClick={() =>
+                                onConfigChange(
+                                    getNextDashboardInstanceColumnConfig(
+                                        config,
+                                        column.key
+                                    )
                                 )
-                            )
-                        }
-                    >
-                        {getDashboardInstanceWidgetColumnLabel(column, t)}
-                    </Button>
-                ))}
+                            }
+                        >
+                            {getDashboardInstanceWidgetColumnLabel(column, t)}
+                        </Button>
+                    )
+                )}
             </div>
         </div>
     );
@@ -442,9 +444,7 @@ export function DashboardEditorRow({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectItem value="horizontal">
-                                        {t(
-                                            'view.dashboard.label.horizontal'
-                                        )}
+                                        {t('view.dashboard.label.horizontal')}
                                     </SelectItem>
                                     <SelectItem value="vertical">
                                         {t('view.dashboard.label.vertical')}
@@ -496,17 +496,14 @@ function useDashboardPagePreviewMetrics(): DashboardPageMetrics {
             onlineCount: state.onlineIds.length
         }))
     );
-    const {
-        favoriteFriendCount,
-        favoriteWorldCount,
-        favoriteAvatarCount
-    } = useFavoriteStore(
-        useShallow((state: any) => ({
-            favoriteFriendCount: state.favoriteFriendIds.length,
-            favoriteWorldCount: state.favoriteWorldIds.length,
-            favoriteAvatarCount: state.favoriteAvatarIds.length
-        }))
-    );
+    const { favoriteFriendCount, favoriteWorldCount, favoriteAvatarCount } =
+        useFavoriteStore(
+            useShallow((state: any) => ({
+                favoriteFriendCount: state.favoriteFriendIds.length,
+                favoriteWorldCount: state.favoriteWorldIds.length,
+                favoriteAvatarCount: state.favoriteAvatarIds.length
+            }))
+        );
     const notificationCount = useNotificationStore(
         (state: any) => state.items.length
     );
@@ -591,7 +588,9 @@ export function DashboardReadRow({ row, dashboardId, onPanelChange }: any) {
         <div className="relative h-full min-h-[180px]">
             <DashboardPanelPreviewForPanel
                 panel={panels[0]}
-                onPanelChange={(nextPanel: any) => onPanelChange?.(0, nextPanel)}
+                onPanelChange={(nextPanel: any) =>
+                    onPanelChange?.(0, nextPanel)
+                }
             />
         </div>
     );

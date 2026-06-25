@@ -27,7 +27,7 @@ export function useFriendLogTableState({
     hideUnfriends: boolean;
     orderedRowsLength: number;
     searchQuery: string;
-    selectedTypes: any[];
+    selectedTypes: string[];
 }) {
     const preferencesHydrated = usePreferencesStore(
         (state: any) => state.preferencesHydrated
@@ -76,7 +76,7 @@ export function useFriendLogTableState({
                 }
                 const resolvedPageSizes = sanitizePageSizes(nextPageSizes);
                 const parsedPersistedPageSize = Number.parseInt(
-                    persistedState.pageSize,
+                    String(persistedState.pageSize ?? ''),
                     10
                 );
                 const hasPersistedPageSize =

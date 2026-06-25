@@ -1,17 +1,12 @@
-import { getTrustColor } from '@/shared/utils/trustColors';
 import { getFriendsSortFunction, sortStatus } from '@/shared/utils/friend';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
     parseLocation,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
+import { getTrustColor } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
-
-export function normalizeId(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
 
 export function normalizeLocationStatus(value: any) {
     const normalized = normalizeId(value).toLowerCase();
@@ -83,7 +78,10 @@ export function clearStaleOfflineLocation(location: any, state: any) {
     return location;
 }
 
-export function resolveCurrentInviteLocation(gameState: any, currentUserSnapshot: any) {
+export function resolveCurrentInviteLocation(
+    gameState: any,
+    currentUserSnapshot: any
+) {
     const currentLocation = normalizeId(gameState?.currentLocation);
     if (currentLocation === 'traveling') {
         return normalizeId(gameState?.currentDestination);
@@ -97,11 +95,17 @@ export function resolveCurrentInviteLocation(gameState: any, currentUserSnapshot
     );
 }
 
-export function buildFavoriteIdSet(remoteFavoriteIds: any, localFriendFavorites: any) {
+export function buildFavoriteIdSet(
+    remoteFavoriteIds: any,
+    localFriendFavorites: any
+) {
     const ids = new Set(
         (remoteFavoriteIds || []).map(normalizeId).filter(Boolean)
     );
-    for (const values of Object.values(localFriendFavorites || {}) as any[]) {
+    for (const values of Object.values(localFriendFavorites || {})) {
+        if (!Array.isArray(values)) {
+            continue;
+        }
         for (const id of values || []) {
             const normalized = normalizeId(id);
             if (normalized) {
@@ -250,8 +254,7 @@ export function resolveSidebarStatusDotClassName(
     if (isCurrentUser || userId === currentUser?.id) {
         if (isGameRunning === true) {
             return (
-                legacyStatusDotClassName(status) ||
-                'bg-[var(--status-online)]'
+                legacyStatusDotClassName(status) || 'bg-[var(--status-online)]'
             );
         }
         return activeStatusDotClassName(status);

@@ -10,7 +10,9 @@ function matchesPath(pathname: any, path: any) {
 }
 
 export function getDefaultHiddenSidePanelPath(pathname: any) {
-    return sidePanelHiddenPaths.find((path: any) => matchesPath(pathname, path));
+    return sidePanelHiddenPaths.find((path: any) =>
+        matchesPath(pathname, path)
+    );
 }
 
 export function isSidePanelDefaultHidden(pathname: any) {

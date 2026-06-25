@@ -82,7 +82,7 @@ export function useInstanceActivityChartLifecycle({
             chartThemeRef.current = themeName;
 
             resizeObserverRef.current = new ResizeObserver(() => {
-                chart.resize();
+                chartInstanceRef.current?.resize();
             });
             resizeObserverRef.current.observe(mainChartElement);
         }

@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import groupProfileRepository from '@/repositories/groupProfileRepository';
+import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { openUserDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
     copyTextToClipboard,
     openExternalLink
 } from '@/services/entityMediaService';
-import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import groupProfileRepository from '@/repositories/groupProfileRepository';
-import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
-import { openUserDialog } from '@/services/dialogService';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
     EntityDialogScaffold,
@@ -368,7 +368,7 @@ export function GroupDialogTabbedView({
                         { n: 100, offset: 0 },
                         { endpoint: currentEndpoint, force }
                     )
-                    .catch(() => [])
+                    .catch((): never[] => [])
             ]);
             if (requestId !== groupEventsRequestRef.current) {
                 return;

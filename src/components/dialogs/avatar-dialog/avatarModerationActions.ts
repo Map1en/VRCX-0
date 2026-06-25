@@ -25,33 +25,23 @@ export function createAvatarModerationActions({
             create: {
                 title: t('dialog.avatar.modal.create_impostor_title'),
                 confirmText: t('dialog.avatar.modal.create'),
-                success: t(
-                    'dialog.avatar.toast.impostor_queued_for_creation'
-                ),
-                error: t(
-                    'dialog.avatar.toast.failed_to_create_impostor'
-                )
+                success: t('dialog.avatar.toast.impostor_queued_for_creation'),
+                error: t('dialog.avatar.toast.failed_to_create_impostor')
             },
             delete: {
                 title: t('dialog.avatar.modal.delete_impostor_title'),
                 confirmText: t('common.actions.delete'),
                 success: t('dialog.avatar.toast.impostor_deleted'),
-                error: t(
-                    'dialog.avatar.toast.failed_to_delete_impostor'
-                ),
+                error: t('dialog.avatar.toast.failed_to_delete_impostor'),
                 destructive: true
             },
             regenerate: {
-                title: t(
-                    'dialog.avatar.modal.regenerate_impostor_title'
-                ),
+                title: t('dialog.avatar.modal.regenerate_impostor_title'),
                 confirmText: t('dialog.avatar.modal.regenerate'),
                 success: t(
                     'dialog.avatar.toast.impostor_queued_for_regeneration'
                 ),
-                error: t(
-                    'dialog.avatar.toast.failed_to_regenerate_impostor'
-                ),
+                error: t('dialog.avatar.toast.failed_to_regenerate_impostor'),
                 destructive: true
             }
         };

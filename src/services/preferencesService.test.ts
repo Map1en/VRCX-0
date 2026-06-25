@@ -40,7 +40,8 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appVrOverlayConfigReload: mocks.appVrOverlayConfigReload,
         appRestartApplication: mocks.appRestartApplication,
-        appOverlayActivityDefinitionsGet: mocks.appOverlayActivityDefinitionsGet,
+        appOverlayActivityDefinitionsGet:
+            mocks.appOverlayActivityDefinitionsGet,
         appOverlayActivityFiltersReload: mocks.appOverlayActivityFiltersReload,
         appVrOverlayEnabledSet: mocks.appVrOverlayEnabledSet,
         appReadConfigFile: mocks.appReadConfigFile,
@@ -120,9 +121,12 @@ vi.mock('./trustColorService', () => ({
     applyTrustColorClasses: mocks.applyTrustColorClasses
 }));
 
-import { DEFAULT_PREFERENCES, usePreferencesStore } from '@/state/preferencesStore';
-import { useShellStore } from '@/state/shellStore';
 import type { useSettingsPreferenceActions } from '@/features/settings/useSettingsPreferenceActions';
+import {
+    DEFAULT_PREFERENCES,
+    usePreferencesStore
+} from '@/state/preferencesStore';
+import { useShellStore } from '@/state/shellStore';
 
 import {
     loadPreferenceSnapshot,
@@ -241,8 +245,8 @@ describe('preferencesService characterization', () => {
         mocks.getBool.mockImplementation((_key: string, fallback = false) =>
             Promise.resolve(Boolean(fallback))
         );
-        mocks.getString.mockImplementation(
-            (_key: string, fallback = '') => Promise.resolve(String(fallback ?? ''))
+        mocks.getString.mockImplementation((_key: string, fallback = '') =>
+            Promise.resolve(String(fallback ?? ''))
         );
         mocks.getInt.mockImplementation((_key: string, fallback = 0) =>
             Promise.resolve(Number(fallback))
@@ -260,7 +264,8 @@ describe('preferencesService characterization', () => {
         mocks.setObject.mockResolvedValue(undefined);
         mocks.setMany.mockResolvedValue(undefined);
         mocks.storageGetString.mockImplementation(
-            (_key: string, fallback = '') => Promise.resolve(String(fallback ?? ''))
+            (_key: string, fallback = '') =>
+                Promise.resolve(String(fallback ?? ''))
         );
         mocks.storageSetString.mockResolvedValue(undefined);
         mocks.appVrOverlayConfigReload.mockResolvedValue(undefined);
@@ -285,11 +290,10 @@ describe('preferencesService characterization', () => {
             setTablePageSizesPreference(['50', 10, 'bad', 25, 10])
         ).resolves.toEqual([10, 25, 50]);
 
-        expect(mocks.setArray).toHaveBeenCalledWith('VRCX_tablePageSizes', [
-            10,
-            25,
-            50
-        ]);
+        expect(mocks.setArray).toHaveBeenCalledWith(
+            'VRCX_tablePageSizes',
+            [10, 25, 50]
+        );
         expect(mocks.setInt).toHaveBeenCalledWith('VRCX_tablePageSize', 25);
         expect(usePreferencesStore.getState()).toMatchObject({
             tablePageSize: 25,
@@ -340,9 +344,7 @@ describe('preferencesService characterization', () => {
         );
         mocks.getInt.mockImplementation((key: string, fallback = 0) =>
             Promise.resolve(
-                key === 'VRCX-0_notificationTimeout'
-                    ? 9000
-                    : Number(fallback)
+                key === 'VRCX-0_notificationTimeout' ? 9000 : Number(fallback)
             )
         );
         mocks.appCurrentCulture.mockResolvedValue('ja-JP');
@@ -404,14 +406,8 @@ describe('preferencesService characterization', () => {
             'notificationIconDot',
             false
         );
-        expect(mocks.setString).toHaveBeenCalledWith(
-            'desktopToast',
-            'Always'
-        );
-        expect(mocks.setInt).toHaveBeenCalledWith(
-            'notificationTimeout',
-            10000
-        );
+        expect(mocks.setString).toHaveBeenCalledWith('desktopToast', 'Always');
+        expect(mocks.setInt).toHaveBeenCalledWith('notificationTimeout', 10000);
         expect(usePreferencesStore.getState()).toMatchObject({
             notificationIconDot: false,
             desktopToast: 'Always',
@@ -512,7 +508,8 @@ describe('preferencesService characterization', () => {
             bioLanguage: 'ja',
             translationAPIType: 'openai',
             translationAPIKey: 'key',
-            translationAPIEndpoint: 'https://api.openai.com/v1/chat/completions',
+            translationAPIEndpoint:
+                'https://api.openai.com/v1/chat/completions',
             translationAPIModel: 'gpt-4o-mini',
             translationAPIPrompt: ''
         });

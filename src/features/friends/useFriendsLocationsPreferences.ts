@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import configRepository from '@/repositories/configRepository';
+import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 
 import { parseConfigArray } from './friendsLocationsConfig';
 import {

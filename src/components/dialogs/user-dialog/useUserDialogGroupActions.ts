@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { setVrchatRegistryKey } from '@/services/shellIntegrationService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { groupIdForRow } from './userDialogGroupRows';
 import { normalizedText, summarizeEntityRow } from './userDialogRows';
 import { downloadJsonFile } from './UserDialogViewParts';
-import { setVrchatRegistryKey } from '@/services/shellIntegrationService';
-
 
 export function useUserDialogGroupActions({
     confirm,
@@ -61,9 +60,7 @@ export function useUserDialogGroupActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_send_group_invite'
-                      )
+                    : t('dialog.user.toast.failed_to_send_group_invite')
             );
         }
     }
@@ -91,9 +88,7 @@ export function useUserDialogGroupActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_update_group_visibility'
-                      )
+                    : t('dialog.user.toast.failed_to_update_group_visibility')
             );
         } finally {
             setGroupActionId('');
@@ -209,10 +204,9 @@ export function useUserDialogGroupActions({
             ).length;
             if (failed) {
                 toast.error(
-                    t(
-                        'dialog.user.dynamic.failed_to_update_value_groups',
-                        { value: failed }
-                    )
+                    t('dialog.user.dynamic.failed_to_update_value_groups', {
+                        value: failed
+                    })
                 );
             } else {
                 toast.success(
@@ -233,10 +227,9 @@ export function useUserDialogGroupActions({
         }
         const result = await confirm({
             title: t('dialog.user.modal.leave_selected_groups'),
-            description: t(
-                'dialog.user.dynamic.leave_value_selected_groups',
-                { value: selectedUserGroups.length }
-            ),
+            description: t('dialog.user.dynamic.leave_value_selected_groups', {
+                value: selectedUserGroups.length
+            }),
             confirmText: t('dialog.user.modal.leave'),
             cancelText: t('common.actions.cancel'),
             destructive: true
@@ -259,10 +252,9 @@ export function useUserDialogGroupActions({
             ).length;
             if (failed) {
                 toast.error(
-                    t(
-                        'dialog.user.dynamic.failed_to_leave_value_groups',
-                        { value: failed }
-                    )
+                    t('dialog.user.dynamic.failed_to_leave_value_groups', {
+                        value: failed
+                    })
                 );
             } else {
                 toast.success(
@@ -279,7 +271,7 @@ export function useUserDialogGroupActions({
     }
 
     function editableGroupOrder() {
-        const nextOrder = [];
+        const nextOrder: string[] = [];
         const seen = new Set();
         const pushGroupId = (groupId: any) => {
             const normalizedGroupId = normalizedText(groupId);
@@ -358,9 +350,7 @@ export function useUserDialogGroupActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_update_group_order'
-                      )
+                    : t('dialog.user.toast.failed_to_update_group_order')
             );
         } finally {
             setGroupActionId('');

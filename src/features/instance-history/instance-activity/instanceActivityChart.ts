@@ -298,11 +298,13 @@ export function buildDetailChartOption({
     const groupedByUser = new Map<string, InstanceActivityDetailRow[]>();
     const firstEntries: InstanceActivityDetailRow[] = [];
     for (const entry of group) {
-        if (!groupedByUser.has(entry.userId)) {
-            groupedByUser.set(entry.userId, []);
+        let userEntries = groupedByUser.get(entry.userId);
+        if (!userEntries) {
+            userEntries = [];
+            groupedByUser.set(entry.userId, userEntries);
             firstEntries.push(entry);
         }
-        groupedByUser.get(entry.userId).push(entry);
+        userEntries.push(entry);
     }
 
     for (const entries of groupedByUser.values()) {
@@ -378,7 +380,11 @@ export function buildDetailChartOption({
         tooltip: {
             trigger: 'item',
             formatter(params: ChartEventParams) {
-                if (params.seriesIndex % 2 === 0) {
+                if (
+                    params.seriesIndex == null ||
+                    params.dataIndex == null ||
+                    params.seriesIndex % 2 === 0
+                ) {
                     return '';
                 }
 

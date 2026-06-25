@@ -40,6 +40,13 @@ function resolveFriendedAtFromHistoryRows(rows: any) {
         : '';
 }
 
+type RepresentedGroupState = {
+    endpoint: unknown;
+    group: unknown;
+    status: string;
+    userId: unknown;
+};
+
 export function useUserDialogSupplementalData({
     activeUserTargetRef,
     currentEndpoint,
@@ -65,12 +72,13 @@ export function useUserDialogSupplementalData({
         targetKey,
         stats: readCachedUserStats(targetKey)
     }));
-    const [representedGroupState, setRepresentedGroupState] = useState(() => ({
-        endpoint: currentEndpoint,
-        group: null,
-        status: normalizedUserId ? 'running' : 'idle',
-        userId: normalizedUserId
-    }));
+    const [representedGroupState, setRepresentedGroupState] =
+        useState<RepresentedGroupState>(() => ({
+            endpoint: currentEndpoint,
+            group: null,
+            status: normalizedUserId ? 'running' : 'idle',
+            userId: normalizedUserId
+        }));
     const visiblePreviousInstances =
         previousInstancesState.targetKey === targetKey
             ? previousInstancesState.rows

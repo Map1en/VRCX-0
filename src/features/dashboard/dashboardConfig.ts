@@ -6,16 +6,39 @@ import {
     getDashboardPanelDefinition,
     getDashboardPanelLabel
 } from '@/components/dashboard/dashboardRegistry';
+import {
+    cloneRows as cloneRepositoryDashboardRows,
+    type DashboardPanel,
+    type DashboardRow
+} from '@/repositories/dashboardRepository';
 
 const DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS = new Set(
-    DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column: any) => column.key)
+    DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map((column) => column.key)
 );
 
-export function cloneDashboardRows(rows: any) {
-    return JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
+type DashboardWidgetPanel = Exclude<DashboardPanel, string>;
+
+type DashboardConfig = DashboardWidgetPanel['config'];
+
+type DashboardTranslate = (
+    key: string,
+    options?: Record<string, unknown>
+) => string;
+
+type DashboardPanelSelectOption = {
+    value: string;
+    label: string;
+};
+
+function isDashboardConfig(value: unknown): value is DashboardConfig {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-export function getDashboardRowKey(row: any) {
+export function cloneDashboardRows(rows: unknown): DashboardRow[] {
+    return cloneRepositoryDashboardRows(rows, { generateMissingRowIds: false });
+}
+
+export function getDashboardRowKey(row: Partial<DashboardRow> | null) {
     if (typeof row?.id === 'string' && row.id.trim()) {
         return row.id.trim();
     }
@@ -23,7 +46,7 @@ export function getDashboardRowKey(row: any) {
     const source = JSON.stringify({
         direction: row?.direction === 'vertical' ? 'vertical' : 'horizontal',
         panels: Array.isArray(row?.panels)
-            ? row.panels.map((panel: any) =>
+            ? row.panels.map((panel) =>
                   typeof panel === 'string' ? panel : panel?.key || ''
               )
             : []
@@ -35,15 +58,18 @@ export function getDashboardRowKey(row: any) {
     return `legacy-${hash.toString(36)}`;
 }
 
-export function createDashboardPanelSelectOptions(currentPanelKey: any, t: any) {
+export function createDashboardPanelSelectOptions(
+    currentPanelKey: unknown,
+    t: DashboardTranslate
+): DashboardPanelSelectOption[] {
     const options = [
-        ...DASHBOARD_WIDGET_DEFINITIONS.map((definition: any) => ({
+        ...DASHBOARD_WIDGET_DEFINITIONS.map((definition) => ({
             value: definition.key,
             label: t('view.dashboard.dynamic.widget_value', {
                 value: getDashboardPanelLabel(definition, t)
             })
         })),
-        ...DASHBOARD_SELECTABLE_PAGE_DEFINITIONS.map((definition: any) => ({
+        ...DASHBOARD_SELECTABLE_PAGE_DEFINITIONS.map((definition) => ({
             value: definition.key,
             label: t('view.dashboard.dynamic.page_value', {
                 value: getDashboardPanelLabel(definition, t)
@@ -54,10 +80,10 @@ export function createDashboardPanelSelectOptions(currentPanelKey: any, t: any) 
     if (
         currentPanelKey &&
         currentPanelKey !== '__none__' &&
-        !options.some((option: any) => option.value === currentPanelKey)
+        !options.some((option) => option.value === currentPanelKey)
     ) {
         options.unshift({
-            value: currentPanelKey,
+            value: String(currentPanelKey),
             label: t('view.dashboard.dynamic.existing_value', {
                 value:
                     getDashboardPanelLabel(
@@ -71,46 +97,59 @@ export function createDashboardPanelSelectOptions(currentPanelKey: any, t: any) 
     return options;
 }
 
-export function getDashboardPanelConfig(panel: any) {
-    if (!panel || typeof panel !== 'object') {
+export function getDashboardPanelConfig(panel: unknown): DashboardConfig {
+    if (!isDashboardConfig(panel)) {
         return {};
     }
 
-    return panel.config && typeof panel.config === 'object' ? panel.config : {};
+    return isDashboardConfig(panel.config) ? panel.config : {};
 }
 
-export function cloneDashboardConfig(value: any) {
-    if (!value || typeof value !== 'object') {
+export function cloneDashboardConfig(value: unknown): DashboardConfig {
+    if (!isDashboardConfig(value)) {
         return {};
     }
 
-    return JSON.parse(JSON.stringify(value));
+    const cloned: unknown = JSON.parse(JSON.stringify(value));
+    return isDashboardConfig(cloned) ? cloned : {};
 }
 
-export function createDashboardWidgetPanelValue(panelKey: any, config: any) {
+export function createDashboardWidgetPanelValue(
+    panelKey: string,
+    config: unknown
+): DashboardWidgetPanel {
     return {
         key: panelKey,
         config: cloneDashboardConfig(config)
     };
 }
 
-export function getDashboardFilterList(config: any) {
+export function getDashboardFilterList(
+    config: DashboardConfig | null | undefined
+): unknown[] {
     return Array.isArray(config?.filters) ? config.filters : [];
 }
 
-export function isDashboardFilterActive(config: any, filterType: any) {
+export function isDashboardFilterActive(
+    config: DashboardConfig | null | undefined,
+    filterType: string
+): boolean {
     const filters = getDashboardFilterList(config);
     return filters.length === 0 || filters.includes(filterType);
 }
 
-export function getNextDashboardFilterConfig(config: any, filterType: any, filterTypes: any) {
+export function getNextDashboardFilterConfig(
+    config: DashboardConfig,
+    filterType: string,
+    filterTypes: readonly string[]
+): DashboardConfig & { filters: unknown[] } {
     const currentFilters = getDashboardFilterList(config);
-    let filters;
+    let filters: unknown[];
 
     if (currentFilters.length === 0) {
-        filters = filterTypes.filter((entry: any) => entry !== filterType);
+        filters = filterTypes.filter((entry) => entry !== filterType);
     } else if (currentFilters.includes(filterType)) {
-        filters = currentFilters.filter((entry: any) => entry !== filterType);
+        filters = currentFilters.filter((entry) => entry !== filterType);
         if (filters.length === 0) {
             filters = [];
         }
@@ -127,14 +166,16 @@ export function getNextDashboardFilterConfig(config: any, filterType: any, filte
     };
 }
 
-export function getDashboardInstanceWidgetColumns(config: any) {
-    const source = Array.isArray(config?.columns)
+export function getDashboardInstanceWidgetColumns(
+    config: DashboardConfig | null | undefined
+): string[] {
+    const source: readonly unknown[] = Array.isArray(config?.columns)
         ? config.columns
         : DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS;
     const columns = source.filter(
-        (column: any, index: any, values: any) =>
+        (column, index, values): column is string =>
             typeof column === 'string' &&
-            column &&
+            column.length > 0 &&
             values.indexOf(column) === index
     );
 
@@ -147,8 +188,10 @@ export function getDashboardInstanceWidgetColumns(config: any) {
         : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
 }
 
-export function getKnownDashboardInstanceWidgetColumns(config: any) {
-    const columns = getDashboardInstanceWidgetColumns(config).filter((column: any) =>
+export function getKnownDashboardInstanceWidgetColumns(
+    config: DashboardConfig | null | undefined
+): string[] {
+    const columns = getDashboardInstanceWidgetColumns(config).filter((column) =>
         DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS.has(column)
     );
 
@@ -161,18 +204,21 @@ export function getKnownDashboardInstanceWidgetColumns(config: any) {
         : [...DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS];
 }
 
-export function getNextDashboardInstanceColumnConfig(config: any, columnKey: any) {
+export function getNextDashboardInstanceColumnConfig(
+    config: DashboardConfig,
+    columnKey: string
+): DashboardConfig & { columns?: string[] } {
     if (columnKey === 'displayName') {
         return config;
     }
 
     const sourceColumns = getDashboardInstanceWidgetColumns(config);
     const unknownColumns = sourceColumns.filter(
-        (column: any) => !DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS.has(column)
+        (column) => !DASHBOARD_INSTANCE_WIDGET_COLUMN_KEYS.has(column)
     );
     const knownColumns = getKnownDashboardInstanceWidgetColumns(config);
     const nextKnownColumns = knownColumns.includes(columnKey)
-        ? knownColumns.filter((column: any) => column !== columnKey)
+        ? knownColumns.filter((column) => column !== columnKey)
         : [...knownColumns, columnKey];
 
     if (!nextKnownColumns.includes('displayName')) {

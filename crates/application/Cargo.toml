@@ -14,7 +14,14 @@ percent-encoding = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["rt", "macros", "sync", "time", "net", "io-util"] }
+tokio = { workspace = true, features = [
+    "rt",
+    "macros",
+    "sync",
+    "time",
+    "net",
+    "io-util"
+] }
 tracing = { workspace = true }
 url = { workspace = true }
 walkdir = { workspace = true }

@@ -46,7 +46,11 @@ export function resolveOwnerId(
     );
 }
 
-export function resolveOwnerSeed(source: any, ownerId: any, knownUsersById: any) {
+export function resolveOwnerSeed(
+    source: any,
+    ownerId: any,
+    knownUsersById: any
+) {
     if (!ownerId) {
         return null;
     }
@@ -86,7 +90,7 @@ export async function loadLocationOwner({
     ownerSeed,
     endpoint,
     groupFallback
-}: any) {
+}: any): Promise<{ ownerUser: unknown; ownerGroup: unknown }> {
     if (!ownerId) {
         return { ownerUser: null, ownerGroup: null };
     }

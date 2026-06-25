@@ -27,7 +27,8 @@ export function LoginAutoLoginAlert({
                     {t('common.label.auto_login')}
                 </Badge>
                 <span className="font-medium">{target}</span>
-                {autoLoginState.status === 'scheduled' && autoLoginState.detail ? (
+                {autoLoginState.status === 'scheduled' &&
+                autoLoginState.detail ? (
                     <span className="text-muted-foreground">
                         {autoLoginState.detail}
                     </span>
@@ -40,7 +41,7 @@ export function LoginAutoLoginAlert({
                 ) : null}
                 {autoLoginState.status !== 'scheduled' &&
                 autoLoginState.detail ? (
-                    <span className="min-w-0 flex-1 basis-full text-muted-foreground">
+                    <span className="text-muted-foreground min-w-0 flex-1 basis-full">
                         {autoLoginState.detail}
                     </span>
                 ) : null}

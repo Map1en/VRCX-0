@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import gameLogRepository from '@/repositories/gameLogRepository';
+import { copyTextToClipboard } from '@/services/entityMediaService';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -31,7 +31,10 @@ export function useGameLogRowActions({
     const [deletingGameLogKey, setDeletingGameLogKey] = useState('');
 
     const deleteGameLogRow = useCallback(
-        async (row: GameLogRow, { skipConfirm = false }: DeleteOptions = {}) => {
+        async (
+            row: GameLogRow,
+            { skipConfirm = false }: DeleteOptions = {}
+        ) => {
             if (!canDeleteGameLogRow(row)) {
                 return;
             }
@@ -64,9 +67,7 @@ export function useGameLogRowActions({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.game_log.toast.failed_to_delete_game_log_row'
-                          )
+                        : t('view.game_log.toast.failed_to_delete_game_log_row')
                 );
             } finally {
                 setDeletingGameLogKey('');

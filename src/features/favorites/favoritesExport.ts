@@ -27,7 +27,11 @@ export function getFavoriteExportFieldOptions(kind: any) {
         : FAVORITE_EXPORT_FIELD_OPTIONS.entity;
 }
 
-export function buildFavoriteExportCsv(items: any, kind: any, selectedFields: any = null) {
+export function buildFavoriteExportCsv(
+    items: any,
+    kind: any,
+    selectedFields: any = null
+) {
     const options = getFavoriteExportFieldOptions(kind);
     const optionByValue = Object.fromEntries(
         options.map((option: any) => [option.value, option])

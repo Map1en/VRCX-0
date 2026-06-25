@@ -33,7 +33,8 @@ import {
     getToolsByCategory,
     parseQuickAccessToolKeys,
     quickAccessConfigKey,
-    toolCategories
+    toolCategories,
+    type ToolDefinition
 } from '@/shared/constants/tools';
 import { publishNavCustomizeRequested } from '@/shared/events/navLayoutEvents';
 import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion';
@@ -87,7 +88,7 @@ function MenuGroupLabel({ children }: any) {
     );
 }
 
-function ToolMenuItem({ tool }: any) {
+function ToolMenuItem({ tool }: { tool: ToolDefinition }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -112,7 +113,7 @@ export function AppMenuBar({
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
-    const [quickAccessKeys, setQuickAccessKeys] = useState<any[]>([]);
+    const [quickAccessKeys, setQuickAccessKeys] = useState<string[]>([]);
     const zoomLevel = useShellStore((state: any) => state.zoomLevel);
     const sidebarOpen = useShellStore((state: any) => state.sidebarOpen);
     const notificationLayout = usePreferencesStore(
@@ -132,29 +133,29 @@ export function AppMenuBar({
     const availableToolCategories = useMemo(
         () =>
             toolCategories
-                .map((category: any) => ({
+                .map((category) => ({
                     ...category,
-                    tools: getToolsByCategory(category.key).filter(
-                        (tool: any) => isToolCapabilityAvailable(tool)
+                    tools: getToolsByCategory(category.key).filter((tool) =>
+                        isToolCapabilityAvailable(tool)
                     )
                 }))
-                .filter((category: any) => category.tools.length > 0),
+                .filter((category) => category.tools.length > 0),
         [hostCapabilities]
     );
     const availableToolMap = useMemo(
         () =>
             new Map(
                 availableToolCategories
-                    .flatMap((category: any) => category.tools)
-                    .map((tool: any) => [tool.key, tool])
+                    .flatMap((category) => category.tools)
+                    .map((tool) => [tool.key, tool])
             ),
         [availableToolCategories]
     );
     const quickAccessTools = useMemo(
         () =>
             quickAccessKeys
-                .map((key: any) => availableToolMap.get(key))
-                .filter(Boolean),
+                .map((key) => availableToolMap.get(key))
+                .filter((tool): tool is ToolDefinition => Boolean(tool)),
         [availableToolMap, quickAccessKeys]
     );
     useEffect(() => {

@@ -36,8 +36,8 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-const CARD_SCALE_SLIDER: any = { min: 0.6, max: 1, step: 0.01 };
-const CARD_SPACING_SLIDER: any = { min: 0.5, max: 1.5, step: 0.05 };
+const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
+const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
 function FavoritesToolbar({
     kind,
     sortValue,
@@ -97,7 +97,9 @@ function FavoritesToolbar({
                     </InputGroupAddon>
                     <InputGroupInput
                         value={searchQuery}
-                        onChange={(event: any) => onSearchChange(event.target.value)}
+                        onChange={(event: any) =>
+                            onSearchChange(event.target.value)
+                        }
                         placeholder={searchPlaceholder}
                         className="text-sm"
                     />

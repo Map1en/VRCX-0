@@ -116,9 +116,7 @@ describe('favoriteWorldCacheService', () => {
             thumbnailImageUrl: 'https://example.test/local.png'
         };
 
-        await expect(cacheFavoriteWorldDetails(world)).resolves.toBe(
-            false
-        );
+        await expect(cacheFavoriteWorldDetails(world)).resolves.toBe(false);
         expect(
             favoritePersistenceRepository.addWorldToCache
         ).not.toHaveBeenCalled();

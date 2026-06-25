@@ -16,10 +16,10 @@ export type NotificationRow = {
     link?: string;
     linkText?: string;
     imageUrl?: string;
-    details?: Record<string, any>;
-    data?: Record<string, any>;
-    responses?: any[];
-    [key: string]: any;
+    details?: Record<string, unknown>;
+    data?: Record<string, unknown>;
+    responses?: unknown[];
+    [key: string]: unknown;
 };
 
 export type NotificationDialogRequest = {

@@ -152,7 +152,7 @@ jobs:
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: . -> target
-            - run: cargo test --workspace --exclude vrcx-0 --locked
+            - run: npm run rust:test
 
     rust-linux:
         name: Rust Backend (Linux)
@@ -175,7 +175,7 @@ jobs:
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: . -> target
-            - run: cargo test --workspace --exclude vrcx-0 --locked
+            - run: npm run rust:test
 
     rust-macos:
         name: Rust Backend (macOS)
@@ -189,7 +189,7 @@ jobs:
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: . -> target
-            - run: cargo test --workspace --exclude vrcx-0 --locked
+            - run: npm run rust:test
 
     tauri-bindings:
         name: Tauri Bindings Up-to-date

@@ -13,7 +13,9 @@ import { ModerationPageToolbar } from './components/ModerationPageToolbar';
 import { ModerationEmptyState } from './components/ModerationViewParts';
 import { useModerationPageController } from './useModerationPageController';
 
-export function ModerationPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function ModerationPage({
+    embedded = false
+}: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
     const location = useLocation();
     const { filteredRows, filters, rowsState, table, tableState } =

@@ -190,8 +190,9 @@ describe('instanceActivityChart', () => {
             ]
         });
 
-        expect(option.yAxis.data).toEqual(['Same Name', '\u2b50 Same Name']);
-        expect(option.firstEntries.map((entry) => entry.userId)).toEqual([
+        expect(option).not.toBeNull();
+        expect(option!.yAxis.data).toEqual(['Same Name', '\u2b50 Same Name']);
+        expect(option!.firstEntries.map((entry) => entry.userId)).toEqual([
             'usr_regular',
             'usr_favorite'
         ]);

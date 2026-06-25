@@ -20,8 +20,17 @@ reqwest = { workspace = true, features = [
     "multipart",
     "socks"
 ] }
-tokio = { workspace = true, features = ["sync", "macros", "time", "net", "io-util"] }
-rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
+tokio = { workspace = true, features = [
+    "sync",
+    "macros",
+    "time",
+    "net",
+    "io-util"
+] }
+rustls = { version = "0.23", default-features = false, features = [
+    "aws_lc_rs",
+    "std"
+] }
 base64 = { workspace = true }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
@@ -62,11 +71,11 @@ devtools = ["tauri/devtools"]
 devkit = ["devtools"]
 steamvr-overlay = [
     "vrcx-0-host/steamvr-overlay",
-    "vrcx-0-runtime-host/steamvr-overlay",
+    "vrcx-0-runtime-host/steamvr-overlay"
 ]
 openxr-overlay = [
     "vrcx-0-host/openxr-overlay",
-    "vrcx-0-runtime-host/openxr-overlay",
+    "vrcx-0-runtime-host/openxr-overlay"
 ]
 
 [build-dependencies]
@@ -74,5 +83,9 @@ tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
 image = { workspace = true }
-vrcx-0-application = { path = "../crates/application", features = ["test-utils"] }
-vrcx-0-runtime-host = { path = "../crates/runtime-host", features = ["test-utils"] }
+vrcx-0-application = { path = "../crates/application", features = [
+    "test-utils"
+] }
+vrcx-0-runtime-host = { path = "../crates/runtime-host", features = [
+    "test-utils"
+] }

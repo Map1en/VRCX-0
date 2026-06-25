@@ -142,7 +142,11 @@ function DashboardPagePreview({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(definition.path)}
+                    onClick={() => {
+                        if (definition.path) {
+                            navigate(definition.path);
+                        }
+                    }}
                 >
                     {t('common.actions.open')}
                     <ArrowRightIcon data-icon="inline-end" />

@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {

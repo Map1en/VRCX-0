@@ -149,7 +149,7 @@ async function resolveTtsText(
     }
     const memo = await memoPersistenceRepository
         .getUserMemo(directive.actorUserId)
-        .catch(() => null);
+        .catch((): null => null);
     const nickName =
         typeof memo?.memo === 'string' ? memo.memo.split('\n')[0]?.trim() : '';
     if (!nickName) {

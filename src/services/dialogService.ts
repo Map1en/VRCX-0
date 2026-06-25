@@ -8,7 +8,8 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 let entityDialogOpenNonce = 0;
 
 type EntityDialogKind = 'user' | 'world' | 'avatar' | 'group' | string;
-type EntityDialogPayload = Record<string, any> | null;
+type DialogRecord = Record<string, unknown>;
+type EntityDialogPayload = DialogRecord | null;
 
 type OpenEntityDialogOptions = {
     kind?: EntityDialogKind;
@@ -22,7 +23,7 @@ type OpenUserDialogOptions = {
     userId?: unknown;
     title?: unknown;
     description?: unknown;
-    seedData?: Record<string, any> | null;
+    seedData?: DialogRecord | null;
     initialAction?: string;
 };
 
@@ -30,24 +31,28 @@ type OpenWorldDialogOptions = {
     worldId?: unknown;
     title?: unknown;
     description?: unknown;
-    seedData?: Record<string, any> | null;
+    seedData?: DialogRecord | null;
     initialAction?: string;
-    initialNewInstanceDefaults?: Record<string, any> | null;
+    initialNewInstanceDefaults?: DialogRecord | null;
 };
 
 type OpenAvatarDialogOptions = {
     avatarId?: unknown;
     title?: unknown;
     description?: unknown;
-    seedData?: Record<string, any> | null;
+    seedData?: DialogRecord | null;
 };
 
 type OpenGroupDialogOptions = {
     groupId?: unknown;
     title?: unknown;
     description?: unknown;
-    seedData?: Record<string, any> | null;
+    seedData?: DialogRecord | null;
 };
+
+function isRecord(value: unknown): value is DialogRecord {
+    return Boolean(value && typeof value === 'object');
+}
 
 function normalizeEntityId(value: unknown) {
     return typeof value === 'string'
@@ -77,10 +82,10 @@ function defaultEntityTitle(kind: EntityDialogKind) {
 }
 
 function readSeedTitle(kind: EntityDialogKind, seedData: unknown) {
-    if (!seedData || typeof seedData !== 'object') {
+    if (!isRecord(seedData)) {
         return '';
     }
-    const seed = seedData as Record<string, any>;
+    const seed = seedData;
     switch (kind) {
         case 'user':
             return normalizeTitle(
@@ -100,7 +105,7 @@ function readSeedTitle(kind: EntityDialogKind, seedData: unknown) {
 function recordUserDialogSeed(
     userId: unknown,
     title: unknown,
-    seedData: Record<string, any> | null
+    seedData: DialogRecord | null
 ) {
     const normalizedUserId = normalizeEntityId(
         userId || seedData?.id || seedData?.userId
@@ -109,17 +114,16 @@ function recordUserDialogSeed(
         return;
     }
 
-    const seed: Record<string, any> =
-        seedData && typeof seedData === 'object'
-            ? {
-                  ...seedData,
-                  id: normalizedUserId,
-                  userId: normalizedUserId
-              }
-            : {
-                  id: normalizedUserId,
-                  userId: normalizedUserId
-              };
+    const seed: DialogRecord = isRecord(seedData)
+        ? {
+              ...seedData,
+              id: normalizedUserId,
+              userId: normalizedUserId
+          }
+        : {
+              id: normalizedUserId,
+              userId: normalizedUserId
+          };
     const seedTitle = normalizeTitle(
         seed.displayName || seed.username || seed.name || title
     );
@@ -170,7 +174,9 @@ function openEntityDialog({
     ) {
         if (kind === 'user' && payload?.initialAction) {
             const nextPayload: any = {
-                ...((store.activeDialog.payload as Record<string, any>) || {}),
+                ...(isRecord(store.activeDialog.payload)
+                    ? store.activeDialog.payload
+                    : {}),
                 ...payload
             };
             entityDialogOpenNonce += 1;

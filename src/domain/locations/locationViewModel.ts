@@ -10,7 +10,11 @@ interface LocationMetadataModelInput {
     explicitWorldNameHint?: unknown;
     explicitGroupNameHint?: unknown;
     queryWorld?: { name?: unknown } | null;
-    queryGroup?: { name?: unknown; displayName?: unknown; shortCode?: unknown } | null;
+    queryGroup?: {
+        name?: unknown;
+        displayName?: unknown;
+        shortCode?: unknown;
+    } | null;
     locationHint?:
         | {
               worldName?: unknown;

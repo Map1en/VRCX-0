@@ -13,7 +13,8 @@ describe('worldDialogInstanceRows', () => {
                 }
             },
             currentInstanceDetails: {
-                location: 'wrld_test:live~group(grp_live)~groupAccessType(public)',
+                location:
+                    'wrld_test:live~group(grp_live)~groupAccessType(public)',
                 instance: {
                     id: 'live~group(grp_live)~groupAccessType(public)',
                     userCount: 2,
@@ -30,7 +31,8 @@ describe('worldDialogInstanceRows', () => {
                 usr_friend: {
                     id: 'usr_friend',
                     displayName: 'Friend',
-                    location: 'wrld_test:live~group(grp_live)~groupAccessType(public)'
+                    location:
+                        'wrld_test:live~group(grp_live)~groupAccessType(public)'
                 },
                 usr_elsewhere: {
                     id: 'usr_elsewhere',
@@ -70,10 +72,9 @@ describe('worldDialogInstanceRows', () => {
                 name: 'Live Group'
             }
         });
-        expect(result.displayInstanceRows[0].users.map((user: any) => user.id)).toEqual([
-            'usr_inside',
-            'usr_friend'
-        ]);
+        expect(
+            result.displayInstanceRows[0].users.map((user: any) => user.id)
+        ).toEqual(['usr_inside', 'usr_friend']);
         expect(result.displayInstanceRows[1]).toMatchObject({
             id: 'public',
             location: 'wrld_test:public'

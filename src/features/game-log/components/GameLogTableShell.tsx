@@ -15,8 +15,8 @@ import { ResizableTableCell } from '@/components/data-table/ResizableTableParts'
 import { PageFooter } from '@/components/layout/PageScaffold';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
-import type { GameLogPaginationSetter, GameLogRow } from '../gameLogTypes';
 import { resolveGameLogPageSize } from '../gameLogState';
+import type { GameLogPaginationSetter, GameLogRow } from '../gameLogTypes';
 
 type GameLogTableShellProps = {
     pageCount: number;
@@ -101,7 +101,7 @@ export function GameLogTableShell({
                     pageSize={pagination.pageSize}
                     pageSizes={pageSizes}
                     pageSizeLabel={t('table.pagination.rows_per_page')}
-                    onPageSizeChange={(value) => {
+                    onPageSizeChange={(value: unknown) => {
                         const nextPageSize = resolveGameLogPageSize(
                             value,
                             pageSizes,

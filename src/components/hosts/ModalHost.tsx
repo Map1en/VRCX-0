@@ -77,10 +77,10 @@ export function ModalHost() {
     const isLocalUserVrcPlusSupporter = useRuntimeStore((state: any) =>
         Boolean(
             state.auth.currentUserSnapshot?.$isVRCPlus ||
-                state.auth.currentUserSnapshot?.tags?.includes?.(
-                    'system_supporter'
-                ) ||
-                globalThis?.$debug?.debugVrcPlus
+            state.auth.currentUserSnapshot?.tags?.includes?.(
+                'system_supporter'
+            ) ||
+            globalThis?.$debug?.debugVrcPlus
         )
     );
     const handleOk = useModalStore((state: any) => state.handleOk);
@@ -98,10 +98,18 @@ export function ModalHost() {
         (state: any) => state.handleBoopDismiss
     );
     const handleOtpOk = useModalStore((state: any) => state.handleOtpOk);
-    const handleOtpCancel = useModalStore((state: any) => state.handleOtpCancel);
-    const handleOtpDismiss = useModalStore((state: any) => state.handleOtpDismiss);
-    const closeImagePreview = useModalStore((state: any) => state.closeImagePreview);
-    const updatePromptValue = useModalStore((state: any) => state.updatePromptValue);
+    const handleOtpCancel = useModalStore(
+        (state: any) => state.handleOtpCancel
+    );
+    const handleOtpDismiss = useModalStore(
+        (state: any) => state.handleOtpDismiss
+    );
+    const closeImagePreview = useModalStore(
+        (state: any) => state.closeImagePreview
+    );
+    const updatePromptValue = useModalStore(
+        (state: any) => state.updatePromptValue
+    );
     const updateOtpValue = useModalStore((state: any) => state.updateOtpValue);
     const promptValueIsValid = matchesPromptPattern(
         promptDialog.inputPattern,
@@ -172,9 +180,7 @@ export function ModalHost() {
                             onChange={(event: any) =>
                                 updatePromptValue(event.target.value)
                             }
-                            placeholder={t(
-                                'dialog.tools.label.prompt_value'
-                            )}
+                            placeholder={t('dialog.tools.label.prompt_value')}
                             className="min-h-32"
                         />
                     ) : (
@@ -184,9 +190,7 @@ export function ModalHost() {
                             onChange={(event: any) =>
                                 updatePromptValue(event.target.value)
                             }
-                            placeholder={t(
-                                'dialog.tools.label.prompt_value'
-                            )}
+                            placeholder={t('dialog.tools.label.prompt_value')}
                         />
                     )}
                     <DialogFooter>

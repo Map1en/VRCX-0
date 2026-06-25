@@ -115,7 +115,10 @@ export function normalizeWorldTarget(value: any) {
     return parseLocation(text).worldId || text.split(':')[0] || text;
 }
 
-export function resolveCurrentInviteLocation(gameState: any, currentUserSnapshot: any) {
+export function resolveCurrentInviteLocation(
+    gameState: any,
+    currentUserSnapshot: any
+) {
     const currentLocation = String(gameState?.currentLocation || '').trim();
     if (currentLocation === 'traveling') {
         return String(gameState?.currentDestination || '').trim();

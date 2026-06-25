@@ -18,6 +18,19 @@ export type FeedColumnScopeDescriptionOptions = {
     typeLabel(type: string): string;
 };
 
+type FeedRemoteFavorite = {
+    $groupKey?: unknown;
+    favoriteId?: unknown;
+    type?: unknown;
+};
+
+type FeedFavoriteGroup = {
+    displayName?: unknown;
+    id?: unknown;
+    key?: unknown;
+    name?: unknown;
+};
+
 function buildFavoriteIdsForGroupSelection({
     groupKeys,
     localFriendFavorites,
@@ -25,7 +38,7 @@ function buildFavoriteIdsForGroupSelection({
 }: {
     groupKeys: FeedColumnFavoriteGroupSelection;
     localFriendFavorites: Record<string, unknown>;
-    remoteFavoritesById: Record<string, any>;
+    remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     const ids = new Set<string>();
     const allGroups = groupKeys === 'all';
@@ -37,10 +50,7 @@ function buildFavoriteIdsForGroupSelection({
     };
     const acceptsLocalGroup = (groupName: unknown) => {
         const normalizedGroupName = normalizeId(groupName);
-        return (
-            allGroups ||
-            selectedGroups.has(`local:${normalizedGroupName}`)
-        );
+        return allGroups || selectedGroups.has(`local:${normalizedGroupName}`);
     };
 
     for (const favorite of Object.values(remoteFavoritesById || {})) {
@@ -80,7 +90,7 @@ export function buildFeedColumnFavoriteIds({
 }: {
     column: FeedColumnConfig;
     localFriendFavorites: Record<string, unknown>;
-    remoteFavoritesById: Record<string, any>;
+    remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     if (column.friendScope.kind !== 'favorites') {
         return new Set<string>();
@@ -99,7 +109,7 @@ export function buildFeedColumnExcludedFavoriteIds({
 }: {
     column: FeedColumnConfig;
     localFriendFavorites: Record<string, unknown>;
-    remoteFavoritesById: Record<string, any>;
+    remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     const excludedGroupKeys = column.friendScope.excludedFavoriteGroupKeys;
     if (
@@ -119,7 +129,7 @@ export function buildFeedFavoriteGroupOptions({
     favoriteFriendGroups,
     localFriendFavoriteGroups
 }: {
-    favoriteFriendGroups: any[];
+    favoriteFriendGroups: FeedFavoriteGroup[];
     localFriendFavoriteGroups: unknown[];
 }): FeedFavoriteGroupOption[] {
     const options = new Map<string, FeedFavoriteGroupOption>();
@@ -130,7 +140,8 @@ export function buildFeedFavoriteGroupOptions({
         if (key) {
             options.set(key, {
                 key,
-                label: normalizeId(group?.displayName || group?.name || key) || key
+                label:
+                    normalizeId(group?.displayName || group?.name || key) || key
             });
         }
     }
@@ -167,7 +178,11 @@ export function describeFeedColumnScope(
             : Array.isArray(excludedGroupKeys) && excludedGroupKeys.length
               ? options.excludedGroupCountLabel?.(excludedGroupKeys.length)
               : '';
-    return [scope, exclusion, column.feedTypes.map(options.typeLabel).join(', ')]
+    return [
+        scope,
+        exclusion,
+        column.feedTypes.map(options.typeLabel).join(', ')
+    ]
         .filter(Boolean)
         .join(' · ');
 }

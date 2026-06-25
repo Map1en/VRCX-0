@@ -1,12 +1,12 @@
 import configRepository from '@/repositories/configRepository';
 import externalApiRepository from '@/repositories/externalApiRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { pushSharedFeedNotification } from '../sharedFeedFilterService';
 import {
     convertYouTubeDurationToSeconds,
-    normalizeString,
     parseWebJson,
     parseYouTubeVideoId
 } from './parsing';
@@ -49,9 +49,7 @@ type ProviderVideoGameLog = {
 };
 
 function asRecord(value: unknown): WebRecord {
-    return value && typeof value === 'object'
-        ? (value as WebRecord)
-        : {};
+    return value && typeof value === 'object' ? (value as WebRecord) : {};
 }
 
 function resetRuntimeNowPlayingState() {

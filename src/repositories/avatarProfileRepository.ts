@@ -1,4 +1,3 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -6,6 +5,7 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 import { storeAvatarImage } from '@/shared/utils/avatar';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
@@ -219,9 +219,8 @@ function normalizeAvatarProfile(
             normalizeEntityId(source.authorId ?? source.author_id) ||
             'Unknown author',
         releaseStatus:
-            normalizeEntityId(
-                source.releaseStatus ?? source.release_status
-            ) || 'unknown',
+            normalizeEntityId(source.releaseStatus ?? source.release_status) ||
+            'unknown',
         thumbnailImageUrl: normalizeString(
             source.thumbnailImageUrl ?? source.thumbnail_image_url
         ),
@@ -238,7 +237,7 @@ function normalizeAvatarProfile(
         ),
         $memo: normalizeMemoString(extras.memo ?? source.$memo),
         $isCached: Boolean(extras.cachedAvatar)
-    } as AvatarProfileRecord;
+    };
 }
 
 async function collectPages<T>(
@@ -297,16 +296,40 @@ async function getLocalSnapshot(
         await Promise.all([
             avatarCacheRepository
                 .getCachedAvatarById(normalizedAvatarId)
-                .catch(() => null),
+                .catch(
+                    (): Awaited<
+                        ReturnType<
+                            typeof avatarCacheRepository.getCachedAvatarById
+                        >
+                    > | null => null
+                ),
             avatarCacheRepository
                 .getAvatarTags(normalizedAvatarId)
-                .catch(() => []),
+                .catch(
+                    (): Awaited<
+                        ReturnType<typeof avatarCacheRepository.getAvatarTags>
+                    > => []
+                ),
             currentUserId
                 ? avatarCacheRepository
                       .getAvatarTimeSpent(currentUserId, normalizedAvatarId)
-                      .catch(() => null)
+                      .catch(
+                          (): Awaited<
+                              ReturnType<
+                                  typeof avatarCacheRepository.getAvatarTimeSpent
+                              >
+                          > | null => null
+                      )
                 : Promise.resolve(null),
-            memoPersistenceRepository.getAvatarMemo(normalizedAvatarId).catch(() => null)
+            memoPersistenceRepository
+                .getAvatarMemo(normalizedAvatarId)
+                .catch(
+                    (): Awaited<
+                        ReturnType<
+                            typeof memoPersistenceRepository.getAvatarMemo
+                        >
+                    > | null => null
+                )
         ]);
 
     return {
@@ -407,7 +430,7 @@ async function getAvatarGallery({
                   : [];
         }
     });
-    return rows.slice().sort((a, b) => {
+    return rows.slice().sort((a: AvatarRecord, b: AvatarRecord) => {
         if (!a?.order && !b?.order) {
             return 0;
         }
@@ -629,7 +652,9 @@ async function deleteImposter({ avatarId, endpoint = '' }: AvatarIdInput) {
     );
 }
 
-async function getAvatarModerations({ endpoint = '' }: AvatarRequestOptions = {}) {
+async function getAvatarModerations({
+    endpoint = ''
+}: AvatarRequestOptions = {}) {
     return unwrapVrchatAvatarResponse(
         await commands.appVrchatAvatarModerationsGet({ endpoint }),
         'auth/user/avatarmoderations'

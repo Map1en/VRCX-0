@@ -1,8 +1,12 @@
+import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { openExternalLink } from '@/services/entityMediaService';
+import type {
+    SavedAuthSnapshot,
+    SavedCredentialRecord
+} from '@/repositories/authRepository';
 import {
     executeManualLogin,
     executeSavedCredentialLogin
@@ -11,6 +15,7 @@ import {
     deleteSavedAuthSnapshot,
     refreshSavedAuthSnapshot
 } from '@/services/authSnapshotService';
+import { openExternalLink } from '@/services/entityMediaService';
 import { promptLegacyVrcxForceMigration } from '@/services/legacyVrcxMigrationService';
 import {
     loadPreferenceSnapshot,
@@ -29,6 +34,17 @@ import {
 } from './loginDisplay';
 import { useLoginAutoLogin } from './useLoginAutoLogin';
 
+type LoginFormState = {
+    password: string;
+    saveCredentials: boolean;
+    username: string;
+};
+
+type LoginErrors = {
+    password: string;
+    username: string;
+};
+
 export function useLoginPageState() {
     const { t } = useTranslation();
     const locale = useShellStore((state: any) => state.locale);
@@ -39,9 +55,10 @@ export function useLoginPageState() {
     );
     const sessionPhase = useSessionStore((state: any) => state.sessionPhase);
     const databaseReady = useSessionStore((state: any) => state.databaseReady);
-    const [snapshot, setSnapshot] = useState(null);
+    const [snapshot, setSnapshot] = useState<SavedAuthSnapshot | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteTarget, setDeleteTarget] =
+        useState<SavedCredentialRecord | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isProxyDialogOpen, setIsProxyDialogOpen] = useState(false);
@@ -49,12 +66,12 @@ export function useLoginPageState() {
     const [isSavingProxySettings, setIsSavingProxySettings] = useState(false);
     const isSavingProxySettingsRef = useRef(false);
     const [activeSavedUserId, setActiveSavedUserId] = useState('');
-    const [loginForm, setLoginForm] = useState<any>({
+    const [loginForm, setLoginForm] = useState<LoginFormState>({
         username: '',
         password: '',
         saveCredentials: true
     });
-    const [loginErrors, setLoginErrors] = useState<any>({
+    const [loginErrors, setLoginErrors] = useState<LoginErrors>({
         username: '',
         password: ''
     });
@@ -143,9 +160,7 @@ export function useLoginPageState() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.auth.toast.failed_to_load_proxy_settings'
-                          )
+                        : t('view.auth.toast.failed_to_load_proxy_settings')
                 );
             }
         }
@@ -157,7 +172,7 @@ export function useLoginPageState() {
         await promptLegacyVrcxForceMigration({ confirm, t, toast });
     }
 
-    async function saveProxySettings(event: any) {
+    async function saveProxySettings(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (isSavingProxySettingsRef.current) {
             return;
@@ -171,9 +186,7 @@ export function useLoginPageState() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.auth.toast.failed_to_save_proxy_settings'
-                      )
+                    : t('view.auth.toast.failed_to_save_proxy_settings')
             );
         } finally {
             isSavingProxySettingsRef.current = false;
@@ -182,24 +195,21 @@ export function useLoginPageState() {
     }
 
     async function handleDeleteSavedAccount() {
-        if (!deleteTarget?.user?.id) {
+        const deleteUserId = deleteTarget?.user?.id;
+        if (!deleteUserId || typeof deleteUserId !== 'string') {
             return;
         }
 
         setIsDeleting(true);
         try {
-            const nextSnapshot = await deleteSavedAuthSnapshot(
-                deleteTarget.user.id
-            );
+            const nextSnapshot = await deleteSavedAuthSnapshot(deleteUserId);
             applySnapshot(nextSnapshot);
             toast.success(t('message.auth.account_removed'));
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.auth.toast.failed_to_remove_saved_account'
-                      )
+                    : t('view.auth.toast.failed_to_remove_saved_account')
             );
         } finally {
             setIsDeleting(false);
@@ -208,7 +218,7 @@ export function useLoginPageState() {
     }
 
     function validateLoginForm() {
-        const nextErrors: any = {
+        const nextErrors: LoginErrors = {
             username: loginForm.username.trim()
                 ? ''
                 : t('view.login.validation.username_required'),
@@ -221,14 +231,12 @@ export function useLoginPageState() {
         return !nextErrors.username && !nextErrors.password;
     }
 
-    async function handleManualLoginSubmit(event: any) {
+    async function handleManualLoginSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
         if (!databaseReady) {
             toast.error(
-                t(
-                    'common.status.database_initialization_is_still_pending'
-                )
+                t('common.status.database_initialization_is_still_pending')
             );
             return;
         }
@@ -249,13 +257,13 @@ export function useLoginPageState() {
             });
             applySnapshot(nextSnapshot);
             toast.success(
-                t(
-                    'common.label.authenticated_and_prepared_the_session'
-                )
+                t('common.label.authenticated_and_prepared_the_session')
             );
         } catch (error) {
-            if (error?.authSnapshot) {
-                applySnapshot(error.authSnapshot);
+            const snapshot = (error as { authSnapshot?: unknown })
+                ?.authSnapshot;
+            if (snapshot) {
+                applySnapshot(snapshot);
             }
             toast.error(
                 getErrorMessage(
@@ -276,9 +284,7 @@ export function useLoginPageState() {
 
         if (!databaseReady) {
             toast.error(
-                t(
-                    'common.status.database_initialization_is_still_pending'
-                )
+                t('common.status.database_initialization_is_still_pending')
             );
             return;
         }
@@ -297,15 +303,15 @@ export function useLoginPageState() {
                 )
             );
         } catch (error) {
-            if (error?.authSnapshot) {
-                applySnapshot(error.authSnapshot);
+            const snapshot = (error as { authSnapshot?: unknown })
+                ?.authSnapshot;
+            if (snapshot) {
+                applySnapshot(snapshot);
             }
             toast.error(
                 getErrorMessage(
                     error,
-                    t(
-                        'view.auth.toast.failed_to_restore_the_saved_account'
-                    )
+                    t('view.auth.toast.failed_to_restore_the_saved_account')
                 )
             );
         } finally {
@@ -313,7 +319,9 @@ export function useLoginPageState() {
         }
     }
 
-    const savedAccounts = snapshot?.savedCredentialsList || [];
+    const savedAccounts = Array.isArray(snapshot?.savedCredentialsList)
+        ? snapshot.savedCredentialsList
+        : [];
     const hasSavedAccounts = !isLoading && savedAccounts.length > 0;
     const showLegacyMigrationAction = shouldShowLegacyMigrationAction(
         isLoading,

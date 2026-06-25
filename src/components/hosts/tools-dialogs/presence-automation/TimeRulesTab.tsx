@@ -35,7 +35,6 @@ import {
     RuleListItem,
     RuleSummaryBadge
 } from './AutomationRuleLayout';
-import { PresenceRuleActionFields } from './PresenceRuleActionFields';
 import {
     createTimeRule,
     dayOptions,
@@ -49,6 +48,7 @@ import {
     shouldRestorePreviousState,
     updateRule
 } from './presenceAutomationDialogUtils';
+import { PresenceRuleActionFields } from './PresenceRuleActionFields';
 
 const I18N_ROOT = 'view.tools.social_automation';
 
@@ -114,7 +114,7 @@ function actionSummary(rule: any, t: any) {
 
 export function TimeRulesTab({ rules, disabled, onRulesChange }: any) {
     const { t } = useTranslation();
-    const [selectedRuleId, setSelectedRuleId] = useState(null);
+    const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!rules.length) {
@@ -235,7 +235,9 @@ export function TimeRulesTab({ rules, disabled, onRulesChange }: any) {
                 <FieldGroup>
                     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_10rem]">
                         <Field>
-                            <FieldLabel>{t(`${I18N_ROOT}.rule_name`)}</FieldLabel>
+                            <FieldLabel>
+                                {t(`${I18N_ROOT}.rule_name`)}
+                            </FieldLabel>
                             <Input
                                 value={selectedRule.label || ''}
                                 disabled={disabled}
@@ -248,7 +250,9 @@ export function TimeRulesTab({ rules, disabled, onRulesChange }: any) {
                             />
                         </Field>
                         <Field>
-                            <FieldLabel>{t(`${I18N_ROOT}.priority`)}</FieldLabel>
+                            <FieldLabel>
+                                {t(`${I18N_ROOT}.priority`)}
+                            </FieldLabel>
                             <Select
                                 value={priorityValueFromNumber(
                                     selectedRule.priority,
@@ -373,7 +377,10 @@ export function TimeRulesTab({ rules, disabled, onRulesChange }: any) {
                                 )}
                                 onCheckedChange={(checked: any) =>
                                     update(selectedRule.id, (current: any) =>
-                                        setGameRunningCondition(current, checked)
+                                        setGameRunningCondition(
+                                            current,
+                                            checked
+                                        )
                                     )
                                 }
                             />

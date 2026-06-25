@@ -19,10 +19,15 @@ export function collectMyAvatarTags(avatars: any) {
             }
         }
     }
-    return Array.from(tagSet).sort((left: any, right: any) => left.localeCompare(right));
+    return Array.from(tagSet).sort((left: any, right: any) =>
+        left.localeCompare(right)
+    );
 }
 
-export function matchesMyAvatarsPlatformFilter(avatar: any, platformFilter: any) {
+export function matchesMyAvatarsPlatformFilter(
+    avatar: any,
+    platformFilter: any
+) {
     if (platformFilter === 'all') {
         return true;
     }

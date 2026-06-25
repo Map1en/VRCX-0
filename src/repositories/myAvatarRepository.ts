@@ -1,9 +1,9 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 
 import avatarCacheRepository from './avatarCacheRepository';
 import userSessionRepository from './userSessionRepository';

@@ -5,6 +5,7 @@ import {
     escapeTag,
     escapeTagRecursive,
     localeIncludes,
+    normalizeString,
     removeEmojis,
     replaceBioSymbols,
     textToHex
@@ -53,6 +54,14 @@ describe('string utils', () => {
         expect(localeIncludes('Cafe noir', 'tea', comparer)).toBe(false);
         expect(localeIncludes('Cafe noir', '', comparer)).toBe(true);
         expect(localeIncludes('', 'Cafe', comparer)).toBe(false);
+    });
+
+    it('trims strings and coerces non-string inputs', () => {
+        expect(normalizeString('  hi  ')).toBe('hi');
+        expect(normalizeString(null)).toBe('');
+        expect(normalizeString(undefined)).toBe('');
+        expect(normalizeString(42)).toBe('42');
+        expect(normalizeString(true)).toBe('true');
     });
 
     it('normalizes bio symbols and removes emoji code points', () => {

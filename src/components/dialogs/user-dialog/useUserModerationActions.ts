@@ -2,10 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { updateModerationSync } from '@/services/moderationSyncService';
-
-import { normalizeUserId } from './userProfileFields';
 import { setVrchatUserModeration } from '@/services/shellIntegrationService';
 
+import { normalizeUserId } from './userProfileFields';
 
 export function useUserModerationActions({
     actionStatusRef,
@@ -230,9 +229,7 @@ export function useUserModerationActions({
             toast.error(
                 error instanceof Error && !knownAvatarModerationFailure
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_update_avatar_moderation'
-                      )
+                    : t('dialog.user.toast.failed_to_update_avatar_moderation')
             );
         } finally {
             actionStatusRef.current = 'idle';

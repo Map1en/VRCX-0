@@ -54,7 +54,9 @@ export function CheckRow({
                 id={id}
                 checked={checked}
                 disabled={disabled}
-                onCheckedChange={(value: any) => onCheckedChange(Boolean(value))}
+                onCheckedChange={(value: any) =>
+                    onCheckedChange(Boolean(value))
+                }
             />
             <FieldContent>
                 <FieldLabel htmlFor={id}>{label}</FieldLabel>

@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import { getCurrentLogLocation } from '@/services/gameLogWatcherService';
+import { normalizeString } from '@/shared/utils/string';
 
-import {
-    isLiveLocation,
-    normalizeString
-} from './playerListRows';
+import { isLiveLocation } from './playerListRows';
 
 function normalizeLogLocationSnapshot(snapshot: any) {
     if (!snapshot || typeof snapshot !== 'object') {

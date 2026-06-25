@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { normalizeString } from '@/shared/utils/string';
+
 interface FeedLiveEntry {
     sequence: number;
     ownerUserId: string;
@@ -28,12 +30,6 @@ const initialState: Pick<FeedLiveStoreState, 'version' | 'entries'> = {
     entries: []
 };
 
-function normalizeId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 export function feedEntryCorrectionId(row: Record<string, unknown>): string {
     if (row?.id != null) {
         return `id:${row.id}`;
@@ -60,7 +56,9 @@ export function feedEntryCorrectionId(row: Record<string, unknown>): string {
 
 function nonEmptyFeedPatch(fields: FeedEntryPatch): FeedEntryPatch {
     return Object.fromEntries(
-        Object.entries(fields).filter(([, value]) => normalizeId(value) !== '')
+        Object.entries(fields).filter(
+            ([, value]) => normalizeString(value) !== ''
+        )
     ) as FeedEntryPatch;
 }
 
@@ -83,7 +81,7 @@ export const useFeedLiveStore = create<FeedLiveStoreState>((set: any) => ({
         }));
     },
     patchEntry(id: any, fields: any) {
-        const normalizedId = normalizeId(id);
+        const normalizedId = normalizeString(id);
         if (!normalizedId || !fields || typeof fields !== 'object') {
             return;
         }

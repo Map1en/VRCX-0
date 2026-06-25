@@ -2,7 +2,12 @@ import { useRef, useState } from 'react';
 
 import { openFavoriteImportDialog } from '@/services/favoriteImportService';
 
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteGroup,
+    FavoriteItem,
+    FavoriteKind,
+    FavoriteSource
+} from './favoritesTypes';
 import { useFavoritesBulkActions } from './useFavoritesBulkActions';
 import { useFavoritesCollectionActions } from './useFavoritesCollectionActions';
 import { useFavoritesItemActions } from './useFavoritesItemActions';
@@ -34,30 +39,32 @@ export function useFavoritesActions({
     setSelectedKeys,
     setSelectedSource
 }: {
-    allItems: any[];
+    allItems: FavoriteItem[];
     avatarHistoryLoading: boolean;
     canInviteFromCurrentLocation: boolean;
     currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
     currentUserSnapshot: any;
-    friendsById: Record<string, any>;
-    friendsMap: Map<string, any>;
+    friendsById: Record<string, unknown>;
+    friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: any[];
+    localGroups: FavoriteGroup[];
     newLocalGroupName: string;
     refreshRemoteDetails(): void;
-    selectedContentItems: any[];
+    selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setAvatarHistory(value: any[] | ((current: any[]) => any[])): void;
+    setAvatarHistory(
+        value: unknown[] | ((current: unknown[]) => unknown[])
+    ): void;
     setAvatarHistoryLoading(value: boolean): void;
     setCreatingLocalGroup(value: boolean): void;
     setEditMode(value: boolean): void;
     setExportDialogOpen(value: boolean): void;
     setNewLocalGroupName(value: string): void;
     setSelectedGroupKey(value: string): void;
-    setSelectedKeys(value: any[] | ((current: any[]) => any[])): void;
+    setSelectedKeys(value: string[] | ((current: string[]) => string[])): void;
     setSelectedSource(value: FavoriteSource): void;
 }) {
     const [refreshing, setRefreshing] = useState(false);
@@ -104,7 +111,8 @@ export function useFavoritesActions({
     });
     const bulkActions = useFavoritesBulkActions({
         handleRemoveLocalFavorite: collectionActions.handleRemoveLocalFavorite,
-        handleRemoveRemoteFavorite: collectionActions.handleRemoveRemoteFavorite,
+        handleRemoveRemoteFavorite:
+            collectionActions.handleRemoveRemoteFavorite,
         selectedContentItems,
         setEditMode,
         setSelectedKeys

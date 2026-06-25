@@ -1,8 +1,8 @@
+import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import {
     userStatusIndicatorClassName,
     userStatusSortRank
 } from '@/shared/utils/userStatus';
-import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 
 export function languageCodeLabel(languageKey: any) {
     const key = String(languageKey ?? '')

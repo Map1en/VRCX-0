@@ -1,4 +1,8 @@
-import { FEED_FILTER_TYPES, type FeedFilterType } from '@/repositories/feedRepository';
+import {
+    FEED_FILTER_TYPES,
+    type FeedFilterType
+} from '@/repositories/feedRepository';
+import { normalizeString } from '@/shared/utils/string';
 
 export type FeedViewMode = 'table' | 'columns';
 
@@ -64,12 +68,6 @@ export const FEED_COLUMNS_DEFAULT_CONFIG: FeedColumnConfig[] = [
         feedTypes: ['Online', 'Offline']
     }
 ];
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
 
 function createColumnId(): string {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -163,9 +161,7 @@ function sanitizeFriendScope(value: unknown): FeedColumnFriendScope {
         );
     }
     const groupKeys = Array.from(
-        new Set(
-            scope.groupKeys.map(normalizeString).filter(Boolean)
-        )
+        new Set(scope.groupKeys.map(normalizeString).filter(Boolean))
     );
     return {
         kind: 'favorites',
@@ -178,7 +174,9 @@ export function sanitizeFeedViewMode(value: unknown): FeedViewMode {
     return value === 'columns' ? 'columns' : 'table';
 }
 
-export function sanitizeFeedColumnConfig(value: unknown): FeedColumnConfig | null {
+export function sanitizeFeedColumnConfig(
+    value: unknown
+): FeedColumnConfig | null {
     if (!value || typeof value !== 'object') {
         return null;
     }

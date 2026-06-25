@@ -1,4 +1,11 @@
-import { Children, cloneElement, isValidElement, useId } from 'react';
+import {
+    Children,
+    cloneElement,
+    isValidElement,
+    type ReactElement,
+    type ReactNode,
+    useId
+} from 'react';
 
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/ui/shadcn/card';
@@ -13,33 +20,45 @@ import {
 } from '@/ui/shadcn/field';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-function getAttachableControl(children: any) {
+type AttachableControlProps = {
+    id?: string;
+    'aria-invalid'?: boolean;
+    children?: ReactNode;
+};
+
+function getAttachableControl(
+    children: ReactNode
+): ReactElement<AttachableControlProps> | null {
     if (Children.count(children) !== 1) {
         return null;
     }
 
     const child = Children.only(children);
 
-    if (!isValidElement(child)) {
+    if (!isValidElement<AttachableControlProps>(child)) {
         return null;
     }
 
-    const childProps = (child as any).props;
+    const childProps = child.props;
     if (childProps.children != null) {
         return null;
     }
 
-    return child as any;
+    return child;
 }
 
-function applyControlProps(children: any, controlId: any, invalid: any) {
+function applyControlProps(
+    children: ReactNode,
+    controlId: string | undefined,
+    invalid: boolean
+): ReactNode {
     const child = getAttachableControl(children);
 
     if (!child) {
         return children;
     }
 
-    return cloneElement(child as any, {
+    return cloneElement(child, {
         id: child.props.id || controlId,
         'aria-invalid': child.props['aria-invalid'] || invalid || undefined
     });

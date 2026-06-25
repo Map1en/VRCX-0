@@ -52,10 +52,7 @@ import {
     sanitizeTableColumnSizing,
     usePersistedDataTableLayout
 } from './dataTablePersistence';
-import {
-    ResizableTableCell,
-    ResizableTableHead
-} from './ResizableTableParts';
+import { ResizableTableCell, ResizableTableHead } from './ResizableTableParts';
 import {
     getColumnOrder,
     getColumnOrderLocked,
@@ -265,7 +262,11 @@ export function DataTableScrollArea({
     );
 }
 
-export function DataTableEmptyRow({ colSpan = 1, className = '', children }: any) {
+export function DataTableEmptyRow({
+    colSpan = 1,
+    className = '',
+    children
+}: any) {
     return (
         <TableRow>
             <TableCell
@@ -364,9 +365,9 @@ export function DataTablePagination({
                         </Button>
                     </PaginationItem>
                     <PaginationItem>
-                        <div className='text-xs mx-2 text-accent-foreground'>{resolvedPageIndex + 1}{' '}
-                            / {resolvedPageCount}</div>
-                            
+                        <div className="text-accent-foreground mx-2 text-xs">
+                            {resolvedPageIndex + 1} / {resolvedPageCount}
+                        </div>
                     </PaginationItem>
                     <PaginationItem>
                         <Button

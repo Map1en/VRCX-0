@@ -69,7 +69,7 @@ export function GalleryInventoryTab({
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="p-4 min-h-0 flex-1 overflow-y-auto">
+                <CardContent className="min-h-0 flex-1 overflow-y-auto p-4">
                     {loading ? (
                         <LoadingState />
                     ) : items.length > 0 ? (

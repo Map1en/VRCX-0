@@ -11,12 +11,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
-import { openExternalLink } from '@/services/entityMediaService';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { openUserDialog } from '@/services/dialogService';
+import { openExternalLink } from '@/services/entityMediaService';
+import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
@@ -40,8 +41,7 @@ import {
     formatWidgetExactTime,
     formatWidgetTime,
     getNextDashboardWidgetFilterConfig,
-    isDashboardWidgetFilterActive,
-    normalizeString
+    isDashboardWidgetFilterActive
 } from './dashboardWidgetUtils';
 
 const GAME_LOG_WIDGET_MAX_ROWS = 200;

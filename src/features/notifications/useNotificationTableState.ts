@@ -14,6 +14,11 @@ import {
     writePersistedNotificationTableState as writePersistedState
 } from './notificationTableState';
 
+type NotificationPagination = {
+    pageIndex: number;
+    pageSize: number;
+};
+
 export function useNotificationTableState({
     activeTypes,
     deferredSearchQuery
@@ -32,7 +37,10 @@ export function useNotificationTableState({
     );
 
     const [persistedState] = useState(() => readPersistedState());
-    const persistedPageSize = Number.parseInt(persistedState.pageSize, 10);
+    const persistedPageSize = Number.parseInt(
+        String(persistedState.pageSize ?? ''),
+        10
+    );
     const hasPersistedPageSize =
         Number.isFinite(persistedPageSize) && persistedPageSize > 0;
     const hasStoredPageSizeRef = useRef(hasPersistedPageSize);
@@ -59,7 +67,7 @@ export function useNotificationTableState({
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
-    const [pagination, setPagination] = useState<any>({
+    const [pagination, setPagination] = useState<NotificationPagination>({
         pageIndex: 0,
         pageSize: resolvePageSize(persistedPageSize)
     });
@@ -118,7 +126,7 @@ export function useNotificationTableState({
             resolvedPageSizes
         );
         setPageSizes(resolvedPageSizes);
-        setPagination((current: any) => {
+        setPagination((current) => {
             const storedPageSize = Number.isFinite(storedPageSizeRef.current)
                 ? storedPageSizeRef.current
                 : current.pageSize;
@@ -144,7 +152,7 @@ export function useNotificationTableState({
     ]);
 
     useEffect(() => {
-        setPagination((current: any) => ({
+        setPagination((current) => ({
             ...current,
             pageIndex: 0
         }));

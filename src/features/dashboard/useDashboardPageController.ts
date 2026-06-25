@@ -20,7 +20,10 @@ export function useDashboardPageController() {
     });
     const dashboardRowPanelIds = useMemo(
         () =>
-            (Array.isArray(store.dashboard?.rows) ? store.dashboard.rows : []).map(
+            (Array.isArray(store.dashboard?.rows)
+                ? store.dashboard.rows
+                : []
+            ).map(
                 (row: any) =>
                     `dashboard-${store.id}-row-panel-${getDashboardRowKey(row)}`
             ),

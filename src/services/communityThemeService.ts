@@ -13,11 +13,11 @@ import {
     loadCommunityThemeCatalog,
     resolveCommunityThemeAssetUrl
 } from '@/repositories/communityThemeRepository';
-import configRepository from '@/repositories/configRepository';
 import {
     APP_THEME_CONFIG_KEYS,
     COMMUNITY_THEME_CONFIG_KEYS
 } from '@/repositories/configKeys';
+import configRepository from '@/repositories/configRepository';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import {
     communityThemeControlsAccent,
@@ -376,11 +376,19 @@ export async function initializeCommunityThemes(): Promise<void> {
     ] = await Promise.all([
         configRepository.getBool(COMMUNITY_THEME_CONFIG_KEYS.enabled, false),
         configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.id, ''),
-        configRepository.getObject(COMMUNITY_THEME_CONFIG_KEYS.installMetadata, null),
+        configRepository.getObject(
+            COMMUNITY_THEME_CONFIG_KEYS.installMetadata,
+            null
+        ),
         configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.cssSnapshot, ''),
-        configRepository.getObject(COMMUNITY_THEME_CONFIG_KEYS.installedThemes, null),
+        configRepository.getObject(
+            COMMUNITY_THEME_CONFIG_KEYS.installedThemes,
+            null
+        ),
         configRepository.getString(COMMUNITY_THEME_CONFIG_KEYS.overrideCss, ''),
-        configRepository.getRawValue(COMMUNITY_THEME_CONFIG_KEYS.overrideCssEnabled),
+        configRepository.getRawValue(
+            COMMUNITY_THEME_CONFIG_KEYS.overrideCssEnabled
+        ),
         configRepository.remove(
             COMMUNITY_THEME_CONFIG_KEYS.legacyMarketplaceCatalogUrl
         )

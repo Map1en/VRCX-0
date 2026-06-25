@@ -32,8 +32,7 @@ const FRIEND_PROFILE_LOAD_BASE_DELAY_MS = 500;
 
 function isRateLimitedError(error: any) {
     return (
-        error?.status === 429 ||
-        String(error?.message || '').includes('429')
+        error?.status === 429 || String(error?.message || '').includes('429')
     );
 }
 
@@ -65,7 +64,9 @@ export function useFriendListRowActions({
     setUserLoadProgress(value: any): void;
 }) {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
@@ -95,8 +96,7 @@ export function useFriendListRowActions({
     const handledMutualGraphRunRef = useRef(0);
     const isMutualFetching =
         mutualGraphOwnerUserId === currentUserId &&
-        (mutualGraphStatus === 'running' ||
-            mutualGraphStatus === 'cancelling');
+        (mutualGraphStatus === 'running' || mutualGraphStatus === 'cancelling');
 
     useEffect(() => {
         if (!isMutualFetching) {
@@ -384,7 +384,9 @@ export function useFriendListRowActions({
             );
             if (cancelUserLoadRef.current) {
                 toast.warning(
-                    t('view.friend_list.success.friend_detail_loading_cancelled')
+                    t(
+                        'view.friend_list.success.friend_detail_loading_cancelled'
+                    )
                 );
                 return;
             }
@@ -469,7 +471,9 @@ export function useFriendListRowActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.charts.toast.failed_to_fetch_mutual_friends_graph')
+                    : t(
+                          'view.charts.toast.failed_to_fetch_mutual_friends_graph'
+                      )
             );
         }
     }

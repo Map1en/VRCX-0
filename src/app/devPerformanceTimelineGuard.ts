@@ -7,7 +7,8 @@ export function installDevPerformanceTimelineGuard() {
         return;
     }
 
-    const performanceApi = globalThis.performance;
+    const performanceApi = globalThis.performance as Performance &
+        Record<symbol, unknown>;
     if (
         !performanceApi ||
         performanceApi[DEV_PERFORMANCE_GUARD_KEY] ||
@@ -24,7 +25,9 @@ export function installDevPerformanceTimelineGuard() {
 
     // React dev builds emit User Timing measures for renders and components.
     // Chrome keeps those entries until cleared, so active dev sessions can OOM.
-    function measureAndClear(...args: any[]) {
+    function measureAndClear(
+        ...args: Parameters<Performance['measure']>
+    ): ReturnType<Performance['measure']> {
         const entry = measure(...args);
         const name = typeof args[0] === 'string' ? args[0] : undefined;
 

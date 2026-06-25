@@ -1,8 +1,8 @@
 import { ClockIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 import { isActionRecent } from '@/services/recentActionService';
+import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 
 const statusOptions = [
     { value: 'join me', labelKey: 'dialog.user.status.join_me' },

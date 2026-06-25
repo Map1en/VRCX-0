@@ -103,7 +103,11 @@ function setCachedGameLogWorldName(worldId: unknown, worldName: unknown) {
     });
 
     while (gameLogWorldNameCache.size > GAME_LOG_WORLD_NAME_CACHE_LIMIT) {
-        gameLogWorldNameCache.delete(gameLogWorldNameCache.keys().next().value);
+        const oldestKey = gameLogWorldNameCache.keys().next().value;
+        if (oldestKey === undefined) {
+            break;
+        }
+        gameLogWorldNameCache.delete(oldestKey);
     }
 }
 
@@ -114,6 +118,9 @@ function getCachedGameLogWorldName(worldId: unknown) {
     }
 
     const cached = gameLogWorldNameCache.get(normalizedWorldId);
+    if (!cached) {
+        return undefined;
+    }
     if (cached.expiresAt && cached.expiresAt <= Date.now()) {
         gameLogWorldNameCache.delete(normalizedWorldId);
         return undefined;

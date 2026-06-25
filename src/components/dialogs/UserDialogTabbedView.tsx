@@ -2,12 +2,12 @@ import { ClockIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import { isActionRecent } from '@/services/recentActionService';
 import { parseLocation } from '@/shared/utils/locationParser';
 import { useRuntimeStore } from '@/state/runtimeStore';

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
@@ -11,7 +13,6 @@ import {
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
 import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
-import { useTranslation } from 'react-i18next';
 
 export function FriendLogPageTable({
     table,

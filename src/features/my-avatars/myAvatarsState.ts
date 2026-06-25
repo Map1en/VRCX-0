@@ -46,26 +46,28 @@ export const MY_AVATARS_COLUMN_IDS = [
     'created_at',
     'actions'
 ];
-export const MY_AVATARS_DEFAULT_COLUMN_VISIBILITY = Object.freeze({
-    pcPerf: false,
-    androidPerf: false,
-    iosPerf: false,
-    created_at: false
-});
+export const MY_AVATARS_DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> =
+    Object.freeze({
+        pcPerf: false,
+        androidPerf: false,
+        iosPerf: false,
+        created_at: false
+    });
 
 const STORAGE_KEY = getDataTableStorageKey('my-avatars');
-const COLUMN_ID_ALIASES: any = {
+const COLUMN_ID_ALIASES: Record<string, string> = {
     releaseStatus: 'visibility',
     action: 'actions'
 };
 const GRID_DENSITY_VALUES = new Set(
     MY_AVATARS_GRID_DENSITY_OPTIONS.map((option: any) => option.value)
 );
-const LEGACY_GRID_DENSITY_ALIASES = Object.freeze({
-    compact: 'standard',
-    dense: 'compact',
-    micro: 'dense'
-});
+const LEGACY_GRID_DENSITY_ALIASES: Readonly<Record<string, string>> =
+    Object.freeze({
+        compact: 'standard',
+        dense: 'compact',
+        micro: 'dense'
+    });
 const SORT_COLUMN_IDS = [
     'name',
     'customTags',
@@ -83,7 +85,7 @@ export function readPersistedMyAvatarsState() {
     return readPersistedTableState(STORAGE_KEY);
 }
 
-export function writePersistedMyAvatarsState(patch: any) {
+export function writePersistedMyAvatarsState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
@@ -218,7 +220,7 @@ export function resolveMyAvatarsGridDensity({
 }
 
 export function sanitizeMyAvatarsColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (value && typeof value === 'object') {
         for (const [rawColumnId, rawVisible] of Object.entries(value)) {
             const columnId = normalizeMyAvatarsColumnId(rawColumnId);
@@ -246,7 +248,7 @@ export function sanitizeMyAvatarsColumnOrder(value: any) {
         return [...MY_AVATARS_COLUMN_IDS];
     }
 
-    const ordered = [];
+    const ordered: string[] = [];
     for (const rawColumnId of value) {
         const columnId = normalizeMyAvatarsColumnId(rawColumnId);
         if (
@@ -271,7 +273,7 @@ export function sanitizeMyAvatarsColumnSizing(value: any) {
         return {};
     }
 
-    const normalizedSizing: any = {};
+    const normalizedSizing: Record<string, unknown> = {};
     for (const [rawColumnId, rawWidth] of Object.entries(value)) {
         const columnId = normalizeMyAvatarsColumnId(rawColumnId);
         if (MY_AVATARS_COLUMN_IDS.includes(columnId)) {

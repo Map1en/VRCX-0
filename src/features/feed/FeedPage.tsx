@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import { PageBody, PageScaffold } from '@/components/layout/PageScaffold';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FeedColumnsMode } from './columns/FeedColumnsMode';
 import { FeedTableShell } from './components/FeedTableShell';
@@ -78,7 +78,10 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
 
     if (!ready) {
         return (
-            <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
+            <PageScaffold
+                embedded={embedded}
+                className={embedded ? '' : 'feed'}
+            >
                 <PageBody className="items-center justify-center">
                     <Spinner />
                 </PageBody>

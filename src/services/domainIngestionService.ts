@@ -73,7 +73,7 @@ function recordKnownUser(
 }
 
 function recordKnownUsers(
-    users: Array<Record<string, unknown> | null | undefined>,
+    users: unknown[],
     options: RecordKnownUserOptions = {}
 ) {
     ingestUserFactEntries(
@@ -258,7 +258,7 @@ function recordLocationHintsFromInstances({
             ...(source.usersById && typeof source.usersById === 'object'
                 ? Object.values(source.usersById)
                 : [])
-        ] as Record<string, unknown>[];
+        ];
         recordKnownUsers(users, {
             endpoint,
             source: 'instance'

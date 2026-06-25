@@ -8,10 +8,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    resolveFeedUserDisplayName,
-    resolveFeedUserId
-} from '../feedRows';
+import { resolveFeedUserDisplayName, resolveFeedUserId } from '../feedRows';
 import type {
     FeedColumns,
     FeedFriendActions,
@@ -102,22 +99,18 @@ export function useFeedColumns({
                 accessorFn: (row: FeedRow) =>
                     new Date(String(row?.created_at || 0)).valueOf() || 0,
                 meta: { label: t('table.feed.date') },
-                header: ({
-                    column
-                }: {
-                    column: Column<FeedRow, unknown>;
-                }) => <SortButton column={column} label={t('table.feed.date')} />,
+                header: ({ column }: { column: Column<FeedRow, unknown> }) => (
+                    <SortButton column={column} label={t('table.feed.date')} />
+                ),
                 cell: ({ row }: { row: Row<FeedRow> }) => <DateCell row={row} />
             },
             {
                 id: 'type',
                 accessorFn: (row: FeedRow) => String(row?.type || ''),
                 meta: { label: t('table.feed.type') },
-                header: ({
-                    column
-                }: {
-                    column: Column<FeedRow, unknown>;
-                }) => <SortButton column={column} label={t('table.feed.type')} />,
+                header: ({ column }: { column: Column<FeedRow, unknown> }) => (
+                    <SortButton column={column} label={t('table.feed.type')} />
+                ),
                 cell: ({ row }: { row: Row<FeedRow> }) => {
                     const typeLabel = row.original.type
                         ? t(`view.feed.filters.${String(row.original.type)}`)
@@ -136,18 +129,14 @@ export function useFeedColumns({
                     );
                 },
                 meta: { label: t('table.feed.user') },
-                header: ({
-                    column
-                }: {
-                    column: Column<FeedRow, unknown>;
-                }) => <SortButton column={column} label={t('table.feed.user')} />,
+                header: ({ column }: { column: Column<FeedRow, unknown> }) => (
+                    <SortButton column={column} label={t('table.feed.user')} />
+                ),
                 cell: ({ row }: { row: Row<FeedRow> }) => (
                     <FeedUserLink
                         actions={actions}
                         cachedDisplayName={
-                            friendLogNamesById[
-                                resolveFeedUserId(row.original)
-                            ]
+                            friendLogNamesById[resolveFeedUserId(row.original)]
                         }
                         row={row.original}
                     />

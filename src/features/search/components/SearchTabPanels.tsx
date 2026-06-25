@@ -281,11 +281,7 @@ export function SearchAvatarTabPanel({
     );
 }
 
-export function SearchGroupTabPanel({
-    isLoading,
-    results,
-    pagination
-}: any) {
+export function SearchGroupTabPanel({ isLoading, results, pagination }: any) {
     return (
         <TabsContent
             value="group"

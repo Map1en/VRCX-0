@@ -13,27 +13,20 @@ import { DataTableSortButton } from '@/components/data-table/DataTableSortButton
 import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
-import {
-    copyTextToClipboard,
-    userImage
-} from '@/services/entityMediaService';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import {
     openGroupDialog,
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import { copyTextToClipboard, userImage } from '@/services/entityMediaService';
 import {
     parseLocation,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage
-} from '@/ui/shadcn/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -161,7 +154,9 @@ function FeedUserLink({
     }, [currentEndpoint, displayName, userId]);
 
     const userLabel = displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
-    const imageUrl = showAvatar ? userImage(displayUser || null, true, '64') : '';
+    const imageUrl = showAvatar
+        ? userImage(displayUser || null, true, '64')
+        : '';
     const actionTarget = (friend || row) as FeedRow;
 
     return (

@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 
 import { normalizeUserTablePrefix } from './userSessionRepository';
 
@@ -88,14 +89,10 @@ interface FeedLiveRowsMergeOptions {
 const DEFAULT_MAX_TABLE_SIZE = 500;
 const DEFAULT_SEARCH_TABLE_SIZE = 50000;
 
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function normalizeStringList(value: unknown): string[] {
-    return Array.isArray(value) ? value.map(normalizeString).filter(Boolean) : [];
+    return Array.isArray(value)
+        ? value.map(normalizeString).filter(Boolean)
+        : [];
 }
 
 function getUserPrefix(userId: unknown) {
@@ -111,8 +108,9 @@ function ensureFeedTablesForUser(userId: unknown): Promise<void> {
         return existing;
     }
 
-    const promise = commands.appUserTablesEnsure(normalizeString(userId))
-        .then(() => undefined)
+    const promise = commands
+        .appUserTablesEnsure(normalizeString(userId))
+        .then((): void => undefined)
         .catch((error: unknown) => {
             if (ensuredFeedTablePrefixes.get(userPrefix) === promise) {
                 ensuredFeedTablePrefixes.delete(userPrefix);
@@ -136,9 +134,9 @@ function addFeedEntry(
     entry: Record<string, unknown> = {}
 ) {
     return commands.appFeedAddEntry(normalizeString(userId), {
-            ...entry,
-            type
-        });
+        ...entry,
+        type
+    });
 }
 
 async function queryFeedRows({
@@ -155,17 +153,17 @@ async function queryFeedRows({
 }: FeedRowsQueryOptions): Promise<FeedDatabaseRow[]> {
     await ensureFeedTablesForUser(userId);
     const rows = (await commands.appFeedRowsQuery({
-            userId: normalizeString(userId),
-            mode,
-            search,
-            filters: normalizeStringList(filters),
-            vipList: normalizeStringList(vipList),
-            excludedUserIds: normalizeStringList(excludedUserIds),
-            maxEntries,
-            dateFrom,
-            dateTo,
-            cursor
-        })) as FeedDatabaseRow[];
+        userId: normalizeString(userId),
+        mode,
+        search,
+        filters: normalizeStringList(filters),
+        vipList: normalizeStringList(vipList),
+        excludedUserIds: normalizeStringList(excludedUserIds),
+        maxEntries,
+        dateFrom,
+        dateTo,
+        cursor
+    })) as FeedDatabaseRow[];
     return Array.isArray(rows) ? rows : [];
 }
 
@@ -178,9 +176,7 @@ function normalizeFeedReadModelResult(result: unknown): FeedReadModelResult {
     }
     const value = result as { rows?: unknown; maxSequence?: unknown };
     return {
-        rows: Array.isArray(value.rows)
-            ? (value.rows as FeedRowValue[])
-            : [],
+        rows: Array.isArray(value.rows) ? (value.rows as FeedRowValue[]) : [],
         maxSequence:
             typeof value.maxSequence === 'number' ? value.maxSequence : 0
     };
@@ -239,7 +235,10 @@ const feed = {
      * @param {string|null} cutoffDate - ISO date string. Deletes records older than this date. If null, deletes all records.
      */
     async purgeAvatarFeedData(userId: unknown, cutoffDate: unknown) {
-        await commands.appFeedAvatarPurge(normalizeString(userId), normalizeString(cutoffDate) || null);
+        await commands.appFeedAvatarPurge(
+            normalizeString(userId),
+            normalizeString(cutoffDate) || null
+        );
     },
 
     addOnlineOfflineToDatabase(
@@ -299,24 +298,24 @@ const feed = {
         await ensureFeedTablesForUser(userId);
         return normalizeFeedReadModelResult(
             await commands.appFeedReadModelQuery({
-                    userId: normalizeString(userId),
-                    mode,
-                    search,
-                    filters: normalizeStringList(filters),
-                    vipList: normalizeStringList(vipList),
-                    maxEntries,
-                    dateFrom,
-                    dateTo,
-                    cursor,
-                    liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
-                    minLiveSequence,
-                    favoritesOnly,
-                    favoriteUserIds: Array.isArray(favoriteUserIds)
-                        ? favoriteUserIds
-                        : [],
-                    excludedUserIds: normalizeStringList(excludedUserIds),
-                    maxRows
-                })
+                userId: normalizeString(userId),
+                mode,
+                search,
+                filters: normalizeStringList(filters),
+                vipList: normalizeStringList(vipList),
+                maxEntries,
+                dateFrom,
+                dateTo,
+                cursor,
+                liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
+                minLiveSequence,
+                favoritesOnly,
+                favoriteUserIds: Array.isArray(favoriteUserIds)
+                    ? favoriteUserIds
+                    : [],
+                excludedUserIds: normalizeStringList(excludedUserIds),
+                maxRows
+            })
         );
     },
 
@@ -336,21 +335,21 @@ const feed = {
     }: FeedLiveRowsMergeOptions) {
         return normalizeFeedReadModelResult(
             await commands.appFeedLiveRowsMerge({
-                    rows: Array.isArray(rows) ? rows : [],
-                    currentUserId: normalizeString(currentUserId),
-                    filters: normalizeStringList(filters),
-                    search,
-                    dateFrom,
-                    dateTo,
-                    favoritesOnly,
-                    favoriteUserIds: Array.isArray(favoriteUserIds)
-                        ? favoriteUserIds
-                        : [],
-                    excludedUserIds: normalizeStringList(excludedUserIds),
-                    liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
-                    minLiveSequence,
-                    maxRows
-                })
+                rows: Array.isArray(rows) ? rows : [],
+                currentUserId: normalizeString(currentUserId),
+                filters: normalizeStringList(filters),
+                search,
+                dateFrom,
+                dateTo,
+                favoritesOnly,
+                favoriteUserIds: Array.isArray(favoriteUserIds)
+                    ? favoriteUserIds
+                    : [],
+                excludedUserIds: normalizeStringList(excludedUserIds),
+                liveEntries: Array.isArray(liveEntries) ? liveEntries : [],
+                minLiveSequence,
+                maxRows
+            })
         );
     },
 

@@ -8,9 +8,9 @@ import {
 
 describe('feed columns density helpers', () => {
     it('offers only compact and dense density modes', () => {
-        expect(FEED_COLUMN_DENSITY_OPTIONS.map((option) => option.value)).toEqual(
-            ['compact', 'dense']
-        );
+        expect(
+            FEED_COLUMN_DENSITY_OPTIONS.map((option) => option.value)
+        ).toEqual(['compact', 'dense']);
     });
 
     it('falls back legacy standard density to compact', () => {

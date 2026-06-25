@@ -1,20 +1,21 @@
-import { commands } from '@/platform/tauri/bindings';
 import { toast } from 'sonner';
 
 import { clearEntityQueryCache } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 import authRepository, {
     type SavedAuthSnapshot,
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
+import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import {
     isVrchatInvalidCredentialsError,
     isVrchatSessionRecoveryError
 } from '@/repositories/vrchatRequest';
-import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import webRepository from '@/repositories/webRepository';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -23,7 +24,6 @@ import {
     useRuntimeStore
 } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
-import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { resetActivityCacheState } from './activityCacheService';
@@ -142,9 +142,9 @@ function parseAuthResponse(json: unknown): AuthResponse {
 function isMissingCredentialsError(error: unknown) {
     return Boolean(
         isRecord(error) &&
-            error.status === 401 &&
-            typeof error.message === 'string' &&
-            error.message.includes('Missing Credentials')
+        error.status === 401 &&
+        typeof error.message === 'string' &&
+        error.message.includes('Missing Credentials')
     );
 }
 
@@ -157,12 +157,13 @@ function getCurrentUserDisplayName(user: AuthUserRecord | null) {
 }
 
 function setRuntimeAuthScope(userId: unknown = '', endpoint: unknown = '') {
-    return commands.appRuntimeAuthScopeSet({
+    return commands
+        .appRuntimeAuthScopeSet({
             userId: typeof userId === 'string' ? userId : String(userId ?? ''),
             endpoint:
                 typeof endpoint === 'string' ? endpoint : String(endpoint ?? '')
         })
-        .catch((error: unknown) => {
+        .catch((error: unknown): null => {
             console.warn('Failed to sync runtime auth scope:', error);
             return null;
         });
@@ -195,7 +196,9 @@ export function resetCurrentUserRuntimeAuth() {
     useFeedLiveStore.getState().resetFeedLive();
     resetDomainFacts();
     resetActivityCacheState();
-    useRuntimeStore.getState().setGroupInstancesState(createGroupInstancesState());
+    useRuntimeStore
+        .getState()
+        .setGroupInstancesState(createGroupInstancesState());
     useRuntimeStore.getState().setAuthBootstrap({
         currentUserId: null,
         currentUserDisplayName: '',
@@ -695,7 +698,9 @@ export async function executeSavedCredentialLogin(
         userId ||
         'saved account';
 
-    const loginParams = normalizeLoginParams(savedCredential?.loginParams ?? {});
+    const loginParams = normalizeLoginParams(
+        savedCredential?.loginParams ?? {}
+    );
     if (!userId || !savedCredential?.hasLoginCredentials) {
         throw createAuthExecutionError(
             'The saved account is missing username or password data.',

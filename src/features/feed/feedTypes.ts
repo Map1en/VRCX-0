@@ -5,10 +5,7 @@ import type {
 } from '@tanstack/react-table';
 import type { Dispatch, SetStateAction } from 'react';
 
-import type {
-    FeedEntry,
-    FeedFilterType
-} from '@/repositories/feedRepository';
+import type { FeedEntry, FeedFilterType } from '@/repositories/feedRepository';
 
 export type FeedRow = FeedEntry & {
     id?: unknown;

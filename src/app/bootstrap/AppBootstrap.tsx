@@ -8,7 +8,7 @@ import {
 } from '@/services/runtimeBootstrapService';
 import { startTelemetryLifecycle } from '@/services/telemetry/telemetryService';
 
-export function AppBootstrap() {
+export function AppBootstrap(): null {
     useEffect(() => startReactRuntimeServices(), []);
     useEffect(() => startI18nLanguageSync(), []);
     useEffect(() => startThemeModeSync(), []);

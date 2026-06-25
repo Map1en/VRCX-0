@@ -4,7 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     EMPTY_ASSETS,
     sanitizeGalleryTab,
-    TAB_ORDER
+    TAB_ORDER,
+    type GalleryTab
 } from './galleryConstants';
 import {
     getGalleryGridDensityConfig,
@@ -14,6 +15,29 @@ import { useGalleryActions } from './useGalleryActions';
 import { useGalleryRuntimeState } from './useGalleryRuntimeState';
 
 const GALLERY_GRID_DENSITY_STORAGE_KEY = 'VRCX_GalleryGridDensity';
+
+type GalleryAuthTarget = {
+    endpoint: string;
+    userId: string;
+};
+
+type GalleryUploadSettings = {
+    animationStyle: string;
+    fps: number;
+    frames: number;
+    isAnimated: boolean;
+    loopPingPong: boolean;
+};
+
+type GalleryUploadTarget = GalleryTab | 'emojis' | 'stickers';
+
+type GalleryCropRequest = {
+    aspectRatio: number;
+    authTarget: GalleryAuthTarget;
+    file: File;
+    settings: GalleryUploadSettings;
+    tab: GalleryUploadTarget;
+};
 
 function readGalleryGridDensityPreference() {
     if (typeof window === 'undefined') {
@@ -44,9 +68,9 @@ function writeGalleryGridDensityPreference(value: any) {
 export function useGalleryPageController() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const uploadInputRef = useRef(null);
-    const uploadTargetRef = useRef('gallery');
-    const uploadAuthTargetRef = useRef(null);
+    const uploadInputRef = useRef<HTMLInputElement | null>(null);
+    const uploadTargetRef = useRef<GalleryUploadTarget>('gallery');
+    const uploadAuthTargetRef = useRef<GalleryAuthTarget | null>(null);
     const {
         currentEndpoint,
         currentUserId,
@@ -60,10 +84,14 @@ export function useGalleryPageController() {
         sanitizeGalleryTab(searchParams.get('tab'))
     );
     const [assets, setAssets] = useState(EMPTY_ASSETS);
-    const [loadingByTab, setLoadingByTab] = useState<any>({});
+    const [loadingByTab, setLoadingByTab] = useState<Record<string, boolean>>(
+        {}
+    );
     const [uploadingTab, setUploadingTab] = useState('');
     const [mutatingKey, setMutatingKey] = useState('');
-    const [cropRequest, setCropRequest] = useState(null);
+    const [cropRequest, setCropRequest] = useState<GalleryCropRequest | null>(
+        null
+    );
     const [emojiAnimFps, setEmojiAnimFps] = useState(15);
     const [emojiAnimFrameCount, setEmojiAnimFrameCount] = useState(4);
     const [emojiAnimType, setEmojiAnimType] = useState(false);
@@ -95,7 +123,7 @@ export function useGalleryPageController() {
 
     useEffect(() => {
         const nextTab = sanitizeGalleryTab(searchParams.get('tab'));
-        setActiveTabState((current: any) =>
+        setActiveTabState((current) =>
             current === nextTab ? current : nextTab
         );
     }, [searchParams]);
@@ -136,16 +164,16 @@ export function useGalleryPageController() {
         uploadInputRef,
         uploadTargetRef
     });
-    function changeGridDensity(nextValue: any) {
+    function changeGridDensity(nextValue: unknown) {
         const nextDensity = sanitizeGalleryGridDensity(nextValue);
         setGridDensity(nextDensity);
         writeGalleryGridDensityPreference(nextDensity);
     }
-    function setActiveTab(nextValue: any) {
+    function setActiveTab(nextValue: unknown) {
         const nextTab = sanitizeGalleryTab(nextValue);
         setActiveTabState(nextTab);
         setSearchParams(
-            (currentParams: any) => {
+            (currentParams) => {
                 const nextParams = new URLSearchParams(currentParams);
                 if (nextTab === TAB_ORDER[0]) {
                     nextParams.delete('tab');

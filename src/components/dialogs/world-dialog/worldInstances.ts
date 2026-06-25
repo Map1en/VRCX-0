@@ -1,7 +1,4 @@
-import {
-    buildLegacyInstanceTag,
-    getLaunchURL
-} from '@/shared/utils/instance';
+import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/locationParser';
 
 export function normalizeEntityId(value: any) {
@@ -72,7 +69,11 @@ export function buildLegacyCreatedInstance({
     };
 }
 
-export function buildCreatedInstanceDetails(location: any, instance: any, fallback: any = {}) {
+export function buildCreatedInstanceDetails(
+    location: any,
+    instance: any,
+    fallback: any = {}
+) {
     const parsedLocation = parseLocation(location);
     const shortName = normalizeEntityId(
         instance?.shortName || parsedLocation.shortName

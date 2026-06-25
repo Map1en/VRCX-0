@@ -69,7 +69,9 @@ function isNavItemNotified(entry: any, notifiedKeys: any) {
         return true;
     }
     return Boolean(
-        entry?.children?.some((child: any) => isEntryNotified(child, notifiedKeys))
+        entry?.children?.some((child: any) =>
+            isEntryNotified(child, notifiedKeys)
+        )
     );
 }
 

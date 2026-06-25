@@ -50,7 +50,9 @@ async function ensureUserTables(userId: unknown): Promise<UserTableContext> {
     }
 
     const promise = (async () => {
-        const context = (await commands.appUserTablesEnsure(normalizeUserId(userId))) as UserTableContext;
+        const context = (await commands.appUserTablesEnsure(
+            normalizeUserId(userId)
+        )) as UserTableContext;
 
         return {
             userId: context.userId || normalizeUserId(userId),
@@ -79,7 +81,9 @@ async function initUserTablesUncached(
     userId: unknown
 ): Promise<UserTableContext> {
     const userPrefix = normalizeUserTablePrefix(userId);
-    const context = (await commands.appUserTablesEnsure(normalizeUserId(userId))) as UserTableContext;
+    const context = (await commands.appUserTablesEnsure(
+        normalizeUserId(userId)
+    )) as UserTableContext;
 
     return {
         userId: context.userId || normalizeUserId(userId),
@@ -91,7 +95,10 @@ async function purgeAvatarFeedData(
     userId: unknown,
     cutoffDate: string | null = null
 ): Promise<void> {
-    await commands.appFeedAvatarPurge(normalizeUserId(userId), cutoffDate || null);
+    await commands.appFeedAvatarPurge(
+        normalizeUserId(userId),
+        cutoffDate || null
+    );
 }
 
 const userSessionRepository: UserSessionRepository = {

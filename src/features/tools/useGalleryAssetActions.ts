@@ -162,9 +162,7 @@ export function useGalleryAssetActions({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_load_inventory'
-                          )
+                        : t('view.tools.toast.failed_to_load_inventory')
                 );
             }
         } finally {
@@ -394,9 +392,7 @@ export function useGalleryAssetActions({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_delete_media_item'
-                          )
+                        : t('view.tools.toast.failed_to_delete_media_item')
                 );
             }
         } finally {

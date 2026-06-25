@@ -99,10 +99,10 @@ export function isVrchatSessionRecoveryError(
             : '';
     return Boolean(
         isVrchatMissingCredentialsError(error) ||
-            (status === 403 &&
-                (normalizedEndpoint === 'config' ||
-                    normalizedEndpoint === 'auth' ||
-                    normalizedEndpoint === 'auth/user'))
+        (status === 403 &&
+            (normalizedEndpoint === 'config' ||
+                normalizedEndpoint === 'auth' ||
+                normalizedEndpoint === 'auth/user'))
     );
 }
 

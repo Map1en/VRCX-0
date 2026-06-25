@@ -262,7 +262,9 @@ export function FavoritesContentPanel({
                     />
                 ) : collections.favoriteLoadStatus === 'error' ? (
                     <FavoritesEmptyState
-                        title={t('view.favorite.error.favorites_failed_to_load')}
+                        title={t(
+                            'view.favorite.error.favorites_failed_to_load'
+                        )}
                         description={
                             collections.favoriteDetail ||
                             t(
@@ -337,8 +339,12 @@ export function FavoritesContentPanel({
                                             item.key
                                         }
                                         onToggleSelect={handleToggleSelect}
-                                        onRemoveLocal={handleCardRemoveLocalFavorite}
-                                        onRemoveRemote={handleCardRemoveRemoteFavorite}
+                                        onRemoveLocal={
+                                            handleCardRemoveLocalFavorite
+                                        }
+                                        onRemoveRemote={
+                                            handleCardRemoveRemoteFavorite
+                                        }
                                         onFriendLaunch={handleCardFriendLaunch}
                                         onFriendSelfInvite={
                                             handleCardFriendSelfInvite

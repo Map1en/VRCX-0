@@ -9,7 +9,9 @@ import type { MyAvatarRow, MyAvatarsLoadStatus } from './myAvatarsTypes';
 
 export function useMyAvatarsRows() {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
@@ -21,8 +23,7 @@ export function useMyAvatarsRows() {
         Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
     const requestIdRef = useRef(0);
     const [avatars, setAvatars] = useState<MyAvatarRow[]>([]);
-    const [loadStatus, setLoadStatus] =
-        useState<MyAvatarsLoadStatus>('idle');
+    const [loadStatus, setLoadStatus] = useState<MyAvatarsLoadStatus>('idle');
     const [detail, setDetail] = useState('');
     const [refreshToken, setRefreshToken] = useState(0);
 

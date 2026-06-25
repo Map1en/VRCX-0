@@ -16,16 +16,17 @@ describe('feed columns state helpers', () => {
     });
 
     it('provides the accepted default columns without an All column', () => {
-        expect(FEED_COLUMNS_DEFAULT_CONFIG.map((column) => column.title)).toEqual([
-            'Favorites',
-            'Location',
-            'Profile',
-            'Presence'
-        ]);
+        expect(
+            FEED_COLUMNS_DEFAULT_CONFIG.map((column) => column.title)
+        ).toEqual(['Favorites', 'Location', 'Profile', 'Presence']);
         expect(FEED_COLUMNS_DEFAULT_CONFIG[0]).toMatchObject({
             friendScope: { kind: 'favorites', groupKeys: 'all' }
         });
-        expect(FEED_COLUMNS_DEFAULT_CONFIG.slice(1).map((column) => column.friendScope)).toEqual([
+        expect(
+            FEED_COLUMNS_DEFAULT_CONFIG.slice(1).map(
+                (column) => column.friendScope
+            )
+        ).toEqual([
             { kind: 'all', excludedFavoriteGroupKeys: 'all' },
             { kind: 'all', excludedFavoriteGroupKeys: 'all' },
             { kind: 'all', excludedFavoriteGroupKeys: 'all' }
@@ -176,9 +177,11 @@ describe('feed columns state helpers', () => {
     });
 
     it('falls back to defaults when persisted columns are unusable', () => {
-        expect(sanitizeFeedColumnsConfig([])).toEqual(FEED_COLUMNS_DEFAULT_CONFIG);
-        expect(sanitizeFeedColumnsConfig([{ title: '', feedTypes: [] }])).toEqual(
+        expect(sanitizeFeedColumnsConfig([])).toEqual(
             FEED_COLUMNS_DEFAULT_CONFIG
         );
+        expect(
+            sanitizeFeedColumnsConfig([{ title: '', feedTypes: [] }])
+        ).toEqual(FEED_COLUMNS_DEFAULT_CONFIG);
     });
 });

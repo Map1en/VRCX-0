@@ -3,7 +3,10 @@ import {
     getTelemetryEndpoint
 } from './telemetryConfig';
 
-export async function postTelemetry(path: string, payload: unknown): Promise<void> {
+export async function postTelemetry(
+    path: string,
+    payload: unknown
+): Promise<void> {
     const endpoint = getTelemetryEndpoint();
     if (!endpoint) {
         return;

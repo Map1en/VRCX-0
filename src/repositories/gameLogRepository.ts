@@ -1,4 +1,5 @@
 import { buildGameLogSessions, type GameLogRow } from '@/shared/utils/gameLog';
+import { normalizeString } from '@/shared/utils/string';
 
 import configRepository from './configRepository';
 import gameLogPersistenceRepository from './gameLogPersistenceRepository';
@@ -100,16 +101,10 @@ function toGameLogRow(value: unknown): GameLogRow {
     return isRecord(value) ? value : {};
 }
 
-function normalizeId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function normalizeFavoriteSet(favoriteUserIds: unknown = []) {
     return new Set(
         (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
-            .map((value) => normalizeId(value))
+            .map((value) => normalizeString(value))
             .filter(Boolean)
     );
 }
@@ -156,7 +151,7 @@ function dateToEpoch(value: unknown) {
 }
 
 function normalizeDateBoundary(value: unknown, boundary: 'start' | 'end') {
-    const normalized = normalizeId(value);
+    const normalized = normalizeString(value);
     if (!normalized) {
         return '';
     }
@@ -212,14 +207,14 @@ function filterSessionEventByFavorite(
         return event;
     }
 
-    const userId = normalizeId(event?.userId);
+    const userId = normalizeString(event?.userId);
     if (userId && favoriteUserIds.has(userId)) {
         return event;
     }
 
     if (Array.isArray(event?.members)) {
         const members = event.members.filter((member) =>
-            favoriteUserIds.has(normalizeId(member?.userId))
+            favoriteUserIds.has(normalizeString(member?.userId))
         );
         if (members.length > 0) {
             return {
@@ -454,7 +449,7 @@ async function loadSessionEvents(
     const locationTags = Array.from(
         new Set(
             segments
-                .map((segment) => normalizeId(segment?.location))
+                .map((segment) => normalizeString(segment?.location))
                 .filter(Boolean)
         )
     );
@@ -467,7 +462,7 @@ async function loadSessionEvents(
 
     return events.map((event: unknown) => {
         const currentEvent = toGameLogRow(event) as GameLogEvent;
-        const userId = normalizeId(currentEvent.userId);
+        const userId = normalizeString(currentEvent.userId);
         return {
             ...currentEvent,
             isFavorite: userId ? favoriteUserIds.has(userId) : false
@@ -492,7 +487,7 @@ async function queryGameLog({
     const normalizedFavorites = Array.from(
         new Set(
             (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
-                .map((value) => normalizeId(value))
+                .map((value) => normalizeString(value))
                 .filter(Boolean)
         )
     );
@@ -504,7 +499,7 @@ async function queryGameLog({
             normalizedFilters,
             normalizedFavorites,
             searchLimit,
-            normalizeId(currentUserId)
+            normalizeString(currentUserId)
         );
     }
 
@@ -650,7 +645,7 @@ async function getPreviousInstancesByWorldId({
 }
 
 async function getWorldNameByWorldId(worldId: unknown) {
-    const normalizedWorldId = normalizeId(worldId);
+    const normalizedWorldId = normalizeString(worldId);
     if (!normalizedWorldId) {
         return '';
     }
@@ -668,7 +663,7 @@ async function getAllUserStats({
 } = {}) {
     return gameLogPersistenceRepository.getAllUserStats(
         (Array.isArray(userIds) ? userIds : [])
-            .map((value) => normalizeId(value))
+            .map((value) => normalizeString(value))
             .filter(Boolean),
         (Array.isArray(displayNames) ? displayNames : [])
             .map((value) => String(value || '').trim())

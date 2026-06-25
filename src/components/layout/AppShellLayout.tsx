@@ -35,8 +35,8 @@ export function AppShellLayout() {
     const { sidePanelOpen } = useRightSidePanelVisibility(location.pathname);
     const [sidePanelWidth, setSidePanelWidth] = useState(loadSidePanelWidth);
     const sidePanelWidthRef = useRef(sidePanelWidth);
-    const sidePanelElementRef = useRef(null);
-    const resizeCleanupRef = useRef(null);
+    const sidePanelElementRef = useRef<HTMLDivElement | null>(null);
+    const resizeCleanupRef = useRef<((commit?: boolean) => void) | null>(null);
     const sidePanelVisible = sidePanelOpen;
 
     useEffect(() => {

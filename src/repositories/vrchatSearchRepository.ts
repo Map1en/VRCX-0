@@ -1,4 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeVrchatEndpoint } from '@/shared/vrchatEndpoint';
+
 import {
     createRequestError,
     notifyVrchatAuthFailure,
@@ -7,7 +9,6 @@ import {
     type VrchatRequestResponse,
     unwrapErrorMessage
 } from './vrchatRequest';
-import { normalizeVrchatEndpoint } from '@/shared/vrchatEndpoint';
 
 interface SearchRequestOptions {
     endpoint?: string;
@@ -68,7 +69,7 @@ async function getConfig(params: QueryParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchConfigGet({
         endpoint: normalizeVrchatEndpoint('', { allowDebugEndpoint: true }),
-        params: normalizedParams,
+        params: normalizedParams
     });
     return unwrapVrchatSearchResponse(response, 'config', normalizedParams);
 }
@@ -80,9 +81,7 @@ async function getWorlds(
 ) {
     const normalizedParams = normalizeParams(params);
     const normalizedOption =
-        typeof option === 'undefined' || option === null
-            ? ''
-            : String(option);
+        typeof option === 'undefined' || option === null ? '' : String(option);
     const response = await commands.appVrchatSearchWorldsGet({
         endpoint: normalizeVrchatEndpoint(options.endpoint, {
             allowDebugEndpoint: true

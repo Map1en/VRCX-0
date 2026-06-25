@@ -1,4 +1,7 @@
-import { convertFileUrlToImageUrl, userImage } from '@/services/entityMediaService';
+import {
+    convertFileUrlToImageUrl,
+    userImage
+} from '@/services/entityMediaService';
 
 export function rowImage(row: any, kind: any) {
     if (!row || typeof row !== 'object') {

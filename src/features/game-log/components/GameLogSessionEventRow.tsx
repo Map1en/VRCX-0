@@ -15,6 +15,7 @@ import {
     copyTextToClipboard,
     openExternalLink
 } from '@/services/entityMediaService';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -32,7 +33,7 @@ import {
 } from '@/ui/shadcn/context-menu';
 
 import { getGameLogSessionPlayerDuration } from '../gameLogSessionDurations';
-import { normalizeId, openGameLogUser } from '../gameLogUserLookup';
+import { openGameLogUser } from '../gameLogUserLookup';
 
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 

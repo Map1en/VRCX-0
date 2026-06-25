@@ -79,7 +79,10 @@ export function InstanceActivityDateControls({
             }
         }
 
-        onSelectedDateChange(isNext ? latestDate : earliestDate);
+        const fallbackDate = isNext ? latestDate : earliestDate;
+        if (fallbackDate) {
+            onSelectedDateChange(fallbackDate);
+        }
     }
 
     return (

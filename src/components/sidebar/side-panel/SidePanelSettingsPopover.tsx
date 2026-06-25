@@ -4,7 +4,7 @@ import {
     RefreshCwIcon,
     SlidersHorizontalIcon
 } from 'lucide-react';
-import { cloneElement, isValidElement } from 'react';
+import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -49,10 +49,22 @@ const sortOptions = [
     ['Sort by Location', 'view.settings.appearance.side_panel.sorting.location']
 ];
 
-function SettingRow({ id, label, children }: any) {
+type SettingRowControlProps = {
+    id?: string;
+};
+
+function SettingRow({
+    id,
+    label,
+    children
+}: {
+    id?: string;
+    label: ReactNode;
+    children: ReactNode;
+}) {
     const control =
-        id && isValidElement(children)
-            ? cloneElement(children as any, { id })
+        id && isValidElement<SettingRowControlProps>(children)
+            ? cloneElement(children, { id })
             : children;
 
     return (

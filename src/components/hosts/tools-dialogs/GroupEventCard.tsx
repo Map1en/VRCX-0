@@ -9,11 +9,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { openGroupDialog } from '@/services/dialogService';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import {
     openCalendarFile,
     saveCalendarFile
@@ -22,11 +22,7 @@ import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 
-import {
-    getEndpoint,
-    getEventGroupId,
-    getEventId
-} from './toolsDialogUtils';
+import { getEndpoint, getEventGroupId, getEventId } from './toolsDialogUtils';
 
 async function getCalendarIcs(event: any, t: any) {
     const groupId = getEventGroupId(event);
@@ -164,7 +160,7 @@ export function GroupEventCard({
     const groupId = getEventGroupId(event);
     const [popoverOpen, setPopoverOpen] = useState(false);
     const [bannerError, setBannerError] = useState(false);
-    const closeTimerRef = useRef(null);
+    const closeTimerRef = useRef<number | null>(null);
     const bannerUrl = bannerError ? '' : getEventBannerUrl(event, groupProfile);
     const title =
         event.title || t('dialog.group_calendar.event_card.untitled_event');

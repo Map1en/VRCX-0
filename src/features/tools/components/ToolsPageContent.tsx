@@ -23,7 +23,8 @@ import {
     PlusIcon,
     StarIcon,
     UsersIcon,
-    WrenchIcon
+    WrenchIcon,
+    type LucideIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -48,7 +49,7 @@ import {
     toolCatalogDropId
 } from '../toolsPageHelpers';
 
-const categoryIconByKey: any = {
+const categoryIconByKey: Record<string, LucideIcon> = {
     image: ImageIcon,
     shortcuts: FolderOpenIcon,
     group: UsersIcon,

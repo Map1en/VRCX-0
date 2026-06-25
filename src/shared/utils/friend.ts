@@ -5,7 +5,8 @@ import {
     compareByLocationAt,
     compareByName,
     compareByPrivate,
-    compareByStatus
+    compareByStatus,
+    type ComparableRecord
 } from './compare';
 import { sortStatus } from './friendStatus';
 
@@ -19,7 +20,9 @@ type FriendSortMethod =
     | 'Sort by Location'
     | 'None';
 
-type FriendSortItem = Record<string, any>;
+type FriendSortItem = ComparableRecord & {
+    pendingOffline?: unknown;
+};
 type FriendComparator = (a: FriendSortItem, b: FriendSortItem) => number;
 
 function getFriendsSortFunction(
@@ -44,7 +47,7 @@ function getFriendsSortFunction(
                 sorts.push(compareByLastSeen);
                 break;
             case 'Sort by Time in Instance':
-                sorts.push((a: any, b: any) => {
+                sorts.push((a: FriendSortItem, b: FriendSortItem) => {
                     if (
                         typeof a.ref === 'undefined' ||
                         typeof b.ref === 'undefined'

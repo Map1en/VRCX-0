@@ -56,13 +56,15 @@ function normalizeText(value: unknown): string {
 function isNotFoundError(error: unknown): boolean {
     return Boolean(
         error &&
-            typeof error === 'object' &&
-            'status' in error &&
-            (error as { status?: unknown }).status === 404
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as { status?: unknown }).status === 404
     );
 }
 
-function requireNotification(notification: NotificationRecord | null | undefined) {
+function requireNotification(
+    notification: NotificationRecord | null | undefined
+) {
     if (!notification) {
         throw new Error('Notification action requires a notification.');
     }
@@ -167,7 +169,10 @@ export async function acceptFriendRequestNotification({
             clearFriendLogAddIntent();
             console.warn('Friend log add recording failed:', error);
         }
-        await expireNotificationLocally({ currentUserId, notification: target });
+        await expireNotificationLocally({
+            currentUserId,
+            notification: target
+        });
         return { status: 'accepted' as const };
     } catch (error) {
         clearFriendLogAddIntent();
@@ -222,12 +227,13 @@ export async function sendInviteResponseNotification({
     }
 
     if (imageData) {
-        const upload = notificationPersistenceRepository.sendInviteResponsePhoto({
-            id: target.id,
-            responseSlot: normalizedResponseSlot,
-            imageData,
-            endpoint
-        });
+        const upload =
+            notificationPersistenceRepository.sendInviteResponsePhoto({
+                id: target.id,
+                responseSlot: normalizedResponseSlot,
+                imageData,
+                endpoint
+            });
         if (withUploadTimeout) {
             await withUploadTimeout(upload);
         } else {

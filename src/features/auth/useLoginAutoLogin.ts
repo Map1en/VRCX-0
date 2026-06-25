@@ -10,6 +10,23 @@ import {
     getLoginUserDisplayName as getUserDisplayName
 } from './loginDisplay';
 
+type AutoLoginStatus =
+    | 'cancelled'
+    | 'expired'
+    | 'failed'
+    | 'idle'
+    | 'running'
+    | 'scheduled'
+    | 'success'
+    | 'throttled';
+
+type AutoLoginState = {
+    detail: string;
+    remainingSeconds: number;
+    status: AutoLoginStatus;
+    userId: string;
+};
+
 export function useLoginAutoLogin({
     activeSavedUserId,
     applySnapshot,
@@ -22,7 +39,7 @@ export function useLoginAutoLogin({
     const backendRuntimeSnapshotHydrated = useRuntimeStore(
         (state: any) => state.shell.backendRuntimeSnapshotHydrated
     );
-    const [autoLoginState, setAutoLoginState] = useState<any>({
+    const [autoLoginState, setAutoLoginState] = useState<AutoLoginState>({
         status: 'idle',
         remainingSeconds: 0,
         detail: '',
@@ -31,7 +48,7 @@ export function useLoginAutoLogin({
     const [autoLoginRetryNonce, setAutoLoginRetryNonce] = useState(0);
     const autoLoginSuppressedKeyRef = useRef('');
     const autoLoginInFlightKeyRef = useRef('');
-    const autoLoginAbortRef = useRef(null);
+    const autoLoginAbortRef = useRef<AbortController | null>(null);
     const isDatabaseBlocked = !databaseReady;
     const isAutoLoginActive =
         autoLoginState.status === 'scheduled' ||
@@ -80,7 +97,7 @@ export function useLoginAutoLogin({
     }
 
     function cancelPendingAutoLogin(
-        detail: any = t('view.auth.auto_login.skipped')
+        detail: string = t('view.auth.auto_login.skipped')
     ) {
         const controller = autoLoginAbortRef.current;
         if (controller) {
@@ -93,7 +110,7 @@ export function useLoginAutoLogin({
             autoLoginInFlightKeyRef.current = '';
         }
 
-        setAutoLoginState((current: any) => {
+        setAutoLoginState((current) => {
             if (
                 current.status !== 'scheduled' &&
                 current.status !== 'running'
@@ -119,7 +136,7 @@ export function useLoginAutoLogin({
             detail: '',
             userId: ''
         });
-        setAutoLoginRetryNonce((current: any) => current + 1);
+        setAutoLoginRetryNonce((current) => current + 1);
     }
 
     useEffect(() => {
@@ -182,12 +199,12 @@ export function useLoginAutoLogin({
 
         executeReactAutoLogin(snapshot, {
             signal: controller.signal,
-            onCountdown(remainingSeconds: any) {
+            onCountdown(remainingSeconds: number) {
                 if (!active) {
                     return;
                 }
 
-                setAutoLoginState((current: any) => ({
+                setAutoLoginState((current) => ({
                     ...current,
                     status: remainingSeconds > 0 ? 'scheduled' : 'running',
                     remainingSeconds,
@@ -215,9 +232,7 @@ export function useLoginAutoLogin({
                 }
 
                 autoLoginAbortRef.current = null;
-                if (
-                    autoLoginInFlightKeyRef.current === autoLoginSnapshotKey
-                ) {
+                if (autoLoginInFlightKeyRef.current === autoLoginSnapshotKey) {
                     autoLoginInFlightKeyRef.current = '';
                 }
                 if (result.status !== 'skipped') {
@@ -299,9 +314,7 @@ export function useLoginAutoLogin({
                 }
 
                 autoLoginAbortRef.current = null;
-                if (
-                    autoLoginInFlightKeyRef.current === autoLoginSnapshotKey
-                ) {
+                if (autoLoginInFlightKeyRef.current === autoLoginSnapshotKey) {
                     autoLoginInFlightKeyRef.current = '';
                 }
                 autoLoginSuppressedKeyRef.current = autoLoginSnapshotKey;
@@ -317,9 +330,7 @@ export function useLoginAutoLogin({
                 toast.error(
                     getErrorMessage(
                         error,
-                        t(
-                            'view.auth.toast.automatic_login_failed_unexpectedly'
-                        )
+                        t('view.auth.toast.automatic_login_failed_unexpectedly')
                     )
                 );
             });

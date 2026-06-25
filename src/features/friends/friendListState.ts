@@ -55,7 +55,7 @@ export function readPersistedFriendListState() {
     return readPersistedTableState(STORAGE_KEY);
 }
 
-export function writePersistedFriendListState(patch: any) {
+export function writePersistedFriendListState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
@@ -93,7 +93,7 @@ export function sanitizeFriendListPageSizes(value: any) {
 }
 
 export function sanitizeFriendListColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (value && typeof value === 'object') {
         for (const columnId of FRIEND_LIST_COLUMN_IDS) {
             if (columnId === 'friendNumber') {

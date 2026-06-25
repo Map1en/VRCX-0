@@ -1,8 +1,4 @@
-export function normalizeId(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 export function onlineFriendIdsFromGroup(userIds: any, friendsById: any) {
     return (Array.isArray(userIds) ? userIds : [])

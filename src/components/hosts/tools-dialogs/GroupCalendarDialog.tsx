@@ -1,4 +1,3 @@
-import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import {
     addYears,
     compareAsc,
@@ -8,16 +7,17 @@ import {
     startOfYear,
     subYears
 } from 'date-fns';
+import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { replaceBioSymbols } from '@/shared/utils/string';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import configRepository from '@/repositories/configRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar, CalendarDayButton } from '@/ui/shadcn/calendar';
@@ -35,7 +35,6 @@ import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Switch } from '@/ui/shadcn/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-import { GroupEventCard } from './GroupEventCard';
 import {
     buildEventsByDate,
     buildFollowedCountByDate,
@@ -45,6 +44,7 @@ import {
     formatCalendarRequestDate,
     monthDateFromKey
 } from './groupCalendarModel';
+import { GroupEventCard } from './GroupEventCard';
 import {
     getEndpoint,
     getEventGroupId,
@@ -201,7 +201,10 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                 groupId,
                 groupName: groupNames[groupId] || groupId,
                 events: groupEvents.sort((left: any, right: any) =>
-                    compareAsc(new Date(left.startsAt), new Date(right.startsAt))
+                    compareAsc(
+                        new Date(left.startsAt),
+                        new Date(right.startsAt)
+                    )
                 )
             }))
             .sort((left: any, right: any) =>
@@ -391,7 +394,10 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
         const nextDateKey = calendarDateKey(nextMonth, calendarTimeZone);
         setVisibleMonthDate(monthDateFromKey(nextDateKey));
         setSelectedDate((current: any) =>
-            isSameMonth(dateKeyToLocalDate(current), monthDateFromKey(nextDateKey))
+            isSameMonth(
+                dateKeyToLocalDate(current),
+                monthDateFromKey(nextDateKey)
+            )
                 ? current
                 : nextDateKey
         );

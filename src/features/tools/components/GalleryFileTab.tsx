@@ -9,11 +9,7 @@ import { GalleryFileCard } from './GalleryFileCard';
 import { EmptyState, LoadingState } from './GalleryViewParts';
 import { MediaLibraryToolbar } from './MediaLibraryToolbar';
 
-export function GalleryFileTab({
-    tab,
-    definition,
-    fileTab
-}: any) {
+export function GalleryFileTab({ tab, definition, fileTab }: any) {
     const {
         assets,
         loadingByTab,
@@ -165,10 +161,9 @@ export function GalleryFileTab({
                         </div>
                     ) : (
                         <EmptyState
-                            title={t(
-                                'view.tools.dynamic.no_value_loaded',
-                                { value: tab }
-                            )}
+                            title={t('view.tools.dynamic.no_value_loaded', {
+                                value: tab
+                            })}
                             description={t(
                                 'view.tools.dynamic.refresh_this_tab_to_load_value_files',
                                 { value: definition.tag }

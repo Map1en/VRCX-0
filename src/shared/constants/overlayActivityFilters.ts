@@ -86,6 +86,21 @@ const INSTANCE_ACTOR_SCOPES: OverlayActivityScope[] = [
 ];
 const REMOVED_OVERLAY_ACTIVITY_TYPE_KEYS = new Set(['PortalSpawn']);
 
+function createEmptyOverlayActivityCategoryMap(): Record<
+    OverlayActivityCategory,
+    string[]
+> {
+    return {
+        actionRequired: [],
+        currentInstance: [],
+        favoriteMovement: [],
+        profileChange: [],
+        groupSocial: [],
+        systemSafety: [],
+        media: []
+    };
+}
+
 function defineType(
     category: OverlayActivityCategory,
     key: string,
@@ -94,6 +109,16 @@ function defineType(
     aliases?: string[]
 ): OverlayActivityTypeDefinition {
     return { key, category, allowedScopes, defaultScope, aliases };
+}
+
+function overlayActivityDefinitionByKey(
+    definitions: OverlayActivityTypeDefinition[]
+): Record<string, OverlayActivityTypeDefinition> {
+    const definitionsByKey: Record<string, OverlayActivityTypeDefinition> = {};
+    for (const definition of definitions) {
+        definitionsByKey[definition.key] = definition;
+    }
+    return definitionsByKey;
 }
 
 export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] =
@@ -234,22 +259,17 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] 
 export const OVERLAY_ACTIVITY_RAW_TYPES: Record<
     OverlayActivityCategory,
     string[]
-> = OVERLAY_ACTIVITY_CATEGORIES.reduce(
-    (result, category) => {
-        result[category] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS.filter(
-            (definition) => definition.category === category
-        ).map((definition) => definition.key);
-        return result;
-    },
-    {} as Record<OverlayActivityCategory, string[]>
-);
+> = OVERLAY_ACTIVITY_CATEGORIES.reduce<
+    Record<OverlayActivityCategory, string[]>
+>((result, category) => {
+    result[category] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS.filter(
+        (definition) => definition.category === category
+    ).map((definition) => definition.key);
+    return result;
+}, createEmptyOverlayActivityCategoryMap());
 
-export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY = Object.fromEntries(
-    OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map((definition) => [
-        definition.key,
-        definition
-    ])
-) as Record<string, OverlayActivityTypeDefinition>;
+export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY =
+    overlayActivityDefinitionByKey(OVERLAY_ACTIVITY_TYPE_DEFINITIONS);
 
 export const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<
     string,
@@ -286,7 +306,9 @@ export const DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS =
 export const DEFAULT_WEBHOOK_ACTIVITY_FILTERS: OverlayActivityFilterProfilePreference =
     {
         version: 1,
-        types: disabledOverlayActivityTypeRules(OVERLAY_ACTIVITY_TYPE_DEFINITIONS)
+        types: disabledOverlayActivityTypeRules(
+            OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+        )
     };
 
 export function overlayActivityCategoriesFromDefinitions(
@@ -304,22 +326,20 @@ export function overlayActivityCategoriesFromDefinitions(
 export function overlayActivityRawTypesByCategoryFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): Record<OverlayActivityCategory, string[]> {
-    return definitions.reduce(
+    return definitions.reduce<Record<OverlayActivityCategory, string[]>>(
         (result, definition) => {
             result[definition.category] ||= [];
             result[definition.category].push(definition.key);
             return result;
         },
-        {} as Record<OverlayActivityCategory, string[]>
+        createEmptyOverlayActivityCategoryMap()
     );
 }
 
 export function overlayActivityDefinitionByKeyFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): Record<string, OverlayActivityTypeDefinition> {
-    return Object.fromEntries(
-        definitions.map((definition) => [definition.key, definition])
-    ) as Record<string, OverlayActivityTypeDefinition>;
+    return overlayActivityDefinitionByKey(definitions);
 }
 
 export function defaultOverlayActivityTypeRulesFromDefinitions(
@@ -351,9 +371,8 @@ export function defaultOverlayActivityFilterProfileFromDefinitions(
 export function defaultOverlayActivityFiltersFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): OverlayActivityFiltersPreference {
-    const profile = defaultOverlayActivityFilterProfileFromDefinitions(
-        definitions
-    );
+    const profile =
+        defaultOverlayActivityFilterProfileFromDefinitions(definitions);
     return {
         version: 1,
         wrist: {

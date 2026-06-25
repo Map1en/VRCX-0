@@ -15,9 +15,9 @@ export const toolCatalogDropId = 'tools-catalog-drop-zone';
 
 const quickAccessDragPrefix = 'tools-quick-access-tool:';
 const catalogDragPrefix = 'tools-catalog-tool:';
-const collapsibleCategories = toolCategories.map((category: any) => category.key);
+const collapsibleCategories = toolCategories.map((category) => category.key);
 
-export const defaultCollapsedState: any = {
+export const defaultCollapsedState: Record<string, boolean> = {
     group: false,
     image: false,
     shortcuts: false,
@@ -28,28 +28,43 @@ export const defaultCollapsedState: any = {
 };
 
 export const toolsPageCategories = toolCategories
-    .filter((category: any) => collapsibleCategories.includes(category.key))
-    .map((category: any) => ({
+    .filter((category) => collapsibleCategories.includes(category.key))
+    .map((category) => ({
         ...category,
         tools: getToolsByCategory(category.key)
     }));
 
-export function getQuickAccessDragId(toolKey: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+export function getQuickAccessDragId(toolKey: unknown): string {
     return `${quickAccessDragPrefix}${toolKey}`;
 }
 
-export function getCatalogDragId(toolKey: any) {
+export function getCatalogDragId(toolKey: unknown): string {
     return `${catalogDragPrefix}${toolKey}`;
 }
 
-export function collectLayoutKeys(layout: any) {
-    const keys = new Set();
-    for (const entry of layout || []) {
-        if (entry.type === 'item' && entry.key) {
+export function collectLayoutKeys(layout: unknown): Set<string> {
+    const keys = new Set<string>();
+    if (!Array.isArray(layout)) {
+        return keys;
+    }
+    for (const entry of layout) {
+        if (!isRecord(entry)) {
+            continue;
+        }
+        if (entry.type === 'item' && typeof entry.key === 'string') {
             keys.add(entry.key);
-        } else if (entry.type === 'folder') {
-            for (const item of entry.items || []) {
-                const key = typeof item === 'string' ? item : item?.key;
+        } else if (entry.type === 'folder' && Array.isArray(entry.items)) {
+            for (const item of entry.items) {
+                const key =
+                    typeof item === 'string'
+                        ? item
+                        : isRecord(item) && typeof item.key === 'string'
+                          ? item.key
+                          : '';
                 if (key) {
                     keys.add(key);
                 }
@@ -59,13 +74,14 @@ export function collectLayoutKeys(layout: any) {
     return keys;
 }
 
-export function insertToolNavItem(layout: any, navKey: any) {
+export function insertToolNavItem(layout: unknown, navKey: string) {
     const nextLayout = Array.isArray(layout) ? [...layout] : [];
     if (collectLayoutKeys(nextLayout).has(navKey)) {
         return nextLayout;
     }
     const insertIndex = nextLayout.findIndex(
-        (entry: any) =>
+        (entry) =>
+            isRecord(entry) &&
             entry.type === 'item' &&
             (entry.key === 'tools' || entry.key === 'direct-access')
     );
@@ -76,19 +92,26 @@ export function insertToolNavItem(layout: any, navKey: any) {
     return [...nextLayout, { type: 'item', key: navKey }];
 }
 
-export function removeToolNavItem(layout: any, navKey: any) {
+export function removeToolNavItem(layout: unknown, navKey: string | string[]) {
     const navKeys = new Set(Array.isArray(navKey) ? navKey : [navKey]);
 
-    return (layout || [])
-        .map((entry: any) => {
-            if (entry.type === 'item') {
+    return (Array.isArray(layout) ? layout : [])
+        .map((entry) => {
+            if (!isRecord(entry)) {
+                return entry;
+            }
+            if (entry.type === 'item' && typeof entry.key === 'string') {
                 return navKeys.has(entry.key) ? null : entry;
             }
-            if (entry.type === 'folder') {
-                const nextItems = (entry.items || []).filter(
-                    (item: any) =>
+            if (entry.type === 'folder' && Array.isArray(entry.items)) {
+                const nextItems = entry.items.filter(
+                    (item) =>
                         !navKeys.has(
-                            typeof item === 'string' ? item : item?.key
+                            typeof item === 'string'
+                                ? item
+                                : isRecord(item) && typeof item.key === 'string'
+                                  ? item.key
+                                  : ''
                         )
                 );
                 return nextItems.length ? { ...entry, items: nextItems } : null;

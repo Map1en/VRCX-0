@@ -31,9 +31,7 @@ export function useUserDialogAvatarAuthorAction({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_load_avatar_author'
-                      )
+                    : t('dialog.user.toast.failed_to_load_avatar_author')
             );
         }
     };

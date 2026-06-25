@@ -16,6 +16,15 @@ const GROUP_LABEL_KEYS: Record<NotificationLifecycleBucket, string> = {
     system: 'side_panel.notification_center.group_system'
 };
 
+function notificationBuckets(value: unknown): Record<string, unknown>[] {
+    return value && typeof value === 'object'
+        ? Object.values(value).filter(
+              (bucket): bucket is Record<string, unknown> =>
+                  Boolean(bucket && typeof bucket === 'object')
+          )
+        : [];
+}
+
 export function NotificationDrawerList({
     categories,
     currentUserId,
@@ -26,50 +35,56 @@ export function NotificationDrawerList({
     const { t } = useTranslation();
     const groups = useMemo(() => {
         const entries: any[] = [];
-        for (const bucket of Object.values(categories || {}) as any[]) {
-            for (const notification of bucket?.unseen || []) {
+        for (const bucket of notificationBuckets(categories)) {
+            const unseen = Array.isArray(bucket.unseen) ? bucket.unseen : [];
+            const recent = Array.isArray(bucket.recent) ? bucket.recent : [];
+            for (const notification of unseen) {
                 entries.push({ notification, isUnseen: true });
             }
-            for (const notification of bucket?.recent || []) {
+            for (const notification of recent) {
                 entries.push({ notification, isUnseen: false });
             }
         }
         return groupDrawerEntries(entries);
     }, [categories]);
     const hasAny = NOTIFICATION_LIFECYCLE_ORDER.some(
-        (bucket: any) => groups[bucket].length > 0
+        (bucket: NotificationLifecycleBucket) => groups[bucket].length > 0
     );
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
                 {hasAny ? (
-                    NOTIFICATION_LIFECYCLE_ORDER.map((bucket: any) => {
-                        const items = groups[bucket];
-                        if (!items.length) {
-                            return null;
-                        }
-                        return (
-                            <div key={bucket} className="mb-2">
-                                <div className="text-muted-foreground flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium tracking-wider uppercase">
-                                    <span>{t(GROUP_LABEL_KEYS[bucket])}</span>
-                                    <span>({items.length})</span>
+                    NOTIFICATION_LIFECYCLE_ORDER.map(
+                        (bucket: NotificationLifecycleBucket) => {
+                            const items = groups[bucket];
+                            if (!items.length) {
+                                return null;
+                            }
+                            return (
+                                <div key={bucket} className="mb-2">
+                                    <div className="text-muted-foreground flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium tracking-wider uppercase">
+                                        <span>
+                                            {t(GROUP_LABEL_KEYS[bucket])}
+                                        </span>
+                                        <span>({items.length})</span>
+                                    </div>
+                                    {items.map((entry: any) => (
+                                        <NotificationDrawerRow
+                                            key={`${bucket}:${entry.notification.id}`}
+                                            notification={entry.notification}
+                                            isUnseen={entry.isUnseen}
+                                            currentUserId={currentUserId}
+                                            canInviteFromCurrentLocation={
+                                                canInviteFromCurrentLocation
+                                            }
+                                            handlers={handlers}
+                                        />
+                                    ))}
                                 </div>
-                                {items.map((entry: any) => (
-                                    <NotificationDrawerRow
-                                        key={`${bucket}:${entry.notification.id}`}
-                                        notification={entry.notification}
-                                        isUnseen={entry.isUnseen}
-                                        currentUserId={currentUserId}
-                                        canInviteFromCurrentLocation={
-                                            canInviteFromCurrentLocation
-                                        }
-                                        handlers={handlers}
-                                    />
-                                ))}
-                            </div>
-                        );
-                    })
+                            );
+                        }
+                    )
                 ) : (
                     <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
                         {t(

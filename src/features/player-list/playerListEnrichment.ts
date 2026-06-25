@@ -1,12 +1,9 @@
 import { userImage } from '@/services/entityMediaService';
+import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 
 import { resolvePlatformMeta } from './playerListDisplay';
-import {
-    normalizeString,
-    parseTimeMs,
-    resolvePlayerRowUserId
-} from './playerListRows';
+import { parseTimeMs, resolvePlayerRowUserId } from './playerListRows';
 
 function hasArrayItems(value: any) {
     return Array.isArray(value) && value.length > 0;

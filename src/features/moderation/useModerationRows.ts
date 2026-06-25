@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 import { refreshModerationSync } from '@/services/moderationSyncService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import type { ModerationLoadStatus, ModerationRow } from './moderationPageTypes';
+import type {
+    ModerationLoadStatus,
+    ModerationRow
+} from './moderationPageTypes';
 
 type ModerationRowsOptions = {
     refreshKey?: string;
@@ -12,13 +15,14 @@ type ModerationRowsOptions = {
 export function useModerationRows({
     refreshKey = ''
 }: ModerationRowsOptions = {}) {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
     const [rows, setRows] = useState<ModerationRow[]>([]);
-    const [loadStatus, setLoadStatus] =
-        useState<ModerationLoadStatus>('idle');
+    const [loadStatus, setLoadStatus] = useState<ModerationLoadStatus>('idle');
     const [detail, setDetail] = useState('');
     const [refreshToken, setRefreshToken] = useState(0);
 

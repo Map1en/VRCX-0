@@ -1,20 +1,15 @@
 import { RefreshCwIcon, SproutIcon, TractorIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
-import configRepository from '@/repositories/configRepository';
-import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { getResolvedThemeMode } from '@/services/themeService';
-import { userActivityViewService } from '@/services/userActivityViewService';
 import { parseLocation } from '@/shared/utils/locationParser';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
-import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     Select,
     SelectContent,
@@ -24,307 +19,26 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     ActivityEmptyState,
-    getWorldThumbnailUrl,
-    HeatmapChart,
-    TopWorldRows
+    HeatmapChart
 } from './user-dialog/components/UserActivityPanelParts';
+import {
+    UserActivityOverlapSection,
+    UserActivityTopWorldsSection
+} from './user-dialog/components/UserActivityPanelSections';
+import {
+    getDisplayDayLabels,
+    USER_ACTIVITY_HOUR_LABELS
+} from './user-dialog/userActivityPanelModel';
+import { useUserActivityPanelController } from './user-dialog/useUserActivityPanelController';
 
-const ACTIVITY_SELF_PERIOD_KEY = 'VRCX_activitySelfPeriodDays';
-const ACTIVITY_FRIEND_PERIOD_KEY = 'VRCX_activityFriendPeriodDays';
-const ACTIVITY_SELF_TOP_WORLDS_SORT_KEY = 'VRCX_activitySelfTopWorldsSortBy';
-const ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY =
-    'VRCX_activitySelfExcludeHomeWorld';
-const OVERLAP_EXCLUDE_ENABLED_KEY = 'VRCX_overlapExcludeEnabled';
-const OVERLAP_EXCLUDE_START_KEY = 'VRCX_overlapExcludeStart';
-const OVERLAP_EXCLUDE_END_KEY = 'VRCX_overlapExcludeEnd';
-const VALID_PERIODS = new Set(['7', '30', '90']);
-const HOUR_LABELS = Array.from(
-    { length: 24 },
-    (_: any, index: any) => `${String(index).padStart(2, '0')}:00`
-);
-const TOP_WORLDS_LOADING_DELAY = 150;
-const OVERLAP_LOADING_DELAY = 120;
-const OVERLAP_RENDER_DELAY = 80;
-
-export function getRangeDays(period: any) {
-    return Number.parseInt(period, 10) || 30;
-}
-
-export function getDisplayDayLabels(dayLabels: any, weekStartsOn: any) {
-    return Array.from(
-        { length: 7 },
-        (_: any, index: any) => dayLabels[(weekStartsOn + index) % 7]
-    );
-}
-
-function UserActivityOverlapSection({
-    bestOverlapTime,
-    changeExcludeHours,
-    changeExcludeRange,
-    dayLabels,
-    emptyColor,
-    excludeEndHour,
-    excludeHoursEnabled,
-    excludeStartHour,
-    hasOverlapData,
-    isDarkMode,
-    onOverlapChartRightClick,
-    overlapHeatmap,
-    overlapLoading,
-    overlapLoadingVisible,
-    overlapPercent,
-    overlapScaleColors,
-    weekStartsOn
-}: any) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="border-border mt-4 border-t pt-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                        {t('dialog.user.activity.overlap.header')}
-                    </span>
-                    {overlapLoadingVisible ? (
-                        <Spinner className="size-3.5" />
-                    ) : null}
-                </div>
-                {hasOverlapData ? (
-                    <div className="flex shrink-0 items-center gap-1.5">
-                        <Switch
-                            checked={excludeHoursEnabled}
-                            onCheckedChange={(value: any) => {
-                                changeExcludeHours(value);
-                            }}
-                            className="scale-75"
-                        />
-                        <span className="text-muted-foreground text-sm whitespace-nowrap">
-                            {t('dialog.user.activity.overlap.exclude_hours')}
-                        </span>
-                        <Select
-                            value={excludeStartHour}
-                            onValueChange={(value: any) => {
-                                changeExcludeRange('start', value);
-                            }}
-                        >
-                            <SelectTrigger
-                                size="sm"
-                                className="h-6 w-[78px] px-2 text-sm"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {HOUR_LABELS.map(
-                                        (label: any, index: any) => (
-                                            <SelectItem
-                                                key={label}
-                                                value={String(index)}
-                                            >
-                                                {label}
-                                            </SelectItem>
-                                        )
-                                    )}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <span className="text-muted-foreground text-xs">-</span>
-                        <Select
-                            value={excludeEndHour}
-                            onValueChange={(value: any) => {
-                                changeExcludeRange('end', value);
-                            }}
-                        >
-                            <SelectTrigger
-                                size="sm"
-                                className="h-6 w-[78px] px-2 text-sm"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {HOUR_LABELS.map(
-                                        (label: any, index: any) => (
-                                            <SelectItem
-                                                key={label}
-                                                value={String(index)}
-                                            >
-                                                {label}
-                                            </SelectItem>
-                                        )
-                                    )}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                ) : null}
-            </div>
-            {!overlapLoadingVisible && hasOverlapData ? (
-                <div className="mb-2 flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                        <span
-                            className={cn(
-                                'text-sm font-medium',
-                                overlapPercent > 0
-                                    ? 'text-accent-foreground'
-                                    : 'text-muted-foreground'
-                            )}
-                        >
-                            {overlapPercent}%
-                        </span>
-                        <span className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                            <span
-                                className="block h-full rounded-full transition-all duration-500"
-                                style={{
-                                    width: `${overlapPercent}%`,
-                                    backgroundColor: isDarkMode
-                                        ? 'hsl(260, 60%, 55%)'
-                                        : 'hsl(260, 55%, 50%)'
-                                }}
-                            />
-                        </span>
-                    </div>
-                    {bestOverlapTime ? (
-                        <div className="text-sm">
-                            <span className="text-muted-foreground">
-                                {t('dialog.user.activity.overlap.peak_overlap')}
-                            </span>
-                            <span className="ml-1 font-medium">
-                                {bestOverlapTime}
-                            </span>
-                        </div>
-                    ) : null}
-                </div>
-            ) : null}
-            {hasOverlapData || overlapLoadingVisible ? (
-                <HeatmapChart
-                    rawBuckets={overlapHeatmap.rawBuckets}
-                    normalizedBuckets={overlapHeatmap.normalizedBuckets}
-                    dayLabels={dayLabels}
-                    hourLabels={HOUR_LABELS}
-                    weekStartsOn={weekStartsOn}
-                    isDarkMode={isDarkMode}
-                    emptyColor={emptyColor}
-                    scaleColors={overlapScaleColors}
-                    unitLabel={t(
-                        'dialog.user.activity.overlap.minutes_overlap'
-                    )}
-                    renderDelay={OVERLAP_RENDER_DELAY}
-                    onContextMenu={onOverlapChartRightClick}
-                />
-            ) : !overlapLoading && !hasOverlapData ? (
-                <div className="text-muted-foreground py-2 text-sm">
-                    {t('dialog.user.activity.overlap.no_data')}
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
-function UserActivityTopWorldsSection({
-    changeExcludeHomeWorld,
-    changeTopWorldsSort,
-    currentHomeWorldId,
-    excludeHomeWorldEnabled,
-    loading,
-    topWorlds,
-    topWorldsLoading,
-    topWorldsLoadingVisible,
-    topWorldsSortBy
-}: any) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="border-border mt-4 border-t pt-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                        {t('dialog.user.activity.most_visited_worlds.header')}
-                    </span>
-                    {topWorldsLoadingVisible ? (
-                        <Spinner className="size-3.5" />
-                    ) : null}
-                </div>
-                <div className="flex items-center gap-4">
-                    {currentHomeWorldId ? (
-                        <Field
-                            orientation="horizontal"
-                            className="text-muted-foreground w-auto gap-1.5"
-                        >
-                            <Switch
-                                id="activity-exclude-home-world"
-                                checked={excludeHomeWorldEnabled}
-                                onCheckedChange={(value: any) => {
-                                    changeExcludeHomeWorld(value);
-                                }}
-                                className="scale-75"
-                            />
-                            <FieldLabel
-                                htmlFor="activity-exclude-home-world"
-                                className="text-muted-foreground text-sm font-normal whitespace-nowrap"
-                            >
-                                {t(
-                                    'dialog.user.activity.most_visited_worlds.exclude_home_world'
-                                )}
-                            </FieldLabel>
-                        </Field>
-                    ) : null}
-                    {topWorlds.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground text-sm">
-                                {t('common.sort_by')}
-                            </span>
-                            <Select
-                                value={topWorldsSortBy}
-                                onValueChange={(value: any) => {
-                                    changeTopWorldsSort(value);
-                                }}
-                                disabled={topWorldsLoading}
-                            >
-                                <SelectTrigger size="sm" className="w-32">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="time">
-                                            {t(
-                                                'dialog.user.activity.most_visited_worlds.sort_by_time'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="count">
-                                            {t(
-                                                'dialog.user.activity.most_visited_worlds.sort_by_count'
-                                            )}
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
-            {topWorldsLoadingVisible && !topWorlds.length ? (
-                <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
-                    <Spinner className="size-4" />
-                    <span>
-                        {t('dialog.user.activity.most_visited_worlds.loading')}
-                    </span>
-                </div>
-            ) : topWorlds.length === 0 && !loading && !topWorldsLoading ? (
-                <div className="text-muted-foreground py-2 text-sm">
-                    {t('dialog.user.activity.no_data_in_period')}
-                </div>
-            ) : (
-                <TopWorldRows worlds={topWorlds} sortBy={topWorldsSortBy} />
-            )}
-        </div>
-    );
-}
+export {
+    getDisplayDayLabels,
+    getRangeDays
+} from './user-dialog/userActivityPanelModel';
 
 export function UserActivityPanel({
     profile,
@@ -343,44 +57,6 @@ export function UserActivityPanel({
         (state: any) => state.weekStartsOn
     );
     const themeMode = useShellStore((state: any) => state.themeMode);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [selectedPeriod, setSelectedPeriod] = useState('30');
-    const [hasAnyData, setHasAnyData] = useState(false);
-    const [filteredEventCount, setFilteredEventCount] = useState(0);
-    const [peakDayText, setPeakDayText] = useState('');
-    const [peakTimeText, setPeakTimeText] = useState('');
-    const [mainHeatmap, setMainHeatmap] = useState<any>({
-        rawBuckets: [],
-        normalizedBuckets: []
-    });
-    const [topWorlds, setTopWorlds] = useState<any[]>([]);
-    const [topWorldsLoading, setTopWorldsLoading] = useState(false);
-    const [topWorldsLoadingVisible, setTopWorldsLoadingVisible] =
-        useState(false);
-    const [topWorldsSortBy, setTopWorldsSortBy] = useState('time');
-    const [excludeHomeWorldEnabled, setExcludeHomeWorldEnabled] =
-        useState(false);
-    const [overlapLoading, setOverlapLoading] = useState(false);
-    const [overlapLoadingVisible, setOverlapLoadingVisible] = useState(false);
-    const [hasOverlapData, setHasOverlapData] = useState(false);
-    const [overlapPercent, setOverlapPercent] = useState(0);
-    const [bestOverlapTime, setBestOverlapTime] = useState('');
-    const [overlapHeatmap, setOverlapHeatmap] = useState<any>({
-        rawBuckets: [],
-        normalizedBuckets: []
-    });
-    const [excludeHoursEnabled, setExcludeHoursEnabled] = useState(false);
-    const [excludeStartHour, setExcludeStartHour] = useState('1');
-    const [excludeEndHour, setExcludeEndHour] = useState('6');
-    const activityRequestIdRef = useRef(0);
-    const overlapRequestIdRef = useRef(0);
-    const topWorldRequestIdRef = useRef(0);
-    const topWorldsLoadingTimerRef = useRef(null);
-    const overlapLoadingTimerRef = useRef(null);
-    const easterEggTimerRef = useRef(null);
-    const pendingWorldThumbnailFetchesRef = useRef(new Set());
-    const lastLoadedContextRef = useRef('');
     const userId = profile?.id || '';
     const activityContextKey = `${currentUserId || ''}:${isCurrentUser ? 'self' : 'friend'}:${userId}`;
     const isDarkMode = getResolvedThemeMode(themeMode) === 'dark';
@@ -403,467 +79,52 @@ export function UserActivityPanel({
         () => getDisplayDayLabels(dayLabels, weekStartsOn),
         [dayLabels, weekStartsOn]
     );
-
-    function clearTopWorldsLoadingTimer() {
-        if (topWorldsLoadingTimerRef.current !== null) {
-            clearTimeout(topWorldsLoadingTimerRef.current);
-            topWorldsLoadingTimerRef.current = null;
-        }
-    }
-
-    function clearOverlapLoadingTimer() {
-        if (overlapLoadingTimerRef.current !== null) {
-            clearTimeout(overlapLoadingTimerRef.current);
-            overlapLoadingTimerRef.current = null;
-        }
-    }
-
-    function beginTopWorldsLoading(requestId: any) {
-        setTopWorldsLoading(true);
-        setTopWorldsLoadingVisible(false);
-        clearTopWorldsLoadingTimer();
-        topWorldsLoadingTimerRef.current = setTimeout(() => {
-            topWorldsLoadingTimerRef.current = null;
-            if (requestId === topWorldRequestIdRef.current) {
-                setTopWorldsLoadingVisible(true);
-            }
-        }, TOP_WORLDS_LOADING_DELAY);
-    }
-
-    function finishTopWorldsLoading(requestId: any) {
-        if (requestId !== topWorldRequestIdRef.current) {
-            return;
-        }
-        clearTopWorldsLoadingTimer();
-        setTopWorldsLoading(false);
-        setTopWorldsLoadingVisible(false);
-    }
-
-    function beginOverlapLoading(requestId: any) {
-        setOverlapLoading(true);
-        setOverlapLoadingVisible(false);
-        clearOverlapLoadingTimer();
-        overlapLoadingTimerRef.current = setTimeout(() => {
-            overlapLoadingTimerRef.current = null;
-            if (requestId === overlapRequestIdRef.current) {
-                setOverlapLoadingVisible(true);
-            }
-        }, OVERLAP_LOADING_DELAY);
-    }
-
-    function finishOverlapLoading(requestId: any) {
-        if (requestId !== overlapRequestIdRef.current) {
-            return;
-        }
-        clearOverlapLoadingTimer();
-        setOverlapLoading(false);
-        setOverlapLoadingVisible(false);
-    }
-
-    function resetActivityState() {
-        clearTopWorldsLoadingTimer();
-        clearOverlapLoadingTimer();
-        topWorldRequestIdRef.current += 1;
-        overlapRequestIdRef.current += 1;
-        setLoading(false);
-        setError('');
-        setSelectedPeriod('30');
-        setHasAnyData(false);
-        setFilteredEventCount(0);
-        setPeakDayText('');
-        setPeakTimeText('');
-        setMainHeatmap({ rawBuckets: [], normalizedBuckets: [] });
-        setTopWorlds([]);
-        setTopWorldsLoading(false);
-        setTopWorldsLoadingVisible(false);
-        setTopWorldsSortBy('time');
-        setHasOverlapData(false);
-        setOverlapPercent(0);
-        setBestOverlapTime('');
-        setOverlapHeatmap({ rawBuckets: [], normalizedBuckets: [] });
-        setOverlapLoading(false);
-        setOverlapLoadingVisible(false);
-    }
-
-    async function fetchMissingTopWorldThumbnails(worlds: any) {
-        const pendingWorldThumbnailFetches =
-            pendingWorldThumbnailFetchesRef.current;
-        const missingWorlds = worlds.filter((world: any) => {
-            if (
-                !world.worldId ||
-                getWorldThumbnailUrl(world) ||
-                pendingWorldThumbnailFetches.has(world.worldId)
-            ) {
-                return false;
-            }
-            pendingWorldThumbnailFetches.add(world.worldId);
-            return true;
-        });
-        if (!missingWorlds.length) {
-            return;
-        }
-
-        let results = [];
-        try {
-            results = await Promise.allSettled(
-                missingWorlds.map((world: any) =>
-                    worldProfileRepository.getWorldProfile({
-                        worldId: world.worldId
-                    })
-                )
-            );
-        } finally {
-            for (const world of missingWorlds) {
-                pendingWorldThumbnailFetches.delete(world.worldId);
-            }
-        }
-        const profileByWorldId = new Map();
-        results.forEach((result: any, index: any) => {
-            if (result.status === 'fulfilled' && result.value?.id) {
-                profileByWorldId.set(
-                    missingWorlds[index].worldId,
-                    result.value
-                );
-            }
-        });
-        if (!profileByWorldId.size) {
-            return;
-        }
-
-        setTopWorlds((currentRows: any) =>
-            currentRows.map((world: any) => {
-                const profileWorld = profileByWorldId.get(world.worldId);
-                if (!profileWorld) {
-                    return world;
-                }
-                return {
-                    ...world,
-                    worldName: profileWorld.name || world.worldName,
-                    imageUrl: profileWorld.imageUrl || world.imageUrl || '',
-                    thumbnailImageUrl:
-                        profileWorld.thumbnailImageUrl ||
-                        world.thumbnailImageUrl ||
-                        ''
-                };
-            })
-        );
-    }
-
-    async function loadTopWorlds({
-        rangeDays,
-        sortBy,
-        excludeHomeWorld,
-        requestId
-    }: any) {
-        if (!isCurrentUser || !userId) {
-            return;
-        }
-        const topWorldRequestId = ++topWorldRequestIdRef.current;
-        beginTopWorldsLoading(topWorldRequestId);
-        try {
-            const rows = await userActivityViewService.loadTopWorldsView({
-                rangeDays,
-                limit: 5,
-                sortBy,
-                excludeWorldId: excludeHomeWorld ? currentHomeWorldId : ''
-            });
-            if (
-                requestId !== activityRequestIdRef.current ||
-                topWorldRequestId !== topWorldRequestIdRef.current
-            ) {
-                return;
-            }
-            setTopWorlds(rows);
-            fetchMissingTopWorldThumbnails(rows);
-        } finally {
-            finishTopWorldsLoading(topWorldRequestId);
-        }
-    }
-
-    function applyOverlapView(overlapView: any) {
-        setHasOverlapData(overlapView.hasOverlapData);
-        setOverlapPercent(overlapView.overlapPercent || 0);
-        setBestOverlapTime(overlapView.bestOverlapTime || '');
-        setOverlapHeatmap({
-            rawBuckets: overlapView.rawBuckets || [],
-            normalizedBuckets: overlapView.normalizedBuckets || []
-        });
-    }
-
-    async function refreshTopWorldsOnly({
-        sortBy = topWorldsSortBy,
-        excludeHomeWorld = excludeHomeWorldEnabled,
-        period = selectedPeriod
-    }: any = {}) {
-        if (!active || !isCurrentUser || !hasAnyData || !userId) {
-            return;
-        }
-        await loadTopWorlds({
-            rangeDays: getRangeDays(period),
-            sortBy,
-            excludeHomeWorld,
-            requestId: activityRequestIdRef.current
-        });
-    }
-
-    async function refreshOverlapOnly({
-        excludeOverlap = excludeHoursEnabled,
-        excludeStart = excludeStartHour,
-        excludeEnd = excludeEndHour
-    }: any = {}) {
-        if (
-            !active ||
-            isCurrentUser ||
-            !hasAnyData ||
-            !currentUserId ||
-            !userId
-        ) {
-            return;
-        }
-
-        const requestId = ++overlapRequestIdRef.current;
-        beginOverlapLoading(requestId);
-        try {
-            const overlapView = await userActivityViewService.loadOverlapView({
-                currentUserId,
-                targetUserId: userId,
-                ownerUserId: currentUserId,
-                rangeDays: getRangeDays(selectedPeriod),
-                dayLabels,
-                forceRefresh: false,
-                excludeHours: {
-                    enabled: excludeOverlap,
-                    startHour: Number.parseInt(excludeStart, 10),
-                    endHour: Number.parseInt(excludeEnd, 10)
-                }
-            });
-            if (requestId !== overlapRequestIdRef.current) {
-                return;
-            }
-            applyOverlapView(overlapView);
-        } catch (nextError) {
-            if (requestId !== overlapRequestIdRef.current) {
-                return;
-            }
-            const message =
-                nextError instanceof Error
-                    ? nextError.message
-                    : t(
-                          'dialog.user.activity.failed_to_load',
-                          'Failed to load activity.'
-                      );
-            toast.error(message);
-        } finally {
-            finishOverlapLoading(requestId);
-        }
-    }
-
-    async function refreshData({
-        forceRefresh = false,
-        period = selectedPeriod,
-        sortBy = topWorldsSortBy,
-        excludeHomeWorld = excludeHomeWorldEnabled,
-        excludeOverlap = excludeHoursEnabled,
-        excludeStart = excludeStartHour,
-        excludeEnd = excludeEndHour
-    }: any = {}) {
-        if (!active || !userId) {
-            return;
-        }
-
-        const requestId = ++activityRequestIdRef.current;
-        const overlapRequestId = ++overlapRequestIdRef.current;
-        const rangeDays = getRangeDays(period);
-        setLoading(true);
-        setError('');
-        try {
-            const activityView = await userActivityViewService.loadActivityView(
-                {
-                    userId,
-                    ownerUserId: currentUserId,
-                    isSelf: isCurrentUser,
-                    rangeDays,
-                    dayLabels,
-                    forceRefresh
-                }
-            );
-            if (requestId !== activityRequestIdRef.current) {
-                return;
-            }
-
-            setHasAnyData(activityView.hasAnyData);
-            setFilteredEventCount(activityView.filteredEventCount || 0);
-            setPeakDayText(activityView.peakDay || '');
-            setPeakTimeText(activityView.peakTime || '');
-            setMainHeatmap({
-                rawBuckets: activityView.rawBuckets || [],
-                normalizedBuckets: activityView.normalizedBuckets || []
-            });
-            lastLoadedContextRef.current = activityContextKey;
-
-            if (!activityView.hasAnyData) {
-                setTopWorlds([]);
-                setTopWorldsLoading(false);
-                setTopWorldsLoadingVisible(false);
-                setHasOverlapData(false);
-                setOverlapHeatmap({ rawBuckets: [], normalizedBuckets: [] });
-                return;
-            }
-
-            if (isCurrentUser) {
-                await loadTopWorlds({
-                    rangeDays,
-                    sortBy,
-                    excludeHomeWorld,
-                    requestId
-                });
-                if (requestId !== activityRequestIdRef.current) {
-                    return;
-                }
-                setHasOverlapData(false);
-                return;
-            }
-
-            if (!currentUserId) {
-                setHasOverlapData(false);
-                return;
-            }
-
-            beginOverlapLoading(overlapRequestId);
-            const overlapView = await userActivityViewService.loadOverlapView({
-                currentUserId,
-                targetUserId: userId,
-                ownerUserId: currentUserId,
-                rangeDays,
-                dayLabels,
-                forceRefresh,
-                excludeHours: {
-                    enabled: excludeOverlap,
-                    startHour: Number.parseInt(excludeStart, 10),
-                    endHour: Number.parseInt(excludeEnd, 10)
-                }
-            });
-            if (requestId !== activityRequestIdRef.current) {
-                return;
-            }
-            applyOverlapView(overlapView);
-        } catch (nextError) {
-            if (requestId !== activityRequestIdRef.current) {
-                return;
-            }
-            const message =
-                nextError instanceof Error
-                    ? nextError.message
-                    : t(
-                          'dialog.user.activity.failed_to_load',
-                          'Failed to load activity.'
-                      );
-            setError(message);
-            toast.error(message);
-        } finally {
-            if (requestId === activityRequestIdRef.current) {
-                setLoading(false);
-            }
-            finishOverlapLoading(overlapRequestId);
-        }
-    }
-
-    useEffect(() => {
-        if (!active) {
-            activityRequestIdRef.current += 1;
-            overlapRequestIdRef.current += 1;
-            topWorldRequestIdRef.current += 1;
-            clearTopWorldsLoadingTimer();
-            clearOverlapLoadingTimer();
-            setLoading(false);
-            setOverlapLoading(false);
-            setOverlapLoadingVisible(false);
-            setTopWorldsLoading(false);
-            setTopWorldsLoadingVisible(false);
-            return undefined;
-        }
-
-        let isMounted = true;
-        const baseRequestId = ++activityRequestIdRef.current;
-        const contextChanged =
-            lastLoadedContextRef.current !== activityContextKey;
-        if (contextChanged) {
-            resetActivityState();
-        } else if (hasAnyData || loading) {
-            setError('');
-            return () => {
-                isMounted = false;
-            };
-        } else {
-            setError('');
-        }
-
-        async function loadSettingsAndData() {
-            const [
-                period,
-                sortBy,
-                excludeHomeWorld,
-                overlapExcludeEnabled,
-                overlapExcludeStart,
-                overlapExcludeEnd
-            ] = await Promise.all([
-                configRepository.getString(
-                    isCurrentUser
-                        ? ACTIVITY_SELF_PERIOD_KEY
-                        : ACTIVITY_FRIEND_PERIOD_KEY,
-                    '30'
-                ),
-                configRepository.getString(
-                    ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
-                    'time'
-                ),
-                configRepository.getBool(
-                    ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-                    false
-                ),
-                configRepository.getBool(OVERLAP_EXCLUDE_ENABLED_KEY, false),
-                configRepository.getString(OVERLAP_EXCLUDE_START_KEY, '1'),
-                configRepository.getString(OVERLAP_EXCLUDE_END_KEY, '6')
-            ]);
-            if (!isMounted || baseRequestId !== activityRequestIdRef.current) {
-                return;
-            }
-
-            const nextPeriod = VALID_PERIODS.has(period) ? period : '30';
-            const nextSortBy = ['time', 'count'].includes(sortBy)
-                ? sortBy
-                : 'time';
-            const nextExcludeStart = String(overlapExcludeStart);
-            const nextExcludeEnd = String(overlapExcludeEnd);
-            const nextExcludeHomeWorld = Boolean(excludeHomeWorld);
-            const nextExcludeOverlap = Boolean(overlapExcludeEnabled);
-            setSelectedPeriod(nextPeriod);
-            setTopWorldsSortBy(nextSortBy);
-            setExcludeHomeWorldEnabled(nextExcludeHomeWorld);
-            setExcludeHoursEnabled(nextExcludeOverlap);
-            setExcludeStartHour(nextExcludeStart);
-            setExcludeEndHour(nextExcludeEnd);
-            activityRequestIdRef.current = baseRequestId - 1;
-            await refreshData({
-                period: nextPeriod,
-                sortBy: nextSortBy,
-                excludeHomeWorld: nextExcludeHomeWorld,
-                excludeOverlap: nextExcludeOverlap,
-                excludeStart: nextExcludeStart,
-                excludeEnd: nextExcludeEnd
-            });
-        }
-
-        loadSettingsAndData();
-        return () => {
-            isMounted = false;
-        };
-    }, [active, activityContextKey]);
+    const {
+        bestOverlapTime,
+        changeExcludeHomeWorld,
+        changeExcludeHours,
+        changeExcludeRange,
+        changePeriod,
+        changeTopWorldsSort,
+        error,
+        excludeEndHour,
+        excludeHomeWorldEnabled,
+        excludeHoursEnabled,
+        excludeStartHour,
+        filteredEventCount,
+        hasAnyData,
+        hasOverlapData,
+        loading,
+        mainHeatmap,
+        overlapHeatmap,
+        overlapLoading,
+        overlapLoadingVisible,
+        overlapPercent,
+        peakDayText,
+        peakTimeText,
+        refreshData,
+        selectedPeriod,
+        topWorlds,
+        topWorldsLoading,
+        topWorldsLoadingVisible,
+        topWorldsSortBy
+    } = useUserActivityPanelController({
+        active,
+        activityContextKey,
+        currentHomeWorldId,
+        currentUserId,
+        dayLabels,
+        failedToLoadMessage: t(
+            'dialog.user.activity.failed_to_load',
+            'Failed to load activity.'
+        ),
+        isCurrentUser,
+        userId
+    });
+    const easterEggTimerRef = useRef<any>(null);
 
     useEffect(
         () => () => {
-            clearTopWorldsLoadingTimer();
-            clearOverlapLoadingTimer();
             if (easterEggTimerRef.current !== null) {
                 clearTimeout(easterEggTimerRef.current);
                 easterEggTimerRef.current = null;
@@ -871,67 +132,6 @@ export function UserActivityPanel({
         },
         []
     );
-
-    useEffect(() => {
-        if (active && isCurrentUser && excludeHomeWorldEnabled && hasAnyData) {
-            refreshTopWorldsOnly();
-        }
-    }, [currentHomeWorldId]);
-
-    async function changePeriod(value: any) {
-        const nextPeriod = VALID_PERIODS.has(value) ? value : '30';
-        setSelectedPeriod(nextPeriod);
-        await configRepository.setString(
-            isCurrentUser
-                ? ACTIVITY_SELF_PERIOD_KEY
-                : ACTIVITY_FRIEND_PERIOD_KEY,
-            nextPeriod
-        );
-        await refreshData({ period: nextPeriod });
-    }
-
-    async function changeTopWorldsSort(value: any) {
-        const nextSortBy = ['time', 'count'].includes(value) ? value : 'time';
-        setTopWorldsSortBy(nextSortBy);
-        await configRepository.setString(
-            ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
-            nextSortBy
-        );
-        await refreshTopWorldsOnly({ sortBy: nextSortBy });
-    }
-
-    async function changeExcludeHomeWorld(value: any) {
-        setExcludeHomeWorldEnabled(value);
-        await configRepository.setBool(
-            ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-            value
-        );
-        await refreshTopWorldsOnly({ excludeHomeWorld: value });
-    }
-
-    async function changeExcludeHours(value: any) {
-        setExcludeHoursEnabled(value);
-        await configRepository.setBool(OVERLAP_EXCLUDE_ENABLED_KEY, value);
-        await refreshOverlapOnly({ excludeOverlap: value });
-    }
-
-    async function changeExcludeRange(kind: any, value: any) {
-        const nextStart = kind === 'start' ? value : excludeStartHour;
-        const nextEnd = kind === 'end' ? value : excludeEndHour;
-        if (kind === 'start') {
-            setExcludeStartHour(value);
-        } else {
-            setExcludeEndHour(value);
-        }
-        await Promise.all([
-            configRepository.setString(OVERLAP_EXCLUDE_START_KEY, nextStart),
-            configRepository.setString(OVERLAP_EXCLUDE_END_KEY, nextEnd)
-        ]);
-        await refreshOverlapOnly({
-            excludeStart: nextStart,
-            excludeEnd: nextEnd
-        });
-    }
 
     function onActivityChartRightClick() {
         toast(t('dialog.user.activity.chart_hint'), {
@@ -1123,7 +323,7 @@ export function UserActivityPanel({
                     rawBuckets={mainHeatmap.rawBuckets}
                     normalizedBuckets={mainHeatmap.normalizedBuckets}
                     dayLabels={displayDayLabels}
-                    hourLabels={HOUR_LABELS}
+                    hourLabels={USER_ACTIVITY_HOUR_LABELS}
                     weekStartsOn={weekStartsOn}
                     isDarkMode={isDarkMode}
                     emptyColor={emptyColor}

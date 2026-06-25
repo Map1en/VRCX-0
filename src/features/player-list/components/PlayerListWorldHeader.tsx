@@ -35,9 +35,8 @@ export function PlayerListWorldHeader({
         instanceSnapshot.location || currentUserLocation || ''
     );
     const [currentWorldProfile, setCurrentWorldProfile] = useState(null);
-    const [currentWorldFileAnalysis, setCurrentWorldFileAnalysis] = useState<any>(
-        {}
-    );
+    const [currentWorldFileAnalysis, setCurrentWorldFileAnalysis] =
+        useState<any>({});
     const [currentWorldCacheInfo, setCurrentWorldCacheInfo] = useState(() =>
         defaultWorldCacheInfo()
     );
@@ -67,7 +66,7 @@ export function PlayerListWorldHeader({
                 }
                 return vrchatAuthRepository
                     .getConfig({ endpoint: currentUserEndpoint })
-                    .catch(() => null)
+                    .catch((): null => null)
                     .then((configResponse: any) => {
                         const sdkUnityVersion = String(
                             configResponse?.json?.sdkUnityVersion || ''

@@ -83,12 +83,16 @@ function normalizeFriendLogHistoryRow(
     };
 
     if (normalizedRow.type === 'DisplayName') {
-        normalizedRow.previousDisplayName =
-            valueAsString(row.previous_display_name ?? row.previousDisplayName);
+        normalizedRow.previousDisplayName = valueAsString(
+            row.previous_display_name ?? row.previousDisplayName
+        );
     } else if (normalizedRow.type === 'TrustLevel') {
-        normalizedRow.trustLevel = valueAsString(row.trust_level ?? row.trustLevel);
-        normalizedRow.previousTrustLevel =
-            valueAsString(row.previous_trust_level ?? row.previousTrustLevel);
+        normalizedRow.trustLevel = valueAsString(
+            row.trust_level ?? row.trustLevel
+        );
+        normalizedRow.previousTrustLevel = valueAsString(
+            row.previous_trust_level ?? row.previousTrustLevel
+        );
     }
 
     return normalizedRow;
@@ -115,7 +119,9 @@ async function getFriendLogHistory(
     options: FriendLogHistoryOptions = {}
 ): Promise<FriendLogHistoryRow[]> {
     const normalizedUserId =
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim();
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim();
     const normalizedTargetUserId =
         typeof options.targetUserId === 'string'
             ? options.targetUserId.trim()
@@ -136,10 +142,10 @@ async function getFriendLogHistory(
         : [];
 
     const rows = (await commands.appFriendLogHistoryQuery({
-            userId: normalizedUserId,
-            targetUserId: normalizedTargetUserId,
-            types: normalizedTypes
-        })) as FriendLogHistorySourceRow[];
+        userId: normalizedUserId,
+        targetUserId: normalizedTargetUserId,
+        types: normalizedTypes
+    })) as FriendLogHistorySourceRow[];
 
     if (!Array.isArray(rows)) {
         return [];
@@ -154,29 +160,38 @@ async function addFriendLogHistory(
     userId: unknown,
     entry: FriendLogHistoryEntry | null | undefined
 ) {
-    await commands.appFriendLogHistoryAdd(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), [normalizeFriendLogHistoryEntryForRuntime(entry)]);
+    await commands.appFriendLogHistoryAdd(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        [normalizeFriendLogHistoryEntryForRuntime(entry)]
+    );
 }
 
 async function addFriendLogHistoryArray(
     userId: unknown,
     entries: FriendLogHistoryEntry[] = []
 ) {
-    await commands.appFriendLogHistoryAdd(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), (Array.isArray(entries) ? entries : []).map(
+    await commands.appFriendLogHistoryAdd(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        (Array.isArray(entries) ? entries : []).map(
             normalizeFriendLogHistoryEntryForRuntime
-        ));
+        )
+    );
 }
 
 async function deleteFriendLogHistory(
     userId: unknown,
     entry: FriendLogHistoryEntry | null | undefined
 ) {
-    return commands.appFriendLogHistoryDelete(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), normalizeFriendLogHistoryEntryForRuntime(entry));
+    return commands.appFriendLogHistoryDelete(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        normalizeFriendLogHistoryEntryForRuntime(entry)
+    );
 }
 
 const friendLogHistoryRepository = {

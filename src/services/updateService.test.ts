@@ -41,7 +41,7 @@ import {
 function release({ publishedAt }: { publishedAt: string }) {
     return {
         tag_name: 'v2.7.0',
-        assets: [],
+        assets: Array<unknown>(),
         html_url: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
         name: 'VRCX-0 2.7.0',
         prerelease: false,

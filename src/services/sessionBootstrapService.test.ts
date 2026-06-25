@@ -78,18 +78,15 @@ describe('sessionBootstrapService', () => {
 
     it('syncs the backend frontend session before friend bootstrap is loaded', async () => {
         const { useSessionStore } = await import('@/state/sessionStore');
-        const { bootstrapAuthenticatedSession } = await import(
-            './sessionBootstrapService'
-        );
+        const { bootstrapAuthenticatedSession } =
+            await import('./sessionBootstrapService');
 
         await bootstrapAuthenticatedSession({
             id: 'usr_self',
             displayName: 'Self'
         });
 
-        expect(
-            mocks.appSyncFrontendAuthenticatedSession
-        ).toHaveBeenCalledWith(
+        expect(mocks.appSyncFrontendAuthenticatedSession).toHaveBeenCalledWith(
             'usr_self',
             'https://api.example.test/api/1',
             'wss://pipeline.example.test',
@@ -100,7 +97,8 @@ describe('sessionBootstrapService', () => {
         );
         expect(mocks.appRuntimeGroupInstancesRefresh).toHaveBeenCalledTimes(1);
         expect(
-            mocks.appSyncFrontendAuthenticatedSession.mock.invocationCallOrder[0]
+            mocks.appSyncFrontendAuthenticatedSession.mock
+                .invocationCallOrder[0]
         ).toBeLessThan(
             mocks.appRuntimeGroupInstancesRefresh.mock.invocationCallOrder[0]
         );

@@ -8,13 +8,19 @@ import {
 } from '@/services/updateInstallService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-function getLatestUpdaterDisplayVersion(release: any) {
+function getReleaseProperty(release: unknown, key: string): unknown {
+    return release && typeof release === 'object'
+        ? Reflect.get(release, key)
+        : undefined;
+}
+
+function getLatestUpdaterDisplayVersion(release: unknown) {
     return (
         String(
-            release?.latestVersion ||
-                release?.displayVersion ||
-                release?.canonicalVersion ||
-                release?.tagName ||
+            getReleaseProperty(release, 'latestVersion') ||
+                getReleaseProperty(release, 'displayVersion') ||
+                getReleaseProperty(release, 'canonicalVersion') ||
+                getReleaseProperty(release, 'tagName') ||
                 ''
         ).trim() || '-'
     );
@@ -28,7 +34,7 @@ function formatUpdateVersionLabel(version: string) {
 }
 
 function getReleaseCanonicalVersion(release: unknown) {
-    return String((release as any)?.canonicalVersion || '');
+    return String(getReleaseProperty(release, 'canonicalVersion') || '');
 }
 
 function isDownloadedUpdateReady({
@@ -107,7 +113,7 @@ export function showUpdateReadyToast({
     );
 }
 
-export function UpdateAvailableToastHost() {
+export function UpdateAvailableToastHost(): null {
     const { t } = useTranslation();
     const hasAvailableUpdate = useRuntimeStore((state: any) =>
         Boolean(state.updateLoop.hasAvailableUpdate)

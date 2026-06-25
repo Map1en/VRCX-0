@@ -209,7 +209,7 @@ export async function loadUserDialogTabData({
     worldSort,
     worldOrder,
     repositories
-}: any) {
+}: any): Promise<{ rows: unknown[]; favoriteWorldGroups: unknown[] }> {
     if (!isUserDialogDataTab(tab)) {
         return { rows: [], favoriteWorldGroups: [] };
     }

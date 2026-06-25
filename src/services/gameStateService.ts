@@ -1,4 +1,7 @@
-import { commands, type HostSessionProjection } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type HostSessionProjection
+} from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import {
@@ -26,7 +29,9 @@ import {
     requireHostCapabilitySupported
 } from '@/services/hostCapabilityService';
 import { showSQLiteErrorDialog } from '@/services/sqliteErrorDialogService';
+import { normalizeBoolean } from '@/shared/utils/coerce';
 import { isRealInstance } from '@/shared/utils/instance';
+import { normalizeString } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -43,16 +48,6 @@ let crashRelaunchTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
-}
-
-function normalizeBoolean(value: unknown) {
-    return value === true || value === 'true' || value === 1 || value === '1';
-}
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function scheduleDebugLoggingCheck(delayMs: number = 60000) {
@@ -190,7 +185,8 @@ async function scheduleCrashRelaunchIfNeeded(previousGameState: GameState) {
         return;
     }
 
-    const closedGracefully = await commands.logWatcherVrcClosedGracefully()
+    const closedGracefully = await commands
+        .logWatcherVrcClosedGracefully()
         .catch(() => true);
     if (closedGracefully) {
         return;
@@ -215,7 +211,8 @@ async function scheduleCrashRelaunchIfNeeded(previousGameState: GameState) {
                 }
 
                 if (!previousGameState.isGameNoVR) {
-                    const steamVrRunning = await commands.appIsSteamvrRunning()
+                    const steamVrRunning = await commands
+                        .appIsSteamvrRunning()
                         .catch(
                             () =>
                                 useRuntimeStore.getState().gameState
@@ -429,9 +426,7 @@ export async function checkVRChatDebugLogging() {
     });
 }
 
-export async function handleGameRunningUpdate(
-    payload: unknown = {}
-) {
+export async function handleGameRunningUpdate(payload: unknown = {}) {
     const projection: GameRunningPayload = isRecord(payload)
         ? (payload as GameRunningPayload)
         : {};
@@ -460,7 +455,7 @@ export async function handleGameRunningUpdate(
             : payloadStartedAt || runtimeStore.gameState.lastGameStartedAt;
     const newSessionPatch =
         gameRunningChanged && nextGameRunning
-            ? buildNewGameSessionPatch(gameStartedAt)
+            ? buildNewGameSessionPatch(gameStartedAt ?? now)
             : {};
     const stoppedSessionPatch =
         gameRunningChanged && previousGameRunning === true && !nextGameRunning
@@ -512,12 +507,14 @@ export async function handleGameRunningUpdate(
     }
 
     if (shouldRefreshDiscordPresence) {
-        await refreshDiscordPresence({ force: true }).catch((error: unknown) => {
-            console.warn(
-                'Discord presence refresh after game state update failed:',
-                error
-            );
-        });
+        await refreshDiscordPresence({ force: true }).catch(
+            (error: unknown) => {
+                console.warn(
+                    'Discord presence refresh after game state update failed:',
+                    error
+                );
+            }
+        );
     }
 }
 

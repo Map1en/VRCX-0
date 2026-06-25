@@ -7,8 +7,8 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
-import { notifyRuntimeVrchatAuthFailure } from './vrchatAuthErrorService';
 import { syncStartupServicesTask } from './startupServicesStatus';
+import { notifyRuntimeVrchatAuthFailure } from './vrchatAuthErrorService';
 
 type FavoriteSnapshotRecord = Record<string, unknown> & {
     detail?: unknown;
@@ -48,7 +48,10 @@ function favoriteBootstrapKey(userId: unknown, endpoint: unknown = '') {
     return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
 }
 
-function isCurrentFavoriteBootstrapTarget(userId: string, endpoint: unknown = '') {
+function isCurrentFavoriteBootstrapTarget(
+    userId: string,
+    endpoint: unknown = ''
+) {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
@@ -93,7 +96,8 @@ async function runFavoriteBootstrap({
             `Loading favorites baseline for ${displayName}.`
         );
 
-    const result: SocialFavoritesBaselineOutput = await commands.appSocialFavoritesBaselineGet({
+    const result: SocialFavoritesBaselineOutput = await commands
+        .appSocialFavoritesBaselineGet({
             userId: normalizedUserId,
             endpoint: String(endpoint || ''),
             currentUserSnapshot: currentSnapshot,
@@ -157,10 +161,9 @@ export function bootstrapFavorites(
                 ? options.currentUserSnapshot.id
                 : '')
     );
-    const currentUserSnapshot =
-        isRecord(options?.currentUserSnapshot)
-            ? options.currentUserSnapshot
-            : null;
+    const currentUserSnapshot = isRecord(options?.currentUserSnapshot)
+        ? options.currentUserSnapshot
+        : null;
 
     if (!normalizedUserId || !currentUserSnapshot) {
         return Promise.reject(

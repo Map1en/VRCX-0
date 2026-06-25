@@ -1,20 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { getCurrentAvatarLiveWearTime } from '@/services/avatarWearTimeService';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { useDialogStore } from '@/state/dialogStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import {
-    avatarGalleryImageUrl,
-    defaultAvatarSideData
-} from './avatarAssets';
+import { avatarGalleryImageUrl, defaultAvatarSideData } from './avatarAssets';
 import { readAvatarCacheInfo } from './avatarCacheAdapter';
 import { createAvatarDialogActions } from './avatarDialogActions';
 
@@ -31,11 +28,15 @@ export function useAvatarDialogState({ avatarId, seedData = null }: any) {
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentAvatarId = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot?.currentAvatar || ''
     );
-    const setAuthBootstrap = useRuntimeStore((state: any) => state.setAuthBootstrap);
+    const setAuthBootstrap = useRuntimeStore(
+        (state: any) => state.setAuthBootstrap
+    );
     const confirm = useModalStore((state: any) => state.confirm);
     const prompt = useModalStore((state: any) => state.prompt);
     const closeDialog = useDialogStore((state: any) => state.closeDialog);
@@ -78,7 +79,9 @@ export function useAvatarDialogState({ avatarId, seedData = null }: any) {
     }, [currentEndpoint, normalizedAvatarId]);
 
     useEffect(() => {
-        setAvatar(seedData ? avatarProfileRepository.normalize(seedData) : null);
+        setAvatar(
+            seedData ? avatarProfileRepository.normalize(seedData) : null
+        );
     }, [seedData]);
 
     useEffect(() => {
@@ -224,7 +227,9 @@ export function useAvatarDialogState({ avatarId, seedData = null }: any) {
             };
         }
 
-        setAvatar(seedData ? avatarProfileRepository.normalize(seedData) : null);
+        setAvatar(
+            seedData ? avatarProfileRepository.normalize(seedData) : null
+        );
         setMemo(typeof seedData?.$memo === 'string' ? seedData.$memo : '');
         setLoadStatus('running');
         setDetail('');

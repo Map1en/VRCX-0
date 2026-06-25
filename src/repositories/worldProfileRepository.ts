@@ -250,7 +250,7 @@ function normalizeWorldProfile(world: unknown): WorldProfileRecord {
         updatedAt: source.updated_at ?? source.updatedAt ?? '',
         publicationDate: source.publicationDate ?? '',
         platforms: resolveWorldPlatforms(source)
-    } as WorldProfileRecord;
+    };
 }
 
 async function collectPages<T>(
@@ -386,12 +386,12 @@ async function getWorldsByUser({
         userId: normalizedUserId,
         releaseStatus
     };
-    const rows = await fetchCachedData({
+    const rows = await fetchCachedData<unknown[]>({
         queryKey: queryKeys.worldsByUser(params, endpoint),
         policy: entityQueryPolicies.worldCollection,
         force,
         queryFn: async () => {
-            const response = unwrapVrchatWorldResponse(
+            const response = unwrapVrchatWorldResponse<unknown[]>(
                 await commands.appVrchatWorldListByUserGet({
                     endpoint,
                     userId: normalizedUserId,

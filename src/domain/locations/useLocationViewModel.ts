@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 
 import { createLocationViewModel } from '@/domain/locations/locationViewModel';
 import { instancePresenceKey } from '@/domain/presence/instancePresence';
-import { useRuntimeStore } from '@/state/runtimeStore';
 import { useLocationHintStore } from '@/state/locationHintStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 interface UseLocationViewModelOptions {
     endpoint?: unknown;

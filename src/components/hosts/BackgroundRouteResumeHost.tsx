@@ -20,7 +20,7 @@ function consumeBackgroundRouteResumeMarker(): boolean {
     return shouldResume;
 }
 
-export function BackgroundRouteResumeHost() {
+export function BackgroundRouteResumeHost(): null {
     const navigate = useNavigate();
     const location = useLocation();
     const consumedRef = useRef(false);

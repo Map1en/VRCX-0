@@ -237,9 +237,7 @@ describe('gameLogIngestService characterization', () => {
             ]
         });
 
-        await service.finalizeCurrentGameLogSession(
-            '2026-05-14T00:03:00.000Z'
-        );
+        await service.finalizeCurrentGameLogSession('2026-05-14T00:03:00.000Z');
 
         expect(mocks.addGamelogJoinLeaveBulk).toHaveBeenCalledWith([
             expect.objectContaining({
@@ -250,9 +248,7 @@ describe('gameLogIngestService characterization', () => {
                 time: 120_000
             })
         ]);
-        expect(
-            mocks.updateGamelogLocationTimeToDatabase
-        ).toHaveBeenCalledWith({
+        expect(mocks.updateGamelogLocationTimeToDatabase).toHaveBeenCalledWith({
             created_at: '2026-05-14T00:00:00.000Z',
             time: 180_000
         });

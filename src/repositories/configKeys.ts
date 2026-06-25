@@ -6,7 +6,11 @@ export interface ConfigKeyDefinition {
     default: ConfigDefaultValue;
 }
 
-export const ConfigKeys = {
+const defineConfigKeys = <T extends Record<string, ConfigKeyDefinition>>(
+    keys: T
+): T => keys;
+
+export const ConfigKeys = defineConfigKeys({
     // ── App Core ─────────────────────────────────────
     databaseVersion: { type: 'int', default: 0 },
     appLanguage: { type: 'string', default: null },
@@ -255,6 +259,8 @@ export const ConfigKeys = {
     InstanceActivityBarWidth: { type: 'int', default: 25 },
     groupCalendarShowFeaturedEvents: { type: 'bool', default: false },
     toolsCategoryCollapsed: { type: 'string', default: null },
+    screenshotGalleryFolder: { type: 'string', default: '' },
+    screenshotGalleryScrollPositions: { type: 'string', default: '{}' },
 
     // ── Charts ───────────────────────────────────────
     MutualGraphLayoutIterations: { type: 'int', default: null },
@@ -293,7 +299,7 @@ export const ConfigKeys = {
     },
     avatarRemoteDatabaseProvider: { type: 'string', default: '' },
     showConfirmationOnSwitchAvatar: { type: 'bool', default: true }
-} satisfies Record<string, ConfigKeyDefinition>;
+});
 
 export type ConfigKeyName = keyof typeof ConfigKeys;
 
@@ -350,6 +356,21 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
         world: 'VRCX_FavoritesWorldSort',
         avatar: 'VRCX_FavoritesAvatarSort'
     })
+});
+
+export const USER_ACTIVITY_CONFIG_KEYS = Object.freeze({
+    selfPeriodDays: 'activitySelfPeriodDays',
+    friendPeriodDays: 'activityFriendPeriodDays',
+    selfTopWorldsSortBy: 'activitySelfTopWorldsSortBy',
+    selfExcludeHomeWorld: 'activitySelfExcludeHomeWorld',
+    overlapExcludeEnabled: 'overlapExcludeEnabled',
+    overlapExcludeStart: 'overlapExcludeStart',
+    overlapExcludeEnd: 'overlapExcludeEnd'
+});
+
+export const SCREENSHOT_GALLERY_CONFIG_KEYS = Object.freeze({
+    folder: 'screenshotGalleryFolder',
+    scrollPositions: 'screenshotGalleryScrollPositions'
 });
 
 export const STATUS_BAR_CONFIG_KEYS = Object.freeze({

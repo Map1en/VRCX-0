@@ -12,7 +12,7 @@ import { AppNavMenu } from './AppNavMenu';
 export function AppSidebar({ children }: any) {
     const sidebarOpen = useShellStore((state: any) => state.sidebarOpen);
     const navWidth = useShellStore((state: any) => state.navWidth);
-    const resizeCleanupRef = useRef(null);
+    const resizeCleanupRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         return () => {

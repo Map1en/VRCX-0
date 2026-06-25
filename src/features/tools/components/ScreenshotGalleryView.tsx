@@ -1,8 +1,4 @@
-import {
-    ChevronRightIcon,
-    FolderIcon,
-    RefreshCwIcon
-} from 'lucide-react';
+import { ChevronRightIcon, FolderIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +20,9 @@ import {
 } from './ScreenshotThumbnailGrid';
 
 function buildFolderTree(folderTree: any) {
-    const folders = Array.isArray(folderTree?.folders) ? folderTree.folders : [];
+    const folders = Array.isArray(folderTree?.folders)
+        ? folderTree.folders
+        : [];
     const rootPath = folderTree?.rootPath || folders[0]?.path || '';
     const nodesByPath = new Map();
 
@@ -274,7 +272,9 @@ export function ScreenshotGalleryView({
                         </div>
                         <div className="text-muted-foreground truncate text-xs">
                             {error
-                                ? t('dialog.screenshot_metadata.gallery_load_failed')
+                                ? t(
+                                      'dialog.screenshot_metadata.gallery_load_failed'
+                                  )
                                 : scanStatus?.running
                                   ? t('dialog.screenshot_metadata.scanning')
                                   : t('dialog.screenshot_metadata.gallery')}

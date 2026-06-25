@@ -118,6 +118,9 @@ export function serializeTelemetryErrorDetails(
         return undefined;
     }
     return [...details.values()]
-        .sort((a, b) => b.count - a.count || a.signature.localeCompare(b.signature))
+        .sort(
+            (a, b) =>
+                b.count - a.count || a.signature.localeCompare(b.signature)
+        )
         .slice(0, 10);
 }

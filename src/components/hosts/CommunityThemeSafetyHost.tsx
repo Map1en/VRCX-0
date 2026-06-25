@@ -8,7 +8,7 @@ import {
     stopLocalCommunityThemePreview
 } from '@/services/communityThemeService';
 
-export function CommunityThemeSafetyHost() {
+export function CommunityThemeSafetyHost(): null {
     const { t } = useTranslation();
 
     useEffect(() => {

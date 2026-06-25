@@ -4,11 +4,9 @@ import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
+import { normalizeString } from '@/shared/utils/string';
 
-import {
-    buildPlayerDialogSeedData,
-    normalizeString
-} from './playerListRows';
+import { buildPlayerDialogSeedData } from './playerListRows';
 
 export function usePlayerListActions({ currentUserEndpoint }: any) {
     const { t } = useTranslation();
@@ -39,11 +37,16 @@ export function usePlayerListActions({ currentUserEndpoint }: any) {
                     endpoint: currentUserEndpoint
                 });
                 if (resolved?.userId) {
+                    const resolvedSeedData =
+                        resolved.seedData &&
+                        typeof resolved.seedData === 'object'
+                            ? resolved.seedData
+                            : {};
                     openUserDialog({
                         seedData:
                             seedData || resolved.seedData
                                 ? {
-                                      ...((resolved.seedData as any) || {}),
+                                      ...resolvedSeedData,
                                       ...(seedData || {}),
                                       id: resolved.userId,
                                       userId: resolved.userId

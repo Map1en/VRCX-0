@@ -124,7 +124,8 @@ export function useMutualFriendsPageState() {
 
     const selectedNode = useMemo(
         () =>
-            baseGraph.nodes.find((node: any) => node.id === selectedNodeId) || null,
+            baseGraph.nodes.find((node: any) => node.id === selectedNodeId) ||
+            null,
         [baseGraph.nodes, selectedNodeId]
     );
 
@@ -159,15 +160,15 @@ export function useMutualFriendsPageState() {
 
     const { fetchProgress, handleCancelFetch, handleFetchGraph } =
         useMutualFriendsGraphFetch({
-        currentUserId,
-        currentUserEndpoint,
-        currentUserIdRef,
-        friendsById,
-        orderedFriendIds,
-        reloadSnapshot: snapshot.reloadSnapshot,
-        setDetail: snapshot.setDetail,
-        setStatus: snapshot.setStatus
-    });
+            currentUserId,
+            currentUserEndpoint,
+            currentUserIdRef,
+            friendsById,
+            orderedFriendIds,
+            reloadSnapshot: snapshot.reloadSnapshot,
+            setDetail: snapshot.setDetail,
+            setStatus: snapshot.setStatus
+        });
 
     function selectNode(friendId: any) {
         const nextValue = normalizeMutualFriendId(friendId);
@@ -184,7 +185,9 @@ export function useMutualFriendsPageState() {
         setExcludedFriendIds((current: any) => {
             const normalizedCurrent = normalizeExcludedMutualFriendIds(current);
             if (normalizedCurrent.includes(normalizedId)) {
-                return normalizedCurrent.filter((id: any) => id !== normalizedId);
+                return normalizedCurrent.filter(
+                    (id: any) => id !== normalizedId
+                );
             }
             return [...normalizedCurrent, normalizedId];
         });
@@ -199,9 +202,7 @@ export function useMutualFriendsPageState() {
         const isFriend = Boolean(friendsById[selectedNode.id]);
         if (!isFriend) {
             const result = await confirm({
-                title: t(
-                    'view.charts.modal.refresh_non_friend_mutuals'
-                ),
+                title: t('view.charts.modal.refresh_non_friend_mutuals'),
                 description: t(
                     'view.charts.modal.this_node_is_not_currently_in_the_friend_roster_continue_refreshing_its_mutual_friends_cache'
                 ),
@@ -241,7 +242,8 @@ export function useMutualFriendsPageState() {
                 })
             );
         } catch (error) {
-            if (error?.status === 403 || error?.status === 404) {
+            const status = (error as { status?: number })?.status;
+            if (status === 403 || status === 404) {
                 if (currentUserIdRef.current !== ownerUserId) {
                     return;
                 }
@@ -268,9 +270,7 @@ export function useMutualFriendsPageState() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.charts.toast.failed_to_refresh_selected_mutuals'
-                      )
+                    : t('view.charts.toast.failed_to_refresh_selected_mutuals')
             );
         } finally {
             setNodeRefreshId('');

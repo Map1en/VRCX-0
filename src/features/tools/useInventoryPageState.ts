@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,10 +25,35 @@ import {
 
 export { IMAGE_UPLOAD_ACCEPT };
 
+type InventoryAuthTarget = {
+    endpoint: string;
+    userId: string;
+};
+
+type InventoryRow = Record<string, unknown> & {
+    id?: unknown;
+};
+
+type InventoryUploadSettings = {
+    animationStyle: string;
+    fps: number;
+    frames: number;
+    isAnimated: boolean;
+    loopPingPong: boolean;
+};
+
+type InventoryCropRequest = {
+    aspectRatio: number;
+    authTarget: InventoryAuthTarget;
+    file: File;
+    settings: InventoryUploadSettings;
+    target: string | null;
+};
+
 export function useInventoryPageState() {
     const { t } = useTranslation();
-    const uploadInputRef = useRef<any>(null);
-    const uploadTargetRef = useRef<any>(null);
+    const uploadInputRef = useRef<HTMLInputElement | null>(null);
+    const uploadTargetRef = useRef<string | null>(null);
     const currentUserId = useRuntimeStore(
         (state: any) => state.auth.currentUserId
     );
@@ -43,17 +69,23 @@ export function useInventoryPageState() {
         (state: any) => state.openImagePreview
     );
     const [activeCategory, setActiveCategory] = useState('emojis');
-    const [activeSubTabs, setActiveSubTabs] = useState<any>({
+    const [activeSubTabs, setActiveSubTabs] = useState<Record<string, string>>({
         emojis: 'custom',
         stickers: 'custom',
         items: 'all',
         cosmetics: 'drones'
     });
-    const [rowsByScope, setRowsByScope] = useState<any>({});
-    const [loadingByScope, setLoadingByScope] = useState<any>({});
+    const [rowsByScope, setRowsByScope] = useState<
+        Record<string, InventoryRow[]>
+    >({});
+    const [loadingByScope, setLoadingByScope] = useState<
+        Record<string, boolean>
+    >({});
     const [mutatingKey, setMutatingKey] = useState('');
     const [uploadingTarget, setUploadingTarget] = useState('');
-    const [cropRequest, setCropRequest] = useState<any>(null);
+    const [cropRequest, setCropRequest] = useState<InventoryCropRequest | null>(
+        null
+    );
     const [emojiAnimFps, setEmojiAnimFps] = useState(15);
     const [emojiAnimFrameCount, setEmojiAnimFrameCount] = useState(4);
     const [emojiAnimType, setEmojiAnimType] = useState(false);
@@ -67,7 +99,7 @@ export function useInventoryPageState() {
     const isVrcPlusSupporter = Boolean(
         currentUserSnapshot?.$isVRCPlus ||
         currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-        globalThis?.$debug?.debugVrcPlus
+        globalThis.$debug?.debugVrcPlus
     );
 
     const activeSubTab = activeSubTabs[activeCategory];
@@ -80,7 +112,7 @@ export function useInventoryPageState() {
         };
     }
 
-    function isCurrentAuthTarget(authTarget: any) {
+    function isCurrentAuthTarget(authTarget: InventoryAuthTarget) {
         const currentAuth = getAuthTarget();
         return (
             currentAuth.userId === authTarget.userId &&
@@ -94,22 +126,22 @@ export function useInventoryPageState() {
         writeGridDensityPreference(nextDensity);
     }
 
-    function setScopeLoading(key: any, value: any) {
-        setLoadingByScope((current: any) => ({
+    function setScopeLoading(key: string, value: unknown) {
+        setLoadingByScope((current) => ({
             ...current,
             [key]: Boolean(value)
         }));
     }
 
-    function setScopeRows(key: any, rows: any) {
-        setRowsByScope((current: any) => ({
+    function setScopeRows(key: string, rows: unknown) {
+        setRowsByScope((current) => ({
             ...current,
             [key]: Array.isArray(rows) ? rows : []
         }));
     }
 
     async function loadFileRows(definition: any, authTarget: any) {
-        const nextRows = [];
+        const nextRows: InventoryRow[] = [];
         for (const tag of definition.fileTags || []) {
             const { json } = await mediaRepository.getFileList(
                 {
@@ -126,7 +158,7 @@ export function useInventoryPageState() {
         }
         const seen = new Set();
         return nextRows
-            .filter((row: any) => {
+            .filter((row) => {
                 if (!row?.id || seen.has(row.id)) {
                     return false;
                 }
@@ -141,7 +173,7 @@ export function useInventoryPageState() {
         if (definition.source === 'empty') {
             return [];
         }
-        const nextRows = [];
+        const nextRows: InventoryRow[] = [];
         for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
             const { json } = await mediaRepository.getInventoryItems(
                 {
@@ -217,8 +249,8 @@ export function useInventoryPageState() {
         uploadInputRef.current?.click();
     }
 
-    function getEmojiUploadParams(settings: any) {
-        const params: any = {
+    function getEmojiUploadParams(settings: InventoryUploadSettings) {
+        const params: Record<string, string | number> = {
             tag: settings.isAnimated ? 'emojianimated' : 'emoji',
             animationStyle: String(
                 settings.animationStyle || 'Stop'
@@ -241,7 +273,11 @@ export function useInventoryPageState() {
         return params;
     }
 
-    function uploadAsset(target: any, base64Body: any, settings: any) {
+    function uploadAsset(
+        target: unknown,
+        base64Body: string,
+        settings: InventoryUploadSettings
+    ) {
         if (target === 'emojis') {
             return mediaRepository.uploadEmoji(
                 base64Body,
@@ -259,7 +295,7 @@ export function useInventoryPageState() {
         throw new Error(`Unsupported inventory upload target: ${target}`);
     }
 
-    async function uploadSelectedFile(event: any) {
+    async function uploadSelectedFile(event: ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0] || null;
         event.target.value = '';
         if (!file) {
@@ -306,13 +342,13 @@ export function useInventoryPageState() {
         });
     }
 
-    async function confirmCroppedUpload(blob: any) {
+    async function confirmCroppedUpload(blob: Blob) {
         const request = cropRequest;
         if (!request || !blob || !isCurrentAuthTarget(request.authTarget)) {
             return;
         }
         const { target, settings, authTarget } = request;
-        setUploadingTarget(target);
+        setUploadingTarget(target ?? '');
         try {
             const base64Body = await readFileAsBase64(blob);
             if (!isCurrentAuthTarget(authTarget)) {

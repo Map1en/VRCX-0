@@ -2,9 +2,11 @@ import { useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';
+import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { openGroupDialog } from '@/services/dialogService';
+import friendRelationshipService from '@/services/friendRelationshipService';
+import { sendBoopToUser } from '@/services/inviteDeliveryService';
 import {
     acceptFriendRequestNotification,
     dismissBoopNotifications,
@@ -12,8 +14,6 @@ import {
     findIncomingFriendRequestNotification,
     hideRemoteAndExpireNotification
 } from '@/services/notificationActionService';
-import friendRelationshipService from '@/services/friendRelationshipService';
-import { sendBoopToUser } from '@/services/inviteDeliveryService';
 import { recordRecentAction } from '@/services/recentActionService';
 
 import { normalizeUserId } from './userProfileFields';
@@ -321,9 +321,7 @@ export function useUserDialogActions({
                 }
                 toast.success(
                     isNowFriend
-                        ? t(
-                              'dialog.user.toast.friend_request_accepted'
-                          )
+                        ? t('dialog.user.toast.friend_request_accepted')
                         : t('dialog.user.toast.friend_request_sent')
                 );
             } else {
@@ -374,19 +372,15 @@ export function useUserDialogActions({
                 }
                 toast.success(
                     action === 'decline'
-                        ? t(
-                              'dialog.user.toast.friend_request_declined'
-                          )
-                        : t(
-                              'dialog.user.toast.friend_request_cancelled'
-                          )
+                        ? t('dialog.user.toast.friend_request_declined')
+                        : t('dialog.user.toast.friend_request_cancelled')
                 );
             }
         } catch (error) {
             if (
                 (action === 'accept' || action === 'decline') &&
                 incomingNotification &&
-                error?.status === 404
+                (error as { status?: number } | null)?.status === 404
             ) {
                 await expireNotificationLocally({
                     currentUserId,
@@ -402,9 +396,7 @@ export function useUserDialogActions({
                     return;
                 }
                 toast.info(
-                    t(
-                        'dialog.user.empty.friend_request_is_no_longer_active'
-                    )
+                    t('dialog.user.empty.friend_request_is_no_longer_active')
                 );
                 return;
             }

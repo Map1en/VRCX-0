@@ -28,9 +28,7 @@ describe('playerListPersistenceRepository', () => {
             time: 0,
             groupName: ''
         });
-        vi.mocked(
-            commands.appPlayerListJoinLeaveRows
-        ).mockResolvedValueOnce([
+        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
             {
                 id: 1,
                 createdAt: '2026-01-01T10:00:00.000Z',
@@ -72,9 +70,7 @@ describe('playerListPersistenceRepository', () => {
             time: 0,
             groupName: ''
         });
-        vi.mocked(
-            commands.appPlayerListJoinLeaveRows
-        ).mockResolvedValueOnce([
+        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
             {
                 id: 1,
                 createdAt: '2026-01-01T10:01:00.000Z',
@@ -116,9 +112,7 @@ describe('playerListPersistenceRepository', () => {
             time: 0,
             groupName: ''
         });
-        vi.mocked(
-            commands.appPlayerListJoinLeaveRows
-        ).mockResolvedValueOnce([
+        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
             {
                 id: 1,
                 createdAt: '2026-04-30T10:01:00.000Z',

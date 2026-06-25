@@ -6,9 +6,10 @@ import { queryKeys } from '@/lib/entityQueryCache';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';
+import { normalizeString } from '@/shared/utils/string';
 import { normalizeLanguageOptionsFromConfig } from '@/shared/utils/userLanguage';
 
-import { normalizeString, resolvePlayerRowUserId } from './playerListRows';
+import { resolvePlayerRowUserId } from './playerListRows';
 
 function buildPlayerProfileIds(playerRows: any, currentUserId: any) {
     const currentUserKey = normalizeString(currentUserId);

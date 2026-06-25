@@ -1,6 +1,11 @@
 export const OWNER_USER_ID = 'usr_63f57413-1470-4703-b655-50b7c0845414';
 
-const userDialogWorldSortingOptions: any = {
+type SelectOption = {
+    name: string;
+    value: string;
+};
+
+const userDialogWorldSortingOptions: Record<string, SelectOption> = {
     name: {
         name: 'dialog.user.worlds.sorting.name',
         value: 'name'
@@ -23,7 +28,7 @@ const userDialogWorldSortingOptions: any = {
     }
 };
 
-const userDialogWorldOrderOptions: any = {
+const userDialogWorldOrderOptions: Record<string, SelectOption> = {
     descending: {
         name: 'dialog.user.worlds.order.descending',
         value: 'descending'
@@ -34,7 +39,7 @@ const userDialogWorldOrderOptions: any = {
     }
 };
 
-const userDialogGroupSortingOptions: any = {
+const userDialogGroupSortingOptions: Record<string, SelectOption> = {
     alphabetical: {
         name: 'dialog.user.groups.sorting.alphabetical',
         value: 'alphabetical'
@@ -49,7 +54,7 @@ const userDialogGroupSortingOptions: any = {
     }
 };
 
-const userDialogMutualFriendSortingOptions: any = {
+const userDialogMutualFriendSortingOptions: Record<string, SelectOption> = {
     alphabetical: {
         name: 'dialog.user.mutual_friends.sorting.alphabetical',
         value: 'alphabetical'

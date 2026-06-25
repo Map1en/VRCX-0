@@ -27,6 +27,24 @@ const dashboardT = (key: any, params: any = {}) => {
     return messages[key] ?? key;
 };
 
+function expectRecord(
+    value: unknown
+): asserts value is Record<string, unknown> {
+    expect(value && typeof value === 'object' && !Array.isArray(value)).toBe(
+        true
+    );
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error('Expected record');
+    }
+}
+
+function expectArray(value: unknown): asserts value is unknown[] {
+    expect(Array.isArray(value)).toBe(true);
+    if (!Array.isArray(value)) {
+        throw new Error('Expected array');
+    }
+}
+
 describe('dashboardConfig', () => {
     it('keeps saved dashboard rows editable without mutating the stored dashboard', () => {
         const rows = [
@@ -38,7 +56,13 @@ describe('dashboardConfig', () => {
         ];
 
         const cloned = cloneDashboardRows(rows);
-        cloned[0].panels[0].config.filters.push('gps');
+        const panel = cloned[0]?.panels[0];
+        expectRecord(panel);
+        const panelConfig = panel.config;
+        expectRecord(panelConfig);
+        const filters = panelConfig.filters;
+        expectArray(filters);
+        filters.push('gps');
 
         expect(rows[0].panels[0].config.filters).toEqual(['friend']);
         expect(cloneDashboardRows(null)).toEqual([]);
@@ -71,11 +95,13 @@ describe('dashboardConfig', () => {
             label: 'Existing · legacy-panel'
         });
         expect(
-            options.some((option: any) => option.label === 'Widget · Feed Widget')
+            options.some(
+                (option: any) => option.label === 'Widget · Feed Widget'
+            )
         ).toBe(true);
-        expect(options.some((option: any) => option.label === 'Page · Feed')).toBe(
-            true
-        );
+        expect(
+            options.some((option: any) => option.label === 'Page · Feed')
+        ).toBe(true);
         expect(
             createDashboardPanelSelectOptions('__none__', dashboardT).some(
                 (option: any) => option.value === '__none__'
@@ -93,14 +119,18 @@ describe('dashboardConfig', () => {
         expect(getDashboardPanelConfig('feed')).toEqual({});
 
         const clonedConfig = cloneDashboardConfig(config);
-        clonedConfig.nested.enabled = false;
+        const clonedNested = clonedConfig.nested;
+        expectRecord(clonedNested);
+        clonedNested.enabled = false;
         expect(config.nested.enabled).toBe(true);
 
         const panelValue = createDashboardWidgetPanelValue(
             'widget:feed',
             config
         );
-        panelValue.config.filters.push('gps');
+        const panelFilters = panelValue.config.filters;
+        expectArray(panelFilters);
+        panelFilters.push('gps');
         expect(config.filters).toEqual(['friend']);
     });
 

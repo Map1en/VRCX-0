@@ -39,7 +39,12 @@ const emptyLaunchDialog: LaunchDialogState = {
 
 export const useLaunchStore = create<LaunchStoreState>((set: any) => ({
     launchDialog: emptyLaunchDialog,
-    showLaunchDialog(tag: any, shortName: any = '', launchToken: any = '', options: any = {}) {
+    showLaunchDialog(
+        tag: any,
+        shortName: any = '',
+        launchToken: any = '',
+        options: any = {}
+    ) {
         set({
             launchDialog: {
                 open: true,

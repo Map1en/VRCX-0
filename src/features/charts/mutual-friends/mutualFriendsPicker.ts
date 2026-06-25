@@ -66,12 +66,21 @@ export function filterMutualFriendPickerOptions(
         .slice(0, limit);
 }
 
+interface MutualFriendPickerOption {
+    value: string;
+    label: string;
+    displayLabel: string;
+    search: string;
+    user: any;
+    degree: any;
+}
+
 export function buildMutualFriendPickerOption(
     userId: any,
     friendsById: any,
     fallbackName: any = '',
     degree: any = null
-) {
+): MutualFriendPickerOption | null {
     const normalizedId = normalizeMutualFriendId(userId);
     if (!isValidMutualFriendId(normalizedId)) {
         return null;
@@ -88,7 +97,10 @@ export function buildMutualFriendPickerOption(
     };
 }
 
-export function buildMutualFriendNodePickerOptions(nodes: any, friendsById: any) {
+export function buildMutualFriendNodePickerOptions(
+    nodes: any,
+    friendsById: any
+) {
     return (Array.isArray(nodes) ? nodes : [])
         .slice()
         .sort((left: any, right: any) => left.label.localeCompare(right.label))
@@ -109,7 +121,7 @@ export function buildMutualFriendExcludePickerOptions(
     currentUserId: any
 ) {
     const seen = new Set();
-    const items = [];
+    const items: MutualFriendPickerOption[] = [];
 
     function pushOption(userId: any, fallbackName: any = '') {
         const normalizedId = normalizeMutualFriendId(userId);
@@ -140,5 +152,7 @@ export function buildMutualFriendExcludePickerOptions(
         });
     }
 
-    return items.sort((left: any, right: any) => left.label.localeCompare(right.label));
+    return items.sort((left: any, right: any) =>
+        left.label.localeCompare(right.label)
+    );
 }

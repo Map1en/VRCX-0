@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_TIME_UNIT_LABELS } from '@/shared/utils/dateTime';
 import { useShellStore } from '@/state/shellStore';
 
-import { formatRelativeTime, timeToText } from './dateTime';
+import {
+    formatDateFilterOrFallback,
+    formatRelativeTime,
+    timeToText
+} from './dateTime';
 
 const NOW = new Date('2026-06-22T12:00:00Z').getTime();
 const SECOND_MS = 1000;
@@ -18,6 +22,7 @@ describe('app dateTime wrappers', () => {
             locale: 'en',
             dateCulture: 'en-gb',
             dateHour12: false,
+            dateIsoFormat: false,
             timeUnitLabels: DEFAULT_TIME_UNIT_LABELS
         });
     });
@@ -38,6 +43,35 @@ describe('app dateTime wrappers', () => {
         expect(formatRelativeTime('not-a-date', { fallback: 'invalid' })).toBe(
             'invalid'
         );
+    });
+
+    it('formats date filters with caller-specific empty and invalid fallbacks', () => {
+        useShellStore.setState({ dateIsoFormat: true });
+
+        expect(
+            formatDateFilterOrFallback('2026-01-02T03:04:05', 'long', {
+                empty: '',
+                invalid: (value) => String(value)
+            })
+        ).toBe('2026-01-02 03:04:05');
+        expect(
+            formatDateFilterOrFallback('', 'long', {
+                empty: '',
+                invalid: (value) => String(value)
+            })
+        ).toBe('');
+        expect(
+            formatDateFilterOrFallback('not-a-date', 'long', {
+                empty: '',
+                invalid: (value) => String(value)
+            })
+        ).toBe('not-a-date');
+        expect(
+            formatDateFilterOrFallback('not-a-date', 'long', {
+                empty: '—',
+                invalid: '—'
+            })
+        ).toBe('—');
     });
 
     it('formats millisecond durations with stable unit boundaries', () => {
@@ -64,9 +98,7 @@ describe('app dateTime wrappers', () => {
         expect(timeToText(13 * MINUTE_MS + 58 * SECOND_MS, true)).toBe(
             '14m 0s'
         );
-        expect(timeToText(59 * MINUTE_MS + 58 * SECOND_MS, true)).toBe(
-            '1h 0s'
-        );
+        expect(timeToText(59 * MINUTE_MS + 58 * SECOND_MS, true)).toBe('1h 0s');
         expect(
             timeToText(23 * HOUR_MS + 59 * MINUTE_MS + 58 * SECOND_MS, true)
         ).toBe('1d 0s');

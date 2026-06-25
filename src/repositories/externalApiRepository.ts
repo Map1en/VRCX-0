@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 
 type ExternalHeaders = Record<string, string>;
 
@@ -7,12 +8,6 @@ interface ExternalRequestInput {
     method?: string;
     headers?: ExternalHeaders;
     body?: unknown;
-}
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 async function searchAvatarProvider({

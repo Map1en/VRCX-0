@@ -6,7 +6,7 @@ import { defaultAvatarSideData, resolveAssetBundleArgs } from './avatarAssets';
 export async function readAvatarCacheInfo(avatar: any, endpoint: any = '') {
     const configResponse = await vrchatAuthRepository
         .getConfig({ endpoint })
-        .catch(() => null);
+        .catch((): null => null);
     const sdkUnityVersion = String(configResponse?.json?.sdkUnityVersion || '');
     const args = resolveAssetBundleArgs(avatar, sdkUnityVersion);
     if (!args) {

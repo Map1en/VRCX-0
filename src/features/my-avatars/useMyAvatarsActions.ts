@@ -86,7 +86,7 @@ function applyOptimisticCurrentAvatar(avatar: MyAvatarRow, avatarId: string) {
 }
 
 function rollbackOptimisticCurrentAvatar(
-    previousSnapshot: Record<string, any> | null,
+    previousSnapshot: Record<string, unknown> | null,
     optimisticAvatarId: string
 ) {
     if (!previousSnapshot) {
@@ -119,7 +119,9 @@ export function useMyAvatarsActions({
     setManageTagsAvatar
 }: MyAvatarsActionsOptions) {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
@@ -189,16 +191,22 @@ export function useMyAvatarsActions({
         }
     }
 
-    function applyAvatarUpdate(nextAvatar: MyAvatarRow | null | undefined) {
-        if (!nextAvatar?.id) {
+    function applyAvatarUpdate(nextAvatar: unknown) {
+        if (
+            !nextAvatar ||
+            typeof nextAvatar !== 'object' ||
+            !('id' in nextAvatar) ||
+            !nextAvatar.id
+        ) {
             return;
         }
+        const nextAvatarRow = nextAvatar as MyAvatarRow;
         setAvatars((currentAvatars: any) =>
             currentAvatars.map((entry: any) =>
-                entry.id === nextAvatar.id
+                entry.id === nextAvatarRow.id
                     ? {
                           ...entry,
-                          ...nextAvatar,
+                          ...nextAvatarRow,
                           $tags: entry.$tags || [],
                           $timeSpent: entry.$timeSpent || 0
                       }
@@ -209,7 +217,7 @@ export function useMyAvatarsActions({
 
     async function saveAvatarPatch(
         avatar: MyAvatarRow,
-        params: Record<string, any>,
+        params: Record<string, unknown>,
         successMessage: string
     ) {
         const avatarId = avatarIdFromValue(avatar);
@@ -387,7 +395,9 @@ export function useMyAvatarsActions({
                 return;
             }
             setDetail(t('view.my_avatars.label.impostor_queued_for_creation'));
-            toast.success(t('view.my_avatars.label.impostor_queued_for_creation'));
+            toast.success(
+                t('view.my_avatars.label.impostor_queued_for_creation')
+            );
         } catch (error) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -419,7 +429,10 @@ export function useMyAvatarsActions({
         imageUploadInputRef.current?.click();
     }
 
-    async function handleAvatarAction(action: MyAvatarAction, avatar: MyAvatarRow) {
+    async function handleAvatarAction(
+        action: MyAvatarAction,
+        avatar: MyAvatarRow
+    ) {
         switch (action) {
             case 'details':
                 openAvatarDetails(avatar);
@@ -453,7 +466,9 @@ export function useMyAvatarsActions({
         if (validation.reason === 'too_large') {
             toast.error(t('view.my_avatars.error.selected_image_is_too_large'));
         } else if (validation.reason === 'not_image') {
-            toast.error(t('view.my_avatars.error.selected_file_is_not_an_image'));
+            toast.error(
+                t('view.my_avatars.error.selected_file_is_not_an_image')
+            );
         }
     }
 
@@ -468,7 +483,12 @@ export function useMyAvatarsActions({
         const avatar = imageUploadAvatarRef.current;
         const avatarId = avatarIdFromValue(avatar);
         const authTarget = imageUploadAuthTargetRef.current;
-        if (!avatarId || !authTarget || !isRuntimeAuthTarget(authTarget)) {
+        if (
+            !avatar ||
+            !avatarId ||
+            !authTarget ||
+            !isRuntimeAuthTarget(authTarget)
+        ) {
             return;
         }
         const validation = validateImageUploadFile(file);
@@ -490,6 +510,7 @@ export function useMyAvatarsActions({
         const authTarget = request?.authTarget;
         if (
             !blob ||
+            !avatar ||
             !avatarId ||
             !authTarget ||
             !isRuntimeAuthTarget(authTarget)
@@ -531,7 +552,9 @@ export function useMyAvatarsActions({
                 const message =
                     error instanceof Error
                         ? error.message
-                        : t('view.my_avatars.toast.failed_to_upload_avatar_image');
+                        : t(
+                              'view.my_avatars.toast.failed_to_upload_avatar_image'
+                          );
                 setDetail(message);
                 toast.error(message);
             }

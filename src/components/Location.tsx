@@ -5,10 +5,7 @@ import { toast } from 'sonner';
 import { LocationContextMenu } from '@/components/location/LocationContextMenu';
 import { LocationDisplay } from '@/components/location/LocationDisplay';
 import { resolveLocationTarget } from '@/components/location/locationModel';
-import {
-    normalizeString,
-    useLocationMetadata
-} from '@/components/location/useLocationMetadata';
+import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import { useLocationPreviousInstancesDialog } from '@/components/location/useLocationPreviousInstancesDialog';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { directAccessParse } from '@/services/directAccessService';
@@ -20,6 +17,7 @@ import {
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useLaunchStore } from '@/state/launchStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

@@ -11,17 +11,20 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 const EMPTY_GROUP_ORDER: any[] = [];
 
 export function useUserDialogRuntimeState(normalizedUserId: string) {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentUserSnapshot = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot
     );
     const isLocalUserVrcPlusSupporter = useRuntimeStore((state: any) =>
         Boolean(
             state.auth.currentUserSnapshot?.$isVRCPlus ||
-                state.auth.currentUserSnapshot?.tags?.includes?.(
-                    'system_supporter'
-                ) ||
-                globalThis?.$debug?.debugVrcPlus
+            state.auth.currentUserSnapshot?.tags?.includes?.(
+                'system_supporter'
+            ) ||
+            (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
+                ?.debugVrcPlus
         )
     );
     const currentEndpoint = useRuntimeStore(
@@ -75,8 +78,12 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const gameLogDisabled = usePreferencesStore(
         (state: any) => state.gameLogDisabled
     );
-    const hideUserNotes = usePreferencesStore((state: any) => state.hideUserNotes);
-    const hideUserMemos = usePreferencesStore((state: any) => state.hideUserMemos);
+    const hideUserNotes = usePreferencesStore(
+        (state: any) => state.hideUserNotes
+    );
+    const hideUserMemos = usePreferencesStore(
+        (state: any) => state.hideUserMemos
+    );
     const knownTargetUser = useKnownUserFact(normalizedUserId, {
         endpoint: currentEndpoint
     });
@@ -138,7 +145,9 @@ export function useUserDialogTabbedRuntimeState() {
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentAvatarId = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot?.currentAvatar || ''
     );
@@ -149,10 +158,11 @@ export function useUserDialogTabbedRuntimeState() {
     const isLocalUserVrcPlusSupporter = useRuntimeStore((state: any) =>
         Boolean(
             state.auth.currentUserSnapshot?.$isVRCPlus ||
-                state.auth.currentUserSnapshot?.tags?.includes?.(
-                    'system_supporter'
-                ) ||
-                globalThis?.$debug?.debugVrcPlus
+            state.auth.currentUserSnapshot?.tags?.includes?.(
+                'system_supporter'
+            ) ||
+            (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
+                ?.debugVrcPlus
         )
     );
     const inGameGroupOrder = useRuntimeStore((state: any) =>
@@ -162,7 +172,9 @@ export function useUserDialogTabbedRuntimeState() {
             : EMPTY_GROUP_ORDER
     );
     const friendsById = useFriendRosterStore((state: any) => state.friendsById);
-    const openImagePreview = useModalStore((state: any) => state.openImagePreview);
+    const openImagePreview = useModalStore(
+        (state: any) => state.openImagePreview
+    );
     const prompt = useModalStore((state: any) => state.prompt);
     const confirm = useModalStore((state: any) => state.confirm);
 

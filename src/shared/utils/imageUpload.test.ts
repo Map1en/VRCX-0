@@ -18,15 +18,20 @@ describe('imageUpload validation', () => {
             reason: 'missing'
         });
         expect(
-            validateImageUploadFile(new Blob(['12345'], { type: 'image/png' }), {
-                maxSize: 5
-            })
+            validateImageUploadFile(
+                new Blob(['12345'], { type: 'image/png' }),
+                {
+                    maxSize: 5
+                }
+            )
         ).toEqual({
             ok: false,
             reason: 'too_large'
         });
         expect(
-            validateImageUploadFile(new Blob(['<svg />'], { type: 'image/svg+xml' }))
+            validateImageUploadFile(
+                new Blob(['<svg />'], { type: 'image/svg+xml' })
+            )
         ).toEqual({
             ok: false,
             reason: 'not_image'

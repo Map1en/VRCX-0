@@ -12,7 +12,6 @@ import {
 import {
     filterRows,
     formatCountText,
-    formatDate,
     formatStatsDate,
     formatStatsDuration,
     groupDisplayName,
@@ -88,16 +87,12 @@ describe('userDialogRows', () => {
             'avtr_b',
             'avtr_c'
         ]);
-        expect(sortAvatarRows(rows, 'update').map((row: any) => row.id)).toEqual([
-            'avtr_a',
-            'avtr_b',
-            'avtr_c'
-        ]);
-        expect(sortAvatarRows(rows, 'createdAt').map((row: any) => row.id)).toEqual([
-            'avtr_c',
-            'avtr_b',
-            'avtr_a'
-        ]);
+        expect(
+            sortAvatarRows(rows, 'update').map((row: any) => row.id)
+        ).toEqual(['avtr_a', 'avtr_b', 'avtr_c']);
+        expect(
+            sortAvatarRows(rows, 'createdAt').map((row: any) => row.id)
+        ).toEqual(['avtr_c', 'avtr_b', 'avtr_a']);
     });
 
     it('shows mutual friends with roster details while keeping dialog friend order', () => {
@@ -140,10 +135,14 @@ describe('userDialogRows', () => {
             }
         ]);
         expect(
-            sortMutualFriendRows(hydrated, 'friendOrder').map((row: any) => row.id)
+            sortMutualFriendRows(hydrated, 'friendOrder').map(
+                (row: any) => row.id
+            )
         ).toEqual(['usr_bob', 'usr_alice']);
         expect(
-            sortMutualFriendRows(hydrated, 'alphabetical').map((row: any) => row.id)
+            sortMutualFriendRows(hydrated, 'alphabetical').map(
+                (row: any) => row.id
+            )
         ).toEqual(['usr_alice', 'usr_bob']);
     });
 
@@ -261,8 +260,7 @@ describe('userDialogRows', () => {
     });
 
     it('uses readable fallback text for empty stats and unavailable locations', () => {
-        expect(formatDate('')).toBe('\u2014');
-        expect(formatDate('not-a-date')).toBe('\u2014');
+        expect(formatStatsDate('')).toBe('\u2014');
         expect(formatStatsDate('2026-01-02T03:04:05')).toBe(
             '2026-01-02 03:04:05'
         );

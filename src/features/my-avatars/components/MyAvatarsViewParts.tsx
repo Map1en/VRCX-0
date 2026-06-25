@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
-import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { cn } from '@/lib/utils';
 import { openAvatarDialog } from '@/services/dialogService';
+import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -38,10 +38,7 @@ import {
     MY_AVATARS_PLATFORM_OPTIONS,
     MY_AVATARS_RELEASE_STATUS_OPTIONS
 } from '../myAvatarsState';
-import {
-    AvatarActionMenuItems,
-    MyAvatarGridCard
-} from './MyAvatarGridCard';
+import { AvatarActionMenuItems, MyAvatarGridCard } from './MyAvatarGridCard';
 
 export { AvatarActionMenuItems, MyAvatarGridCard };
 
@@ -104,9 +101,7 @@ export function AvatarActionsDropdown({
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={t(
-                        'view.my_avatars.action.open_avatar_actions'
-                    )}
+                    aria-label={t('view.my_avatars.action.open_avatar_actions')}
                     disabled={isUpdating}
                     onPointerDown={(event: any) => event.stopPropagation()}
                     onClick={(event: any) => event.stopPropagation()}
@@ -193,18 +188,22 @@ export function MyAvatarFilterPopover({
                             }}
                             className="grid w-full grid-cols-3"
                         >
-                            {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option: any) => (
-                                <ToggleGroupItem
-                                    key={option}
-                                    value={option}
-                                    aria-label={visibilityFilterLabel(option)}
-                                    className="w-full min-w-0 justify-center px-2"
-                                >
-                                    <span className="truncate">
-                                        {visibilityFilterLabel(option)}
-                                    </span>
-                                </ToggleGroupItem>
-                            ))}
+                            {MY_AVATARS_RELEASE_STATUS_OPTIONS.map(
+                                (option: any) => (
+                                    <ToggleGroupItem
+                                        key={option}
+                                        value={option}
+                                        aria-label={visibilityFilterLabel(
+                                            option
+                                        )}
+                                        className="w-full min-w-0 justify-center px-2"
+                                    >
+                                        <span className="truncate">
+                                            {visibilityFilterLabel(option)}
+                                        </span>
+                                    </ToggleGroupItem>
+                                )
+                            )}
                         </ToggleGroup>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -336,18 +335,20 @@ export function GridSettingsMenu({ gridDensity, onGridDensityChange }: any) {
                             }}
                             className="grid w-full grid-cols-3"
                         >
-                            {MY_AVATARS_GRID_DENSITY_OPTIONS.map((option: any) => (
-                                <ToggleGroupItem
-                                    key={option.value}
-                                    value={option.value}
-                                    aria-label={t(option.labelKey)}
-                                    className="w-full min-w-0 justify-center px-2"
-                                >
-                                    <span className="truncate">
-                                        {t(option.labelKey)}
-                                    </span>
-                                </ToggleGroupItem>
-                            ))}
+                            {MY_AVATARS_GRID_DENSITY_OPTIONS.map(
+                                (option: any) => (
+                                    <ToggleGroupItem
+                                        key={option.value}
+                                        value={option.value}
+                                        aria-label={t(option.labelKey)}
+                                        className="w-full min-w-0 justify-center px-2"
+                                    >
+                                        <span className="truncate">
+                                            {t(option.labelKey)}
+                                        </span>
+                                    </ToggleGroupItem>
+                                )
+                            )}
                         </ToggleGroup>
                     </Field>
                 </FieldGroup>

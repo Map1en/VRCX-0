@@ -5,11 +5,11 @@ import { toast } from 'sonner';
 import {
     authorTagsCsv,
     authorTagsFromCsv,
-    normalizeString,
     styleName,
     tagsKey
 } from '@/components/dialogs/avatarDetailsModel';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
+import { normalizeString } from '@/shared/utils/string';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,

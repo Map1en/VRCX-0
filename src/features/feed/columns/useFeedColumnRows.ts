@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import feedRepository from '@/repositories/feedRepository';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
+import feedRepository from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -65,9 +65,7 @@ function normalizeFeedColumnReadModelResult(
         rows: Array.isArray(readModel.rows)
             ? (readModel.rows as FeedRow[])
             : [],
-        maxSequence: resolveFeedColumnInitialLiveSequence(
-            readModel.maxSequence
-        )
+        maxSequence: resolveFeedColumnInitialLiveSequence(readModel.maxSequence)
     };
 }
 
@@ -136,7 +134,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
     const excludedGroupKeys = column.friendScope.excludedFavoriteGroupKeys;
     const excludesFavoriteGroups = Boolean(
         excludedGroupKeys === 'all' ||
-            (Array.isArray(excludedGroupKeys) && excludedGroupKeys.length)
+        (Array.isArray(excludedGroupKeys) && excludedGroupKeys.length)
     );
 
     const favoritesReady =
@@ -402,7 +400,9 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                const pageRows = Array.isArray(dbRows) ? (dbRows as FeedRow[]) : [];
+                const pageRows = Array.isArray(dbRows)
+                    ? (dbRows as FeedRow[])
+                    : [];
                 cursorRef.current = resolveLastFeedCursor(pageRows);
                 setHasMore(pageRows.length >= FEED_COLUMN_PAGE_SIZE);
                 setRows((currentRows) => {

@@ -142,9 +142,7 @@ export function useGalleryInventoryActions({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_update_profile_media'
-                          )
+                        : t('view.tools.toast.failed_to_update_profile_media')
                 );
             }
         } finally {
@@ -183,9 +181,7 @@ export function useGalleryInventoryActions({
                     )
                 }));
                 await refreshInventory();
-                toast.success(
-                    t('view.tools.label.inventory_bundle_consumed')
-                );
+                toast.success(t('view.tools.label.inventory_bundle_consumed'));
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
@@ -231,9 +227,7 @@ export function useGalleryInventoryActions({
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_redeem_reward'
-                          )
+                        : t('view.tools.toast.failed_to_redeem_reward')
                 );
             }
         } finally {

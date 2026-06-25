@@ -62,8 +62,7 @@ export function VrcNotificationPage({ embedded = false }: any = {}) {
                 targetLabel={
                     dialogs.inviteResponseRequest?.notification
                         ?.senderUsername ||
-                    dialogs.inviteResponseRequest?.notification
-                        ?.senderUserId ||
+                    dialogs.inviteResponseRequest?.notification?.senderUserId ||
                     'this user'
                 }
                 allowEdit

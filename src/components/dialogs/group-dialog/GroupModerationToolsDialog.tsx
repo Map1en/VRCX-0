@@ -66,7 +66,10 @@ export function GroupModerationToolsDialog({
         }
 
         let active = true;
-        setStatusByTab((current: any) => ({ ...current, [activeTab]: 'running' }));
+        setStatusByTab((current: any) => ({
+            ...current,
+            [activeTab]: 'running'
+        }));
         setErrorsByTab((current: any) => ({ ...current, [activeTab]: '' }));
 
         const request =

@@ -18,7 +18,7 @@ export function UserTitleLanguages({ languages }: any) {
     }
 
     return (
-        <span className="flex min-w-0 max-w-full flex-wrap items-start gap-1">
+        <span className="flex max-w-full min-w-0 flex-wrap items-start gap-1">
             {languages.map((language: any) => {
                 const key = String(
                     language?.key || language?.value || ''

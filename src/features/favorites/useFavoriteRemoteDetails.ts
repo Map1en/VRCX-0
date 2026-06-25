@@ -30,7 +30,39 @@ function buildCacheKey(type: any, endpoint: any, idsKey: any, tagsKey: any) {
     return [type, endpoint || '', idsKey || '', tagsKey || ''].join('::');
 }
 
-function buildInitialState(status: any = 'idle', detail: any = '') {
+interface RemoteDetailsState {
+    status: string;
+    detail: string;
+    data: Record<string, unknown>;
+    lastLoadedAt: string | null;
+}
+
+function isRemoteDetailsState(value: unknown): value is RemoteDetailsState {
+    return Boolean(
+        value &&
+        typeof value === 'object' &&
+        typeof Reflect.get(value, 'status') === 'string' &&
+        typeof Reflect.get(value, 'detail') === 'string'
+    );
+}
+
+function getCachedRemoteDetailsState(cacheKey: unknown) {
+    const cachedState = getFavoriteRemoteDetailsCache(cacheKey);
+    return isRemoteDetailsState(cachedState) ? cachedState : null;
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+    return Boolean(
+        value &&
+        typeof value === 'object' &&
+        typeof Reflect.get(value, 'then') === 'function'
+    );
+}
+
+function buildInitialState(
+    status: string = 'idle',
+    detail: string = ''
+): RemoteDetailsState {
     return {
         status,
         detail,
@@ -39,8 +71,8 @@ function buildInitialState(status: any = 'idle', detail: any = '') {
     };
 }
 
-function mapEntitiesById(items: any) {
-    const byId: any = {};
+function mapEntitiesById(items: any): Record<string, unknown> {
+    const byId: Record<string, unknown> = {};
     for (const item of Array.isArray(items) ? items : []) {
         const itemId =
             typeof item?.id === 'string'
@@ -78,7 +110,9 @@ export function useFavoriteRemoteDetails({
     enabled = true,
     refreshToken = 0
 }: any) {
-    const endpoint = useRuntimeStore((state: any) => state.auth.currentUserEndpoint);
+    const endpoint = useRuntimeStore(
+        (state: any) => state.auth.currentUserEndpoint
+    );
     const normalizedIds = useMemo(
         () => normalizeValues(favoriteIds),
         [favoriteIds]
@@ -91,11 +125,11 @@ export function useFavoriteRemoteDetails({
     const tagsKey = normalizedTags.join('|');
     const cacheKey = buildCacheKey(type, endpoint, idsKey, tagsKey);
     const [state, setState] = useState(
-        () => getFavoriteRemoteDetailsCache(cacheKey) ?? buildInitialState()
+        () => getCachedRemoteDetailsState(cacheKey) ?? buildInitialState()
     );
 
     useEffect(() => {
-        const cachedState = getFavoriteRemoteDetailsCache(cacheKey);
+        const cachedState = getCachedRemoteDetailsState(cacheKey);
         if (cachedState) {
             setState(cachedState);
             return;
@@ -121,7 +155,7 @@ export function useFavoriteRemoteDetails({
             return;
         }
 
-        const cachedState = getFavoriteRemoteDetailsCache(cacheKey);
+        const cachedState = getCachedRemoteDetailsState(cacheKey);
         if (cachedState) {
             setState(cachedState);
             return;
@@ -139,7 +173,7 @@ export function useFavoriteRemoteDetails({
         );
 
         let promise = getFavoriteRemoteDetailsPromise(cacheKey);
-        if (!promise) {
+        if (!isPromiseLike(promise)) {
             const promiseGeneration = getFavoriteRemoteDetailsCacheGeneration();
             promise = loadRemoteDetails(type, endpoint, normalizedTags)
                 .then((data: any) => {
@@ -149,7 +183,7 @@ export function useFavoriteRemoteDetails({
                     ) {
                         return null;
                     }
-                    const filtered: any = {};
+                    const filtered: Record<string, unknown> = {};
                     for (const favoriteId of normalizedIds) {
                         if (data[favoriteId]) {
                             filtered[favoriteId] = data[favoriteId];
@@ -159,7 +193,7 @@ export function useFavoriteRemoteDetails({
                         persistWorldDetailsById(filtered);
                     }
 
-                    const nextState: any = {
+                    const nextState: RemoteDetailsState = {
                         status: 'ready',
                         detail:
                             type === 'avatar'
@@ -182,9 +216,9 @@ export function useFavoriteRemoteDetails({
             setFavoriteRemoteDetailsPromise(cacheKey, promise);
         }
 
-        (promise as Promise<any>)
-            .then((nextState: any) => {
-                if (active && nextState) {
+        Promise.resolve(promise)
+            .then((nextState: unknown) => {
+                if (active && isRemoteDetailsState(nextState)) {
                     setState(nextState);
                 }
             })

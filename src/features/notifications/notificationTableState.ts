@@ -24,7 +24,7 @@ export const NOTIFICATION_TABLE_COLUMN_IDS = [
 ];
 
 const STORAGE_KEY = getDataTableStorageKey('notifications');
-const LEGACY_COLUMN_ID_MAP: any = {
+const LEGACY_COLUMN_ID_MAP: Record<string, string> = {
     createdAt: 'created_at',
     sender: 'senderUsername',
     group: 'groupName',
@@ -35,7 +35,9 @@ export function readPersistedNotificationTableState() {
     return readPersistedTableState(STORAGE_KEY);
 }
 
-export function writePersistedNotificationTableState(patch: any) {
+export function writePersistedNotificationTableState(
+    patch: Record<string, unknown>
+) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
@@ -101,7 +103,7 @@ export function sanitizeNotificationPageSizes(value: any) {
 }
 
 export function sanitizeNotificationColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (!value || typeof value !== 'object') {
         return visibility;
     }
@@ -123,7 +125,7 @@ export function sanitizeNotificationColumnOrder(value: any) {
         return [];
     }
 
-    const order = [];
+    const order: string[] = [];
     for (const columnId of value) {
         const normalizedColumnId = normalizeNotificationColumnId(columnId);
         if (
@@ -141,7 +143,7 @@ export function sanitizeNotificationColumnSizing(value: any) {
         return {};
     }
 
-    const normalizedSizing: any = {};
+    const normalizedSizing: Record<string, unknown> = {};
     for (const [columnId, rawSize] of Object.entries(value)) {
         const normalizedColumnId = normalizeNotificationColumnId(columnId);
         if (NOTIFICATION_TABLE_COLUMN_IDS.includes(normalizedColumnId)) {

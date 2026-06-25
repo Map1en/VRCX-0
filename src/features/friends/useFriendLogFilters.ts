@@ -8,7 +8,7 @@ export function useFriendLogFilters() {
     const hydratedTypeFiltersRef = useRef(false);
     const [refreshToken, setRefreshToken] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedTypes, setSelectedTypes] = useState<any[]>([]);
+    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
     useEffect(() => {
         let active = true;

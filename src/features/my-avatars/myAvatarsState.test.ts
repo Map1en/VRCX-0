@@ -41,7 +41,7 @@ function installLocalStorage(initial: any = {}) {
 }
 
 afterEach(() => {
-    delete globalThis.window;
+    Reflect.deleteProperty(globalThis, 'window');
 });
 
 describe('myAvatarsState', () => {

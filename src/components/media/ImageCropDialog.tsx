@@ -34,8 +34,8 @@ export function ImageCropDialog({
 }: any) {
     const { t } = useTranslation();
 
-    const canvasRef = useRef(null);
-    const [imageBitmap, setImageBitmap] = useState(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [imageBitmap, setImageBitmap] = useState<ImageBitmap | null>(null);
     const [zoom, setZoom] = useState(1);
     const [offsetX, setOffsetX] = useState(0);
     const [offsetY, setOffsetY] = useState(0);
@@ -134,7 +134,12 @@ export function ImageCropDialog({
                 crop.height
             );
         } catch (error) {
-            if ((error as any)?.name === 'InvalidStateError') {
+            if (
+                error &&
+                typeof error === 'object' &&
+                'name' in error &&
+                error.name === 'InvalidStateError'
+            ) {
                 setImageBitmap(null);
                 return;
             }
@@ -163,7 +168,9 @@ export function ImageCropDialog({
             }
             await onConfirm?.(
                 blob,
-                Object.keys(uploadOptions).length > 0 ? uploadOptions : undefined
+                Object.keys(uploadOptions).length > 0
+                    ? uploadOptions
+                    : undefined
             );
         } finally {
             setIsConfirming(false);

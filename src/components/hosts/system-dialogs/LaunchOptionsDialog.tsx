@@ -1,8 +1,4 @@
-import {
-    ExternalLinkIcon,
-    FolderOpenIcon,
-    SaveIcon
-} from 'lucide-react';
+import { ExternalLinkIcon, FolderOpenIcon, SaveIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -193,9 +189,7 @@ export function LaunchOptionsDialog({ open, onOpenChange }: any) {
                                 placeholder="C:\\Program Files (x86)\\Steam\\steamapps\\common\\VRChat\\launch.exe"
                                 spellCheck={false}
                                 onChange={(event: any) =>
-                                    setVrcLaunchPathOverride(
-                                        event.target.value
-                                    )
+                                    setVrcLaunchPathOverride(event.target.value)
                                 }
                             />
                             <InputGroupAddon align="inline-end">

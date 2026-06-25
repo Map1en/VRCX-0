@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import vrchatModerationRepository from '@/repositories/vrchatModerationRepository';
-
-import { normalizeString } from './playerListRows';
+import { normalizeString } from '@/shared/utils/string';
 
 export function usePlayerListModeration(currentUserId: any) {
     const [moderationByUserId, setModerationByUserId] = useState<any>({});

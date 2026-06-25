@@ -1,4 +1,4 @@
-function escapeHtml(value: any) {
+function escapeHtml(value: unknown): string {
     return String(value ?? '')
         .replaceAll(/&/g, '&amp;')
         .replaceAll(/</g, '&lt;')
@@ -9,38 +9,46 @@ function escapeHtml(value: any) {
 }
 
 function formatDifferenceHtml(
-    oldValue: any,
-    newValue: any,
-    markerAddition: any = '<span class="rounded bg-primary/10 px-0.5 text-primary">{{text}}</span>',
-    markerDeletion: any = '<span class="rounded bg-destructive/10 px-0.5 text-destructive line-through">{{text}}</span>'
-) {
+    oldValue: unknown,
+    newValue: unknown,
+    markerAddition = '<span class="rounded bg-primary/10 px-0.5 text-primary">{{text}}</span>',
+    markerDeletion = '<span class="rounded bg-destructive/10 px-0.5 text-destructive line-through">{{text}}</span>'
+): string {
     const oldWords = escapeHtml(oldValue)
         .split(/\s+/)
-        .flatMap((word: any) => word.split(/(<br>)/));
+        .flatMap((word) => word.split(/(<br>)/));
     const newWords = escapeHtml(newValue)
         .split(/\s+/)
-        .flatMap((word: any) => word.split(/(<br>)/));
+        .flatMap((word) => word.split(/(<br>)/));
 
-    function findLongestMatch(oldStart: any, oldEnd: any, newStart: any, newEnd: any) {
+    function findLongestMatch(
+        oldStart: number,
+        oldEnd: number,
+        newStart: number,
+        newEnd: number
+    ): { newStart: number; oldStart: number; size: number } {
         let bestOldStart = oldStart;
         let bestNewStart = newStart;
         let bestSize = 0;
-        const lookup = new Map();
+        const lookup = new Map<string, number[]>();
 
         for (let i = oldStart; i < oldEnd; i += 1) {
             const word = oldWords[i];
-            if (!lookup.has(word)) {
-                lookup.set(word, []);
+            let positions = lookup.get(word);
+            if (!positions) {
+                positions = [];
+                lookup.set(word, positions);
             }
-            lookup.get(word).push(i);
+            positions.push(i);
         }
 
         for (let j = newStart; j < newEnd; j += 1) {
             const word = newWords[j];
-            if (!lookup.has(word)) {
+            const positions = lookup.get(word);
+            if (!positions) {
                 continue;
             }
-            for (const i of lookup.get(word)) {
+            for (const i of positions) {
                 let size = 0;
                 while (
                     i + size < oldEnd &&
@@ -64,11 +72,16 @@ function formatDifferenceHtml(
         };
     }
 
-    function build(words: any, start: any, end: any, pattern: any) {
-        const result = [];
+    function build(
+        words: string[],
+        start: number,
+        end: number,
+        pattern: string
+    ): string[] {
+        const result: string[] = [];
         const parts = words
             .slice(start, end)
-            .filter((word: any) => word.length > 0)
+            .filter((word) => word.length > 0)
             .join(' ')
             .split('<br>');
 
@@ -83,8 +96,13 @@ function formatDifferenceHtml(
         return result;
     }
 
-    function buildDiff(oldStart: any, oldEnd: any, newStart: any, newEnd: any) {
-        const result = [];
+    function buildDiff(
+        oldStart: number,
+        oldEnd: number,
+        newStart: number,
+        newEnd: number
+    ): string[] {
+        const result: string[] = [];
         const match = findLongestMatch(oldStart, oldEnd, newStart, newEnd);
 
         if (match.size > 0) {

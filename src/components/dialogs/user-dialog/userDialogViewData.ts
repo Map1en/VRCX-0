@@ -62,8 +62,9 @@ function validTimestampMs(value: any) {
 }
 
 function isCurrentlyOnline(profile: any) {
-    const state = normalizedText(profile?.stateBucket || profile?.state)
-        .toLowerCase();
+    const state = normalizedText(
+        profile?.stateBucket || profile?.state
+    ).toLowerCase();
     return state === 'online';
 }
 
@@ -319,7 +320,8 @@ export function buildUserDialogProfileSummary({
     const isLocalUserVrcPlusSupporter = Boolean(
         currentUserSnapshot?.$isVRCPlus ||
         currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-        globalThis?.$debug?.debugVrcPlus
+        (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
+            ?.debugVrcPlus
     );
     const ownGroupCountText = formatCountText(
         userGroupSections.ownGroups.length,

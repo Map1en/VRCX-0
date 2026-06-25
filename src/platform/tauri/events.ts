@@ -2,9 +2,7 @@ import type { Event, UnlistenFn } from '@tauri-apps/api/event';
 
 import { normalizePlatformError } from './errors';
 
-export type TauriEventHandler<TPayload = unknown> = (
-    payload: TPayload
-) => void;
+export type TauriEventHandler<TPayload = unknown> = (payload: TPayload) => void;
 
 interface TauriEventRegistration {
     promise: Promise<UnlistenFn>;

@@ -24,9 +24,12 @@ export function useWorldImageUpload({
     setDetail
 }: any) {
     const { t } = useTranslation();
-    const [imageCropRequest, setImageCropRequest] = useState(null);
-    const imageUploadInputRef = useRef(null);
-    const imageUploadWorldRef = useRef(null);
+    const [imageCropRequest, setImageCropRequest] = useState<{
+        file: any;
+        world: any;
+    } | null>(null);
+    const imageUploadInputRef = useRef<HTMLInputElement | null>(null);
+    const imageUploadWorldRef = useRef<any>(null);
 
     useEffect(() => {
         imageUploadWorldRef.current = null;

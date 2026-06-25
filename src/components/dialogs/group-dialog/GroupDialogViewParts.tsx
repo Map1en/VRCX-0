@@ -7,7 +7,10 @@ import {
 } from '../user-dialog/userProfileFields';
 import { firstText } from './groupDialogUtils';
 
-export function normalizeGroupLanguages(group: any, languageOptionMap: any = new Map()) {
+export function normalizeGroupLanguages(
+    group: any,
+    languageOptionMap: any = new Map()
+) {
     return normalizeProfileLanguageRows(group, languageOptionMap);
 }
 

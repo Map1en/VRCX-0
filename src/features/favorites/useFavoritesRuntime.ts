@@ -9,7 +9,9 @@ export function useFavoritesRuntime() {
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentUserSnapshot = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot
     );
@@ -45,8 +47,8 @@ export function useFavoritesRuntime() {
     );
     const canSendInvite = Boolean(
         gameState.isGameRunning &&
-            currentInviteLocation &&
-            canInviteFromCurrentLocation
+        currentInviteLocation &&
+        canInviteFromCurrentLocation
     );
 
     return {

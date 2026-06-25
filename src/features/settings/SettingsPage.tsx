@@ -1,6 +1,7 @@
 import {
     BellIcon,
     ImageIcon,
+    type LucideIcon,
     MonitorIcon,
     PaletteIcon,
     PlugIcon,
@@ -29,7 +30,7 @@ import { SettingsSystemSection } from './components/SettingsSystemSection';
 import { SettingsVrSection } from './components/SettingsVrSection';
 import { useSettingsPageController } from './useSettingsPageController';
 
-const SETTINGS_TAB_ICONS: Record<string, any> = {
+const SETTINGS_TAB_ICONS: Record<string, LucideIcon> = {
     system: MonitorIcon,
     interface: PaletteIcon,
     social: UsersIcon,

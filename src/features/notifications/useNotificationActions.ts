@@ -2,10 +2,6 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import {
-    convertFileUrlToImageUrl,
-    openExternalLink
-} from '@/services/entityMediaService';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
 import {
     openAvatarDialog,
@@ -13,6 +9,10 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import {
+    convertFileUrlToImageUrl,
+    openExternalLink
+} from '@/services/entityMediaService';
 import {
     acceptFriendRequestNotification,
     acceptRequestInviteNotification,

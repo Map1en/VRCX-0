@@ -1,5 +1,5 @@
-import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 import { getTagColor } from '@/shared/constants/tags';
+import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 
 export function getMyAvatarPlatformInfo(avatar: any) {
     return getPlatformInfo(avatar?.unityPackages);

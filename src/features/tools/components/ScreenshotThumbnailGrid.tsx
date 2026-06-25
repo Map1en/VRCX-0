@@ -2,12 +2,10 @@ import { CameraIcon, ImageIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    normalizeString,
-    useLocationMetadataBatch
-} from '@/components/location/useLocationMetadata';
+import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -16,10 +14,8 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { formatScreenshotDateTime } from '../screenshotMetadataValues';
 import { requestScreenshotThumbnail } from '../screenshotThumbnailQueue';
 
-function firstText(...values: any[]) {
-    return values
-        .map((value: any) => String(value || '').trim())
-        .find(Boolean);
+function firstText(...values: unknown[]) {
+    return values.map((value) => String(value || '').trim()).find(Boolean);
 }
 
 const WORLD_REFERENCE_PATTERN =
@@ -36,11 +32,8 @@ function normalizeThumbnailWorldName(value: any) {
 function resolveThumbnailLocation(item: any) {
     const metadataWorld = item.metadata?.world || {};
     return (
-        firstText(
-            metadataWorld.instanceId,
-            metadataWorld.id,
-            item.worldId
-        ) || ''
+        firstText(metadataWorld.instanceId, metadataWorld.id, item.worldId) ||
+        ''
     );
 }
 
@@ -136,9 +129,7 @@ export function ScreenshotThumbnailCard({
                 if (!active) {
                     return;
                 }
-                setThumbnailUrl(
-                    convertFileSrc(thumbnailPath, 'vrcx-0-thumb')
-                );
+                setThumbnailUrl(convertFileSrc(thumbnailPath, 'vrcx-0-thumb'));
                 setLoadState('ready');
             })
             .catch(() => {
@@ -158,7 +149,9 @@ export function ScreenshotThumbnailCard({
         i18n.resolvedLanguage || i18n.language
     );
     const displayTitle =
-        title || resolveDirectThumbnailTitle(item, worldNameHint) || item.fileName;
+        title ||
+        resolveDirectThumbnailTitle(item, worldNameHint) ||
+        item.fileName;
     const cardHeight = compact ? 'h-[156px]' : 'h-[196px]';
     const mediaHeight = compact ? 'h-[94px]' : 'h-[118px]';
 

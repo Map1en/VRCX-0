@@ -4,7 +4,9 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
 export function useMutualFriendsRuntime() {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentUserEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );

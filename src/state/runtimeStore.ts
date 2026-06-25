@@ -344,7 +344,34 @@ function createHostCapabilities(): RuntimeStore['hostCapabilities'] {
     return capabilities as RuntimeStore['hostCapabilities'];
 }
 
-const initialState = {
+type RuntimeStoreState = Omit<
+    RuntimeStore,
+    | 'setStartupTask'
+    | 'setAuthBootstrap'
+    | 'setHostCapabilities'
+    | 'setUpdateLoopState'
+    | 'setActivityState'
+    | 'resetActivityState'
+    | 'setMutualGraphState'
+    | 'resetMutualGraphState'
+    | 'setTransportState'
+    | 'incrementTransportReconnect'
+    | 'recordRuntimeEvent'
+    | 'setGameState'
+    | 'setBackendRuntimeSnapshot'
+    | 'setShellState'
+    | 'setNowPlayingState'
+    | 'setInstanceQueueState'
+    | 'clearInstanceQueueState'
+    | 'setVrcStatusState'
+    | 'setGroupInstancesState'
+    | 'setChangelogTargetVersion'
+    | 'setSystemHostOpen'
+    | 'setDatabaseUpgradeState'
+    | 'resetRuntimeState'
+>;
+
+const initialState: RuntimeStoreState = {
     startup: {
         capabilities: createTaskState(),
         config: createTaskState(),
@@ -475,32 +502,7 @@ const initialState = {
         ipcEvent: createRuntimeEventState(),
         browserFocus: createRuntimeEventState()
     }
-} satisfies Omit<
-    RuntimeStore,
-    | 'setStartupTask'
-    | 'setAuthBootstrap'
-    | 'setHostCapabilities'
-    | 'setUpdateLoopState'
-    | 'setActivityState'
-    | 'resetActivityState'
-    | 'setMutualGraphState'
-    | 'resetMutualGraphState'
-    | 'setTransportState'
-    | 'incrementTransportReconnect'
-    | 'recordRuntimeEvent'
-    | 'setGameState'
-    | 'setBackendRuntimeSnapshot'
-    | 'setShellState'
-    | 'setNowPlayingState'
-    | 'setInstanceQueueState'
-    | 'clearInstanceQueueState'
-    | 'setVrcStatusState'
-    | 'setGroupInstancesState'
-    | 'setChangelogTargetVersion'
-    | 'setSystemHostOpen'
-    | 'setDatabaseUpgradeState'
-    | 'resetRuntimeState'
->;
+};
 
 export const useRuntimeStore = create<RuntimeStore>((set) => ({
     ...initialState,

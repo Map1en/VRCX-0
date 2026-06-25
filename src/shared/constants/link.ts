@@ -1,4 +1,4 @@
-const links: any = {
+const links: Record<string, string> = {
     wiki: 'https://github.com/Map1en/VRCX-0/wiki',
     github: 'https://github.com/Map1en/VRCX-0',
     githubSponsors: 'https://github.com/sponsors/Map1en',

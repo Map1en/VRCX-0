@@ -67,11 +67,11 @@ const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 type TrustColorKey = keyof typeof TRUST_COLOR_DEFAULTS;
 type TrustColorMap = Record<TrustColorKey, string>;
-type TrustColorUser = Record<string, any>;
+type TrustColorUser = Record<string, unknown>;
 
-function parseTrustColorSource(value: unknown): Record<string, any> {
+function parseTrustColorSource(value: unknown): Record<string, unknown> {
     if (value && typeof value === 'object') {
-        return value;
+        return Object.fromEntries(Object.entries(value));
     }
     if (typeof value !== 'string' || !value.trim()) {
         return {};
@@ -84,9 +84,13 @@ function parseTrustColorSource(value: unknown): Record<string, any> {
     }
 }
 
+function isTrustColorKey(value: string): value is TrustColorKey {
+    return Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, value);
+}
+
 export function normalizeTrustColors(value: unknown): TrustColorMap {
     const source = parseTrustColorSource(value);
-    const normalized = {} as TrustColorMap;
+    const normalized: TrustColorMap = { ...TRUST_COLOR_DEFAULTS };
     for (const key of Object.keys(TRUST_COLOR_DEFAULTS) as TrustColorKey[]) {
         const color = String(source[key] || '').trim();
         normalized[key] = HEX_COLOR_PATTERN.test(color)
@@ -103,7 +107,9 @@ export function isValidTrustColor(value: unknown) {
 export function resolveTrustColorKey(user: unknown): TrustColorKey {
     const source =
         user && (typeof user === 'object' || typeof user === 'function')
-            ? (user as TrustColorUser)
+            ? (Object.fromEntries(
+                  Object.entries(user)
+              ) satisfies TrustColorUser)
             : {};
     if (source.$isModerator) {
         return 'vip';
@@ -114,9 +120,7 @@ export function resolveTrustColorKey(user: unknown): TrustColorKey {
     const classKey = String(
         source.$trustClass || source.trustClass || ''
     ).replace(/^x-tag-/, '');
-    return Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, classKey)
-        ? (classKey as TrustColorKey)
-        : 'untrusted';
+    return isTrustColorKey(classKey) ? classKey : 'untrusted';
 }
 
 export function getTrustColor(

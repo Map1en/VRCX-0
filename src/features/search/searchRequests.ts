@@ -91,7 +91,11 @@ export function buildGroupSearchRequest(searchText: any, offset: any = 0) {
     };
 }
 
-export function buildAvatarSearchRequest(searchText: any, provider: any, offset: any = 0) {
+export function buildAvatarSearchRequest(
+    searchText: any,
+    provider: any,
+    offset: any = 0
+) {
     return {
         provider,
         query: replaceBioSymbols(searchText),

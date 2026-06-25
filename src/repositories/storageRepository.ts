@@ -1,9 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
-import {
-    asString,
-    safeJsonParse,
-    safeJsonStringify
-} from './baseRepository';
+
+import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
 
 export class StorageRepository {
     #prefix = '';

@@ -6,8 +6,8 @@ import { useModalStore } from '@/state/modalStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
-import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
 import { resolveFeedLocationForDisplay } from '../feedRows';
+import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
 import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { formatDifferenceHtml } from './FeedDifferenceHtml';
 import { FeedLocationLink } from './FeedLocationLink';
@@ -184,8 +184,9 @@ function FeedExpandedRow({
                                                     previousImage
                                             ),
                                             title:
-                                                String(row.previousAvatarName || '') ||
-                                                previousAvatarLabel
+                                                String(
+                                                    row.previousAvatarName || ''
+                                                ) || previousAvatarLabel
                                         })
                                     }
                                 >

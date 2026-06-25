@@ -1,14 +1,15 @@
 import { EyeOffIcon, UserIcon, UserMinusIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import {
     getNameColour,
     openExternalLink,
     userImage
 } from '@/services/entityMediaService';
-import { cn } from '@/lib/utils';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -47,14 +48,14 @@ export function useFriendListColumns({
                 size: 20,
                 enableSorting: false,
                 enableResizing: false,
-                header: () => null,
-                cell: () => null
+                header: (): ReactNode => null,
+                cell: (): ReactNode => null
             },
             {
                 id: 'bulkSelect',
                 size: 55,
                 enableSorting: false,
-                header: () => null,
+                header: (): ReactNode => null,
                 cell: ({ row }: any) => {
                     const friendId = normalizeId(row.original?.id);
                     const friendLabel = row.original?.displayName || friendId;
@@ -219,9 +220,7 @@ export function useFriendListColumns({
                                 <i className={status.indicatorClassName} />
                             ) : null}
                             {status.label ? (
-                                <span className="truncate">
-                                    {status.label}
-                                </span>
+                                <span className="truncate">{status.label}</span>
                             ) : null}
                         </span>
                     );
@@ -248,8 +247,10 @@ export function useFriendListColumns({
                             {languages.map((entry: any) => {
                                 const key = entry?.key || entry?.value || '';
                                 const code = languageCodeLabel(key);
-                                const tooltipLabel =
-                                    languageTooltipLabel(entry, code);
+                                const tooltipLabel = languageTooltipLabel(
+                                    entry,
+                                    code
+                                );
                                 if (!code) {
                                     return null;
                                 }

@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import feedRepository from '@/repositories/feedRepository';
+import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -32,8 +33,7 @@ import {
     formatWidgetExactTime,
     formatWidgetTime,
     getNextDashboardWidgetFilterConfig,
-    isDashboardWidgetFilterActive,
-    normalizeString
+    isDashboardWidgetFilterActive
 } from './dashboardWidgetUtils';
 
 const FEED_WIDGET_MAX_ROWS = 100;

@@ -14,9 +14,9 @@ describe('FeedDifferenceHtml', () => {
     });
 
     it('renders inserted and deleted words around unchanged text', () => {
-        expect(formatDifferenceHtml('hello old world', 'hello new world', ADD, DEL)).toBe(
-            'hello <del>old</del> <ins>new</ins> world'
-        );
+        expect(
+            formatDifferenceHtml('hello old world', 'hello new world', ADD, DEL)
+        ).toBe('hello <del>old</del> <ins>new</ins> world');
     });
 
     it('escapes changed bio content before wrapping diff markers', () => {

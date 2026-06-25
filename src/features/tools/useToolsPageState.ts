@@ -1,4 +1,5 @@
 import {
+    type DragEndEvent,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -20,6 +21,7 @@ import {
     isToolCapabilityAvailable,
     triggerToolByKey
 } from '@/services/toolActionService';
+import type { ToolDefinition } from '@/shared/constants/tools';
 import { publishToolsQuickAccessUpdated } from '@/shared/constants/tools';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -42,8 +44,13 @@ import {
     toolsPageCategories
 } from './toolsPageHelpers';
 
+type CollapsedByCategory = Record<string, boolean>;
+type QuickAccessKeysUpdater =
+    | string[]
+    | ((current: string[]) => string[] | unknown);
+
 function useToolsCollapsedState() {
-    const [collapsed, setCollapsed] = useState<any>({
+    const [collapsed, setCollapsed] = useState<CollapsedByCategory>({
         ...defaultCollapsedState
     });
 
@@ -51,15 +58,15 @@ function useToolsCollapsedState() {
         let active = true;
         configRepository
             .getString(categoryConfigKey, '{}')
-            .then((value: any) => {
+            .then((value) => {
                 if (!active) {
                     return;
                 }
                 const parsed = JSON.parse(value || '{}');
-                setCollapsed((current: any) => ({
+                setCollapsed((current) => ({
                     ...current,
                     ...Object.fromEntries(
-                        Object.keys(defaultCollapsedState).map((key: any) => [
+                        Object.keys(defaultCollapsedState).map((key) => [
                             key,
                             Boolean(parsed[key])
                         ])
@@ -73,9 +80,9 @@ function useToolsCollapsedState() {
         };
     }, []);
 
-    function toggleCategoryCollapsed(categoryKey: any) {
-        setCollapsed((current: any) => {
-            const nextState: any = {
+    function toggleCategoryCollapsed(categoryKey: string) {
+        setCollapsed((current) => {
+            const nextState: CollapsedByCategory = {
                 ...current,
                 [categoryKey]: !current[categoryKey]
             };
@@ -91,13 +98,13 @@ function useToolsCollapsedState() {
 }
 
 function useToolsQuickAccessState() {
-    const [quickAccessKeys, setQuickAccessKeysState] = useState<any[]>([]);
+    const [quickAccessKeys, setQuickAccessKeysState] = useState<string[]>([]);
 
     useEffect(() => {
         let active = true;
         configRepository
             .getString(quickAccessConfigKey, '[]')
-            .then((value: any) => {
+            .then((value) => {
                 if (active) {
                     setQuickAccessKeysState(parseQuickAccessToolKeys(value));
                 }
@@ -113,15 +120,14 @@ function useToolsQuickAccessState() {
         };
     }, []);
 
-    function setQuickAccessKeys(updater: any) {
-        setQuickAccessKeysState((current: any) => {
+    function setQuickAccessKeys(updater: QuickAccessKeysUpdater) {
+        setQuickAccessKeysState((current) => {
             const value =
                 typeof updater === 'function' ? updater(current) : updater;
             const nextKeys = normalizeQuickAccessToolKeys(value);
-            configRepository.setString(
-                quickAccessConfigKey,
-                JSON.stringify(nextKeys)
-            ).then(() => publishToolsQuickAccessUpdated())
+            configRepository
+                .setString(quickAccessConfigKey, JSON.stringify(nextKeys))
+                .then(() => publishToolsQuickAccessUpdated())
                 .catch(() => {});
             return nextKeys;
         });
@@ -159,35 +165,33 @@ export function useToolsPageState() {
     const categories = useMemo(
         () =>
             toolsPageCategories
-                .map((category: any) => ({
+                .map((category) => ({
                     ...category,
                     tools: category.tools.filter(isToolCapabilityAvailable)
                 }))
-                .filter((category: any) => category.tools.length > 0),
+                .filter((category) => category.tools.length > 0),
         [hostCapabilities]
     );
     const availableToolMap = useMemo(
         () =>
-            new Map(
+            new Map<string, ToolDefinition>(
                 categories
-                    .flatMap((category: any) => category.tools)
-                    .map((tool: any) => [tool.key, tool])
+                    .flatMap((category) => category.tools)
+                    .map((tool) => [tool.key, tool])
             ),
         [categories]
     );
     const { collapsed, toggleCategoryCollapsed } = useToolsCollapsedState();
     const { quickAccessKeys, setQuickAccessKeys } = useToolsQuickAccessState();
     const [isQuickAccessEditing, setIsQuickAccessEditing] = useState(false);
-    const [navLayout, setNavLayout] = useState<any[]>([]);
-    const [navHiddenKeys, setNavHiddenKeys] = useState<any[]>([]);
+    const [navLayout, setNavLayout] = useState<unknown[]>([]);
+    const [navHiddenKeys, setNavHiddenKeys] = useState<string[]>([]);
     const pinnedToolKeys = useMemo(() => {
         const keys = collectLayoutKeys(navLayout);
         return new Set(
             Array.from(keys)
-                .filter((key: any) => String(key).startsWith('tool-'))
-                .map((key: any) =>
-                    normalizePinnedToolKey(String(key).replace(/^tool-/, ''))
-                )
+                .filter((key) => key.startsWith('tool-'))
+                .map((key) => normalizePinnedToolKey(key.replace(/^tool-/, '')))
         );
     }, [navLayout]);
     const quickAccessKeySet = useMemo(
@@ -197,14 +201,14 @@ export function useToolsPageState() {
     const quickAccessTools = useMemo(
         () =>
             quickAccessKeys
-                .map((key: any) => availableToolMap.get(key))
-                .filter(Boolean),
+                .map((key) => availableToolMap.get(key))
+                .filter((tool): tool is ToolDefinition => Boolean(tool)),
         [availableToolMap, quickAccessKeys]
     );
     const shouldShowQuickAccess =
         isQuickAccessEditing || quickAccessTools.length > 0;
 
-    const translateWithFallback = (key: any) => {
+    const translateWithFallback = (key: string) => {
         const localized = t(key);
         if (localized !== key) {
             return localized;
@@ -255,10 +259,13 @@ export function useToolsPageState() {
         };
     }, [dashboards, notificationLayout, preferencesHydrated, t]);
 
-    function addQuickAccessToolByKey(toolKey: any, beforeToolKey: any = '') {
+    function addQuickAccessToolByKey(
+        toolKey: unknown,
+        beforeToolKey: unknown = ''
+    ) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         const normalizedBeforeToolKey = normalizePinnedToolKey(beforeToolKey);
-        setQuickAccessKeys((current: any) => {
+        setQuickAccessKeys((current) => {
             if (current.includes(normalizedToolKey)) {
                 return current;
             }
@@ -273,7 +280,7 @@ export function useToolsPageState() {
         });
     }
 
-    function addQuickAccessToolByKeyWithFeedback(toolKey: any) {
+    function addQuickAccessToolByKeyWithFeedback(toolKey: unknown) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         if (quickAccessKeySet.has(normalizedToolKey)) {
             toast.info(
@@ -284,14 +291,17 @@ export function useToolsPageState() {
         addQuickAccessToolByKey(normalizedToolKey);
     }
 
-    function removeQuickAccessToolByKey(toolKey: any) {
+    function removeQuickAccessToolByKey(toolKey: unknown) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
-        setQuickAccessKeys((current: any) =>
-            current.filter((key: any) => key !== normalizedToolKey)
+        setQuickAccessKeys((current) =>
+            current.filter((key) => key !== normalizedToolKey)
         );
     }
 
-    function reorderQuickAccessTool(activeToolKey: any, overToolKey: any) {
+    function reorderQuickAccessTool(
+        activeToolKey: unknown,
+        overToolKey: unknown
+    ) {
         const normalizedActiveToolKey = normalizePinnedToolKey(activeToolKey);
         const normalizedOverToolKey = normalizePinnedToolKey(overToolKey);
         if (
@@ -300,7 +310,7 @@ export function useToolsPageState() {
         ) {
             return;
         }
-        setQuickAccessKeys((current: any) => {
+        setQuickAccessKeys((current) => {
             const oldIndex = current.indexOf(normalizedActiveToolKey);
             const newIndex = current.indexOf(normalizedOverToolKey);
             if (oldIndex < 0 || newIndex < 0) {
@@ -310,7 +320,7 @@ export function useToolsPageState() {
         });
     }
 
-    function handleQuickAccessDragEnd({ active, over }: any) {
+    function handleQuickAccessDragEnd({ active, over }: DragEndEvent) {
         const activeData = active?.data?.current;
         const overData = over?.data?.current;
         const activeToolKey = normalizePinnedToolKey(activeData?.toolKey);
@@ -341,14 +351,14 @@ export function useToolsPageState() {
         }
     }
 
-    async function triggerTool(tool: any) {
+    async function triggerTool(tool: ToolDefinition) {
         await triggerToolByKey(tool?.key, {
             navigate,
             t: translateWithFallback
         });
     }
 
-    async function pinToolToNav(tool: any) {
+    async function pinToolToNav(tool: ToolDefinition) {
         if (!tool?.navEligible) {
             return;
         }
@@ -356,7 +366,7 @@ export function useToolsPageState() {
         try {
             const model = await saveNavMenuModel({
                 layout: insertToolNavItem(navLayout, navKey),
-                hiddenKeys: navHiddenKeys.filter((key: any) => key !== navKey),
+                hiddenKeys: navHiddenKeys.filter((key) => key !== navKey),
                 dashboards: useDashboardStore.getState().dashboards,
                 notificationLayout,
                 t: translateWithFallback
@@ -373,7 +383,7 @@ export function useToolsPageState() {
         }
     }
 
-    async function unpinToolFromNav(tool: any) {
+    async function unpinToolFromNav(tool: ToolDefinition) {
         if (!tool?.navEligible) {
             return;
         }

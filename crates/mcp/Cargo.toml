@@ -23,7 +23,13 @@ serde_json = { workspace = true }
 socket2 = "0.6"
 specta = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["io-util", "macros", "net", "sync", "time"] }
+tokio = { workspace = true, features = [
+    "io-util",
+    "macros",
+    "net",
+    "sync",
+    "time"
+] }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
 vrcx-0-application = { path = "../application" }

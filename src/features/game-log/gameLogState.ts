@@ -28,7 +28,7 @@ export function readPersistedGameLogState() {
     return readPersistedTableState(STORAGE_KEY);
 }
 
-export function writePersistedGameLogState(patch: any) {
+export function writePersistedGameLogState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
@@ -66,7 +66,7 @@ export function sanitizeGameLogPageSizes(value: any) {
 }
 
 export function sanitizeGameLogColumnVisibility(value: any) {
-    const visibility: any = {};
+    const visibility: Record<string, boolean> = {};
     if (!value || typeof value !== 'object') {
         return visibility;
     }

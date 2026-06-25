@@ -1,6 +1,6 @@
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
-import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import type { QueryParams } from '@/repositories/vrchatRequest';
+import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 
 interface SendInviteToLocationInput {
     receiverUserId?: unknown;

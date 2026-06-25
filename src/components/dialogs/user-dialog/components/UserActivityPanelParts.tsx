@@ -1,9 +1,10 @@
+import type { EChartsType } from 'echarts/core';
 import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { echarts } from '@/lib/echarts';
 import { timeToText } from '@/lib/dateTime';
+import { echarts } from '@/lib/echarts';
 import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
@@ -14,6 +15,8 @@ import {
     EmptyHeader,
     EmptyTitle
 } from '@/ui/shadcn/empty';
+
+import { getWorldThumbnailUrl } from '../userActivityPanelModel';
 
 function toHeatmapSeriesData(normalizedBuckets: any, weekStartsOn: any) {
     const data = [];
@@ -131,11 +134,13 @@ export function HeatmapChart({
     renderDelay = 0,
     onContextMenu
 }: any) {
-    const [chartElement, setChartElement] = useState(null);
-    const chartInstanceRef = useRef(null);
-    const chartThemeRef = useRef(null);
-    const resizeObserverRef = useRef(null);
-    const renderTimerRef = useRef(null);
+    const [chartElement, setChartElement] = useState<HTMLDivElement | null>(
+        null
+    );
+    const chartInstanceRef = useRef<EChartsType | null>(null);
+    const chartThemeRef = useRef<string | null>(null);
+    const resizeObserverRef = useRef<ResizeObserver | null>(null);
+    const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(
         () => () => {
@@ -169,15 +174,24 @@ export function HeatmapChart({
             if (!chart || chartThemeRef.current !== themeName) {
                 resizeObserverRef.current?.disconnect();
                 chart?.dispose();
-                chart = echarts.init(chartElement, themeName || undefined, {
-                    height: 240
-                });
-                chartInstanceRef.current = chart;
+                const nextChart = echarts.init(
+                    chartElement,
+                    themeName || undefined,
+                    {
+                        height: 240
+                    }
+                );
+                chart = nextChart;
+                chartInstanceRef.current = nextChart;
                 chartThemeRef.current = themeName;
                 resizeObserverRef.current = new ResizeObserver(() => {
-                    chart.resize();
+                    nextChart.resize();
                 });
                 resizeObserverRef.current.observe(chartElement);
+            }
+
+            if (!chart) {
+                return;
             }
 
             chartElement.style.height = '240px';
@@ -246,11 +260,6 @@ export function HeatmapChart({
     );
 }
 
-export function getWorldThumbnailUrl(world: any) {
-    const url = world?.thumbnailImageUrl || world?.imageUrl || '';
-    return url ? url.replace('256', '128') : '';
-}
-
 export function ActivityEmptyState({ title, description }: any) {
     return (
         <Empty className="mt-8 min-h-40 border">
@@ -267,7 +276,10 @@ export function ActivityEmptyState({ title, description }: any) {
 export function TopWorldRows({ worlds, sortBy }: any) {
     const { t } = useTranslation();
     const key = sortBy === 'count' ? 'visitCount' : 'totalTime';
-    const maxValue = Math.max(...worlds.map((world: any) => world[key] || 0), 0);
+    const maxValue = Math.max(
+        ...worlds.map((world: any) => world[key] || 0),
+        0
+    );
 
     if (!worlds.length) {
         return null;

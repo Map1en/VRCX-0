@@ -66,11 +66,14 @@ async function getSavedCredential(userId: string) {
     return savedCredentials[userId] ?? null;
 }
 
-async function deleteSavedCredential(userId: string): Promise<SavedAuthSnapshot> {
+async function deleteSavedCredential(
+    userId: string
+): Promise<SavedAuthSnapshot> {
     return runAuthSavedCommand(
         () =>
             commands.appVrchatAuthSavedCredentialDelete({
-                userId: typeof userId === 'string' ? userId : String(userId ?? '')
+                userId:
+                    typeof userId === 'string' ? userId : String(userId ?? '')
             }) as Promise<SavedAuthSnapshot>,
         'Saved credential delete failed'
     );

@@ -33,7 +33,7 @@ describe('data table persistence helpers', () => {
 
     afterEach(() => {
         vi.useRealTimers();
-        delete globalThis.window;
+        Reflect.deleteProperty(globalThis, 'window');
     });
 
     it('uses the vrcx-0 table namespace for generated storage keys', () => {
@@ -72,7 +72,7 @@ describe('data table persistence helpers', () => {
             'vrcx-0:table:feed',
             expect.any(String)
         );
-        expect(JSON.parse(values.get('vrcx-0:table:feed'))).toEqual({
+        expect(JSON.parse(values.get('vrcx-0:table:feed') ?? '')).toEqual({
             pageSize: 25,
             columnVisibility: { detail: false },
             columnSizing: { detail: 320 },

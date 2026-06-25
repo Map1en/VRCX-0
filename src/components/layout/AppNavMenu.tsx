@@ -9,16 +9,16 @@ import {
 } from '@/services/preferencesService';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard';
+import { useBackgroundImageStore } from '@/state/backgroundImageStore';
+import {
+    communityThemeControlsAppearance,
+    useCommunityThemeStore
+} from '@/state/communityThemeStore';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
-import {
-    communityThemeControlsAppearance,
-    useCommunityThemeStore
-} from '@/state/communityThemeStore';
-import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
@@ -40,13 +40,17 @@ import {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
     routePathByName,
-    saveNavMenuModel
+    saveNavMenuModel,
+    type NavDefinition,
+    type NavLayoutEntry,
+    type NavMenuItem,
+    type NavMenuModel
 } from './navMenuModel';
 
-function resolveActiveIndex(menuItems: any, pathname: any) {
+function resolveActiveIndex(menuItems: NavMenuItem[], pathname: string) {
     for (const item of menuItems) {
         if (item.children?.length) {
-            const activeChild = item.children.find((entry: any) =>
+            const activeChild = item.children.find((entry) =>
                 isEntryActive(entry, pathname)
             );
             if (activeChild) {
@@ -67,13 +71,15 @@ function useAppNavModel({
     preferencesHydrated,
     t
 }: any) {
-    const [menuItems, setMenuItems] = useState<any[]>([]);
-    const [navLayout, setNavLayout] = useState<any[]>([]);
-    const [navHiddenKeys, setNavHiddenKeys] = useState<any[]>([]);
-    const [navDefinitions, setNavDefinitions] = useState<any[]>([]);
-    const [defaultNavLayout, setDefaultNavLayout] = useState<any[]>([]);
+    const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
+    const [navLayout, setNavLayout] = useState<NavLayoutEntry[]>([]);
+    const [navHiddenKeys, setNavHiddenKeys] = useState<string[]>([]);
+    const [navDefinitions, setNavDefinitions] = useState<NavDefinition[]>([]);
+    const [defaultNavLayout, setDefaultNavLayout] = useState<NavLayoutEntry[]>(
+        []
+    );
 
-    function applyModel(model: any) {
+    function applyModel(model: NavMenuModel) {
         setNavLayout(model.layout);
         setNavHiddenKeys(model.hiddenKeys);
         setNavDefinitions(model.definitions);
@@ -123,7 +129,10 @@ function useAppNavModel({
         };
     }, [dashboards, notificationLayout, preferencesHydrated, t]);
 
-    async function saveAndApplyNavLayout(nextLayout: any, nextHiddenKeys: any) {
+    async function saveAndApplyNavLayout(
+        nextLayout: unknown,
+        nextHiddenKeys: unknown
+    ) {
         const model = await saveNavMenuModel({
             layout: nextLayout,
             hiddenKeys: nextHiddenKeys,

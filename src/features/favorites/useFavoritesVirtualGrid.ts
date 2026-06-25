@@ -84,27 +84,20 @@ export function useFavoritesVirtualGrid({
     resetKey,
     showGroupLabel
 }: any) {
-    const {
-        resetScrollTop,
-        viewportMetrics,
-        viewportRef
-    } = useScrollViewportMetrics();
+    const { resetScrollTop, viewportMetrics, viewportRef } =
+        useScrollViewportMetrics();
 
     useEffect(() => {
         resetScrollTop();
     }, [resetKey, resetScrollTop]);
 
-    const {
-        cardHeight,
-        gridColumnCount,
-        gridGap,
-        gridMinWidth
-    } = getFavoritesGridMetrics({
-        cardScale,
-        cardSpacing,
-        showGroupLabel,
-        width: viewportMetrics.width
-    });
+    const { cardHeight, gridColumnCount, gridGap, gridMinWidth } =
+        getFavoritesGridMetrics({
+            cardScale,
+            cardSpacing,
+            showGroupLabel,
+            width: viewportMetrics.width
+        });
 
     const positionedRows = useMemo(
         () =>

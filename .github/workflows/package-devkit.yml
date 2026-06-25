@@ -2,7 +2,7 @@ name: Package Dev Kit
 
 on:
     workflow_run:
-        workflows: ["Package"]
+        workflows: ['Package']
         types:
             - completed
     workflow_dispatch:

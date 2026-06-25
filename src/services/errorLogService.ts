@@ -292,9 +292,10 @@ function installConsoleErrorCapture(): void {
         return;
     }
 
-    originalConsoleError = console.error.bind(console);
+    const capturedConsoleError = console.error.bind(console);
+    originalConsoleError = capturedConsoleError;
     console.error = (...args: unknown[]) => {
-        originalConsoleError(...args);
+        capturedConsoleError(...args);
         recordErrorLog('js:console.error', args);
     };
 }

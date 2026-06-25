@@ -35,10 +35,7 @@ export function padDatePart(value: unknown): string {
     return String(value).padStart(2, '0');
 }
 
-export function formatIsoDateTime(
-    value: unknown,
-    fallback = '-'
-): string {
+export function formatIsoDateTime(value: unknown, fallback = '-'): string {
     const date = toValidDate(value);
     if (!date) {
         return fallback;

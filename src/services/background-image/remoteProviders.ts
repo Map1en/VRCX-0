@@ -122,8 +122,7 @@ function buildSnapshot({
 function normalizeHttpsUrl(rawUrl: string, allowedHosts?: Set<string>): string {
     const parsedUrl = new URL(rawUrl);
     const normalizedHostname = parsedUrl.hostname.toLowerCase();
-    const hostAllowed =
-        !allowedHosts || allowedHosts.has(normalizedHostname);
+    const hostAllowed = !allowedHosts || allowedHosts.has(normalizedHostname);
 
     if (parsedUrl.protocol === 'http:' && hostAllowed && allowedHosts) {
         parsedUrl.protocol = 'https:';
@@ -240,7 +239,9 @@ async function fetchApodByDate(date: string): Promise<NasaApodResponse | null> {
         return null;
     }
     if (response.status === 429) {
-        throw new BackgroundImageRateLimitError('NASA APOD rate limit reached.');
+        throw new BackgroundImageRateLimitError(
+            'NASA APOD rate limit reached.'
+        );
     }
     if (!response.ok) {
         throw new Error(

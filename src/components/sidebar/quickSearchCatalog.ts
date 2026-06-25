@@ -4,7 +4,22 @@ import myAvatarRepository from '@/repositories/myAvatarRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
-export function createEmptyCatalog(status: any = 'idle', detail: any = '') {
+type QuickSearchCatalog = {
+    status: string;
+    detail: string;
+    ownAvatars: unknown[];
+    favoriteAvatars: unknown[];
+    ownWorlds: unknown[];
+    favoriteWorlds: unknown[];
+    groups: unknown[];
+    userMemos: unknown[];
+    userNotes: unknown[];
+};
+
+export function createEmptyCatalog(
+    status: string = 'idle',
+    detail: string = ''
+): QuickSearchCatalog {
     return {
         status,
         detail,
@@ -24,7 +39,7 @@ function normalize(value: any) {
         : String(value ?? '').trim();
 }
 
-function settledRows(result: any) {
+function settledRows(result: PromiseSettledResult<unknown>): unknown[] {
     return result.status === 'fulfilled' && Array.isArray(result.value)
         ? result.value
         : [];

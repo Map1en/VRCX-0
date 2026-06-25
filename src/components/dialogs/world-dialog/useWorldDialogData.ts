@@ -104,7 +104,7 @@ export function useWorldDialogData({
         const targetEndpoint = currentEndpoint;
         vrchatAuthRepository
             .getConfig({ endpoint: targetEndpoint })
-            .catch(() => null)
+            .catch((): null => null)
             .then((configResponse: any) =>
                 Promise.allSettled([
                     readWorldCacheInfo(world, targetEndpoint),

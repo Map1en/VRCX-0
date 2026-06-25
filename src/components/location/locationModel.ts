@@ -1,7 +1,4 @@
-import {
-    parseLocation,
-    normalizeLocationValue
-} from '@/shared/utils/location';
+import { parseLocation, normalizeLocationValue } from '@/shared/utils/location';
 
 export function normalizeLocationText(value: any) {
     return typeof value === 'string'
@@ -17,7 +14,7 @@ export function finiteLocationNumber(value: any) {
     return Number.isFinite(number) ? number : null;
 }
 
-export function firstFiniteLocationNumber(...values: any[]) {
+export function firstFiniteLocationNumber(...values: unknown[]) {
     for (const value of values) {
         const number = finiteLocationNumber(value);
         if (number !== null) {

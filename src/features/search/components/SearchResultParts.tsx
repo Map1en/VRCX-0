@@ -7,11 +7,6 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
-import {
-    convertFileUrlToImageUrl,
-    getNameColour,
-    userImage
-} from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
 import {
     openAvatarDialog,
@@ -19,6 +14,11 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import {
+    convertFileUrlToImageUrl,
+    getNameColour,
+    userImage
+} from '@/services/entityMediaService';
 import {
     languageOptionLabel,
     normalizeProfileLanguageRows

@@ -35,7 +35,9 @@ export function useModerationRowActions({
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const confirm = useModalStore((state: any) => state.confirm);
     const [deletingModerationKey, setDeletingModerationKey] = useState('');
 
@@ -64,15 +66,19 @@ export function useModerationRowActions({
         ) {
             return;
         }
+        const { targetUserId, type } = row;
+        if (!targetUserId || !type) {
+            return;
+        }
         const rowKey = getModerationRowKey(row);
         setDeletingModerationKey(rowKey);
         try {
             await updateModerationSync({
                 ownerUserId,
                 endpoint: currentEndpoint,
-                targetUserId: row.targetUserId,
-                targetDisplayName: row.targetDisplayName || row.targetUserId,
-                type: row.type,
+                targetUserId,
+                targetDisplayName: row.targetDisplayName || targetUserId,
+                type,
                 enabled: false
             });
             if (useRuntimeStore.getState().auth.currentUserId !== ownerUserId) {

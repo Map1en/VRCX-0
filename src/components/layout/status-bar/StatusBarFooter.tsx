@@ -183,9 +183,7 @@ function formatMutualGraphTooltip(mutualGraph: any, t: any) {
 
 function formatVrcStatusTooltip(vrcStatus: any, t: any, formatStatusDate: any) {
     const status =
-        vrcStatus.summary ||
-        vrcStatus.status ||
-        t('status_bar.servers_ok');
+        vrcStatus.summary || vrcStatus.status || t('status_bar.servers_ok');
     return (
         <div className="flex flex-col gap-1 text-xs">
             <span>{status}</span>
@@ -195,9 +193,7 @@ function formatVrcStatusTooltip(vrcStatus: any, t: any, formatStatusDate: any) {
                 </span>
             ) : null}
             {vrcStatus.error ? (
-                <span className="text-muted-foreground">
-                    {vrcStatus.error}
-                </span>
+                <span className="text-muted-foreground">{vrcStatus.error}</span>
             ) : null}
             {vrcStatus.lastFetchedAt ? (
                 <span className="text-muted-foreground">
@@ -262,9 +258,7 @@ export const StatusBarFooter = forwardRef(function StatusBarFooter(
     const vrcStatusHasIssue = Boolean(
         vrcStatusIndicator && vrcStatusIndicator !== 'none'
     );
-    const vrcStatusIsMajor = ['major', 'critical'].includes(
-        vrcStatusIndicator
-    );
+    const vrcStatusIsMajor = ['major', 'critical'].includes(vrcStatusIndicator);
 
     useEffect(() => {
         if (!zoomPopoverOpen) {
@@ -437,28 +431,24 @@ export const StatusBarFooter = forwardRef(function StatusBarFooter(
                     <StatusSegment
                         visible={visibility.servers}
                         active={!vrcStatusHasIssue}
-                        dotClassName={
-                            cn(
-                                vrcStatus.refreshing && 'animate-pulse',
-                                vrcStatusHasIssue
-                                    ? vrcStatusIsMajor
-                                        ? 'bg-destructive'
-                                        : 'bg-[var(--status-askme)]'
-                                    : undefined
-                            )
-                        }
+                        dotClassName={cn(
+                            vrcStatus.refreshing && 'animate-pulse',
+                            vrcStatusHasIssue
+                                ? vrcStatusIsMajor
+                                    ? 'bg-destructive'
+                                    : 'bg-[var(--status-askme)]'
+                                : undefined
+                        )}
                         label={t('status_bar.servers')}
                         className="cursor-pointer"
                         onClick={() => {
                             onOpenStatusPage();
                         }}
-                        tooltip={
-                            formatVrcStatusTooltip(
-                                vrcStatus,
-                                t,
-                                formatStatusDate
-                            )
-                        }
+                        tooltip={formatVrcStatusTooltip(
+                            vrcStatus,
+                            t,
+                            formatStatusDate
+                        )}
                     />
                     {visibility.ws ? (
                         <Tooltip>
@@ -508,7 +498,7 @@ export const StatusBarFooter = forwardRef(function StatusBarFooter(
                         label={formatMutualGraphLabel(mutualGraph, t)}
                         value={formatMutualGraphValue(mutualGraph)}
                         tooltip={formatMutualGraphTooltip(mutualGraph, t)}
-                        className="-ml-px border-l text-muted-foreground"
+                        className="text-muted-foreground -ml-px border-l"
                         valueClassName="text-muted-foreground"
                     />
                     {visibility.clocks

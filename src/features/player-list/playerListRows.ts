@@ -1,10 +1,5 @@
 import { parseLocation } from '@/shared/utils/locationParser';
-
-export function normalizeString(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
+import { normalizeString } from '@/shared/utils/string';
 
 export function normalizePlayerUserId(value: any) {
     const normalized = normalizeString(value);
@@ -80,7 +75,10 @@ export function isLiveLocation(location: any) {
     );
 }
 
-export function buildFavoriteIdSet(remoteFavoriteIds: any, localFriendFavorites: any) {
+export function buildFavoriteIdSet(
+    remoteFavoriteIds: any,
+    localFriendFavorites: any
+) {
     const set = new Set();
 
     for (const id of remoteFavoriteIds ?? []) {
@@ -146,9 +144,10 @@ export function buildPlayerSourceRows({
     };
 
     if (canUseLiveRows) {
-        const sourceRows = runtimeRosterAvailable && !context?.playerFactsKnown
-            ? runtimePlayerRows
-            : playerRows;
+        const sourceRows =
+            runtimeRosterAvailable && !context?.playerFactsKnown
+                ? runtimePlayerRows
+                : playerRows;
         for (const row of Array.isArray(sourceRows) ? sourceRows : []) {
             addRow(row);
         }

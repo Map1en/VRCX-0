@@ -63,7 +63,9 @@ describe('InstanceRepository', () => {
             region: 'Japan'
         });
 
-        expect(tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params).toEqual({
+        expect(
+            tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params
+        ).toEqual({
             type: 'group',
             canRequestInvite: false,
             worldId: 'wrld_group',
@@ -87,12 +89,10 @@ describe('InstanceRepository', () => {
 
         expect(
             tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params
-        ).toMatchObject(
-            {
-                groupAccessType: 'members',
-                roleIds: ['grol_a', 'grol_b']
-            }
-        );
+        ).toMatchObject({
+            groupAccessType: 'members',
+            roleIds: ['grol_a', 'grol_b']
+        });
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {

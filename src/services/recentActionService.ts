@@ -24,7 +24,7 @@ function normalizeUserId(value: unknown): string {
 }
 
 function normalizeMinutes(value: unknown): number {
-    const parsed = Number.parseInt(value as string, 10);
+    const parsed = Number.parseInt(String(value), 10);
     return Number.isNaN(parsed) ? 60 : Math.min(1440, Math.max(1, parsed));
 }
 
@@ -36,18 +36,19 @@ function readActions(): Record<string, number> {
         cachedActions = {};
         return cachedActions;
     }
+    let next: Record<string, number> = {};
     try {
         const parsed = JSON.parse(
             window.localStorage.getItem(STORAGE_KEY) || '{}'
         );
-        cachedActions =
-            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-                ? parsed
-                : {};
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            next = parsed;
+        }
     } catch {
-        cachedActions = {};
+        next = {};
     }
-    return cachedActions;
+    cachedActions = next;
+    return next;
 }
 
 function writeActions(actions: Record<string, number>): void {

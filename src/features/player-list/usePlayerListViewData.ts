@@ -76,12 +76,12 @@ export function usePlayerListViewData({
     );
     const isPlayerListSourceUnavailable = Boolean(
         !gameLogDisabled &&
-            isGameRunning &&
-            loadStatus === 'ready' &&
-            context.source !== 'database' &&
-            playerSourceRows.length === 0 &&
-            !parsedLocation.isTraveling &&
-            !parsedLocation.isOffline
+        isGameRunning &&
+        loadStatus === 'ready' &&
+        context.source !== 'database' &&
+        playerSourceRows.length === 0 &&
+        !parsedLocation.isTraveling &&
+        !parsedLocation.isOffline
     );
 
     return {

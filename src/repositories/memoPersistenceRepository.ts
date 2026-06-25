@@ -76,7 +76,9 @@ async function getUserMemo(userId: unknown) {
     }
 
     return (
-        ((await commands.appMemoGetUser(normalizedUserId)) as UserMemoEntry | null) ?? createEmptyUserMemo(normalizedUserId)
+        ((await commands.appMemoGetUser(
+            normalizedUserId
+        )) as UserMemoEntry | null) ?? createEmptyUserMemo(normalizedUserId)
     );
 }
 
@@ -96,7 +98,9 @@ async function getAllUserNotes(ownerUserId: unknown = '') {
         return [];
     }
 
-    const rows = (await commands.appMemoListUserNotes(normalizedOwnerUserId)) as Array<{
+    const rows = (await commands.appMemoListUserNotes(
+        normalizedOwnerUserId
+    )) as Array<{
         userId: unknown;
         displayName: unknown;
         note: unknown;
@@ -117,7 +121,10 @@ async function saveUserMemo({ userId, memo }: SaveUserMemoInput) {
         return createEmptyUserMemo(normalizedUserId);
     }
 
-    const entry = (await commands.appMemoSaveUser(normalizedUserId, nextMemo)) as LocalMemoSaveResult;
+    const entry = (await commands.appMemoSaveUser(
+        normalizedUserId,
+        nextMemo
+    )) as LocalMemoSaveResult;
     return {
         userId: entry.entityId,
         editedAt: entry.editedAt,
@@ -132,7 +139,9 @@ async function getWorldMemo(worldId: unknown) {
     }
 
     return (
-        ((await commands.appMemoGetWorld(normalizedWorldId)) as WorldMemoEntry | null) ?? createEmptyWorldMemo(normalizedWorldId)
+        ((await commands.appMemoGetWorld(
+            normalizedWorldId
+        )) as WorldMemoEntry | null) ?? createEmptyWorldMemo(normalizedWorldId)
     );
 }
 
@@ -148,7 +157,10 @@ async function saveWorldMemo({ worldId, memo }: SaveWorldMemoInput) {
         return createEmptyWorldMemo(normalizedWorldId);
     }
 
-    const entry = (await commands.appMemoSaveWorld(normalizedWorldId, nextMemo)) as LocalMemoSaveResult;
+    const entry = (await commands.appMemoSaveWorld(
+        normalizedWorldId,
+        nextMemo
+    )) as LocalMemoSaveResult;
     return {
         worldId: entry.entityId,
         editedAt: entry.editedAt,
@@ -163,7 +175,9 @@ async function getAvatarMemo(avatarId: unknown) {
     }
 
     return (
-        ((await commands.appMemoGetAvatar(normalizedAvatarId)) as AvatarMemoEntry | null) ??
+        ((await commands.appMemoGetAvatar(
+            normalizedAvatarId
+        )) as AvatarMemoEntry | null) ??
         createEmptyAvatarMemo(normalizedAvatarId)
     );
 }
@@ -180,7 +194,10 @@ async function saveAvatarMemo({ avatarId, memo }: SaveAvatarMemoInput) {
         return createEmptyAvatarMemo(normalizedAvatarId);
     }
 
-    const entry = (await commands.appMemoSaveAvatar(normalizedAvatarId, nextMemo)) as LocalMemoSaveResult;
+    const entry = (await commands.appMemoSaveAvatar(
+        normalizedAvatarId,
+        nextMemo
+    )) as LocalMemoSaveResult;
     return {
         avatarId: entry.entityId,
         editedAt: entry.editedAt,

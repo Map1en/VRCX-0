@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 
 type SQLiteLikeRow = Record<string, unknown> | unknown[];
 
@@ -24,12 +25,6 @@ interface WorldSummary {
     thumbnailImageUrl?: unknown;
     updated_at?: unknown;
     version?: unknown;
-}
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function normalizeInstanceActivityRow(row: SQLiteLikeRow): InstanceActivityRow {
@@ -125,7 +120,10 @@ async function getWorldSummariesByIds(
         return {};
     }
 
-    const rows = (await commands.appWorldSummariesGet(ids)) as Record<string, SQLiteLikeRow>;
+    const rows = (await commands.appWorldSummariesGet(ids)) as Record<
+        string,
+        SQLiteLikeRow
+    >;
 
     const map: Record<string, WorldSummary> = {};
     for (const [worldId, row] of Object.entries(rows || {})) {

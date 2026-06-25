@@ -2,24 +2,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import configRepository from '@/repositories/configRepository';
+import { formatDateTime } from '@/lib/dateTime';
 import { STATUS_BAR_CONFIG_KEYS } from '@/repositories/configKeys';
+import configRepository from '@/repositories/configRepository';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
-import {
-    loadPreferenceSnapshot,
-    setProxyServerPreference
-} from '@/services/preferencesService';
 import {
     refreshMutualGraphFetchStatus,
     startMutualGraphFetchStatusPolling,
     wasMutualGraphFetchStartedInThisSession
 } from '@/services/mutualGraphFetchService';
+import {
+    loadPreferenceSnapshot,
+    setProxyServerPreference
+} from '@/services/preferencesService';
 import { openExternalLink } from '@/services/shellIntegrationService';
 import {
     formatZoomPercentage,
     normalizeZoomLevel
 } from '@/services/themeService';
-import { formatDateTime } from '@/lib/dateTime';
 import { refreshVrcStatusNow } from '@/services/vrcStatusService';
 import {
     queueZoomLevelPreference,
@@ -37,7 +37,7 @@ import { StatusBarFooter } from './status-bar/StatusBarFooter';
 
 const STATUS_PAGE_URL = 'https://status.vrchat.com/';
 
-const DEFAULT_VISIBILITY: any = {
+const DEFAULT_VISIBILITY: Record<string, boolean> = {
     vrchat: true,
     steamvr: true,
     proxy: true,
@@ -112,7 +112,7 @@ function formatUtcHour(offset: any) {
     return `UTC${normalized >= 0 ? '+' : ''}${normalized}`;
 }
 
-const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_: any, index: any) => {
+const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, index) => {
     const value = index - 12;
     return { value, label: formatUtcHour(value) };
 });
@@ -173,7 +173,7 @@ export function AppStatusBar() {
     const [visibility, setVisibility] = useState(DEFAULT_VISIBILITY);
     const [clocks, setClocks] = useState(() => createDefaultClocks());
     const [clockCount, setClockCount] = useState(1);
-    const [clockPopoverOpen, setClockPopoverOpen] = useState<any[]>([
+    const [clockPopoverOpen, setClockPopoverOpen] = useState<boolean[]>([
         false,
         false,
         false
@@ -395,7 +395,9 @@ export function AppStatusBar() {
 
         if (mutualGraphStatus === 'completed') {
             notifiedMutualGraphRunRef.current = runId;
-            toast.success(t('view.charts.success.mutual_friends_graph_refreshed'));
+            toast.success(
+                t('view.charts.success.mutual_friends_graph_refreshed')
+            );
             return;
         }
 

@@ -1,10 +1,10 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
     invalidateEntityQueries,
     queryKeys
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 
 import {
     createRequestError,
@@ -155,11 +155,12 @@ async function getFollowingGroupCalendars(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response =
-                await commands.appVrchatToolsFollowingCalendarsGet({
+            const response = await commands.appVrchatToolsFollowingCalendarsGet(
+                {
                     endpoint,
                     params
-                });
+                }
+            );
             return unwrapVrchatToolsResponse(response, 'calendar/following')
                 .json;
         }
@@ -175,11 +176,10 @@ async function getFeaturedGroupCalendars(
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
-            const response =
-                await commands.appVrchatToolsFeaturedCalendarsGet({
-                    endpoint,
-                    params
-                });
+            const response = await commands.appVrchatToolsFeaturedCalendarsGet({
+                endpoint,
+                params
+            });
             return unwrapVrchatToolsResponse(response, 'calendar/featured')
                 .json;
         }
@@ -249,12 +249,11 @@ async function getGroupCalendarIcs(
         policy: entityQueryPolicies.groupCalendarEvent,
         force,
         queryFn: async () => {
-            const response =
-                await commands.appVrchatToolsGroupCalendarIcsGet({
-                    endpoint,
-                    groupId,
-                    eventId
-                });
+            const response = await commands.appVrchatToolsGroupCalendarIcsGet({
+                endpoint,
+                groupId,
+                eventId
+            });
             return unwrapVrchatToolsResponse(
                 response,
                 `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}.ics`

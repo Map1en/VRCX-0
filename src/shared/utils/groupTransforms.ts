@@ -1,6 +1,6 @@
 export function createDefaultGroupRef(
     json: Record<string, unknown> = {}
-): Record<string, any> {
+): Record<string, unknown> {
     return {
         id: '',
         name: '',

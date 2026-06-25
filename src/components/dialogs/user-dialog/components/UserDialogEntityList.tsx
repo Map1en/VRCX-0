@@ -1,8 +1,8 @@
 import { LockIcon, PersonStandingIcon, UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -21,7 +21,12 @@ import { EntityListState } from './UserDialogEntityListState';
 import { openRow } from './userDialogEntityNavigation';
 import { UserGroupCard } from './UserDialogGroupCard';
 
-export function EntityList({ rows, kind = '', loading = false, error = '' }: any) {
+export function EntityList({
+    rows,
+    kind = '',
+    loading = false,
+    error = ''
+}: any) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
@@ -134,7 +139,9 @@ export function EntityList({ rows, kind = '', loading = false, error = '' }: any
                                 {isPrivateWorld ? (
                                     <LockIcon
                                         className="text-muted-foreground size-3.5 shrink-0"
-                                        aria-label={t('dialog.world.tags.private')}
+                                        aria-label={t(
+                                            'dialog.world.tags.private'
+                                        )}
                                     />
                                 ) : null}
                             </span>

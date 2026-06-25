@@ -66,7 +66,9 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
     return {
         userId: valueAsString(row.user_id ?? row.userId),
         displayName: valueAsString(row.display_name ?? row.displayName),
-        trustLevel: valueAsString(row.trust_level ?? row.trustLevel ?? 'Visitor'),
+        trustLevel: valueAsString(
+            row.trust_level ?? row.trustLevel ?? 'Visitor'
+        ),
         friendNumber: valueAsInt(row.friend_number ?? row.friendNumber)
     };
 }
@@ -74,9 +76,9 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
 async function getFriendLogCurrent(
     userId: unknown
 ): Promise<FriendLogCurrentRow[]> {
-    const rows = (await commands.appFriendLogCurrentList(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim())) as FriendLogSourceRow[];
+    const rows = (await commands.appFriendLogCurrentList(
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
+    )) as FriendLogSourceRow[];
 
     if (!Array.isArray(rows)) {
         return [];
@@ -125,16 +127,20 @@ async function replaceFriendLogCurrent(
         ? options.addedHistoryEntries
         : [];
 
-    return commands.appFriendLogReplaceCurrent(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), (Array.isArray(entries) ? entries : []).map(
+    return commands.appFriendLogReplaceCurrent(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        (Array.isArray(entries) ? entries : []).map(
             normalizeCurrentEntryForRuntime
-        ), {
+        ),
+        {
             historyEntries: historyEntries.map(normalizeHistoryEntryForRuntime),
             addedHistoryEntries: addedHistoryEntries.map(
                 normalizeHistoryEntryForRuntime
             )
-        }) as Promise<FriendLogMutationResult>;
+        }
+    ) as Promise<FriendLogMutationResult>;
 }
 
 async function deleteFriendLogCurrentArray(
@@ -166,11 +172,15 @@ async function deleteFriendLogCurrentArray(
         ? options.historyEntries
         : [];
 
-    return commands.appFriendLogDeleteCurrentArray(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), normalizedTargetUserIds, {
+    return commands.appFriendLogDeleteCurrentArray(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        normalizedTargetUserIds,
+        {
             historyEntries: historyEntries.map(normalizeHistoryEntryForRuntime)
-        }) as Promise<FriendLogMutationResult>;
+        }
+    ) as Promise<FriendLogMutationResult>;
 }
 
 async function upsertFriendLogCurrent(
@@ -210,12 +220,15 @@ async function upsertFriendLogCurrent(
 
     const historyEntry = options?.historyEntry;
 
-    return commands.appFriendLogUpsertCurrent(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), normalizeCurrentEntryForRuntime({
+    return commands.appFriendLogUpsertCurrent(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        normalizeCurrentEntryForRuntime({
             ...entry,
             userId: targetUserId
-        }), {
+        }),
+        {
             historyEntry: historyEntry
                 ? normalizeHistoryEntryForRuntime({
                       ...historyEntry,
@@ -223,13 +236,17 @@ async function upsertFriendLogCurrent(
                   })
                 : null,
             forceHistory: Boolean(options?.forceHistory)
-        }) as Promise<FriendLogMutationResult>;
+        }
+    ) as Promise<FriendLogMutationResult>;
 }
 
 async function deleteFriendLogCurrent(userId: unknown, targetUserId: string) {
-    await commands.appFriendLogDeleteCurrent(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), targetUserId);
+    await commands.appFriendLogDeleteCurrent(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        targetUserId
+    );
 }
 
 const friendLogRepository = {

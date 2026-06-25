@@ -61,9 +61,9 @@ describe('runtime GameLog persistence routing', () => {
     });
 
     it('always skips frontend writes for runtime-persisted mirror rows', () => {
-        expect(isRuntimePersistedGameLogMirror({ runtimePersisted: true })).toBe(
-            true
-        );
+        expect(
+            isRuntimePersistedGameLogMirror({ runtimePersisted: true })
+        ).toBe(true);
         expect(
             shouldSkipRuntimePersistedGameLog(
                 { type: 'external', runtimePersisted: true },

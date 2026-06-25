@@ -107,9 +107,7 @@ describe('UpdaterDialog', () => {
         );
 
         expect(html).toContain('nav_menu.update');
-        expect(html).not.toContain(
-            'dialog.system.action.install_and_restart'
-        );
+        expect(html).not.toContain('dialog.system.action.install_and_restart');
     });
 
     it('keeps the install action for stable installable updates', () => {

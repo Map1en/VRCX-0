@@ -77,7 +77,7 @@ export async function fetchMutualFriendIds(
                     error?.status === 429 ||
                     String(error?.message || '').includes('429')
             }
-        ).catch((error: any) => {
+        ).catch((error: any): null => {
             if (String(error?.message || '') === 'cancelled') {
                 return null;
             }
@@ -363,7 +363,7 @@ export function renderSigmaGraph({
         sigma.getCamera?.()?.setState?.(cameraState);
     }
 
-    let hovered = null;
+    let hovered: string | null = null;
     let neighbors = new Set();
     const rebuildNeighbors = (node: any) => {
         neighbors =

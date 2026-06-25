@@ -2,7 +2,7 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 
 import { getColourFromUserID } from './colour';
 
-type LooseRecord = Record<string, any>;
+type LooseRecord = Record<string, unknown>;
 
 type ImageUser = LooseRecord & {
     userIcon?: string;
@@ -95,7 +95,7 @@ function hueToHex(hue: number, isDarkMode: boolean) {
 }
 
 export function getNameColour(userId: unknown, isDarkMode: boolean) {
-    return hueToHex(getColourFromUserID((userId || '') as string), isDarkMode);
+    return hueToHex(getColourFromUserID(String(userId || '')), isDarkMode);
 }
 
 export function userImage(

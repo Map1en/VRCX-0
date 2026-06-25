@@ -10,6 +10,7 @@ import {
     createResourceLoadEntry
 } from '@/shared/utils/gameLog';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -21,7 +22,6 @@ import {
 } from './game-log-ingest/instanceMediaSave';
 import {
     getPlayerKey,
-    normalizeString,
     parseRawRow,
     type ParsedGameLog
 } from './game-log-ingest/parsing';
@@ -626,14 +626,11 @@ async function persistGameLog(
                 break;
             }
             if (await configRepository.getBool('saveInstanceStickers', false)) {
-                enqueueStickerSave(
-                    instanceMediaState.stickerInventoryIds,
-                    {
-                        displayName: gameLog.displayName,
-                        userId: gameLog.userId,
-                        inventoryId: gameLog.inventoryId
-                    }
-                );
+                enqueueStickerSave(instanceMediaState.stickerInventoryIds, {
+                    displayName: gameLog.displayName,
+                    userId: gameLog.userId,
+                    inventoryId: gameLog.inventoryId
+                });
             }
             break;
         default:

@@ -1,8 +1,8 @@
 import { EyeIcon, EyeOffIcon, ShieldCheckIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
@@ -31,12 +31,12 @@ function resolveBadgeName(badge: any, profileTitle: any, profileId: any) {
 function isRenderableBadge(badge: any) {
     return Boolean(
         badge &&
-            typeof badge === 'object' &&
-            (resolveBadgeImageUrl(badge) ||
-                badge.badgeName ||
-                badge.name ||
-                badge.badgeId ||
-                badge.id)
+        typeof badge === 'object' &&
+        (resolveBadgeImageUrl(badge) ||
+            badge.badgeName ||
+            badge.name ||
+            badge.badgeId ||
+            badge.id)
     );
 }
 
@@ -153,221 +153,211 @@ export function UserDialogHeaderMediaBadges({
 
     return (
         <>
-            {profile.badges
-                .filter(isRenderableBadge)
-                .map((badge: any) => {
-                    const badgeImageUrl = resolveBadgeImageUrl(badge);
-                    const badgeName = resolveBadgeName(
-                        badge,
-                        profileTitle,
-                        profile.id
-                    );
-                    const isBadgeVisible =
-                        Boolean(badge.showcased) && !badge.hidden;
-                    const badgeTitle = !isBadgeVisible
-                        ? `${badgeName} (${hiddenLabel})`
-                        : badgeName;
-                    const visibilityValue = isBadgeVisible
-                        ? 'visible'
-                        : 'hidden';
-                    const actionsDisabled = actionStatus !== 'idle';
+            {profile.badges.filter(isRenderableBadge).map((badge: any) => {
+                const badgeImageUrl = resolveBadgeImageUrl(badge);
+                const badgeName = resolveBadgeName(
+                    badge,
+                    profileTitle,
+                    profile.id
+                );
+                const isBadgeVisible =
+                    Boolean(badge.showcased) && !badge.hidden;
+                const badgeTitle = !isBadgeVisible
+                    ? `${badgeName} (${hiddenLabel})`
+                    : badgeName;
+                const visibilityValue = isBadgeVisible ? 'visible' : 'hidden';
+                const actionsDisabled = actionStatus !== 'idle';
 
-                    return (
-                        <Popover
-                            key={
-                                badge.badgeId ||
-                                badge.id ||
-                                badge.badgeName ||
-                                badgeImageUrl
-                            }
+                return (
+                    <Popover
+                        key={
+                            badge.badgeId ||
+                            badge.id ||
+                            badge.badgeName ||
+                            badgeImageUrl
+                        }
+                    >
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size={badgeImageUrl ? 'icon' : 'sm'}
+                                aria-label={badgeTitle}
+                                title={badgeTitle}
+                                className={
+                                    badgeImageUrl
+                                        ? cn(
+                                              'size-8 rounded-sm p-0',
+                                              !isBadgeVisible && 'opacity-60'
+                                          )
+                                        : cn(
+                                              'h-8 max-w-full rounded-sm px-2 text-xs',
+                                              !isBadgeVisible && 'opacity-60'
+                                          )
+                                }
+                                onClick={(event: any) =>
+                                    event.stopPropagation()
+                                }
+                            >
+                                {badgeImageUrl ? (
+                                    <img
+                                        src={badgeImageUrl}
+                                        alt={badge.badgeName || ''}
+                                        className={cn(
+                                            'size-8 rounded-sm object-cover',
+                                            !isBadgeVisible && 'grayscale'
+                                        )}
+                                    />
+                                ) : (
+                                    <span className="max-w-32 truncate">
+                                        {badgeName || badge.badgeId}
+                                    </span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            side="bottom"
+                            className="w-80 gap-0 overflow-hidden p-0"
                         >
-                            <PopoverTrigger asChild>
+                            {badgeImageUrl ? (
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    size={badgeImageUrl ? 'icon' : 'sm'}
-                                    aria-label={badgeTitle}
-                                    title={badgeTitle}
-                                    className={
-                                        badgeImageUrl
-                                            ? cn(
-                                                  'size-8 rounded-sm p-0',
-                                                  !isBadgeVisible &&
-                                                      'opacity-60'
-                                              )
-                                            : cn(
-                                                  'h-8 max-w-full rounded-sm px-2 text-xs',
-                                                  !isBadgeVisible &&
-                                                      'opacity-60'
-                                              )
+                                    className="bg-muted/20 hover:bg-muted/30 h-auto w-full rounded-none p-3"
+                                    onClick={() =>
+                                        onOpenImagePreview?.({
+                                            url: badgeImageUrl,
+                                            title: badgeName
+                                        })
                                     }
-                                    onClick={(event: any) => event.stopPropagation()}
                                 >
-                                    {badgeImageUrl ? (
-                                        <img
-                                            src={badgeImageUrl}
-                                            alt={badge.badgeName || ''}
-                                            className={cn(
-                                                'size-8 rounded-sm object-cover',
-                                                !isBadgeVisible && 'grayscale'
-                                            )}
-                                        />
-                                    ) : (
-                                        <span className="max-w-32 truncate">
+                                    <img
+                                        src={badgeImageUrl}
+                                        alt={badge.badgeName || ''}
+                                        className={cn(
+                                            'max-h-52 w-full rounded-md object-contain',
+                                            !isBadgeVisible && 'grayscale'
+                                        )}
+                                    />
+                                </Button>
+                            ) : (
+                                <div className="bg-muted/20 flex min-h-24 items-center justify-center p-3">
+                                    <Badge
+                                        variant="outline"
+                                        className="mx-auto max-w-full"
+                                    >
+                                        <span className="truncate">
                                             {badgeName || badge.badgeId}
                                         </span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                side="bottom"
-                                className="w-80 gap-0 overflow-hidden p-0"
-                            >
-                                {badgeImageUrl ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="bg-muted/20 hover:bg-muted/30 h-auto w-full rounded-none p-3"
-                                        onClick={() =>
-                                            onOpenImagePreview?.({
-                                                url: badgeImageUrl,
-                                                title: badgeName
-                                            })
-                                        }
-                                    >
-                                        <img
-                                            src={badgeImageUrl}
-                                            alt={badge.badgeName || ''}
-                                            className={cn(
-                                                'max-h-52 w-full rounded-md object-contain',
-                                                !isBadgeVisible && 'grayscale'
-                                            )}
-                                        />
-                                    </Button>
-                                ) : (
-                                    <div className="bg-muted/20 flex min-h-24 items-center justify-center p-3">
-                                        <Badge
-                                            variant="outline"
-                                            className="mx-auto max-w-full"
-                                        >
-                                            <span className="truncate">
-                                                {badgeName || badge.badgeId}
-                                            </span>
-                                        </Badge>
-                                    </div>
-                                )}
-                                <div className="flex flex-col gap-3 p-3 text-sm">
-                                    <div className="flex min-w-0 items-start justify-between gap-3">
-                                        <div className="flex min-w-0 flex-col gap-1">
-                                            <div className="min-w-0 truncate font-medium">
-                                                {badgeName}
+                                    </Badge>
+                                </div>
+                            )}
+                            <div className="flex flex-col gap-3 p-3 text-sm">
+                                <div className="flex min-w-0 items-start justify-between gap-3">
+                                    <div className="flex min-w-0 flex-col gap-1">
+                                        <div className="min-w-0 truncate font-medium">
+                                            {badgeName}
+                                        </div>
+                                        {badge.badgeDescription ? (
+                                            <div className="text-muted-foreground text-xs leading-relaxed">
+                                                {badge.badgeDescription}
                                             </div>
-                                            {badge.badgeDescription ? (
-                                                <div className="text-muted-foreground text-xs leading-relaxed">
-                                                    {badge.badgeDescription}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                        <Badge
-                                            variant={
-                                                isBadgeVisible
-                                                    ? 'outline'
-                                                    : 'secondary'
-                                            }
-                                            className="shrink-0"
-                                        >
-                                            {isBadgeVisible
-                                                ? visibleLabel
-                                                : hiddenLabel}
-                                        </Badge>
+                                        ) : null}
                                     </div>
-                                    {badge.assignedAt ? (
-                                        <div className="text-muted-foreground flex min-w-0 items-center justify-between gap-2 text-xs">
-                                            <span>{assignedLabel}</span>
-                                            <span className="min-w-0 truncate text-right font-mono">
-                                                {formatStatsDate(
-                                                    badge.assignedAt
-                                                )}
-                                            </span>
-                                        </div>
-                                    ) : null}
-                                    {isCurrentUser ? (
-                                        <>
-                                            <Separator />
-                                            <ToggleGroup
-                                                type="single"
-                                                variant="outline"
-                                                size="sm"
-                                                spacing={1}
-                                                value={visibilityValue}
-                                                aria-label={visibilityLabel}
-                                                className="grid w-full grid-cols-2"
-                                                onValueChange={(
-                                                    nextValue: any
-                                                ) => {
-                                                    if (!nextValue) {
-                                                        return;
-                                                    }
+                                    <Badge
+                                        variant={
+                                            isBadgeVisible
+                                                ? 'outline'
+                                                : 'secondary'
+                                        }
+                                        className="shrink-0"
+                                    >
+                                        {isBadgeVisible
+                                            ? visibleLabel
+                                            : hiddenLabel}
+                                    </Badge>
+                                </div>
+                                {badge.assignedAt ? (
+                                    <div className="text-muted-foreground flex min-w-0 items-center justify-between gap-2 text-xs">
+                                        <span>{assignedLabel}</span>
+                                        <span className="min-w-0 truncate text-right font-mono">
+                                            {formatStatsDate(badge.assignedAt)}
+                                        </span>
+                                    </div>
+                                ) : null}
+                                {isCurrentUser ? (
+                                    <>
+                                        <Separator />
+                                        <ToggleGroup
+                                            type="single"
+                                            variant="outline"
+                                            size="sm"
+                                            spacing={1}
+                                            value={visibilityValue}
+                                            aria-label={visibilityLabel}
+                                            className="grid w-full grid-cols-2"
+                                            onValueChange={(nextValue: any) => {
+                                                if (!nextValue) {
+                                                    return;
+                                                }
 
-                                                    if (
-                                                        nextValue ===
-                                                        visibilityValue
-                                                    ) {
-                                                        return;
-                                                    }
+                                                if (
+                                                    nextValue ===
+                                                    visibilityValue
+                                                ) {
+                                                    return;
+                                                }
 
-                                                    if (
-                                                        nextValue === 'visible'
-                                                    ) {
-                                                        onToggleBadgeShowcased?.(
-                                                            badge,
-                                                            true
-                                                        );
-                                                        return;
-                                                    }
-
-                                                    onToggleBadgeVisibility?.(
+                                                if (nextValue === 'visible') {
+                                                    onToggleBadgeShowcased?.(
                                                         badge,
                                                         true
                                                     );
-                                                }}
+                                                    return;
+                                                }
+
+                                                onToggleBadgeVisibility?.(
+                                                    badge,
+                                                    true
+                                                );
+                                            }}
+                                        >
+                                            <ToggleGroupItem
+                                                value="visible"
+                                                aria-label={visibleLabel}
+                                                disabled={
+                                                    actionsDisabled ||
+                                                    !onToggleBadgeShowcased
+                                                }
+                                                className="min-w-0 justify-center"
                                             >
-                                                <ToggleGroupItem
-                                                    value="visible"
-                                                    aria-label={visibleLabel}
-                                                    disabled={
-                                                        actionsDisabled ||
-                                                        !onToggleBadgeShowcased
-                                                    }
-                                                    className="min-w-0 justify-center"
-                                                >
-                                                    <EyeIcon data-icon="inline-start" />
-                                                    <span className="truncate">
-                                                        {visibleLabel}
-                                                    </span>
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem
-                                                    value="hidden"
-                                                    aria-label={hiddenLabel}
-                                                    disabled={
-                                                        actionsDisabled ||
-                                                        !onToggleBadgeVisibility
-                                                    }
-                                                    className="min-w-0 justify-center"
-                                                >
-                                                    <EyeOffIcon data-icon="inline-start" />
-                                                    <span className="truncate">
-                                                        {hiddenLabel}
-                                                    </span>
-                                                </ToggleGroupItem>
-                                            </ToggleGroup>
-                                        </>
-                                    ) : null}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    );
-                })}
+                                                <EyeIcon data-icon="inline-start" />
+                                                <span className="truncate">
+                                                    {visibleLabel}
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem
+                                                value="hidden"
+                                                aria-label={hiddenLabel}
+                                                disabled={
+                                                    actionsDisabled ||
+                                                    !onToggleBadgeVisibility
+                                                }
+                                                className="min-w-0 justify-center"
+                                            >
+                                                <EyeOffIcon data-icon="inline-start" />
+                                                <span className="truncate">
+                                                    {hiddenLabel}
+                                                </span>
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </>
+                                ) : null}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                );
+            })}
         </>
     );
 }

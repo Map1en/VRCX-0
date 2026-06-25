@@ -12,8 +12,8 @@ import {
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { cn } from '@/lib/utils';
+import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -45,7 +45,6 @@ import {
     resolveMyAvatarActionDisabled,
     resolveMyAvatarTagBadgeStyle
 } from '../myAvatarsDisplay';
-
 import type {
     MyAvatarAction,
     MyAvatarActionHandler,
@@ -257,24 +256,26 @@ export function MyAvatarGridCard({
                                                     'dialog.avatar.info.tags'
                                                 )}
                                             >
-                                                {visibleTags.map((entry: any) => (
-                                                    <Badge
-                                                        key={`${avatar.id}:${entry.tag}`}
-                                                        variant="secondary"
-                                                        className={cn(
-                                                            MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                            'max-w-16 min-w-0 shrink truncate shadow-sm'
-                                                        )}
-                                                        style={{
-                                                            ...resolveMyAvatarGridTagBadgeStyle(
-                                                                entry
-                                                            ),
-                                                            fontSize: `${densityConfig.tagFontSize}px`
-                                                        }}
-                                                    >
-                                                        {entry.tag}
-                                                    </Badge>
-                                                ))}
+                                                {visibleTags.map(
+                                                    (entry: any) => (
+                                                        <Badge
+                                                            key={`${avatar.id}:${entry.tag}`}
+                                                            variant="secondary"
+                                                            className={cn(
+                                                                MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                                'max-w-16 min-w-0 shrink truncate shadow-sm'
+                                                            )}
+                                                            style={{
+                                                                ...resolveMyAvatarGridTagBadgeStyle(
+                                                                    entry
+                                                                ),
+                                                                fontSize: `${densityConfig.tagFontSize}px`
+                                                            }}
+                                                        >
+                                                            {entry.tag}
+                                                        </Badge>
+                                                    )
+                                                )}
                                                 {hiddenTagCount ? (
                                                     <Badge
                                                         variant="outline"
@@ -377,7 +378,9 @@ export function MyAvatarGridCard({
                                 onPointerDown={(event: any) =>
                                     event.stopPropagation()
                                 }
-                                onClick={(event: any) => event.stopPropagation()}
+                                onClick={(event: any) =>
+                                    event.stopPropagation()
+                                }
                             >
                                 {isUpdating ? (
                                     <Spinner data-icon="inline-start" />

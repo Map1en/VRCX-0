@@ -369,10 +369,9 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
                                                                         current: any
                                                                     ) => ({
                                                                         ...current,
-                                                                        [key]:
-                                                                            event
-                                                                                .target
-                                                                                .value
+                                                                        [key]: event
+                                                                            .target
+                                                                            .value
                                                                     })
                                                                 )
                                                             }
@@ -411,10 +410,9 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
                                                                     current: any
                                                                 ) => ({
                                                                     ...current,
-                                                                    [key]:
-                                                                        event
-                                                                            .target
-                                                                            .value
+                                                                    [key]: event
+                                                                        .target
+                                                                        .value
                                                                 })
                                                             )
                                                         }

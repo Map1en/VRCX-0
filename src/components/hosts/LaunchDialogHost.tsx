@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog';
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
+import { copyTextToClipboard } from '@/services/entityMediaService';
 import {
     attachRunningVrchat,
     launchVrchat,
@@ -14,6 +14,7 @@ import {
 } from '@/services/launchService';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 import { useLaunchStore } from '@/state/launchStore';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -74,12 +75,6 @@ function normalizeInstanceLaunchToken(instance: any) {
             instance?.shortName ||
             instance?.instance?.shortName
     );
-}
-
-function normalizeString(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function canInviteCreatedInstance(instance: any, currentUserId: any) {

@@ -1,11 +1,11 @@
 import { toast } from 'sonner';
 
 import authRepository from '@/repositories/authRepository';
-import webRepository from '@/repositories/webRepository';
 import {
     isVrchatSessionRecoveryError,
     setVrchatAuthFailureHandler
 } from '@/repositories/vrchatRequest';
+import webRepository from '@/repositories/webRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 

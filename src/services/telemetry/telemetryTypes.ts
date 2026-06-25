@@ -1,5 +1,16 @@
 import type { BackendRuntimeMode } from '@/platform/tauri/bindings';
 
+import type {
+    TELEMETRY_CONFIG_FIELDS,
+    TelemetryPageRouteKey,
+    TelemetryViewModeDimension
+} from './telemetryContract';
+
+export type {
+    TelemetryPageRouteKey,
+    TelemetryViewModeDimension
+} from './telemetryContract';
+
 export type TelemetryRuntimeMode = BackendRuntimeMode;
 
 export type TelemetryContextPayload = {
@@ -44,15 +55,24 @@ export type TelemetryConfigSnapshot = {
     themeMode: string;
 };
 
+type TelemetryConfigContractField =
+    | (typeof TELEMETRY_CONFIG_FIELDS.booleanFields)[number]
+    | (typeof TELEMETRY_CONFIG_FIELDS.optionalBooleanFields)[number]
+    | (typeof TELEMETRY_CONFIG_FIELDS.enumFields)[number];
+
+type Assert<T extends true> = T;
+type _TelemetryConfigContractFieldsAreSnapshotKeys = Assert<
+    Exclude<
+        TelemetryConfigContractField,
+        keyof TelemetryConfigSnapshot
+    > extends never
+        ? true
+        : false
+>;
+
 export type TelemetryConfigSnapshotPayload = TelemetryContextPayload & {
     config: TelemetryConfigSnapshot;
 };
-
-export type TelemetryViewModeDimension =
-    | 'gameLogViewMode'
-    | 'myAvatarsViewMode'
-    | 'feedViewMode'
-    | 'feedTimeDisplayMode';
 
 export type TelemetryViewModeUsageEntry = {
     dimension: TelemetryViewModeDimension;
@@ -63,30 +83,6 @@ export type TelemetryViewModeUsageEntry = {
 export type TelemetryViewModeUsagePayload = TelemetryContextPayload & {
     modes: TelemetryViewModeUsageEntry[];
 };
-
-export type TelemetryPageRouteKey =
-    | 'friends_locations'
-    | 'game_log'
-    | 'instance_history'
-    | 'player_list'
-    | 'search'
-    | 'dashboard'
-    | 'favorites_friends'
-    | 'favorites_worlds'
-    | 'favorites_avatars'
-    | 'friend_log'
-    | 'moderation'
-    | 'my_avatars'
-    | 'notification'
-    | 'friend_list'
-    | 'charts_mutual'
-    | 'tools'
-    | 'gallery'
-    | 'inventory'
-    | 'screenshot_metadata'
-    | 'vrchat_log'
-    | 'themes'
-    | 'settings';
 
 export type TelemetryRouteErrorClass = 'load_fail' | 'render_crash';
 

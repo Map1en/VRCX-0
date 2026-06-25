@@ -1,5 +1,4 @@
 import type { Dispatch, SetStateAction } from 'react';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 type ViewportMetrics = Readonly<{
@@ -34,7 +33,7 @@ function updateMetricsIfChanged(
     setViewportMetrics: Dispatch<SetStateAction<ViewportMetrics>>,
     nextMetrics: ViewportMetrics
 ) {
-    setViewportMetrics((current: any) =>
+    setViewportMetrics((current: ViewportMetrics) =>
         current.scrollTop === nextMetrics.scrollTop &&
         current.viewportHeight === nextMetrics.viewportHeight &&
         current.width === nextMetrics.width
@@ -48,9 +47,10 @@ export function useScrollViewportMetrics({
 }: UseScrollViewportMetricsOptions = {}) {
     const viewportRef = useRef<HTMLElement | null>(null);
     const pendingScrollTopRef = useRef<number | null>(null);
-    const [viewportElement, setViewportElement] =
-        useState<HTMLElement | null>(null);
-    const [viewportMetrics, setViewportMetrics] = useState(
+    const [viewportElement, setViewportElement] = useState<HTMLElement | null>(
+        null
+    );
+    const [viewportMetrics, setViewportMetrics] = useState<ViewportMetrics>(
         EMPTY_VIEWPORT_METRICS
     );
 
@@ -67,7 +67,7 @@ export function useScrollViewportMetrics({
             node.scrollTop = 0;
         }
 
-        setViewportMetrics((current: any) =>
+        setViewportMetrics((current: ViewportMetrics) =>
             current.scrollTop === 0
                 ? current
                 : {
@@ -85,7 +85,7 @@ export function useScrollViewportMetrics({
             node.scrollTop = nextScrollTop;
         }
 
-        setViewportMetrics((current: any) =>
+        setViewportMetrics((current: ViewportMetrics) =>
             current.scrollTop === nextScrollTop
                 ? current
                 : {

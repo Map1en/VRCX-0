@@ -10,7 +10,10 @@ export function normalizeFavoriteEntityId(value: any) {
         : String(value ?? '').trim();
 }
 
-export function resolveCurrentInviteLocation(gameState: any, currentUserSnapshot: any) {
+export function resolveCurrentInviteLocation(
+    gameState: any,
+    currentUserSnapshot: any
+) {
     const currentLocation = normalizeFavoriteEntityId(
         gameState?.currentLocation
     );

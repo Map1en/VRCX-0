@@ -18,7 +18,12 @@ export const MUTUAL_GRAPH_PICKER_RESULT_LIMIT = 120;
 export const MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY =
     'VRCX_MutualGraphExcludedFriends';
 
-export function clampMutualGraphNumber(value: any, min: any, max: any, fallback: any) {
+export function clampMutualGraphNumber(
+    value: any,
+    min: any,
+    max: any,
+    fallback: any
+) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
         return fallback;

@@ -1,23 +1,18 @@
 import { toast } from 'sonner';
 
+import { assetBundleRepository } from '@/repositories/assetBundleRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import {
     readFileAsBase64,
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload';
 
-import {
-    avatarGalleryImageUrl,
-    resolveAssetBundleArgs
-} from './avatarAssets';
+import { avatarGalleryImageUrl, resolveAssetBundleArgs } from './avatarAssets';
 import { readAvatarCacheInfo } from './avatarCacheAdapter';
-import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
-import { assetBundleRepository } from '@/repositories/assetBundleRepository';
-
-
 
 function normalizeEntityId(value: any) {
     return typeof value === 'string'
@@ -126,19 +121,16 @@ export function createAvatarImageUploadActions({
             );
             setAvatar(currentAvatar);
             setDetail(
-                t(
-                    'dialog.avatar.dynamic.avatar_image_updated_for_value',
-                    { value: selectedAvatar.name || avatarId }
-                )
+                t('dialog.avatar.dynamic.avatar_image_updated_for_value', {
+                    value: selectedAvatar.name || avatarId
+                })
             );
             toast.success(t('dialog.avatar.success.avatar_image_updated'));
         } catch (error) {
             const message =
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_upload_avatar_image'
-                      );
+                    : t('dialog.avatar.toast.failed_to_upload_avatar_image');
             setDetail(message);
             toast.error(message);
         } finally {
@@ -190,7 +182,7 @@ export function createAvatarCacheActions({
         }
         const configResponse = await vrchatAuthRepository
             .getConfig({ endpoint: currentEndpoint })
-            .catch(() => null);
+            .catch((): null => null);
         const args = resolveAssetBundleArgs(
             avatar,
             String(configResponse?.json?.sdkUnityVersion || '')
@@ -220,9 +212,7 @@ export function createAvatarCacheActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_delete_avatar_cache'
-                      )
+                    : t('dialog.avatar.toast.failed_to_delete_avatar_cache')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -266,12 +256,8 @@ export function createAvatarGalleryUploadActions({
         if (!validation.ok) {
             toast.error(
                 validation.reason === 'too_large'
-                    ? t(
-                          'dialog.avatar.toast.selected_file_is_too_large'
-                      )
-                    : t(
-                          'dialog.avatar.toast.selected_file_is_not_an_image'
-                      )
+                    ? t('dialog.avatar.toast.selected_file_is_too_large')
+                    : t('dialog.avatar.toast.selected_file_is_not_an_image')
             );
             return;
         }

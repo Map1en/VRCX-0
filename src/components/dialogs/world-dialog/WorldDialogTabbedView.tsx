@@ -2,13 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import {
-    convertFileUrlToImageUrl,
-    copyTextToClipboard,
-    openExternalLink
-} from '@/services/entityMediaService';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
-import { formatDateFilter } from '@/lib/dateTime';
 import mediaRepository from '@/repositories/mediaRepository';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -18,6 +12,11 @@ import {
     recordGameRuntimePresence,
     recordLocationHintsFromInstances
 } from '@/services/domainIngestionService';
+import {
+    convertFileUrlToImageUrl,
+    copyTextToClipboard,
+    openExternalLink
+} from '@/services/entityMediaService';
 import { parseLocation } from '@/shared/utils/locationParser';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 
@@ -38,13 +37,6 @@ import {
     resolveLaunchLocation,
     sameLocationTag
 } from './WorldDialogViewParts';
-function formatDate(value: any) {
-    if (!value) {
-        return '';
-    }
-    const formatted = formatDateFilter(value, 'long');
-    return formatted === '-' ? String(value) : formatted;
-}
 
 let lastWorldDialogTab = 'instances';
 
@@ -127,8 +119,8 @@ const visibleWorldFeatureTags = [
 
 function visibleWorldTags(world: any, t: any) {
     const tags = Array.isArray(world?.tags) ? world.tags : [];
-    const entries = [];
-    const seen = new Set();
+    const entries: Array<{ key: string; label: string }> = [];
+    const seen = new Set<string>();
     const pushTag = (key: any, label: any) => {
         if (!key || seen.has(key)) {
             return;
@@ -518,7 +510,7 @@ export function WorldDialogTabbedView({
                         location: target.location,
                         instance: response.json
                     }))
-                    .catch(() => null)
+                    .catch((): null => null)
             )
         ).then((entries: any) => {
             if (!active) {
@@ -582,7 +574,7 @@ export function WorldDialogTabbedView({
                         includeRoles: false
                     })
                     .then((groupProfile: any) => [groupId, groupProfile])
-                    .catch(() => null)
+                    .catch((): null => null)
             )
         ).then((entries: any) => {
             if (!active) {
@@ -645,14 +637,14 @@ export function WorldDialogTabbedView({
                     endpoint: currentEndpoint
                 })
                 .then((response: any) => response.json)
-                .catch(() => null),
+                .catch((): null => null),
             isCurrentLiveInstance
                 ? playerListPersistenceRepository
                       .getCurrentInstanceSnapshot({
                           currentUserId,
                           currentLocation: normalizedWorldId
                       })
-                      .catch(() => null)
+                      .catch((): null => null)
                 : Promise.resolve(null)
         ])
             .then(async ([instance, playerSnapshot]: any) => {
@@ -929,7 +921,6 @@ export function WorldDialogTabbedView({
                 <WorldDialogTabPanels
                     tabModel={tabModel}
                     tabCommands={tabCommands}
-                    formatDate={formatDate}
                 />
             </EntityDialogTwoColumnLayout>
         </EntityDialogScaffold>

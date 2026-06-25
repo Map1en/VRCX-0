@@ -76,7 +76,7 @@ function FeedLocationLink({
                         : undefined
                 }
                 className={cn(
-                    'text-foreground max-w-full text-sm [&_button:hover]:text-foreground',
+                    'text-foreground [&_button:hover]:text-foreground max-w-full text-sm',
                     className
                 )}
             />

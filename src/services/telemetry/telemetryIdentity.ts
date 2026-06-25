@@ -34,7 +34,10 @@ export async function getOrCreateTelemetryInstallIdentity(): Promise<TelemetryIn
     }
 
     const installId = createRandomId();
-    await configRepository.setString(TELEMETRY_INSTALL_ID_CONFIG_KEY, installId);
+    await configRepository.setString(
+        TELEMETRY_INSTALL_ID_CONFIG_KEY,
+        installId
+    );
     return { installId, isNewInstall: true };
 }
 

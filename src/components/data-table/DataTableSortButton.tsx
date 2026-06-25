@@ -1,8 +1,4 @@
-import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon
-} from 'lucide-react';
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';

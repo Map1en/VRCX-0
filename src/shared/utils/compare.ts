@@ -1,7 +1,53 @@
 import { sortStatus } from './friendStatus';
 
-type ComparableRecord = Record<string, any>;
+type ComparableFieldValue = string | number | undefined;
+
+type ComparableRef = Record<string, ComparableFieldValue> & {
+    $online_for?: ComparableFieldValue;
+    last_activity?: ComparableFieldValue;
+    last_login?: ComparableFieldValue;
+    location?: string;
+    state?: string;
+    status?: string;
+};
+
+type ComparableRecord = Record<string, unknown> & {
+    $friendNumber?: number;
+    $lastSeen?: ComparableFieldValue;
+    $location_at?: ComparableFieldValue;
+    $online_for?: ComparableFieldValue;
+    created_at?: string;
+    displayName?: string;
+    id?: string;
+    last_activity?: ComparableFieldValue;
+    last_login?: ComparableFieldValue;
+    location?: string;
+    memberCount?: number;
+    name?: string;
+    ref?: ComparableRef;
+    state?: string;
+    updated_at?: string;
+};
 type Comparator = (a: ComparableRecord, b: ComparableRecord) => number;
+
+// Mirrors JS `<` semantics for possibly-undefined operands: any comparison
+// involving `undefined` is false, so it ranks the value as "not lower".
+function isLessThan(a: ComparableFieldValue, b: ComparableFieldValue): boolean {
+    if (a === undefined || b === undefined) {
+        return false;
+    }
+    return a < b;
+}
+
+function isGreaterThan(
+    a: ComparableFieldValue,
+    b: ComparableFieldValue
+): boolean {
+    if (a === undefined || b === undefined) {
+        return false;
+    }
+    return a > b;
+}
 
 /**
  *
@@ -47,6 +93,9 @@ function compareByCreatedAtAscending(
     a: ComparableRecord,
     b: ComparableRecord
 ): number {
+    if (typeof a.created_at !== 'string' || typeof b.created_at !== 'string') {
+        return 0;
+    }
     const A = a.created_at;
     const B = b.created_at;
     if (A < B) {
@@ -166,7 +215,7 @@ function compareByStatus(a: ComparableRecord, b: ComparableRecord): number {
     if (a.ref.state === 'offline') {
         return 1;
     }
-    return sortStatus(a.ref.status, b.ref.status);
+    return sortStatus(a.ref.status ?? '', b.ref.status ?? '');
 }
 
 /**
@@ -196,11 +245,11 @@ function compareByLastActiveRef(
 ): number {
     if (a.state === 'online' && b.state === 'online') {
         if (a.$online_for && b.$online_for && a.$online_for === b.$online_for) {
-            return a.last_login < b.last_login ? 1 : -1;
+            return isLessThan(a.last_login, b.last_login) ? 1 : -1;
         }
-        return a.$online_for < b.$online_for ? 1 : -1;
+        return isLessThan(a.$online_for, b.$online_for) ? 1 : -1;
     }
-    return a.last_activity < b.last_activity ? 1 : -1;
+    return isLessThan(a.last_activity, b.last_activity) ? 1 : -1;
 }
 
 /**
@@ -232,13 +281,13 @@ function compareByActivityField(
     // When the field is just and empty string, it means they've been
     // in whatever active state for the longest
     if (
-        a.ref[field] < b.ref[field] ||
+        isLessThan(a.ref[field], b.ref[field]) ||
         (a.ref[field] !== '' && b.ref[field] === '')
     ) {
         return 1;
     }
     if (
-        a.ref[field] > b.ref[field] ||
+        isGreaterThan(a.ref[field], b.ref[field]) ||
         (a.ref[field] === '' && b.ref[field] !== '')
     ) {
         return -1;
@@ -262,10 +311,10 @@ function compareByLocationAt(a: ComparableRecord, b: ComparableRecord): number {
     if (b.location === 'traveling') {
         return -1;
     }
-    if (a.$location_at < b.$location_at) {
+    if (isLessThan(a.$location_at, b.$location_at)) {
         return -1;
     }
-    if (a.$location_at > b.$location_at) {
+    if (isGreaterThan(a.$location_at, b.$location_at)) {
         return 1;
     }
     return 0;
@@ -285,7 +334,7 @@ function compareByLocation(a: ComparableRecord, b: ComparableRecord): number {
         return 0;
     }
 
-    return a.ref.location.localeCompare(b.ref.location);
+    return (a.ref.location ?? '').localeCompare(b.ref.location ?? '');
 }
 
 /**
@@ -301,7 +350,7 @@ function compareByFriendOrder(
     if (typeof a === 'undefined' || typeof b === 'undefined') {
         return 0;
     }
-    return b.$friendNumber - a.$friendNumber;
+    return (b.$friendNumber ?? NaN) - (a.$friendNumber ?? NaN);
 }
 
 export {

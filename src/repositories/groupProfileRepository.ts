@@ -1,11 +1,11 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
-import { replaceBioSymbols } from '@/shared/utils/string';
+import { commands } from '@/platform/tauri/bindings';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
     createRequestError,
@@ -216,7 +216,7 @@ function normalizeGroupRoles(values: unknown): GroupRecord[] {
 function normalizeGroupProfile(
     group: GroupRecord | null | undefined
 ): GroupProfileRecord {
-    const base = createDefaultGroupRef(group ?? {}) as GroupRecord;
+    const base = createDefaultGroupRef(group ?? {});
     const owner = isRecord(base.owner) ? base.owner : {};
     const shortCode = normalizeString(base.shortCode);
     const discriminator = normalizeString(base.discriminator);
@@ -261,7 +261,7 @@ function normalizeGroupProfile(
         tags: normalizeArray(base.tags),
         roles: normalizeGroupRoles(base.roles),
         url: groupUrl
-    } as GroupProfileRecord;
+    };
 }
 
 function responseRows(json: unknown, key = ''): unknown[] {
@@ -278,7 +278,10 @@ function responseRows(json: unknown, key = ''): unknown[] {
 
 async function collectPages(
     fetchPage: (page: PageRequest) => Promise<unknown[]>,
-    { pageSize = 100, maxPages = Number.POSITIVE_INFINITY }: CollectPagesOptions = {}
+    {
+        pageSize = 100,
+        maxPages = Number.POSITIVE_INFINITY
+    }: CollectPagesOptions = {}
 ) {
     const rows: unknown[] = [];
 
@@ -366,11 +369,11 @@ async function getUserGroups({
         );
     }
 
-    const rows = await fetchCachedData({
+    const rows = await fetchCachedData<GroupRecord[]>({
         queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
-            const response = unwrapVrchatGroupResponse(
+            const response = unwrapVrchatGroupResponse<GroupRecord[]>(
                 await commands.appVrchatGroupUserGroupsGet({
                     userId: normalizedUserId,
                     endpoint
@@ -956,7 +959,7 @@ async function getGroupAuditLogTypes({ groupId, endpoint = '' }: GroupIdInput) {
         );
     }
 
-    const response = unwrapVrchatGroupResponse(
+    const response = unwrapVrchatGroupResponse<unknown[]>(
         await commands.appVrchatGroupAuditLogTypesGet({
             groupId: normalizedGroupId,
             endpoint
@@ -991,9 +994,7 @@ async function getGroupLogs({
             n,
             offset,
             eventTypes:
-                typeof params.eventTypes === 'string'
-                    ? params.eventTypes
-                    : '',
+                typeof params.eventTypes === 'string' ? params.eventTypes : '',
             endpoint
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/auditLogs`

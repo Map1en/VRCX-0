@@ -46,7 +46,9 @@ describe('mutualFriendsGraphData', () => {
             ['usr_b', 'ben_user', 1],
             ['usr_c', 'Cora', 1]
         ]);
-        expect(graph.nodes.find((node: any) => node.id === 'usr_c')).toMatchObject({
+        expect(
+            graph.nodes.find((node: any) => node.id === 'usr_c')
+        ).toMatchObject({
             lastFetchedAt: '2026-04-01T00:00:00.000Z',
             optedOut: true
         });
@@ -63,7 +65,10 @@ describe('mutualFriendsGraphData', () => {
             ['usr_c']
         );
 
-        expect(graph.nodes.map((node: any) => node.id)).toEqual(['usr_a', 'usr_b']);
+        expect(graph.nodes.map((node: any) => node.id)).toEqual([
+            'usr_a',
+            'usr_b'
+        ]);
         expect(graph.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
     });
 

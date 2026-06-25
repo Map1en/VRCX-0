@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { userStatusLabel } from '@/shared/utils/userStatus';
 import { cn } from '@/lib/utils';
+import { userStatusLabel } from '@/shared/utils/userStatus';
 import {
     Empty,
     EmptyDescription,

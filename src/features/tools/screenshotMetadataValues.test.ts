@@ -6,10 +6,15 @@ import {
     formatScreenshotBytes,
     formatScreenshotDateTime,
     getDroppedScreenshotPath,
+    getGalleryFolderPathSet,
     getFileNameFromPath,
+    normalizeGalleryScrollPositions,
+    normalizeGalleryScrollTop,
     normalizeDroppedFilePath,
     normalizeScreenshotMetadata,
+    resolveGalleryFolder,
     SCREENSHOT_METADATA_SEARCH_TYPES,
+    serializeGalleryScrollPositions,
     sortScreenshotRowsByNewest,
     sortScreenshotSearchRows
 } from './screenshotMetadataValues';
@@ -72,7 +77,7 @@ describe('screenshotMetadataValues', () => {
             author: { id: 'usr_author', displayName: 'Author' },
             players: [{ id: 'usr_ava', displayName: 'Ava' }]
         });
-        expect(metadata.dateTime.toISOString()).toBe(
+        expect(metadata.dateTime!.toISOString()).toBe(
             '2026-04-16T01:02:03.000Z'
         );
     });
@@ -90,9 +95,9 @@ describe('screenshotMetadataValues', () => {
             'VRChat_2026-04-15_22-10-05.123_1920x1080.png'
         );
         expect(metadata.dateTime).toBeInstanceOf(Date);
-        expect(metadata.dateTime.getFullYear()).toBe(2026);
-        expect(metadata.dateTime.getMonth()).toBe(3);
-        expect(metadata.dateTime.getDate()).toBe(15);
+        expect(metadata.dateTime!.getFullYear()).toBe(2026);
+        expect(metadata.dateTime!.getMonth()).toBe(3);
+        expect(metadata.dateTime!.getDate()).toBe(15);
     });
 
     it('builds search rows with visible match text for player name and id searches', () => {
@@ -181,5 +186,52 @@ describe('screenshotMetadataValues', () => {
         expect(formatScreenshotBytes(1536)).toBe('1.5 KB');
         expect(formatScreenshotDateTime(null)).toBe('—');
         expect(formatScreenshotDateTime('invalid')).toBe('—');
+    });
+
+    it('normalizes gallery scroll positions for persistence', () => {
+        expect(normalizeGalleryScrollTop(-12)).toBe(0);
+        expect(normalizeGalleryScrollTop(12.6)).toBe(13);
+        expect(normalizeGalleryScrollTop(Number.POSITIVE_INFINITY)).toBe(0);
+
+        const positions = normalizeGalleryScrollPositions({
+            'D:\\A': 12.2,
+            'D:\\B': -10,
+            '': 99
+        });
+
+        expect(Array.from(positions.entries())).toEqual([
+            ['D:\\A', 12],
+            ['D:\\B', 0]
+        ]);
+        expect(
+            serializeGalleryScrollPositions(
+                new Map([
+                    ['', 1],
+                    ['D:\\A', 4.7]
+                ])
+            )
+        ).toEqual({ 'D:\\A': 5 });
+    });
+
+    it('resolves gallery folders from preferences, latest folders, and root fallback', () => {
+        const folderTree = {
+            rootPath: 'D:\\Root',
+            folders: [
+                { path: 'D:\\Old', imageCount: 2, latestModifiedAt: 10 },
+                { path: 'D:\\New', imageCount: 1, latestModifiedAt: 20 },
+                { path: 'D:\\Empty', imageCount: 0, latestModifiedAt: 99 }
+            ]
+        };
+
+        expect(
+            resolveGalleryFolder(folderTree, ['D:\\Missing', 'D:\\Old'])
+        ).toBe('D:\\Old');
+        expect(resolveGalleryFolder(folderTree, '')).toBe('D:\\New');
+        expect(getGalleryFolderPathSet(folderTree)).toEqual(
+            new Set(['D:\\Old', 'D:\\New', 'D:\\Empty'])
+        );
+        expect(
+            resolveGalleryFolder({ rootPath: 'D:\\Root', folders: [] }, '')
+        ).toBe('D:\\Root');
     });
 });

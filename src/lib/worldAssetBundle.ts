@@ -1,3 +1,4 @@
+import { assetBundleRepository } from '@/repositories/assetBundleRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import {
@@ -5,17 +6,15 @@ import {
     extractFileVersion,
     extractVariantVersion
 } from '@/shared/utils/fileUtils';
-import { assetBundleRepository } from '@/repositories/assetBundleRepository';
 
-
-type UnityPackage = Record<string, any> & {
+type UnityPackage = Record<string, unknown> & {
     assetUrl?: string;
     platform?: string;
     unitySortNumber?: string | number;
     variant?: string;
 };
 
-type WorldRecord = Record<string, any> & {
+type WorldRecord = Record<string, unknown> & {
     assetUrl?: string;
     unityPackages?: unknown;
 };
@@ -43,6 +42,10 @@ type CacheInfoTuple = Record<string, unknown> & {
     item3?: unknown;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 export function defaultWorldCacheInfo(): WorldCacheInfo {
     return {
         inCache: false,
@@ -54,15 +57,12 @@ export function defaultWorldCacheInfo(): WorldCacheInfo {
 
 function isWorldCacheCandidatePackage(
     unityPackage: unknown,
-    sdkUnityVersion: any = ''
+    sdkUnityVersion: unknown = ''
 ): unityPackage is UnityPackage {
-    if (
-        !unityPackage ||
-        (typeof unityPackage !== 'object' && typeof unityPackage !== 'function')
-    ) {
+    if (!isRecord(unityPackage)) {
         return false;
     }
-    const source = unityPackage as UnityPackage;
+    const source = unityPackage;
     if (source.platform !== 'standalonewindows') {
         return false;
     }
@@ -76,7 +76,10 @@ function isWorldCacheCandidatePackage(
     if (
         sdkUnityVersion &&
         source.unitySortNumber &&
-        !compareUnityVersion(source.unitySortNumber as string, sdkUnityVersion)
+        !compareUnityVersion(
+            String(source.unitySortNumber),
+            String(sdkUnityVersion)
+        )
     ) {
         return false;
     }
@@ -85,7 +88,7 @@ function isWorldCacheCandidatePackage(
 
 export function resolveWorldAssetBundleArgs(
     world: WorldRecord | null | undefined,
-    sdkUnityVersion: any = ''
+    sdkUnityVersion: unknown = ''
 ): WorldAssetBundleArgs | null {
     const unityPackages = Array.isArray(world?.unityPackages)
         ? world.unityPackages
@@ -101,7 +104,7 @@ export function resolveWorldAssetBundleArgs(
     if (!selectedPackage && sdkUnityVersion) {
         return resolveWorldAssetBundleArgs(world, '');
     }
-    const assetUrl = selectedPackage?.assetUrl || world?.assetUrl || '';
+    const assetUrl = String(selectedPackage?.assetUrl || world?.assetUrl || '');
     const fileId = extractFileId(assetUrl);
     const fileVersion = Number.parseInt(extractFileVersion(assetUrl), 10);
     const variant =
@@ -123,14 +126,18 @@ export function resolveWorldAssetBundleArgs(
 
 export async function readWorldCacheInfo(
     world: WorldRecord | null | undefined,
-    endpoint: any = '',
+    endpoint: unknown = '',
     sdkUnityVersion?: string
 ): Promise<WorldCacheInfo> {
     let resolvedSdkUnityVersion = sdkUnityVersion;
     if (typeof resolvedSdkUnityVersion !== 'string') {
         const configResponse = await vrchatAuthRepository
-            .getConfig({ endpoint })
-            .catch(() => null);
+            .getConfig({ endpoint: String(endpoint ?? '') })
+            .catch(
+                (): Awaited<
+                    ReturnType<typeof vrchatAuthRepository.getConfig>
+                > | null => null
+            );
         resolvedSdkUnityVersion = String(
             configResponse?.json?.sdkUnityVersion || ''
         );

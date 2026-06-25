@@ -6,7 +6,6 @@ import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
 
 import { bootstrapActivityCache } from './activityCacheService';
 import { startRuntimeAuthFailureRecovery } from './authSessionRecoveryService';
-import { bindRuntimeEvents } from './runtimeEventBridgeService';
 import { bootstrapFavorites } from './favoriteBootstrapService';
 import { bootstrapFriendRoster } from './friendBootstrapService';
 import { startRuntimeGameClientSync } from './gameClientLifecycle';
@@ -16,6 +15,7 @@ import {
     startRealtimeTransport,
     stopRealtimeTransport
 } from './realtimeTransportService';
+import { bindRuntimeEvents } from './runtimeEventBridgeService';
 import { initializeReactRuntime } from './startupService';
 import { syncStartupServicesTask } from './startupServicesStatus';
 import { applyThemeMode } from './themeService';
@@ -117,10 +117,10 @@ function isBackendRuntimeOwningRealtime(
     return Boolean(
         isRecord(snapshot) &&
         snapshot?.phase === 'running' &&
-            snapshot?.authStatus === 'authenticated' &&
-            snapshot?.authUserId === context?.userId &&
-            snapshot?.wsStatus !== 'authFailure' &&
-            snapshot?.mode === 'background'
+        snapshot?.authStatus === 'authenticated' &&
+        snapshot?.authUserId === context?.userId &&
+        snapshot?.wsStatus !== 'authFailure' &&
+        snapshot?.mode === 'background'
     );
 }
 
@@ -200,7 +200,10 @@ export function startReactRuntimeServices() {
 }
 
 export function startThemeModeSync() {
-    const syncThemeMode = (themeMode: ShellState['themeMode'], title: string) => {
+    const syncThemeMode = (
+        themeMode: ShellState['themeMode'],
+        title: string
+    ) => {
         applyThemeMode(themeMode).catch((error: unknown) => {
             pushRuntimeNotification({
                 level: 'warning',
@@ -312,10 +315,7 @@ export function startAuthenticatedRuntimeServices() {
         stopRealtimeTransport({ updateStatus: false });
     };
 
-    const isActiveRun = (
-        runId: number,
-        context: AuthenticatedRuntimeContext
-    ) =>
+    const isActiveRun = (runId: number, context: AuthenticatedRuntimeContext) =>
         !disposed &&
         activeRunId === runId &&
         isCurrentAuthenticatedContext(context);
@@ -509,7 +509,9 @@ export function startAuthenticatedRuntimeServices() {
                 useSessionStore
                     .getState()
                     .setTransportStatus('pipeline-connected');
-                syncStartupServicesTask(['Backend realtime transport is active.']);
+                syncStartupServicesTask([
+                    'Backend realtime transport is active.'
+                ]);
             }
             return;
         }

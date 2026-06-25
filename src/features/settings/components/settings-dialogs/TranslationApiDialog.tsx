@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
-import { openExternalLink } from '@/services/entityMediaService';
 import { getLanguageName, languageCodes } from '@/localization/index';
+import { openExternalLink } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,

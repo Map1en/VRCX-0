@@ -5,7 +5,11 @@ import { Card } from '@/ui/shadcn/card';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-export function UserDialogEmptyState({ title, description, loading = false }: any) {
+export function UserDialogEmptyState({
+    title,
+    description,
+    loading = false
+}: any) {
     return (
         <AppEmptyState
             className="min-h-56"

@@ -5,13 +5,18 @@ import { toast } from 'sonner';
 import avatarCacheRepository from '@/repositories/avatarCacheRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
-import { clearFavoriteRemoteDetailsCache } from '@/services/favoriteRemoteDetailsCacheService';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
+import { clearFavoriteRemoteDetailsCache } from '@/services/favoriteRemoteDetailsCacheService';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 
 import { favoriteGroupType } from './favoritesItems';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteGroup,
+    FavoriteItem,
+    FavoriteKind,
+    FavoriteSource
+} from './favoritesTypes';
 
 export function useFavoritesCollectionActions({
     allItems,
@@ -31,18 +36,20 @@ export function useFavoritesCollectionActions({
     setRemovingFavoriteKey,
     setSelectedGroupKey
 }: {
-    allItems: any[];
+    allItems: FavoriteItem[];
     currentEndpoint: string;
     currentUserId: string;
     currentUserSnapshot: any;
     kind: FavoriteKind;
-    localGroups: any[];
+    localGroups: FavoriteGroup[];
     refreshRemoteDetails(): void;
     refreshing: boolean;
     removingFavoriteKeyRef: MutableRefObject<string>;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setAvatarHistory(value: any[] | ((current: any[]) => any[])): void;
+    setAvatarHistory(
+        value: unknown[] | ((current: unknown[]) => unknown[])
+    ): void;
     setExportDialogOpen(value: boolean): void;
     setRefreshing(value: boolean): void;
     setRemovingFavoriteKey(value: string | ((current: string) => string)): void;
@@ -97,8 +104,8 @@ export function useFavoritesCollectionActions({
     };
 
     const handleRemoveLocalFavorite = async (
-        item: any,
-        { silent = false }: any = {}
+        item: FavoriteItem,
+        { silent = false }: { silent?: boolean } = {}
     ) => {
         if (
             !item ||
@@ -145,7 +152,9 @@ export function useFavoritesCollectionActions({
                 groupName: item.groupKey
             });
             if (!silent) {
-                toast.success(t('view.favorite.success.local_favorite_removed'));
+                toast.success(
+                    t('view.favorite.success.local_favorite_removed')
+                );
             }
             return true;
         } catch (error) {
@@ -155,15 +164,13 @@ export function useFavoritesCollectionActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_remove_local_favorite'
-                      )
+                    : t('view.favorites.toast.failed_to_remove_local_favorite')
             );
             return false;
         } finally {
             if (!silent) {
                 removingFavoriteKeyRef.current = '';
-                setRemovingFavoriteKey((currentKey: any) =>
+                setRemovingFavoriteKey((currentKey) =>
                     currentKey === item.key ? '' : currentKey
                 );
             }
@@ -171,8 +178,8 @@ export function useFavoritesCollectionActions({
     };
 
     const handleRemoveRemoteFavorite = async (
-        item: any,
-        { silent = false }: any = {}
+        item: FavoriteItem,
+        { silent = false }: { silent?: boolean } = {}
     ) => {
         if (
             !item ||
@@ -214,7 +221,9 @@ export function useFavoritesCollectionActions({
             });
             removeRemoteFavorite(item.id);
             if (!silent) {
-                toast.success(t('view.favorite.success.vrchat_favorite_removed'));
+                toast.success(
+                    t('view.favorite.success.vrchat_favorite_removed')
+                );
             }
             return true;
         } catch (error) {
@@ -224,9 +233,7 @@ export function useFavoritesCollectionActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_remove_vrchat_favorite'
-                      )
+                    : t('view.favorites.toast.failed_to_remove_vrchat_favorite')
             );
             return false;
         } finally {
@@ -241,7 +248,9 @@ export function useFavoritesCollectionActions({
 
     async function exportCurrentFavorites() {
         if (!allItems.length) {
-            toast.error(t('view.favorite.empty.no_favorites_available_to_export'));
+            toast.error(
+                t('view.favorite.empty.no_favorites_available_to_export')
+            );
             return;
         }
         setExportDialogOpen(true);
@@ -278,9 +287,7 @@ export function useFavoritesCollectionActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_rename_favorite_group'
-                      )
+                    : t('view.favorites.toast.failed_to_rename_favorite_group')
             );
         }
     }
@@ -344,7 +351,9 @@ export function useFavoritesCollectionActions({
     async function handleLocalGroupRename(group: any) {
         const result = await prompt({
             title: t('view.favorites.modal.rename_local_favorite_group'),
-            description: t('view.favorites.modal.enter_the_new_local_group_name'),
+            description: t(
+                'view.favorites.modal.enter_the_new_local_group_name'
+            ),
             inputValue: group.label,
             pattern: /\S+/,
             confirmText: t('common.actions.save'),
@@ -358,7 +367,9 @@ export function useFavoritesCollectionActions({
         if (!nextName || nextName === group.key) {
             return;
         }
-        if (localGroups.some((localGroup: any) => localGroup.key === nextName)) {
+        if (
+            localGroups.some((localGroup: any) => localGroup.key === nextName)
+        ) {
             toast.error(
                 t('view.favorites.dynamic.local_group_value_already_exists', {
                     value: nextName
@@ -380,7 +391,9 @@ export function useFavoritesCollectionActions({
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
-            toast.success(t('view.favorite.label.local_favorite_group_renamed'));
+            toast.success(
+                t('view.favorite.label.local_favorite_group_renamed')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
@@ -417,7 +430,9 @@ export function useFavoritesCollectionActions({
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }
-            toast.success(t('view.favorite.success.local_favorite_group_deleted'));
+            toast.success(
+                t('view.favorite.success.local_favorite_group_deleted')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error

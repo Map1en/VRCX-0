@@ -120,13 +120,15 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
         set((state) => ({
             messagesBySession: {
                 ...state.messagesBySession,
-                [session.id]: session.messages.map((message) => ({
-                    id: message.id,
-                    role: message.role,
-                    text: message.content,
-                    streaming: false,
-                    toolCalls: []
-                }))
+                [session.id]: session.messages.map(
+                    (message): UIMessage => ({
+                        id: message.id,
+                        role: message.role,
+                        text: message.content,
+                        streaming: false,
+                        toolCalls: []
+                    })
+                )
             },
             // Restore the persisted right-panel state for this session.
             entityPanelOpenBySession: {

@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { timeToText } from '@/lib/dateTime';
-import { getNameColour, openExternalLink } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
+import { getNameColour, openExternalLink } from '@/services/entityMediaService';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Badge } from '@/ui/shadcn/badge';

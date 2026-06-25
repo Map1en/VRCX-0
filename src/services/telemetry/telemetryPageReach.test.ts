@@ -41,7 +41,11 @@ type PageReachPayload = {
 };
 
 function findRoute(payload: PageReachPayload, route: string) {
-    return payload.routes.find((entry) => entry.route === route);
+    const entry = payload.routes.find((item) => item.route === route);
+    if (!entry) {
+        throw new Error(`Route "${route}" not found in payload`);
+    }
+    return entry;
 }
 
 describe('page reach telemetry', () => {

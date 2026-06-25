@@ -16,8 +16,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { Location } from '@/components/Location';
 import { BoopEmojiDialog } from '@/components/dialogs/BoopEmojiDialog';
+import { Location } from '@/components/Location';
 import { NOTIFICATION_TYPES } from '@/repositories/notificationPersistenceRepository';
 import { Button } from '@/ui/shadcn/button';
 import {

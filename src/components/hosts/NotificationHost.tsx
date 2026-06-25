@@ -18,7 +18,9 @@ export function NotificationHost() {
 
     const items = useNotificationStore((state: any) => state.items);
     const isPanelOpen = useNotificationStore((state: any) => state.isPanelOpen);
-    const setPanelOpen = useNotificationStore((state: any) => state.setPanelOpen);
+    const setPanelOpen = useNotificationStore(
+        (state: any) => state.setPanelOpen
+    );
     const dismissNotification = useNotificationStore(
         (state: any) => state.dismissNotification
     );

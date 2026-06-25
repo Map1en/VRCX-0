@@ -63,8 +63,7 @@ describe('friendLogState', () => {
             'created_at',
             'action',
             ...COLUMN_IDS.filter(
-                (columnId) =>
-                    columnId !== 'action' && columnId !== 'created_at'
+                (columnId) => columnId !== 'action' && columnId !== 'created_at'
             )
         ]);
     });

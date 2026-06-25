@@ -1,5 +1,6 @@
 import { CheckIcon, PersonStandingIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
@@ -13,7 +14,11 @@ import {
     resolveMyAvatarPerformanceLabel,
     resolveMyAvatarTagBadgeStyle
 } from '../myAvatarsDisplay';
-import type { MyAvatarActionHandler } from '../myAvatarsTypes';
+import type {
+    MyAvatarAction,
+    MyAvatarActionHandler,
+    MyAvatarRow
+} from '../myAvatarsTypes';
 import {
     AvatarActionsDropdown,
     PlatformBadges,
@@ -48,7 +53,7 @@ export function useMyAvatarsColumns({
                 minSize: 32,
                 maxSize: 36,
                 accessorFn: (row: any) => (row?.id === currentAvatarId ? 1 : 0),
-                header: () => null,
+                header: (): ReactNode => null,
                 enableResizing: false,
                 cell: ({ row }: any) =>
                     row.original?.id === currentAvatarId ? (
@@ -63,7 +68,7 @@ export function useMyAvatarsColumns({
                 minSize: 52,
                 maxSize: 72,
                 accessorFn: (row: any) => row?.thumbnailImageUrl || '',
-                header: () => null,
+                header: (): ReactNode => null,
                 enableSorting: false,
                 enableResizing: false,
                 cell: ({ row }: any) =>
@@ -372,7 +377,7 @@ export function useMyAvatarsColumns({
                     tableCellClassName:
                         'bg-background group-hover:bg-muted/50 sticky right-0 z-10 border-l'
                 },
-                header: () => null,
+                header: (): ReactNode => null,
                 cell: ({ row }: any) => {
                     const isUpdating =
                         updatingAvatarId === row.original?.id ||
@@ -383,7 +388,10 @@ export function useMyAvatarsColumns({
                             avatar={row.original}
                             isActive={row.original?.id === currentAvatarId}
                             isUpdating={isUpdating}
-                            onAction={(action, avatar) => {
+                            onAction={(
+                                action: MyAvatarAction,
+                                avatar: MyAvatarRow
+                            ) => {
                                 onAvatarAction(action, avatar);
                             }}
                         />

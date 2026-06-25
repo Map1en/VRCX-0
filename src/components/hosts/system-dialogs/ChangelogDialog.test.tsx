@@ -29,7 +29,7 @@ vi.mock('react-i18next', () => {
 vi.mock('@/services/changelogService', () => ({
     fetchChangelogRelease: vi.fn(),
     parseChangelog: () => ({
-        entries: [],
+        entries: [] as unknown[],
         note: ''
     }),
     resolvePreferredChangelogLanguage: () => 'en'

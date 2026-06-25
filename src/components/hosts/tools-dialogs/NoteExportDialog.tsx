@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { userImage } from '@/services/entityMediaService';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { openUserDialog } from '@/services/dialogService';
+import { userImage } from '@/services/entityMediaService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';

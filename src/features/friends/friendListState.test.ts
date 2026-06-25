@@ -36,7 +36,7 @@ function installLocalStorage(initial: any = {}) {
 }
 
 afterEach(() => {
-    delete globalThis.window;
+    Reflect.deleteProperty(globalThis, 'window');
 });
 
 describe('friendListState', () => {
@@ -138,7 +138,8 @@ describe('friendListState', () => {
             'status',
             'avatar',
             ...FRIEND_LIST_COLUMN_IDS.filter(
-                (columnId: any) => columnId !== 'status' && columnId !== 'avatar'
+                (columnId: any) =>
+                    columnId !== 'status' && columnId !== 'avatar'
             )
         ]);
 

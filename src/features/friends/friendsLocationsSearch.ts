@@ -32,7 +32,11 @@ export function buildFriendsLocationsFavoriteIdSet(
     return ids;
 }
 
-export function matchesFriendLocationSearch(friend: any, searchQuery: any, favoriteIds: any) {
+export function matchesFriendLocationSearch(
+    friend: any,
+    searchQuery: any,
+    favoriteIds: any
+) {
     if (!searchQuery) {
         return true;
     }

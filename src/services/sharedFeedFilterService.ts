@@ -1,10 +1,11 @@
-import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import configRepository from '@/repositories/configRepository';
 import i18n from '@/services/i18nService';
 import {
     sharedFeedFiltersDefaults,
     type SharedFeedFilterDefaults
 } from '@/shared/constants/feedFilters';
+import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
+import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -31,9 +32,11 @@ type SharedFeedFilterContext = {
     favorite: boolean;
 };
 
-const FEED_FILTER_KEY_BY_TYPE = Object.freeze({
-    Avatar: 'AvatarChange'
-}) satisfies Record<string, string>;
+const FEED_FILTER_KEY_BY_TYPE: Readonly<Record<string, string>> = Object.freeze(
+    {
+        Avatar: 'AvatarChange'
+    }
+);
 
 let cachedSharedFeedFilters: SharedFeedFilters = normalizeSharedFeedFilters();
 let sharedFeedFiltersLoaded = false;
@@ -63,7 +66,7 @@ function parseSharedFeedFilters(value: unknown): SharedFeedFilters {
         return normalizeSharedFeedFilters(value);
     }
     try {
-        return normalizeSharedFeedFilters(JSON.parse(value as string));
+        return normalizeSharedFeedFilters(JSON.parse(String(value)));
     } catch {
         return normalizeSharedFeedFilters();
     }
@@ -110,18 +113,12 @@ async function loadSharedFeedFilters(): Promise<SharedFeedFilters> {
     return sharedFeedFiltersLoadPromise;
 }
 
-function normalizeId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 function getEntryUserId(entry?: SharedFeedEntry | null): string {
-    return normalizeId(entry?.userId || entry?.senderUserId);
+    return normalizeString(entry?.userId || entry?.senderUserId);
 }
 
 function isLocalFavoriteFriend(userId: unknown): boolean {
-    const normalizedUserId = normalizeId(userId);
+    const normalizedUserId = normalizeString(userId);
     if (!normalizedUserId) {
         return false;
     }
@@ -130,12 +127,12 @@ function isLocalFavoriteFriend(userId: unknown): boolean {
     return Object.values(localFriendFavorites ?? {}).some(
         (ids: any) =>
             Array.isArray(ids) &&
-            ids.some((id: any) => normalizeId(id) === normalizedUserId)
+            ids.some((id: any) => normalizeString(id) === normalizedUserId)
     );
 }
 
 function isFriend(userId: unknown): boolean {
-    const normalizedUserId = normalizeId(userId);
+    const normalizedUserId = normalizeString(userId);
     if (!normalizedUserId) {
         return false;
     }
@@ -145,7 +142,7 @@ function isFriend(userId: unknown): boolean {
 }
 
 function getFeedFilterKey(type: unknown): string {
-    const normalizedType = normalizeId(type);
+    const normalizedType = normalizeString(type);
     return FEED_FILTER_KEY_BY_TYPE[normalizedType] || normalizedType;
 }
 
@@ -189,9 +186,9 @@ export async function pushSharedFeedNotification(
     if (!(await shouldIncludeSharedFeedEntry(entry, 'noty'))) {
         return;
     }
-    const type = normalizeId(entry?.type) || 'Feed';
+    const type = normalizeString(entry?.type) || 'Feed';
     const displayName =
-        normalizeId(entry?.displayName || entry?.userId) || 'Unknown';
+        normalizeString(entry?.displayName || entry?.userId) || 'Unknown';
     const detail =
         entry?.worldName ||
         entry?.avatarName ||
@@ -203,10 +200,9 @@ export async function pushSharedFeedNotification(
         '';
     useNotificationStore.getState().pushNotification({
         level: 'info',
-        title: i18n.t(
-            'service.shared_feed_filter_service.dynamic.feed_value',
-            { value: type }
-        ),
+        title: i18n.t('service.shared_feed_filter_service.dynamic.feed_value', {
+            value: type
+        }),
         message: [displayName, detail].filter(Boolean).join(' - ')
     });
 }

@@ -21,6 +21,28 @@ export function formatDateFilter(dateStr: any, format: DateFilterFormat) {
     });
 }
 
+type DateFallbackOptions = {
+    empty?: string;
+    invalid?: string | ((value: unknown) => string);
+};
+
+export function formatDateFilterOrFallback(
+    value: unknown,
+    format: DateFilterFormat,
+    { empty = '-', invalid = '-' }: DateFallbackOptions = {}
+) {
+    if (!value) {
+        return empty;
+    }
+
+    const formatted = formatDateFilter(value, format);
+    if (formatted !== '-') {
+        return formatted;
+    }
+
+    return typeof invalid === 'function' ? invalid(value) : invalid;
+}
+
 function currentDateTimePreferences(
     overrides: DateTimeFormatPreferences = {}
 ): DateTimeFormatPreferences {

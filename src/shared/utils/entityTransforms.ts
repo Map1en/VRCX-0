@@ -1,6 +1,6 @@
 import { replaceBioSymbols } from './string';
 
-type EntityRecord = Record<string, any>;
+type EntityRecord = Record<string, unknown>;
 
 /**
  * Sanitize arbitrary entity JSON fields via replaceBioSymbols.
@@ -23,6 +23,8 @@ export function sanitizeEntityJson(json: EntityRecord, fields: string[]) {
  * @returns {object}
  */
 export function createDefaultFavoriteGroupRef(json: EntityRecord = {}) {
+    const tags: string[] = [];
+
     return {
         id: '',
         ownerId: '',
@@ -31,7 +33,7 @@ export function createDefaultFavoriteGroupRef(json: EntityRecord = {}) {
         displayName: '',
         type: '',
         visibility: '',
-        tags: [],
+        tags,
         ...json
     };
 }

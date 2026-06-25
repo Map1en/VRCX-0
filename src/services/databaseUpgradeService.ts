@@ -46,7 +46,7 @@ function failedUpgradeDescription(
             'service.database_upgrade_service.error.failed_upgrade_description_with_reason',
             {
                 path: workDbPath,
-                reason: failedUpgrade.reason as string
+                reason: String(failedUpgrade.reason)
             }
         );
     }
@@ -112,10 +112,10 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
             return blockOnFailedUpgrade(failedUpgrade);
         }
 
-        const currentVersion = (await configRepository.getInt(
+        const currentVersion = await configRepository.getInt(
             VRCX0_SCHEMA_VERSION_KEY,
             0
-        )) as number;
+        );
 
         if (currentVersion >= DATABASE_VERSION) {
             setUpgradeState({

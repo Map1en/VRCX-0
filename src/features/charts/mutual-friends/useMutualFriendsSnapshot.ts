@@ -60,7 +60,10 @@ export function useMutualFriendsSnapshot({
         };
     }, [currentUserId, reloadToken]);
 
-    async function reloadSnapshot(nextDetail: any, expectedUserId: any = currentUserId) {
+    async function reloadSnapshot(
+        nextDetail: any,
+        expectedUserId: any = currentUserId
+    ) {
         if (!expectedUserId || currentUserIdRef.current !== expectedUserId) {
             return;
         }
@@ -68,7 +71,9 @@ export function useMutualFriendsSnapshot({
         setStatus('running');
         try {
             const result =
-                await mutualGraphPersistenceRepository.getSnapshot(expectedUserId);
+                await mutualGraphPersistenceRepository.getSnapshot(
+                    expectedUserId
+                );
             if (currentUserIdRef.current !== expectedUserId) {
                 return;
             }

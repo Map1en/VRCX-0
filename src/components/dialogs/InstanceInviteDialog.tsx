@@ -9,6 +9,7 @@ import { userImage } from '@/services/entityMediaService';
 import { sendInviteToLocation } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
@@ -48,7 +49,6 @@ import {
     buildFriendsInCurrentInstanceIds,
     displayNameForUser,
     filterInviteUserIds,
-    normalizeId,
     sortInviteUserIdsWithSelectedFirst
 } from './inviteDialogModel';
 
@@ -87,7 +87,7 @@ export function InstanceInviteDialog({
         (state: any) => state.localFriendFavorites
     );
     const confirm = useModalStore((state: any) => state.confirm);
-    const [selectedUserIds, setSelectedUserIds] = useState<any[]>([]);
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [search, setSearch] = useState('');
     const [sending, setSending] = useState(false);
     const [resolvedWorldName, setResolvedWorldName] = useState('');
@@ -215,26 +215,24 @@ export function InstanceInviteDialog({
         ]
     );
 
-    function addUserIds(userIds: any) {
+    function addUserIds(userIds: unknown) {
         const ids = (Array.isArray(userIds) ? userIds : [])
             .map(normalizeId)
             .filter(Boolean);
         if (!ids.length) {
             return;
         }
-        setSelectedUserIds((current: any) => [
-            ...new Set([...current, ...ids])
-        ]);
+        setSelectedUserIds((current) => [...new Set([...current, ...ids])]);
     }
 
-    function toggleUserId(userId: any) {
+    function toggleUserId(userId: unknown) {
         const normalizedUserId = normalizeId(userId);
         if (!normalizedUserId) {
             return;
         }
-        setSelectedUserIds((current: any) =>
+        setSelectedUserIds((current) =>
             current.includes(normalizedUserId)
-                ? current.filter((entry: any) => entry !== normalizedUserId)
+                ? current.filter((entry) => entry !== normalizedUserId)
                 : [...current, normalizedUserId]
         );
     }
@@ -278,8 +276,8 @@ export function InstanceInviteDialog({
 
         setSending(true);
         try {
-            const failedUserIds = new Set();
-            const failures = [];
+            const failedUserIds = new Set<string>();
+            const failures: string[] = [];
             let successCount = 0;
             for (const receiverUserId of normalizedUserIds) {
                 try {
@@ -322,8 +320,8 @@ export function InstanceInviteDialog({
                 );
             }
             if (failures.length) {
-                setSelectedUserIds((current: any) =>
-                    current.filter((userId: any) => failedUserIds.has(userId))
+                setSelectedUserIds((current) =>
+                    current.filter((userId) => failedUserIds.has(userId))
                 );
                 toast.error(
                     failures.length === 1

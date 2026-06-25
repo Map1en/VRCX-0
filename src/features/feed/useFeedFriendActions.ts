@@ -2,13 +2,13 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { openWorldDialog } from '@/services/dialogService';
+import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
     sendBoopToUser,
     sendInviteToLocation,
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
-import { openWorldDialog } from '@/services/dialogService';
-import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/locationParser';
@@ -33,7 +33,9 @@ function resolveActionFriendId(friend: FeedFriendActionTarget) {
 
 export function useFeedFriendActions(): FeedFriendActions {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );

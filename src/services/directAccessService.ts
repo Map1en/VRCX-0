@@ -9,15 +9,10 @@ import {
 } from '@/services/dialogService';
 import { isHostCapabilityAvailable } from '@/services/hostCapabilityService';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 
 type LooseRecord = Record<string, unknown>;
 type ParsedLocation = ReturnType<typeof parseLocation>;
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
 
 function isRecord(value: unknown): value is LooseRecord {
     return Boolean(value && typeof value === 'object');
@@ -89,11 +84,12 @@ export async function resolveInstanceLaunchToken(
 
     if (parsed.worldId && parsed.instanceId) {
         try {
-            const response = await vrchatInstanceRepository.getInstanceShortName({
-                worldId: parsed.worldId,
-                instanceId: parsed.instanceId,
-                endpoint: normalizeString(endpoint)
-            });
+            const response =
+                await vrchatInstanceRepository.getInstanceShortName({
+                    worldId: parsed.worldId,
+                    instanceId: parsed.instanceId,
+                    endpoint: normalizeString(endpoint)
+                });
             launchToken = normalizeString(
                 response.json?.shortName || response.json?.secureName
             );
@@ -297,7 +293,10 @@ async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
     return false;
 }
 
-export async function directAccessParse(input: unknown, endpoint: unknown = '') {
+export async function directAccessParse(
+    input: unknown,
+    endpoint: unknown = ''
+) {
     const value = normalizeString(input);
     if (!value) {
         return false;

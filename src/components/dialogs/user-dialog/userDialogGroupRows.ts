@@ -47,7 +47,11 @@ function compareGroupRowsByInGameOrder(groupOrder: any[] = []) {
     };
 }
 
-export function sortUserGroupRows(rows: any, sortBy: any, groupOrder: any[] = []) {
+export function sortUserGroupRows(
+    rows: any,
+    sortBy: any,
+    groupOrder: any[] = []
+) {
     const comparers: any = {
         alphabetical: compareByName,
         members: compareByMemberCount,

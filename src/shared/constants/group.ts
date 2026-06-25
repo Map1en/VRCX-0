@@ -9,12 +9,17 @@ const groupDialogSortingOptions = [
     }
 ];
 
-const FILTER_EVERYONE: any = {
+type GroupDialogFilterOption = {
+    name: string;
+    id: string | null;
+};
+
+const FILTER_EVERYONE: GroupDialogFilterOption = {
     name: 'dialog.group.members.filters.everyone',
     id: null
 };
 
-const FILTER_NO_ROLE: any = {
+const FILTER_NO_ROLE: GroupDialogFilterOption = {
     name: 'dialog.group.members.filters.users_with_no_role',
     id: ''
 };

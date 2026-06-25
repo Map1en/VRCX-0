@@ -3,9 +3,10 @@ import gameLogRepository from '@/repositories/gameLogRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import { parseLocation } from '@/shared/utils/locationParser';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { getFileNameFromPath, normalizeString } from './parsing';
+import { getFileNameFromPath } from './parsing';
 import { getCurrentLocation, ingestState } from './state';
 
 const SCREENSHOT_METADATA_FALLBACK_LOCATION_MAX_AGE_MS = 15 * 60 * 1000;
@@ -32,11 +33,6 @@ type LocationEntry = Record<string, unknown> & {
     created_at?: unknown;
 };
 
-type JoinLeaveEntry = Record<string, unknown> & {
-    type?: unknown;
-    userId?: unknown;
-    displayName?: unknown;
-};
 type ScreenshotExtra = {
     creationDate?: unknown;
 };
@@ -102,7 +98,7 @@ async function resolveScreenshotTimestampFromFile(
             false
         )) as ScreenshotExtra | null | undefined;
         if (extra?.creationDate) {
-            const timestamp = Date.parse(extra.creationDate as string);
+            const timestamp = Date.parse(normalizeString(extra.creationDate));
             if (!Number.isNaN(timestamp)) {
                 return timestamp;
             }
@@ -131,8 +127,13 @@ async function resolveScreenshotMetadataContext(
     if (!locationEntry?.location) {
         return null;
     }
+    const location = normalizeString(locationEntry.location);
+    const createdAt = normalizeString(locationEntry.created_at);
+    if (!location || !createdAt) {
+        return null;
+    }
     if (
-        screenshotTimestamp - Date.parse(locationEntry.created_at as string) >
+        screenshotTimestamp - Date.parse(createdAt) >
         SCREENSHOT_METADATA_FALLBACK_LOCATION_MAX_AGE_MS
     ) {
         return null;
@@ -140,15 +141,18 @@ async function resolveScreenshotMetadataContext(
 
     const joinLeaveEntries =
         await gameLogRepository.getJoinLeaveEntriesForLocationRange(
-            locationEntry.location as string,
-            locationEntry.created_at as string,
+            location,
+            createdAt,
             screenshotDateIso
         );
 
     const playerMap = new Map<string, ScreenshotPlayer>();
-    for (const entry of joinLeaveEntries as JoinLeaveEntry[]) {
-        const playerKey = (entry.userId ||
-            `display:${entry.displayName}`) as string;
+    for (const entry of Array.isArray(joinLeaveEntries)
+        ? joinLeaveEntries
+        : []) {
+        const playerKey = normalizeString(
+            entry.userId || `display:${entry.displayName}`
+        );
         if (entry.type === 'OnPlayerJoined') {
             playerMap.set(playerKey, {
                 userId: entry.userId,
@@ -160,7 +164,7 @@ async function resolveScreenshotMetadataContext(
     }
 
     return {
-        location: locationEntry.location as string,
+        location,
         worldName: locationEntry.worldName,
         players: Array.from(playerMap.values())
     };
@@ -192,24 +196,23 @@ async function processScreenshot(
             (await resolveScreenshotMetadataContext(
                 screenshotPath,
                 screenshotDateTime
-        ));
+            ));
         if (screenshotContext?.location) {
             const location = parseLocation(screenshotContext.location);
+            const authState = useRuntimeStore.getState().auth;
             const currentUser =
-                (useRuntimeStore.getState().auth.currentUserSnapshot ||
-                    {}) as Record<string, unknown>;
+                authState.currentUserSnapshot &&
+                typeof authState.currentUserSnapshot === 'object'
+                    ? authState.currentUserSnapshot
+                    : {};
             const metadata: ScreenshotMetadata = {
                 application: 'VRCX-0',
                 version: 1,
                 author: {
-                    id:
-                        currentUser.id ||
-                        useRuntimeStore.getState().auth.currentUserId ||
-                        '',
+                    id: currentUser.id || authState.currentUserId || '',
                     displayName:
                         currentUser.displayName ||
-                        useRuntimeStore.getState().auth
-                            .currentUserDisplayName ||
+                        authState.currentUserDisplayName ||
                         ''
                 },
                 world: {
@@ -228,11 +231,11 @@ async function processScreenshot(
                     await mediaRepository.addScreenshotMetadata(
                         screenshotPath,
                         JSON.stringify(metadata),
-                        location.worldId as string,
-                        modifyFilename as boolean
+                        location.worldId,
+                        modifyFilename
                     );
                 if (metadataPath) {
-                    nextPath = metadataPath as string;
+                    nextPath = metadataPath;
                 }
             } catch (error) {
                 console.error('Failed to add screenshot metadata:', error);

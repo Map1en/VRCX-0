@@ -5,7 +5,10 @@ import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FeedDetailCell } from '../components/FeedDetailCell';
-import { FeedUserAvatarButton, FeedUserLink } from '../components/FeedTableParts';
+import {
+    FeedUserAvatarButton,
+    FeedUserLink
+} from '../components/FeedTableParts';
 import type { FeedColumnDensityConfig } from '../feedColumnsDensity';
 import { resolveFeedColumnTimeDisplay } from '../feedTimeDisplay';
 import type {
@@ -43,13 +46,7 @@ function FeedColumnTypeHint({
     );
 }
 
-function FeedColumnTime({
-    label,
-    title
-}: {
-    label: string;
-    title: string;
-}) {
+function FeedColumnTime({ label, title }: { label: string; title: string }) {
     return (
         <div className="ml-auto flex shrink-0 items-center">
             <Tooltip>
@@ -88,7 +85,7 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
         <>
             <div
                 className={cn(
-                    'border-border/35 hover:bg-accent/20 group/feed-column-item flex min-w-0 items-start border-b bg-background/20 transition-colors',
+                    'border-border/35 hover:bg-accent/20 group/feed-column-item bg-background/20 flex min-w-0 items-start border-b transition-colors',
                     animateEntry && 'feed-column-row-new',
                     densityConfig.rowPaddingClassName
                 )}
@@ -152,7 +149,9 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
                                     props.loadingPreviousInstancesKey
                                 }
                                 locationClassName="text-xs"
-                                onNewInstance={props.actions.openFeedNewInstance}
+                                onNewInstance={
+                                    props.actions.openFeedNewInstance
+                                }
                                 onOpenPreviousInstances={
                                     props.onOpenPreviousInstances
                                 }

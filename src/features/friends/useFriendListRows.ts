@@ -74,7 +74,9 @@ export function useFriendListRows({
                     );
                     const friendNumber =
                         Number.parseInt(
-                            friend.$friendNumber ?? friend.friendNumber ?? 0,
+                            String(
+                                friend.$friendNumber ?? friend.friendNumber ?? 0
+                            ),
                             10
                         ) || 0;
                     if (friendNumber > 0) {

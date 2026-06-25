@@ -30,6 +30,26 @@ type DateTimeFormatPreferences = Pick<
     fallback?: string;
 };
 
+type DateInputValue = string | number | Date;
+
+function toDateInput(value: unknown): DateInputValue | null {
+    return typeof value === 'string' ||
+        typeof value === 'number' ||
+        value instanceof Date
+        ? value
+        : null;
+}
+
+export function dateFromUnknown(value: unknown): Date | null {
+    const input = toDateInput(value);
+    if (input === null) {
+        return null;
+    }
+
+    const date = new Date(input);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function toLocalClock(
     date: Date,
     dateFormat: string,
@@ -91,8 +111,8 @@ export function formatDateFilterWithPreferences(
         return '-';
     }
 
-    const dt = new Date(dateStr as any);
-    if (Number.isNaN(dt.getTime())) {
+    const dt = dateFromUnknown(dateStr);
+    if (!dt) {
         return '-';
     }
 
@@ -130,8 +150,8 @@ export function formatDateTimeWithPreferences(
         return preferences.fallback ?? '-';
     }
 
-    const date = new Date(value as any);
-    if (Number.isNaN(date.getTime())) {
+    const date = dateFromUnknown(value);
+    if (!date) {
         return preferences.fallback ?? '-';
     }
 
@@ -186,8 +206,8 @@ export function formatRelativeTimeWithPreferences(
         return preferences.fallback ?? '';
     }
 
-    const date = new Date(value as any);
-    if (Number.isNaN(date.getTime())) {
+    const date = dateFromUnknown(value);
+    if (!date) {
         return preferences.fallback ?? '';
     }
 

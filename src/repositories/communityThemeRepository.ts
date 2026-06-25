@@ -38,7 +38,9 @@ function requireString(
 ): string {
     const value = entry[field];
     if (typeof value !== 'string' || !value.trim()) {
-        throw new Error(`Invalid community theme ${context}: missing ${field}.`);
+        throw new Error(
+            `Invalid community theme ${context}: missing ${field}.`
+        );
     }
     return value.trim();
 }
@@ -48,9 +50,7 @@ function optionalString(
     field: string
 ): string | undefined {
     const value = entry[field];
-    return typeof value === 'string' && value.trim()
-        ? value.trim()
-        : undefined;
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function normalizeTags(value: unknown, context: string): string[] {
@@ -64,7 +64,10 @@ function normalizeTags(value: unknown, context: string): string[] {
         .slice(0, 3);
 }
 
-function normalizeAuthor(value: unknown, context: string): CommunityThemeAuthor {
+function normalizeAuthor(
+    value: unknown,
+    context: string
+): CommunityThemeAuthor {
     if (!value || typeof value !== 'object') {
         throw new Error(`Invalid community theme ${context}: missing author.`);
     }
@@ -138,7 +141,9 @@ function normalizeCommunityThemeStats(value: unknown): CommunityThemeStatsById {
     return stats;
 }
 
-export function normalizeCommunityThemeCatalogUrl(value?: string | null): string {
+export function normalizeCommunityThemeCatalogUrl(
+    value?: string | null
+): string {
     const catalogUrl = String(value || '').trim();
     if (!catalogUrl) {
         return COMMUNITY_THEME_CATALOG_URL;
@@ -178,7 +183,9 @@ function normalizeCommunityThemeManifest(
     expectedThemeId: string
 ): CommunityThemeManifest {
     if (!value || typeof value !== 'object') {
-        throw new Error(`Invalid community theme manifest: ${expectedThemeId}.`);
+        throw new Error(
+            `Invalid community theme manifest: ${expectedThemeId}.`
+        );
     }
 
     const entry = value as RawCommunityThemeEntry;

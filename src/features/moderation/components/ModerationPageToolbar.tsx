@@ -11,9 +11,8 @@ import {
     normalizeModerationSelectedTypes,
     resolveModerationTypeLabel
 } from '../moderationPageState';
-import { ModerationTypeFilterDropdown } from './ModerationViewParts';
-
 import type { ModerationLoadStatus } from '../moderationPageTypes';
+import { ModerationTypeFilterDropdown } from './ModerationViewParts';
 
 type ModerationPageToolbarProps = {
     selectedTypes: string[];

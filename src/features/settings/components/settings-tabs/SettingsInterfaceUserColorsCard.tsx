@@ -18,12 +18,18 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
 
-function getTrustColorInputValue(prefs: any, key: any) {
+function getTrustColorInputValue(
+    prefs: any,
+    key: keyof typeof TRUST_COLOR_DEFAULTS
+) {
     const value = prefs.trustColor?.[key];
     return isValidTrustColor(value) ? value : TRUST_COLOR_DEFAULTS[key];
 }
 
-function getTrustColorDraftValue(prefs: any, key: any) {
+function getTrustColorDraftValue(
+    prefs: any,
+    key: keyof typeof TRUST_COLOR_DEFAULTS
+) {
     return prefs.trustColor?.[key] || TRUST_COLOR_DEFAULTS[key];
 }
 

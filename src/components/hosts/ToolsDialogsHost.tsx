@@ -1,12 +1,12 @@
 import { InviteMessageTemplatesDialog } from '@/components/dialogs/InviteMessageDialog';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import { AppLauncherDialog } from './tools-dialogs/AppLauncherDialog';
 import {
     ExportAvatarsListDialog,
     ExportDiscordNamesDialog,
     ExportFriendsListDialog
 } from './tools-dialogs/ExportListDialogs';
-import { AppLauncherDialog } from './tools-dialogs/AppLauncherDialog';
 import { GroupCalendarDialog } from './tools-dialogs/GroupCalendarDialog';
 import { NoteExportDialog } from './tools-dialogs/NoteExportDialog';
 import {

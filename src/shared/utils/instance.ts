@@ -64,7 +64,7 @@ function getLaunchURL(instance: LaunchableInstance): string {
     )}`;
 }
 
-const regionTagMap: any = {
+const regionTagMap: Record<string, string> = {
     'US West': 'us',
     'US East': 'use',
     Europe: 'eu',

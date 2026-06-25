@@ -181,11 +181,16 @@ export function ScreenshotMetadataToolbar({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            {SCREENSHOT_METADATA_SEARCH_TYPES.map((type: any) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                    {t(type.labelKey)}
-                                </SelectItem>
-                            ))}
+                            {SCREENSHOT_METADATA_SEARCH_TYPES.map(
+                                (type: any) => (
+                                    <SelectItem
+                                        key={type.value}
+                                        value={type.value}
+                                    >
+                                        {t(type.labelKey)}
+                                    </SelectItem>
+                                )
+                            )}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -349,9 +354,7 @@ export function ScreenshotMetadataPreviewCard({
             <CardHeader>
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
-                        <CardTitle>
-                            {t('view.tools.action.preview')}
-                        </CardTitle>
+                        <CardTitle>{t('view.tools.action.preview')}</CardTitle>
                         <CardDescription>
                             {metadata?.fileName ||
                                 t('dialog.screenshot_metadata.drag')}

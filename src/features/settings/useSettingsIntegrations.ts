@@ -151,7 +151,10 @@ export function useSettingsIntegrations({ commit }: any) {
 
     async function saveYoutubeApiKey() {
         const apiKey = youtubeApiKeyDraft.trim();
-        setIntegrationStatus((current: any) => ({ ...current, youtube: 'running' }));
+        setIntegrationStatus((current: any) => ({
+            ...current,
+            youtube: 'running'
+        }));
         try {
             await validateYoutubeApiKey(apiKey);
             await setYoutubeApiKeyPreference(apiKey);
@@ -245,7 +248,10 @@ export function useSettingsIntegrations({ commit }: any) {
             headers.Authorization = `Bearer ${translationDraft.translationAPIKey.trim()}`;
         }
 
-        setIntegrationStatus((current: any) => ({ ...current, models: 'running' }));
+        setIntegrationStatus((current: any) => ({
+            ...current,
+            models: 'running'
+        }));
         try {
             const response =
                 await externalApiRepository.executeTranslationRequest({
@@ -288,7 +294,10 @@ export function useSettingsIntegrations({ commit }: any) {
                       )
             );
         } finally {
-            setIntegrationStatus((current: any) => ({ ...current, models: 'idle' }));
+            setIntegrationStatus((current: any) => ({
+                ...current,
+                models: 'idle'
+            }));
         }
     }
 

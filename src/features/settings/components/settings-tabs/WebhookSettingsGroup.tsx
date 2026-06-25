@@ -147,7 +147,9 @@ export function WebhookSettingsGroup({
 
     return (
         <SettingsGroup
-            title={t('view.settings.notifications.notifications.webhook.header')}
+            title={t(
+                'view.settings.notifications.notifications.webhook.header'
+            )}
         >
             <Field
                 label={t(
@@ -161,7 +163,9 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
-                label={t('view.settings.notifications.notifications.webhook.url')}
+                label={t(
+                    'view.settings.notifications.notifications.webhook.url'
+                )}
                 controlId="settings-webhook-url"
             >
                 <Input

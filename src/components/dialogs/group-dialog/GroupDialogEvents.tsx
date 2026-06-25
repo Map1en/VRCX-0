@@ -45,7 +45,9 @@ function splitGroupEvents(events: any) {
         (left: any, right: any) =>
             eventTimeMs(left?.startsAt) - eventTimeMs(right?.startsAt)
     );
-    past.sort((left: any, right: any) => eventEndTimeMs(right) - eventEndTimeMs(left));
+    past.sort(
+        (left: any, right: any) => eventEndTimeMs(right) - eventEndTimeMs(left)
+    );
 
     return { upcoming, past };
 }

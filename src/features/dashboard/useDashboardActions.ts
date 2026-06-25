@@ -11,9 +11,15 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const confirm = useModalStore((state: any) => state.confirm);
-    const createDashboard = useDashboardStore((state: any) => state.createDashboard);
-    const updateDashboard = useDashboardStore((state: any) => state.updateDashboard);
-    const deleteDashboard = useDashboardStore((state: any) => state.deleteDashboard);
+    const createDashboard = useDashboardStore(
+        (state: any) => state.createDashboard
+    );
+    const updateDashboard = useDashboardStore(
+        (state: any) => state.updateDashboard
+    );
+    const deleteDashboard = useDashboardStore(
+        (state: any) => state.deleteDashboard
+    );
     const setEditingDashboardId = useDashboardStore(
         (state: any) => state.setEditingDashboardId
     );
@@ -22,7 +28,11 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
         await updateDashboard(dashboardId, nextDashboard);
     }
 
-    async function updateLivePanel(rowIndex: any, panelIndex: any, nextPanel: any) {
+    async function updateLivePanel(
+        rowIndex: any,
+        panelIndex: any,
+        nextPanel: any
+    ) {
         if (!dashboard?.rows?.[rowIndex]?.panels) {
             return;
         }
@@ -36,9 +46,7 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.dashboard.toast.failed_to_update_dashboard_panel'
-                      )
+                    : t('view.dashboard.toast.failed_to_update_dashboard_panel')
             );
         }
     }
@@ -64,7 +72,8 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
         try {
             await deleteDashboard(dashboard.id);
             const fallback =
-                dashboards.find((entry: any) => entry.id !== dashboard.id) || null;
+                dashboards.find((entry: any) => entry.id !== dashboard.id) ||
+                null;
             if (fallback) {
                 navigate(`/dashboard/${fallback.id}`, { replace: true });
             } else {
@@ -74,9 +83,7 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.dashboard.toast.failed_to_delete_dashboard'
-                      )
+                    : t('view.dashboard.toast.failed_to_delete_dashboard')
             );
         }
     }
@@ -92,9 +99,7 @@ export function useDashboardActions({ dashboard, dashboards }: any) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.dashboard.toast.failed_to_create_dashboard'
-                      )
+                    : t('view.dashboard.toast.failed_to_create_dashboard')
             );
         }
     }

@@ -22,7 +22,10 @@ export function useWorldDialogOwnerActions({
     const { t } = useTranslation();
     const worldNameOrId = world?.name || world?.id || '';
 
-    async function saveWorldPatch(patch: any, { successMessage, errorMessage }: any) {
+    async function saveWorldPatch(
+        patch: any,
+        { successMessage, errorMessage }: any
+    ) {
         if (
             !world?.id ||
             !canManageWorld ||
@@ -103,7 +106,12 @@ export function useWorldDialogOwnerActions({
         }
     }
 
-    function readChangedCapacityField(patch: any, field: any, value: any, label: any) {
+    function readChangedCapacityField(
+        patch: any,
+        field: any,
+        value: any,
+        label: any
+    ) {
         const rawValue = String(value ?? '').trim();
         if (rawValue === String(world?.[field] ?? '')) {
             return true;
@@ -112,10 +120,9 @@ export function useWorldDialogOwnerActions({
         const parsedValue = Number.parseInt(rawValue, 10);
         if (!Number.isFinite(parsedValue) || parsedValue < 1) {
             toast.error(
-                t(
-                    'dialog.world.dynamic.value_must_be_a_positive_number',
-                    { value: label }
-                )
+                t('dialog.world.dynamic.value_must_be_a_positive_number', {
+                    value: label
+                })
             );
             return false;
         }
@@ -165,9 +172,7 @@ export function useWorldDialogOwnerActions({
 
         const saved = await saveWorldPatch(patch, {
             successMessage: t('dialog.world.success.world_details_updated'),
-            errorMessage: t(
-                'dialog.world.toast.failed_to_update_world_details'
-            )
+            errorMessage: t('dialog.world.toast.failed_to_update_world_details')
         });
         if (saved) {
             setOwnerEditor('');
@@ -188,9 +193,7 @@ export function useWorldDialogOwnerActions({
                 { name: result.value },
                 {
                     successMessage: t('prompt.rename_world.message.success'),
-                    errorMessage: t(
-                        'dialog.world.toast.failed_to_rename_world'
-                    )
+                    errorMessage: t('dialog.world.toast.failed_to_rename_world')
                 }
             );
         }
@@ -236,28 +239,21 @@ export function useWorldDialogOwnerActions({
         const value = Number.parseInt(result.value, 10);
         if (!Number.isFinite(value) || value < 1) {
             toast.error(
-                t(
-                    'dialog.world.dynamic.value_must_be_a_positive_number',
-                    { value: label }
-                )
+                t('dialog.world.dynamic.value_must_be_a_positive_number', {
+                    value: label
+                })
             );
             return;
         }
         await saveWorldPatch(
             { [field]: value },
             {
-                successMessage: t(
-                    'dialog.world.dynamic.value_updated',
-                    {
-                        value: label
-                    }
-                ),
-                errorMessage: t(
-                    'dialog.world.dynamic.failed_to_update_value',
-                    {
-                        value: label
-                    }
-                )
+                successMessage: t('dialog.world.dynamic.value_updated', {
+                    value: label
+                }),
+                errorMessage: t('dialog.world.dynamic.failed_to_update_value', {
+                    value: label
+                })
             }
         );
     }
@@ -394,9 +390,7 @@ export function useWorldDialogOwnerActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.world.toast.failed_to_update_world_publication'
-                      )
+                    : t('dialog.world.toast.failed_to_update_world_publication')
             );
         } finally {
             actionStatusRef.current = 'idle';

@@ -2,20 +2,36 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { generateDashboardRowId } from '@/repositories/dashboardRepository';
+import {
+    generateDashboardRowId,
+    type Dashboard,
+    type DashboardDirection,
+    type DashboardPanel,
+    type DashboardRow
+} from '@/repositories/dashboardRepository';
 
 import { cloneDashboardRows } from './dashboardConfig';
+
+type DashboardEditorStateProps = {
+    consumeEditingDashboardId: (dashboardId: string) => boolean;
+    dashboard: Dashboard | null;
+    loaded: boolean;
+    saveDashboard: (
+        dashboardId: string,
+        patch: Pick<Dashboard, 'name' | 'rows'>
+    ) => Promise<unknown>;
+};
 
 export function useDashboardEditorState({
     consumeEditingDashboardId,
     dashboard,
     loaded,
     saveDashboard
-}: any) {
+}: DashboardEditorStateProps) {
     const { t } = useTranslation();
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
-    const [editRows, setEditRows] = useState<any[]>([]);
+    const [editRows, setEditRows] = useState<DashboardRow[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     function resetEditDraft() {
@@ -47,27 +63,35 @@ export function useDashboardEditorState({
         setIsEditing(false);
     }, [consumeEditingDashboardId, dashboard?.id, loaded]);
 
-    const handleAddRow = (panelCount: any, direction: any = 'horizontal') => {
-        setEditRows((current: any) => [
+    const handleAddRow = (
+        panelCount: number,
+        direction: DashboardDirection = 'horizontal'
+    ) => {
+        setEditRows((current) => [
             ...current,
             {
                 id: generateDashboardRowId(),
                 direction,
-                panels: Array.from({ length: panelCount }, () => null)
+                panels: Array.from(
+                    { length: panelCount },
+                    (): DashboardPanel | null => null
+                )
             }
         ]);
     };
 
-    const handleUpdatePanel = (rowIndex: any, panelIndex: any, nextPanel: any) => {
-        setEditRows((current: any) =>
-            current.map((row: any, currentRowIndex: any) => {
+    const handleUpdatePanel = (
+        rowIndex: number,
+        panelIndex: number,
+        nextPanel: DashboardPanel | null
+    ) => {
+        setEditRows((current) =>
+            current.map((row, currentRowIndex) => {
                 if (currentRowIndex !== rowIndex) {
                     return row;
                 }
 
-                const panels = Array.isArray(row?.panels)
-                    ? row.panels.slice(0, 2)
-                    : [];
+                const panels = row.panels.slice(0, 2);
                 panels[panelIndex] = nextPanel;
                 return {
                     ...row,
@@ -77,38 +101,37 @@ export function useDashboardEditorState({
         );
     };
 
-    const handleRemovePanel = (rowIndex: any, panelIndex: any) => {
-        setEditRows((current: any) =>
+    const handleRemovePanel = (rowIndex: number, panelIndex: number) => {
+        setEditRows((current) =>
             current
-                .map((row: any, currentRowIndex: any) => {
+                .map((row, currentRowIndex) => {
                     if (currentRowIndex !== rowIndex) {
                         return row;
                     }
 
-                    const panels = Array.isArray(row?.panels)
-                        ? row.panels.slice(0, 2)
-                        : [];
+                    const panels = row.panels.slice(0, 2);
                     panels.splice(panelIndex, 1);
                     return {
                         ...row,
                         panels
                     };
                 })
-                .filter(
-                    (row: any) => Array.isArray(row?.panels) && row.panels.length > 0
-                )
+                .filter((row) => row.panels.length > 0)
         );
     };
 
-    const handleRemoveRow = (rowIndex: any) => {
-        setEditRows((current: any) =>
-            current.filter((_: any, index: any) => index !== rowIndex)
+    const handleRemoveRow = (rowIndex: number) => {
+        setEditRows((current) =>
+            current.filter((_, index) => index !== rowIndex)
         );
     };
 
-    const handleDirectionChange = (rowIndex: any, direction: any) => {
-        setEditRows((current: any) =>
-            current.map((row: any, index: any) =>
+    const handleDirectionChange = (
+        rowIndex: number,
+        direction: DashboardDirection
+    ) => {
+        setEditRows((current) =>
+            current.map((row, index) =>
                 index === rowIndex
                     ? {
                           ...row,
@@ -142,9 +165,7 @@ export function useDashboardEditorState({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.dashboard.toast.failed_to_save_dashboard'
-                      )
+                    : t('view.dashboard.toast.failed_to_save_dashboard')
             );
         } finally {
             setIsSaving(false);

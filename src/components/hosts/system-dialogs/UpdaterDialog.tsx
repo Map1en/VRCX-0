@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { openExternalLink } from '@/services/entityMediaService';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { openExternalLink } from '@/services/entityMediaService';
 import { restartApplication } from '@/services/shellIntegrationService';
 import {
     canInstallUpdatesOnPlatform,

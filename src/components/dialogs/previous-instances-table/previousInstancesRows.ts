@@ -145,22 +145,28 @@ export function sortPreviousInstanceRows(
         return [...(Array.isArray(rows) ? rows : [])];
     }
     const direction = sortDesc ? -1 : 1;
-    return [...(Array.isArray(rows) ? rows : [])].sort((left: any, right: any) => {
-        let result = 0;
-        if (sortKey === 'duration') {
-            result = rowDurationValue(left) - rowDurationValue(right);
-        } else if (sortKey === 'location') {
-            result = rowInstanceText(left).localeCompare(rowInstanceText(right));
-        } else if (sortKey === 'creator') {
-            result = rowCreatorText(left).localeCompare(rowCreatorText(right));
-        } else {
-            result = createdTime(left) - createdTime(right);
+    return [...(Array.isArray(rows) ? rows : [])].sort(
+        (left: any, right: any) => {
+            let result = 0;
+            if (sortKey === 'duration') {
+                result = rowDurationValue(left) - rowDurationValue(right);
+            } else if (sortKey === 'location') {
+                result = rowInstanceText(left).localeCompare(
+                    rowInstanceText(right)
+                );
+            } else if (sortKey === 'creator') {
+                result = rowCreatorText(left).localeCompare(
+                    rowCreatorText(right)
+                );
+            } else {
+                result = createdTime(left) - createdTime(right);
+            }
+            if (result === 0 && sortKey !== 'date') {
+                result = createdTime(left) - createdTime(right);
+            }
+            return result * direction;
         }
-        if (result === 0 && sortKey !== 'date') {
-            result = createdTime(left) - createdTime(right);
-        }
-        return result * direction;
-    });
+    );
 }
 
 export function normalizePlayerRows(players: any) {
@@ -171,7 +177,8 @@ export function normalizePlayerRows(players: any) {
               ? players
               : [];
     return [...rows].sort(
-        (left: any, right: any) => Number(right?.time || 0) - Number(left?.time || 0)
+        (left: any, right: any) =>
+            Number(right?.time || 0) - Number(left?.time || 0)
     );
 }
 

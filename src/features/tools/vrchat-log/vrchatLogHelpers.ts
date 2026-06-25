@@ -30,9 +30,13 @@ export type VrchatLogViewerPrefs = {
     recentFileName?: string;
 };
 
+function isVrchatLogLevel(value: string): value is VrchatLogLevel {
+    return LOG_LEVELS.some((level) => level === value);
+}
+
 export function normalizePrefs(value: VrchatLogViewerPrefs | null) {
     const levels = Array.isArray(value?.levels)
-        ? value.levels.filter((level) => LOG_LEVELS.includes(level as any))
+        ? value.levels.filter(isVrchatLogLevel)
         : LOG_LEVELS;
     return {
         levels: levels.length ? levels : LOG_LEVELS,

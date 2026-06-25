@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-    getFriendsLocations,
-    resolveFriendPresenceLocation
-} from './location';
+import { getFriendsLocations, resolveFriendPresenceLocation } from './location';
 
 describe('location utils', () => {
     it('uses current concrete location before traveling location for grouped friend locations', () => {
@@ -74,7 +71,9 @@ describe('location utils', () => {
             travelingToLocation: 'wrld_traveling:67890'
         };
 
-        expect(resolveFriendPresenceLocation(friend)).toBe('wrld_current:12345');
+        expect(resolveFriendPresenceLocation(friend)).toBe(
+            'wrld_current:12345'
+        );
         expect(
             resolveFriendPresenceLocation(friend, { preferTraveling: false })
         ).toBe('wrld_current:12345');

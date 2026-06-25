@@ -18,16 +18,12 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    GridSettingsMenu,
-    MyAvatarFilterPopover
-} from './MyAvatarsViewParts';
-
 import type {
     MyAvatarsGridDensity,
     MyAvatarsLoadStatus,
     MyAvatarsViewMode
 } from '../myAvatarsTypes';
+import { GridSettingsMenu, MyAvatarFilterPopover } from './MyAvatarsViewParts';
 
 type MyAvatarsToolbarProps = {
     viewMode: MyAvatarsViewMode;
@@ -71,7 +67,9 @@ export function MyAvatarsToolbar({
     onRefresh
 }: MyAvatarsToolbarProps) {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
 
     return (
         <div className="flex shrink-0 flex-col gap-2 px-0.5 pt-1.5 lg:flex-row lg:items-center lg:justify-between">
@@ -146,7 +144,9 @@ export function MyAvatarsToolbar({
                     </InputGroupAddon>
                     <InputGroupInput
                         value={searchQuery}
-                        onChange={(event: any) => onSearchChange(event.target.value)}
+                        onChange={(event: any) =>
+                            onSearchChange(event.target.value)
+                        }
                         placeholder={t('common.actions.search')}
                         aria-label={t('common.actions.search')}
                     />
@@ -182,9 +182,7 @@ export function MyAvatarsToolbar({
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        {t(
-                            'view.my_avatars.action.refresh_avatar_inventory'
-                        )}
+                        {t('view.my_avatars.action.refresh_avatar_inventory')}
                     </TooltipContent>
                 </Tooltip>
             </div>

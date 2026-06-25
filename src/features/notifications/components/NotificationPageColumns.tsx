@@ -1,10 +1,11 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { CheckIcon, SendIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter } from '@/lib/dateTime';
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -46,7 +47,7 @@ export function useNotificationColumns({
 }: any) {
     const { t } = useTranslation();
 
-    return useMemo(
+    return useMemo<ColumnDef<unknown>[]>(
         () => [
             {
                 id: 'created_at',
@@ -124,7 +125,8 @@ export function useNotificationColumns({
                 ),
                 cell: ({ row }: any) => {
                     const notification = row.original;
-                    const senderLabel = getNotificationSenderLabel(notification);
+                    const senderLabel =
+                        getNotificationSenderLabel(notification);
                     if (
                         notification.senderUserId &&
                         !notification.senderUserId.startsWith('grp_')

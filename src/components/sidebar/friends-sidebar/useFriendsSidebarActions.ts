@@ -14,10 +14,9 @@ import { selfInviteToInstance } from '@/services/launchService';
 import { recordRecentAction } from '@/services/recentActionService';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-import { normalizeId } from './friendsSidebarModel';
 
 export function useFriendsSidebarActions({
     canInviteFromCurrentLocation,
@@ -155,9 +154,7 @@ export function useFriendsSidebarActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'component.friends_sidebar.toast.failed_to_send_invite'
-                      )
+                    : t('component.friends_sidebar.toast.failed_to_send_invite')
             );
         }
     }
@@ -168,13 +165,9 @@ export function useFriendsSidebarActions({
             return;
         }
         const result = await confirm({
-            title: t(
-                'component.friends_sidebar.modal.request_invite'
-            ),
+            title: t('component.friends_sidebar.modal.request_invite'),
             description: friend.displayName || friendId,
-            confirmText: t(
-                'component.friends_sidebar.modal.request_invite_2'
-            ),
+            confirmText: t('component.friends_sidebar.modal.request_invite_2'),
             cancelText: t('common.actions.cancel')
         });
         if (!result.ok) {
@@ -221,9 +214,7 @@ export function useFriendsSidebarActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'component.friends_sidebar.toast.failed_to_send_boop'
-                      )
+                    : t('component.friends_sidebar.toast.failed_to_send_boop')
             );
         }
     }
@@ -255,8 +246,9 @@ export function useFriendsSidebarActions({
                 );
                 useRuntimeStore.getState().setAuthBootstrap({
                     currentUserId: String(mergedUser.id),
-                    currentUserDisplayName:
-                        String(mergedUser.displayName || mergedUser.username || ''),
+                    currentUserDisplayName: String(
+                        mergedUser.displayName || mergedUser.username || ''
+                    ),
                     currentUserSnapshot: mergedUser
                 });
             }
@@ -296,9 +288,7 @@ export function useFriendsSidebarActions({
 
     async function editCurrentUserStatusDescription() {
         const result = await prompt({
-            title: t(
-                'component.friends_sidebar.modal.edit_status_description'
-            ),
+            title: t('component.friends_sidebar.modal.edit_status_description'),
             inputValue: currentUser?.statusDescription || '',
             multiline: true,
             confirmText: t('common.actions.save'),

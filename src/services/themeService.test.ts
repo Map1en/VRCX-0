@@ -13,9 +13,7 @@ describe('themeService CJK font locale routing', () => {
         expect(supportsConfigurableCjkFontPack('zh-Hant-TW')).toBe(true);
         expect(supportsConfigurableCjkFontPack('ja')).toBe(true);
         expect(supportsConfigurableCjkFontPack('ko')).toBe(true);
-        expect(resolveAppCjkFontPackForLocale('puhuiti', 'ja')).toBe(
-            'puhuiti'
-        );
+        expect(resolveAppCjkFontPackForLocale('puhuiti', 'ja')).toBe('puhuiti');
     });
 
     it('uses the system CJK font for non-core CJK app locales', () => {
@@ -23,8 +21,6 @@ describe('themeService CJK font locale routing', () => {
         expect(supportsConfigurableCjkFontPack('fr')).toBe(false);
         expect(supportsConfigurableCjkFontPack('vi')).toBe(false);
         expect(resolveAppCjkFontPackForLocale('noto', 'en')).toBe('system');
-        expect(resolveAppCjkFontPackForLocale('puhuiti', 'fr')).toBe(
-            'system'
-        );
+        expect(resolveAppCjkFontPackForLocale('puhuiti', 'fr')).toBe('system');
     });
 });

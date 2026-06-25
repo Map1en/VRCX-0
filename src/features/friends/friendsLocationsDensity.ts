@@ -77,6 +77,10 @@ export function sanitizeFriendsLocationsDensity(value: any) {
         : DEFAULT_FRIENDS_LOCATIONS_DENSITY;
 }
 
+type FriendsLocationsDensityKey = keyof typeof DENSITY_CONFIGS;
+
 export function getFriendsLocationsDensityConfig(value: any) {
-    return DENSITY_CONFIGS[sanitizeFriendsLocationsDensity(value)];
+    return DENSITY_CONFIGS[
+        sanitizeFriendsLocationsDensity(value) as FriendsLocationsDensityKey
+    ];
 }

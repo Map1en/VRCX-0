@@ -1,8 +1,4 @@
-export function normalizeString(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
+import { normalizeString } from '@/shared/utils/string';
 
 export function normalizeTagName(value: any, prefix: any) {
     const normalized = String(value || '')

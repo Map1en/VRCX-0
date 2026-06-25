@@ -150,7 +150,10 @@ function instancePresenceKey(endpoint: unknown, location: unknown): string {
     return key ? `${endpointText(endpoint)}::${key}` : '';
 }
 
-function createRosterRow(user: unknown, fallback: Record<string, unknown> = {}) {
+function createRosterRow(
+    user: unknown,
+    fallback: Record<string, unknown> = {}
+): RosterUserRow {
     const source = record(user);
     const nested = record(source.user);
     const id = firstText(userId(source), fallback.id, fallback.userId);
@@ -182,9 +185,11 @@ function createRosterRow(user: unknown, fallback: Record<string, unknown> = {}) 
                   $location_at: joinedAt
               }
             : {}),
-        ...(fallback.subtitle ? { $subtitle: fallback.subtitle } : {}),
+        ...(fallback.subtitle
+            ? { $subtitle: firstText(fallback.subtitle) }
+            : {}),
         ...(fallback.isFriend ? { isFriend: true } : {})
-    } as RosterUserRow;
+    };
 }
 
 function rowKey(user: RosterUserRow): string {
@@ -195,7 +200,10 @@ function valuePresent(value: unknown): boolean {
     return value !== undefined && value !== null && value !== '';
 }
 
-function mergeRosterRow(existing: RosterUserRow | undefined, incoming: RosterUserRow) {
+function mergeRosterRow(
+    existing: RosterUserRow | undefined,
+    incoming: RosterUserRow
+) {
     if (!existing) {
         return incoming;
     }

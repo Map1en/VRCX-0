@@ -33,7 +33,8 @@ describe('waitForInitialTelemetryContext', () => {
             }
         }));
 
-        const { waitForInitialTelemetryContext } = await import('./telemetryPayload');
+        const { waitForInitialTelemetryContext } =
+            await import('./telemetryPayload');
         const controller = new AbortController();
         const wait = waitForInitialTelemetryContext({
             timeoutMs: 5_000,

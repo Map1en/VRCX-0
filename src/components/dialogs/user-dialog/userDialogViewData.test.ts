@@ -114,22 +114,23 @@ describe('userDialogViewData', () => {
         });
 
         expect(viewData.effectiveGroupSort).toBe('alphabetical');
-        expect(viewData.sortedProfileGroups.map((group: any) => group.id)).toEqual([
-            'grp_alpha',
-            'grp_beta'
-        ]);
-        expect(viewData.filteredProfileGroups.map((group: any) => group.id)).toEqual(
-            ['grp_beta']
-        );
-        expect(viewData.selectedUserGroups.map((group: any) => group.id)).toEqual([
-            'grp_beta'
-        ]);
         expect(
-            viewData.visibleMutualFriends.map((friend: any) => friend.displayName)
+            viewData.sortedProfileGroups.map((group: any) => group.id)
+        ).toEqual(['grp_alpha', 'grp_beta']);
+        expect(
+            viewData.filteredProfileGroups.map((group: any) => group.id)
+        ).toEqual(['grp_beta']);
+        expect(
+            viewData.selectedUserGroups.map((group: any) => group.id)
+        ).toEqual(['grp_beta']);
+        expect(
+            viewData.visibleMutualFriends.map(
+                (friend: any) => friend.displayName
+            )
         ).toEqual(['Alice']);
-        expect(viewData.filteredProfileWorlds.map((world: any) => world.id)).toEqual(
-            ['wrld_tree']
-        );
+        expect(
+            viewData.filteredProfileWorlds.map((world: any) => world.id)
+        ).toEqual(['wrld_tree']);
         expect(
             viewData.filteredFavoriteWorlds.map((world: any) => world.id)
         ).toEqual(['wrld_remote_fav']);
@@ -247,7 +248,9 @@ describe('userDialogViewData', () => {
         ).toEqual(['grp_owned']);
         expect(summary.userGroupSections.mutualGroups).toEqual([]);
         expect(
-            summary.userGroupSections.remainingGroups.map((group: any) => group.id)
+            summary.userGroupSections.remainingGroups.map(
+                (group: any) => group.id
+            )
         ).toEqual(['grp_mutual', 'grp_regular']);
         expect(summary.selectedGroupCount).toBe(2);
         expect(summary.ownGroupCountText).toBe('1/3');

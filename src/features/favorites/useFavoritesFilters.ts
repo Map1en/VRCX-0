@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteGroup,
+    FavoriteKind,
+    FavoriteSource
+} from './favoritesTypes';
 
 export function useFavoritesFilters({ kind }: { kind: FavoriteKind }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -37,9 +41,9 @@ export function useFavoritesSelectedGroupSync({
     setSelectedGroupKey,
     setSelectedSource
 }: {
-    avatarHistoryGroups: any[];
-    localGroups: any[];
-    remoteGroups: any[];
+    avatarHistoryGroups: FavoriteGroup[];
+    localGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroup[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
     setSelectedGroupKey(value: string): void;
@@ -52,14 +56,14 @@ export function useFavoritesSelectedGroupSync({
                 : selectedSource === 'history'
                   ? avatarHistoryGroups
                   : localGroups;
-        if (activeGroups.some((group: any) => group.key === selectedGroupKey)) {
+        if (activeGroups.some((group) => group.key === selectedGroupKey)) {
             return;
         }
 
         const nextGroup =
-            remoteGroups.find((group: any) => group.count > 0) ||
-            localGroups.find((group: any) => group.count > 0) ||
-            avatarHistoryGroups.find((group: any) => group.count > 0) ||
+            remoteGroups.find((group) => Number(group.count) > 0) ||
+            localGroups.find((group) => Number(group.count) > 0) ||
+            avatarHistoryGroups.find((group) => Number(group.count) > 0) ||
             remoteGroups[0] ||
             localGroups[0] ||
             avatarHistoryGroups[0] ||

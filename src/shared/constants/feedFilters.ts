@@ -27,7 +27,10 @@ export type SharedFeedFilterDefaults = Record<
 const getOptions = (
     optionTypes: SharedFeedFilterOptionValue[]
 ): SharedFeedFilterOption[] => {
-    const optionMap: Record<SharedFeedFilterOptionValue, SharedFeedFilterOption> = {
+    const optionMap: Record<
+        SharedFeedFilterOptionValue,
+        SharedFeedFilterOption
+    > = {
         Off: { label: 'Off', textKey: 'dialog.shared_feed_filters.off' },
         On: { label: 'On', textKey: 'dialog.shared_feed_filters.on' },
         VIP: {
@@ -43,7 +46,9 @@ const getOptions = (
             textKey: 'dialog.shared_feed_filters.everyone'
         }
     };
-    return optionTypes.map((type: any) => optionMap[type]);
+    return optionTypes.map(
+        (type: SharedFeedFilterOptionValue) => optionMap[type]
+    );
 };
 
 function feedFiltersOptions(): {

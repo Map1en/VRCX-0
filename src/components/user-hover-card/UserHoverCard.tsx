@@ -96,11 +96,10 @@ export function UserHoverCard({
                     }
                 }}
                 onPointerDownCapture={() => {
-                    suppressUntilRef.current =
-                        getHoverOpenSuppressionDeadline(
-                            Date.now(),
-                            openDelay
-                        );
+                    suppressUntilRef.current = getHoverOpenSuppressionDeadline(
+                        Date.now(),
+                        openDelay
+                    );
                     setOpen(false);
                 }}
             >

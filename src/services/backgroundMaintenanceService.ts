@@ -474,7 +474,7 @@ function mergeCurrentUserRefreshSnapshot({
             continue;
         }
         if (hasCurrentUserSnapshotField(currentSnapshot, field)) {
-            user[field] = currentSnapshot[field];
+            user[field] = currentSnapshotRecord?.[field];
         }
     }
 
@@ -945,7 +945,7 @@ async function deferRuntimeScheduledFrontendJob(
 async function getDueRuntimeScheduledFrontendJobs() {
     const dueJobs = await commands
         .appRuntimeFrontendScheduleDueJobsGet()
-        .catch((error: unknown) => {
+        .catch((error: unknown): unknown[] => {
             console.warn('Failed to read runtime maintenance due jobs:', error);
             return [];
         });

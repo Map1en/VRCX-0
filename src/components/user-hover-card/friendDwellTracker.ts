@@ -1,9 +1,9 @@
 import {
-    normalizeId,
     normalizeLocationStatus,
     timestampMsFromValue
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 const firstSeenByUser = new Map<string, { location: string; since: number }>();

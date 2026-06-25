@@ -2,7 +2,10 @@ import { PlusIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { FEED_FILTER_TYPES, type FeedFilterType } from '@/repositories/feedRepository';
+import {
+    FEED_FILTER_TYPES,
+    type FeedFilterType
+} from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import {
     AlertDialog,
@@ -24,7 +27,13 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Field, FieldGroup, FieldLabel, FieldSet, FieldLegend } from '@/ui/shadcn/field';
+import {
+    Field,
+    FieldGroup,
+    FieldLabel,
+    FieldSet,
+    FieldLegend
+} from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
     Select,
@@ -103,7 +112,8 @@ export function FeedColumnsManagerDialog({
     selectedColumnId
 }: FeedColumnsManagerDialogProps) {
     const { t } = useTranslation();
-    const [draftColumns, setDraftColumns] = useState<FeedColumnConfig[]>(columns);
+    const [draftColumns, setDraftColumns] =
+        useState<FeedColumnConfig[]>(columns);
     const [draftSelectedColumnId, setDraftSelectedColumnId] =
         useState(selectedColumnId);
     const [restorePresetPromptOpen, setRestorePresetPromptOpen] =
@@ -192,7 +202,9 @@ export function FeedColumnsManagerDialog({
             setRestorePresetPromptOpen(true);
             return;
         }
-        const nextColumns = draftColumns.filter((column) => column.id !== columnId);
+        const nextColumns = draftColumns.filter(
+            (column) => column.id !== columnId
+        );
         setDraftColumns(nextColumns);
         if (draftSelectedColumnId === columnId) {
             setDraftSelectedColumnId(nextColumns[0]?.id || '');
@@ -219,9 +231,7 @@ export function FeedColumnsManagerDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="w-[min(94vw,60rem)] sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>
-                        {t('view.feed.columns.manage')}
-                    </DialogTitle>
+                    <DialogTitle>{t('view.feed.columns.manage')}</DialogTitle>
                 </DialogHeader>
                 <div className="grid min-h-96 min-w-0 grid-cols-[18rem_1fr] gap-4">
                     <div className="border-border flex min-h-0 flex-col gap-1 rounded-lg border p-1">
@@ -334,7 +344,10 @@ export function FeedColumnsManagerDialog({
                                                                 selectedGroupKeys.length
                                                                     ? selectedGroupKeys
                                                                     : favoriteGroupOptions
-                                                                          .slice(0, 1)
+                                                                          .slice(
+                                                                              0,
+                                                                              1
+                                                                          )
                                                                           .map(
                                                                               (
                                                                                   group
@@ -388,7 +401,9 @@ export function FeedColumnsManagerDialog({
                                                         'all'
                                                     )
                                             });
-                                        } else if (value === 'exclude-selected') {
+                                        } else if (
+                                            value === 'exclude-selected'
+                                        ) {
                                             updateSelectedColumn({
                                                 friendScope:
                                                     withExcludedFavoriteGroups(
@@ -438,13 +453,12 @@ export function FeedColumnsManagerDialog({
                                     </SelectContent>
                                 </Select>
                             </Field>
-                            {resolveScopeSelectValue(selectedColumn.friendScope) ===
-                            'favorites-selected' ? (
+                            {resolveScopeSelectValue(
+                                selectedColumn.friendScope
+                            ) === 'favorites-selected' ? (
                                 <FieldSet>
                                     <FieldLegend variant="label">
-                                        {t(
-                                            'view.feed.columns.favorite_groups'
-                                        )}
+                                        {t('view.feed.columns.favorite_groups')}
                                     </FieldLegend>
                                     <div className="grid grid-cols-2 gap-2">
                                         {favoriteGroupOptions.map((group) => (
@@ -463,10 +477,11 @@ export function FeedColumnsManagerDialog({
                                                                     selectedColumn.friendScope,
                                                                     {
                                                                         kind: 'favorites',
-                                                                        groupKeys: toggleValue(
-                                                                            selectedGroupKeys,
-                                                                            group.key
-                                                                        )
+                                                                        groupKeys:
+                                                                            toggleValue(
+                                                                                selectedGroupKeys,
+                                                                                group.key
+                                                                            )
                                                                     }
                                                                 )
                                                         })
@@ -530,16 +545,20 @@ export function FeedColumnsManagerDialog({
                                 </FieldLegend>
                                 <div className="grid grid-cols-3 gap-2">
                                     {FEED_FILTER_TYPES.map((type) => (
-                                        <Field key={type} orientation="horizontal">
+                                        <Field
+                                            key={type}
+                                            orientation="horizontal"
+                                        >
                                             <Checkbox
                                                 checked={selectedColumn.feedTypes.includes(
                                                     type
                                                 )}
                                                 onCheckedChange={() => {
-                                                    const nextTypes = toggleValue(
-                                                        selectedColumn.feedTypes,
-                                                        type
-                                                    ) as FeedFilterType[];
+                                                    const nextTypes =
+                                                        toggleValue(
+                                                            selectedColumn.feedTypes,
+                                                            type
+                                                        ) as FeedFilterType[];
                                                     if (nextTypes.length) {
                                                         updateSelectedColumn({
                                                             feedTypes: nextTypes

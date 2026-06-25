@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { formatDateFilter } from '@/lib/dateTime';
 import {
     backgroundImageRemoteProviders,
     chooseBackgroundImageFiles,
@@ -18,7 +19,6 @@ import {
     setBackgroundImageMode,
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
-import { formatDateFilter } from '@/lib/dateTime';
 import { isBackgroundImageCustomSourceRotating } from '@/services/background-image/localSourceService';
 import type {
     BackgroundImageCustomSource,
@@ -43,10 +43,12 @@ function countKey(baseKey: string, count: number): string {
 }
 
 function fileNameFromPath(path?: string): string {
-    return String(path || '')
-        .split(/[\\/]/)
-        .filter(Boolean)
-        .pop() || String(path || '');
+    return (
+        String(path || '')
+            .split(/[\\/]/)
+            .filter(Boolean)
+            .pop() || String(path || '')
+    );
 }
 
 function formatResolvedAt(value: string): string {
@@ -87,7 +89,9 @@ function CurrentBackgroundImageSummary({
         setImageFailed(false);
     }, [snapshot?.imageUrl]);
 
-    const providerName = resolveProviderName(snapshot?.providerId || providerId);
+    const providerName = resolveProviderName(
+        snapshot?.providerId || providerId
+    );
     const imageCount = snapshot?.imageCount || customSource?.paths.length || 0;
     const localPath =
         snapshot?.imagePath ||
@@ -180,21 +184,28 @@ function CurrentBackgroundImageSummary({
                             ) : null}
                             {snapshot.mode === 'custom' && customSource ? (
                                 <span>
-                                    {t('view.background_image.settings.rotation')}:{' '}
+                                    {t(
+                                        'view.background_image.settings.rotation'
+                                    )}
+                                    :{' '}
                                     {t(
                                         `view.background_image.rotation.${customSource.rotationInterval}`
                                     )}
                                 </span>
                             ) : null}
                             <span>
-                                {t('view.background_image.settings.resolved_at')}:{' '}
-                                {formatResolvedAt(snapshot.resolvedAt)}
+                                {t(
+                                    'view.background_image.settings.resolved_at'
+                                )}
+                                : {formatResolvedAt(snapshot.resolvedAt)}
                             </span>
                         </div>
                     </>
                 ) : (
                     <div className="text-muted-foreground text-xs">
-                        {t('view.background_image.settings.no_image_description')}
+                        {t(
+                            'view.background_image.settings.no_image_description'
+                        )}
                     </div>
                 )}
             </div>
@@ -449,11 +460,14 @@ export function BackgroundImageSection() {
                         {showRotation ? (
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-sm font-medium">
-                                    {t('view.background_image.settings.rotation')}
+                                    {t(
+                                        'view.background_image.settings.rotation'
+                                    )}
                                 </span>
                                 <Select
                                     value={
-                                        customSource?.rotationInterval || 'daily'
+                                        customSource?.rotationInterval ||
+                                        'daily'
                                     }
                                     disabled={loading}
                                     onValueChange={(value) =>

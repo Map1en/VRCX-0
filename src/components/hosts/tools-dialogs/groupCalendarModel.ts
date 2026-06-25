@@ -62,7 +62,7 @@ export function buildEventsByDate(events: any, timeZone: any) {
         }
         result[dateKey].push(event);
     }
-    for (const rows of Object.values(result) as any[]) {
+    for (const rows of Object.values(result).filter(Array.isArray)) {
         rows.sort((left: any, right: any) =>
             compareAsc(new Date(left.startsAt), new Date(right.startsAt))
         );

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-import { FILE_TABS, TAB_ORDER } from '../galleryConstants';
+import { FILE_TABS, TAB_ORDER, type GalleryTab } from '../galleryConstants';
 import { GalleryFileTab } from './GalleryFileTab';
 import { GalleryPrintsTab } from './GalleryPrintsTab';
 
@@ -25,19 +25,26 @@ export function GalleryTabs({
                 variant="line"
                 className="flex h-auto w-full flex-wrap justify-start"
             >
-                {TAB_ORDER.map((tab: any) => (
-                    <TabsTrigger key={tab} value={tab} className="flex-none">
-                        {FILE_TABS[tab]?.titleKey
-                            ? t(FILE_TABS[tab].titleKey)
-                            : t(`dialog.gallery_icons.${tab}`)}
-                        <span className="text-muted-foreground text-xs">
-                            {tabCounts[tab]}
-                        </span>
-                    </TabsTrigger>
-                ))}
+                {TAB_ORDER.map((tab: GalleryTab) => {
+                    const definition = tab === 'prints' ? null : FILE_TABS[tab];
+                    return (
+                        <TabsTrigger
+                            key={tab}
+                            value={tab}
+                            className="flex-none"
+                        >
+                            {definition?.titleKey
+                                ? t(definition.titleKey)
+                                : t(`dialog.gallery_icons.${tab}`)}
+                            <span className="text-muted-foreground text-xs">
+                                {tabCounts[tab]}
+                            </span>
+                        </TabsTrigger>
+                    );
+                })}
             </TabsList>
 
-            {Object.entries(FILE_TABS).map(([tab, definition]: any) => (
+            {Object.entries(FILE_TABS).map(([tab, definition]) => (
                 <GalleryFileTab
                     key={tab}
                     tab={tab}

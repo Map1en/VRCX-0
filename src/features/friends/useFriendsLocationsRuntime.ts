@@ -6,7 +6,9 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 const EMPTY_CURRENT_LOCATION_PLAYER_IDS = Object.freeze([]);
 
 export function useFriendsLocationsRuntime() {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );

@@ -86,7 +86,9 @@ function getLocalFavoriteGroupConfigKey(kind: unknown): string | undefined {
         : undefined;
 }
 
-function normalizeCacheRow(row: ObjectRow | null | undefined): FavoriteCacheEntity {
+function normalizeCacheRow(
+    row: ObjectRow | null | undefined
+): FavoriteCacheEntity {
     const record = asObjectRow(row);
     return {
         id: normalizeEntityId(record.id),
@@ -97,14 +99,15 @@ function normalizeCacheRow(row: ObjectRow | null | undefined): FavoriteCacheEnti
         imageUrl: normalizeEntityId(record.imageUrl),
         name: normalizeEntityId(record.name),
         releaseStatus: normalizeEntityId(record.releaseStatus),
-        thumbnailImageUrl:
-            normalizeEntityId(record.thumbnailImageUrl),
+        thumbnailImageUrl: normalizeEntityId(record.thumbnailImageUrl),
         updated_at: normalizeEntityId(record.updated_at),
         version: Number(record.version) || 0
     };
 }
 
-function normalizeWorldFavoriteRow(row: ObjectRow | null | undefined): WorldFavoriteRow {
+function normalizeWorldFavoriteRow(
+    row: ObjectRow | null | undefined
+): WorldFavoriteRow {
     const record = asObjectRow(row);
     return {
         created_at: normalizeEntityId(record.created_at),
@@ -113,7 +116,9 @@ function normalizeWorldFavoriteRow(row: ObjectRow | null | undefined): WorldFavo
     };
 }
 
-function normalizeAvatarFavoriteRow(row: ObjectRow | null | undefined): AvatarFavoriteRow {
+function normalizeAvatarFavoriteRow(
+    row: ObjectRow | null | undefined
+): AvatarFavoriteRow {
     const record = asObjectRow(row);
     return {
         created_at: normalizeEntityId(record.created_at),
@@ -122,7 +127,9 @@ function normalizeAvatarFavoriteRow(row: ObjectRow | null | undefined): AvatarFa
     };
 }
 
-function normalizeFriendFavoriteRow(row: ObjectRow | null | undefined): FriendFavoriteRow {
+function normalizeFriendFavoriteRow(
+    row: ObjectRow | null | undefined
+): FriendFavoriteRow {
     const record = asObjectRow(row);
     return {
         created_at: normalizeEntityId(record.created_at),
@@ -211,18 +218,18 @@ async function getAvatarCache() {
 
 async function addWorldToCache(entry: CacheEntryInput) {
     return commands.appWorldCacheUpsert({
-            id: entry.id,
-            authorId: entry.authorId,
-            authorName: entry.authorName,
-            createdAt: entry.created_at,
-            description: entry.description,
-            imageUrl: entry.imageUrl,
-            name: entry.name,
-            releaseStatus: entry.releaseStatus,
-            thumbnailImageUrl: entry.thumbnailImageUrl,
-            updatedAt: entry.updated_at,
-            version: entry.version
-        });
+        id: entry.id,
+        authorId: entry.authorId,
+        authorName: entry.authorName,
+        createdAt: entry.created_at,
+        description: entry.description,
+        imageUrl: entry.imageUrl,
+        name: entry.name,
+        releaseStatus: entry.releaseStatus,
+        thumbnailImageUrl: entry.thumbnailImageUrl,
+        updatedAt: entry.updated_at,
+        version: entry.version
+    });
 }
 
 async function getCachedWorldById(id: unknown) {
@@ -230,7 +237,9 @@ async function getCachedWorldById(id: unknown) {
     if (!normalizedId) {
         return null;
     }
-    const row = (await commands.appWorldCacheGet(normalizedId)) as ObjectRow | null;
+    const row = (await commands.appWorldCacheGet(
+        normalizedId
+    )) as ObjectRow | null;
     return row ? normalizeCacheRow(row) : null;
 }
 

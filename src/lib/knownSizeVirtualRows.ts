@@ -1,4 +1,4 @@
-type KnownSizeRow = Record<string, any> & {
+type KnownSizeRow = Record<string, unknown> & {
     height?: unknown;
     top?: unknown;
 };
@@ -14,9 +14,9 @@ export function positionKnownSizeRows<T extends KnownSizeRow>(
     rows: readonly T[] | null | undefined
 ) {
     let top = 0;
-    const positionedRows = (Array.isArray(rows) ? rows : []).map((row: any) => {
+    const positionedRows = (Array.isArray(rows) ? rows : []).map((row) => {
         const height = Math.max(0, Number(row?.height) || 0);
-        const positioned: any = {
+        const positioned: T & { height: number; top: number } = {
             ...row,
             height,
             top
@@ -48,7 +48,7 @@ export function getVisibleKnownSizeRows<T extends KnownSizeRow>({
     const start = Math.max(0, safeScrollTop - safeOverscan);
     const end = safeScrollTop + safeViewportHeight + safeOverscan;
 
-    return safeRows.filter((row: any) => {
+    return safeRows.filter((row) => {
         const top = Math.max(0, Number(row?.top) || 0);
         const height = Math.max(0, Number(row?.height) || 0);
         return top + height >= start && top <= end;

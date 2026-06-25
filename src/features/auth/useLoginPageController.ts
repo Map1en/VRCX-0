@@ -1,17 +1,16 @@
-import { useLoginPageState } from './useLoginPageState';
 import { links } from '@/shared/constants/link';
+
+import { useLoginPageState } from './useLoginPageState';
 
 export function useLoginPageController() {
     const page = useLoginPageState();
 
     return {
         actions: {
-            openDiscord: () =>
-                page.openExternalLink(links.discord),
+            openDiscord: () => page.openExternalLink(links.discord),
             openForgotPassword: () =>
                 page.openExternalLink('https://vrchat.com/home/password'),
-            openGithub: () =>
-                page.openExternalLink(links.github),
+            openGithub: () => page.openExternalLink(links.github),
             openRegister: () =>
                 page.openExternalLink('https://vrchat.com/register')
         },

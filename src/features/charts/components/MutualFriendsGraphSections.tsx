@@ -291,9 +291,8 @@ function MutualFriendsSettingsSheet({
                         </p>
                     </div>
                     <div className="text-muted-foreground text-xs">
-                        {t('view.charts.label.hidden_nodes')}{' '}
-                        {excludedCount}. Visible nodes: {nodeCount}. Visible
-                        links: {edgeCount}.
+                        {t('view.charts.label.hidden_nodes')} {excludedCount}.
+                        Visible nodes: {nodeCount}. Visible links: {edgeCount}.
                     </div>
                     <Button
                         type="button"
@@ -327,7 +326,8 @@ export function MutualFriendsToolbar({
         ? isRefreshingSelectedNode
         : fetchProgress.isFetching;
     const isRefreshBusy =
-        isRefreshingSelectedNode || (!picker.selectedNode && fetchProgress.isFetching);
+        isRefreshingSelectedNode ||
+        (!picker.selectedNode && fetchProgress.isFetching);
     const handleRefresh = picker.selectedNode
         ? mutualCommands.refreshSelectedNode
         : mutualCommands.refreshPage;
@@ -397,9 +397,7 @@ export function MutualFriendsToolbar({
                     onExcludeSearchQueryChange={
                         exclusions.setExcludeSearchQuery
                     }
-                    onResetLayoutAndHidden={
-                        mutualCommands.resetLayoutAndHidden
-                    }
+                    onResetLayoutAndHidden={mutualCommands.resetLayoutAndHidden}
                     onToggleExcludedFriendId={
                         mutualCommands.toggleExcludedFriendId
                     }

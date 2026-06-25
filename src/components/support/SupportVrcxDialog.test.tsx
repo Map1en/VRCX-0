@@ -36,7 +36,8 @@ vi.mock('@/ui/shadcn/card', async () => {
     const React = await import('react');
 
     return {
-        Card: ({ children }: any) => React.createElement('section', null, children),
+        Card: ({ children }: any) =>
+            React.createElement('section', null, children),
         CardContent: ({ children }: any) =>
             React.createElement('div', null, children),
         CardDescription: ({ children }: any) =>

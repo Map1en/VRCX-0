@@ -23,7 +23,9 @@ function resolveTimezone(): string {
 }
 
 export function getCurrentTelemetryMode(): TelemetryRuntimeMode {
-    return normalizeRuntimeMode(useRuntimeStore.getState().backendRuntime?.mode);
+    return normalizeRuntimeMode(
+        useRuntimeStore.getState().backendRuntime?.mode
+    );
 }
 
 export function buildTelemetryContext(
@@ -66,7 +68,8 @@ type WaitForTelemetryContextOptions = {
 export function waitForInitialTelemetryContext(
     options: WaitForTelemetryContextOptions | number = {}
 ): Promise<void> {
-    const timeoutMs = typeof options === 'number' ? options : options.timeoutMs ?? 5000;
+    const timeoutMs =
+        typeof options === 'number' ? options : (options.timeoutMs ?? 5000);
     const signal = typeof options === 'number' ? undefined : options.signal;
 
     if (useRuntimeStore.getState().hostCapabilities.platform !== 'unknown') {

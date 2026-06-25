@@ -30,7 +30,10 @@ export function normalizeUserId(value: any) {
         : String(value ?? '').trim();
 }
 
-export function buildFavoriteIdSet(remoteFavoriteIds: any, localFriendFavorites: any) {
+export function buildFavoriteIdSet(
+    remoteFavoriteIds: any,
+    localFriendFavorites: any
+) {
     const set = new Set();
 
     for (const id of remoteFavoriteIds ?? []) {
@@ -70,7 +73,10 @@ export function normalizeSelfStatusInput(value: any) {
     return '';
 }
 
-export function normalizeStatusHistoryRows(profile: any, currentUserSnapshot: any) {
+export function normalizeStatusHistoryRows(
+    profile: any,
+    currentUserSnapshot: any
+) {
     const source = Array.isArray(profile?.statusHistory)
         ? profile.statusHistory
         : Array.isArray(currentUserSnapshot?.statusHistory)

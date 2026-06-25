@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
@@ -10,6 +9,7 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 
 import { resolveTabValue } from './userDialogRows';
 import {
@@ -60,7 +60,7 @@ function normalizeUserDialogAvatarSort(value: any) {
         : 'name';
 }
 
-function emptyDataPatchForTab(tab: any) {
+function emptyDataPatchForTab(tab: any): Record<string, unknown[]> {
     const dataKey = userDialogDataKeyForTab(tab);
     if (!dataKey) {
         return {};
@@ -224,9 +224,7 @@ export function useUserDialogTabData({
             return;
         }
 
-        setAvatarSort((current: any) =>
-            normalizeUserDialogAvatarSort(current)
-        );
+        setAvatarSort((current: any) => normalizeUserDialogAvatarSort(current));
         configRepository
             .getString(USER_DIALOG_AVATAR_SORT_CONFIG_KEY, 'name')
             .then((value: any) => {

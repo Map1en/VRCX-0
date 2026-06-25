@@ -59,9 +59,8 @@ function applyLocalFriendDelete(userId: string): void {
 
 async function refreshRustFriendSnapshotAfterLocalMutation() {
     try {
-        const { refreshFriendAndFavoriteSnapshots } = await import(
-            './backgroundMaintenanceService'
-        );
+        const { refreshFriendAndFavoriteSnapshots } =
+            await import('./backgroundMaintenanceService');
         await refreshFriendAndFavoriteSnapshots({ syncRealtime: false });
     } catch (error) {
         console.warn('Realtime friend snapshot refresh failed:', error);
@@ -91,9 +90,8 @@ async function deleteFriend({
         };
     }
 
-    const { recordFriendLogUnfriendByUserId } = await import(
-        './friendBootstrapService'
-    );
+    const { recordFriendLogUnfriendByUserId } =
+        await import('./friendBootstrapService');
     await recordFriendLogUnfriendByUserId({
         currentUserId,
         targetUserId: normalizedUserId

@@ -42,7 +42,9 @@ function buildAvatarWearSnapshotUpdate({
 } {
     const next =
         nextSnapshot && typeof nextSnapshot === 'object'
-            ? ({ ...(nextSnapshot as Record<string, unknown>) } as AvatarSnapshot)
+            ? ({
+                  ...(nextSnapshot as Record<string, unknown>)
+              } as AvatarSnapshot)
             : null;
 
     if (!next) {

@@ -107,7 +107,9 @@ export function TableColumnVisibilityMenu({
                                             checked === true
                                         )
                                     }
-                                    onSelect={(event: any) => event.preventDefault()}
+                                    onSelect={(event: any) =>
+                                        event.preventDefault()
+                                    }
                                 >
                                     <span className="min-w-0 flex-1 truncate">
                                         {resolveColumnLabel(column)}
@@ -161,7 +163,9 @@ export function TableColumnHeaderContextMenu({
                                 onCheckedChange={(checked: any) =>
                                     column.toggleVisibility(checked === true)
                                 }
-                                onSelect={(event: any) => event.preventDefault()}
+                                onSelect={(event: any) =>
+                                    event.preventDefault()
+                                }
                             >
                                 <span className="min-w-0 flex-1 truncate">
                                     {resolveColumnLabel(column)}
@@ -184,7 +188,9 @@ export function TableColumnHeaderContextMenu({
                                         checked === true
                                     )
                                 }
-                                onSelect={(event: any) => event.preventDefault()}
+                                onSelect={(event: any) =>
+                                    event.preventDefault()
+                                }
                             >
                                 {renderColumnLockLabel(columnOrderLocked, t)}
                             </ContextMenuCheckboxItem>

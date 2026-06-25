@@ -60,8 +60,8 @@ export function useWorldInstanceActions({
     showLaunchDialog
 }: any) {
     const { t } = useTranslation();
-    const [newInstanceRequest, setNewInstanceRequest] = useState(null);
-    const [inviteRequest, setInviteRequest] = useState(null);
+    const [newInstanceRequest, setNewInstanceRequest] = useState<any>(null);
+    const [inviteRequest, setInviteRequest] = useState<any>(null);
 
     useEffect(() => {
         setNewInstanceRequest(null);

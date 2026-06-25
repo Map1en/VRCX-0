@@ -16,6 +16,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -40,11 +41,7 @@ import {
 } from '../dashboardRegistry';
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader';
-import {
-    buildFavoriteIdSet,
-    joinCompactParts,
-    normalizeString
-} from './dashboardWidgetUtils';
+import { buildFavoriteIdSet, joinCompactParts } from './dashboardWidgetUtils';
 
 const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
     (column: any) => column.key
@@ -128,7 +125,11 @@ function resolveLanguageEntries(friend: any) {
             const key =
                 typeof entry === 'string'
                     ? entry
-                    : entry?.key || entry?.id || entry?.name || entry?.label || '';
+                    : entry?.key ||
+                      entry?.id ||
+                      entry?.name ||
+                      entry?.label ||
+                      '';
             const value =
                 typeof entry === 'string'
                     ? languageCodeLabel(entry)
@@ -194,7 +195,9 @@ function DashboardInstanceSettingsMenu({
                                 key={column.key}
                                 checked={activeColumns.includes(column.key)}
                                 disabled={column.required}
-                                onSelect={(event: any) => event.preventDefault()}
+                                onSelect={(event: any) =>
+                                    event.preventDefault()
+                                }
                                 onCheckedChange={() =>
                                     configUpdater(
                                         getNextColumnConfig(
@@ -404,9 +407,14 @@ function DashboardInstancePlayersTable({ activeColumns, rows }: any) {
     );
 }
 
-export function DashboardInstanceWidget({ config = {}, configUpdater = null }: any) {
+export function DashboardInstanceWidget({
+    config = {},
+    configUpdater = null
+}: any) {
     const { t } = useTranslation();
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentUserLocation = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot?.location || ''
     );
@@ -526,7 +534,9 @@ export function DashboardInstanceWidget({ config = {}, configUpdater = null }: a
 
     const parsedLocation = useMemo(
         () =>
-            parseLocation(instanceSnapshot.location || currentUserLocation || ''),
+            parseLocation(
+                instanceSnapshot.location || currentUserLocation || ''
+            ),
         [currentUserLocation, instanceSnapshot.location]
     );
 

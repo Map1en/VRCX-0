@@ -74,7 +74,11 @@ export function useUserDialogModerationState({
     useEffect(() => {
         let active = true;
 
-        if (!normalizedUserId || !normalizedCurrentUserId || isTargetCurrentUser) {
+        if (
+            !normalizedUserId ||
+            !normalizedCurrentUserId ||
+            isTargetCurrentUser
+        ) {
             setExtendedModerationState({ interactOff: false, muteChat: false });
             return () => {
                 active = false;
@@ -89,9 +93,7 @@ export function useUserDialogModerationState({
                 if (!active) {
                     return;
                 }
-                const rows = Array.isArray(response?.rows)
-                    ? response.rows
-                    : [];
+                const rows = Array.isArray(response?.rows) ? response.rows : [];
                 setExtendedModerationState({
                     interactOff: rows.some(
                         (row: any) =>

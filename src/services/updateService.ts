@@ -26,12 +26,14 @@ const PREVIEW_BADGE_TIMESTAMP_PATTERN =
     /^Preview\s+(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})-(?<hour>\d{2})(?<minute>\d{2})$/i;
 const TOKYO_UTC_OFFSET_MINUTES = 9 * 60;
 let updateInstallInFlight: Promise<TauriUpdateMetadata> | null = null;
-let updateDownloadInFlight: {
+type UpdateDownloadInFlight = {
     version: string;
     promise: Promise<TauriUpdateMetadata>;
     progressSubscribers: Set<UpdateDownloadProgressSubscriber>;
     lastProgress: UpdateDownloadProgress | null;
-} | null = null;
+};
+
+let updateDownloadInFlight: UpdateDownloadInFlight | null = null;
 
 export type UpdateOptions = {
     branch?: unknown;
@@ -256,7 +258,7 @@ function normalizeGitHubRelease(
         channel: 'Stable',
         displayVersion: parsedVersion.displayVersion,
         htmlUrl: release.html_url || '',
-        tagName: release.tag_name,
+        tagName: release.tag_name || '',
         displayName: release.name || `VRCX-0 ${parsedVersion.displayVersion}`,
         prerelease: Boolean(release.prerelease),
         publishedAt: release.published_at || '',
@@ -279,7 +281,7 @@ function normalizeReleaseList(
         )
         .filter(
             (release): release is NormalizedRelease =>
-                Boolean(release) &&
+                release !== null &&
                 release.channel === normalizedBranch &&
                 release.prerelease === false
         )
@@ -291,7 +293,7 @@ function normalizeReleaseList(
         );
 }
 
-function sanitizeBranch(_branch?: unknown) {
+function sanitizeBranch(_branch?: unknown): keyof typeof branches {
     return 'Stable';
 }
 
@@ -596,7 +598,7 @@ function createTauriDownloadEventHandler(
 }
 
 function publishInFlightDownloadProgress(
-    download: NonNullable<typeof updateDownloadInFlight>,
+    download: UpdateDownloadInFlight,
     progress: UpdateDownloadProgress
 ) {
     download.lastProgress = progress;
@@ -606,7 +608,7 @@ function publishInFlightDownloadProgress(
 }
 
 function subscribeToInFlightDownload(
-    download: NonNullable<typeof updateDownloadInFlight>,
+    download: UpdateDownloadInFlight,
     options: UpdateOptions
 ) {
     if (!options.onProgress && !options.onDownloadProgress) {
@@ -658,6 +660,7 @@ async function checkInstallableUpdate(
     return {
         ...release,
         ...update,
+        body: update.body ?? release.body,
         canonicalVersion: release.canonicalVersion,
         displayVersion: release.displayVersion,
         displayName: release.displayName,
@@ -744,7 +747,7 @@ async function downloadUpdate(
         throw new Error('Selected release has no Tauri updater target.');
     }
 
-    let inFlight: NonNullable<typeof updateDownloadInFlight>;
+    let inFlight: UpdateDownloadInFlight;
     const promise = (async () => {
         const request = await buildTauriUpdaterRequest(
             release,

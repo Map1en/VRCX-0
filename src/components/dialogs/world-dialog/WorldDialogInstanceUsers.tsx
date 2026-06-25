@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
+import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import {
     createInstanceUserRow,
     firstText,
@@ -8,12 +10,10 @@ import {
     normalizeInstanceUsers
 } from '@/domain/instances/instanceRoster';
 import { useKnownUserFact } from '@/domain/users/useKnownUser';
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { timeToText } from '@/lib/dateTime';
+import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusLabel } from '@/shared/utils/userStatus';
-import { openUserDialog } from '@/services/dialogService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';

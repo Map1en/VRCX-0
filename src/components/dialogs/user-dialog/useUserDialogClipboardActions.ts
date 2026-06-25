@@ -19,9 +19,7 @@ export function useUserDialogClipboardActions() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.user.toast.failed_to_open_discord_profile'
-                      )
+                    : t('dialog.user.toast.failed_to_open_discord_profile')
             );
         }
     }

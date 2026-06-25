@@ -1,10 +1,10 @@
-import { formatDateFilter, timeToText } from '@/lib/dateTime';
-import { userStatusLabel } from '@/shared/utils/userStatus';
+import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
 import {
     compareByDisplayName,
     compareByFriendOrder,
     compareByLastActiveRef
 } from '@/shared/utils/compare';
+import { userStatusLabel } from '@/shared/utils/userStatus';
 
 const DASH = '\u2014';
 
@@ -210,24 +210,8 @@ export function normalizeLanguageRows(rows: any, tags: any[] = []) {
     return normalizedRows;
 }
 
-export function formatDate(value: any) {
-    if (!value) {
-        return DASH;
-    }
-    const formatted = formatDateFilter(value, 'long');
-    return formatted === '-' ? DASH : formatted;
-}
-
-export function formatDateOnly(value: any) {
-    if (!value) {
-        return DASH;
-    }
-    const formatted = formatDateFilter(value, 'date');
-    return formatted === '-' ? DASH : formatted;
-}
-
 export function formatStatsDate(value: any) {
-    return value ? formatDateFilter(value, 'long') : DASH;
+    return formatDateFilterOrFallback(value, 'long', { empty: DASH });
 }
 
 export function formatStatsDuration(value: any) {

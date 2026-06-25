@@ -100,7 +100,10 @@ describe('mutualFriendsPicker', () => {
             'usr_a',
             'usr_b'
         ]);
-        expect(options.map((option: any) => option.label)).toEqual(['Ava', 'Ben']);
+        expect(options.map((option: any) => option.label)).toEqual([
+            'Ava',
+            'Ben'
+        ]);
     });
 
     it('keeps long graph labels compact for node rendering', () => {

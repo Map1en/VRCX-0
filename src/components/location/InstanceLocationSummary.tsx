@@ -41,7 +41,9 @@ export function InstanceLocationSummary({
     className = ''
 }: any) {
     const { t } = useTranslation();
-    const showLaunchDialog = useLaunchStore((state: any) => state.showLaunchDialog);
+    const showLaunchDialog = useLaunchStore(
+        (state: any) => state.showLaunchDialog
+    );
     const locObj = useMemo(
         () => normalizeLocationObject(locationObject),
         [locationObject]

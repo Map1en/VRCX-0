@@ -5,8 +5,8 @@ import {
     EmptyState as AppEmptyState,
     LoadingState as AppLoadingState
 } from '@/components/layout/PageScaffold';
-import { userImage } from '@/services/entityMediaService';
 import { cn } from '@/lib/utils';
+import { userImage } from '@/services/entityMediaService';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 
 export function UserPickerRow({

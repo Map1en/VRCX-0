@@ -48,7 +48,9 @@ function PreviousInstancesPanel({
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const [rows, setRows] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [sortKey, setSortKey] = useState('date');
@@ -190,7 +192,9 @@ function PreviousInstancesPanel({
                 setPageIndex((value: any) => Math.max(0, value - 1))
             }
             onNextPage={() =>
-                setPageIndex((value: any) => Math.min(totalPages - 1, value + 1))
+                setPageIndex((value: any) =>
+                    Math.min(totalPages - 1, value + 1)
+                )
             }
             onClose={onClose}
             currentUserId={currentUserId}
@@ -223,12 +227,9 @@ function PreviousInstancesTableDialog({
         : title;
     const dialogDescription = detailsOnly
         ? instanceDialogDescription(initialDetailRow, t)
-        : t(
-              'dialog.previous_instances.label.recorded_instance_visits_count',
-              {
-                  count: instanceCountText
-              }
-          );
+        : t('dialog.previous_instances.label.recorded_instance_visits_count', {
+              count: instanceCountText
+          });
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

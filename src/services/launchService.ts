@@ -1,6 +1,6 @@
-import { commands } from '@/platform/tauri/bindings';
 import { toast } from 'sonner';
 
+import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import {
@@ -12,6 +12,7 @@ import { requireHostCapabilitySupported } from '@/services/hostCapabilityService
 import i18n from '@/services/i18nService';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/locationParser';
+import { normalizeString } from '@/shared/utils/string';
 
 type InstanceShortNameResponse = {
     json?: {
@@ -32,12 +33,6 @@ type LaunchDialogDetails = {
     worldName: string;
     parsed: ReturnType<typeof parseLocation>;
 };
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
 
 function resolveLaunchLocation(location: unknown): string {
     const parsed = parseLocation(location);
@@ -119,10 +114,12 @@ export async function attachRunningVrchat(
     shortName: unknown = '',
     endpoint: string = ''
 ): Promise<void> {
+    const launchLocation = normalizeString(location);
+    const launchShortName = normalizeString(shortName);
     if (
         !(await tryOpenLaunchLocation(
-            location as string,
-            shortName as string,
+            launchLocation,
+            launchShortName,
             endpoint
         ))
     ) {
@@ -136,8 +133,8 @@ export async function attachRunningVrchat(
             )
         );
         const launchToken = await resolveInstanceLaunchToken(
-            location as string,
-            shortName as string,
+            launchLocation,
+            launchShortName,
             endpoint
         );
         await vrchatInstanceRepository.selfInvite({
@@ -155,6 +152,8 @@ export async function selfInviteToInstance(
     shortName: unknown = '',
     endpoint: string = ''
 ): Promise<void> {
+    const launchLocation = normalizeString(location);
+    const launchShortName = normalizeString(shortName);
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
         throw new Error(
@@ -162,8 +161,8 @@ export async function selfInviteToInstance(
         );
     }
     const launchToken = await resolveInstanceLaunchToken(
-        location as string,
-        shortName as string,
+        launchLocation,
+        launchShortName,
         endpoint
     );
     await vrchatInstanceRepository.selfInvite({
@@ -181,9 +180,11 @@ export async function launchVrchat(
     endpoint: string = ''
 ): Promise<void> {
     requireHostCapabilitySupported('gameLaunch');
+    const launchLocation = normalizeString(location);
+    const launchShortName = normalizeString(shortName);
     const launchUrl = await resolveVrcLaunchUrl(
-        location as string,
-        shortName as string,
+        launchLocation,
+        launchShortName,
         endpoint
     );
     const args = [launchUrl];

@@ -10,8 +10,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter } from '@/lib/dateTime';
-import { openExternalLink } from '@/services/entityMediaService';
 import { openWorldDialog } from '@/services/dialogService';
+import { openExternalLink } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';

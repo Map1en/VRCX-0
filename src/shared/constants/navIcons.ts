@@ -70,10 +70,12 @@ const navIconNames = new Set(
     navIconEntries.map(([key]) => key.slice(LUCIDE_ICON_PREFIX.length))
 );
 
-export const NAV_ICON_OPTIONS: NavIconOption[] = navIconEntries.map(([key, label]) => ({
-    key,
-    label
-}));
+export const NAV_ICON_OPTIONS: NavIconOption[] = navIconEntries.map(
+    ([key, label]) => ({
+        key,
+        label
+    })
+);
 
 function extractLucideIconName(value: unknown): string {
     if (typeof value !== 'string') {

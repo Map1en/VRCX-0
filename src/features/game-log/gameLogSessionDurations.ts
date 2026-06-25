@@ -1,4 +1,4 @@
-import { normalizeId } from './gameLogUserLookup';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 export type GameLogSessionDurationDetails = {
     durationByKey: Map<string, number>;

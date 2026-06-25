@@ -78,7 +78,9 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                         />
                     ) : rowsState.gameLogDisabled ? (
                         <GameLogEmptyState
-                            title={t('view.game_log.label.game_log_is_disabled')}
+                            title={t(
+                                'view.game_log.label.game_log_is_disabled'
+                            )}
                             description={t(
                                 'view.game_log.action.enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity'
                             )}

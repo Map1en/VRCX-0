@@ -108,6 +108,12 @@ function replaceBioSymbols(text: unknown): string {
     return newText.replace(/ {1,}/g, ' ').trimRight();
 }
 
+function normalizeString(value: unknown): string {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
 function removeEmojis(text: unknown): string {
     if (!text) {
         return '';
@@ -127,6 +133,7 @@ export {
     textToHex,
     commaNumber,
     localeIncludes,
+    normalizeString,
     replaceBioSymbols,
     removeEmojis
 };

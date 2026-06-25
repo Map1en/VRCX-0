@@ -8,8 +8,8 @@ import {
     isPopcornPalaceWorld
 } from './discordPresence';
 
-const t = (key: any) =>
-    ({
+const t = (key: string) => {
+    const labels: Record<string, string> = {
         'view.settings.discord_presence.rpc.desktop': 'Desktop',
         'view.settings.discord_presence.rpc.vr': 'VR',
         'dialog.user.status.active': 'Active',
@@ -17,7 +17,9 @@ const t = (key: any) =>
         'dialog.user.status.ask_me': 'Ask Me',
         'dialog.user.status.busy': 'Busy',
         'dialog.user.status.offline': 'Offline'
-    })[key] ?? key;
+    };
+    return labels[key] ?? key;
+};
 
 describe('discordPresence utilities', () => {
     it('derives platform labels from game state before profile platform', () => {
@@ -60,6 +62,9 @@ describe('discordPresence utilities', () => {
     it('returns copy-on-read RPC world config objects', () => {
         const worldId = 'wrld_266523e8-9161-40da-acd0-6bd82e075833';
         const config = getRpcWorldConfig(worldId);
+        if (!config) {
+            throw new Error('expected RPC world config');
+        }
 
         expect(config).toMatchObject({
             activityType: ActivityType.Watching,
@@ -71,7 +76,11 @@ describe('discordPresence utilities', () => {
 
         config.bigIcon = 'mutated';
 
-        expect(getRpcWorldConfig(worldId).bigIcon).toBe('popcorn_palace');
+        const freshConfig = getRpcWorldConfig(worldId);
+        if (!freshConfig) {
+            throw new Error('expected RPC world config');
+        }
+        expect(freshConfig.bigIcon).toBe('popcorn_palace');
         expect(getRpcWorldConfig('wrld_unknown')).toBeNull();
         expect(isPopcornPalaceWorld('wrld_unknown')).toBe(false);
     });

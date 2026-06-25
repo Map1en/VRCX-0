@@ -69,18 +69,18 @@ function sourceHasUserIdentity(source: InstanceRosterRecord): boolean {
     const nested = nestedUser(source);
     return Boolean(
         field(source, 'id') ||
-            field(source, 'userId') ||
-            field(source, 'user_id') ||
-            field(source, 'targetUserId') ||
-            field(source, 'target_user_id') ||
-            field(source, 'displayName') ||
-            field(source, 'display_name') ||
-            field(source, 'username') ||
-            field(source, 'name') ||
-            field(nested, 'id') ||
-            field(nested, 'userId') ||
-            field(nested, 'displayName') ||
-            field(nested, 'username')
+        field(source, 'userId') ||
+        field(source, 'user_id') ||
+        field(source, 'targetUserId') ||
+        field(source, 'target_user_id') ||
+        field(source, 'displayName') ||
+        field(source, 'display_name') ||
+        field(source, 'username') ||
+        field(source, 'name') ||
+        field(nested, 'id') ||
+        field(nested, 'userId') ||
+        field(nested, 'displayName') ||
+        field(nested, 'username')
     );
 }
 
@@ -173,7 +173,10 @@ export function createInstanceUserRow(
     );
     const displayName =
         userDisplayName(sourceRecord) ||
-        firstText(field(fallback, 'displayName'), field(fallback, 'display_name')) ||
+        firstText(
+            field(fallback, 'displayName'),
+            field(fallback, 'display_name')
+        ) ||
         userId;
 
     return {
@@ -315,7 +318,9 @@ export function pushInstanceUserSource(
     pushWithFallback(typeof source === 'string' ? source : null, fallback);
 }
 
-export function normalizeInstanceUsers(...sources: unknown[]): InstanceRosterRow[] {
+export function normalizeInstanceUsers(
+    ...sources: unknown[]
+): InstanceRosterRow[] {
     const rows: InstanceRosterRow[] = [];
     for (const source of sources) {
         pushInstanceUserSource(source, (user, fallback = {}) => {
@@ -349,11 +354,11 @@ export function isSameInstanceLocation(left: unknown, right: unknown): boolean {
     const rightLocation = parseLocation(rightTag);
     return Boolean(
         leftLocation.worldId &&
-            rightLocation.worldId &&
-            leftLocation.instanceId &&
-            rightLocation.instanceId &&
-            leftLocation.worldId === rightLocation.worldId &&
-            leftLocation.instanceId === rightLocation.instanceId
+        rightLocation.worldId &&
+        leftLocation.instanceId &&
+        rightLocation.instanceId &&
+        leftLocation.worldId === rightLocation.worldId &&
+        leftLocation.instanceId === rightLocation.instanceId
     );
 }
 

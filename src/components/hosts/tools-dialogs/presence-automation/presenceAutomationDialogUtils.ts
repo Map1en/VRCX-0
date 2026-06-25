@@ -21,33 +21,27 @@ export const contextPresetOptions = [
     },
     {
         value: 'withAnyFriend',
-        labelKey:
-            'view.tools.social_automation.preset_with_any_friend'
+        labelKey: 'view.tools.social_automation.preset_with_any_friend'
     },
     {
         value: 'friendCountAtLeast',
-        labelKey:
-            'view.tools.social_automation.preset_friend_count_at_least'
+        labelKey: 'view.tools.social_automation.preset_friend_count_at_least'
     },
     {
         value: 'playerCountAtLeast',
-        labelKey:
-            'view.tools.social_automation.preset_player_count_at_least'
+        labelKey: 'view.tools.social_automation.preset_player_count_at_least'
     },
     {
         value: 'withSelectedGroups',
-        labelKey:
-            'view.tools.social_automation.preset_with_selected_groups'
+        labelKey: 'view.tools.social_automation.preset_with_selected_groups'
     },
     {
         value: 'withSelectedFriend',
-        labelKey:
-            'view.tools.social_automation.preset_with_selected_friend'
+        labelKey: 'view.tools.social_automation.preset_with_selected_friend'
     },
     {
         value: 'inSelectedInstanceTypes',
-        labelKey:
-            'view.tools.social_automation.preset_in_selected_room_types'
+        labelKey: 'view.tools.social_automation.preset_in_selected_room_types'
     }
 ];
 
@@ -69,7 +63,10 @@ export const priorityOptions = [
     }
 ];
 
-export function priorityValueFromNumber(priority: any, fallback: any = 'medium') {
+export function priorityValueFromNumber(
+    priority: any,
+    fallback: any = 'medium'
+) {
     const numericPriority = Number(priority);
     if (!Number.isFinite(numericPriority)) {
         return fallback;
@@ -83,26 +80,28 @@ export function priorityValueFromNumber(priority: any, fallback: any = 'medium')
     return 'low';
 }
 
-export function priorityLabelKeyFromNumber(priority: any, fallback: any = 'medium') {
+export function priorityLabelKeyFromNumber(
+    priority: any,
+    fallback: any = 'medium'
+) {
     const value = priorityValueFromNumber(priority, fallback);
     return (
-        priorityOptions.find((option: any) => option.value === value)?.labelKey ||
-        priorityOptions[1].labelKey
+        priorityOptions.find((option: any) => option.value === value)
+            ?.labelKey || priorityOptions[1].labelKey
     );
 }
 
 export function priorityNumberFromValue(value: any, fallback: any = 400) {
     return (
-        priorityOptions.find((option: any) => option.value === value)?.priority ||
-        fallback
+        priorityOptions.find((option: any) => option.value === value)
+            ?.priority || fallback
     );
 }
 
 export function contextPresetLabelKeyFromValue(value: any) {
     return (
         contextPresetOptions.find((option: any) => option.value === value)
-            ?.labelKey ||
-        'view.tools.social_automation.preset_custom'
+            ?.labelKey || 'view.tools.social_automation.preset_custom'
     );
 }
 
@@ -129,10 +128,12 @@ export function createGroupOptions({
     favoriteFriendGroups,
     localFriendFavoriteGroups
 }: any) {
-    const remoteGroupOptions = (favoriteFriendGroups || []).map((group: any) => ({
-        value: group.key,
-        label: group.displayName || group.name || group.key
-    }));
+    const remoteGroupOptions = (favoriteFriendGroups || []).map(
+        (group: any) => ({
+            value: group.key,
+            label: group.displayName || group.name || group.key
+        })
+    );
     const localGroupOptions = (localFriendFavoriteGroups || []).map(
         (group: any) => ({
             value: `local:${group}`,
@@ -145,6 +146,8 @@ export function createGroupOptions({
 }
 
 export function createTimeRule(label: any = '') {
+    const days: number[] = [];
+
     return {
         id: `time-${Date.now()}`,
         enabled: true,
@@ -157,7 +160,7 @@ export function createTimeRule(label: any = '') {
                 type: 'timeWindow',
                 start: '21:00',
                 end: '02:00',
-                days: [],
+                days,
                 timezone: 'local'
             }
         ],
@@ -167,7 +170,9 @@ export function createTimeRule(label: any = '') {
 
 export function getTimeWindow(rule: any) {
     return (
-        rule.conditions?.find((condition: any) => condition.type === 'timeWindow') || {
+        rule.conditions?.find(
+            (condition: any) => condition.type === 'timeWindow'
+        ) || {
             type: 'timeWindow',
             start: '21:00',
             end: '02:00',
@@ -185,8 +190,7 @@ export function hasGameRunningCondition(rule: any) {
     return Boolean(
         rule.conditions?.some(
             (condition: any) =>
-                condition?.type === 'isGameRunning' &&
-                condition.value !== false
+                condition?.type === 'isGameRunning' && condition.value !== false
         )
     );
 }

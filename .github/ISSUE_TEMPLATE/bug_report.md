@@ -4,13 +4,13 @@ about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: ''
-
 ---
 
 **Bug description**
 Describe what happened.
 
 **Steps to reproduce**
+
 1.
 2.
 3.
@@ -26,5 +26,6 @@ Attach screenshots or the error log if applicable.
 - Linux: `~/.local/share/VRCX-0/error-log.txt`
 
 **Environment**
+
 - OS: [e.g. Windows 11, macOS 15, Ubuntu 24.04]
 - App version: [e.g. 2.1.0]

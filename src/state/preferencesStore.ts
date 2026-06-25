@@ -96,18 +96,11 @@ type BoundedIntOptions = {
     max?: number;
     fallback?: number;
 };
-type TableLimits = {
-    maxTableSize?: unknown;
-    searchLimit?: unknown;
-};
-type SharedFeedFilterSnapshot = {
-    noty?: unknown;
-};
 type PreferenceInputSnapshot = Record<string, unknown>;
 
 function asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
+        ? Object.fromEntries(Object.entries(value))
         : {};
 }
 
@@ -129,7 +122,7 @@ function normalizeBoundedInt(
         fallback = 0
     }: BoundedIntOptions = {}
 ): number {
-    const parsed = Number.parseInt(value as string, 10);
+    const parsed = Number.parseInt(String(value), 10);
     if (!Number.isFinite(parsed)) {
         return fallback;
     }
@@ -175,7 +168,7 @@ export function normalizeWristOverlayButton(
 export function normalizeTablePageSizes(value: unknown): number[] {
     const source = Array.isArray(value) ? value : DEFAULT_TABLE_PAGE_SIZES;
     const nextSizes = source
-        .map((entry: any) => Number.parseInt(entry as string, 10))
+        .map((entry: any) => Number.parseInt(String(entry), 10))
         .filter(
             (entry: any) => Number.isFinite(entry) && entry > 0 && entry <= 1000
         );
@@ -200,7 +193,7 @@ export function normalizeTableLimits(value: unknown = {}): {
     maxTableSize: number;
     searchLimit: number;
 } {
-    const limits = asRecord(value) as TableLimits;
+    const limits = asRecord(value);
     return {
         maxTableSize: normalizeBoundedInt(limits.maxTableSize, {
             min: TABLE_MAX_SIZE_MIN,
@@ -218,7 +211,7 @@ export function normalizeTableLimits(value: unknown = {}): {
 export function normalizeSharedFeedFilters(
     value: unknown = {}
 ): SharedFeedFiltersPreference {
-    const filters = asRecord(value) as SharedFeedFilterSnapshot;
+    const filters = asRecord(value);
     const noty = asRecord(filters.noty);
     return {
         noty: {
@@ -353,16 +346,15 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     discordWorldNameAsDiscordStatus: false
 });
 
-export function normalizePreferenceSnapshot(
-    snapshot: PreferenceInputSnapshot = {}
-) {
+export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
+    const snapshotRecord = asRecord(snapshot);
     const hasOverlayActivityFiltersInput = Object.prototype.hasOwnProperty.call(
-        snapshot,
+        snapshotRecord,
         'overlayActivityFilters'
     );
     const next: any = {
         ...DEFAULT_PREFERENCES,
-        ...snapshot
+        ...snapshotRecord
     };
 
     return {
@@ -557,33 +549,29 @@ export type PreferencesStoreState = PreferencesSnapshot & {
     ): void;
 };
 
-export const usePreferencesStore = create<PreferencesStoreState>(
-    (set) => ({
-        ...normalizePreferenceSnapshot(DEFAULT_PREFERENCES),
-        preferencesHydrated: false,
-        hydratePreferences(snapshot: unknown) {
-            set({
-                ...normalizePreferenceSnapshot(
-                    snapshot as PreferenceInputSnapshot
-                ),
-                preferencesHydrated: true
-            });
-        },
-        patchPreferences(patch: Partial<PreferencesSnapshot>) {
-            set((state) =>
-                normalizePreferenceSnapshot({
-                    ...state,
-                    ...patch
-                } as PreferenceInputSnapshot)
-            );
-        },
-        setPreferenceValue(key, value) {
-            set((state) =>
-                normalizePreferenceSnapshot({
-                    ...state,
-                    [key]: value
-                } as PreferenceInputSnapshot)
-            );
-        }
-    })
-);
+export const usePreferencesStore = create<PreferencesStoreState>((set) => ({
+    ...normalizePreferenceSnapshot(DEFAULT_PREFERENCES),
+    preferencesHydrated: false,
+    hydratePreferences(snapshot: unknown) {
+        set({
+            ...normalizePreferenceSnapshot(snapshot),
+            preferencesHydrated: true
+        });
+    },
+    patchPreferences(patch: Partial<PreferencesSnapshot>) {
+        set((state) =>
+            normalizePreferenceSnapshot({
+                ...state,
+                ...patch
+            })
+        );
+    },
+    setPreferenceValue(key, value) {
+        set((state) =>
+            normalizePreferenceSnapshot({
+                ...state,
+                [key]: value
+            })
+        );
+    }
+}));

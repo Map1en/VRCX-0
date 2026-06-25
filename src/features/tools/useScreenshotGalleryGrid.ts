@@ -15,7 +15,12 @@ const COMPACT_CARD_MIN_WIDTH = 150;
 const COMPACT_CARD_HEIGHT = 156;
 const COMPACT_GRID_GAP = 8;
 
-function buildGalleryGridRows({ cardHeight, gridColumnCount, gridGap, items }: any) {
+function buildGalleryGridRows({
+    cardHeight,
+    gridColumnCount,
+    gridGap,
+    items
+}: any) {
     const safeItems = Array.isArray(items) ? items : [];
     const rows = [];
 
@@ -55,9 +60,7 @@ export function useScreenshotGalleryGrid({
     );
     const gridColumnCount = Math.max(
         1,
-        Math.floor(
-            (safeWidth + gridGap) / (gridMinWidth + gridGap)
-        ) || 1
+        Math.floor((safeWidth + gridGap) / (gridMinWidth + gridGap)) || 1
     );
 
     const positionedRows = useMemo(

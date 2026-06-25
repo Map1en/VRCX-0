@@ -9,10 +9,7 @@ import {
     normalizeGameLogId as normalizeId,
     resolveGameLogWorldId as resolveWorldId
 } from './gameLogRows';
-import type {
-    GameLogPreviousInstanceRow,
-    GameLogRow
-} from './gameLogTypes';
+import type { GameLogPreviousInstanceRow, GameLogRow } from './gameLogTypes';
 
 export function useGameLogPreviousInstancesDialog() {
     const { t } = useTranslation();

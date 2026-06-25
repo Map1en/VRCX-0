@@ -2,11 +2,10 @@ import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 
-export function normalizeId(value: any) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' ? { ...value } : null;
 }
 
 export async function openGameLogUser(row: any, t: any) {
@@ -28,16 +27,15 @@ export async function openGameLogUser(row: any, t: any) {
             openUserDialog({
                 userId: resolved.userId,
                 title: resolved.title || displayName,
-                seedData: resolved.seedData || null
+                seedData: recordOrNull(resolved.seedData)
             });
             return;
         }
 
         toast.info(
-            t(
-                'view.game_log.dynamic.no_user_id_was_found_for_value',
-                { value: displayName }
-            )
+            t('view.game_log.dynamic.no_user_id_was_found_for_value', {
+                value: displayName
+            })
         );
     } catch (error) {
         toast.error(

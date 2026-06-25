@@ -7,6 +7,7 @@ export type FavoriteGroup = {
     source: FavoriteSource;
     label: string;
     name?: string;
+    type?: string;
     count?: number;
     capacity?: number;
     visibility?: string;
@@ -22,10 +23,16 @@ export type FavoriteItem = {
     title?: string;
     subtitle?: string;
     description?: string;
+    detailText?: string;
     imageUrl?: string;
-    seedData?: any;
+    seedData?: unknown;
     isUnavailable?: boolean;
     isPrivate?: boolean;
+    location?: string;
+    orderIndex?: number;
+    playerCount?: number;
+    statusLabel?: string;
+    statusVariant?: string;
     tags?: string[];
     titleColor?: string;
     travelingToLocation?: string;

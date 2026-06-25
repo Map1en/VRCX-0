@@ -5,7 +5,13 @@ import type {
 } from '@/platform/tauri/bindings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-const HOST_CAPABILITY_KEYS = Object.freeze([
+type HostCapabilityKey = {
+    [K in keyof HostCapabilities]: HostCapabilities[K] extends HostCapabilityStatus
+        ? K
+        : never;
+}[keyof HostCapabilities];
+
+const HOST_CAPABILITY_KEYS: readonly HostCapabilityKey[] = Object.freeze([
     'localDatabase',
     'websocketRuntime',
     'gameLogWatcher',
@@ -94,13 +100,13 @@ function createUnavailableCapabilities(reason: unknown): HostCapabilities {
 function normalizeHostCapabilities(payload: unknown): HostCapabilities {
     const record = isRecord(payload) ? payload : {};
     const platform = HOST_PLATFORMS.has(record.platform)
-        ? (record.platform as HostPlatform)
+        ? String(record.platform)
         : 'unknown';
     const arch = HOST_ARCHITECTURES.has(record.arch)
-        ? (record.arch as HostArchitecture)
+        ? String(record.arch)
         : 'unknown';
     const linuxPackageKind = LINUX_PACKAGE_KINDS.has(record.linuxPackageKind)
-        ? (record.linuxPackageKind as LinuxPackageKind)
+        ? String(record.linuxPackageKind)
         : 'unknown';
     const capabilities = createCapabilitiesBase(
         platform,
@@ -128,11 +134,7 @@ export async function initializeHostCapabilities(): Promise<HostCapabilities> {
         const capabilities = normalizeHostCapabilities(
             await commands.appGetHostCapabilities()
         );
-        useRuntimeStore
-            .getState()
-            .setHostCapabilities(
-                capabilities as unknown as Record<string, unknown>
-            );
+        useRuntimeStore.getState().setHostCapabilities(capabilities);
         useRuntimeStore
             .getState()
             .setStartupTask(
@@ -144,11 +146,7 @@ export async function initializeHostCapabilities(): Promise<HostCapabilities> {
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         const capabilities = createUnavailableCapabilities(message);
-        useRuntimeStore
-            .getState()
-            .setHostCapabilities(
-                capabilities as unknown as Record<string, unknown>
-            );
+        useRuntimeStore.getState().setHostCapabilities(capabilities);
         useRuntimeStore
             .getState()
             .setStartupTask('capabilities', 'error', message);
@@ -160,11 +158,7 @@ export async function refreshHostCapabilities(): Promise<HostCapabilities> {
     const capabilities = normalizeHostCapabilities(
         await commands.appGetHostCapabilities()
     );
-    useRuntimeStore
-        .getState()
-        .setHostCapabilities(
-            capabilities as unknown as Record<string, unknown>
-        );
+    useRuntimeStore.getState().setHostCapabilities(capabilities);
     return capabilities;
 }
 

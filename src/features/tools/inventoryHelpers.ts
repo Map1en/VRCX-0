@@ -1,9 +1,7 @@
 import { toast } from 'sonner';
 
 import { emojiAnimationStyleList } from '@/shared/constants/emoji';
-import {
-    validateImageUploadFile
-} from '@/shared/utils/imageUpload';
+import { validateImageUploadFile } from '@/shared/utils/imageUpload';
 
 import {
     getGalleryGridDensityConfig,
@@ -260,7 +258,10 @@ export function resolveEmojiStyleName(rawValue: any) {
     return match || 'Stop';
 }
 
-export function parseEmojiUploadSettings(fileName: any, currentSettings: any = {}) {
+export function parseEmojiUploadSettings(
+    fileName: any,
+    currentSettings: any = {}
+) {
     const next: any = {
         isAnimated: Boolean(currentSettings.isAnimated),
         animationStyle: currentSettings.animationStyle || 'Stop',

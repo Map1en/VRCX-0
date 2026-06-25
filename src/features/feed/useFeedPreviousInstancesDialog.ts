@@ -27,7 +27,8 @@ export function useFeedPreviousInstancesDialog() {
         }: FeedLocationActionPayload = {}) => {
             const normalizedLocation = normalizeId(location);
             const normalizedWorldId =
-                normalizeId(worldId) || parseLocation(normalizedLocation).worldId;
+                normalizeId(worldId) ||
+                parseLocation(normalizedLocation).worldId;
             if (!normalizedWorldId || loadingKey) {
                 return;
             }
@@ -39,10 +40,14 @@ export function useFeedPreviousInstancesDialog() {
                     });
                 const sortedInstances = [...instances].sort((left, right) => {
                     if (normalizedLocation) {
-                        if (normalizeId(left?.location) === normalizedLocation) {
+                        if (
+                            normalizeId(left?.location) === normalizedLocation
+                        ) {
                             return -1;
                         }
-                        if (normalizeId(right?.location) === normalizedLocation) {
+                        if (
+                            normalizeId(right?.location) === normalizedLocation
+                        ) {
                             return 1;
                         }
                     }
@@ -68,9 +73,7 @@ export function useFeedPreviousInstancesDialog() {
                 toast.error(
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'view.feed.toast.failed_to_load_instance_history'
-                          )
+                        : t('view.feed.toast.failed_to_load_instance_history')
                 );
             } finally {
                 setLoadingKey('');

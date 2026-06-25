@@ -39,7 +39,7 @@ describe('notification table state helpers', () => {
 
     afterEach(() => {
         vi.useRealTimers();
-        delete globalThis.window;
+        Reflect.deleteProperty(globalThis, 'window');
     });
 
     it('parses persisted JSON safely', () => {
@@ -62,7 +62,9 @@ describe('notification table state helpers', () => {
             'vrcx-0:table:notifications',
             expect.any(String)
         );
-        expect(JSON.parse(values.get('vrcx-0:table:notifications'))).toEqual({
+        expect(
+            JSON.parse(values.get('vrcx-0:table:notifications') ?? '')
+        ).toEqual({
             pageSize: 25,
             sorting: [{ id: 'type', desc: false }],
             updatedAt: new Date('2026-01-02T03:04:05Z').getTime()

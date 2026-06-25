@@ -74,7 +74,10 @@ export function useDirectAccessAction() {
             );
             const input = (await getClipboardText()).trim();
             try {
-                if (input && (await directAccessParse(input, currentEndpoint))) {
+                if (
+                    input &&
+                    (await directAccessParse(input, currentEndpoint))
+                ) {
                     return;
                 }
             } catch (error) {

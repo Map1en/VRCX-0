@@ -1,10 +1,4 @@
-import type {
-    FriendProjection,
-    RealtimeCurrentUserProjection,
-    RealtimeEntryCorrection,
-    RealtimeInstanceClosedProjection,
-    RealtimeNotificationProjection
-} from '@/platform/tauri/bindings';
+import type { RealtimeEntryCorrection } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendLogStore } from '@/state/friendLogStore';
@@ -77,9 +71,8 @@ function hasCompleteCurrentUserFriendBucketSnapshot(source: ProjectionRecord) {
     );
 }
 
-function getCurrentUserProjectionFriendBucketSource(
-    projection: Partial<RealtimeCurrentUserProjection>
-) {
+function getCurrentUserProjectionFriendBucketSource(payload: unknown) {
+    const projection = asRecord(payload);
     const patch = asRecord(projection.patch);
     if (hasCompleteCurrentUserFriendBucketSnapshot(patch)) {
         return patch;
@@ -96,8 +89,9 @@ function getCurrentUserProjectionFriendBucketSource(
 
 function mergeCurrentUserProjectionSnapshot(
     runtimeState: RuntimeState,
-    projection: Partial<RealtimeCurrentUserProjection>
+    payload: unknown
 ) {
+    const projection = asRecord(payload);
     const currentSnapshot = getCurrentUserSnapshot(runtimeState);
     const patch = asRecord(projection.patch);
     const snapshotSource = isRecord(projection.snapshot)
@@ -157,7 +151,7 @@ function pushProjectionFeedEntry(entry: unknown) {
         return;
     }
     useFeedLiveStore.getState().pushEntry(feedEntry, {
-        ownerUserId: useRuntimeStore.getState().auth.currentUserId
+        ownerUserId: useRuntimeStore.getState().auth.currentUserId ?? undefined
     });
     pushSharedFeedNotification(feedEntry).catch((error: unknown) => {
         console.warn('Failed to publish realtime feed notification:', error);
@@ -208,8 +202,8 @@ async function shouldNotifyInstanceClosed(): Promise<boolean> {
     }
 }
 
-function handleRealtimeFriendProjection(payload: Partial<FriendProjection>) {
-    const projection = payload;
+function handleRealtimeFriendProjection(payload: unknown) {
+    const projection = asRecord(payload);
     for (const userId of Array.isArray(projection.removals)
         ? projection.removals
         : []) {
@@ -253,10 +247,8 @@ export function handleRealtimeUserCacheProjection(payload: unknown) {
     useUserFactsStore.getState().replaceUserFacts(users);
 }
 
-async function handleRealtimeNotificationProjection(
-    payload: Partial<RealtimeNotificationProjection>
-) {
-    const projection = payload;
+async function handleRealtimeNotificationProjection(payload: unknown) {
+    const projection = asRecord(payload);
     const store = useVrcNotificationStore.getState();
 
     if (Array.isArray(projection.expiredIds) && projection.expiredIds.length) {
@@ -314,10 +306,8 @@ function handleRealtimeEntryCorrection(
     }
 }
 
-function handleRealtimeCurrentUserProjection(
-    payload: Partial<RealtimeCurrentUserProjection>
-) {
-    const projection = payload;
+function handleRealtimeCurrentUserProjection(payload: unknown) {
+    const projection = asRecord(payload);
     const runtimeStore = useRuntimeStore.getState();
     const snapshot = mergeCurrentUserProjectionSnapshot(
         runtimeStore,
@@ -351,10 +341,8 @@ function handleRealtimeCurrentUserProjection(
     });
 }
 
-async function handleRealtimeInstanceClosedProjection(
-    payload: Partial<RealtimeInstanceClosedProjection>
-) {
-    const projection = payload;
+async function handleRealtimeInstanceClosedProjection(payload: unknown) {
+    const projection = asRecord(payload);
     const notification = asRecord(projection.notification);
     if (!notification.id) {
         return;
@@ -364,7 +352,7 @@ async function handleRealtimeInstanceClosedProjection(
         useShellStore.getState().notifyMenu('notification');
     }
     useFeedLiveStore.getState().pushEntry(asRecord(projection.feedEntry), {
-        ownerUserId: useRuntimeStore.getState().auth.currentUserId
+        ownerUserId: useRuntimeStore.getState().auth.currentUserId ?? undefined
     });
     pushSharedFeedNotification(notification).catch((error: unknown) => {
         console.warn(

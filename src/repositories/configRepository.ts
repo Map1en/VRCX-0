@@ -31,7 +31,11 @@ class ConfigRepository {
 
     #getSchemaDefault(key: string): ConfigDefaultValue {
         const stripped = key.startsWith('VRCX_') ? key.slice(5) : key;
-        return ConfigKeys[stripped]?.default ?? null;
+        return (
+            (ConfigKeys as Record<string, { default?: ConfigDefaultValue }>)[
+                stripped
+            ]?.default ?? null
+        );
     }
 
     async init(): Promise<void> {

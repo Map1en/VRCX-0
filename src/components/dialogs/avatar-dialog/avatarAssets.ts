@@ -5,7 +5,19 @@ import {
     extractVariantVersion
 } from '@/shared/utils/fileUtils';
 
-export function defaultAvatarSideData() {
+type AvatarSideData = {
+    galleryRows: unknown[];
+    galleryImages: unknown[];
+    fileAnalysis: Record<string, unknown>;
+    cache: {
+        inCache: boolean;
+        cacheSize: string;
+        cacheLocked: boolean;
+        cachePath: string;
+    };
+};
+
+export function defaultAvatarSideData(): AvatarSideData {
     return {
         galleryRows: [],
         galleryImages: [],
@@ -31,7 +43,10 @@ export function avatarGalleryImageUrl(file: any) {
     );
 }
 
-export function isCacheCandidatePackage(unityPackage: any, sdkUnityVersion: any = '') {
+export function isCacheCandidatePackage(
+    unityPackage: any,
+    sdkUnityVersion: any = ''
+) {
     if (!unityPackage || unityPackage.platform !== 'standalonewindows') {
         return false;
     }

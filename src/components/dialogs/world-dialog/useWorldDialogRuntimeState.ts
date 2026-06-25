@@ -8,21 +8,27 @@ export function useWorldDialogRuntimeState() {
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentHomeLocation = useRuntimeStore(
         (state: any) => state.auth.currentUserSnapshot?.homeLocation || ''
     );
     const isGameRunning = useRuntimeStore((state: any) =>
         Boolean(state.gameState.isGameRunning)
     );
-    const setAuthBootstrap = useRuntimeStore((state: any) => state.setAuthBootstrap);
+    const setAuthBootstrap = useRuntimeStore(
+        (state: any) => state.setAuthBootstrap
+    );
     const confirm = useModalStore((state: any) => state.confirm);
     const prompt = useModalStore((state: any) => state.prompt);
     const closeDialog = useDialogStore((state: any) => state.closeDialog);
     const updateEntityDialogMetadata = useDialogStore(
         (state: any) => state.updateEntityDialogMetadata
     );
-    const showLaunchDialog = useLaunchStore((state: any) => state.showLaunchDialog);
+    const showLaunchDialog = useLaunchStore(
+        (state: any) => state.showLaunchDialog
+    );
 
     return {
         closeDialog,
@@ -39,7 +45,9 @@ export function useWorldDialogRuntimeState() {
 }
 
 export function useWorldDialogTabbedRuntimeState() {
-    const currentUserId = useRuntimeStore((state: any) => state.auth.currentUserId);
+    const currentUserId = useRuntimeStore(
+        (state: any) => state.auth.currentUserId
+    );
     const currentEndpoint = useRuntimeStore(
         (state: any) => state.auth.currentUserEndpoint
     );
@@ -56,7 +64,9 @@ export function useWorldDialogTabbedRuntimeState() {
         (state: any) => state.gameState.currentLocationStartedAt
     );
     const friendsById = useFriendRosterStore((state: any) => state.friendsById);
-    const openImagePreview = useModalStore((state: any) => state.openImagePreview);
+    const openImagePreview = useModalStore(
+        (state: any) => state.openImagePreview
+    );
 
     return {
         currentEndpoint,

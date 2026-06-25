@@ -85,11 +85,12 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
     };
 });
 
+import { buildInstanceActionTarget } from '@/components/location/locationModel';
+
 import {
     buildInstanceActionSelfInviteRequest,
     InstanceActionBar
 } from './InstanceActionBar';
-import { buildInstanceActionTarget } from '@/components/location/locationModel';
 
 function renderActionBar(props: any = {}) {
     return renderToStaticMarkup(React.createElement(InstanceActionBar, props));

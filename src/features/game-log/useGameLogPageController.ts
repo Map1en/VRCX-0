@@ -34,7 +34,8 @@ export function useGameLogPageController() {
         favoritesOnly: filters.favoritesOnly,
         filters: filters.queryFilterTypes,
         paginationPageSize: tableState.pagination.pageSize,
-        preferencesReady: filters.preferencesReady && tableState.preferencesReady,
+        preferencesReady:
+            filters.preferencesReady && tableState.preferencesReady,
         refreshToken: filters.refreshToken,
         sessionDateFrom: filters.sessionDateFrom,
         sessionDateTo: filters.sessionDateTo,
@@ -92,7 +93,8 @@ export function useGameLogPageController() {
         const maxPageIndex = Math.max(
             0,
             Math.ceil(
-                annotations.annotatedRows.length / tableState.pagination.pageSize
+                annotations.annotatedRows.length /
+                    tableState.pagination.pageSize
             ) - 1
         );
         if (tableState.pagination.pageIndex > maxPageIndex) {

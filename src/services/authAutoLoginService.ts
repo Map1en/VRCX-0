@@ -1,6 +1,6 @@
-import { commands } from '@/platform/tauri/bindings';
 import { toast } from 'sonner';
 
+import { commands } from '@/platform/tauri/bindings';
 import authRepository, {
     type SavedAuthSnapshot,
     type SavedCredentialRecord
@@ -45,9 +45,9 @@ function createAutoLoginAbortError() {
 function isMissingCredentialsError(error: unknown) {
     return Boolean(
         isRecord(error) &&
-            error.status === 401 &&
-            typeof error.message === 'string' &&
-            error.message.includes('Missing Credentials')
+        error.status === 401 &&
+        typeof error.message === 'string' &&
+        error.message.includes('Missing Credentials')
     );
 }
 
@@ -104,17 +104,29 @@ function waitForAutoLoginDelay(
             signal?.removeEventListener('abort', onAbort);
         }
 
-        function settle(callback: (value?: unknown) => void, value?: unknown) {
+        function markSettled(): boolean {
             if (settled) {
-                return;
+                return false;
             }
             settled = true;
             cleanup();
-            callback(value);
+            return true;
+        }
+
+        function settleResolve() {
+            if (markSettled()) {
+                resolve();
+            }
+        }
+
+        function settleReject(reason: unknown) {
+            if (markSettled()) {
+                reject(reason);
+            }
         }
 
         function onAbort() {
-            settle(reject, createAutoLoginAbortError());
+            settleReject(createAutoLoginAbortError());
         }
 
         function tick() {
@@ -125,7 +137,7 @@ function waitForAutoLoginDelay(
 
             const remainingMs = deadline - Date.now();
             if (remainingMs <= 0) {
-                settle(resolve);
+                settleResolve();
                 return;
             }
 
@@ -216,8 +228,7 @@ export async function executeReactAutoLogin(
         'saved account';
     const lastUserLoggedIn = String(snapshot?.lastUserLoggedIn || '').trim();
     const throttleKey =
-        String(snapshot?.autoLoginThrottleKey || '').trim() ||
-        lastUserLoggedIn;
+        String(snapshot?.autoLoginThrottleKey || '').trim() || lastUserLoggedIn;
 
     const cookieRestoreEligible = Boolean(snapshot?.cookieRestoreEligible);
     const savedCredentialFallbackAvailable = Boolean(

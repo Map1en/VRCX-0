@@ -1,6 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
-import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
+import {
+    sharedFeedFiltersDefaults,
+    type SharedFeedFilterDefaults
+} from '@/shared/constants/feedFilters';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -66,7 +69,7 @@ export function FeedFilterDialog({
                                             setting.key
                                         ] ||
                                         sharedFeedFiltersDefaults[
-                                            feedFilterMode
+                                            feedFilterMode as keyof SharedFeedFilterDefaults
                                         ]?.[setting.key] ||
                                         setting.options[0]?.label
                                     }
@@ -86,14 +89,16 @@ export function FeedFilterDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {setting.options.map((option: any) => (
-                                                <SelectItem
-                                                    key={option.label}
-                                                    value={option.label}
-                                                >
-                                                    {t(option.textKey)}
-                                                </SelectItem>
-                                            ))}
+                                            {setting.options.map(
+                                                (option: any) => (
+                                                    <SelectItem
+                                                        key={option.label}
+                                                        value={option.label}
+                                                    >
+                                                        {t(option.textKey)}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>

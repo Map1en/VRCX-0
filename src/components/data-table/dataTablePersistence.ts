@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 
 const DATA_TABLE_STORAGE_PREFIX = 'vrcx-0:table:';
+type PersistedTableState = Record<string, unknown>;
+type TableColumnSizing = Record<string, number>;
+type TableColumnVisibility = Record<string, boolean>;
 
 function getBrowserLocalStorage() {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -9,23 +12,25 @@ function getBrowserLocalStorage() {
     return window.localStorage;
 }
 
-export function getDataTableStorageKey(tableId: any) {
+export function getDataTableStorageKey(tableId: unknown): string {
     return `${DATA_TABLE_STORAGE_PREFIX}${tableId}`;
 }
 
-export function safeJsonParse(value: any) {
+export function safeJsonParse(value: unknown): unknown | null {
     if (!value) {
         return null;
     }
 
     try {
-        return JSON.parse(value);
+        return JSON.parse(String(value));
     } catch {
         return null;
     }
 }
 
-export function readPersistedTableState(storageKey: any) {
+export function readPersistedTableState(
+    storageKey: unknown
+): PersistedTableState {
     if (!storageKey) {
         return {};
     }
@@ -36,13 +41,19 @@ export function readPersistedTableState(storageKey: any) {
     }
 
     try {
-        return safeJsonParse(localStorage.getItem(storageKey)) ?? {};
+        const parsed = safeJsonParse(localStorage.getItem(String(storageKey)));
+        return parsed && typeof parsed === 'object'
+            ? Object.fromEntries(Object.entries(parsed))
+            : {};
     } catch {
         return {};
     }
 }
 
-export function writePersistedTableState(storageKey: any, patch: any) {
+export function writePersistedTableState(
+    storageKey: unknown,
+    patch: PersistedTableState
+): void {
     if (!storageKey) {
         return;
     }
@@ -55,7 +66,7 @@ export function writePersistedTableState(storageKey: any, patch: any) {
     try {
         const current = readPersistedTableState(storageKey);
         localStorage.setItem(
-            storageKey,
+            String(storageKey),
             JSON.stringify({
                 ...current,
                 ...patch,
@@ -67,14 +78,18 @@ export function writePersistedTableState(storageKey: any, patch: any) {
     }
 }
 
-export function sanitizeTableColumnSizing(value: any, columnIds: any) {
-    const sizing: any = {};
+export function sanitizeTableColumnSizing(
+    value: unknown,
+    columnIds: readonly string[]
+): TableColumnSizing {
+    const sizing: TableColumnSizing = {};
     if (!value || typeof value !== 'object' || !Array.isArray(columnIds)) {
         return sizing;
     }
+    const source = Object.fromEntries(Object.entries(value));
 
     for (const columnId of columnIds) {
-        const width = Number.parseInt(value[columnId], 10);
+        const width = Number.parseInt(String(source[columnId] ?? ''), 10);
         if (Number.isFinite(width) && width > 0) {
             sizing[columnId] = width;
         }
@@ -82,35 +97,47 @@ export function sanitizeTableColumnSizing(value: any, columnIds: any) {
     return sizing;
 }
 
-export function sanitizeTableColumnVisibility(value: any, columnIds: any) {
-    const visibility: any = {};
+export function sanitizeTableColumnVisibility(
+    value: unknown,
+    columnIds: readonly string[]
+): TableColumnVisibility {
+    const visibility: TableColumnVisibility = {};
     if (!value || typeof value !== 'object' || !Array.isArray(columnIds)) {
         return visibility;
     }
+    const source = Object.fromEntries(Object.entries(value));
 
     for (const columnId of columnIds) {
-        if (typeof value[columnId] === 'boolean') {
-            visibility[columnId] = value[columnId];
+        if (typeof source[columnId] === 'boolean') {
+            visibility[columnId] = source[columnId];
         }
     }
     return visibility;
 }
 
-export function sanitizeTableColumnOrder(value: any, columnIds: any, fallback: any[] = []) {
+export function sanitizeTableColumnOrder(
+    value: unknown,
+    columnIds: readonly string[],
+    fallback: string[] = []
+): string[] {
     if (!Array.isArray(value) || !Array.isArray(columnIds)) {
         return fallback;
     }
 
-    return value.filter((columnId: any) => columnIds.includes(columnId));
+    return value.filter(
+        (columnId): columnId is string =>
+            typeof columnId === 'string' && columnIds.includes(columnId)
+    );
 }
 
-export function createPersistedTableStateHelpers(tableId: any) {
+export function createPersistedTableStateHelpers(tableId: unknown) {
     const storageKey = getDataTableStorageKey(tableId);
 
     return {
         storageKey,
         read: () => readPersistedTableState(storageKey),
-        write: (patch: any) => writePersistedTableState(storageKey, patch)
+        write: (patch: PersistedTableState) =>
+            writePersistedTableState(storageKey, patch)
     };
 }
 
@@ -124,7 +151,9 @@ export function usePersistedDataTableLayout({
         () => (tableId ? getDataTableStorageKey(tableId) : null),
         [tableId]
     );
-    const [persistedState] = useState(() => readPersistedTableState(storageKey));
+    const [persistedState] = useState(() =>
+        readPersistedTableState(storageKey)
+    );
     const [columnVisibility, setColumnVisibility] = useState(() => ({
         ...initialColumnVisibility,
         ...sanitizeTableColumnVisibility(
@@ -147,7 +176,8 @@ export function usePersistedDataTableLayout({
         () => persistedState.columnOrderLocked === true
     );
     const writePersistedState = useCallback(
-        (patch: any) => writePersistedTableState(storageKey, patch),
+        (patch: PersistedTableState) =>
+            writePersistedTableState(storageKey, patch),
         [storageKey]
     );
 

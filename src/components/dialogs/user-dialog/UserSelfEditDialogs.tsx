@@ -1,9 +1,4 @@
-import {
-    BookmarkIcon,
-    HistoryIcon,
-    PlusIcon,
-    XIcon
-} from 'lucide-react';
+import { BookmarkIcon, HistoryIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
@@ -173,7 +168,10 @@ export function UserSocialStatusDialog({
                                         <DropdownMenuGroup>
                                             {statusHistoryRows.length ? (
                                                 statusHistoryRows.map(
-                                                    (status: any, index: any) => (
+                                                    (
+                                                        status: any,
+                                                        index: any
+                                                    ) => (
                                                         <DropdownMenuItem
                                                             key={`${status}:${index}`}
                                                             onSelect={() => {
@@ -278,68 +276,72 @@ export function UserSocialStatusDialog({
                         </div>
                         {statusPresets.length ? (
                             <div className="flex flex-wrap gap-2">
-                                {statusPresets.map((preset: any, index: any) => {
-                                    const presetStatus =
-                                        normalizeSelfStatusInput(
-                                            preset?.status
-                                        ) || 'active';
-                                    const presetDescription = String(
-                                        preset?.statusDescription || ''
-                                    ).slice(0, 32);
-                                    const label =
-                                        presetDescription ||
-                                        statusLabelByValue.get(presetStatus) ||
-                                        presetStatus;
-                                    return (
-                                        <div
-                                            key={`${presetStatus}:${presetDescription}:${index}`}
-                                            className="inline-flex max-w-52 items-center"
-                                        >
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="xs"
-                                                className="min-w-0 justify-start rounded-r-none border-r-0"
-                                                disabled={busy}
-                                                aria-label={`Apply status preset ${label}`}
-                                                onClick={() => {
-                                                    setDraft({
-                                                        status: presetStatus,
-                                                        statusDescription:
-                                                            presetDescription
-                                                    });
-                                                }}
+                                {statusPresets.map(
+                                    (preset: any, index: any) => {
+                                        const presetStatus =
+                                            normalizeSelfStatusInput(
+                                                preset?.status
+                                            ) || 'active';
+                                        const presetDescription = String(
+                                            preset?.statusDescription || ''
+                                        ).slice(0, 32);
+                                        const label =
+                                            presetDescription ||
+                                            statusLabelByValue.get(
+                                                presetStatus
+                                            ) ||
+                                            presetStatus;
+                                        return (
+                                            <div
+                                                key={`${presetStatus}:${presetDescription}:${index}`}
+                                                className="inline-flex max-w-52 items-center"
                                             >
-                                                <i
-                                                    className={userStatusIndicatorClassName(
-                                                        presetStatus,
-                                                        {
-                                                            showOffline: true,
-                                                            className:
-                                                                'shrink-0'
-                                                        }
-                                                    )}
-                                                />
-                                                <span className="min-w-0 truncate">
-                                                    {label}
-                                                </span>
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon-xs"
-                                                className="shrink-0 rounded-l-none"
-                                                disabled={busy}
-                                                aria-label="Remove status preset"
-                                                onClick={() =>
-                                                    onRemovePreset(index)
-                                                }
-                                            >
-                                                <XIcon data-icon="inline-start" />
-                                            </Button>
-                                        </div>
-                                    );
-                                })}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="xs"
+                                                    className="min-w-0 justify-start rounded-r-none border-r-0"
+                                                    disabled={busy}
+                                                    aria-label={`Apply status preset ${label}`}
+                                                    onClick={() => {
+                                                        setDraft({
+                                                            status: presetStatus,
+                                                            statusDescription:
+                                                                presetDescription
+                                                        });
+                                                    }}
+                                                >
+                                                    <i
+                                                        className={userStatusIndicatorClassName(
+                                                            presetStatus,
+                                                            {
+                                                                showOffline: true,
+                                                                className:
+                                                                    'shrink-0'
+                                                            }
+                                                        )}
+                                                    />
+                                                    <span className="min-w-0 truncate">
+                                                        {label}
+                                                    </span>
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon-xs"
+                                                    className="shrink-0 rounded-l-none"
+                                                    disabled={busy}
+                                                    aria-label="Remove status preset"
+                                                    onClick={() =>
+                                                        onRemovePreset(index)
+                                                    }
+                                                >
+                                                    <XIcon data-icon="inline-start" />
+                                                </Button>
+                                            </div>
+                                        );
+                                    }
+                                )}
                             </div>
                         ) : null}
                     </Field>
@@ -381,7 +383,9 @@ export function UserProfileDetailsDialog({
     const bioLinks = draft.bioLinks?.length ? draft.bioLinks : [''];
     const bioLength = String(draft.bio || '').length;
     const pronounsLength = String(draft.pronouns || '').length;
-    const selectedLanguageKeys = languageRows.map((language: any) => language.key);
+    const selectedLanguageKeys = languageRows.map(
+        (language: any) => language.key
+    );
     const languageLabelByKey = new Map(
         [...languageRows, ...availableLanguageOptions].map((language: any) => [
             language.key,
@@ -421,7 +425,9 @@ export function UserProfileDetailsDialog({
                         {t('dialog.user.description.edit_profile_details')}
                     </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.user.description.update_your_profile_details')}
+                        {t(
+                            'dialog.user.description.update_your_profile_details'
+                        )}
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="-mx-1 min-h-0 px-1">
@@ -453,18 +459,22 @@ export function UserProfileDetailsDialog({
                                         <ComboboxValue>
                                             {(values: any) => (
                                                 <>
-                                                    {values.map((value: any) => (
-                                                        <ComboboxChip
-                                                            key={value}
-                                                            showRemove={!busy}
-                                                        >
-                                                            <span className="max-w-36 truncate">
-                                                                {languageLabelByKey.get(
-                                                                    value
-                                                                ) || value}
-                                                            </span>
-                                                        </ComboboxChip>
-                                                    ))}
+                                                    {values.map(
+                                                        (value: any) => (
+                                                            <ComboboxChip
+                                                                key={value}
+                                                                showRemove={
+                                                                    !busy
+                                                                }
+                                                            >
+                                                                <span className="max-w-36 truncate">
+                                                                    {languageLabelByKey.get(
+                                                                        value
+                                                                    ) || value}
+                                                                </span>
+                                                            </ComboboxChip>
+                                                        )
+                                                    )}
                                                     <ComboboxChipsInput
                                                         disabled={
                                                             languageInputDisabled
@@ -486,9 +496,7 @@ export function UserProfileDetailsDialog({
                                         anchor={languageComboboxAnchor}
                                     >
                                         <ComboboxEmpty>
-                                            {t(
-                                                'dialog.user.empty.no_results'
-                                            )}
+                                            {t('dialog.user.empty.no_results')}
                                         </ComboboxEmpty>
                                         <ComboboxList>
                                             {(key: any) => (

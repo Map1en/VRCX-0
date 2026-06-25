@@ -55,8 +55,7 @@ export function useVrcNotificationPageController() {
         onOpenNotificationLink: actions.openNotificationLink,
         onOpenTypeTarget: actions.openNotificationTypeTarget,
         onOpenUser: actions.openUser,
-        onSendInviteResponseWithMessage:
-            actions.sendInviteResponseWithMessage,
+        onSendInviteResponseWithMessage: actions.sendInviteResponseWithMessage,
         onSendNotificationResponse: actions.sendNotificationResponse,
         shiftHeld
     });

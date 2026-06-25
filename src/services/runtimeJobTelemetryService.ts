@@ -19,13 +19,18 @@ type RuntimeJobTelemetryRecord = {
 export async function recordRuntimeJobTelemetry(
     record: RuntimeJobTelemetryRecord
 ): Promise<void> {
-    await commands.appRuntimeBackgroundJobRecord({
-        owner: 'frontend',
-        detail: '',
-        ...record
-    }).catch((error: unknown) => {
-        console.warn('Failed to record runtime background job state:', error);
-    });
+    await commands
+        .appRuntimeBackgroundJobRecord({
+            owner: 'frontend',
+            detail: '',
+            ...record
+        })
+        .catch((error: unknown) => {
+            console.warn(
+                'Failed to record runtime background job state:',
+                error
+            );
+        });
 }
 
 export async function runRuntimeTelemetryJob<T>(

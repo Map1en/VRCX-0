@@ -141,16 +141,15 @@ async function getConfig(): Promise<ProviderConfig> {
         providerListValue,
         rawSelectedProviderValue,
         hasProviderList
-    ] =
-        await Promise.all([
-            configRepository.getBool('avatarRemoteDatabase', true),
-            configRepository.getString(
-                'VRCX_avatarRemoteDatabaseProviderList',
-                `["${DEFAULT_PROVIDER}"]`
-            ),
-            configRepository.getString('VRCX_avatarRemoteDatabaseProvider', ''),
-            configRepository.has('VRCX_avatarRemoteDatabaseProviderList')
-        ]);
+    ] = await Promise.all([
+        configRepository.getBool('avatarRemoteDatabase', true),
+        configRepository.getString(
+            'VRCX_avatarRemoteDatabaseProviderList',
+            `["${DEFAULT_PROVIDER}"]`
+        ),
+        configRepository.getString('VRCX_avatarRemoteDatabaseProvider', ''),
+        configRepository.has('VRCX_avatarRemoteDatabaseProviderList')
+    ]);
     const selectedProviderValue = normalizeString(rawSelectedProviderValue);
 
     let parsedProviderList: unknown = safeJsonParse(

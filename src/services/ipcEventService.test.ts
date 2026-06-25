@@ -124,10 +124,12 @@ describe('ipcEventService payload parsing', () => {
     });
 
     it('keeps unknown typed IPC payloads as records for compatibility', () => {
-        expect(parseIpcEventPayload({ type: 'FutureEvent', value: 1 })).toEqual({
-            type: 'FutureEvent',
-            value: 1
-        });
+        expect(parseIpcEventPayload({ type: 'FutureEvent', value: 1 })).toEqual(
+            {
+                type: 'FutureEvent',
+                value: 1
+            }
+        );
     });
 
     it('handles Ping and MsgPing without accepting arbitrary records', async () => {
@@ -141,10 +143,9 @@ describe('ipcEventService payload parsing', () => {
         expect(
             useRuntimeStore.getState().gameState.externalNotifierVersion
         ).toBe(42);
-        expect(warn).toHaveBeenCalledWith(
-            'IPC invalid payload:',
-            { hello: 'world' }
-        );
+        expect(warn).toHaveBeenCalledWith('IPC invalid payload:', {
+            hello: 'world'
+        });
 
         warn.mockRestore();
     });

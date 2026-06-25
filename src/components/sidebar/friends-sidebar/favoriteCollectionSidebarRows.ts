@@ -1,4 +1,6 @@
-import { buildSameInstanceGroups, normalizeId } from './friendsSidebarModel';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
+
+import { buildSameInstanceGroups } from './friendsSidebarModel';
 
 interface BuildFavoriteCollectionFriendIdSetOptions {
     sourceGroupKeys?: string[];

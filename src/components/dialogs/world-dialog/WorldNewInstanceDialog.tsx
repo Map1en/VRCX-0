@@ -1,6 +1,6 @@
+import { ChevronDownIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon } from 'lucide-react';
 
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -136,8 +136,7 @@ export function WorldNewInstanceDialog({
         strict: false
     });
     const [legacySeed, setLegacySeed] = useState('00001');
-    const [displayNamePresetsOpen, setDisplayNamePresetsOpen] =
-        useState(false);
+    const [displayNamePresetsOpen, setDisplayNamePresetsOpen] = useState(false);
 
     useEffect(() => {
         if (open && request?.defaults) {
@@ -291,7 +290,9 @@ export function WorldNewInstanceDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[min(92vw,32rem)]">
                 <DialogHeader>
-                    <DialogTitle>{t(newInstanceDialogTitleKey(request))}</DialogTitle>
+                    <DialogTitle>
+                        {t(newInstanceDialogTitleKey(request))}
+                    </DialogTitle>
                     <DialogDescription>
                         {world?.name ||
                             world?.id ||
@@ -300,7 +301,9 @@ export function WorldNewInstanceDialog({
                 </DialogHeader>
                 <Tabs
                     value={form.selectedTab}
-                    onValueChange={(value: any) => patchForm({ selectedTab: value })}
+                    onValueChange={(value: any) =>
+                        patchForm({ selectedTab: value })
+                    }
                 >
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="Normal">
@@ -328,14 +331,16 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {accessTypeOptions.map((option: any) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {t(option.labelKey)}
-                                                </SelectItem>
-                                            ))}
+                                            {accessTypeOptions.map(
+                                                (option: any) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {t(option.labelKey)}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -356,14 +361,16 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {regionOptions.map((region: any) => (
-                                                <SelectItem
-                                                    key={region.value}
-                                                    value={region.value}
-                                                >
-                                                    {t(region.labelKey)}
-                                                </SelectItem>
-                                            ))}
+                                            {regionOptions.map(
+                                                (region: any) => (
+                                                    <SelectItem
+                                                        key={region.value}
+                                                        value={region.value}
+                                                    >
+                                                        {t(region.labelKey)}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -584,14 +591,16 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {accessTypeOptions.map((option: any) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {t(option.labelKey)}
-                                                </SelectItem>
-                                            ))}
+                                            {accessTypeOptions.map(
+                                                (option: any) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {t(option.labelKey)}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -611,14 +620,16 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {regionOptions.map((region: any) => (
-                                                <SelectItem
-                                                    key={region.value}
-                                                    value={region.value}
-                                                >
-                                                    {t(region.labelKey)}
-                                                </SelectItem>
-                                            ))}
+                                            {regionOptions.map(
+                                                (region: any) => (
+                                                    <SelectItem
+                                                        key={region.value}
+                                                        value={region.value}
+                                                    >
+                                                        {t(region.labelKey)}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>

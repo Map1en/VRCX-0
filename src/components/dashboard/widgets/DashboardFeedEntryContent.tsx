@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Location } from '@/components/Location';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
+import { normalizeString } from '@/shared/utils/string';
 import { Button } from '@/ui/shadcn/button';
-
-import { normalizeString } from './dashboardWidgetUtils';
 
 const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 

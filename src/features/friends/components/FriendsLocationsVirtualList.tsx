@@ -94,12 +94,18 @@ export function FriendsLocationsVirtualList({
                                             key={`${row.section.key}:${friend.id}`}
                                             section={row.section}
                                             friend={friend}
-                                            currentUserId={runtime.currentUserId}
-                                            densityConfig={derived.densityConfig}
+                                            currentUserId={
+                                                runtime.currentUserId
+                                            }
+                                            densityConfig={
+                                                derived.densityConfig
+                                            }
                                             canUseFriendLocation={
                                                 locationCommands.canUseFriendLocation
                                             }
-                                            canSendInvite={derived.canSendInvite}
+                                            canSendInvite={
+                                                derived.canSendInvite
+                                            }
                                             canBoop={runtime.canBoop}
                                             onOpenUser={
                                                 locationCommands.openFriendUser

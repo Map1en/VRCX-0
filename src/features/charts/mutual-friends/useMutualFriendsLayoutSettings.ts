@@ -135,10 +135,14 @@ export function useMutualFriendsLayoutSettings() {
 
     function resetLayoutSettings() {
         setLayoutSettings(MUTUAL_GRAPH_LAYOUT_DEFAULTS);
-        for (const [key, config] of Object.entries(
-            layoutSettingConfig
-        ) as any[]) {
-            config.persist(MUTUAL_GRAPH_LAYOUT_DEFAULTS[key]);
+        for (const [key, config] of Object.entries(layoutSettingConfig)) {
+            const persist =
+                config && typeof config === 'object' && 'persist' in config
+                    ? config.persist
+                    : null;
+            if (typeof persist === 'function') {
+                persist(MUTUAL_GRAPH_LAYOUT_DEFAULTS[key]);
+            }
         }
     }
 

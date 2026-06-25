@@ -17,7 +17,11 @@ function getUsefulDisplayName(file: any) {
     const id = String(file?.id || '').trim();
     const visibleName = displayName || name;
 
-    if (!visibleName || visibleName === id || /^file_[\w-]+_blob$/i.test(visibleName)) {
+    if (
+        !visibleName ||
+        visibleName === id ||
+        /^file_[\w-]+_blob$/i.test(visibleName)
+    ) {
         return '';
     }
 
@@ -90,8 +94,7 @@ export function GalleryFileCard({
                           ? t('dialog.gallery_icons.use_profile_icon')
                           : t('dialog.gallery_icons.use_banner'),
                   icon: CheckIcon,
-                  disabled:
-                      !isVrcPlusSupporter || isMutating || !currentUserId,
+                  disabled: !isVrcPlusSupporter || isMutating || !currentUserId,
                   onClick: () => onSetProfileField(profileField, file.id)
               }
             : null;

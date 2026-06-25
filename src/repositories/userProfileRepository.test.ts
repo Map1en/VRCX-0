@@ -133,9 +133,9 @@ describe('UserProfileRepository', () => {
             n: 100,
             offset: 100
         });
-        expect(tauriMock.commands.appVrchatUserMutualFriendsGet).toHaveBeenCalledTimes(
-            2
-        );
+        expect(
+            tauriMock.commands.appVrchatUserMutualFriendsGet
+        ).toHaveBeenCalledTimes(2);
         expect(rows).toHaveLength(101);
         expect(rows.at(-1)).toEqual({ id: 'usr_last' });
     });

@@ -26,7 +26,8 @@ impl WebClient {
     ) -> Result<Self> {
         let proxy_url = crate::proxy::load_proxy_url(storage);
         let persisted_cookies = cookies::get_default_cookies(db)?;
-        let inner = transport::WebClient::new(proxy_url, persisted_cookies.as_deref(), app_version)?;
+        let inner =
+            transport::WebClient::new(proxy_url, persisted_cookies.as_deref(), app_version)?;
         Ok(Self {
             inner,
             realtime_origin,
@@ -53,7 +54,10 @@ impl WebClient {
     }
 
     pub fn image_fetcher(&self) -> Result<ImageFetcher> {
-        Ok(ImageFetcher::new(self.inner.cookie_jar(), self.inner.proxy_url())?)
+        Ok(ImageFetcher::new(
+            self.inner.cookie_jar(),
+            self.inner.proxy_url(),
+        )?)
     }
 
     pub fn realtime_connection_options(&self) -> RealtimeConnectionOptions {

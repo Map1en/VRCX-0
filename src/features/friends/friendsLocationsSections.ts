@@ -84,7 +84,11 @@ export function buildFavoriteGroupLabelsByFriendId({
     return labelsByFriendId;
 }
 
-export function compareFavoriteGroups(left: any, right: any, order: any[] = []) {
+export function compareFavoriteGroups(
+    left: any,
+    right: any,
+    order: any[] = []
+) {
     const leftIndex = order.indexOf(left.key);
     const rightIndex = order.indexOf(right.key);
     if (leftIndex >= 0 && rightIndex >= 0) {
@@ -176,7 +180,10 @@ export function sortFriendsBySidebarPrefs(friends: any, sortMethods: any) {
     );
 }
 
-export function sortActiveFriendsBySidebarPrefs(friends: any, sortMethods: any) {
+export function sortActiveFriendsBySidebarPrefs(
+    friends: any,
+    sortMethods: any
+) {
     return [...sortFriendsBySidebarPrefs(friends, sortMethods)].sort(
         compareByActiveStatus
     );

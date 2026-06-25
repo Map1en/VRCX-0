@@ -1,4 +1,3 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     useCallback,
     useEffect,
@@ -10,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { commands } from '@/platform/tauri/bindings';
 import type {
     VrchatLogEntriesReadOutput,
     VrchatLogEntryOutput,
@@ -235,11 +235,9 @@ export function useVrchatLogController() {
             fileName: selectedFileName,
             offset,
             limit,
-            query: searchQuery.trim() || undefined,
+            query: searchQuery.trim() || null,
             levels,
-            categories: selectedCategories.length
-                ? selectedCategories
-                : undefined
+            categories: selectedCategories.length ? selectedCategories : null
         }),
         [levels, searchQuery, selectedCategories, selectedFileName]
     );
@@ -519,8 +517,7 @@ export function useVrchatLogController() {
 
             Promise.resolve()
                 .then(async () => {
-                    const nextFiles =
-                        await commands.appVrchatLogFilesList();
+                    const nextFiles = await commands.appVrchatLogFilesList();
                     if (!active) {
                         return;
                     }
@@ -558,11 +555,11 @@ export function useVrchatLogController() {
                         afterLineNumber: lastLineNumberRef.current,
                         fileSize: lastFileSizeRef.current,
                         limit: TAIL_LIMIT,
-                        query: searchQuery.trim() || undefined,
+                        query: searchQuery.trim() || null,
                         levels,
                         categories: selectedCategories.length
                             ? selectedCategories
-                            : undefined
+                            : null
                     });
                     if (!active || response.fileName !== selectedFileName) {
                         return;

@@ -15,6 +15,12 @@ export function getFolderItemIcon(item: any) {
     return typeof item === 'object' && item ? item.icon : undefined;
 }
 
+function getLayoutItemKey(entry: unknown): unknown {
+    return typeof entry === 'object' && entry && 'key' in entry
+        ? entry.key
+        : undefined;
+}
+
 export function createFolderItem(key: any, icon: any = '') {
     const normalizedIcon = normalizeNavIconKey(icon, '');
     return normalizedIcon ? { key, icon: normalizedIcon } : key;
@@ -77,7 +83,7 @@ export function cloneLayout(source: any) {
             }
             return null;
         })
-        .filter(Boolean);
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 }
 
 export function createFolderId() {
@@ -194,7 +200,7 @@ export function buildHiddenPlacementMap(layout: any, hiddenKeys: any) {
 
     for (const [index, entry] of cloneLayout(layout).entries()) {
         if (entry.type === 'item') {
-            const key = String((entry as any).key || '');
+            const key = String(getLayoutItemKey(entry) || '');
             if (hiddenKeySet.has(key)) {
                 placements.set(key, {
                     parentId: null,
@@ -233,8 +239,17 @@ export function isDashboardKey(key: any) {
     return String(key || '').startsWith(DASHBOARD_NAV_KEY_PREFIX);
 }
 
+interface VisibleNode {
+    type: 'folder' | 'item';
+    id: string;
+    key?: unknown;
+    icon?: unknown;
+    sortableId: string;
+    parentId: string | null;
+}
+
 export function buildVisibleNodes(layout: any) {
-    const nodes = [];
+    const nodes: VisibleNode[] = [];
     for (const entry of layout || []) {
         if (entry.type === 'folder') {
             const folderId = String(entry.id);

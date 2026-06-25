@@ -363,27 +363,28 @@ const toolDefinitions: ToolDefinition[] = [
 ];
 
 const toolDefinitionMap = new Map<string, ToolDefinition>(
-    toolDefinitions.map((tool: any) => [tool.key, tool])
+    toolDefinitions.map((tool) => [tool.key, tool])
 );
 
 const quickAccessConfigKey = 'VRCX_toolsQuickAccessList';
 const TOOLS_QUICK_ACCESS_UPDATED_EVENT = 'vrcx:tools-quick-access-updated';
-const knownToolKeys = new Set(toolDefinitions.map((tool: any) => tool.key));
+const knownToolKeys = new Set(toolDefinitions.map((tool) => tool.key));
 const legacyToolKeyAliases: Record<string, string> = {
     'auto-change-status': 'presence-room-rules'
 };
 
-function normalizePinnedToolKey(toolKey: any) {
-    return legacyToolKeyAliases[toolKey] ?? toolKey;
+function normalizePinnedToolKey(toolKey: unknown): string {
+    const normalizedToolKey = String(toolKey ?? '');
+    return legacyToolKeyAliases[normalizedToolKey] ?? normalizedToolKey;
 }
 
-function normalizeQuickAccessToolKeys(value: any) {
+function normalizeQuickAccessToolKeys(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return [];
     }
 
-    const seen = new Set();
-    const nextKeys = [];
+    const seen = new Set<string>();
+    const nextKeys: string[] = [];
     for (const rawKey of value) {
         const toolKey = normalizePinnedToolKey(String(rawKey || ''));
         if (!knownToolKeys.has(toolKey) || seen.has(toolKey)) {
@@ -395,15 +396,15 @@ function normalizeQuickAccessToolKeys(value: any) {
     return nextKeys;
 }
 
-function parseQuickAccessToolKeys(value: any) {
+function parseQuickAccessToolKeys(value: unknown): string[] {
     try {
-        return normalizeQuickAccessToolKeys(JSON.parse(value || '[]'));
+        return normalizeQuickAccessToolKeys(JSON.parse(String(value || '[]')));
     } catch {
         return [];
     }
 }
 
-function getEquivalentToolNavKeys(toolKey: any) {
+function getEquivalentToolNavKeys(toolKey: unknown): string[] {
     const normalizedToolKey = normalizePinnedToolKey(toolKey);
     const equivalentToolKeys = new Set([normalizedToolKey]);
 
@@ -415,7 +416,7 @@ function getEquivalentToolNavKeys(toolKey: any) {
         }
     }
 
-    return Array.from(equivalentToolKeys).map((key: any) => `tool-${key}`);
+    return Array.from(equivalentToolKeys).map((key) => `tool-${key}`);
 }
 
 function publishToolsQuickAccessUpdated(): void {
@@ -425,8 +426,8 @@ function publishToolsQuickAccessUpdated(): void {
 }
 
 const generatedToolNavDefinitions: ToolNavDefinition[] = toolDefinitions
-    .filter((tool: any) => tool.navEligible)
-    .map((tool: any) => ({
+    .filter((tool) => tool.navEligible)
+    .map((tool) => ({
         key: `tool-${tool.key}`,
         icon: tool.navIcon,
         tooltip: tool.titleKey,
@@ -459,12 +460,12 @@ const toolNavDefinitions: ToolNavDefinition[] = [
     ...legacyToolNavDefinitions
 ];
 
-const defaultHiddenToolNavKeys = toolNavDefinitions.map((tool: any) => tool.key);
+const defaultHiddenToolNavKeys = toolNavDefinitions.map((tool) => tool.key);
 const isToolNavKey = (key: unknown): key is string =>
     typeof key === 'string' && key.startsWith('tool-');
 
 function getToolsByCategory(categoryKey: ToolCategoryKey): ToolDefinition[] {
-    return toolDefinitions.filter((tool: any) => tool.category === categoryKey);
+    return toolDefinitions.filter((tool) => tool.category === categoryKey);
 }
 
 export {

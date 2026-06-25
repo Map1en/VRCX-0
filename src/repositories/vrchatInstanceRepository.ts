@@ -1,9 +1,10 @@
-import { commands } from '@/platform/tauri/bindings';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
+import { normalizeString } from '@/shared/utils/string';
 
 import {
     createRequestError,
@@ -63,11 +64,13 @@ type VrchatInstanceIdentity = {
     instanceId: string;
 };
 
-function normalizeString(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
+type VrchatInstanceShortNameResponse = {
+    json: Record<string, unknown>;
+    status?: number;
+    raw?: unknown;
+    instance?: VrchatInstanceIdentity;
+    params?: { shortName?: string };
+};
 
 function toApiAccessType(accessType: InstanceAccessType): string {
     if (accessType === 'friends') {
@@ -255,7 +258,7 @@ async function getInstanceShortName({
         worldId: normalizedWorldId,
         instanceId: normalizedInstanceId
     };
-    return fetchCachedData({
+    return fetchCachedData<VrchatInstanceShortNameResponse>({
         queryKey: queryKeys.instanceShortName(
             normalizedWorldId,
             normalizedInstanceId,
@@ -279,6 +282,7 @@ async function getInstanceShortName({
             );
             return {
                 ...response,
+                json: isRecord(response.json) ? response.json : {},
                 instance,
                 params
             };

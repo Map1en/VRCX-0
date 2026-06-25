@@ -5,6 +5,7 @@ import { DataTableSortButton } from '@/components/data-table/DataTableSortButton
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
+import { formatDateFilterOrFallback } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -33,8 +34,7 @@ import {
 } from './previousInstancesRows';
 import {
     DialogEmptyState,
-    InstanceOwnerCell,
-    formatDate
+    InstanceOwnerCell
 } from './PreviousInstancesViewParts';
 
 function renderLocationCell(row: any, { variant, currentUserId }: any) {
@@ -240,9 +240,10 @@ export function PreviousInstancesListTable({
                                         key={`${location}:${row?.id || row?.created_at || row?.createdAt || index}`}
                                     >
                                         <TableCell className="text-muted-foreground align-middle text-xs leading-5">
-                                            {formatDate(
+                                            {formatDateFilterOrFallback(
                                                 row?.created_at ||
-                                                    row?.createdAt
+                                                    row?.createdAt,
+                                                'long'
                                             )}
                                         </TableCell>
                                         <TableCell className="relative max-w-[26rem] align-middle text-xs">
@@ -271,7 +272,10 @@ export function PreviousInstancesListTable({
                                         </TableCell>
                                         {showWorldGroupColumn ? (
                                             <TableCell className="text-muted-foreground align-middle text-xs leading-5">
-                                                {[row?.worldName, row?.groupName]
+                                                {[
+                                                    row?.worldName,
+                                                    row?.groupName
+                                                ]
                                                     .filter(Boolean)
                                                     .join(' / ') || '-'}
                                             </TableCell>

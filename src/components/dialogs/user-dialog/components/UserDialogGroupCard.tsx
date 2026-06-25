@@ -6,10 +6,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 
-import {
-    groupIdForRow,
-    groupMemberVisibility
-} from '../userDialogGroupRows';
+import { groupIdForRow, groupMemberVisibility } from '../userDialogGroupRows';
 import { groupDisplayName } from '../userDialogRows';
 import { rowImage } from './userDialogEntityImages';
 import { openRow } from './userDialogEntityNavigation';
@@ -28,7 +25,7 @@ export function UserGroupCard({ group, currentEndpoint }: any) {
     const { t } = useTranslation();
 
     const groupId = groupIdForRow(group);
-    const [profile, setProfile] = useState(null);
+    const [profile, setProfile] = useState<any>(null);
 
     useEffect(() => {
         let active = true;

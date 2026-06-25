@@ -45,9 +45,9 @@ describe('trustColors', () => {
     });
 
     it('resolves moderator, troll, class, and fallback trust keys', () => {
-        expect(resolveTrustColorKey({ $isModerator: true, $isTroll: true })).toBe(
-            'vip'
-        );
+        expect(
+            resolveTrustColorKey({ $isModerator: true, $isTroll: true })
+        ).toBe('vip');
         expect(resolveTrustColorKey({ $isProbableTroll: true })).toBe('troll');
         expect(resolveTrustColorKey({ $trustClass: 'x-tag-known' })).toBe(
             'known'
@@ -66,8 +66,8 @@ describe('trustColors', () => {
                 { known: '#00aa00', untrusted: '#111111' }
             )
         ).toBe('#00AA00');
-        expect(getTrustColor({ trustClass: 'unknown' }, { untrusted: '#111111' })).toBe(
-            '#111111'
-        );
+        expect(
+            getTrustColor({ trustClass: 'unknown' }, { untrusted: '#111111' })
+        ).toBe('#111111');
     });
 });

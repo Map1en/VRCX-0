@@ -27,6 +27,7 @@ interface UserFactMergeOptions {
 }
 
 interface UserFact {
+    [key: string]: unknown;
     id: string;
     endpoint: string;
     username?: string;

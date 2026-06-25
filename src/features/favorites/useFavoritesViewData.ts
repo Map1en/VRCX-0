@@ -12,8 +12,9 @@ import {
     buildFavoriteRemoteItemsByGroup,
     getFavoritesPageConfig
 } from './favoritesPageData';
+import type { FavoriteItem } from './favoritesTypes';
 
-const EMPTY_ITEMS = Object.freeze([]);
+const EMPTY_ITEMS: FavoriteItem[] = [];
 
 export function useFavoritesViewData({
     avatarHistory,
@@ -178,12 +179,12 @@ export function useFavoritesViewData({
             return [];
         }
 
-        return allItems.filter((item: any) => {
+        return allItems.filter((item) => {
             if (kind === 'world' && searchMode === 'tag') {
                 const matchesTag =
                     Array.isArray(item.tags) &&
                     item.tags.some(
-                        (tag: any) =>
+                        (tag) =>
                             typeof tag === 'string' &&
                             tag.startsWith('author_tag_') &&
                             tag
@@ -223,7 +224,7 @@ export function useFavoritesViewData({
                 : selectedSource === 'history'
                   ? avatarHistoryGroups
                   : localGroups
-            ).find((group: any) => group.key === selectedGroupKey) || null,
+            ).find((group) => group.key === selectedGroupKey) || null,
         [
             avatarHistoryGroups,
             localGroups,

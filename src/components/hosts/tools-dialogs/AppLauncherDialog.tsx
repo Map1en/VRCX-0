@@ -55,7 +55,7 @@ function createDefaultEntry(
         kind,
         scope: 'all',
         target: '',
-        args: kind === 'localApp' ? '' : undefined,
+        args: '',
         launchDelaySeconds: 0,
         runPolicy: 'always',
         stopPolicy: 'keepRunning',
@@ -70,7 +70,7 @@ function normalizeEntry(entry: AppLauncherEntry): AppLauncherEntry {
         ...entry,
         name: entry.name.trim(),
         target: entry.target.trim(),
-        args: entry.kind === 'localApp' ? (entry.args ?? '') : undefined,
+        args: entry.kind === 'localApp' ? (entry.args ?? '') : '',
         launchDelaySeconds: normalizeLaunchDelaySeconds(
             entry.launchDelaySeconds
         ),
@@ -86,10 +86,7 @@ function normalizeLaunchDelaySeconds(value: unknown): number {
     if (!Number.isFinite(numeric)) {
         return 0;
     }
-    return Math.min(
-        MAX_LAUNCH_DELAY_SECONDS,
-        Math.max(0, Math.trunc(numeric))
-    );
+    return Math.min(MAX_LAUNCH_DELAY_SECONDS, Math.max(0, Math.trunc(numeric)));
 }
 
 function shortTarget(entry: AppLauncherEntry): string {
@@ -109,12 +106,11 @@ function applyPickedTarget(
         kind: picked.kind,
         target: picked.target,
         args:
-            picked.kind === 'localApp'
-                ? entry.kind === 'localApp'
-                    ? entry.args ?? ''
-                    : ''
-                : undefined,
-        stopPolicy: picked.kind === 'steamApp' ? 'keepRunning' : entry.stopPolicy,
+            picked.kind === 'localApp' && entry.kind === 'localApp'
+                ? (entry.args ?? '')
+                : '',
+        stopPolicy:
+            picked.kind === 'steamApp' ? 'keepRunning' : entry.stopPolicy,
         processName: picked.processName ?? '',
         workingDirectory: null
     });
@@ -376,9 +372,7 @@ export function AppLauncherDialog({ open, onOpenChange }: any) {
                                     <EmptyTitle>
                                         {loading
                                             ? t('dialog.app_launcher.loading')
-                                            : t(
-                                                  'dialog.app_launcher.empty'
-                                              )}
+                                            : t('dialog.app_launcher.empty')}
                                     </EmptyTitle>
                                 </EmptyHeader>
                             </Empty>

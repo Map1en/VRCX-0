@@ -71,9 +71,7 @@ export function createAvatarDialogActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_refresh_avatar'
-                      )
+                    : t('dialog.avatar.toast.failed_to_refresh_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';
@@ -179,9 +177,7 @@ export function createAvatarDialogActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_select_fallback_avatar'
-                      )
+                    : t('dialog.avatar.toast.failed_to_select_fallback_avatar')
             );
         } finally {
             actionStatusRef.current = 'idle';

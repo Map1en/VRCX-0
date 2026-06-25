@@ -37,7 +37,9 @@ function buildFriendRosterView({
         onlineIds,
         activeIds,
         offlineIds,
-        favoriteIds: rows.filter((row: any) => row.isFavorite).map((row: any) => row.id)
+        favoriteIds: rows
+            .filter((row: any) => row.isFavorite)
+            .map((row: any) => row.id)
     };
 }
 

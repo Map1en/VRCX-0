@@ -137,9 +137,7 @@ export function useSettingsMaintenanceActions({
         }
         if (state?.cliOverride) {
             toast.error(
-                t(
-                    'view.settings.advanced.advanced.data_directory.cli_override'
-                )
+                t('view.settings.advanced.advanced.data_directory.cli_override')
             );
             return;
         }
@@ -188,9 +186,7 @@ export function useSettingsMaintenanceActions({
         }
         if (state?.cliOverride) {
             toast.error(
-                t(
-                    'view.settings.advanced.advanced.data_directory.cli_override'
-                )
+                t('view.settings.advanced.advanced.data_directory.cli_override')
             );
             return;
         }

@@ -31,6 +31,9 @@ export function getAutoLoginStateLabel(status: any) {
     }
 }
 
-export function shouldShowLegacyMigrationAction(isLoading: any, savedAccounts: any) {
+export function shouldShowLegacyMigrationAction(
+    isLoading: any,
+    savedAccounts: any
+) {
     return !isLoading && (savedAccounts?.length || 0) === 0;
 }

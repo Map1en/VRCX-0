@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { normalizeString } from '@/shared/utils/string';
+
 import {
     buildFavoriteIdSet,
     buildPlayerSourceRows,
     buildPlayerDialogSeedData,
     isLiveLocation,
-    normalizeString,
     parseTimeMs
 } from './playerListRows';
 

@@ -30,10 +30,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function unwrapRuntimeMutualResponse(
-    response: VrchatApiResult,
-    path: string
-) {
+function unwrapRuntimeMutualResponse(response: VrchatApiResult, path: string) {
     const json = parseJsonResponse(response.data);
     if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
         const requestError = createRequestError(
@@ -57,9 +54,9 @@ function unwrapRuntimeMutualResponse(
 
 async function ensureTables(userId: unknown): Promise<string> {
     const userPrefix = normalizeUserTablePrefix(userId);
-    await commands.appMutualGraphTablesEnsure(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim());
+    await commands.appMutualGraphTablesEnsure(
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
+    );
     return userPrefix;
 }
 
@@ -72,9 +69,9 @@ async function getSnapshot(userId: unknown): Promise<{
         friendIds = [],
         links = [],
         meta: metaRows = []
-    } = (await commands.appMutualGraphSnapshotGet(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim())) as {
+    } = (await commands.appMutualGraphSnapshotGet(
+        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
+    )) as {
         friendIds?: unknown[];
         links?: Array<{ friendId?: unknown; mutualId?: unknown }>;
         meta?: Array<{
@@ -154,7 +151,8 @@ async function getMutualFriends({
 
 async function saveSnapshot(userId: unknown, entries: MutualGraphEntryMap) {
     const pairs = entries instanceof Map ? entries : new Map();
-    const normalizedEntries: Array<{ friendId: string; mutualIds: string[] }> = [];
+    const normalizedEntries: Array<{ friendId: string; mutualIds: string[] }> =
+        [];
     pairs.forEach((mutualIds, friendId) => {
         if (!friendId) {
             return;
@@ -168,9 +166,12 @@ async function saveSnapshot(userId: unknown, entries: MutualGraphEntryMap) {
                 .filter(Boolean)
         });
     });
-    await commands.appMutualGraphSnapshotSave(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), normalizedEntries);
+    await commands.appMutualGraphSnapshotSave(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        normalizedEntries
+    );
 }
 
 async function updateMutualsForFriend(
@@ -190,9 +191,13 @@ async function updateMutualsForFriend(
         ? mutualIds.filter(Boolean)
         : [];
 
-    await commands.appMutualGraphFriendUpdate(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), normalizedFriendId, collection.map(String));
+    await commands.appMutualGraphFriendUpdate(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        normalizedFriendId,
+        collection.map(String)
+    );
 }
 
 async function upsertMeta(
@@ -208,13 +213,16 @@ async function upsertMeta(
         return;
     }
 
-    await commands.appMutualGraphMetaUpsert(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), {
+    await commands.appMutualGraphMetaUpsert(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        {
             friendId: normalizedFriendId,
             lastFetchedAt: lastFetchedAt || new Date().toISOString(),
             optedOut: Boolean(optedOut)
-        });
+        }
+    );
 }
 
 async function bulkUpsertMeta(userId: unknown, entries: MutualGraphMetaMap) {
@@ -237,9 +245,12 @@ async function bulkUpsertMeta(userId: unknown, entries: MutualGraphMetaMap) {
             });
         }
     });
-    await commands.appMutualGraphMetaBulkUpsert(typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim(), rows);
+    await commands.appMutualGraphMetaBulkUpsert(
+        typeof userId === 'string'
+            ? userId.trim()
+            : String(userId ?? '').trim(),
+        rows
+    );
 }
 
 const mutualGraphPersistenceRepository = Object.freeze({

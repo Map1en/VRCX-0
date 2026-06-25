@@ -54,9 +54,7 @@ function resolveQueueLocationLabel(instanceLocation: string): string {
     );
 }
 
-export function handleRealtimeInstanceQueueProjection(
-    payload: unknown
-) {
+export function handleRealtimeInstanceQueueProjection(payload: unknown) {
     const projection: RealtimeInstanceQueueProjectionInput = isRecord(payload)
         ? payload
         : {};

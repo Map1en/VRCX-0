@@ -222,11 +222,12 @@ function applyActivityRefreshResult(
 }
 
 async function fullRefresh(snapshot: ActivitySnapshot, rangeDays: number) {
-    const result = await activityPersistenceRepository.refreshSelfActivitySessions({
-        userId: snapshot.userId,
-        mode: 'full',
-        rangeDays
-    });
+    const result =
+        await activityPersistenceRepository.refreshSelfActivitySessions({
+            userId: snapshot.userId,
+            mode: 'full',
+            rangeDays
+        });
     applyActivityRefreshResult(snapshot, result);
 }
 
@@ -235,10 +236,11 @@ async function incrementalRefresh(snapshot: ActivitySnapshot) {
         return;
     }
 
-    const result = await activityPersistenceRepository.refreshSelfActivitySessions({
-        userId: snapshot.userId,
-        mode: 'incremental'
-    });
+    const result =
+        await activityPersistenceRepository.refreshSelfActivitySessions({
+            userId: snapshot.userId,
+            mode: 'incremental'
+        });
     applyActivityRefreshResult(snapshot, result);
 }
 
@@ -248,11 +250,12 @@ async function expandRange(snapshot: ActivitySnapshot, rangeDays: number) {
         return;
     }
 
-    const result = await activityPersistenceRepository.refreshSelfActivitySessions({
-        userId: snapshot.userId,
-        mode: 'expand',
-        rangeDays
-    });
+    const result =
+        await activityPersistenceRepository.refreshSelfActivitySessions({
+            userId: snapshot.userId,
+            mode: 'expand',
+            rangeDays
+        });
     applyActivityRefreshResult(snapshot, result);
 }
 
@@ -403,10 +406,9 @@ export function bootstrapActivityCache(
                 ? options.currentUserSnapshot.id
                 : '')
     );
-    const currentUserSnapshot =
-        isRecord(options?.currentUserSnapshot)
-            ? options.currentUserSnapshot
-            : null;
+    const currentUserSnapshot = isRecord(options?.currentUserSnapshot)
+        ? options.currentUserSnapshot
+        : null;
 
     if (!normalizedUserId || !currentUserSnapshot) {
         return Promise.reject(

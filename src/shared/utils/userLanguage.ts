@@ -38,7 +38,10 @@ export function languageOptionLabel(option: LanguageOption): string {
     return key ? `${value || key.toUpperCase()} (${key.toUpperCase()})` : value;
 }
 
-export function fallbackLanguageOptions(): Array<{ key: string; value: string }> {
+export function fallbackLanguageOptions(): Array<{
+    key: string;
+    value: string;
+}> {
     return [...languageKeys]
         .sort()
         .map((key: any) => ({ key, value: key.toUpperCase() }));

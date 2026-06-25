@@ -37,11 +37,9 @@ function getVisibilityLabel(
     t: ReturnType<typeof useTranslation>['t'],
     visibility: string
 ) {
-    return (
-        VISIBILITY_LABEL_KEYS[visibility as FavoriteVisibility]
-            ? t(VISIBILITY_LABEL_KEYS[visibility as FavoriteVisibility])
-            : visibility
-    );
+    return VISIBILITY_LABEL_KEYS[visibility as FavoriteVisibility]
+        ? t(VISIBILITY_LABEL_KEYS[visibility as FavoriteVisibility])
+        : visibility;
 }
 
 function GroupMenu({
@@ -243,8 +241,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         >
                             <div className="min-w-0">
                                 <div className="truncate font-semibold">
-                                    {t('view.favorite.label.group')}{' '}
-                                    {index + 1}
+                                    {t('view.favorite.label.group')} {index + 1}
                                 </div>
                                 <div className="bg-muted mt-1 h-3 w-14 rounded" />
                             </div>

@@ -48,50 +48,52 @@ vi.mock('./components/GalleryDialogs', async () => {
 });
 
 vi.mock('./useGalleryPageController', () => ({
-    useGalleryPageController: () => ({
-        activeTab: 'prints',
-        assets: {
-            gallery: [],
-            icons: [],
-            prints: []
-        },
-        beginUpload: vi.fn(),
-        changeGridDensity: vi.fn(),
-        confirmCroppedUpload: mocks.confirmCroppedUpload,
-        cropRequest: {
-            tab: 'prints'
-        },
-        currentUserId: 'usr_self',
-        deleteFileAsset: vi.fn(),
-        deletePrint: vi.fn(),
-        gridDensity: 'comfortable',
-        gridDensityConfig: {},
-        isVrcPlusSupporter: true,
-        loadingByTab: {},
-        mutatingKey: '',
-        navigate: vi.fn(),
-        openImagePreview: vi.fn(),
-        profilePicOverride: '',
-        refreshAll: vi.fn(),
-        refreshTab: vi.fn(),
-        setActiveTab: vi.fn(),
-        setCropRequest: vi.fn(),
-        setProfileField: vi.fn(),
-        tabCounts: {
-            gallery: '0/64',
-            icons: '0/64',
-            prints: '0/64'
-        },
-        uploadAuthTargetRef: {
+    useGalleryPageController: () => {
+        const uploadAuthTargetRef: { current: unknown } = { current: null };
+        const uploadInputRef: { current: HTMLInputElement | null } = {
             current: null
-        },
-        uploadInputRef: {
-            current: null
-        },
-        uploadingTab: '',
-        uploadSelectedFile: vi.fn(),
-        userIcon: ''
-    })
+        };
+        return {
+            activeTab: 'prints',
+            assets: {
+                gallery: Array<unknown>(),
+                icons: Array<unknown>(),
+                prints: Array<unknown>()
+            },
+            beginUpload: vi.fn(),
+            changeGridDensity: vi.fn(),
+            confirmCroppedUpload: mocks.confirmCroppedUpload,
+            cropRequest: {
+                tab: 'prints'
+            },
+            currentUserId: 'usr_self',
+            deleteFileAsset: vi.fn(),
+            deletePrint: vi.fn(),
+            gridDensity: 'comfortable',
+            gridDensityConfig: {},
+            isVrcPlusSupporter: true,
+            loadingByTab: {},
+            mutatingKey: '',
+            navigate: vi.fn(),
+            openImagePreview: vi.fn(),
+            profilePicOverride: '',
+            refreshAll: vi.fn(),
+            refreshTab: vi.fn(),
+            setActiveTab: vi.fn(),
+            setCropRequest: vi.fn(),
+            setProfileField: vi.fn(),
+            tabCounts: {
+                gallery: '0/64',
+                icons: '0/64',
+                prints: '0/64'
+            },
+            uploadAuthTargetRef,
+            uploadInputRef,
+            uploadingTab: '',
+            uploadSelectedFile: vi.fn(),
+            userIcon: ''
+        };
+    }
 }));
 
 import { GalleryPage } from './GalleryPage';

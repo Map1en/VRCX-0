@@ -1,4 +1,3 @@
-import { commands } from '@/platform/tauri/bindings';
 import { recordUserProfile } from '@/domain/users/userFactAccess';
 import {
     entityQueryPolicies,
@@ -7,6 +6,7 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
+import { commands } from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
 import {
     computeTrustLevel,
@@ -97,12 +97,18 @@ function normalizeUserProfile(user: unknown): UserProfileRecord {
         typeof source.$trustClass === 'string' && source.$trustClass.length > 0;
     const trustFields = hasUpstreamTrust
         ? {
-              $trustLevel: source.$trustLevel,
-              $trustClass: source.$trustClass,
-              $trustSortNum: source.$trustSortNum,
-              $isModerator: source.$isModerator,
-              $isTroll: source.$isTroll,
-              $isProbableTroll: source.$isProbableTroll
+              $trustLevel:
+                  typeof source.$trustLevel === 'string'
+                      ? source.$trustLevel
+                      : '',
+              $trustClass:
+                  typeof source.$trustClass === 'string'
+                      ? source.$trustClass
+                      : '',
+              $trustSortNum: Number(source.$trustSortNum) || 0,
+              $isModerator: source.$isModerator === true,
+              $isTroll: source.$isTroll === true,
+              $isProbableTroll: source.$isProbableTroll === true
           }
         : {
               $trustLevel: trust.trustLevel,
@@ -125,7 +131,7 @@ function normalizeUserProfile(user: unknown): UserProfileRecord {
                           ? base.last_platform
                           : ''
                   )
-    } as UserProfileRecord;
+    };
 }
 
 async function collectPages<T>(
@@ -332,11 +338,10 @@ async function getRepresentedGroup({
         policy: entityQueryPolicies.representedGroup,
         force,
         queryFn: async () => {
-            const response =
-                await commands.appVrchatUserRepresentedGroupGet({
-                    userId: normalizedUserId,
-                    endpoint
-                });
+            const response = await commands.appVrchatUserRepresentedGroupGet({
+                userId: normalizedUserId,
+                endpoint
+            });
             const json = unwrapVrchatUserResponse(
                 response,
                 `users/${encodeURIComponent(normalizedUserId)}/groups/represented`

@@ -15,8 +15,7 @@ export function useFeedTimeDisplayMode() {
     const preferenceMode = usePreferencesStore(
         (state: any) => state.feedTimeDisplayMode
     );
-    const [mode, setMode] =
-        useState<FeedTimeDisplayModePreference>('relative');
+    const [mode, setMode] = useState<FeedTimeDisplayModePreference>('relative');
 
     useEffect(() => {
         if (preferencesHydrated) {

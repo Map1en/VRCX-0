@@ -5,6 +5,7 @@ import configRepository from '@/repositories/configRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import i18n from '@/services/i18nService';
+import { normalizeString } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -19,7 +20,7 @@ import {
 import { bootstrapFavorites } from './favoriteBootstrapService';
 import { openFavoriteImportDialog } from './favoriteImportService';
 
-let ipcTimeoutId = null;
+let ipcTimeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
 
 type IpcRecord = Record<string, unknown>;
 type IpcPingPayload = { type: 'Ping' };
@@ -68,12 +69,6 @@ function parseIpcPayload(payload: unknown): IpcRecord | null {
     } catch {
         return null;
     }
-}
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function isKnownIpcEventPayload(
@@ -345,8 +340,7 @@ export async function handleIpcEvent(payload: unknown) {
             break;
         case 'MsgPing':
             useRuntimeStore.getState().setGameState({
-                externalNotifierVersion:
-                    Number.parseInt(data.version, 10) || 0
+                externalNotifierVersion: Number.parseInt(data.version, 10) || 0
             });
             break;
         case 'VrcxMessage':

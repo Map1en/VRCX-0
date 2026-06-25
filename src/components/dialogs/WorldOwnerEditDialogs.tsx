@@ -109,7 +109,9 @@ function createWorldTagsDraft(tags: any[] = []) {
 
 function buildWorldTags(draft: any, baseTags: any[] = []) {
     const tags = Array.isArray(baseTags)
-        ? baseTags.map(String).filter((tag: any) => tag && !isManagedWorldTag(tag))
+        ? baseTags
+              .map(String)
+              .filter((tag: any) => tag && !isManagedWorldTag(tag))
         : [];
     for (const tag of String(draft.authorTags || '')
         .split(',')
@@ -350,9 +352,7 @@ function WorldTagsDialog({
                             }
                         />
                         <FieldLabel htmlFor="world-tag-avatar-scaling-disabled">
-                            {t(
-                                'dialog.world.label.avatar_scaling_disabled'
-                            )}
+                            {t('dialog.world.label.avatar_scaling_disabled')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
@@ -449,9 +449,7 @@ function WorldTagsDialog({
                     </FieldSet>
                     <FieldSet>
                         <FieldLegend variant="label">
-                            {t(
-                                'dialog.world.label.default_content_settings'
-                            )}
+                            {t('dialog.world.label.default_content_settings')}
                         </FieldLegend>
                         <FieldGroup
                             data-slot="checkbox-group"
@@ -569,8 +567,10 @@ function WorldAllowedDomainsDialog({
                                         onClick={() =>
                                             setUrlList((current: any) =>
                                                 current.filter(
-                                                    (_: any, currentIndex: any) =>
-                                                        currentIndex !== index
+                                                    (
+                                                        _: any,
+                                                        currentIndex: any
+                                                    ) => currentIndex !== index
                                                 )
                                             )
                                         }

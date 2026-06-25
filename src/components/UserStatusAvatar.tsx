@@ -2,14 +2,21 @@ import { UserIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-export function UserStatusAvatar({ imageUrl = '', statusDotClassName = '' }: any) {
+export function UserStatusAvatar({
+    imageUrl = '',
+    statusDotClassName = ''
+}: any) {
     const isActiveStatusDot = statusDotClassName.includes('bg-background');
 
     return (
         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
             <span className="bg-muted relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border">
                 {imageUrl ? (
-                    <img src={imageUrl} alt="" className="size-full object-cover" />
+                    <img
+                        src={imageUrl}
+                        alt=""
+                        className="size-full object-cover"
+                    />
                 ) : (
                     <UserIcon
                         data-icon="inline-start"

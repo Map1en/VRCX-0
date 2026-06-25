@@ -20,7 +20,19 @@ import { useModalStore } from '@/state/modalStore';
 
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteGroup,
+    FavoriteItem,
+    FavoriteKind,
+    FavoriteSource
+} from './favoritesTypes';
+
+type FavoriteFriendRecord = Record<string, unknown> & {
+    displayName?: unknown;
+    id?: unknown;
+    location?: unknown;
+    username?: unknown;
+};
 
 export function useFavoritesItemActions({
     avatarHistoryLoading,
@@ -48,15 +60,17 @@ export function useFavoritesItemActions({
     currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
-    friendsById: Record<string, any>;
-    friendsMap: Map<string, any>;
+    friendsById: Record<string, unknown>;
+    friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: any[];
+    localGroups: FavoriteGroup[];
     newLocalGroupName: string;
     refreshing: boolean;
-    selectedContentItems: any[];
+    selectedContentItems: FavoriteItem[];
     selectedSource: FavoriteSource;
-    setAvatarHistory(value: any[] | ((current: any[]) => any[])): void;
+    setAvatarHistory(
+        value: unknown[] | ((current: unknown[]) => unknown[])
+    ): void;
     setAvatarHistoryLoading(value: boolean): void;
     setCreatingLocalGroup(value: boolean): void;
     setNewLocalGroupName(value: string): void;
@@ -69,6 +83,16 @@ export function useFavoritesItemActions({
     const createLocalFavoriteGroup = useFavoriteStore(
         (state: any) => state.createLocalFavoriteGroup
     );
+
+    function isFavoriteFriendRecord(
+        value: unknown
+    ): value is FavoriteFriendRecord {
+        return Boolean(value && typeof value === 'object');
+    }
+
+    function friendText(value: unknown): string {
+        return typeof value === 'string' ? value : String(value ?? '');
+    }
 
     async function refreshAvatarHistory() {
         if (kind !== 'avatar' || !currentUserId || avatarHistoryLoading) {
@@ -85,9 +109,7 @@ export function useFavoritesItemActions({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_refresh_avatar_history'
-                      )
+                    : t('view.favorites.toast.failed_to_refresh_avatar_history')
             );
         } finally {
             setAvatarHistoryLoading(false);
@@ -125,14 +147,20 @@ export function useFavoritesItemActions({
 
     function getFavoriteFriend(item: any) {
         const userId = normalizeEntityId(item?.id);
-        return (
-            item?.seedData ||
-            friendsById[userId] || {
-                id: userId,
-                displayName: item?.title || userId,
-                location: ''
-            }
-        );
+        const seedData = item?.seedData;
+        if (isFavoriteFriendRecord(seedData)) {
+            return seedData;
+        }
+        const knownFriend = friendsById[userId];
+        if (isFavoriteFriendRecord(knownFriend)) {
+            return knownFriend;
+        }
+        return {
+            id: userId,
+            displayName: item?.title || userId,
+            username: '',
+            location: ''
+        };
     }
 
     async function launchFavoriteFriendLocation(item: any) {
@@ -188,7 +216,9 @@ export function useFavoritesItemActions({
                 friends: friendsMap
             })
         ) {
-            toast.error(t('view.favorite.error.cannot_self_invite_to_this_instance'));
+            toast.error(
+                t('view.favorite.error.cannot_self_invite_to_this_instance')
+            );
             return;
         }
         try {
@@ -241,7 +271,8 @@ export function useFavoritesItemActions({
         const result = await confirm({
             title: t('view.favorites.modal.send_invite'),
             description:
-                friend?.displayName || t('view.favorites.description.this_user'),
+                friendText(friend?.displayName) ||
+                t('view.favorites.description.this_user'),
             confirmText: t('view.favorites.modal.invite'),
             cancelText: t('common.actions.cancel')
         });
@@ -276,7 +307,8 @@ export function useFavoritesItemActions({
         const result = await confirm({
             title: t('view.favorites.modal.request_invite'),
             description:
-                friend?.displayName || t('view.favorites.description.this_user'),
+                friend?.displayName ||
+                t('view.favorites.description.this_user'),
             confirmText: t('view.favorites.modal.request_invite_2'),
             cancelText: t('common.actions.cancel')
         });
@@ -308,7 +340,9 @@ export function useFavoritesItemActions({
             const result = await boopPrompt({
                 endpoint: currentEndpoint,
                 targetLabel:
-                    friend?.displayName || friend?.username || friendId
+                    friendText(friend?.displayName) ||
+                    friendText(friend?.username) ||
+                    friendId
             });
             if (!result.ok) {
                 return;
@@ -425,12 +459,16 @@ export function useFavoritesItemActions({
             await navigator.clipboard.writeText(
                 selectedContentItems.map((item: any) => `${item.id}\n`).join('')
             );
-            toast.success(t('view.favorite.success.copied_selected_favorite_ids'));
+            toast.success(
+                t('view.favorite.success.copied_selected_favorite_ids')
+            );
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.favorites.toast.failed_to_copy_selected_favorites')
+                    : t(
+                          'view.favorites.toast.failed_to_copy_selected_favorites'
+                      )
             );
         }
     }

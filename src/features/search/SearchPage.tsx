@@ -1,10 +1,8 @@
-import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog';
 import { PageScaffold } from '@/components/layout/PageScaffold';
+import { AvatarProviderSettingsDialog } from '@/components/search/AvatarProviderSettingsDialog';
 import { Tabs } from '@/ui/shadcn/tabs';
 
-import {
-    SearchPageToolbar
-} from './components/SearchPageToolbar';
+import { SearchPageToolbar } from './components/SearchPageToolbar';
 import {
     SearchAvatarTabPanel,
     SearchGroupTabPanel,

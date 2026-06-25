@@ -225,8 +225,7 @@ export function useFriendsLocationsActions({
         try {
             const result = await boopPrompt({
                 endpoint: currentEndpoint,
-                targetLabel:
-                    friend?.displayName || friend?.username || friendId
+                targetLabel: friend?.displayName || friend?.username || friendId
             });
             if (!result.ok) {
                 return;

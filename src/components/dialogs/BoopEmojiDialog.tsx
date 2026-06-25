@@ -5,10 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import mediaRepository from '@/repositories/mediaRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import {
-    photonEmojiId,
-    photonEmojis
-} from '@/shared/constants/photonEmojis';
+import { photonEmojiId, photonEmojis } from '@/shared/constants/photonEmojis';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -218,9 +215,7 @@ export function BoopEmojiDialog({
                                 disabled={sending || !selectedDefaultEmojiId}
                                 onClick={() => setEmojiId('')}
                             >
-                                {t(
-                                    'view.notification.action.clear_selection'
-                                )}
+                                {t('view.notification.action.clear_selection')}
                             </Button>
                         </div>
                     </div>

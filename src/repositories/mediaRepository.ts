@@ -1,25 +1,3 @@
-import vrchatMediaRepository, {
-    consumeInventoryBundle,
-    deleteFile,
-    deletePrint,
-    getFileList,
-    getFiles,
-    getInventoryItems,
-    getPrint,
-    getPrints,
-    getUserInventoryItem,
-    redeemReward,
-    updateInventoryItem,
-    uploadAssetImage,
-    uploadAvatarGalleryImage,
-    uploadAvatarImageLegacy,
-    uploadEmoji,
-    uploadGalleryImage,
-    uploadPrint,
-    uploadSticker,
-    uploadVrcPlusIcon,
-    uploadWorldImageLegacy
-} from './vrchatMediaRepository';
 import mediaFileRepository, {
     addScreenshotMetadata,
     copyImageToClipboard,
@@ -48,8 +26,31 @@ import mediaFileRepository, {
     saveStickerToFile,
     startScreenshotLibraryScan
 } from './mediaFileRepository';
+import vrchatMediaRepository, {
+    consumeInventoryBundle,
+    deleteFile,
+    deletePrint,
+    getFileList,
+    getFiles,
+    getInventoryItems,
+    getPrint,
+    getPrints,
+    getUserInventoryItem,
+    redeemReward,
+    updateInventoryItem,
+    uploadAssetImage,
+    uploadAvatarGalleryImage,
+    uploadAvatarImageLegacy,
+    uploadEmoji,
+    uploadGalleryImage,
+    uploadPrint,
+    uploadSticker,
+    uploadVrcPlusIcon,
+    uploadWorldImageLegacy
+} from './vrchatMediaRepository';
 
-type MediaRepository = typeof vrchatMediaRepository & typeof mediaFileRepository;
+type MediaRepository = typeof vrchatMediaRepository &
+    typeof mediaFileRepository;
 
 const mediaRepository = Object.freeze({
     ...vrchatMediaRepository,

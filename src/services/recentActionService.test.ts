@@ -35,7 +35,7 @@ describe('recentActionService', () => {
 
     afterEach(() => {
         vi.useRealTimers();
-        delete globalThis.window;
+        Reflect.deleteProperty(globalThis, 'window');
     });
 
     it('records only tracked actions and respects the configured cooldown', async () => {
@@ -56,7 +56,9 @@ describe('recentActionService', () => {
         vi.setSystemTime(new Date('2026-01-01T00:30:00Z'));
         expect(service.isActionRecent('usr_abc', 'Invite')).toBe(false);
 
-        const stored = JSON.parse(String(localStorage.dump().VRCX_recentActions));
+        const stored = JSON.parse(
+            String(localStorage.dump().VRCX_recentActions)
+        );
         expect(stored).toEqual({});
     });
 

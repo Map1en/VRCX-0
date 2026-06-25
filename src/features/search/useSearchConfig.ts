@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
+import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { normalizeLanguageOptionsFromConfig } from '@/shared/utils/userLanguage';
 
 import { emptyArray } from './searchResults';

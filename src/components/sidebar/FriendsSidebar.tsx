@@ -8,6 +8,7 @@ import { useCurrentInstancePresence } from '@/domain/presence/useCurrentInstance
 import { useKnownUserFacts } from '@/domain/users/useKnownUser';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import { checkCanInvite } from '@/shared/utils/invite';
+import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
@@ -24,7 +25,6 @@ import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
     normalizeLocationStatus,
-    normalizeId,
     readFriendStatusSource,
     resolveCurrentInviteLocation,
     sortActiveRows,

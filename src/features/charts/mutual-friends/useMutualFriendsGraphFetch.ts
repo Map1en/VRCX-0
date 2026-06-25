@@ -20,7 +20,9 @@ export function useMutualFriendsGraphFetch({
 }: any) {
     const { t } = useTranslation();
     const lastHandledRunRef = useRef(0);
-    const statusRunId = useRuntimeStore((state: any) => state.mutualGraph.runId);
+    const statusRunId = useRuntimeStore(
+        (state: any) => state.mutualGraph.runId
+    );
     const statusName = useRuntimeStore(
         (state: any) => state.mutualGraph.status
     );
@@ -85,7 +87,7 @@ export function useMutualFriendsGraphFetch({
                         ? error.message
                         : t(
                               'view.charts.toast.failed_to_fetch_mutual_friends_graph'
-                    )
+                          )
                 );
             });
             return;
@@ -163,7 +165,9 @@ export function useMutualFriendsGraphFetch({
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : t('view.charts.toast.failed_to_fetch_mutual_friends_graph')
+                    : t(
+                          'view.charts.toast.failed_to_fetch_mutual_friends_graph'
+                      )
             );
         });
     }

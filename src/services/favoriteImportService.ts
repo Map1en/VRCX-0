@@ -5,6 +5,7 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import i18n from '@/services/i18nService';
+import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -12,7 +13,30 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { bootstrapFavorites } from './favoriteBootstrapService';
 
-const TYPE_CONFIG: Record<string, Record<string, any>> = {
+type FavoriteRemoteGroupsKey =
+    | 'favoriteAvatarGroups'
+    | 'favoriteWorldGroups'
+    | 'favoriteFriendGroups';
+type FavoriteLocalGroupsKey =
+    | 'localAvatarFavoriteGroups'
+    | 'localWorldFavoriteGroups'
+    | 'localFriendFavoriteGroups';
+type FavoriteLocalFavoritesKey =
+    | 'localAvatarFavorites'
+    | 'localWorldFavorites'
+    | 'localFriendFavorites';
+
+interface FavoriteTypeConfig {
+    label: string;
+    regex: RegExp;
+    remoteGroupsKey: FavoriteRemoteGroupsKey;
+    localGroupsKey: FavoriteLocalGroupsKey;
+    localFavoritesKey: FavoriteLocalFavoritesKey;
+    getProfile(id: string, endpoint: string): Promise<any>;
+    addLocal(id: string, groupName: string): Promise<void>;
+}
+
+const TYPE_CONFIG: Record<string, FavoriteTypeConfig> = {
     avatar: {
         label: 'Avatar',
         regex: /avtr_[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g,
@@ -83,12 +107,6 @@ const TYPE_CONFIG: Record<string, Record<string, any>> = {
 function normalizeType(type: unknown): string {
     const normalized = normalizeString(type);
     return TYPE_CONFIG[normalized] ? normalized : '';
-}
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 function getRuntimeAuth() {

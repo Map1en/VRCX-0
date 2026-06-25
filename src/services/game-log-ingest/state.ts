@@ -1,6 +1,5 @@
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-import { normalizeString } from './parsing';
 
 type GameLogPlayer = {
     userId?: unknown;
@@ -89,9 +88,8 @@ function getCurrentLocationPlayers(): CurrentLocationPlayer[] {
                 source: 'runtime' as const
             };
         })
-        .filter(
-            (player): player is CurrentLocationPlayer =>
-                Boolean(player.id && (player.userId || player.displayName))
+        .filter((player): player is CurrentLocationPlayer =>
+            Boolean(player.id && (player.userId || player.displayName))
         );
 }
 
