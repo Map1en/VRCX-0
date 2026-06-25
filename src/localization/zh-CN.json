@@ -2595,7 +2595,7 @@
                 "no_user_id_was_found_for_this_player_row": "这个玩家行没有用户 ID",
                 "currently_traveling_between_instances": "正在切换房间",
                 "no_current_instance_detected": "未检测到当前房间",
-                "no_players_reconstructed_for_this_instance_yet": "还没有为当前房间重建出玩家",
+                "no_players_reconstructed_for_this_instance_yet": "无法显示房内玩家：尚未有足够的日志数据",
                 "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "请先在设置中启用游戏日志记录，之后才能重建当前玩家。",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "请启动 VRChat 并让 VRCX-0 能收到游戏日志事件，之后此页面才可用。",
                 "stay_in_the_instance_until_local_join_leave_events_are_recorded": "请在房间中停留，直到本地加入/离开事件被记录完毕，之后此列表会自动填充。",
