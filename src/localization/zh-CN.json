@@ -1429,7 +1429,7 @@
                 "no_instance_activity_on_this_day": "这一天没有房间活动",
                 "no_friends_are_available_for_mutual_graph_fetching": "没有可用于获取共同好友图谱的好友",
                 "no_selection": "未选择",
-                "no_friends_match_this_search": "没有好友符合此搜索",
+                "no_friends_match_this_search": "没有好友符合此搜索条件",
                 "no_cached_mutual_graph_yet": "还没有缓存的共同好友图谱",
                 "no_graph_nodes_match_the_current_search": "没有图谱节点符合当前搜索",
                 "no_matching_player_activity_rows_were_found_for_this_instance_visit": "这次房间访问没有匹配的玩家活动行"
