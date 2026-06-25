@@ -345,7 +345,9 @@ export function MutualFriendsToolbar({
                     >
                         {fetchProgress.cancelRequested
                             ? t('view.charts.mutual_friend.actions.cancelling')
-                            : t('view.charts.mutual_friend.actions.stop_fetching')}
+                            : t(
+                                  'view.charts.mutual_friend.actions.stop_fetching'
+                              )}
                     </Button>
                 ) : (
                     <Button
@@ -353,7 +355,11 @@ export function MutualFriendsToolbar({
                         disabled={!graph.currentUserId || !graph.friendCount}
                         onClick={mutualCommands.fetchGraph}
                     >
-                        {baseNodeCount ? t('view.charts.mutual_friend.actions.fetch_again') : t('view.charts.mutual_friend.actions.start_fetch')}
+                        {baseNodeCount
+                            ? t('view.charts.mutual_friend.actions.fetch_again')
+                            : t(
+                                  'view.charts.mutual_friend.actions.start_fetch'
+                              )}
                     </Button>
                 )}
                 {baseNodeCount ? (
