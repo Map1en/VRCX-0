@@ -3411,8 +3411,6 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前位置不可用或不可传送",
                 "cannot_invite_from_the_current_instance_type": "无法从当前房间类型发出邀请",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：所在位置不是有效房间",
-                "group_id_is_required": "需要群组 ID",
-                "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：当前位置不是具体房间",
                 "user_profile_unavailable": "用户个人资料不可用",
                 "avatar_author_unavailable": "模型作者不可用",
                 "blocked": "已屏蔽",
