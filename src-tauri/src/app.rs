@@ -141,11 +141,14 @@ pub fn run() {
             // the destroyed webview (background mode) re-enters the event loop and would hang
             // the sending process, leaving two instances.
             let app_handle = app.clone();
-            let _ = app.run_on_main_thread(move || {
-                restore_or_ensure_main_window(
-                    &app_handle,
-                    "failed to show main window from single instance",
-                );
+            tauri::async_runtime::spawn(async move {
+                let inner_handle = app_handle.clone();
+                let _ = app_handle.run_on_main_thread(move || {
+                    restore_or_ensure_main_window(
+                        &inner_handle,
+                        "failed to show main window from single instance",
+                    );
+                });
             });
         }))
         .register_asynchronous_uri_scheme_protocol("vrcx-0-img", move |_ctx, request, responder| {
