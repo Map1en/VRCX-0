@@ -137,9 +137,9 @@ pub fn run() {
     let setup_app_data_dir = app_data_dir.clone();
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            // Must defer: this runs inside the synchronous WM_COPYDATA proc, and rebuilding
-            // the destroyed webview (background mode) re-enters the event loop and would hang
-            // the sending process, leaving two instances.
+            // Spawn onto a worker thread so run_on_main_thread actually defers the window
+            // rebuild; running it inline here would block the second instance and leave two
+            // instances alive.
             let app_handle = app.clone();
             tauri::async_runtime::spawn(async move {
                 let inner_handle = app_handle.clone();
