@@ -1,7 +1,7 @@
 {
     "assistant": {
         "title": "社交 AI",
-        "new_chat": "新聊天",
+        "new_chat": "新對話",
         "sessions_empty": "目前尚無對話",
         "composer_placeholder": "問個問題",
         "send": "傳送",
