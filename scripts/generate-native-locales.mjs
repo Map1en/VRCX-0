@@ -110,7 +110,31 @@ const overlayPathKeys = [
     ['overlay.status.active', ['dialog', 'user', 'status', 'online']],
     ['overlay.status.join_me', ['dialog', 'user', 'status', 'join_me']],
     ['overlay.status.ask_me', ['dialog', 'user', 'status', 'ask_me']],
-    ['overlay.status.busy', ['dialog', 'user', 'status', 'busy']]
+    ['overlay.status.busy', ['dialog', 'user', 'status', 'busy']],
+    ['overlay.discord.title.invite', ['overlay', 'discord', 'title', 'invite']],
+    [
+        'overlay.discord.title.request_invite',
+        ['overlay', 'discord', 'title', 'request_invite']
+    ],
+    [
+        'overlay.discord.title.invite_response',
+        ['overlay', 'discord', 'title', 'invite_response']
+    ],
+    [
+        'overlay.discord.title.request_invite_response',
+        ['overlay', 'discord', 'title', 'request_invite_response']
+    ],
+    ['overlay.discord.title.gps', ['overlay', 'discord', 'title', 'gps']],
+    ['overlay.discord.title.status', ['overlay', 'discord', 'title', 'status']],
+    [
+        'overlay.discord.title.avatar_change',
+        ['overlay', 'discord', 'title', 'avatar_change']
+    ],
+    ['overlay.discord.title.online', ['overlay', 'discord', 'title', 'online']],
+    [
+        'overlay.discord.title.offline',
+        ['overlay', 'discord', 'title', 'offline']
+    ]
 ];
 const shellPathKeys = pathKeysFromDottedKeys([
     'nativeShell.tray.open',

@@ -130,7 +130,20 @@
             "players": "{count}명",
             "instance_duration": "체류 {duration}"
         },
-        "generic_instance_location": "인스턴스"
+        "generic_instance_location": "인스턴스",
+        "discord": {
+            "title": {
+                "invite": "{name}님의 초대",
+                "request_invite": "{name}님의 초대 요청",
+                "invite_response": "{name}님의 초대 응답",
+                "request_invite_response": "{name}님의 초대 요청 응답",
+                "gps": "{name}님의 현재 위치",
+                "status": "{name}님이 상태를 변경했습니다",
+                "avatar_change": "{name}님이 아바타를 변경했습니다",
+                "online": "{name}님이 로그인했습니다",
+                "offline": "{name}님이 로그아웃했습니다"
+            }
+        }
     },
     "nativeShell": {
         "tray": {

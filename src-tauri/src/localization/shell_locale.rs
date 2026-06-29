@@ -211,11 +211,11 @@ mod tests {
     fn routes_chinese_script_and_region_variants() {
         assert_eq!(
             auth_failure_notification_labels_for_language("zh-Hant").title,
-            "VRChat 登入已失效"
+            "VRChat 登入已過期"
         );
         assert_eq!(
             auth_failure_notification_labels_for_language("zh_HK").title,
-            "VRChat 登入已失效"
+            "VRChat 登入已過期"
         );
         assert_eq!(
             auth_failure_notification_labels_for_language("zh-Hans").title,

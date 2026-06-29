@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::OnceLock};
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use vrcx_0_application::OverlayActivityText;
 use vrcx_0_core::location::{
     format_display_location_with_labels, parse_location, DisplayLocationLabels,
@@ -121,6 +121,48 @@ impl OverlayLocalizer {
         self.label("overlay.generic_instance_location", "an instance")
     }
 
+    pub(crate) fn discord_title(&self, activity_type: &str, name: &str) -> String {
+        let name = name.trim();
+        let Some(key) = discord_title_key(activity_type) else {
+            return name.to_string();
+        };
+        let template = catalog().text(self.locale.as_str(), key, "{name}");
+        collapse_whitespace(&interpolate(&template, &json!({ "name": name })))
+    }
+
+    pub(crate) fn status_text(&self, status: &str) -> String {
+        let status = status.trim();
+        if status.is_empty() {
+            return String::new();
+        }
+        match status_label_key(status) {
+            Some(key) => self.label(key, status),
+            None => status.to_string(),
+        }
+    }
+
+    pub(crate) fn access_label(&self, location: &str) -> String {
+        let parsed = parse_location(location);
+        match parsed.access_type_name.as_str() {
+            "" => String::new(),
+            "public" => self.label("overlay.access.public", "Public"),
+            "invite" => self.label("overlay.access.invite", "Invite"),
+            "invite+" => self.label("overlay.access.invite_plus", "Invite+"),
+            "friends" => self.label("overlay.access.friends", "Friends"),
+            "friends+" => self.label("overlay.access.friends_plus", "Friends+"),
+            "group" => self.label("overlay.access.group", "Group"),
+            "groupPublic" => {
+                let group = self.label("overlay.access.group", "Group");
+                self.group_access_label(&group, "overlay.access.group_public", "groupPublic")
+            }
+            "groupPlus" => {
+                let group = self.label("overlay.access.group", "Group");
+                self.group_access_label(&group, "overlay.access.group_plus", "groupPlus")
+            }
+            other => other.to_string(),
+        }
+    }
+
     fn group_access_label(&self, group: &str, key: &str, fallback: &str) -> String {
         let label = self.label(key, fallback);
         if label.starts_with(group) {
@@ -148,6 +190,25 @@ impl OverlayLocalizer {
         let mut localized = object.clone();
         localized.insert("status".to_string(), Value::String(label));
         Cow::Owned(Value::Object(localized))
+    }
+}
+
+pub(crate) fn discord_has_rich_title(activity_type: &str) -> bool {
+    discord_title_key(activity_type).is_some()
+}
+
+fn discord_title_key(activity_type: &str) -> Option<&'static str> {
+    match activity_type {
+        "invite" => Some("overlay.discord.title.invite"),
+        "requestInvite" => Some("overlay.discord.title.request_invite"),
+        "inviteResponse" => Some("overlay.discord.title.invite_response"),
+        "requestInviteResponse" => Some("overlay.discord.title.request_invite_response"),
+        "GPS" => Some("overlay.discord.title.gps"),
+        "Status" => Some("overlay.discord.title.status"),
+        "AvatarChange" => Some("overlay.discord.title.avatar_change"),
+        "Online" => Some("overlay.discord.title.online"),
+        "Offline" => Some("overlay.discord.title.offline"),
+        _ => None,
     }
 }
 

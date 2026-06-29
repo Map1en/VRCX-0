@@ -130,7 +130,20 @@
             "players": "{count} 名玩家",
             "instance_duration": "停留 {duration}"
         },
-        "generic_instance_location": "某个房间"
+        "generic_instance_location": "某个房间",
+        "discord": {
+            "title": {
+                "invite": "{name} 的邀请",
+                "request_invite": "{name} 的邀请请求",
+                "invite_response": "{name} 的邀请回应",
+                "request_invite_response": "{name} 的邀请请求回应",
+                "gps": "{name} 的当前位置",
+                "status": "{name} 更改了状态",
+                "avatar_change": "{name} 更改了模型",
+                "online": "{name} 已登录",
+                "offline": "{name} 已登出"
+            }
+        }
     },
     "nativeShell": {
         "tray": {

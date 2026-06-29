@@ -130,7 +130,20 @@
             "players": "{count}人",
             "instance_duration": "滞在 {duration}"
         },
-        "generic_instance_location": "インスタンス"
+        "generic_instance_location": "インスタンス",
+        "discord": {
+            "title": {
+                "invite": "{name} からの招待",
+                "request_invite": "{name} からの招待リクエスト",
+                "invite_response": "{name} からの招待への返信",
+                "request_invite_response": "{name} からの招待リクエストへの返信",
+                "gps": "{name} が移動しました",
+                "status": "{name} がステータスを変更しました",
+                "avatar_change": "{name} がアバターを変更しました",
+                "online": "{name} がログインしました",
+                "offline": "{name} がログアウトしました"
+            }
+        }
     },
     "nativeShell": {
         "tray": {

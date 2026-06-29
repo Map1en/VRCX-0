@@ -130,7 +130,20 @@
             "players": "{count} players",
             "instance_duration": "Instance {duration}"
         },
-        "generic_instance_location": "an instance"
+        "generic_instance_location": "an instance",
+        "discord": {
+            "title": {
+                "invite": "{name}'s invite",
+                "request_invite": "{name}'s invite request",
+                "invite_response": "{name}'s invite response",
+                "request_invite_response": "{name}'s invite request response",
+                "gps": "{name}'s location",
+                "status": "{name} changed status",
+                "avatar_change": "{name} changed avatar",
+                "online": "{name} logged in",
+                "offline": "{name} logged out"
+            }
+        }
     },
     "nativeShell": {
         "tray": {

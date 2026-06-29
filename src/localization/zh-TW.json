@@ -130,7 +130,20 @@
             "players": "{count} 位玩家",
             "instance_duration": "停留 {duration}"
         },
-        "generic_instance_location": "一個房間"
+        "generic_instance_location": "一個房間",
+        "discord": {
+            "title": {
+                "invite": "{name} 的邀請",
+                "request_invite": "{name} 的邀請請求",
+                "invite_response": "{name} 的邀請回應",
+                "request_invite_response": "{name} 的邀請請求回應",
+                "gps": "{name} 的目前位置",
+                "status": "{name} 變更了狀態",
+                "avatar_change": "{name} 變更了角色",
+                "online": "{name} 已登入",
+                "offline": "{name} 已登出"
+            }
+        }
     },
     "nativeShell": {
         "tray": {

@@ -1149,7 +1149,7 @@ mod tests {
         );
         assert_eq!(
             auth_failure_notification_labels_for_language("zh-TW").title,
-            "VRChat 登入已失效"
+            "VRChat 登入已過期"
         );
         assert_eq!(
             auth_failure_notification_labels_for_language("ja").title,

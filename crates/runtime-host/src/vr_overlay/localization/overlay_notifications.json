@@ -50,7 +50,16 @@
             "overlay.status.active": "Online",
             "overlay.status.join_me": "Join Me",
             "overlay.status.ask_me": "Ask Me",
-            "overlay.status.busy": "Do Not Disturb"
+            "overlay.status.busy": "Do Not Disturb",
+            "overlay.discord.title.invite": "{name}'s invite",
+            "overlay.discord.title.request_invite": "{name}'s invite request",
+            "overlay.discord.title.invite_response": "{name}'s invite response",
+            "overlay.discord.title.request_invite_response": "{name}'s invite request response",
+            "overlay.discord.title.gps": "{name}'s location",
+            "overlay.discord.title.status": "{name} changed status",
+            "overlay.discord.title.avatar_change": "{name} changed avatar",
+            "overlay.discord.title.online": "{name} logged in",
+            "overlay.discord.title.offline": "{name} logged out"
         },
         "zh-CN": {
             "notifications.has_joined": "加入了房间",
@@ -100,7 +109,16 @@
             "overlay.status.active": "在线",
             "overlay.status.join_me": "欢迎加入",
             "overlay.status.ask_me": "忙碌",
-            "overlay.status.busy": "请勿打扰"
+            "overlay.status.busy": "请勿打扰",
+            "overlay.discord.title.invite": "{name} 的邀请",
+            "overlay.discord.title.request_invite": "{name} 的邀请请求",
+            "overlay.discord.title.invite_response": "{name} 的邀请回应",
+            "overlay.discord.title.request_invite_response": "{name} 的邀请请求回应",
+            "overlay.discord.title.gps": "{name} 的当前位置",
+            "overlay.discord.title.status": "{name} 更改了状态",
+            "overlay.discord.title.avatar_change": "{name} 更改了模型",
+            "overlay.discord.title.online": "{name} 已登录",
+            "overlay.discord.title.offline": "{name} 已登出"
         },
         "zh-TW": {
             "notifications.has_joined": "已加入",
@@ -150,7 +168,16 @@
             "overlay.status.active": "上線",
             "overlay.status.join_me": "加入我",
             "overlay.status.ask_me": "詢問我",
-            "overlay.status.busy": "請勿打擾"
+            "overlay.status.busy": "請勿打擾",
+            "overlay.discord.title.invite": "{name} 的邀請",
+            "overlay.discord.title.request_invite": "{name} 的邀請請求",
+            "overlay.discord.title.invite_response": "{name} 的邀請回應",
+            "overlay.discord.title.request_invite_response": "{name} 的邀請請求回應",
+            "overlay.discord.title.gps": "{name} 的目前位置",
+            "overlay.discord.title.status": "{name} 變更了狀態",
+            "overlay.discord.title.avatar_change": "{name} 變更了角色",
+            "overlay.discord.title.online": "{name} 已登入",
+            "overlay.discord.title.offline": "{name} 已登出"
         },
         "ja": {
             "notifications.has_joined": "が参加しました",
@@ -200,7 +227,16 @@
             "overlay.status.active": "オンライン",
             "overlay.status.join_me": "だれでもおいで",
             "overlay.status.ask_me": "きいてみてね",
-            "overlay.status.busy": "取り込み中"
+            "overlay.status.busy": "取り込み中",
+            "overlay.discord.title.invite": "{name} からの招待",
+            "overlay.discord.title.request_invite": "{name} からの招待リクエスト",
+            "overlay.discord.title.invite_response": "{name} からの招待への返信",
+            "overlay.discord.title.request_invite_response": "{name} からの招待リクエストへの返信",
+            "overlay.discord.title.gps": "{name} が移動しました",
+            "overlay.discord.title.status": "{name} がステータスを変更しました",
+            "overlay.discord.title.avatar_change": "{name} がアバターを変更しました",
+            "overlay.discord.title.online": "{name} がログインしました",
+            "overlay.discord.title.offline": "{name} がログアウトしました"
         },
         "ko": {
             "notifications.has_joined": "가입했습니다",
@@ -250,7 +286,16 @@
             "overlay.status.active": "온라인",
             "overlay.status.join_me": "조인 가능",
             "overlay.status.ask_me": "조인 문의",
-            "overlay.status.busy": "방해 금지"
+            "overlay.status.busy": "방해 금지",
+            "overlay.discord.title.invite": "{name}님의 초대",
+            "overlay.discord.title.request_invite": "{name}님의 초대 요청",
+            "overlay.discord.title.invite_response": "{name}님의 초대 응답",
+            "overlay.discord.title.request_invite_response": "{name}님의 초대 요청 응답",
+            "overlay.discord.title.gps": "{name}님의 현재 위치",
+            "overlay.discord.title.status": "{name}님이 상태를 변경했습니다",
+            "overlay.discord.title.avatar_change": "{name}님이 아바타를 변경했습니다",
+            "overlay.discord.title.online": "{name}님이 로그인했습니다",
+            "overlay.discord.title.offline": "{name}님이 로그아웃했습니다"
         }
     }
 }
