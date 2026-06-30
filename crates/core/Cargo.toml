@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 chrono = { workspace = true }
-quick-xml = "0.40"
+quick-xml = "0.41"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
