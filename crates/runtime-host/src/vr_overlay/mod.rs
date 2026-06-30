@@ -2,7 +2,9 @@ mod eligibility;
 mod localization;
 mod manager;
 
-pub(crate) use localization::{discord_has_rich_title, OverlayLocale, OverlayLocalizer};
+pub(crate) use localization::{
+    discord_embed_kind, discord_title_key, DiscordEmbedKind, OverlayLocale, OverlayLocalizer,
+};
 mod preview_bridge;
 mod runtime;
 mod service;

@@ -193,11 +193,28 @@ impl OverlayLocalizer {
     }
 }
 
-pub(crate) fn discord_has_rich_title(activity_type: &str) -> bool {
-    discord_title_key(activity_type).is_some()
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum DiscordEmbedKind {
+    Invite,
+    Gps,
+    Status,
+    AvatarChange,
+    Other,
 }
 
-fn discord_title_key(activity_type: &str) -> Option<&'static str> {
+pub(crate) fn discord_embed_kind(activity_type: &str) -> DiscordEmbedKind {
+    match activity_type {
+        "invite" | "requestInvite" | "inviteResponse" | "requestInviteResponse" => {
+            DiscordEmbedKind::Invite
+        }
+        "GPS" => DiscordEmbedKind::Gps,
+        "Status" => DiscordEmbedKind::Status,
+        "AvatarChange" => DiscordEmbedKind::AvatarChange,
+        _ => DiscordEmbedKind::Other,
+    }
+}
+
+pub(crate) fn discord_title_key(activity_type: &str) -> Option<&'static str> {
     match activity_type {
         "invite" => Some("overlay.discord.title.invite"),
         "requestInvite" => Some("overlay.discord.title.request_invite"),

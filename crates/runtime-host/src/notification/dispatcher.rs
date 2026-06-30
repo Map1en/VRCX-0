@@ -20,7 +20,9 @@ use vrcx_0_vrchat_client::http_api::ApiScope;
 use vrcx_0_vrchat_client::web_client::WebExecuteRequest;
 
 use crate::notification::user_image::UserImageCache;
-use crate::vr_overlay::{discord_has_rich_title, OverlayLocale, OverlayLocalizer};
+use crate::vr_overlay::{
+    discord_embed_kind, discord_title_key, DiscordEmbedKind, OverlayLocale, OverlayLocalizer,
+};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
@@ -996,7 +998,7 @@ fn discord_webhook_payload(
     locale: OverlayLocale,
 ) -> Value {
     let entry = &delivery.entry;
-    if !discord_has_rich_title(&entry.activity_type) {
+    if discord_title_key(&entry.activity_type).is_none() {
         return discord_legacy_embed(delivery, render);
     }
     let localizer = OverlayLocalizer::new(locale);
@@ -1008,40 +1010,41 @@ fn discord_webhook_payload(
     }
 
     let mut description = String::new();
-    let is_invite = matches!(
-        entry.activity_type.as_str(),
-        "invite" | "requestInvite" | "inviteResponse" | "requestInviteResponse"
-    );
-    if is_invite {
-        let message = entry.content.detail.trim();
-        if !message.is_empty() && message != render.display_location.trim() {
-            description.push_str(&format!("\u{300c}{message}\u{300d}"));
+    match discord_embed_kind(&entry.activity_type) {
+        DiscordEmbedKind::Invite => {
+            let message = entry.content.detail.trim();
+            if !message.is_empty() && message != render.display_location.trim() {
+                description.push_str(&format!("\u{300c}{message}\u{300d}"));
+            }
         }
-    }
-    if entry.activity_type == "GPS" {
-        let content = &entry.content;
-        let target = if !content.world_name.trim().is_empty() {
-            content.world_name.trim()
-        } else if !render.display_location.trim().is_empty() {
-            render.display_location.trim()
-        } else if !render.body.trim().is_empty() {
-            render.body.trim()
-        } else {
-            render.text.trim()
-        };
-        if !target.is_empty() {
-            description.push_str(&format!("\u{2192} {target}"));
+        DiscordEmbedKind::Gps => {
+            let content = &entry.content;
+            let target = if !content.world_name.trim().is_empty() {
+                content.world_name.trim()
+            } else if !render.display_location.trim().is_empty() {
+                render.display_location.trim()
+            } else if !render.body.trim().is_empty() {
+                render.body.trim()
+            } else {
+                render.text.trim()
+            };
+            if !target.is_empty() {
+                description.push_str(&format!("\u{2192} {target}"));
+            }
         }
-    } else if entry.activity_type == "Status" {
-        let status = localizer.status_text(&entry.content.status);
-        if !status.is_empty() {
-            description.push_str(&status);
+        DiscordEmbedKind::Status => {
+            let status = localizer.status_text(&entry.content.status);
+            if !status.is_empty() {
+                description.push_str(&status);
+            }
         }
-    } else if entry.activity_type == "AvatarChange" {
-        let avatar = entry.content.avatar_name.trim();
-        if !avatar.is_empty() {
-            description.push_str(avatar);
+        DiscordEmbedKind::AvatarChange => {
+            let avatar = entry.content.avatar_name.trim();
+            if !avatar.is_empty() {
+                description.push_str(avatar);
+            }
         }
+        DiscordEmbedKind::Other => {}
     }
 
     let author = build_discord_author(entry, render);
