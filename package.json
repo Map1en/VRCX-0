@@ -78,7 +78,7 @@
         "react-i18next": "^17.0.8",
         "react-markdown": "^10.1.0",
         "react-resizable-panels": "^4.11.2",
-        "react-router-dom": "^7.18.0",
+        "react-router-dom": "^7.18.1",
         "remark-gfm": "^4.0.1",
         "sigma": "^3.0.3",
         "sonner": "^2.0.7",
