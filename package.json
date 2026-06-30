@@ -68,7 +68,7 @@
         "graphology-communities-louvain": "^2.0.2",
         "graphology-layout-forceatlas2": "^0.10.1",
         "graphology-layout-noverlap": "^0.4.2",
-        "i18next": "^26.3.2",
+        "i18next": "^26.3.4",
         "input-otp": "^1.4.2",
         "lucide-react": "^1.21.0",
         "radix-ui": "1.5.0",
