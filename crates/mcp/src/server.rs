@@ -2,9 +2,8 @@ use std::future::{self, Future};
 
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::model::{
-    AnnotateAble, Implementation, ListResourcesResult, PaginatedRequestParams, RawResource,
-    ReadResourceRequestParams, ReadResourceResult, ResourceContents, ServerCapabilities,
-    ServerInfo,
+    Implementation, ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams,
+    ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerInfo,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
@@ -76,11 +75,10 @@ impl ServerHandler for VrcxMcpServer {
         _request: Option<PaginatedRequestParams>,
         _context: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ListResourcesResult, RmcpError>> + MaybeSendFuture + '_ {
-        let resource = RawResource::new(DATA_CAVEATS_URI, "data_caveats")
+        let resource = Resource::new(DATA_CAVEATS_URI, "data_caveats")
             .with_title("VRCX-0 Data Caveats")
             .with_description("Observer-centered data caveats for all VRCX-0 MCP tools.")
-            .with_mime_type("text/plain")
-            .no_annotation();
+            .with_mime_type("text/plain");
         future::ready(Ok(ListResourcesResult::with_all_items(vec![resource])))
     }
 
