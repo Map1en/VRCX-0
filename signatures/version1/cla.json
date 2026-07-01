@@ -1,12 +1,12 @@
 {
-  "signedContributors": [
-    {
-      "name": "Dreaminko",
-      "id": 62631990,
-      "comment_id": 4855124150,
-      "created_at": "2026-07-01T12:57:54Z",
-      "repoId": 1201710991,
-      "pullRequestNo": 252
-    }
-  ]
+    "signedContributors": [
+        {
+            "name": "Dreaminko",
+            "id": 62631990,
+            "comment_id": 4855124150,
+            "created_at": "2026-07-01T12:57:54Z",
+            "repoId": 1201710991,
+            "pullRequestNo": 252
+        }
+    ]
 }
