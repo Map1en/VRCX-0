@@ -27,6 +27,11 @@ import {
     buildTelemetryContext,
     waitForInitialTelemetryContext
 } from './telemetryPayload';
+import {
+    resetRustErrors,
+    seedRustErrors,
+    sendRustErrors
+} from './telemetryRustErrors';
 import type {
     TelemetrySessionState,
     TelemetryVrchatLifecycleState
@@ -60,6 +65,11 @@ const HEARTBEAT_COLLECTORS: HeartbeatCollector[] = [
     {
         flush: sendAssistantUsage,
         reset: resetAssistantUsage
+    },
+    {
+        seed: seedRustErrors,
+        flush: sendRustErrors,
+        reset: resetRustErrors
     }
 ];
 

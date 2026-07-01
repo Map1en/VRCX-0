@@ -50,6 +50,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::web::web__clear_cookies,
             commands::web::web__clear_auth_cookies,
             commands::host::error_log::app__append_error_log,
+            commands::host::error_log::app__drain_client_error_log,
             commands::asset_bundle::asset_bundle__get_vrchat_cache_full_location,
             commands::asset_bundle::asset_bundle__check_vrchat_cache,
             commands::asset_bundle::asset_bundle__delete_cache,

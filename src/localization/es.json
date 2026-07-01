@@ -193,6 +193,12 @@
                 "title": "Herramientas",
                 "allTools": "Todas las herramientas..."
             },
+            "edit": {
+                "title": "Edición"
+            },
+            "window": {
+                "title": "Ventana"
+            },
             "help": {
                 "title": "Ayuda",
                 "changelog": "Registro de cambios",

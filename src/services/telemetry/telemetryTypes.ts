@@ -87,14 +87,22 @@ export type TelemetryViewModeUsagePayload = TelemetryContextPayload & {
 export type TelemetryRouteErrorClass = 'load_fail' | 'render_crash';
 
 export type TelemetryErrorDetail = {
-    kind: TelemetryRouteErrorClass | 'tool_error' | 'turn_error';
+    kind:
+        | TelemetryRouteErrorClass
+        | 'tool_error'
+        | 'turn_error'
+        | 'panic'
+        | 'rust_error';
     source?: string;
     code?: string;
     name?: string;
     summary?: string;
     signature: string;
+    appVersion?: string;
     count: number;
 };
+
+export type TelemetryErrorDetailKind = TelemetryErrorDetail['kind'];
 
 export type TelemetryPageUsageEntry = {
     route: TelemetryPageRouteKey;
@@ -117,4 +125,8 @@ export type TelemetryAssistantHealthPayload = TelemetryContextPayload & {
 export type TelemetryAssistantUsagePayload = TelemetryContextPayload & {
     opens: number;
     apiKeyConfigured?: boolean;
+};
+
+export type TelemetryClientErrorPayload = TelemetryContextPayload & {
+    errors: TelemetryErrorDetail[];
 };

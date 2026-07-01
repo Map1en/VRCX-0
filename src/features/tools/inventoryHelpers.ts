@@ -179,7 +179,7 @@ export function writeGridDensityPreference(value: any) {
     try {
         window.localStorage.setItem(INVENTORY_GRID_DENSITY_STORAGE_KEY, value);
     } catch {
-        // Display preference only.
+        // no-op
     }
 }
 

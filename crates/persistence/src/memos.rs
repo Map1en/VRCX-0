@@ -218,7 +218,6 @@ pub fn memo_save_avatar(
     save_memo(db, "avatar_memos", "avatar_id", avatar_id, memo)
 }
 
-// Memo persistence helper.
 pub(crate) fn save_memo(
     db: &DatabaseService,
     table_name: &str,

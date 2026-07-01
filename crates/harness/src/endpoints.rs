@@ -26,7 +26,6 @@ const TRANSLATION_API_MODEL_CONFIG_KEY: &str = "translationAPIModel";
 const DEFAULT_TRANSLATION_SYSTEM_PROMPT: &str =
     "You are a translation assistant. Translate the user message into {targetLang}. Only return the translated text.";
 
-// (endpoint_id, model, allow_writes, playbook_mode)
 type LegacyAssistantSeed = (String, Option<String>, bool, PlaybookMode);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

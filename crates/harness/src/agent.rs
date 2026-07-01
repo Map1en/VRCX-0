@@ -167,7 +167,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
                 duplicate_tool_call_result(&call.function.name)
             };
             if !resolved.ok {
-                tracing::error!(
+                tracing::warn!(
                     tool = %call.function.name,
                     args = %call.function.arguments,
                     detail = %resolved.summary,

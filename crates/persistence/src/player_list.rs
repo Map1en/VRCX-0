@@ -251,7 +251,6 @@ pub fn world_summaries_get(
     Ok(summaries)
 }
 
-// Player-list row projection helpers.
 pub(crate) fn player_location_from_row(row: &[Value]) -> PlayerLocationOutput {
     PlayerLocationOutput {
         created_at: row_string(row, 0),

@@ -1848,6 +1848,12 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit"
+            },
+            "window": {
+                "title": "Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",

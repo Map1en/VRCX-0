@@ -57,6 +57,16 @@ pub(crate) mod macos_menu {
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(crate) struct EditMenuLabels {
+        pub(crate) title: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(crate) struct WindowMenuLabels {
+        pub(crate) title: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct ToolsMenuLabels {
         pub(crate) title: String,
         pub(crate) all_tools: String,
@@ -102,6 +112,18 @@ pub(crate) mod macos_menu {
             zoom_in: text(language, "nativeShell.menu.view.zoomIn"),
             zoom_out: text(language, "nativeShell.menu.view.zoomOut"),
             reset_zoom: text(language, "nativeShell.menu.view.resetZoom"),
+        }
+    }
+
+    pub(crate) fn edit_menu_labels_for_language(language: &str) -> EditMenuLabels {
+        EditMenuLabels {
+            title: text(language, "nativeShell.menu.edit.title"),
+        }
+    }
+
+    pub(crate) fn window_menu_labels_for_language(language: &str) -> WindowMenuLabels {
+        WindowMenuLabels {
+            title: text(language, "nativeShell.menu.window.title"),
         }
     }
 
@@ -195,6 +217,8 @@ mod tests {
         "nativeShell.menu.view.zoomIn",
         "nativeShell.menu.view.zoomOut",
         "nativeShell.menu.view.resetZoom",
+        "nativeShell.menu.edit.title",
+        "nativeShell.menu.window.title",
         "nativeShell.menu.tools.title",
         "nativeShell.menu.tools.allTools",
         "nativeShell.menu.help.title",

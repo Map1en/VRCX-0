@@ -44,7 +44,7 @@ function writeSidePanelRouteOpenState(routeKey: any, open: any) {
             JSON.stringify(nextState)
         );
     } catch {
-        // Persisted layout state is optional.
+        // no-op
     }
 
     window.dispatchEvent(

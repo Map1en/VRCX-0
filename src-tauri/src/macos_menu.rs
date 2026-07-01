@@ -1,11 +1,14 @@
 use crate::localization::shell_locale::macos_menu;
-use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Emitter};
 
 const MENU_ACTION_EVENT: &str = "macNativeMenuAction";
 
 pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri::Result<()> {
     let app_i18n = macos_menu::app_menu_labels_for_language(language);
+    let quit_item = MenuItemBuilder::with_id("mac-menu-quit", app_i18n.quit)
+        .accelerator("CmdOrCtrl+Q")
+        .build(app)?;
     let app_menu = SubmenuBuilder::new(app, app_i18n.title)
         .text("mac-menu-about", app_i18n.about)
         .separator()
@@ -18,7 +21,18 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
         )
         .separator()
         .text("mac-menu-logout", app_i18n.logout)
-        .text("mac-menu-quit", app_i18n.quit)
+        .item(&quit_item)
+        .build()?;
+
+    let edit_i18n = macos_menu::edit_menu_labels_for_language(language);
+    let edit_menu = SubmenuBuilder::new(app, edit_i18n.title)
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
         .build()?;
 
     let view_i18n = macos_menu::view_menu_labels_for_language(language);
@@ -48,6 +62,14 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
         .text("mac-menu-tools", tools_i18n.all_tools)
         .build()?;
 
+    let window_i18n = macos_menu::window_menu_labels_for_language(language);
+    let window_menu = SubmenuBuilder::new(app, window_i18n.title)
+        .minimize()
+        .maximize()
+        .separator()
+        .close_window()
+        .build()?;
+
     let help_i18n = macos_menu::help_menu_labels_for_language(language);
     let help_menu = SubmenuBuilder::new(app, help_i18n.title)
         .text("mac-menu-changelog", help_i18n.changelog)
@@ -69,8 +91,10 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
 
     let menu = MenuBuilder::new(app)
         .item(&app_menu)
+        .item(&edit_menu)
         .item(&view_menu)
         .item(&tools_menu)
+        .item(&window_menu)
         .item(&help_menu)
         .build()?;
     app.set_menu(menu)?;

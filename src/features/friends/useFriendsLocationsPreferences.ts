@@ -149,7 +149,7 @@ export function useFriendsLocationsPreferences() {
                         ]);
                     }
                 } catch {
-                    // ignore preference refresh failures
+                    // no-op
                 }
             }
         );

@@ -206,6 +206,12 @@
                 "title": "ツール",
                 "allTools": "すべてのツール..."
             },
+            "edit": {
+                "title": "編集"
+            },
+            "window": {
+                "title": "ウインドウ"
+            },
             "help": {
                 "title": "ヘルプ",
                 "changelog": "新機能 (更新履歴)",

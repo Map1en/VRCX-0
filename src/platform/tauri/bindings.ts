@@ -45,6 +45,15 @@ export const commands = {
     async appAppendErrorLog(entry: string): Promise<null> {
         return await TAURI_INVOKE('app__append_error_log', { entry });
     },
+    async appDrainClientErrorLog(
+        sinceIso: string | null,
+        limit: number | null
+    ): Promise<ClientErrorLogEntry[]> {
+        return await TAURI_INVOKE('app__drain_client_error_log', {
+            sinceIso,
+            limit
+        });
+    },
     async assetBundleGetVrchatCacheFullLocation(
         fileId: string,
         fileVersion: number,
@@ -3007,6 +3016,12 @@ export type ClientConfigSnippets = {
     claudeCodeCommand: string;
     mcpRemoteJson: string;
     genericJson: string;
+};
+export type ClientErrorLogEntry = {
+    tsIso: string;
+    appVersion: string | null;
+    source: string;
+    message: string;
 };
 export type CommunityThemeDebugLocalThemeOutput = {
     folderPath: string;

@@ -8,6 +8,18 @@ describe('startTelemetryLifecycle', () => {
         vi.unstubAllGlobals();
     });
 
+    function mockRustErrors() {
+        const seedRustErrors = vi.fn(() => Promise.resolve());
+        const sendRustErrors = vi.fn(() => Promise.resolve());
+        const resetRustErrors = vi.fn();
+        vi.doMock('./telemetryRustErrors', () => ({
+            resetRustErrors,
+            seedRustErrors,
+            sendRustErrors
+        }));
+        return { seedRustErrors, sendRustErrors, resetRustErrors };
+    }
+
     it('runs heartbeat collectors during seed, tick, and cleanup without moving config or VRChat lifecycle work', async () => {
         vi.useFakeTimers();
         vi.stubGlobal('window', {
@@ -26,6 +38,7 @@ describe('startTelemetryLifecycle', () => {
         const resetAssistantHealth = vi.fn();
         const sendAssistantUsage = vi.fn(() => Promise.resolve());
         const resetAssistantUsage = vi.fn();
+        const rustErrors = mockRustErrors();
         const sendConfigSnapshot = vi.fn(() => Promise.resolve());
         const unsubscribe = vi.fn();
         const subscribe = vi.fn(() => unsubscribe);
@@ -87,6 +100,7 @@ describe('startTelemetryLifecycle', () => {
         await vi.waitFor(() =>
             expect(seedViewModeUsage).toHaveBeenCalledOnce()
         );
+        expect(rustErrors.seedRustErrors).toHaveBeenCalledOnce();
         expect(sendConfigSnapshot).toHaveBeenCalledWith({
             installId: 'install-test',
             sessionId: 'session-test',
@@ -102,6 +116,7 @@ describe('startTelemetryLifecycle', () => {
         expect(sendPageReach).toHaveBeenCalledTimes(1);
         expect(sendAssistantHealth).toHaveBeenCalledTimes(1);
         expect(sendAssistantUsage).toHaveBeenCalledTimes(1);
+        expect(rustErrors.sendRustErrors).toHaveBeenCalledTimes(1);
 
         cleanup();
 
@@ -109,10 +124,12 @@ describe('startTelemetryLifecycle', () => {
         expect(sendPageReach).toHaveBeenCalledTimes(2);
         expect(sendAssistantHealth).toHaveBeenCalledTimes(2);
         expect(sendAssistantUsage).toHaveBeenCalledTimes(2);
+        expect(rustErrors.sendRustErrors).toHaveBeenCalledTimes(2);
         expect(resetViewModeUsage).toHaveBeenCalledOnce();
         expect(resetPageReach).toHaveBeenCalledOnce();
         expect(resetAssistantHealth).toHaveBeenCalledOnce();
         expect(resetAssistantUsage).toHaveBeenCalledOnce();
+        expect(rustErrors.resetRustErrors).toHaveBeenCalledOnce();
         expect(unsubscribe).toHaveBeenCalledOnce();
 
         const sessionEndIndex = postTelemetry.mock.calls.findLastIndex(
@@ -134,6 +151,7 @@ describe('startTelemetryLifecycle', () => {
             setInterval: globalThis.setInterval,
             clearInterval: globalThis.clearInterval
         });
+        mockRustErrors();
         const heartbeatResolvers: Array<() => void> = [];
         const postTelemetry = vi.fn((path: string) => {
             if (path.endsWith('/session/heartbeat')) {
@@ -218,6 +236,7 @@ describe('startTelemetryLifecycle', () => {
             setInterval: globalThis.setInterval,
             clearInterval: globalThis.clearInterval
         });
+        mockRustErrors();
         const postTelemetry = vi.fn((_path: string, _payload: unknown) =>
             Promise.resolve()
         );
@@ -305,6 +324,7 @@ describe('startTelemetryLifecycle', () => {
             setInterval: globalThis.setInterval,
             clearInterval: globalThis.clearInterval
         });
+        mockRustErrors();
         const postTelemetry = vi.fn((_path: string, _payload: unknown) =>
             Promise.resolve()
         );
@@ -393,6 +413,7 @@ describe('startTelemetryLifecycle', () => {
             setInterval: globalThis.setInterval,
             clearInterval: globalThis.clearInterval
         });
+        mockRustErrors();
         const postTelemetry = vi.fn((_path: string, _payload: unknown) =>
             Promise.resolve()
         );

@@ -89,7 +89,7 @@ pub fn load_proxy_url(storage: &StorageService) -> Option<String> {
             );
             storage.remove(PROXY_STORAGE_KEY);
             if let Err(error) = storage.save() {
-                tracing::error!(?error, "failed to persist cleared proxy setting");
+                tracing::warn!(?error, "failed to persist cleared proxy setting");
             }
             None
         }

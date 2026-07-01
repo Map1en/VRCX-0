@@ -1,6 +1,6 @@
 [package]
 name = "vrcx-0"
-version = "2.9.2"
+version = "2.10.0"
 edition = "2021"
 default-run = "vrcx-0"
 

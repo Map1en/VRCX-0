@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
 use chrono::Local;
+use serde::Serialize;
 
 const ERROR_LOG_FILE: &str = "error-log.txt";
 pub const HEADLESS_ERROR_LOG_FILE: &str = "error-headless.txt";
@@ -13,13 +14,17 @@ pub fn default_app_data_dir() -> Option<PathBuf> {
     crate::app_paths::default_app_data_dir().ok()
 }
 
-fn format_timestamp() -> String {
+fn format_timestamp_with_version(app_version: Option<&str>) -> String {
     let now = Local::now();
-    format!(
+    let timestamp = format!(
         "[{}] [{}]",
         now.format("%Y-%m-%d %H:%M:%S%.3f %:z"),
         now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-    )
+    );
+    match app_version.map(str::trim).filter(|value| !value.is_empty()) {
+        Some(version) => format!("{timestamp} [v{version}]"),
+        None => timestamp,
+    }
 }
 
 const NETWORK_ERROR_MARKERS: &[&str] = &[
@@ -55,11 +60,46 @@ pub fn append_error_log(app_data: &Path, source: &str, message: &str) {
     append_error_log_to_file(app_data, ERROR_LOG_FILE, source, message);
 }
 
+pub fn append_error_log_with_version(
+    app_data: &Path,
+    source: &str,
+    message: &str,
+    app_version: &str,
+) {
+    append_error_log_to_file_with_version(app_data, ERROR_LOG_FILE, source, message, app_version);
+}
+
 pub fn append_headless_error_log(app_data: &Path, source: &str, message: &str) {
     append_error_log_to_file(app_data, HEADLESS_ERROR_LOG_FILE, source, message);
 }
 
 pub fn append_error_log_to_file(app_data: &Path, file_name: &str, source: &str, message: &str) {
+    append_error_log_to_file_with_optional_version(app_data, file_name, source, message, None);
+}
+
+pub fn append_error_log_to_file_with_version(
+    app_data: &Path,
+    file_name: &str,
+    source: &str,
+    message: &str,
+    app_version: &str,
+) {
+    append_error_log_to_file_with_optional_version(
+        app_data,
+        file_name,
+        source,
+        message,
+        Some(app_version),
+    );
+}
+
+fn append_error_log_to_file_with_optional_version(
+    app_data: &Path,
+    file_name: &str,
+    source: &str,
+    message: &str,
+    app_version: Option<&str>,
+) {
     if message.trim().is_empty() || should_skip_error_log(message) {
         return;
     }
@@ -69,7 +109,7 @@ pub fn append_error_log_to_file(app_data: &Path, file_name: &str, source: &str, 
         file_name,
         &format!(
             "{} [{}]\n{}\n",
-            format_timestamp(),
+            format_timestamp_with_version(app_version),
             source,
             message.trim_end()
         ),
@@ -144,9 +184,90 @@ fn safe_log_file_name(file_name: &str) -> &str {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ClientErrorLogEntry {
+    pub ts_iso: String,
+    pub app_version: Option<String>,
+    pub source: String,
+    pub message: String,
+}
+
+pub fn drain_client_error_log(
+    app_data: &Path,
+    since_iso: Option<&str>,
+    limit: usize,
+) -> Vec<ClientErrorLogEntry> {
+    let limit = limit.clamp(1, 100);
+    let path = app_data.join(ERROR_LOG_FILE);
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    text.split("\n\n")
+        .filter_map(parse_client_error_log_entry)
+        .filter(|entry| entry.source == "rust:panic" || entry.source == "rust:tracing")
+        .filter(|entry| since_iso.is_none_or(|since| entry.ts_iso.as_str() > since))
+        .take(limit)
+        .collect()
+}
+
+fn parse_client_error_log_entry(raw: &str) -> Option<ClientErrorLogEntry> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let mut lines = raw.lines();
+    let header = lines.next()?.trim();
+    let fields = bracket_fields(header);
+    if fields.len() < 3 {
+        return None;
+    }
+    let ts_iso = fields.get(1)?.trim().to_string();
+    if ts_iso.is_empty() {
+        return None;
+    }
+    let (app_version, source) = match (fields.get(2), fields.get(3)) {
+        (Some(version), Some(source)) if version.starts_with('v') => (
+            Some(version.trim_start_matches('v').trim().to_string())
+                .filter(|value| !value.is_empty()),
+            source.trim().to_string(),
+        ),
+        (Some(source), _) => (None, source.trim().to_string()),
+        _ => return None,
+    };
+    if source.is_empty() {
+        return None;
+    }
+    let message = lines.collect::<Vec<_>>().join("\n").trim_end().to_string();
+    if message.is_empty() {
+        return None;
+    }
+    Some(ClientErrorLogEntry {
+        ts_iso,
+        app_version,
+        source,
+        message,
+    })
+}
+
+fn bracket_fields(header: &str) -> Vec<String> {
+    let mut fields = Vec::new();
+    let mut rest = header;
+    while let Some(start) = rest.find('[') {
+        let after_start = &rest[start + 1..];
+        let Some(end) = after_start.find(']') else {
+            break;
+        };
+        fields.push(after_start[..end].to_string());
+        rest = &after_start[end + 1..];
+    }
+    fields
+}
+
 pub struct ErrorLogWriter {
     app_data: PathBuf,
     file_name: &'static str,
+    app_version: Option<&'static str>,
     buffer: Vec<u8>,
 }
 
@@ -155,10 +276,23 @@ impl ErrorLogWriter {
         Self::with_file_name(app_data, ERROR_LOG_FILE)
     }
 
+    pub fn new_with_version(app_data: PathBuf, app_version: &'static str) -> Self {
+        Self::with_file_name_and_version(app_data, ERROR_LOG_FILE, Some(app_version))
+    }
+
     pub fn with_file_name(app_data: PathBuf, file_name: &'static str) -> Self {
+        Self::with_file_name_and_version(app_data, file_name, None)
+    }
+
+    pub fn with_file_name_and_version(
+        app_data: PathBuf,
+        file_name: &'static str,
+        app_version: Option<&'static str>,
+    ) -> Self {
         Self {
             app_data,
             file_name,
+            app_version,
             buffer: Vec::new(),
         }
     }
@@ -182,7 +316,13 @@ impl Drop for ErrorLogWriter {
         }
 
         let message = String::from_utf8_lossy(&self.buffer);
-        append_error_log_to_file(&self.app_data, self.file_name, "rust:tracing", &message);
+        append_error_log_to_file_with_optional_version(
+            &self.app_data,
+            self.file_name,
+            "rust:tracing",
+            &message,
+            self.app_version,
+        );
     }
 }
 
@@ -224,5 +364,38 @@ mod tests {
 
         let text = std::fs::read_to_string(path).unwrap();
         assert_eq!(text, "new entry");
+    }
+
+    #[test]
+    fn writes_versioned_rust_error_entries() {
+        let dir = test_dir("versioned");
+        append_error_log_with_version(&dir, "rust:panic", "panic detail", "2.9.2");
+
+        let text = std::fs::read_to_string(dir.join(ERROR_LOG_FILE)).unwrap();
+        assert!(text.contains("[v2.9.2] [rust:panic]"));
+        assert!(text.contains("panic detail"));
+    }
+
+    #[test]
+    fn drains_rust_error_entries_after_cursor_and_keeps_old_version_optional() {
+        let dir = test_dir("drain");
+        std::fs::write(
+            dir.join(ERROR_LOG_FILE),
+            "[2026-07-01 00:00:00.001 +00:00] [2026-07-01T00:00:00.001Z] [v2.9.1] [rust:panic]\nfirst panic\n\n\
+[2026-07-01 00:00:00.002 +00:00] [2026-07-01T00:00:00.002Z] [v2.9.2] [rust:tracing]\nsecond error\n\n\
+[2026-07-01 00:00:00.003 +00:00] [2026-07-01T00:00:00.003Z] [js:error]\nnot rust\n\n\
+[2026-07-01 00:00:00.004 +00:00] [2026-07-01T00:00:00.004Z] [rust:panic]\nold panic\n\n",
+        )
+        .unwrap();
+
+        let entries = drain_client_error_log(&dir, Some("2026-07-01T00:00:00.001Z"), 10);
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].ts_iso, "2026-07-01T00:00:00.002Z");
+        assert_eq!(entries[0].app_version.as_deref(), Some("2.9.2"));
+        assert_eq!(entries[0].source, "rust:tracing");
+        assert_eq!(entries[0].message, "second error");
+        assert_eq!(entries[1].ts_iso, "2026-07-01T00:00:00.004Z");
+        assert_eq!(entries[1].app_version, None);
     }
 }

@@ -49,12 +49,6 @@ function isGreaterThan(
     return a > b;
 }
 
-/**
- *
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByName(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.name !== 'string' || typeof b.name !== 'string') {
         return 0;
@@ -62,12 +56,6 @@ function compareByName(a: ComparableRecord, b: ComparableRecord): number {
     return a.name.localeCompare(b.name);
 }
 
-/**
- * descending
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByCreatedAt(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.created_at !== 'string' || typeof b.created_at !== 'string') {
         return 0;
@@ -83,12 +71,6 @@ function compareByCreatedAt(a: ComparableRecord, b: ComparableRecord): number {
     return 0;
 }
 
-/**
- * ascending
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByCreatedAtAscending(
     a: ComparableRecord,
     b: ComparableRecord
@@ -107,12 +89,6 @@ function compareByCreatedAtAscending(
     return 0;
 }
 
-/**
- * descending
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByUpdatedAt(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.updated_at !== 'string' || typeof b.updated_at !== 'string') {
         return 0;
@@ -128,12 +104,6 @@ function compareByUpdatedAt(a: ComparableRecord, b: ComparableRecord): number {
     return 0;
 }
 
-/**
- * ascending
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByDisplayName(
     a: ComparableRecord,
     b: ComparableRecord
@@ -147,12 +117,6 @@ function compareByDisplayName(
     return a.displayName.localeCompare(b.displayName);
 }
 
-/**
- * ascending
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareById(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.id !== 'string' || typeof b.id !== 'string') {
         return 0;
@@ -160,12 +124,6 @@ function compareById(a: ComparableRecord, b: ComparableRecord): number {
     return a.id.localeCompare(b.id);
 }
 
-/**
- *
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByMemberCount(
     a: ComparableRecord,
     b: ComparableRecord
@@ -179,12 +137,6 @@ function compareByMemberCount(
     return a.memberCount - b.memberCount;
 }
 
-/**
- * private
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByPrivate(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
         return 0;
@@ -199,12 +151,6 @@ function compareByPrivate(a: ComparableRecord, b: ComparableRecord): number {
     return 0;
 }
 
-/**
- *
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByStatus(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
         return 0;
@@ -223,12 +169,6 @@ function compareByStatus(a: ComparableRecord, b: ComparableRecord): number {
     return sortStatus(a.ref.status ?? '', b.ref.status ?? '');
 }
 
-/**
- * last active
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByLastActive(a: ComparableRecord, b: ComparableRecord): number {
     if (a.state === 'online' && b.state === 'online') {
         if (
@@ -257,23 +197,10 @@ function compareByLastActiveRef(
     return isLessThan(a.last_activity, b.last_activity) ? 1 : -1;
 }
 
-/**
- * last seen
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByLastSeen(a: ComparableRecord, b: ComparableRecord): number {
     return compareByActivityField(a, b, '$lastSeen');
 }
 
-/**
- *
- * @param {object} a
- * @param {object} b
- * @param {string} field
- * @returns
- */
 function compareByActivityField(
     a: ComparableRecord,
     b: ComparableRecord,
@@ -300,12 +227,6 @@ function compareByActivityField(
     return 0;
 }
 
-/**
- * location at
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByLocationAt(a: ComparableRecord, b: ComparableRecord): number {
     if (a.location === 'traveling' && b.location === 'traveling') {
         return 0;
@@ -325,12 +246,6 @@ function compareByLocationAt(a: ComparableRecord, b: ComparableRecord): number {
     return 0;
 }
 
-/**
- * location at but for the sidebar
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByLocation(a: ComparableRecord, b: ComparableRecord): number {
     if (typeof a.ref === 'undefined' || typeof b.ref === 'undefined') {
         return 0;
@@ -342,12 +257,6 @@ function compareByLocation(a: ComparableRecord, b: ComparableRecord): number {
     return (a.ref.location ?? '').localeCompare(b.ref.location ?? '');
 }
 
-/**
- * $friendNumber friend order
- * @param {object} a
- * @param {object} b
- * @returns
- */
 function compareByFriendOrder(
     a: ComparableRecord,
     b: ComparableRecord

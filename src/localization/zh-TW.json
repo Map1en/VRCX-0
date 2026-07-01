@@ -206,6 +206,12 @@
                 "title": "工具",
                 "allTools": "所有工具..."
             },
+            "edit": {
+                "title": "編輯"
+            },
+            "window": {
+                "title": "視窗"
+            },
             "help": {
                 "title": "幫助",
                 "changelog": "更新紀錄",

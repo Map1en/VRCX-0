@@ -229,9 +229,7 @@ const feed = {
     },
 
     /**
-     * Purges avatar feed data from the database.
-     * !!!!
-     * @param {string|null} cutoffDate - ISO date string. Deletes records older than this date. If null, deletes all records.
+     * @param {string|null} cutoffDate - null deletes every record, not just old ones.
      */
     async purgeAvatarFeedData(userId: unknown, cutoffDate: unknown) {
         await commands.appFeedAvatarPurge(

@@ -167,6 +167,8 @@ const shellPathKeys = pathKeysFromDottedKeys([
     'nativeShell.menu.view.resetZoom',
     'nativeShell.menu.tools.title',
     'nativeShell.menu.tools.allTools',
+    'nativeShell.menu.edit.title',
+    'nativeShell.menu.window.title',
     'nativeShell.menu.help.title',
     'nativeShell.menu.help.changelog',
     'nativeShell.menu.help.keyboardShortcuts',

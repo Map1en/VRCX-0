@@ -91,7 +91,6 @@ export function setEntityPanelOpen(open: boolean): void {
     const sessionId = store.activeSessionId;
     store.setEntityPanelOpen(open);
     if (sessionId) {
-        // Persist so the panel state survives an app restart.
         void commands
             .appAssistantSetPanelOpen(sessionId, open)
             .catch((error) => {

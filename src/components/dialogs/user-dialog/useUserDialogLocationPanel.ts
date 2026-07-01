@@ -156,7 +156,7 @@ async function enrichLocationUsersWithProfiles({
                         profile
                     );
                 } catch {
-                    // Keep the lightweight row when the profile endpoint is unavailable.
+                    // no-op
                 }
             }
         }

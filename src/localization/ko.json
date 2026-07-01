@@ -206,6 +206,12 @@
                 "title": "도구",
                 "allTools": "모든 도구..."
             },
+            "edit": {
+                "title": "편집"
+            },
+            "window": {
+                "title": "윈도우"
+            },
             "help": {
                 "title": "도움말",
                 "changelog": "변경 내역",

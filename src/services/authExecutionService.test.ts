@@ -327,7 +327,10 @@ describe('authExecutionService characterization', () => {
     });
 
     it('deletes saved credentials when VRChat rejects them', async () => {
-        const error = Object.assign(new Error('Unauthorized'), { status: 401 });
+        const error = Object.assign(
+            new Error('Invalid Username/Email or Password'),
+            { status: 401 }
+        );
         mocks.loginWithSavedCredential.mockRejectedValueOnce(error);
 
         await expect(
@@ -358,6 +361,28 @@ describe('authExecutionService characterization', () => {
             })
         );
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+    });
+
+    it('keeps saved credentials when a generic 401 interrupts login', async () => {
+        const error = Object.assign(new Error('Unauthorized'), { status: 401 });
+        mocks.loginWithSavedCredential.mockRejectedValueOnce(error);
+
+        await expect(
+            executeSavedCredentialLogin({
+                user: {
+                    id: 'usr_saved',
+                    displayName: 'Saved User'
+                },
+                loginParams: {
+                    username: 'saved@example.test'
+                },
+                hasLoginCredentials: true
+            } as any)
+        ).rejects.toBe(error);
+
+        expect(mocks.deleteSavedCredential).not.toHaveBeenCalled();
+        expect(mocks.clearCookies).not.toHaveBeenCalled();
+        expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
     });
 
     it('rejects saved credentials that do not contain stored login data', async () => {

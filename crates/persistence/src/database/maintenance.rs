@@ -531,7 +531,6 @@ pub fn database_maintenance_broken_game_log_display_names_get(
         .collect())
 }
 
-// Maintenance table counters.
 pub(crate) fn count_table(db: &DatabaseService, table_name: &str) -> Result<i64, Error> {
     let table_name = safe_identifier(table_name, "Table name")?;
     Ok(db

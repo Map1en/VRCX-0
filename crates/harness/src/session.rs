@@ -135,7 +135,7 @@ impl SessionStore {
                 *self.seq.lock().unwrap() = max_seq;
             }
             Err(error) => {
-                tracing::error!(%error, "assistant: failed to load persisted sessions");
+                tracing::warn!(%error, "assistant: failed to load persisted sessions");
             }
         }
     }
@@ -147,7 +147,7 @@ impl SessionStore {
         if let Err(error) =
             assistant::assistant_session_upsert(db, id, title, created_at, updated_at)
         {
-            tracing::error!(%error, "assistant: failed to persist session");
+            tracing::warn!(%error, "assistant: failed to persist session");
         }
     }
 
@@ -182,7 +182,7 @@ impl SessionStore {
             &message.content,
             &message.created_at,
         ) {
-            tracing::error!(%error, "assistant: failed to persist message");
+            tracing::warn!(%error, "assistant: failed to persist message");
         }
     }
 
@@ -278,7 +278,7 @@ impl SessionStore {
         self.sessions.lock().unwrap().remove(session_id);
         if let Some(db) = self.db.as_ref() {
             if let Err(error) = assistant::assistant_session_delete(db, session_id) {
-                tracing::error!(%error, "assistant: failed to delete persisted session");
+                tracing::warn!(%error, "assistant: failed to delete persisted session");
             }
         }
     }
@@ -405,7 +405,7 @@ fn persist_ui_state(
     };
     let json = serde_json::to_string(entities).unwrap_or_else(|_| "[]".into());
     if let Err(error) = assistant::assistant_session_set_ui_state(db, session_id, open, &json) {
-        tracing::error!(%error, "assistant: failed to persist panel state");
+        tracing::warn!(%error, "assistant: failed to persist panel state");
     }
 }
 
@@ -421,7 +421,7 @@ fn persist_runtime(db: Option<&DatabaseService>, session: &Session) {
         session.allow_writes,
         session.playbook_mode.as_config_str(),
     ) {
-        tracing::error!(%error, "assistant: failed to persist runtime selection");
+        tracing::warn!(%error, "assistant: failed to persist runtime selection");
     }
 }
 

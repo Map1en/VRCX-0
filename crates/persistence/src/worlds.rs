@@ -130,7 +130,6 @@ pub fn world_cache_get_many(
         .collect())
 }
 
-// World cache row projection helper.
 pub(crate) fn world_summary_from_row(row: &[Value]) -> WorldSummaryOutput {
     WorldSummaryOutput {
         id: row_string(row, 0),

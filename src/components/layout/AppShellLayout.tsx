@@ -50,7 +50,7 @@ export function AppShellLayout() {
                 String(sidePanelWidth)
             );
         } catch {
-            // Persisted layout state is optional.
+            // no-op
         }
     }, [sidePanelWidth]);
 

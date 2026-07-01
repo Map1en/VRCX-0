@@ -28,6 +28,7 @@ use vrcx_0_runtime_host::notification::DesktopNotifier;
 use vrcx_0_runtime_host::RuntimeHostActions;
 
 const AUTH_FAILURE_NOTIFICATION_COOLDOWN: Duration = Duration::from_secs(5);
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const MAIN_WINDOW_REBUILD_DESTROY_TIMEOUT: Duration = Duration::from_secs(2);
 const MAIN_WINDOW_REBUILD_DESTROY_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
@@ -531,10 +532,11 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
     let default_panic_hook = std::panic::take_hook();
     let panic_app_data = app_data.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
-        vrcx_0_host::error_log::append_error_log(
+        vrcx_0_host::error_log::append_error_log_with_version(
             &panic_app_data,
             "rust:panic",
             &panic_info.to_string(),
+            APP_VERSION,
         );
         default_panic_hook(panic_info);
     }));
@@ -551,7 +553,10 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
             tracing_subscriber::fmt::layer()
                 .with_ansi(false)
                 .with_writer(move || {
-                    vrcx_0_host::error_log::ErrorLogWriter::new(tracing_app_data.clone())
+                    vrcx_0_host::error_log::ErrorLogWriter::new_with_version(
+                        tracing_app_data.clone(),
+                        APP_VERSION,
+                    )
                 })
                 .with_filter(LevelFilter::ERROR),
         )

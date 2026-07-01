@@ -1,10 +1,5 @@
 import { vrchatLaunchUrl } from '@/shared/constants/vrchatWebUrls';
 
-/**
- *
- * @param {string} instanceId
- * @returns
- */
 export interface LaunchableInstance {
     worldId: string;
     instanceId?: string;
@@ -42,11 +37,6 @@ function isRealInstance(instanceId: unknown): instanceId is string {
     return true;
 }
 
-/**
- *
- * @param {object} instance
- * @returns {string}
- */
 function getLaunchURL(instance: LaunchableInstance): string {
     return vrchatLaunchUrl(instance);
 }

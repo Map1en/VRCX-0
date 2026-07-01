@@ -190,7 +190,7 @@ async function flashWindowSafely() {
     try {
         await commands.appFlashWindow();
     } catch {
-        // ignore host gaps during auth bootstrap
+        // no-op
     }
 }
 
@@ -256,7 +256,7 @@ export async function executeReactAutoLogin(
             try {
                 await webRepository.clearAuthCookies();
             } catch {
-                // ignore cleanup failure and still clear the auto-login target
+                // no-op
             }
             setSignedOutSessionState();
             const throttledSnapshot = applySavedAuthSnapshot(

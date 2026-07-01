@@ -19,9 +19,6 @@ const SAFE_RASTER_IMAGE_TYPES = new Set([
     'image/bmp'
 ]);
 
-/**
- *
- */
 export function withUploadTimeout<T>(promise: Promise<T>): Promise<T> {
     let timeoutId: ReturnType<typeof setTimeout>;
     const timeout = new Promise<never>((_: any, reject: any) => {

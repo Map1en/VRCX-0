@@ -7,10 +7,12 @@ import {
     RefreshCcw,
     RotateCcw,
     RotateCw,
+    Upload,
     ZoomIn,
     ZoomOut
 } from 'lucide-react';
 import {
+    Fragment,
     type ReactNode,
     useCallback,
     useEffect,
@@ -21,6 +23,7 @@ import {
 import Cropper, { type Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 
+import { cn } from '@/lib/utils';
 import { validateImageUploadFile } from '@/shared/utils/imageUpload';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -32,10 +35,17 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
+import { Separator } from '@/ui/shadcn/separator';
 import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger
+} from '@/ui/shadcn/tooltip';
 
 import { buildMediaTransform, cropImage, prepareImage } from './imageCropUtils';
 
@@ -47,6 +57,23 @@ const LOG_ZOOM_MAX = Math.log(ZOOM_MAX);
 const CONTAINER_STYLE = {
     containerStyle: { borderRadius: '0.5rem' }
 } as const;
+
+const ASPECT_PRESETS: ReadonlyArray<readonly [number, number]> = [
+    [1, 1],
+    [4, 3],
+    [3, 4],
+    [16, 9],
+    [3, 2],
+    [2, 3],
+    [2, 1]
+];
+
+function formatAspect(aspect: number): string {
+    for (const [w, h] of ASPECT_PRESETS) {
+        if (Math.abs(aspect - w / h) < 0.02) return `${w}:${h}`;
+    }
+    return aspect.toFixed(2);
+}
 
 export function ImageCropDialog({
     open,
@@ -177,8 +204,6 @@ export function ImageCropDialog({
         setCroppedAreaPixels(pixels);
     }, []);
 
-    // toolbar
-
     const rotateBy = useCallback(
         (delta: number) =>
             setRotation((r) => (((r + delta) % 360) + 360) % 360),
@@ -215,8 +240,6 @@ export function ImageCropDialog({
         []
     );
     const reset = resetTransforms;
-
-    // confirm
 
     async function confirmCrop() {
         const img = originalImgRef.current;
@@ -265,27 +288,40 @@ export function ImageCropDialog({
     const toolsDisabled = !previewSrc || isConfirming;
     const zoomSliderValue =
         ((Math.log(zoom) - logZoomMin) / (LOG_ZOOM_MAX - logZoomMin)) * 100;
+    const zoomPercent = Math.round(zoom * 100);
+    const aspectLabel = formatAspect(aspect);
+    const hudExtras = [
+        rotation !== 0 ? `${rotation}°` : null,
+        flipH || flipV ? `${flipH ? 'H' : ''}${flipV ? 'V' : ''}` : null
+    ].filter(Boolean);
 
-    const renderTool = (
-        key: string,
+    const tool = (
         onClick: () => void,
         label: string,
-        icon: ReactNode
+        icon: ReactNode,
+        active?: boolean
     ) => (
-        <Button
-            key={key}
-            variant="outline"
-            size="icon"
-            onClick={onClick}
-            disabled={toolsDisabled}
-            title={label}
-            aria-label={label}
-        >
-            {icon}
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={onClick}
+                    disabled={toolsDisabled}
+                    aria-label={label}
+                    aria-pressed={active}
+                    className={cn(
+                        'text-muted-foreground hover:text-foreground',
+                        active && 'bg-muted text-foreground'
+                    )}
+                >
+                    {icon}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
-
-    // render
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -295,154 +331,179 @@ export function ImageCropDialog({
                     <DialogDescription>{resolvedDescription}</DialogDescription>
                 </DialogHeader>
 
-                <div className="flex flex-col gap-4">
-                    {/* Crop box == container so fit mode letterboxes to the crop aspect */}
-                    <div
-                        ref={cropWrapperRef}
-                        className="bg-muted flex justify-center overflow-hidden rounded-lg border"
-                        style={{ minHeight: '30vh' }}
-                    >
-                        {previewSrc && cropperReady ? (
-                            <div
-                                style={{
-                                    position: 'relative',
-                                    aspectRatio: String(aspect),
-                                    width: `min(100%, calc(50vh * ${aspect}))`
-                                }}
-                            >
-                                <Cropper
-                                    image={previewSrc}
-                                    crop={crop}
-                                    zoom={zoom}
-                                    rotation={rotation}
-                                    aspect={aspect}
-                                    minZoom={minZoom}
-                                    maxZoom={ZOOM_MAX}
-                                    objectFit={fitWhole ? 'contain' : 'cover'}
-                                    restrictPosition={!fitWhole}
-                                    showGrid
-                                    zoomWithScroll
-                                    onCropChange={setCrop}
-                                    onZoomChange={setZoom}
-                                    onCropComplete={onCropComplete}
-                                    transform={mediaTransform}
-                                    style={CONTAINER_STYLE}
-                                />
-                            </div>
-                        ) : null}
-                    </div>
-
-                    {/* toolbar */}
-                    <FieldGroup>
+                <TooltipProvider>
+                    <div className="flex flex-col gap-4">
                         <div
-                            className="flex flex-wrap items-center justify-center gap-1"
+                            ref={cropWrapperRef}
+                            className="bg-muted/40 ring-border/60 relative flex items-center justify-center overflow-hidden rounded-xl border shadow-inner ring-1 ring-inset"
+                            style={{ minHeight: '30vh' }}
+                        >
+                            {previewSrc && cropperReady ? (
+                                <div
+                                    className="bg-background/60 relative overflow-hidden rounded-lg"
+                                    style={{
+                                        aspectRatio: String(aspect),
+                                        width: `min(100%, calc(50vh * ${aspect}))`
+                                    }}
+                                >
+                                    <Cropper
+                                        image={previewSrc}
+                                        crop={crop}
+                                        zoom={zoom}
+                                        rotation={rotation}
+                                        aspect={aspect}
+                                        minZoom={minZoom}
+                                        maxZoom={ZOOM_MAX}
+                                        objectFit={
+                                            fitWhole ? 'contain' : 'cover'
+                                        }
+                                        restrictPosition={!fitWhole}
+                                        showGrid
+                                        zoomWithScroll
+                                        onCropChange={setCrop}
+                                        onZoomChange={setZoom}
+                                        onCropComplete={onCropComplete}
+                                        transform={mediaTransform}
+                                        style={CONTAINER_STYLE}
+                                    />
+
+                                    <span className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 left-2 z-10 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none ring-1 backdrop-blur-sm">
+                                        {aspectLabel}
+                                    </span>
+                                    <div className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none tabular-nums ring-1 backdrop-blur-sm">
+                                        <span className="text-foreground">
+                                            {zoomPercent}%
+                                        </span>
+                                        {hudExtras.map((seg) => (
+                                            <Fragment key={seg}>
+                                                <span className="opacity-30">
+                                                    ·
+                                                </span>
+                                                <span>{seg}</span>
+                                            </Fragment>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <div
+                            className="bg-muted/40 flex flex-wrap items-center justify-center gap-2 rounded-xl border p-1.5"
                             role="toolbar"
                             aria-label={t('dialog.image_crop.toolbar_label', {
                                 defaultValue: 'Image crop toolbar'
                             })}
                         >
-                            {renderTool(
-                                'rotate_left',
-                                rotateLeft,
-                                t('dialog.image_crop.rotate_left'),
-                                <RotateCcw className="h-4 w-4" />
-                            )}
-                            {renderTool(
-                                'rotate_right',
-                                rotateRight,
-                                t('dialog.image_crop.rotate_right'),
-                                <RotateCw className="h-4 w-4" />
-                            )}
-                            {renderTool(
-                                'flip_h',
-                                doFlipH,
-                                t('dialog.image_crop.flip_h'),
-                                <FlipHorizontal2 className="h-4 w-4" />
-                            )}
-                            {renderTool(
-                                'flip_v',
-                                doFlipV,
-                                t('dialog.image_crop.flip_v'),
-                                <FlipVertical2 className="h-4 w-4" />
-                            )}
-                            {renderTool(
-                                'zoom_out',
-                                zoomOut,
-                                t('dialog.image_crop.zoom_out'),
-                                <ZoomOut className="h-4 w-4" />
-                            )}
-                            <Slider
-                                className="w-28"
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={[zoomSliderValue]}
-                                disabled={toolsDisabled}
-                                onValueChange={onZoomSlider}
-                                aria-label={t('dialog.image_crop.zoom_in')}
-                            />
-                            {renderTool(
-                                'zoom_in',
-                                zoomIn,
-                                t('dialog.image_crop.zoom_in'),
-                                <ZoomIn className="h-4 w-4" />
-                            )}
-                            {renderTool(
-                                'fit',
-                                toggleFit,
-                                fitLabel,
-                                fitWhole ? (
-                                    <Minimize2 className="h-4 w-4" />
-                                ) : (
-                                    <Maximize2 className="h-4 w-4" />
-                                )
-                            )}
-                            {renderTool(
-                                'reset',
-                                reset,
-                                t('dialog.image_crop.reset'),
-                                <RefreshCcw className="h-4 w-4" />
-                            )}
-                        </div>
-                    </FieldGroup>
+                            <div className="bg-background/50 flex items-center gap-0.5 rounded-lg border p-1">
+                                {tool(
+                                    rotateLeft,
+                                    t('dialog.image_crop.rotate_left'),
+                                    <RotateCcw />
+                                )}
+                                {tool(
+                                    rotateRight,
+                                    t('dialog.image_crop.rotate_right'),
+                                    <RotateCw />
+                                )}
+                                <Separator
+                                    orientation="vertical"
+                                    className="mx-0.5 !h-5"
+                                />
+                                {tool(
+                                    doFlipH,
+                                    t('dialog.image_crop.flip_h'),
+                                    <FlipHorizontal2 />,
+                                    flipH
+                                )}
+                                {tool(
+                                    doFlipV,
+                                    t('dialog.image_crop.flip_v'),
+                                    <FlipVertical2 />,
+                                    flipV
+                                )}
+                            </div>
 
-                    {/* optional fields */}
-                    {noteEnabled ? (
-                        <Field>
-                            <FieldLabel htmlFor="image-crop-upload-note">
-                                {noteField.label}
-                            </FieldLabel>
-                            <Input
-                                id="image-crop-upload-note"
-                                maxLength={noteMaxLength}
-                                value={note}
-                                onChange={(e) =>
-                                    setNote(
-                                        String(e.target.value || '').slice(
-                                            0,
-                                            noteMaxLength
+                            <div className="bg-background/50 flex items-center gap-1 rounded-lg border py-1 pr-1 pl-1.5">
+                                {tool(
+                                    zoomOut,
+                                    t('dialog.image_crop.zoom_out'),
+                                    <ZoomOut />
+                                )}
+                                <Slider
+                                    className="w-24 sm:w-36"
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={[zoomSliderValue]}
+                                    disabled={toolsDisabled}
+                                    onValueChange={onZoomSlider}
+                                    aria-label={t('dialog.image_crop.zoom_in')}
+                                />
+                                <span className="text-muted-foreground w-10 text-right font-mono text-xs tabular-nums">
+                                    {zoomPercent}%
+                                </span>
+                                {tool(
+                                    zoomIn,
+                                    t('dialog.image_crop.zoom_in'),
+                                    <ZoomIn />
+                                )}
+                            </div>
+
+                            <div className="bg-background/50 flex items-center gap-0.5 rounded-lg border p-1">
+                                {tool(
+                                    toggleFit,
+                                    fitLabel,
+                                    fitWhole ? <Minimize2 /> : <Maximize2 />,
+                                    fitWhole
+                                )}
+                                {tool(
+                                    reset,
+                                    t('dialog.image_crop.reset'),
+                                    <RefreshCcw />
+                                )}
+                            </div>
+                        </div>
+
+                        {noteEnabled ? (
+                            <Field>
+                                <FieldLabel htmlFor="image-crop-upload-note">
+                                    {noteField.label}
+                                </FieldLabel>
+                                <Input
+                                    id="image-crop-upload-note"
+                                    maxLength={noteMaxLength}
+                                    value={note}
+                                    onChange={(e) =>
+                                        setNote(
+                                            String(e.target.value || '').slice(
+                                                0,
+                                                noteMaxLength
+                                            )
                                         )
-                                    )
-                                }
-                                placeholder={noteField.placeholder}
-                            />
-                        </Field>
-                    ) : null}
-                    {cropWhiteBorderEnabled ? (
-                        <Field orientation="horizontal" className="h-9 w-auto">
-                            <Checkbox
-                                id="image-crop-white-border"
-                                checked={cropWhiteBorder}
-                                onCheckedChange={(v) =>
-                                    setCropWhiteBorder(Boolean(v))
-                                }
-                            />
-                            <FieldLabel htmlFor="image-crop-white-border">
-                                {cropWhiteBorderField.label}
-                            </FieldLabel>
-                        </Field>
-                    ) : null}
-                </div>
+                                    }
+                                    placeholder={noteField.placeholder}
+                                />
+                            </Field>
+                        ) : null}
+                        {cropWhiteBorderEnabled ? (
+                            <Field
+                                orientation="horizontal"
+                                className="h-9 w-auto"
+                            >
+                                <Checkbox
+                                    id="image-crop-white-border"
+                                    checked={cropWhiteBorder}
+                                    onCheckedChange={(v) =>
+                                        setCropWhiteBorder(Boolean(v))
+                                    }
+                                />
+                                <FieldLabel htmlFor="image-crop-white-border">
+                                    {cropWhiteBorderField.label}
+                                </FieldLabel>
+                            </Field>
+                        ) : null}
+                    </div>
+                </TooltipProvider>
 
                 <DialogFooter>
                     <Button
@@ -460,7 +521,9 @@ export function ImageCropDialog({
                     >
                         {isConfirming ? (
                             <Spinner data-icon="inline-start" />
-                        ) : null}
+                        ) : (
+                            <Upload data-icon="inline-start" />
+                        )}
                         {t('message.image.action.upload')}
                     </Button>
                 </DialogFooter>

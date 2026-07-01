@@ -74,7 +74,7 @@ export function writePersistedTableState(
             })
         );
     } catch {
-        // Persisted table state is optional.
+        // no-op
     }
 }
 

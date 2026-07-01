@@ -193,6 +193,12 @@
                 "title": "Ferramentas",
                 "allTools": "Todas as ferramentas..."
             },
+            "edit": {
+                "title": "Editar"
+            },
+            "window": {
+                "title": "Janela"
+            },
             "help": {
                 "title": "Ajuda",
                 "changelog": "Registro de alterações",

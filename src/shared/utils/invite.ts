@@ -79,15 +79,6 @@ function getCachedInstance(
     );
 }
 
-/**
- *
- * @param {string} location
- * @param {object} deps
- * @param {string} deps.currentUserId - current user's id
- * @param {string} deps.lastLocationStr - last location string from location store
- * @param {Map} deps.cachedInstances - instance cache map
- * @returns {boolean}
- */
 function checkCanInvite(location: string, deps: CheckCanInviteDeps): boolean {
     if (!location) {
         return false;
@@ -116,15 +107,6 @@ function checkCanInvite(location: string, deps: CheckCanInviteDeps): boolean {
     return false;
 }
 
-/**
- *
- * @param {string} location
- * @param {object} deps
- * @param {string} deps.currentUserId - current user's id
- * @param {Map} deps.cachedInstances - instance cache map
- * @param {Map} deps.friends - friends map
- * @returns {boolean}
- */
 function checkCanInviteSelf(
     location: string,
     deps: CheckCanInviteSelfDeps

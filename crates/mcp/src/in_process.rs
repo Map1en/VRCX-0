@@ -68,7 +68,7 @@ impl InProcessMcpTools {
             params = params.with_arguments(arguments);
         }
         let result = self.client.call_tool(params).await.map_err(|error| {
-            tracing::error!(tool = %tool_name, error = %error, "assistant: tool dispatch failed");
+            tracing::debug!(tool = %tool_name, error = %error, "assistant: tool dispatch failed");
             McpError::Custom(format!("call_tool failed: {error}"))
         })?;
         let text = result
@@ -79,7 +79,7 @@ impl InProcessMcpTools {
             .join("\n");
         let is_error = result.is_error.unwrap_or(false);
         if is_error {
-            tracing::error!(tool = %tool_name, body = %text, "assistant: tool returned error");
+            tracing::debug!(tool = %tool_name, body = %text, "assistant: tool returned error");
         }
         Ok(ToolCallOutcome {
             is_error,
