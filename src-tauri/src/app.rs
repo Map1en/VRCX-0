@@ -303,6 +303,21 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen {
+                has_visible_windows,
+                ..
+            } = event
+            {
+                if !has_visible_windows {
+                    restore_or_ensure_main_window(
+                        app,
+                        "failed to show main window from macOS Dock",
+                    );
+                }
+                return;
+            }
+
             if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
                 if code.is_some() {
                     return;
