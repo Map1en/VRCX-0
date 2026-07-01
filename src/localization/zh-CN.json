@@ -207,10 +207,19 @@
                 "allTools": "所有工具..."
             },
             "edit": {
-                "title": "编辑"
+                "title": "编辑",
+                "undo": "撤销",
+                "redo": "重做",
+                "cut": "剪切",
+                "copy": "复制",
+                "paste": "粘贴",
+                "selectAll": "全选"
             },
             "window": {
-                "title": "窗口"
+                "title": "窗口",
+                "minimize": "最小化",
+                "maximize": "最大化",
+                "close": "关闭窗口"
             },
             "help": {
                 "title": "帮助",

@@ -1645,10 +1645,19 @@
                 "allTools": "All Tools..."
             },
             "edit": {
-                "title": "Edit"
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
             },
             "window": {
-                "title": "Window"
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
             },
             "help": {
                 "title": "Help",

@@ -194,10 +194,19 @@
                 "allTools": "Todas as ferramentas..."
             },
             "edit": {
-                "title": "Editar"
+                "title": "Editar",
+                "undo": "Desfazer",
+                "redo": "Refazer",
+                "cut": "Recortar",
+                "copy": "Copiar",
+                "paste": "Colar",
+                "selectAll": "Selecionar tudo"
             },
             "window": {
-                "title": "Janela"
+                "title": "Janela",
+                "minimize": "Minimizar",
+                "maximize": "Maximizar",
+                "close": "Fechar janela"
             },
             "help": {
                 "title": "Ajuda",

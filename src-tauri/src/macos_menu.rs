@@ -26,13 +26,13 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
 
     let edit_i18n = macos_menu::edit_menu_labels_for_language(language);
     let edit_menu = SubmenuBuilder::new(app, edit_i18n.title)
-        .undo()
-        .redo()
+        .undo_with_text(edit_i18n.undo)
+        .redo_with_text(edit_i18n.redo)
         .separator()
-        .cut()
-        .copy()
-        .paste()
-        .select_all()
+        .cut_with_text(edit_i18n.cut)
+        .copy_with_text(edit_i18n.copy)
+        .paste_with_text(edit_i18n.paste)
+        .select_all_with_text(edit_i18n.select_all)
         .build()?;
 
     let view_i18n = macos_menu::view_menu_labels_for_language(language);
@@ -64,10 +64,10 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
 
     let window_i18n = macos_menu::window_menu_labels_for_language(language);
     let window_menu = SubmenuBuilder::new(app, window_i18n.title)
-        .minimize()
-        .maximize()
+        .minimize_with_text(window_i18n.minimize)
+        .maximize_with_text(window_i18n.maximize)
         .separator()
-        .close_window()
+        .close_window_with_text(window_i18n.close_window)
         .build()?;
 
     let help_i18n = macos_menu::help_menu_labels_for_language(language);

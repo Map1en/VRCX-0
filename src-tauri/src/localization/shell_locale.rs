@@ -59,11 +59,20 @@ pub(crate) mod macos_menu {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct EditMenuLabels {
         pub(crate) title: String,
+        pub(crate) undo: String,
+        pub(crate) redo: String,
+        pub(crate) cut: String,
+        pub(crate) copy: String,
+        pub(crate) paste: String,
+        pub(crate) select_all: String,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub(crate) struct WindowMenuLabels {
         pub(crate) title: String,
+        pub(crate) minimize: String,
+        pub(crate) maximize: String,
+        pub(crate) close_window: String,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,12 +127,21 @@ pub(crate) mod macos_menu {
     pub(crate) fn edit_menu_labels_for_language(language: &str) -> EditMenuLabels {
         EditMenuLabels {
             title: text(language, "nativeShell.menu.edit.title"),
+            undo: text(language, "nativeShell.menu.edit.undo"),
+            redo: text(language, "nativeShell.menu.edit.redo"),
+            cut: text(language, "nativeShell.menu.edit.cut"),
+            copy: text(language, "nativeShell.menu.edit.copy"),
+            paste: text(language, "nativeShell.menu.edit.paste"),
+            select_all: text(language, "nativeShell.menu.edit.selectAll"),
         }
     }
 
     pub(crate) fn window_menu_labels_for_language(language: &str) -> WindowMenuLabels {
         WindowMenuLabels {
             title: text(language, "nativeShell.menu.window.title"),
+            minimize: text(language, "nativeShell.menu.window.minimize"),
+            maximize: text(language, "nativeShell.menu.window.maximize"),
+            close_window: text(language, "nativeShell.menu.window.close"),
         }
     }
 
@@ -218,7 +236,16 @@ mod tests {
         "nativeShell.menu.view.zoomOut",
         "nativeShell.menu.view.resetZoom",
         "nativeShell.menu.edit.title",
+        "nativeShell.menu.edit.undo",
+        "nativeShell.menu.edit.redo",
+        "nativeShell.menu.edit.cut",
+        "nativeShell.menu.edit.copy",
+        "nativeShell.menu.edit.paste",
+        "nativeShell.menu.edit.selectAll",
         "nativeShell.menu.window.title",
+        "nativeShell.menu.window.minimize",
+        "nativeShell.menu.window.maximize",
+        "nativeShell.menu.window.close",
         "nativeShell.menu.tools.title",
         "nativeShell.menu.tools.allTools",
         "nativeShell.menu.help.title",
@@ -299,6 +326,12 @@ mod tests {
 
         let view_ja = macos_menu::view_menu_labels_for_language("ja");
         assert_eq!(view_ja.zoom_in, "拡大");
+
+        let edit_ja = macos_menu::edit_menu_labels_for_language("ja");
+        assert_eq!(edit_ja.copy, "コピー");
+
+        let window_zh_cn = macos_menu::window_menu_labels_for_language("zh-CN");
+        assert_eq!(window_zh_cn.close_window, "关闭窗口");
 
         let help_en = macos_menu::help_menu_labels_for_language("en");
         assert_eq!(help_en.discord, "Join our Discord");

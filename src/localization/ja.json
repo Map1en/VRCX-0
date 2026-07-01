@@ -207,10 +207,19 @@
                 "allTools": "すべてのツール..."
             },
             "edit": {
-                "title": "編集"
+                "title": "編集",
+                "undo": "元に戻す",
+                "redo": "やり直す",
+                "cut": "切り取り",
+                "copy": "コピー",
+                "paste": "ペースト",
+                "selectAll": "すべてを選択"
             },
             "window": {
-                "title": "ウインドウ"
+                "title": "ウインドウ",
+                "minimize": "最小化",
+                "maximize": "拡大",
+                "close": "ウインドウを閉じる"
             },
             "help": {
                 "title": "ヘルプ",
