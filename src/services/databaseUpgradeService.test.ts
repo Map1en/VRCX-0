@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
     appCheckLegacyVrcxAvailable: vi.fn(),
     appRequestLegacyMigration: vi.fn(),
     configGetInt: vi.fn(),
+    configGetString: vi.fn(),
     configSetString: vi.fn(),
     configReload: vi.fn(),
     cleanLegendFromFriendLog: vi.fn(),
@@ -24,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     upgradeDatabaseVersion: vi.fn(),
     vacuum: vi.fn(),
     addV17PerformanceIndexes: vi.fn(),
+    repairZeroCopresenceDurations: vi.fn(),
     optimize: vi.fn(),
     t: vi.fn(),
     showSQLiteErrorDialog: vi.fn(),
@@ -51,6 +53,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 vi.mock('@/repositories/configRepository', () => ({
     default: {
         getInt: mocks.configGetInt,
+        getString: mocks.configGetString,
         setString: mocks.configSetString,
         reload: mocks.configReload
     }
@@ -70,6 +73,7 @@ vi.mock('@/repositories/databaseMaintenanceRepository', () => ({
         upgradeDatabaseVersion: mocks.upgradeDatabaseVersion,
         vacuum: mocks.vacuum,
         addV17PerformanceIndexes: mocks.addV17PerformanceIndexes,
+        repairZeroCopresenceDurations: mocks.repairZeroCopresenceDurations,
         optimize: mocks.optimize
     }
 }));
@@ -120,7 +124,8 @@ describe('databaseUpgradeService', () => {
         );
         mocks.appCheckLegacyVrcxAvailable.mockResolvedValue(false);
         mocks.appRequestLegacyMigration.mockResolvedValue(false);
-        mocks.configGetInt.mockResolvedValue(17);
+        mocks.configGetInt.mockResolvedValue(18);
+        mocks.configGetString.mockResolvedValue('');
         mocks.configSetString.mockResolvedValue(undefined);
         mocks.configReload.mockResolvedValue(undefined);
         for (const task of [
@@ -136,6 +141,7 @@ describe('databaseUpgradeService', () => {
             mocks.upgradeDatabaseVersion,
             mocks.vacuum,
             mocks.addV17PerformanceIndexes,
+            mocks.repairZeroCopresenceDurations,
             mocks.optimize
         ]) {
             task.mockResolvedValue(undefined);
@@ -195,18 +201,32 @@ describe('databaseUpgradeService', () => {
     });
 
     it('marks the database ready when the schema version is already current', async () => {
-        mocks.configGetInt.mockResolvedValueOnce(17);
+        mocks.configGetInt.mockResolvedValueOnce(18);
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
             open: false,
             phase: 'completed',
-            fromVersion: 17,
-            toVersion: 17
+            fromVersion: 18,
+            toVersion: 18
         });
         expect(useSessionStore.getState().databaseReady).toBe(true);
         expect(mocks.sqliteBeginUpgrade).not.toHaveBeenCalled();
+        expect(mocks.repairZeroCopresenceDurations).toHaveBeenCalledTimes(1);
+        expect(mocks.configSetString).toHaveBeenCalledWith(
+            'copresenceDurationRepairV1Done',
+            '1'
+        );
+    });
+
+    it('skips the co-presence duration repair when the marker is already set', async () => {
+        mocks.configGetInt.mockResolvedValueOnce(18);
+        mocks.configGetString.mockResolvedValueOnce('1');
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
+
+        expect(mocks.repairZeroCopresenceDurations).not.toHaveBeenCalled();
     });
 
     it('runs the legacy maintenance sequence and commits a full upgrade from old schemas', async () => {
@@ -214,19 +234,20 @@ describe('databaseUpgradeService', () => {
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
-        expect(mocks.sqliteBeginUpgrade).toHaveBeenCalledWith(15, 17);
+        expect(mocks.sqliteBeginUpgrade).toHaveBeenCalledWith(15, 18);
         expect(mocks.cleanLegendFromFriendLog).toHaveBeenCalledTimes(1);
         expect(mocks.fixBrokenGameLogDisplayNames).toHaveBeenCalledTimes(1);
         expect(mocks.vacuum).toHaveBeenCalledTimes(1);
         expect(mocks.addV17PerformanceIndexes).toHaveBeenCalledTimes(1);
+        expect(mocks.repairZeroCopresenceDurations).toHaveBeenCalledTimes(1);
         expect(mocks.optimize).toHaveBeenCalledTimes(1);
         expect(mocks.configSetString).toHaveBeenCalledWith(
             'VRCX_0_databaseVersion',
-            '17'
+            '18'
         );
         expect(mocks.configSetString).toHaveBeenCalledWith(
             'databaseVersion',
-            '17'
+            '18'
         );
         expect(mocks.sqliteCommitUpgrade).toHaveBeenCalledTimes(1);
         expect(mocks.configReload).toHaveBeenCalledTimes(1);

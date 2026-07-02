@@ -1,8 +1,8 @@
 use vrcx_0_core::log_watcher::{GameLogEvent, GameLogEventKind};
 use vrcx_0_persistence::game_log::{
-    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
-    GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogResourceLoadEntry,
-    GameLogWriteBatch,
+    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
+    GameLogLocationEntry, GameLogLocationTimeUpdate, GameLogPortalSpawnEntry,
+    GameLogResourceLoadEntry, GameLogWriteBatch,
 };
 
 use super::runtime_state::{
@@ -91,6 +91,34 @@ impl GameLogIngestEngine {
         self.state.current_world_name = world_name;
         self.state.current_location_started_at = started_at.clone();
         self.state.current_location_started_at_ms = parse_event_time_ms(&started_at);
+    }
+
+    pub fn seed_current_roster(&mut self, entries: &[GameLogJoinLeaveSnapshot]) {
+        if self.state.current_location.is_empty() || !self.state.players_by_key.is_empty() {
+            return;
+        }
+        for entry in entries {
+            if entry.user_id.trim().is_empty() && entry.display_name.trim().is_empty() {
+                continue;
+            }
+            let key = player_key(&entry.user_id, &entry.display_name);
+            match entry.event_type.as_str() {
+                "OnPlayerJoined" => {
+                    self.state.players_by_key.insert(
+                        key,
+                        PlayerState {
+                            user_id: entry.user_id.clone(),
+                            display_name: entry.display_name.clone(),
+                            join_time_ms: parse_event_time_ms(&entry.created_at),
+                        },
+                    );
+                }
+                "OnPlayerLeft" => {
+                    self.state.players_by_key.remove(&key);
+                }
+                _ => {}
+            }
+        }
     }
 
     pub fn ingest_events(
@@ -503,7 +531,7 @@ fn decode_video_url(value: &str) -> String {
 mod tests {
     use vrcx_0_core::log_watcher::{GameLogEvent, GameLogEventKind};
 
-    use super::{GameLogIngestEngine, GameLogIngestOptions};
+    use super::{GameLogIngestEngine, GameLogIngestOptions, GameLogJoinLeaveSnapshot};
 
     fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
         GameLogEvent {
@@ -608,6 +636,93 @@ mod tests {
         assert_eq!(output.batch.externals.len(), 1);
         assert_eq!(output.runtime_persisted_mirrors.len(), 1);
         assert_eq!(output.runtime_persisted_mirrors[0][2], "vrcx");
+    }
+
+    #[test]
+    fn seed_current_roster_pairs_leave_with_real_join_time() {
+        let mut engine = GameLogIngestEngine::default();
+        engine.seed_current_location(
+            "wrld_seed:1".into(),
+            "Seed World".into(),
+            "2026-05-14T04:00:00.000Z".into(),
+        );
+        let entries = vec![
+            GameLogJoinLeaveSnapshot {
+                created_at: "2026-05-14T04:00:10.000Z".into(),
+                event_type: "OnPlayerJoined".into(),
+                display_name: "Alice".into(),
+                user_id: "usr_alice".into(),
+            },
+            GameLogJoinLeaveSnapshot {
+                created_at: "2026-05-14T04:00:20.000Z".into(),
+                event_type: "OnPlayerJoined".into(),
+                display_name: "Bob".into(),
+                user_id: "usr_bob".into(),
+            },
+            GameLogJoinLeaveSnapshot {
+                created_at: "2026-05-14T04:05:00.000Z".into(),
+                event_type: "OnPlayerLeft".into(),
+                display_name: "Bob".into(),
+                user_id: "usr_bob".into(),
+            },
+        ];
+        engine.seed_current_roster(&entries);
+
+        let output = engine.ingest_events(
+            &[event(
+                "2026-05-14T04:40:10.000Z",
+                GameLogEventKind::PlayerLeft {
+                    display_name: "Alice".into(),
+                    user_id: "usr_alice".into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        assert_eq!(output.batch.join_leave.len(), 1);
+        assert_eq!(output.batch.join_leave[0].event_type, "OnPlayerLeft");
+        // 04:40:10 - 04:00:10 = 2400s; without the seed this would be 0.
+        assert_eq!(output.batch.join_leave[0].time, 2_400_000);
+    }
+
+    #[test]
+    fn seed_current_roster_ignored_when_roster_already_populated() {
+        let mut engine = GameLogIngestEngine::default();
+        engine.seed_current_location(
+            "wrld_seed:1".into(),
+            "Seed World".into(),
+            "2026-05-14T04:00:00.000Z".into(),
+        );
+        engine.ingest_events(
+            &[event(
+                "2026-05-14T04:00:05.000Z",
+                GameLogEventKind::PlayerJoined {
+                    display_name: "Alice".into(),
+                    user_id: "usr_alice".into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+        engine.seed_current_roster(&[GameLogJoinLeaveSnapshot {
+            created_at: "2020-01-01T00:00:00.000Z".into(),
+            event_type: "OnPlayerJoined".into(),
+            display_name: "Alice".into(),
+            user_id: "usr_alice".into(),
+        }]);
+
+        let output = engine.ingest_events(
+            &[event(
+                "2026-05-14T04:00:35.000Z",
+                GameLogEventKind::PlayerLeft {
+                    display_name: "Alice".into(),
+                    user_id: "usr_alice".into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        // The live join (04:00:05) wins over the stale seed, so 30s not years.
+        assert_eq!(output.batch.join_leave[0].time, 30000);
     }
 
     #[test]

@@ -10,7 +10,7 @@
         "example_1": "이번 주에 누구와 가장 많이 놀았나요?",
         "example_2": "요즘 누구와 멀어지고 있나요?",
         "example_3": "친구들이 접속해 있을 가능성이 가장 높은 시간은?",
-        "not_configured": "시작하려면 설정에서 모델과 API 키를 입력하세요.",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "{{name}} 호출 중…",
         "entities_title": "언급됨",
         "entities_empty": "답변에서 언급된 사람과 월드가 여기에 표시됩니다.",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "자동 (엔드포인트 기준)",
             "playbook_mode_guided": "가이드 (로컬 / 약한 모델)",
             "playbook_mode_open": "개방 (강한 모델)",
-            "disable_thinking": "사고 비활성화",
-            "disable_thinking_description": "모델의 숨겨진 추론 과정을 건너뜁니다(예: Qwen의 /no_think). 도구 기반 로컬 모델에 권장 — 훨씬 빠르며 이 용도에서는 품질 손실이 거의 없습니다.",
             "privacy_title": "개인정보",
             "privacy_local": "요청은 이 PC의 로컬 엔드포인트로 전송되며 소셜 데이터는 컴퓨터를 벗어나지 않습니다.",
             "privacy_remote": "온라인 AI 서비스를 사용하면 데이터가 유출될 수 있습니다. 신중하게 사용하세요."
+        },
+        "runtime": {
+            "title": "런타임",
+            "connection": "연결",
+            "connection_unset": "엔드포인트 없음",
+            "model": "모델",
+            "model_unset": "이 엔드포인트에 저장된 모델이 없습니다",
+            "playbook_mode": "분석 모드",
+            "allow_writes": "쓰기 작업 허용",
+            "manage_endpoints": "LLM 엔드포인트 관리"
         }
     },
     "user_hover_card": {
@@ -197,6 +205,21 @@
             "tools": {
                 "title": "도구",
                 "allTools": "모든 도구..."
+            },
+            "edit": {
+                "title": "편집",
+                "undo": "실행 취소",
+                "redo": "다시 실행",
+                "cut": "잘라내기",
+                "copy": "복사",
+                "paste": "붙여넣기",
+                "selectAll": "모두 선택"
+            },
+            "window": {
+                "title": "윈도우",
+                "minimize": "최소화",
+                "maximize": "최대화",
+                "close": "창 닫기"
             },
             "help": {
                 "title": "도움말",
@@ -704,6 +727,10 @@
             },
             "dynamic": {
                 "value_copied": "{value} 복사됨"
+            },
+            "context": {
+                "hide_user": "Feed에서 숨기기",
+                "unhide_user": "Feed에서 숨김 해제"
             }
         },
         "friends_locations": {
@@ -1555,7 +1582,9 @@
                 "launch_options_description": "VRChat 실행 옵션 편집",
                 "app_launcher_description": "VRChat이(가) 시작될 때 자동으로 실행되는 앱과 바로가기를 관리하세요.",
                 "registry_backup": "VRChat 레지스트리 백업",
-                "registry_backup_description": "VRChat 레지스트리 백업 생성 또는 복원"
+                "registry_backup_description": "VRChat 레지스트리 백업 생성 또는 복원",
+                "llm_endpoints": "LLM 엔드포인트",
+                "llm_endpoints_description": "Social AI 및 번역에 사용하는 OpenAI 호환 연결을 관리합니다."
             },
             "vrchat_log": {
                 "latest": "최신",
@@ -1758,6 +1787,37 @@
                     "too_many_favorites": "{favorites} favorite print(s) exceed the favorite limit of {max} by {over}. Auto-delete will not remove favorite prints.",
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
+            },
+            "llm_endpoints": {
+                "title": "LLM 엔드포인트",
+                "description": "Social AI 및 번역에서 공유하는 OpenAI 호환 연결입니다.",
+                "endpoint_count": "엔드포인트 {count}개",
+                "model_count": "모델 {count}개",
+                "add": "엔드포인트 추가",
+                "empty_description": "Social AI 및 OpenAI 호환 번역에 사용할 OpenAI 호환 엔드포인트를 추가하세요.",
+                "name": "이름",
+                "base_url": "Base URL",
+                "models": "모델",
+                "key": "키",
+                "actions": "작업",
+                "no_models": "모델 없음",
+                "key_saved": "저장됨",
+                "key_empty": "비어 있음",
+                "detect_models": "모델 감지",
+                "edit": "엔드포인트 수정",
+                "delete": "엔드포인트 삭제",
+                "api_key": "API 키",
+                "clear_key": "키 지우기",
+                "key_preserve_placeholder": "비워 두면 저장된 키를 유지합니다",
+                "saved": "엔드포인트가 저장되었습니다",
+                "save_failed": "엔드포인트 저장에 실패했습니다",
+                "load_failed": "엔드포인트를 불러오지 못했습니다",
+                "base_url_required": "Base URL은 필수입니다.",
+                "models_detected": "모델 {count}개를 감지했습니다",
+                "no_models_detected": "감지된 모델이 없습니다",
+                "detect_failed": "모델 감지에 실패했습니다",
+                "deleted": "엔드포인트가 삭제되었습니다",
+                "delete_failed": "엔드포인트 삭제에 실패했습니다"
             }
         },
         "profile": {
@@ -1799,6 +1859,15 @@
                 },
                 "favorites": {
                     "header": "즐겨찾기"
+                },
+                "hidden_feed": {
+                    "header": "Feed 숨김 사용자",
+                    "description": "저장된 데이터를 삭제하지 않고 선택한 사용자를 Feed에서 숨깁니다.",
+                    "add": "사용자 추가",
+                    "search_placeholder": "사용자 검색",
+                    "empty": "Feed에서 숨긴 사용자가 없습니다.",
+                    "remove": "숨김 사용자 제거",
+                    "unknown_user": "알 수 없는 사용자"
                 }
             },
             "vr": {
@@ -4465,7 +4534,7 @@
             "emoji_loop_pingpong": "루프 탁구",
             "flipbook_info": "애니메이션 이모티콘으로 사용할 1024x1024 PNG 스프라이트 시트를 선택하세요. 사용 가능한 프레임 그리드 크기: 4, 16 또는 64(최대 FPS 64, 최대 프레임 64)",
             "note": "참고",
-            "crop_print_border": "인쇄 테두리 자르기",
+            "crop_print_border": "재업로드 시 기존 테두리 자르기",
             "upload_options": "업로드 옵션",
             "consume_bundle": "소비하다",
             "item": "품목",
@@ -4676,20 +4745,16 @@
             "openai": {
                 "model": "모델명",
                 "prompt_optional": "프롬프트(선택 사항)",
-                "endpoint": "API 끝점",
-                "api_key": "API 키(선택 사항)",
-                "prompt_optional_description": "OpenAI 호환 번역 APIs에 대한 선택적 시스템 프롬프트."
+                "prompt_optional_description": "OpenAI 호환 번역 API에 대한 선택적 시스템 프롬프트.",
+                "connection": "LLM 엔드포인트",
+                "connection_description": "OpenAI 호환 번역에서 사용합니다.",
+                "connection_placeholder": "엔드포인트를 선택하세요"
             },
             "deepl": {
                 "api_key": "DeepL API 키"
             },
-            "fetch_models": "모델 가져오기",
-            "fetching_models": "가져오는 중...",
-            "msg_endpoint_required": "엔드포인트를 먼저 입력해주세요.",
-            "msg_no_models_found": "모델을 찾을 수 없습니다.",
             "header": "약력 번역 API",
-            "description": "Google 번역 API 키를 입력하세요.",
-            "msg_models_fetched": "{count} 모델을 찾았습니다."
+            "description": "Google 번역 API 키를 입력하세요."
         },
         "notification_position": {
             "header": "알림 위치 설정",

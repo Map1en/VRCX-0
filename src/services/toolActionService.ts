@@ -29,7 +29,8 @@ type ToolDialogHostKey =
     | 'noteExportOpen'
     | 'exportFriendsListOpen'
     | 'exportAvatarsListOpen'
-    | 'editInviteMessagesOpen';
+    | 'editInviteMessagesOpen'
+    | 'llmEndpointsOpen';
 
 const toolRouteMap = {
     gallery: '/tools/gallery',
@@ -48,7 +49,8 @@ const toolDialogHostMap: Record<string, ToolDialogHostKey> = {
     'note-export': 'noteExportOpen',
     'export-friends-list': 'exportFriendsListOpen',
     'export-avatars-list': 'exportAvatarsListOpen',
-    'edit-invite-messages': 'editInviteMessagesOpen'
+    'edit-invite-messages': 'editInviteMessagesOpen',
+    'llm-endpoints': 'llmEndpointsOpen'
 };
 
 const legacyToolAliases: Record<string, string> = {

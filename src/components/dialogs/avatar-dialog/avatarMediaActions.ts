@@ -99,7 +99,6 @@ export function createAvatarImageUploadActions({
                         selectedAvatar.thumbnailImageUrl ||
                         '',
                     base64File,
-                    blob,
                     endpoint: requestEndpoint
                 })
             );

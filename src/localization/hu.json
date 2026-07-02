@@ -51,7 +51,11 @@
         },
         "feed": {
             "favorites_only_tooltip": "Csak a kedvencek szűrése",
-            "search_placeholder": "Keresés"
+            "search_placeholder": "Keresés",
+            "context": {
+                "hide_user": "Elrejtés a Feedből",
+                "unhide_user": "Megjelenítés a Feedben"
+            }
         },
         "game_log": {
             "filter_placeholder": "Szűrés",
@@ -154,6 +158,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "LLM végpontok",
+                "llm_endpoints_description": "OpenAI-kompatibilis kapcsolatok kezelése a Social AI és a fordítás számára."
+            },
+            "llm_endpoints": {
+                "title": "LLM végpontok",
+                "description": "Megosztott OpenAI-kompatibilis kapcsolatok a Social AI és a fordítás számára.",
+                "endpoint_count": "{count} végpont",
+                "model_count": "{count} modell",
+                "add": "Végpont hozzáadása",
+                "empty_description": "Adj hozzá egy OpenAI-kompatibilis végpontot a Social AI-hoz és az OpenAI-kompatibilis fordításhoz.",
+                "name": "Név",
+                "base_url": "Base URL",
+                "models": "Modellek",
+                "key": "Kulcs",
+                "actions": "Műveletek",
+                "no_models": "Nincs modell",
+                "key_saved": "Mentve",
+                "key_empty": "Üres",
+                "detect_models": "Modellek észlelése",
+                "edit": "Végpont szerkesztése",
+                "delete": "Végpont törlése",
+                "api_key": "API kulcs",
+                "clear_key": "Kulcs törlése",
+                "key_preserve_placeholder": "Hagyd üresen a mentett kulcs megtartásához",
+                "saved": "Végpont mentve",
+                "save_failed": "A végpont mentése sikertelen",
+                "load_failed": "A végpontok betöltése sikertelen",
+                "base_url_required": "A Base URL megadása kötelező.",
+                "models_detected": "{count} modell észlelve",
+                "no_models_detected": "Nem észlelt modellt",
+                "detect_failed": "A modellek észlelése sikertelen",
+                "deleted": "Végpont törölve",
+                "delete_failed": "A végpont törlése sikertelen"
             }
         },
         "profile": {
@@ -180,6 +219,17 @@
                 "wrist_overlay": "Csukló átfedés",
                 "discord_presence": "Discord jelenlét",
                 "advanced": "Haladó"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "Rejtett Feed-felhasználók",
+                    "description": "Elrejti a kijelölt felhasználókat a Feed nézetből a mentett adatok törlése nélkül.",
+                    "add": "Felhasználó hozzáadása",
+                    "search_placeholder": "Felhasználók keresése",
+                    "empty": "Nincsenek rejtett felhasználók a Feed nézetben.",
+                    "remove": "Rejtett felhasználó eltávolítása",
+                    "unknown_user": "Ismeretlen felhasználó"
+                }
             },
             "general": {
                 "general": {
@@ -1282,6 +1332,20 @@
         "avatar_database_provider": {
             "header": "Avatar adatbázis szolgáltató",
             "add_provider": "Szolgáltató hozzáadása"
+        },
+        "translation_api": {
+            "openai": {
+                "connection": "LLM végpont",
+                "connection_description": "Az OpenAI-kompatibilis fordítás használja.",
+                "connection_placeholder": "Válassz egy végpontot",
+                "model": "Modell neve",
+                "prompt_optional": "Prompt (opcionális)",
+                "prompt_optional_description": "Opcionális rendszer prompt az OpenAI-kompatibilis fordítási API-khoz."
+            },
+            "mode_deepl": "DeepL ingyenes API",
+            "deepl": {
+                "api_key": "DeepL API kulcs"
+            }
         }
     },
     "prompt": {
@@ -1595,6 +1659,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -1610,5 +1689,21 @@
     },
     "nav_menu": {
         "update_downloaded": "Frissítés kész"
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "Futásidő",
+            "connection": "Kapcsolat",
+            "connection_unset": "Nincs végpont",
+            "model": "Modell",
+            "model_unset": "Ehhez a végponthoz nincs mentett modell",
+            "playbook_mode": "Elemzési mód",
+            "allow_writes": "Írási műveletek engedélyezése",
+            "manage_endpoints": "LLM végpontok kezelése"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

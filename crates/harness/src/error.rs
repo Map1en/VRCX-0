@@ -4,6 +4,10 @@ use vrcx_0_integrations::llm::LlmError;
 pub enum HarnessError {
     #[error("assistant is not configured")]
     NotConfigured,
+    #[error("assistant endpoint was removed: {0}")]
+    EndpointRemoved(String),
+    #[error("invalid LLM endpoint: {0}")]
+    InvalidEndpoint(String),
     #[error("assistant session not found")]
     SessionNotFound,
     #[error("assistant LLM error: {0}")]

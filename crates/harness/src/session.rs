@@ -6,6 +6,8 @@ use specta::Type;
 use vrcx_0_persistence::assistant;
 use vrcx_0_persistence::DatabaseService;
 
+use crate::config::PlaybookMode;
+use crate::endpoints::AssistantRuntimeSelection;
 use crate::entities::Entity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -48,6 +50,10 @@ pub struct Session {
     pub title: String,
     pub messages: Vec<Message>,
     pub active_turn: Option<ActiveTurn>,
+    pub endpoint_id: Option<String>,
+    pub model: Option<String>,
+    pub allow_writes: bool,
+    pub playbook_mode: PlaybookMode,
     pub entity_panel_open: bool,
     pub surfaced_entities: Vec<Entity>,
     pub created_at: String,
@@ -113,6 +119,10 @@ impl SessionStore {
                             title: entry.title,
                             messages,
                             active_turn: None,
+                            endpoint_id: optional_string(entry.endpoint_id),
+                            model: optional_string(entry.model),
+                            allow_writes: entry.allow_writes,
+                            playbook_mode: PlaybookMode::parse(&entry.playbook_mode),
                             entity_panel_open: entry.entity_panel_open,
                             surfaced_entities: serde_json::from_str(&entry.surfaced_entities)
                                 .unwrap_or_default(),
@@ -125,7 +135,7 @@ impl SessionStore {
                 *self.seq.lock().unwrap() = max_seq;
             }
             Err(error) => {
-                tracing::error!(%error, "assistant: failed to load persisted sessions");
+                tracing::warn!(%error, "assistant: failed to load persisted sessions");
             }
         }
     }
@@ -137,7 +147,7 @@ impl SessionStore {
         if let Err(error) =
             assistant::assistant_session_upsert(db, id, title, created_at, updated_at)
         {
-            tracing::error!(%error, "assistant: failed to persist session");
+            tracing::warn!(%error, "assistant: failed to persist session");
         }
     }
 
@@ -148,6 +158,7 @@ impl SessionStore {
             &session.created_at,
             &session.updated_at,
         );
+        persist_runtime(self.db.as_deref(), session);
     }
 
     fn persist_message(
@@ -171,7 +182,7 @@ impl SessionStore {
             &message.content,
             &message.created_at,
         ) {
-            tracing::error!(%error, "assistant: failed to persist message");
+            tracing::warn!(%error, "assistant: failed to persist message");
         }
     }
 
@@ -181,13 +192,17 @@ impl SessionStore {
         *guard
     }
 
-    fn insert_new(&self, id: String) -> Session {
+    fn insert_new(&self, id: String, runtime: AssistantRuntimeSelection) -> Session {
         let now = now_rfc3339();
         let session = Session {
             id,
             title: String::new(),
             messages: Vec::new(),
             active_turn: None,
+            endpoint_id: normalize_optional(runtime.endpoint_id),
+            model: normalize_optional(runtime.model),
+            allow_writes: runtime.allow_writes,
+            playbook_mode: runtime.playbook_mode,
             entity_panel_open: false,
             surfaced_entities: Vec::new(),
             created_at: now.clone(),
@@ -201,22 +216,37 @@ impl SessionStore {
         session
     }
 
-    pub fn create_session(&self) -> Session {
-        self.insert_new(format!("ses_{}", random_hex()))
+    pub fn create_session_with_runtime(&self, runtime: AssistantRuntimeSelection) -> Session {
+        self.insert_new(format!("ses_{}", random_hex()), runtime)
     }
 
-    pub fn ensure_session(&self, session_id: Option<String>) -> Session {
-        match session_id {
-            Some(id) => {
-                {
-                    let guard = self.sessions.lock().unwrap();
-                    if let Some(existing) = guard.get(&id) {
-                        return existing.clone();
-                    }
+    pub fn ensure_session_with_runtime(
+        &self,
+        session_id: Option<String>,
+        runtime: AssistantRuntimeSelection,
+    ) -> Session {
+        let Some(id) = session_id else {
+            return self.create_session_with_runtime(runtime);
+        };
+        let seeded = {
+            let mut guard = self.sessions.lock().unwrap();
+            match guard.get_mut(&id) {
+                Some(session) if session.endpoint_id.is_none() && session.model.is_none() => {
+                    apply_runtime(session, runtime.clone());
+                    session.updated_at = now_rfc3339();
+                    Some((session.clone(), true))
                 }
-                self.insert_new(id)
+                Some(session) => Some((session.clone(), false)),
+                None => None,
             }
-            None => self.create_session(),
+        };
+        match seeded {
+            Some((session, true)) => {
+                persist_runtime(self.db.as_deref(), &session);
+                session
+            }
+            Some((session, false)) => session,
+            None => self.insert_new(id, runtime),
         }
     }
 
@@ -248,7 +278,7 @@ impl SessionStore {
         self.sessions.lock().unwrap().remove(session_id);
         if let Some(db) = self.db.as_ref() {
             if let Err(error) = assistant::assistant_session_delete(db, session_id) {
-                tracing::error!(%error, "assistant: failed to delete persisted session");
+                tracing::warn!(%error, "assistant: failed to delete persisted session");
             }
         }
     }
@@ -346,6 +376,22 @@ impl SessionStore {
             &session.surfaced_entities,
         );
     }
+
+    pub fn set_runtime(
+        &self,
+        session_id: &str,
+        runtime: AssistantRuntimeSelection,
+    ) -> Option<Session> {
+        let updated = {
+            let mut guard = self.sessions.lock().unwrap();
+            let session = guard.get_mut(session_id)?;
+            apply_runtime(session, runtime);
+            session.updated_at = now_rfc3339();
+            session.clone()
+        };
+        persist_runtime(self.db.as_deref(), &updated);
+        Some(updated)
+    }
 }
 
 fn persist_ui_state(
@@ -359,8 +405,41 @@ fn persist_ui_state(
     };
     let json = serde_json::to_string(entities).unwrap_or_else(|_| "[]".into());
     if let Err(error) = assistant::assistant_session_set_ui_state(db, session_id, open, &json) {
-        tracing::error!(%error, "assistant: failed to persist panel state");
+        tracing::warn!(%error, "assistant: failed to persist panel state");
     }
+}
+
+fn persist_runtime(db: Option<&DatabaseService>, session: &Session) {
+    let Some(db) = db else {
+        return;
+    };
+    if let Err(error) = assistant::assistant_session_set_runtime(
+        db,
+        &session.id,
+        session.endpoint_id.as_deref(),
+        session.model.as_deref(),
+        session.allow_writes,
+        session.playbook_mode.as_config_str(),
+    ) {
+        tracing::warn!(%error, "assistant: failed to persist runtime selection");
+    }
+}
+
+fn apply_runtime(session: &mut Session, runtime: AssistantRuntimeSelection) {
+    session.endpoint_id = normalize_optional(runtime.endpoint_id);
+    session.model = normalize_optional(runtime.model);
+    session.allow_writes = runtime.allow_writes;
+    session.playbook_mode = runtime.playbook_mode;
+}
+
+fn normalize_optional(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn optional_string(value: String) -> Option<String> {
+    normalize_optional(Some(value))
 }
 
 fn role_str(role: Role) -> &'static str {
@@ -414,12 +493,16 @@ mod tests {
         Arc::new(DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap())
     }
 
+    fn create_test_session(store: &SessionStore) -> Session {
+        store.create_session_with_runtime(AssistantRuntimeSelection::default())
+    }
+
     #[test]
     fn reopened_session_keeps_history_for_followups() {
         let db = test_db();
         let session = {
             let store = SessionStore::with_db(db.clone());
-            let session = store.create_session();
+            let session = create_test_session(&store);
             store.push_message(&session.id, Role::User, "who do I play with?".into());
             store.push_message(&session.id, Role::Assistant, "Alice and Bob.".into());
             session
@@ -441,7 +524,7 @@ mod tests {
         let db = test_db();
         let session_id = {
             let store = SessionStore::with_db(db.clone());
-            let session = store.create_session();
+            let session = create_test_session(&store);
             store.set_surfaced_entities(
                 &session.id,
                 &[Entity {
@@ -462,11 +545,56 @@ mod tests {
     }
 
     #[test]
+    fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
+        let db = test_db();
+        let session_id = {
+            let store = SessionStore::with_db(db.clone());
+            let session = create_test_session(&store);
+            store
+                .set_runtime(
+                    &session.id,
+                    AssistantRuntimeSelection {
+                        endpoint_id: Some("ep_1".into()),
+                        model: Some("model-a".into()),
+                        allow_writes: true,
+                        playbook_mode: PlaybookMode::Guided,
+                    },
+                )
+                .unwrap()
+                .id
+        };
+
+        let reopened = SessionStore::with_db(db.clone()).get(&session_id).unwrap();
+        assert_eq!(reopened.endpoint_id.as_deref(), Some("ep_1"));
+        assert_eq!(reopened.model.as_deref(), Some("model-a"));
+        assert!(reopened.allow_writes);
+        assert_eq!(reopened.playbook_mode, PlaybookMode::Guided);
+
+        let old_session_id = {
+            let store = SessionStore::with_db(db.clone());
+            create_test_session(&store).id
+        };
+        let store = SessionStore::with_db(db);
+        let seeded = store.ensure_session_with_runtime(
+            Some(old_session_id),
+            AssistantRuntimeSelection {
+                endpoint_id: Some("ep_seed".into()),
+                model: Some("seed-model".into()),
+                allow_writes: false,
+                playbook_mode: PlaybookMode::Open,
+            },
+        );
+        assert_eq!(seeded.endpoint_id.as_deref(), Some("ep_seed"));
+        assert_eq!(seeded.model.as_deref(), Some("seed-model"));
+        assert_eq!(seeded.playbook_mode, PlaybookMode::Open);
+    }
+
+    #[test]
     fn empty_surfaced_entities_clear_prior_references() {
         let db = test_db();
         let session_id = {
             let store = SessionStore::with_db(db.clone());
-            let session = store.create_session();
+            let session = create_test_session(&store);
             store.set_surfaced_entities(
                 &session.id,
                 &[Entity {
@@ -489,7 +617,7 @@ mod tests {
         let db = test_db();
         let session_id = {
             let store = SessionStore::with_db(db.clone());
-            let session = store.create_session();
+            let session = create_test_session(&store);
             store.set_entity_panel_open(&session.id, true);
             store.set_entity_panel_open(&session.id, false);
             session.id
@@ -501,7 +629,7 @@ mod tests {
     #[test]
     fn is_current_turn_tracks_the_latest_turn() {
         let store = SessionStore::with_db(test_db());
-        let session = store.create_session();
+        let session = create_test_session(&store);
 
         store.set_active_turn(
             &session.id,

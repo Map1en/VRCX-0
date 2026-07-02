@@ -512,6 +512,7 @@ describe('preferencesService characterization', () => {
             bioLanguage: 'ja',
             translationAPIType: 'openai',
             translationAPIKey: 'key',
+            translationEndpointId: '',
             translationAPIEndpoint:
                 'https://api.openai.com/v1/chat/completions',
             translationAPIModel: 'gpt-4o-mini',
@@ -522,6 +523,7 @@ describe('preferencesService characterization', () => {
             ['bioLanguage', 'ja'],
             ['translationAPIType', 'openai'],
             ['translationAPIKey', 'key'],
+            ['translationEndpointId', ''],
             [
                 'translationAPIEndpoint',
                 'https://api.openai.com/v1/chat/completions'

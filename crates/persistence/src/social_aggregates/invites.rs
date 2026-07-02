@@ -40,10 +40,24 @@ pub fn get_invite_history(
     });
     rows.truncate(limit as usize);
 
+    let summary = invite_history_summary(&rows);
     Ok(InviteHistoryOutput {
         rows,
+        summary,
         caveats: invite_history_caveats(),
     })
+}
+
+fn invite_history_summary(rows: &[InviteHistoryRow]) -> String {
+    if rows.is_empty() {
+        return "No invites found in this window.".to_string();
+    }
+    let entries = rows
+        .iter()
+        .map(|row| format!("{} ({})", row.display_name, row.total_count))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{} people in invite history: {entries}.", rows.len())
 }
 
 fn append_v1_invites(

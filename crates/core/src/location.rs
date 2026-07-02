@@ -9,6 +9,8 @@
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use crate::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
+
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ParsedLocation {
@@ -223,7 +225,7 @@ pub fn format_display_location_with_labels(
     )
 }
 
-fn access_type_label<'a>(
+pub fn access_type_label<'a>(
     parsed: &'a ParsedLocation,
     labels: &'a DisplayLocationLabels<'a>,
 ) -> &'a str {
@@ -238,6 +240,25 @@ fn access_type_label<'a>(
         "groupPlus" => labels.group_plus,
         _ => parsed.access_type_name.as_str(),
     }
+}
+
+pub fn launch_url(parsed: &ParsedLocation) -> String {
+    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
+        return String::new();
+    }
+    let mut url = format!(
+        "{VRCHAT_SITE_ORIGIN}/home/launch?worldId={}&instanceId={}",
+        parsed.world_id, parsed.instance_id
+    );
+    if !parsed.short_name.is_empty() {
+        url.push_str("&shortName=");
+        url.push_str(&parsed.short_name);
+    }
+    url
+}
+
+pub fn region_label(region: &str) -> String {
+    region.trim().to_ascii_uppercase()
 }
 
 fn format_display_location_parts(
@@ -557,5 +578,52 @@ mod tests {
             ),
             "Plus World Friends+"
         );
+    }
+
+    #[test]
+    fn access_type_label_selects_group_variants() {
+        let labels = DisplayLocationLabels {
+            public: "Public",
+            invite: "Invite",
+            invite_plus: "Invite+",
+            friends: "Friends",
+            friends_plus: "Friends+",
+            group: "Group",
+            group_public: "Group Public",
+            group_plus: "Group+",
+        };
+
+        assert_eq!(
+            access_type_label(
+                &parse_location("wrld_a:1~group(grp_a)~groupAccessType(public)"),
+                &labels,
+            ),
+            "Group Public"
+        );
+        assert_eq!(
+            access_type_label(
+                &parse_location("wrld_a:1~group(grp_a)~groupAccessType(plus)"),
+                &labels,
+            ),
+            "Group+"
+        );
+    }
+
+    #[test]
+    fn launch_url_includes_short_name_and_requires_instance() {
+        assert_eq!(
+            launch_url(&parse_location("wrld_a:1~region(use)&shortName=ab12")),
+            "https://vrchat.com/home/launch?worldId=wrld_a&instanceId=1~region(use)&shortName=ab12"
+        );
+        assert_eq!(launch_url(&parse_location("wrld_only")), "");
+    }
+
+    #[test]
+    fn region_label_preserves_specific_uppercase_codes() {
+        assert_eq!(region_label("use"), "USE");
+        assert_eq!(region_label("usw"), "USW");
+        assert_eq!(region_label("jp"), "JP");
+        assert_eq!(region_label("  eu  "), "EU");
+        assert_eq!(region_label(""), "");
     }
 }

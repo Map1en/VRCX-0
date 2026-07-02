@@ -35,7 +35,6 @@ function getPrintFileName(print: GalleryPrint): string {
 function getPrintLocalDate(print: GalleryPrint): Date {
     if (print.createdAt) {
         const createdAt = new Date(print.createdAt);
-        // cursed convert to local time
         createdAt.setMinutes(
             createdAt.getMinutes() - createdAt.getTimezoneOffset()
         );
@@ -46,7 +45,6 @@ function getPrintLocalDate(print: GalleryPrint): Date {
     }
 
     const createdAt = new Date();
-    // cursed convert to local time
     createdAt.setMinutes(
         createdAt.getMinutes() - createdAt.getTimezoneOffset()
     );

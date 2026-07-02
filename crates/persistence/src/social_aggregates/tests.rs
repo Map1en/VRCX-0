@@ -679,7 +679,7 @@ fn friend_activity_pattern_buckets_in_local_time_with_offset() {
 
     // 18:05 UTC shifted by +9h lands at 03:05 local -> bucket "03", not "18".
     assert_eq!(output.rows[0].buckets.get("03"), Some(&1));
-    assert!(output.rows[0].buckets.get("18").is_none());
+    assert!(!output.rows[0].buckets.contains_key("18"));
     assert!(output
         .caveats
         .iter()

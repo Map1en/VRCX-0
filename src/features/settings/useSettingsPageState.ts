@@ -180,11 +180,11 @@ export function useSettingsPageState() {
     const commit = useSettingsCommit();
 
     const {
-        availableTranslationModels,
         discordPrefs,
         fetchTranslationModels,
         integrationPrefs,
         integrationStatus,
+        llmEndpoints,
         openTranslationApiDialog,
         openYoutubeApiDialog,
         saveDiscordBoolPreference,
@@ -220,6 +220,7 @@ export function useSettingsPageState() {
 
     const {
         applyPreferenceSnapshotToLocalState,
+        addFeedHiddenUser,
         savePreferenceValue,
         saveBoolPreference,
         saveStringPreference,
@@ -253,6 +254,7 @@ export function useSettingsPageState() {
         migrateLegacyVrcxData,
         openAppDataDirSelector,
         resetAppDataDir,
+        removeFeedHiddenUser,
         restartForAppDataDir,
         updateSharedFeedFilter,
         resetSharedFeedFilters,
@@ -376,13 +378,13 @@ export function useSettingsPageState() {
 
     return buildSettingsPageStateSections({
         activeSettingsTab,
+        addFeedHiddenUser,
         addAvatarProvider,
         appDataDirState,
         applyAvatarProviderConfig,
         avatarProviderConfig,
         avatarProviderConfigRef,
         avatarProviderDialogOpen,
-        availableTranslationModels,
         cacheStats,
         cacheStatsVisible,
         clearVrcxCache,
@@ -404,6 +406,7 @@ export function useSettingsPageState() {
         handleGameLogDisabledChange,
         integrationPrefs,
         integrationStatus,
+        llmEndpoints,
         locale,
         localFavoriteFriendGroupOptions,
         localFavoriteFriendsGroups,
@@ -434,6 +437,7 @@ export function useSettingsPageState() {
         refreshRuntimeAppSnapshot,
         refreshSqliteTableSizes,
         remoteFavoriteFriendGroupOptions,
+        removeFeedHiddenUser,
         removeAvatarProvider,
         resetAppDataDir,
         resetSharedFeedFilters,

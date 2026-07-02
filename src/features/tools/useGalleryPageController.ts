@@ -61,7 +61,7 @@ function writeGalleryGridDensityPreference(value: any) {
     try {
         window.localStorage.setItem(GALLERY_GRID_DENSITY_STORAGE_KEY, value);
     } catch {
-        // Grid density is a display preference only.
+        // no-op
     }
 }
 

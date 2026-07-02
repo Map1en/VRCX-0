@@ -1,16 +1,7 @@
-import { postTelemetry } from './telemetryClient';
-import { isAnonymousUsageTelemetryEnabled } from './telemetryConfig';
-import {
-    recordTelemetryErrorDetail,
-    serializeTelemetryErrorDetails
-} from './telemetryErrorDetails';
-import { buildTelemetryContext } from './telemetryPayload';
+import { recordTelemetryEvent } from './telemetryEvent';
 import type {
-    TelemetryErrorDetail,
     TelemetryPageRouteKey,
-    TelemetryPageUsageEntry,
-    TelemetryRouteErrorClass,
-    TelemetrySessionState
+    TelemetryRouteErrorClass
 } from './telemetryTypes';
 
 const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
@@ -37,6 +28,8 @@ const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
     '/settings': 'settings'
 };
 
+let currentRoute: TelemetryPageRouteKey | null = null;
+
 export function normalizeRouteKey(
     pathname: string
 ): TelemetryPageRouteKey | null {
@@ -51,86 +44,26 @@ export function normalizeRouteKey(
     return null;
 }
 
-type RouteUsage = {
-    visits: number;
-    errors: Record<TelemetryRouteErrorClass, number>;
-    details: Map<string, TelemetryErrorDetail>;
-};
-
-const usage = new Map<TelemetryPageRouteKey, RouteUsage>();
-let currentRoute: TelemetryPageRouteKey | null = null;
-
-function ensureUsage(route: TelemetryPageRouteKey): RouteUsage {
-    let entry = usage.get(route);
-    if (!entry) {
-        entry = {
-            visits: 0,
-            errors: { load_fail: 0, render_crash: 0 },
-            details: new Map()
-        };
-        usage.set(route, entry);
-    }
-    return entry;
-}
-
 export function recordRouteEnter(pathname: string): void {
-    if (!isAnonymousUsageTelemetryEnabled()) {
-        return;
-    }
     const route = normalizeRouteKey(pathname);
     currentRoute = route;
-    if (route) {
-        ensureUsage(route).visits += 1;
+    if (!route) {
+        return;
     }
+    recordTelemetryEvent({ type: 'pageVisit', route });
 }
 
 export function recordRouteError(
     errorClass: TelemetryRouteErrorClass,
     error?: unknown
 ): void {
-    if (!isAnonymousUsageTelemetryEnabled() || !currentRoute) {
+    if (!currentRoute) {
         return;
     }
-    const entry = ensureUsage(currentRoute);
-    entry.errors[errorClass] += 1;
-    recordTelemetryErrorDetail(entry.details, {
-        kind: errorClass,
+    recordTelemetryEvent({
+        type: 'routeError',
+        error_class: errorClass,
         name: error instanceof Error ? error.name : typeof error,
         summary: error instanceof Error ? error.message : String(error ?? '')
     });
-}
-
-export async function sendPageReach(
-    session: TelemetrySessionState
-): Promise<void> {
-    if (!isAnonymousUsageTelemetryEnabled() || usage.size === 0) {
-        return;
-    }
-    const routes: TelemetryPageUsageEntry[] = [];
-    for (const [route, entry] of usage) {
-        const result: TelemetryPageUsageEntry = {
-            route,
-            visits: entry.visits
-        };
-        if (entry.errors.load_fail > 0) {
-            result.loadFail = entry.errors.load_fail;
-        }
-        if (entry.errors.render_crash > 0) {
-            result.renderCrash = entry.errors.render_crash;
-        }
-        const details = serializeTelemetryErrorDetails(entry.details);
-        if (details) {
-            result.details = details;
-        }
-        routes.push(result);
-    }
-    await postTelemetry('/api/v1/telemetry/page-health', {
-        ...buildTelemetryContext(session),
-        routes
-    });
-}
-
-export function resetPageReach(): void {
-    usage.clear();
-    currentRoute = null;
 }

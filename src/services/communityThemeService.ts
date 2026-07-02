@@ -18,6 +18,12 @@ import {
     COMMUNITY_THEME_CONFIG_KEYS
 } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
+import {
+    disableBackgroundImageForCommunityTheme,
+    isBackgroundImageAppearanceActive,
+    migrateLegacyNasaApodCommunityThemeForBackgroundImage,
+    registerCommunityThemeAppearanceHandlers
+} from '@/services/appearanceConflictCoordinator';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import {
     communityThemeControlsAccent,
@@ -26,11 +32,6 @@ import {
     useCommunityThemeStore
 } from '@/state/communityThemeStore';
 
-import {
-    disableBackgroundImage,
-    isBackgroundImageActive,
-    migrateLegacyNasaApodCommunityTheme
-} from './background-image/backgroundImageService';
 import {
     applyThemeColor,
     resolveThemeMode,
@@ -118,7 +119,7 @@ async function syncCommunityThemeAppearanceControl(): Promise<void> {
         return;
     }
 
-    if (!isBackgroundImageActive()) {
+    if (!isBackgroundImageAppearanceActive()) {
         await applySavedThemeMode();
     }
 }
@@ -441,7 +442,7 @@ export async function initializeCommunityThemes(): Promise<void> {
         ? overrideCssEnabledRaw === null || overrideCssEnabledRaw === 'true'
         : false;
     if (legacyApodWasActive) {
-        await migrateLegacyNasaApodCommunityTheme();
+        await migrateLegacyNasaApodCommunityThemeForBackgroundImage();
     }
 
     useCommunityThemeStore.getState().hydrate({
@@ -468,7 +469,9 @@ export async function installCommunityTheme(
     try {
         const catalogUrl = COMMUNITY_THEME_CATALOG_URL;
         const cssText = await loadCommunityThemeCss(catalogUrl, theme);
-        await disableBackgroundImage({ restoreAppTheme: false });
+        await disableBackgroundImageForCommunityTheme({
+            restoreAppTheme: false
+        });
         const now = currentTimestamp();
         const previous = store.installedThemes.find(
             (installedTheme) => installedTheme.themeId === theme.id
@@ -565,7 +568,7 @@ export async function enableInstalledCommunityTheme(
     if (!activeRecord) {
         return;
     }
-    await disableBackgroundImage({ restoreAppTheme: false });
+    await disableBackgroundImageForCommunityTheme({ restoreAppTheme: false });
     const nextRecords = mergeInstallRecords([
         ...records.filter((record) => record.themeId !== activeRecord.themeId),
         activeRecord
@@ -721,7 +724,7 @@ export async function loadLocalCommunityThemePreview(
     if (shouldApply && !shouldApply()) {
         throw new Error('Local theme preview load was cancelled.');
     }
-    await disableBackgroundImage({ restoreAppTheme: false });
+    await disableBackgroundImageForCommunityTheme({ restoreAppTheme: false });
     if (shouldApply && !shouldApply()) {
         throw new Error('Local theme preview load was cancelled.');
     }
@@ -844,3 +847,8 @@ export function isCommunityThemeAccentControlled(): boolean {
         state.localPreview
     );
 }
+
+registerCommunityThemeAppearanceHandlers({
+    disableInstalledCommunityTheme,
+    stopLocalCommunityThemePreview
+});

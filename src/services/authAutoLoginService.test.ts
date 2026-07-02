@@ -139,6 +139,10 @@ describe('authAutoLoginService', () => {
                 params?.seconds ? `${key}:${params.seconds}` : key
         );
         mocks.toastInfo.mockReturnValue('toast-id');
+        Object.defineProperty(navigator, 'onLine', {
+            configurable: true,
+            value: true
+        });
     });
 
     it('skips when neither cookie restore nor saved credential fallback is eligible', async () => {
@@ -241,5 +245,44 @@ describe('authAutoLoginService', () => {
             status: 'completed',
             detail: 'Automatic login countdown was cancelled.'
         });
+    });
+
+    it('does not show a system auth notification when auto-login fails offline', async () => {
+        Object.defineProperty(navigator, 'onLine', {
+            configurable: true,
+            value: false
+        });
+        mocks.executeCookieSessionRestore.mockRejectedValueOnce(
+            new Error('Network unavailable')
+        );
+
+        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
+            status: 'failed'
+        });
+
+        expect(mocks.toastError).toHaveBeenCalledWith('message.auth.offline');
+        expect(mocks.appAuthFailureNotificationShow).not.toHaveBeenCalled();
+    });
+
+    it('shows a system auth notification when saved credentials require manual login', async () => {
+        mocks.executeSavedCredentialLogin.mockRejectedValueOnce(
+            Object.assign(new Error('Saved credentials are no longer valid.'), {
+                code: 'AUTH_SAVED_CREDENTIALS_INVALID'
+            })
+        );
+
+        await expect(
+            executeReactAutoLogin(
+                snapshot({
+                    cookieRestoreEligible: false
+                })
+            )
+        ).resolves.toMatchObject({
+            status: 'failed'
+        });
+
+        expect(mocks.appAuthFailureNotificationShow).toHaveBeenCalledWith(
+            'frontend-auto-login-failed'
+        );
     });
 });

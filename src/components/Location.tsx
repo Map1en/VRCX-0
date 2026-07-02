@@ -1,26 +1,16 @@
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { LocationContextMenu } from '@/components/location/LocationContextMenu';
 import { LocationDisplay } from '@/components/location/LocationDisplay';
-import { resolveLocationTarget } from '@/components/location/locationModel';
-import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import { useLocationPreviousInstancesDialog } from '@/components/location/useLocationPreviousInstancesDialog';
+import { useResolvedLocation } from '@/components/location/useResolvedLocation';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { directAccessParse } from '@/services/directAccessService';
 import { copyTextToClipboard } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
-import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
-import {
-    getLocationText,
-    parseLocation,
-    translateAccessType
-} from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useLaunchStore } from '@/state/launchStore';
-import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export function Location({
@@ -45,77 +35,39 @@ export function Location({
     className = '',
     worldNameClassName = ''
 }: any) {
-    const { t } = useTranslation();
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
     const isGameRunning = useRuntimeStore((state) =>
         Boolean(state.gameState.isGameRunning)
     );
-    const preferencesHydrated = usePreferencesStore(
-        (state) => state.preferencesHydrated
-    );
-    const ageGatedInstancesVisiblePreference = usePreferencesStore(
-        (state) => state.isAgeGatedInstancesVisible
-    );
-    const globalShowInstanceIdInLocation = usePreferencesStore(
-        (state) => state.showInstanceIdInLocation
-    );
-    const ageGatedInstancesVisible =
-        preferencesHydrated && ageGatedInstancesVisiblePreference;
-    const currentLocation = resolveLocationTarget(location, traveling);
-    const hasShortNameHint = Boolean(
-        !normalizeString(currentLocation) && normalizeString(hint).length === 8
-    );
-    const isTraveling =
-        typeof traveling !== 'undefined' &&
-        normalizeString(location) === 'traveling';
-    const resolvedGroupHint = normalizeString(groupHint || grouphint);
-    const parsedLocation = useMemo(
-        () => parseLocation(currentLocation),
-        [currentLocation]
-    );
     const {
+        t,
+        currentLocation,
         currentEndpoint,
+        parsedLocation,
         region,
         instanceName: resolvedInstanceName,
         isClosed,
         groupName,
         worldName,
-        worldNameHint
-    } = useLocationMetadata({
-        locationInfo: parsedLocation,
-        currentLocation,
-        endpoint,
+        worldNameHint,
+        isTraveling,
+        hasShortNameHint,
+        isAgeRestricted,
+        isLocationLink,
+        text,
+        tooltipContent,
+        shouldShowInstanceId: shouldShowInstanceIdInLocation
+    } = useResolvedLocation({
+        location,
+        traveling,
         hint,
-        groupHint: resolvedGroupHint
+        grouphint,
+        groupHint,
+        endpoint,
+        link,
+        showInstanceIdInLocation
     });
-    const isAgeRestricted = Boolean(
-        parsedLocation.ageGate && !ageGatedInstancesVisible
-    );
-    const isLocationLink = Boolean(
-        link &&
-        !parsedLocation.isPrivate &&
-        !parsedLocation.isOffline &&
-        (normalizeString(currentLocation) || hasShortNameHint)
-    );
-    const accessTypeLabel = translateAccessType(
-        parsedLocation.accessTypeName,
-        t,
-        accessTypeLocaleKeyMap
-    );
     const worldDialogTitle = worldName || worldNameHint || undefined;
-    const text = getLocationText(parsedLocation, {
-        hint: worldNameHint,
-        worldName,
-        accessTypeLabel,
-        t
-    });
-    const tooltipContent = resolvedInstanceName
-        ? `${t('dialog.new_instance.instance_id')}: #${resolvedInstanceName}`
-        : '';
-    const shouldShowInstanceIdInLocation =
-        typeof showInstanceIdInLocation === 'boolean'
-            ? showInstanceIdInLocation
-            : globalShowInstanceIdInLocation;
     const canOpenWorld = Boolean(
         isLocationLink && (parsedLocation.worldId || hasShortNameHint)
     );

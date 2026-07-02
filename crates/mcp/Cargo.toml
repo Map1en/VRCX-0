@@ -11,7 +11,7 @@ constant_time_eq = "0.5"
 getrandom = "0.4"
 http = "1"
 http-body = "1"
-rmcp = { version = "1.7.0", features = [
+rmcp = { version = "2.0.0", features = [
     "client",
     "server",
     "macros",

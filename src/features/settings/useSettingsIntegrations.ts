@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { languageCodes } from '@/localization/index';
+import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import externalApiRepository from '@/repositories/externalApiRepository';
 import {
@@ -11,13 +12,13 @@ import {
     setYoutubeApiKeyPreference
 } from '@/services/preferencesService';
 import { normalizeDeepLTargetLanguage } from '@/services/translationService';
+import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import {
     normalizeTranslationApiType,
     type DiscordPreferenceKey
 } from '@/state/preferencesStore';
 
 import {
-    buildOpenAiModelsEndpoint,
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
     parseWebJson
@@ -30,6 +31,7 @@ export type SettingsIntegrationPrefs = {
     bioLanguage: string;
     translationAPIType: string;
     translationAPIKey: string;
+    translationEndpointId: string;
     translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
@@ -59,6 +61,7 @@ type SettingsTranslationDraft = {
     bioLanguage: string;
     translationAPIType: string;
     translationAPIKey: string;
+    translationEndpointId: string;
     translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
@@ -78,39 +81,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function readModelId(model: unknown): string | null {
-    if (!isRecord(model)) {
-        return null;
-    }
-    return typeof model.id === 'string' && model.id ? model.id : null;
-}
-
-function readModelIdOrName(model: unknown): string | null {
-    if (!isRecord(model)) {
-        return null;
-    }
-    const value = model.id || model.name;
-    return typeof value === 'string' && value ? value : null;
-}
-
-function readTranslationModelNames(payload: unknown): string[] {
-    if (isRecord(payload) && Array.isArray(payload.data)) {
-        return payload.data
-            .map(readModelId)
-            .filter((modelName): modelName is string => Boolean(modelName))
-            .sort();
-    }
-    if (Array.isArray(payload)) {
-        return payload
-            .map(readModelIdOrName)
-            .filter((modelName): modelName is string => Boolean(modelName))
-            .sort();
-    }
-    return [];
-}
-
 export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
     const { t } = useTranslation();
+    const llmEndpoints = useLlmEndpointsStore((state) => state.endpoints);
     const [integrationPrefs, setIntegrationPrefs] =
         useState<SettingsIntegrationPrefs>({
             youtubeAPI: false,
@@ -119,6 +92,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             bioLanguage: 'en',
             translationAPIType: 'google',
             translationAPIKey: '',
+            translationEndpointId: '',
             translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
             translationAPIModel: DEFAULT_TRANSLATION_MODEL,
             translationAPIPrompt: ''
@@ -133,8 +107,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         discordWorldIntegration: true,
         discordWorldNameAsDiscordStatus: false
     });
-    const [availableTranslationModels, setAvailableTranslationModels] =
-        useState<string[]>([]);
+    const fetchingModelsRef = useRef(false);
     const [integrationStatus, setIntegrationStatus] =
         useState<SettingsIntegrationStatus>({
             youtube: 'idle',
@@ -150,6 +123,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             bioLanguage: 'en',
             translationAPIType: 'google',
             translationAPIKey: '',
+            translationEndpointId: '',
             translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
             translationAPIModel: DEFAULT_TRANSLATION_MODEL,
             translationAPIPrompt: ''
@@ -197,12 +171,33 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
     }
 
     function openTranslationApiDialog() {
+        useLlmEndpointsStore
+            .getState()
+            .load()
+            .then((endpoints) => {
+                const selected =
+                    integrationPrefs.translationEndpointId ||
+                    endpoints[0]?.id ||
+                    '';
+                if (selected) {
+                    setTranslationDraftValue('translationEndpointId', selected);
+                    if (
+                        normalizeTranslationApiType(
+                            integrationPrefs.translationAPIType
+                        ) === 'openai'
+                    ) {
+                        fetchTranslationModels(selected);
+                    }
+                }
+            })
+            .catch(() => {});
         setTranslationDraft({
             bioLanguage: integrationPrefs.bioLanguage || 'en',
             translationAPIType: normalizeTranslationApiType(
                 integrationPrefs.translationAPIType
             ),
             translationAPIKey: integrationPrefs.translationAPIKey || '',
+            translationEndpointId: integrationPrefs.translationEndpointId || '',
             translationAPIEndpoint:
                 integrationPrefs.translationAPIEndpoint ||
                 DEFAULT_TRANSLATION_ENDPOINT,
@@ -211,7 +206,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 DEFAULT_TRANSLATION_MODEL,
             translationAPIPrompt: integrationPrefs.translationAPIPrompt || ''
         });
-        setAvailableTranslationModels([]);
         setTranslationApiDialogOpen(true);
     }
 
@@ -295,13 +289,14 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         const nextModel =
             translationDraft.translationAPIModel.trim() ||
             DEFAULT_TRANSLATION_MODEL;
+        const nextEndpointId = translationDraft.translationEndpointId.trim();
         const nextKey = translationDraft.translationAPIKey.trim();
         const nextBioLanguage = languageCodes.includes(
             translationDraft.bioLanguage
         )
             ? translationDraft.bioLanguage
             : 'en';
-        if (nextType === 'openai' && (!nextEndpoint || !nextModel)) {
+        if (nextType === 'openai' && (!nextEndpointId || !nextModel)) {
             toast.warning(t('dialog.translation_api.msg_fill_endpoint_model'));
             return;
         }
@@ -315,6 +310,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 bioLanguage: nextBioLanguage,
                 translationAPIType: nextType,
                 translationAPIKey: nextKey,
+                translationEndpointId: nextEndpointId,
                 translationAPIEndpoint: nextEndpoint,
                 translationAPIModel: nextModel,
                 translationAPIPrompt: translationDraft.translationAPIPrompt
@@ -341,42 +337,32 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         }
     }
 
-    async function fetchTranslationModels() {
-        const endpoint =
-            translationDraft.translationAPIEndpoint.trim() ||
-            DEFAULT_TRANSLATION_ENDPOINT;
-        const headers: Record<string, string> = {};
-        if (translationDraft.translationAPIKey.trim()) {
-            headers.Authorization = `Bearer ${translationDraft.translationAPIKey.trim()}`;
+    async function fetchTranslationModels(endpointIdOverride?: string) {
+        const endpointId = (
+            endpointIdOverride ?? translationDraft.translationEndpointId
+        ).trim();
+        if (!endpointId || fetchingModelsRef.current) {
+            return;
         }
 
+        fetchingModelsRef.current = true;
         setIntegrationStatus((current) => ({
             ...current,
             models: 'running'
         }));
         try {
-            const response =
-                await externalApiRepository.executeTranslationRequest({
-                    url: buildOpenAiModelsEndpoint(endpoint),
-                    method: 'GET',
-                    headers
-                });
-            if (response.status !== 200) {
-                throw new Error(`Failed to fetch models: ${response.status}`);
-            }
-            const payload = parseWebJson(response);
-            const models = readTranslationModelNames(payload);
-            setAvailableTranslationModels(models);
-            if (models.length && !translationDraft.translationAPIModel.trim()) {
+            const models = await useLlmEndpointsStore.getState().detectModels({
+                id: endpointId,
+                baseUrl: null,
+                apiKey: null,
+                persist: true
+            });
+            if (
+                models.length &&
+                !models.includes(translationDraft.translationAPIModel.trim())
+            ) {
                 setTranslationDraftValue('translationAPIModel', models[0]);
             }
-            toast.success(
-                models.length
-                    ? t('dialog.translation_api.msg_models_fetched', {
-                          count: models.length
-                      })
-                    : t('dialog.translation_api.msg_no_models_found')
-            );
         } catch (error) {
             toast.error(
                 error instanceof Error
@@ -386,6 +372,7 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                       )
             );
         } finally {
+            fetchingModelsRef.current = false;
             setIntegrationStatus((current) => ({
                 ...current,
                 models: 'idle'
@@ -450,37 +437,25 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                     );
                 }
             } else {
-                const endpoint =
-                    translationDraft.translationAPIEndpoint.trim() ||
-                    DEFAULT_TRANSLATION_ENDPOINT;
+                const endpointId =
+                    translationDraft.translationEndpointId.trim();
                 const model =
                     translationDraft.translationAPIModel.trim() ||
                     DEFAULT_TRANSLATION_MODEL;
-                const headers: Record<string, string> = {
-                    'Content-Type': 'application/json'
-                };
-                if (apiKey) {
-                    headers.Authorization = `Bearer ${apiKey}`;
+                if (!endpointId || !model) {
+                    toast.warning(
+                        t('dialog.translation_api.msg_fill_endpoint_model')
+                    );
+                    return;
                 }
-                const response =
-                    await externalApiRepository.executeTranslationRequest({
-                        url: endpoint,
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify({
-                            model,
-                            messages: [
-                                {
-                                    role: 'system',
-                                    content:
-                                        translationDraft.translationAPIPrompt ||
-                                        `Translate the user message into ${translationDraft.bioLanguage || 'en'}. Only return the translated text.`
-                                },
-                                { role: 'user', content: 'Hello world' }
-                            ]
-                        })
-                    });
-                if (response.status !== 200) {
+                const translated = await commands.appLlmTranslate({
+                    endpointId,
+                    model,
+                    text: 'Hello world',
+                    targetLang: translationDraft.bioLanguage || 'en',
+                    prompt: translationDraft.translationAPIPrompt || null
+                });
+                if (!translated.trim()) {
                     throw new Error(
                         t('dialog.translation_api.msg_test_failed')
                     );
@@ -502,11 +477,11 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
     }
 
     return {
-        availableTranslationModels,
         discordPrefs,
         fetchTranslationModels,
         integrationPrefs,
         integrationStatus,
+        llmEndpoints,
         openTranslationApiDialog,
         openYoutubeApiDialog,
         saveDiscordBoolPreference,

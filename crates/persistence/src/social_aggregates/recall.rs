@@ -109,10 +109,24 @@ pub fn recall_encounter(
     });
     rows.truncate(clamped_optional_limit(input.limit, 50, 200) as usize);
 
+    let summary = recall_encounter_summary(&rows);
     Ok(RecallEncounterOutput {
         rows,
+        summary,
         caveats: recall_encounter_caveats(),
     })
+}
+
+fn recall_encounter_summary(rows: &[RecallEncounterRow]) -> String {
+    if rows.is_empty() {
+        return "No matching encounters found.".to_string();
+    }
+    let entries = rows
+        .iter()
+        .map(|row| format!("{} ({}x)", row.display_name, row.encounter_count))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{} match(es): {entries}.", rows.len())
 }
 
 fn trimmed(value: &Option<String>) -> Option<String> {

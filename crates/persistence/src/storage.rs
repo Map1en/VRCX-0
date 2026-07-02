@@ -110,7 +110,7 @@ fn do_save(data: &Arc<RwLock<HashMap<String, String>>>, path: &Path) {
     match serde_json::to_string_pretty(&*data) {
         Ok(json) => {
             if let Err(e) = std::fs::write(path, json) {
-                tracing::error!("StorageService: failed to write: {e}");
+                tracing::warn!("StorageService: failed to write: {e}");
             }
         }
         Err(e) => tracing::error!("StorageService: failed to serialize: {e}"),

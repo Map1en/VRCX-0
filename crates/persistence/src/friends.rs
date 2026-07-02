@@ -492,7 +492,6 @@ pub fn friend_log_history_delete(
     )
 }
 
-// Friend log write helpers.
 pub(crate) fn add_friend_log_history_entry(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,

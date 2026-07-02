@@ -1,4 +1,7 @@
+mod discord;
 mod dispatcher;
+mod image_file;
+mod rendered;
 mod user_image;
 
 pub use dispatcher::{

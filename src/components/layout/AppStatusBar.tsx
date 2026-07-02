@@ -470,7 +470,7 @@ export function AppStatusBar() {
                             setClocks(nextClocks);
                         }
                     } catch {
-                        // ignore invalid saved clocks
+                        // no-op
                     }
                 }
 

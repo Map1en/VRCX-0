@@ -183,6 +183,16 @@ const toolDefinitions: ToolDefinition[] = [
         action: { type: 'route', routeName: 'vrchat-log' }
     },
     {
+        key: 'llm-endpoints',
+        category: 'other',
+        iconKey: 'plug',
+        navIcon: 'lucide:Plug',
+        titleKey: 'view.tools.system_tools.llm_endpoints',
+        descriptionKey: 'view.tools.system_tools.llm_endpoints_description',
+        navEligible: true,
+        action: { type: 'dialog', dialogKey: 'llm-endpoints' }
+    },
+    {
         key: 'crash-dumps',
         category: 'shortcuts',
         iconKey: 'folder-x',

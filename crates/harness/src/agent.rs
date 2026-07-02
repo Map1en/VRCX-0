@@ -78,7 +78,6 @@ pub(crate) struct TurnContext {
     pub turn_id: String,
     pub locale: Option<String>,
     pub cancel: CancellationToken,
-    pub disable_thinking: bool,
     pub apply_playbook: bool,
 }
 
@@ -99,9 +98,15 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         .map(|pb| pb.filter_tools(ctx.tool_defs.as_slice()))
         .filter(|tools| !tools.is_empty());
     let route = route.filter(|_| playbook_tools.is_some());
+    // On a classify miss while a playbook mode is active, fall back to the
+    // curated weak-model toolset (full minus advanced/non-answer tools) rather
+    // than the whole surface. Open mode keeps everything.
+    let fallback_tools = (ctx.apply_playbook && playbook_tools.is_none())
+        .then(|| playbook::weak_fallback_tools(ctx.tool_defs.as_slice()));
     let mut working = build_context(&ctx, route);
     let tool_defs = playbook_tools
         .as_deref()
+        .or(fallback_tools.as_deref())
         .unwrap_or(ctx.tool_defs.as_slice());
     let mut collected: Vec<Entity> = Vec::new();
     let mut final_answer = String::new();
@@ -162,7 +167,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
                 duplicate_tool_call_result(&call.function.name)
             };
             if !resolved.ok {
-                tracing::error!(
+                tracing::warn!(
                     tool = %call.function.name,
                     args = %call.function.arguments,
                     detail = %resolved.summary,
@@ -261,9 +266,6 @@ fn build_context(ctx: &TurnContext, route: Option<playbook::Playbook>) -> Vec<Ch
     ];
     if let Some(pb) = route {
         working.push(ChatMessage::system(pb.constraint_prompt()));
-    }
-    if ctx.disable_thinking {
-        working.push(ChatMessage::system("/no_think"));
     }
     if let Some(locale) = ctx
         .locale

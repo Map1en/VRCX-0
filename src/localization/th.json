@@ -61,6 +61,10 @@
                 "Status": "สถานะ",
                 "Avatar": "อวาตาร์",
                 "Bio": "ข้อมูลประวัติ"
+            },
+            "context": {
+                "hide_user": "ซ่อนจาก Feed",
+                "unhide_user": "เลิกซ่อนจาก Feed"
             }
         },
         "game_log": {
@@ -262,6 +266,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "LLM Endpoints",
+                "llm_endpoints_description": "จัดการการเชื่อมต่อที่รองรับ OpenAI สำหรับ Social AI และการแปล"
+            },
+            "llm_endpoints": {
+                "title": "LLM Endpoints",
+                "description": "การเชื่อมต่อที่รองรับ OpenAI ที่ใช้ร่วมกันสำหรับ Social AI และการแปล",
+                "endpoint_count": "{count} Endpoint",
+                "model_count": "{count} โมเดล",
+                "add": "เพิ่ม Endpoint",
+                "empty_description": "เพิ่ม Endpoint ที่รองรับ OpenAI สำหรับ Social AI และการแปลที่รองรับ OpenAI",
+                "name": "ชื่อ",
+                "base_url": "Base URL",
+                "models": "โมเดล",
+                "key": "คีย์",
+                "actions": "การดำเนินการ",
+                "no_models": "ไม่มีโมเดล",
+                "key_saved": "บันทึกแล้ว",
+                "key_empty": "ว่าง",
+                "detect_models": "ตรวจหาโมเดล",
+                "edit": "แก้ไข Endpoint",
+                "delete": "ลบ Endpoint",
+                "api_key": "API key",
+                "clear_key": "ล้างคีย์",
+                "key_preserve_placeholder": "เว้นว่างไว้เพื่อคงคีย์ที่บันทึกไว้",
+                "saved": "บันทึก Endpoint แล้ว",
+                "save_failed": "บันทึก Endpoint ไม่สำเร็จ",
+                "load_failed": "โหลด Endpoint ไม่สำเร็จ",
+                "base_url_required": "จำเป็นต้องระบุ Base URL",
+                "models_detected": "ตรวจพบ {count} โมเดล",
+                "no_models_detected": "ไม่พบโมเดล",
+                "detect_failed": "ตรวจหาโมเดลไม่สำเร็จ",
+                "deleted": "ลบ Endpoint แล้ว",
+                "delete_failed": "ลบ Endpoint ไม่สำเร็จ"
             }
         },
         "profile": {
@@ -289,6 +328,17 @@
                 "discord_presence": "สถานะ Discord",
                 "pictures": "รูปภาพ",
                 "advanced": "ขั้นสูง"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "ผู้ใช้ที่ซ่อนใน Feed",
+                    "description": "ซ่อนผู้ใช้ที่เลือกใน Feed โดยไม่ลบข้อมูลที่บันทึกไว้",
+                    "add": "เพิ่มผู้ใช้",
+                    "search_placeholder": "ค้นหาผู้ใช้",
+                    "empty": "ไม่มีผู้ใช้ที่ซ่อนใน Feed",
+                    "remove": "นำผู้ใช้ที่ซ่อนออก",
+                    "unknown_user": "ผู้ใช้ที่ไม่รู้จัก"
+                }
             },
             "general": {
                 "general": {
@@ -1292,7 +1342,7 @@
             "emoji_loop_pingpong": "วนลูปแบบ PingPong",
             "flipbook_info": "เลือก spritesheet PNG ขนาด 1024x1024 เพื่อใช้เป็นอีโมจิเคลื่อนไหว, ขนาดตารางเฟรมที่มี: 4, 16 หรือ 64 (FPS สูงสุด 64, เฟรมสูงสุด 64)",
             "note": "หมายเหตุ",
-            "crop_print_border": "ตัดขอบ Print",
+            "crop_print_border": "ตัดขอบเดิม (อัปโหลดซ้ำ)",
             "consume_bundle": "ใช้"
         },
         "gallery_select": {
@@ -1530,6 +1580,20 @@
         "avatar_database_provider": {
             "header": "ผู้ให้บริการฐานข้อมูลอวาตาร์",
             "add_provider": "เพิ่มผู้ให้บริการ"
+        },
+        "translation_api": {
+            "openai": {
+                "connection": "LLM Endpoint",
+                "connection_description": "ใช้โดยการแปลที่รองรับ OpenAI",
+                "connection_placeholder": "เลือก Endpoint",
+                "model": "ชื่อโมเดล",
+                "prompt_optional": "Prompt (ไม่บังคับ)",
+                "prompt_optional_description": "System prompt เสริมสำหรับ API การแปลที่รองรับ OpenAI"
+            },
+            "mode_deepl": "DeepL Free API",
+            "deepl": {
+                "api_key": "DeepL API Key"
+            }
         }
     },
     "confirm": {
@@ -1971,6 +2035,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -1986,5 +2065,21 @@
     },
     "nav_menu": {
         "update_downloaded": "อัปเดตพร้อมแล้ว"
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "รันไทม์",
+            "connection": "การเชื่อมต่อ",
+            "connection_unset": "ไม่มี Endpoint",
+            "model": "โมเดล",
+            "model_unset": "ไม่มีโมเดลที่บันทึกไว้สำหรับ Endpoint นี้",
+            "playbook_mode": "โหมดวิเคราะห์",
+            "allow_writes": "อนุญาตการดำเนินการเขียน",
+            "manage_endpoints": "จัดการ LLM Endpoints"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

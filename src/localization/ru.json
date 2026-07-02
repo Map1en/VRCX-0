@@ -62,6 +62,10 @@
                 "Status": "Статус",
                 "Avatar": "Аватар",
                 "Bio": "Био"
+            },
+            "context": {
+                "hide_user": "Скрыть из Feed",
+                "unhide_user": "Показать в Feed"
             }
         },
         "game_log": {
@@ -287,6 +291,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "LLM Эндпоинты",
+                "llm_endpoints_description": "Управление OpenAI-совместимыми подключениями для Social AI и перевода."
+            },
+            "llm_endpoints": {
+                "title": "LLM Эндпоинты",
+                "description": "Общие OpenAI-совместимые подключения для Social AI и перевода.",
+                "endpoint_count": "Эндпоинтов: {count}",
+                "model_count": "Моделей: {count}",
+                "add": "Добавить эндпоинт",
+                "empty_description": "Добавьте OpenAI-совместимый эндпоинт для Social AI и OpenAI-совместимого перевода.",
+                "name": "Имя",
+                "base_url": "Базовый URL",
+                "models": "Модели",
+                "key": "Ключ",
+                "actions": "Действия",
+                "no_models": "Нет моделей",
+                "key_saved": "Сохранён",
+                "key_empty": "Пусто",
+                "detect_models": "Определить модели",
+                "edit": "Изменить эндпоинт",
+                "delete": "Удалить эндпоинт",
+                "api_key": "API ключ",
+                "clear_key": "Очистить ключ",
+                "key_preserve_placeholder": "Оставьте пустым, чтобы сохранить существующий ключ",
+                "saved": "Эндпоинт сохранён",
+                "save_failed": "Не удалось сохранить эндпоинт",
+                "load_failed": "Не удалось загрузить эндпоинты",
+                "base_url_required": "Требуется базовый URL.",
+                "models_detected": "Определено моделей: {count}",
+                "no_models_detected": "Модели не определены",
+                "detect_failed": "Не удалось определить модели",
+                "deleted": "Эндпоинт удалён",
+                "delete_failed": "Не удалось удалить эндпоинт"
             }
         },
         "profile": {
@@ -314,6 +353,17 @@
                 "discord_presence": "Отображение в Discord",
                 "pictures": "Фотографии",
                 "advanced": "Расширенные"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "Скрытые пользователи Feed",
+                    "description": "Скрывает выбранных пользователей в Feed без удаления сохраненных данных.",
+                    "add": "Добавить пользователя",
+                    "search_placeholder": "Поиск пользователей",
+                    "empty": "В Feed нет скрытых пользователей.",
+                    "remove": "Удалить скрытого пользователя",
+                    "unknown_user": "Неизвестный пользователь"
+                }
             },
             "general": {
                 "general": {
@@ -1233,7 +1283,7 @@
             "emoji_loop_pingpong": "Зацикленный PingPong",
             "flipbook_info": "Выберите спрайт-лист PNG размером 1024x1024 для использования в качестве анимированного эмодзи, доступные размеры сетки кадров: 4, 16 или 64 (максимальный FPS 64, максимальное количество кадров 64)",
             "note": "Заметка",
-            "crop_print_border": "Обрзать рамку прита",
+            "crop_print_border": "Обрезать существующую рамку (при перезагрузке)",
             "consume_bundle": "Использовать",
             "item": "Предмет",
             "sticker": "Стикер",
@@ -1500,6 +1550,20 @@
         "avatar_database_provider": {
             "header": "Провайдер базы данных аватаров",
             "add_provider": "Добавить провайдера"
+        },
+        "translation_api": {
+            "openai": {
+                "connection": "LLM Эндпоинт",
+                "connection_description": "Используется OpenAI-совместимым переводом.",
+                "connection_placeholder": "Выберите эндпоинт",
+                "model": "Название модели",
+                "prompt_optional": "Промпт (необязательно)",
+                "prompt_optional_description": "Необязательный системный промпт для OpenAI-совместимых API перевода."
+            },
+            "mode_deepl": "DeepL Free API",
+            "deepl": {
+                "api_key": "DeepL API ключ"
+            }
         }
     },
     "confirm": {
@@ -1952,6 +2016,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -1967,5 +2046,21 @@
     },
     "nav_menu": {
         "update_downloaded": "Обновление готово"
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "Среда выполнения",
+            "connection": "Подключение",
+            "connection_unset": "Нет эндпоинта",
+            "model": "Модель",
+            "model_unset": "Для этого эндпоинта не сохранено ни одной модели",
+            "playbook_mode": "Режим анализа",
+            "allow_writes": "Разрешить действия записи",
+            "manage_endpoints": "Управление LLM Эндпоинтами"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

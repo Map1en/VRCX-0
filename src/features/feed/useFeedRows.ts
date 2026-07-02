@@ -51,6 +51,9 @@ export function useFeedRows({
     const favoriteGroupFilterIds = usePreferencesStore(
         (state) => state.localFavoriteFriendsGroups
     );
+    const feedHiddenUsers = usePreferencesStore(
+        (state) => state.feedHiddenUsers
+    );
     const maxFeedRows = usePreferencesStore(
         (state) => state.tableLimits.maxTableSize
     );
@@ -76,6 +79,7 @@ export function useFeedRows({
             ),
         [favoriteGroupFilterIds, localFriendFavorites, remoteFavoritesById]
     );
+    const hiddenUserIds = feedHiddenUsers;
 
     useEffect(() => {
         rowsRef.current = rows;
@@ -84,11 +88,13 @@ export function useFeedRows({
     async function mergeRowsWithLatestLive({
         rows,
         minLiveSequence,
+        excludedUserIds,
         favoriteUserIds,
         requestIsCurrent
     }: {
         rows: FeedRow[];
         minLiveSequence: number;
+        excludedUserIds: unknown[];
         favoriteUserIds: unknown[];
         requestIsCurrent(): boolean;
     }): Promise<FeedReadModelResult<FeedRow> | null> {
@@ -104,6 +110,7 @@ export function useFeedRows({
                 userId: currentUserId,
                 search: deferredSearchQuery,
                 filters: activeFilters,
+                excludedFavoriteUserIds: excludedUserIds,
                 favoriteUserIds,
                 dateFrom: toIsoRangeStart(dateFrom),
                 dateTo: toIsoRangeEnd(dateTo),
@@ -129,10 +136,12 @@ export function useFeedRows({
 
     async function prepareFullQueryRowsForCommit({
         result,
+        excludedUserIds,
         favoriteUserIds,
         requestIsCurrent
     }: {
         result: FeedReadModelResult<FeedRow>;
+        excludedUserIds: unknown[];
         favoriteUserIds: unknown[];
         requestIsCurrent(): boolean;
     }) {
@@ -144,6 +153,7 @@ export function useFeedRows({
             }
             const mergedResult = await mergeRowsWithLatestLive({
                 rows: nextResult.rows,
+                excludedUserIds,
                 favoriteUserIds,
                 minLiveSequence: nextResult.maxSequence,
                 requestIsCurrent
@@ -285,6 +295,7 @@ export function useFeedRows({
                 userId: currentUserId,
                 search: deferredSearchQuery,
                 filters: activeFilters,
+                excludedFavoriteUserIds: hiddenUserIds,
                 favoriteUserIds,
                 dateFrom: toIsoRangeStart(dateFrom),
                 dateTo: toIsoRangeEnd(dateTo),
@@ -299,6 +310,7 @@ export function useFeedRows({
                 }
                 const mergedResult = await mergeRowsWithLatestLive({
                     rows: result.rows,
+                    excludedUserIds: hiddenUserIds,
                     favoriteUserIds,
                     minLiveSequence: result.maxSequence,
                     requestIsCurrent: () => requestIdRef.current === requestId
@@ -308,6 +320,7 @@ export function useFeedRows({
                 }
                 const commitResult = await prepareFullQueryRowsForCommit({
                     result: mergedResult,
+                    excludedUserIds: hiddenUserIds,
                     favoriteUserIds,
                     requestIsCurrent: () => requestIdRef.current === requestId
                 });
@@ -341,6 +354,7 @@ export function useFeedRows({
         deferredSearchQuery,
         favoriteIdSet,
         favoritesOnly,
+        hiddenUserIds,
         isFavoritesLoaded,
         maxFeedRows,
         preferencesReady
@@ -363,6 +377,7 @@ export function useFeedRows({
             const minLiveSequence = lastLiveFeedSequenceRef.current;
             mergeRowsWithLatestLive({
                 rows: rowsRef.current,
+                excludedUserIds: hiddenUserIds,
                 favoriteUserIds: favoritesOnly ? Array.from(favoriteIdSet) : [],
                 minLiveSequence,
                 requestIsCurrent: () =>
@@ -393,6 +408,7 @@ export function useFeedRows({
         deferredSearchQuery,
         favoriteIdSet,
         favoritesOnly,
+        hiddenUserIds,
         maxFeedRows,
         preferencesReady
     ]);

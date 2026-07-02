@@ -61,7 +61,7 @@ mod platform {
                         if stop_requested.load(Ordering::Acquire) {
                             break;
                         }
-                        tracing::error!("[IPC] accept error: {error}");
+                        tracing::warn!("[IPC] accept error: {error}");
                         std::thread::sleep(std::time::Duration::from_secs(1));
                     }
                 }

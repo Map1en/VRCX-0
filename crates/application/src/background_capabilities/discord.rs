@@ -1,6 +1,6 @@
 use serde::Serialize;
 use serde_json::{json, Map, Value};
-use vrcx_0_core::location::{parse_location, ParsedLocation};
+use vrcx_0_core::location::{launch_url, parse_location, ParsedLocation};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
@@ -401,7 +401,7 @@ fn build_discord_activity(
     }
     let mut button_text = "Join".to_string();
     let mut button_url = if parsed.access_type == "public" {
-        get_launch_url(parsed)
+        launch_url(parsed)
     } else {
         String::new()
     };
@@ -678,21 +678,6 @@ fn compact_object(value: Value) -> Value {
         })
         .collect();
     Value::Object(compacted)
-}
-
-fn get_launch_url(parsed: &ParsedLocation) -> String {
-    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
-        return String::new();
-    }
-    let mut url = format!(
-        "{VRCHAT_SITE_ORIGIN}/home/launch?worldId={}&instanceId={}",
-        parsed.world_id, parsed.instance_id
-    );
-    if !parsed.short_name.is_empty() {
-        url.push_str("&shortName=");
-        url.push_str(&parsed.short_name);
-    }
-    url
 }
 
 fn now_playing_has_content(now_playing: &Value) -> bool {

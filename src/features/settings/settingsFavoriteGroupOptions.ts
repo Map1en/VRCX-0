@@ -4,7 +4,7 @@ type RemoteFavoriteFriendGroup = {
     name?: string;
 };
 
-type FavoriteFriendGroupOption = {
+export type FavoriteFriendGroupOption = {
     value: string;
     label: string;
 };

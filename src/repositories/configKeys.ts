@@ -133,6 +133,7 @@ export const ConfigKeys = defineConfigKeys({
     translationAPI: { type: 'bool', default: false },
     translationAPIKey: { type: 'string', default: '' },
     translationAPIType: { type: 'string', default: 'google' },
+    translationEndpointId: { type: 'string', default: '' },
     translationAPIEndpoint: { type: 'string', default: '' },
     translationAPIModel: { type: 'string', default: '' },
     translationAPIPrompt: { type: 'string', default: '' },
@@ -291,6 +292,7 @@ export const ConfigKeys = defineConfigKeys({
 
     // ── Dashboard ────────────────────────────────────
     localFavoriteFriendsGroups: { type: 'string', default: null },
+    feedHiddenUsers: { type: 'string', default: null },
 
     // ── Onboarding ───────────────────────────────────
     onboarding_welcome_seen: { type: 'bool', default: false },

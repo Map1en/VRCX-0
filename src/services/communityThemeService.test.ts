@@ -67,11 +67,12 @@ vi.mock('@/shared/buildLabel', () => ({
     isDevToolsBuild: mocks.isDevToolsBuild
 }));
 
-vi.mock('./background-image/backgroundImageService', () => ({
-    disableBackgroundImage: mocks.disableBackgroundImage,
-    isBackgroundImageActive: mocks.isBackgroundImageActive,
-    migrateLegacyNasaApodCommunityTheme:
-        mocks.migrateLegacyNasaApodCommunityTheme
+vi.mock('./appearanceConflictCoordinator', () => ({
+    disableBackgroundImageForCommunityTheme: mocks.disableBackgroundImage,
+    isBackgroundImageAppearanceActive: mocks.isBackgroundImageActive,
+    migrateLegacyNasaApodCommunityThemeForBackgroundImage:
+        mocks.migrateLegacyNasaApodCommunityTheme,
+    registerCommunityThemeAppearanceHandlers: vi.fn()
 }));
 
 vi.mock('./themeService', () => ({

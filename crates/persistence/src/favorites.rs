@@ -219,7 +219,6 @@ pub fn favorite_group_delete_with_config(
     })
 }
 
-// Favorite kind normalization.
 pub(crate) fn normalize_kind(
     kind: &str,
 ) -> Result<(&'static str, &'static str, &'static str), Error> {

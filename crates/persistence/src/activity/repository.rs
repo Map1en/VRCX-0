@@ -781,7 +781,6 @@ pub fn activity_bucket_cache_upsert(
     Ok(())
 }
 
-// Activity constants and row projection helpers.
 pub(crate) const ACTIVITY_FULL_CACHE_BATCH_DAYS: i64 = 30;
 pub(crate) const ACTIVITY_INITIAL_RANGE_DAYS: i64 = 90;
 pub(crate) const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
@@ -789,7 +788,6 @@ pub(crate) const ACTIVITY_ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
 pub(crate) const ACTIVITY_DAY_MS: i64 = 86_400_000;
 pub(crate) const ACTIVITY_MAX_INFERRED_SESSION_MS: i64 = 24 * 60 * 60 * 1000;
 
-// Activity row projection helpers.
 fn activity_presence_from_row(row: &[Value]) -> ActivityPresenceOutput {
     ActivityPresenceOutput {
         created_at: row_string(row, 0),

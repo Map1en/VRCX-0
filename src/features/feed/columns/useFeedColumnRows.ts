@@ -5,6 +5,7 @@ import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -68,6 +69,9 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
     const remoteFavoritesById = useFavoriteStore(
         (state) => state.remoteFavoritesById
     );
+    const feedHiddenUsers = usePreferencesStore(
+        (state) => state.feedHiddenUsers
+    );
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
     );
@@ -96,7 +100,8 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
             ),
         [column, localFriendFavorites, remoteFavoritesById]
     );
-    const excludedFavoriteUserIds = useMemo(
+    const hiddenUserIds = feedHiddenUsers;
+    const columnExcludedFavoriteUserIds = useMemo(
         () =>
             Array.from(
                 buildFeedColumnExcludedFavoriteIds({
@@ -106,6 +111,13 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 })
             ),
         [column, localFriendFavorites, remoteFavoritesById]
+    );
+    const excludedFavoriteUserIds = useMemo(
+        () =>
+            Array.from(
+                new Set([...columnExcludedFavoriteUserIds, ...hiddenUserIds])
+            ),
+        [columnExcludedFavoriteUserIds, hiddenUserIds]
     );
     const excludedGroupKeys = column.friendScope.excludedFavoriteGroupKeys;
     const excludesFavoriteGroups = Boolean(

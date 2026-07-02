@@ -1,5 +1,4 @@
 import type {
-    AssistantConfigStatus,
     AssistantDeltaEvent,
     AssistantDoneEvent,
     AssistantErrorEvent,
@@ -14,7 +13,6 @@ import type {
 // tauri-specta, so the contract is checked at build time. Re-export them here
 // as the assistant feature's public surface.
 export type {
-    AssistantConfigStatus,
     AssistantDeltaEvent,
     AssistantDoneEvent,
     AssistantErrorEvent,

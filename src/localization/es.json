@@ -10,7 +10,7 @@
         "example_1": "¿Con quién he jugado más esta semana?",
         "example_2": "¿De quién me estoy distanciando?",
         "example_3": "¿Cuál es el mejor momento para encontrar a mis amigos en línea?",
-        "not_configured": "Configura tu modelo y clave de API en Ajustes para empezar.",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "Llamando a {{name}}…",
         "entities_title": "Mencionados",
         "entities_empty": "Las personas y mundos mencionados en las respuestas aparecen aquí.",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "Auto (según el endpoint)",
             "playbook_mode_guided": "Guiado (modelos locales / débiles)",
             "playbook_mode_open": "Abierto (modelos potentes)",
-            "disable_thinking": "Desactivar el razonamiento",
-            "disable_thinking_description": "Omite la cadena de razonamiento oculta del modelo (p. ej. /no_think de Qwen). Recomendado para modelos locales basados en herramientas: mucho más rápido y con poca pérdida de calidad aquí.",
             "privacy_title": "Privacidad",
             "privacy_local": "Las solicitudes van a un endpoint local en este equipo. Tus datos sociales no salen de tu computadora.",
             "privacy_remote": "Usar un servicio de IA en línea puede exponer tus datos. Procede con precaución."
+        },
+        "runtime": {
+            "title": "Runtime",
+            "connection": "Conexión",
+            "connection_unset": "Sin endpoint",
+            "model": "Modelo",
+            "model_unset": "No hay modelos guardados para este endpoint",
+            "playbook_mode": "Modo de análisis",
+            "allow_writes": "Permitir acciones de escritura",
+            "manage_endpoints": "Gestionar endpoints LLM"
         }
     },
     "user_hover_card": {
@@ -184,6 +192,21 @@
             "tools": {
                 "title": "Herramientas",
                 "allTools": "Todas las herramientas..."
+            },
+            "edit": {
+                "title": "Edición",
+                "undo": "Deshacer",
+                "redo": "Rehacer",
+                "cut": "Cortar",
+                "copy": "Copiar",
+                "paste": "Pegar",
+                "selectAll": "Seleccionar todo"
+            },
+            "window": {
+                "title": "Ventana",
+                "minimize": "Minimizar",
+                "maximize": "Maximizar",
+                "close": "Cerrar ventana"
             },
             "help": {
                 "title": "Ayuda",
@@ -697,6 +720,10 @@
             },
             "dynamic": {
                 "value_copied": "{value} copiado"
+            },
+            "context": {
+                "hide_user": "Ocultar del Feed",
+                "unhide_user": "Mostrar en el Feed"
             }
         },
         "friends_locations": {
@@ -1576,7 +1603,9 @@
                 "app_launcher": "Lanzador de aplicaciones",
                 "app_launcher_description": "Gestiona las aplicaciones y accesos directos que se inician automáticamente cuando arranca VRChat.",
                 "registry_backup": "Copia de seguridad del registro de VRChat",
-                "registry_backup_description": "Crea o restaura una copia de seguridad del registro de VRChat"
+                "registry_backup_description": "Crea o restaura una copia de seguridad del registro de VRChat",
+                "llm_endpoints": "Endpoints LLM",
+                "llm_endpoints_description": "Gestiona las conexiones compatibles con OpenAI para Social AI y la traducción."
             },
             "vrchat_log": {
                 "title": "Visor de registros de VRChat",
@@ -1774,6 +1803,37 @@
                     "too_many_favorites": "{favorites} favorite print(s) exceed the favorite limit of {max} by {over}. Auto-delete will not remove favorite prints.",
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
+            },
+            "llm_endpoints": {
+                "title": "Endpoints LLM",
+                "description": "Conexiones compartidas compatibles con OpenAI para Social AI y la traducción.",
+                "endpoint_count": "{count} endpoints",
+                "model_count": "{count} modelos",
+                "add": "Añadir endpoint",
+                "empty_description": "Añade un endpoint compatible con OpenAI para Social AI y la traducción compatible con OpenAI.",
+                "name": "Nombre",
+                "base_url": "URL base",
+                "models": "Modelos",
+                "key": "Clave",
+                "actions": "Acciones",
+                "no_models": "Sin modelos",
+                "key_saved": "Guardada",
+                "key_empty": "Vacía",
+                "detect_models": "Detectar modelos",
+                "edit": "Editar endpoint",
+                "delete": "Eliminar endpoint",
+                "api_key": "Clave de API",
+                "clear_key": "Borrar clave",
+                "key_preserve_placeholder": "Déjalo en blanco para conservar la clave guardada",
+                "saved": "Endpoint guardado",
+                "save_failed": "No se pudo guardar el endpoint",
+                "load_failed": "No se pudieron cargar los endpoints",
+                "base_url_required": "La URL base es obligatoria.",
+                "models_detected": "{count} modelos detectados",
+                "no_models_detected": "No se detectaron modelos",
+                "detect_failed": "No se pudieron detectar los modelos",
+                "deleted": "Endpoint eliminado",
+                "delete_failed": "No se pudo eliminar el endpoint"
             }
         },
         "profile": {
@@ -1816,6 +1876,15 @@
                 },
                 "favorites": {
                     "header": "Favoritos"
+                },
+                "hidden_feed": {
+                    "header": "Usuarios ocultos en Feed",
+                    "description": "Oculta usuarios seleccionados en Feed sin eliminar datos guardados.",
+                    "add": "Agregar usuario",
+                    "search_placeholder": "Buscar usuarios",
+                    "empty": "No hay usuarios ocultos en Feed.",
+                    "remove": "Quitar usuario oculto",
+                    "unknown_user": "Usuario desconocido"
                 }
             },
             "vr": {
@@ -4526,7 +4595,7 @@
             "emoji_loop_pingpong": "Bucle PingPong",
             "flipbook_info": "Selecciona una hoja de sprites PNG de 1024x1024 para usar como un emoji animado, tamaños de cuadrícula de cuadros disponibles: 4, 16 o 64 (máx FPS 64, máx cuadros 64)",
             "note": "Nota",
-            "crop_print_border": "Recortar borde de la impresión",
+            "crop_print_border": "Recortar borde existente (resubida)",
             "upload_options": "Opciones de subida",
             "consume_bundle": "Consumir",
             "item": "Objeto",
@@ -4736,20 +4805,16 @@
             "msg_test_success": "Prueba exitosa",
             "msg_test_failed": "La prueba falló",
             "openai": {
-                "endpoint": "Endpoint de la API",
-                "api_key": "Clave de API (opcional)",
                 "model": "Nombre del modelo",
                 "prompt_optional": "Prompt (opcional)",
-                "prompt_optional_description": "Prompt de sistema opcional para las API de traducción compatibles con OpenAI."
+                "prompt_optional_description": "Prompt de sistema opcional para las API de traducción compatibles con OpenAI.",
+                "connection": "Endpoint LLM",
+                "connection_description": "Usado por la traducción compatible con OpenAI.",
+                "connection_placeholder": "Selecciona un endpoint"
             },
             "deepl": {
                 "api_key": "Clave de API de DeepL"
-            },
-            "fetch_models": "Obtener modelos",
-            "fetching_models": "Obteniendo...",
-            "msg_endpoint_required": "Primero completa el endpoint",
-            "msg_models_fetched": "Se encontraron {count} modelos",
-            "msg_no_models_found": "No se encontraron modelos"
+            }
         },
         "notification_position": {
             "header": "Posición de Notificación",

@@ -7,22 +7,17 @@ use vrcx_0_application::{
     OverlayActivitySnapshot, RuntimeDiagnostics, RuntimeEventBus, TaskSupervisor, WebClient,
     WorldCache,
 };
-use vrcx_0_core::location::{
-    format_display_location, is_meaningful_world_name, parse_location, ParsedLocation,
-};
-use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
+use vrcx_0_core::location::{format_display_location, is_meaningful_world_name, parse_location};
 use vrcx_0_host::overlay_notifications::{send_xs_notification, OvrToolkit};
 use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::worlds::world_cache_get;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::avatar_file_get_input;
-use vrcx_0_vrchat_client::http_api::ApiScope;
 use vrcx_0_vrchat_client::web_client::WebExecuteRequest;
 
+use super::discord::{build_discord_payload, DiscordDeps};
+use super::image_file::extract_file_id;
+use super::rendered::RenderedNotification;
 use crate::notification::user_image::UserImageCache;
-use crate::vr_overlay::{
-    discord_embed_kind, discord_title_key, DiscordEmbedKind, OverlayLocale, OverlayLocalizer,
-};
+use crate::vr_overlay::{OverlayLocale, OverlayLocalizer};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
@@ -282,42 +277,21 @@ impl OverlayActivitySink for NotificationDispatcher {
                 )
                 .await;
             }
-            let is_discord = plan.webhook && preferences.webhook_format == "discord";
-            if is_discord {
-                resolve_delivery_avatar_name(web.as_ref(), db.as_ref(), &endpoint, &mut delivery)
-                    .await;
-            }
-            let mut render = render_delivery(&delivery, locale);
-            if is_discord {
-                let (actor_image_url, world_image_url) = tokio::join!(
-                    resolve_actor_icon_url(
-                        user_image_cache.as_ref(),
-                        web.as_ref(),
-                        db.as_ref(),
-                        &endpoint,
-                        allow_user_icon,
-                        &delivery,
-                    ),
-                    resolve_world_thumbnail_url(
-                        world_cache.as_ref(),
-                        db.as_ref(),
-                        web.as_ref(),
-                        &endpoint,
-                        &delivery,
-                    ),
-                );
-                render.actor_image_url = actor_image_url;
-                render.world_image_url = world_image_url;
-            }
+            let render = render_delivery(&delivery, locale);
             dispatch_rendered_notification(
                 delivery,
                 preferences,
                 plan,
                 render,
                 locale,
+                world_cache,
                 image_cache,
+                user_image_cache,
                 ovrt,
                 web,
+                db,
+                endpoint,
+                allow_user_icon,
                 desktop,
                 event_bus,
                 diagnostics,
@@ -334,9 +308,14 @@ async fn dispatch_rendered_notification(
     plan: NotificationDeliveryPlan,
     render: RenderedNotification,
     locale: OverlayLocale,
+    world_cache: Arc<WorldCache>,
     image_cache: Arc<ImageCache>,
+    user_image_cache: Arc<UserImageCache>,
     ovrt: Arc<OvrToolkit>,
     web: Arc<WebClient>,
+    db: Arc<DatabaseService>,
+    endpoint: String,
+    allow_user_icon: bool,
     desktop: Arc<dyn DesktopNotifier>,
     event_bus: RuntimeEventBus,
     diagnostics: RuntimeDiagnostics,
@@ -391,41 +370,30 @@ async fn dispatch_rendered_notification(
     }
 
     if plan.webhook {
-        send_webhook_with_retry(&web, &diagnostics, &delivery, &render, &preferences, locale).await;
+        let discord_deps = DiscordDeps {
+            world_cache: world_cache.as_ref(),
+            user_image_cache: user_image_cache.as_ref(),
+            web: web.as_ref(),
+            db: db.as_ref(),
+            endpoint: &endpoint,
+            allow_user_icon,
+        };
+        send_webhook_with_retry(
+            &discord_deps,
+            &diagnostics,
+            &delivery,
+            &render,
+            &preferences,
+            locale,
+        )
+        .await;
     }
-}
-
-#[derive(Clone, Debug)]
-struct RenderedNotification {
-    title: String,
-    body: String,
-    text: String,
-    display_location: String,
-    image_url: String,
-    actor_image_url: String,
-    world_image_url: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct OverlayRenderedNotification<'a> {
     title: &'static str,
     text: &'a str,
-}
-
-impl RenderedNotification {
-    fn tts_payload(&self, delivery: &OverlayActivityDelivery) -> Value {
-        json!({
-            "sourceId": &delivery.entry.source_id,
-            "activityType": &delivery.entry.activity_type,
-            "desktop": delivery.desktop,
-            "vr": delivery.vr,
-            "title": &self.title,
-            "body": &self.body,
-            "text": &self.text,
-            "imageUrl": &self.image_url,
-            "actorUserId": &delivery.entry.actor_user_id,
-        })
-    }
 }
 
 fn overlay_notification_render(render: &RenderedNotification) -> OverlayRenderedNotification<'_> {
@@ -507,110 +475,6 @@ fn delivery_actor_image_user_id<'a>(
     Some(actor_user_id)
 }
 
-async fn resolve_delivery_avatar_name(
-    web: &WebClient,
-    db: &DatabaseService,
-    endpoint: &str,
-    delivery: &mut OverlayActivityDelivery,
-) {
-    if delivery.entry.activity_type != "AvatarChange" {
-        return;
-    }
-    if !delivery.entry.content.avatar_name.trim().is_empty() {
-        return;
-    }
-    let Some(file_id) = extract_file_id(&delivery.entry.content.image_url) else {
-        return;
-    };
-    let Ok((_, request)) = avatar_file_get_input(endpoint.to_string(), file_id) else {
-        return;
-    };
-    let response = match tokio::time::timeout(
-        WEBHOOK_TIMEOUT,
-        web.execute_api(request, ApiScope::Vrchat, db),
-    )
-    .await
-    {
-        Ok(Ok(response)) => response,
-        _ => return,
-    };
-    if !(200..=299).contains(&response.status) {
-        return;
-    }
-    let Ok(value) = serde_json::from_str::<Value>(&response.data) else {
-        return;
-    };
-    if let Some(file_name) = value.get("name").and_then(Value::as_str) {
-        if let Some(name) = avatar_name_from_file_name(file_name) {
-            delivery.entry.content.avatar_name = name;
-        }
-    }
-}
-
-fn avatar_name_from_file_name(file_name: &str) -> Option<String> {
-    let lower = file_name.to_ascii_lowercase();
-    let start = lower.find("avatar - ")? + "avatar - ".len();
-    let end = lower.rfind(" - image -")?;
-    if end < start {
-        return None;
-    }
-    let name = file_name[start..end].trim();
-    (!name.is_empty()).then(|| name.to_string())
-}
-
-async fn resolve_actor_icon_url(
-    user_image_cache: &UserImageCache,
-    web: &WebClient,
-    db: &DatabaseService,
-    endpoint: &str,
-    allow_user_icon: bool,
-    delivery: &OverlayActivityDelivery,
-) -> String {
-    let actor = delivery.entry.actor_user_id.trim();
-    if actor.is_empty() {
-        return String::new();
-    }
-    user_image_cache
-        .resolve(web, db, endpoint, actor, allow_user_icon)
-        .await
-        .unwrap_or_default()
-}
-
-async fn resolve_world_thumbnail_url(
-    world_cache: &WorldCache,
-    db: &DatabaseService,
-    web: &WebClient,
-    endpoint: &str,
-    delivery: &OverlayActivityDelivery,
-) -> String {
-    let content = &delivery.entry.content;
-    let explicit = content.world_id.trim();
-    let world_id = if explicit.is_empty() {
-        parse_location(&content.location).world_id
-    } else {
-        explicit.to_string()
-    };
-    if world_id.is_empty() {
-        return String::new();
-    }
-    let _ = world_cache.resolve_name(web, endpoint, &world_id).await;
-    match world_cache_get(db, world_id.clone()) {
-        Ok(Some(world)) => {
-            let thumbnail = world.thumbnail_image_url.trim();
-            if thumbnail.is_empty() {
-                world.image_url.trim().to_string()
-            } else {
-                thumbnail.to_string()
-            }
-        }
-        Ok(None) => String::new(),
-        Err(error) => {
-            tracing::warn!(world_id = %world_id, "world thumbnail lookup failed: {error}");
-            String::new()
-        }
-    }
-}
-
 fn render_delivery(
     delivery: &OverlayActivityDelivery,
     locale: OverlayLocale,
@@ -641,8 +505,6 @@ fn render_delivery(
         text,
         display_location,
         image_url: entry.content.image_url.clone(),
-        actor_image_url: String::new(),
-        world_image_url: String::new(),
     }
 }
 
@@ -812,15 +674,6 @@ async fn resolve_local_image(image_cache: &ImageCache, image_url: &str) -> Optio
     image_cache.get_image(url, &file_id, &version).await.ok()
 }
 
-fn extract_file_id(value: &str) -> Option<String> {
-    let start = value.find("file_")?;
-    let id = value[start..]
-        .chars()
-        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '-' || *ch == '_')
-        .collect::<String>();
-    (!id.is_empty()).then_some(id)
-}
-
 fn extract_file_version(value: &str, file_id: &str) -> Option<String> {
     let marker = format!("/{file_id}/");
     let start = value.find(&marker)? + marker.len();
@@ -843,7 +696,7 @@ fn fallback_file_version(value: &str) -> String {
 }
 
 async fn send_webhook_with_retry(
-    web: &WebClient,
+    discord_deps: &DiscordDeps<'_>,
     diagnostics: &RuntimeDiagnostics,
     delivery: &OverlayActivityDelivery,
     render: &RenderedNotification,
@@ -854,13 +707,11 @@ async fn send_webhook_with_retry(
     if url.is_empty() {
         return;
     }
-    let payload = webhook_payload(
-        delivery,
-        render,
-        &preferences.webhook_format,
-        &preferences.webhook_fields,
-        locale,
-    );
+    let payload = if preferences.webhook_format == "discord" {
+        build_discord_payload(discord_deps, delivery, render, locale).await
+    } else {
+        generic_webhook_payload(delivery, render, &preferences.webhook_fields)
+    };
     let body = match serde_json::to_string(&payload) {
         Ok(body) => body,
         Err(error) => {
@@ -870,7 +721,7 @@ async fn send_webhook_with_retry(
     };
     let mut last_error = String::new();
     for attempt in 0..=WEBHOOK_RETRY_DELAYS.len() {
-        match send_webhook_once(web, url, &body).await {
+        match send_webhook_once(discord_deps.web, url, &body).await {
             Ok(status) if (200..=399).contains(&status) => return,
             Ok(status) => {
                 last_error = format!("HTTP {status}");
@@ -915,16 +766,11 @@ fn webhook_status_retryable(status: i32) -> bool {
     matches!(status, 408 | 409 | 425 | 429 | 500..=599 | -1)
 }
 
-fn webhook_payload(
+fn generic_webhook_payload(
     delivery: &OverlayActivityDelivery,
     render: &RenderedNotification,
-    format: &str,
     fields: &[String],
-    locale: OverlayLocale,
 ) -> Value {
-    if format == "discord" {
-        return discord_webhook_payload(delivery, render, locale);
-    }
     let entry = &delivery.entry;
     let payload = json!({
         "version": 1,
@@ -992,207 +838,6 @@ pub fn webhook_local_time_string(created_at: &str) -> String {
         .unwrap_or_default()
 }
 
-fn discord_webhook_payload(
-    delivery: &OverlayActivityDelivery,
-    render: &RenderedNotification,
-    locale: OverlayLocale,
-) -> Value {
-    let entry = &delivery.entry;
-    if discord_title_key(&entry.activity_type).is_none() {
-        return discord_legacy_embed(delivery, render);
-    }
-    let localizer = OverlayLocalizer::new(locale);
-    let parsed = parse_location(&entry.content.location);
-
-    let mut title = localizer.discord_title(&entry.activity_type, &entry.actor_display_name);
-    if title.trim().is_empty() {
-        title = render.text.clone();
-    }
-
-    let mut description = String::new();
-    match discord_embed_kind(&entry.activity_type) {
-        DiscordEmbedKind::Invite => {
-            let message = entry.content.detail.trim();
-            if !message.is_empty() && message != render.display_location.trim() {
-                description.push_str(&format!("\u{300c}{message}\u{300d}"));
-            }
-        }
-        DiscordEmbedKind::Gps => {
-            let content = &entry.content;
-            let target = if !content.world_name.trim().is_empty() {
-                content.world_name.trim()
-            } else if !render.display_location.trim().is_empty() {
-                render.display_location.trim()
-            } else if !render.body.trim().is_empty() {
-                render.body.trim()
-            } else {
-                render.text.trim()
-            };
-            if !target.is_empty() {
-                description.push_str(&format!("\u{2192} {target}"));
-            }
-        }
-        DiscordEmbedKind::Status => {
-            let status = localizer.status_text(&entry.content.status);
-            if !status.is_empty() {
-                description.push_str(&status);
-            }
-        }
-        DiscordEmbedKind::AvatarChange => {
-            let avatar = entry.content.avatar_name.trim();
-            if !avatar.is_empty() {
-                description.push_str(avatar);
-            }
-        }
-        DiscordEmbedKind::Other => {}
-    }
-
-    let author = build_discord_author(entry, render);
-
-    // footer is only for actual instances; non-world events (login etc.) get none
-    let mut footer = String::new();
-    if !parsed.instance_name.is_empty() {
-        footer.push_str(&format!("#{}", parsed.instance_name));
-        let access = localizer.access_label(&entry.content.location);
-        if !access.is_empty() {
-            footer.push_str(&format!(" - {access}"));
-        }
-        if let Some(flag) = region_flag_emoji(&parsed.region) {
-            footer.push_str(&format!(" {flag}"));
-        }
-    }
-
-    let thumbnail_url = if render.world_image_url.trim().is_empty() {
-        render.image_url.trim()
-    } else {
-        render.world_image_url.trim()
-    };
-    let thumbnail = if thumbnail_url.is_empty() {
-        json!({})
-    } else {
-        json!({ "url": thumbnail_url })
-    };
-
-    let mut embed = serde_json::Map::new();
-    embed.insert("title".into(), Value::String(title));
-    if !description.is_empty() {
-        embed.insert("description".into(), Value::String(description));
-    }
-    let url = launch_url(&parsed);
-    if !url.is_empty() {
-        embed.insert("url".into(), Value::String(url));
-    }
-    if !author.is_empty() {
-        embed.insert("author".into(), Value::Object(author));
-    }
-    if !footer.is_empty() {
-        embed.insert("footer".into(), json!({ "text": footer }));
-    }
-    embed.insert("timestamp".into(), Value::String(entry.created_at.clone()));
-    embed.insert("thumbnail".into(), thumbnail);
-
-    json!({
-        "content": null,
-        "embeds": [Value::Object(embed)],
-    })
-}
-
-fn launch_url(parsed: &ParsedLocation) -> String {
-    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
-        return String::new();
-    }
-    let mut url = format!(
-        "{VRCHAT_SITE_ORIGIN}/home/launch?worldId={}&instanceId={}",
-        parsed.world_id, parsed.instance_id
-    );
-    if !parsed.short_name.is_empty() {
-        url.push_str("&shortName=");
-        url.push_str(&parsed.short_name);
-    }
-    url
-}
-
-fn build_discord_author(
-    entry: &vrcx_0_application::OverlayActivityEntry,
-    render: &RenderedNotification,
-) -> serde_json::Map<String, Value> {
-    let mut author = serde_json::Map::new();
-    if !entry.actor_display_name.trim().is_empty() {
-        author.insert(
-            "name".into(),
-            Value::String(entry.actor_display_name.clone()),
-        );
-    }
-    if !entry.actor_user_id.trim().is_empty() {
-        author.insert(
-            "url".into(),
-            Value::String(format!(
-                "{VRCHAT_SITE_ORIGIN}/home/user/{}",
-                entry.actor_user_id
-            )),
-        );
-    }
-    if !render.actor_image_url.trim().is_empty() {
-        author.insert(
-            "icon_url".into(),
-            Value::String(render.actor_image_url.clone()),
-        );
-    }
-    author
-}
-
-fn discord_legacy_embed(
-    delivery: &OverlayActivityDelivery,
-    render: &RenderedNotification,
-) -> Value {
-    let entry = &delivery.entry;
-    let description = if !render.body.trim().is_empty() {
-        String::new()
-    } else if !render.display_location.trim().is_empty() {
-        format!("\u{2192} {}", render.display_location)
-    } else if !entry.content.world_name.trim().is_empty() {
-        format!("\u{2192} {}", entry.content.world_name)
-    } else {
-        String::new()
-    };
-    let thumbnail = if render.image_url.trim().is_empty() {
-        json!({})
-    } else {
-        json!({ "url": render.image_url })
-    };
-    let author = build_discord_author(entry, render);
-    // the author header already shows the actor name, so prefer the body alone
-    // and fall back to the combined title+body text when there's no author/body
-    let title = if author.is_empty() || render.body.trim().is_empty() {
-        render.text.clone()
-    } else {
-        render.body.clone()
-    };
-    let mut embed = serde_json::Map::new();
-    if !author.is_empty() {
-        embed.insert("author".into(), Value::Object(author));
-    }
-    embed.insert("title".into(), Value::String(title));
-    if !description.is_empty() {
-        embed.insert("description".into(), Value::String(description));
-    }
-    embed.insert("thumbnail".into(), thumbnail);
-    embed.insert("timestamp".into(), Value::String(entry.created_at.clone()));
-    json!({
-        "content": null,
-        "embeds": [embed],
-    })
-}
-
-fn region_flag_emoji(region: &str) -> Option<&'static str> {
-    match region.trim().to_ascii_lowercase().as_str() {
-        "us" | "use" | "usw" => Some("\u{1F1FA}\u{1F1F8}"),
-        "eu" => Some("\u{1F1EA}\u{1F1FA}"),
-        "jp" => Some("\u{1F1EF}\u{1F1F5}"),
-        _ => None,
-    }
-}
-
 fn non_empty(value: &str) -> Option<&str> {
     let value = value.trim();
     (!value.is_empty()).then_some(value)
@@ -1209,18 +854,17 @@ mod tests {
     use crate::vr_overlay::OverlayLocale;
 
     use super::{
-        avatar_name_from_file_name, delivery_actor_image_user_id, overlay_notification_render,
-        parse_webhook_fields, render_delivery, webhook_payload, RenderedNotification,
+        delivery_actor_image_user_id, generic_webhook_payload, overlay_notification_render,
+        parse_webhook_fields, render_delivery,
     };
+    use crate::notification::rendered::RenderedNotification;
 
     #[test]
     fn generic_webhook_payload_exposes_location_id_and_local_time() {
-        let payload = webhook_payload(
+        let payload = generic_webhook_payload(
             &delivery(),
             &rendered(),
-            "generic",
             &["location".into(), "locationId".into(), "localTime".into()],
-            OverlayLocale::En,
         );
 
         assert_eq!(
@@ -1243,13 +887,7 @@ mod tests {
     #[test]
     fn generic_webhook_fields_ignore_localized_names() {
         let fields = parse_webhook_fields(r#"["locationId","位置","タイトル"]"#);
-        let payload = webhook_payload(
-            &delivery(),
-            &rendered(),
-            "generic",
-            &fields,
-            OverlayLocale::En,
-        );
+        let payload = generic_webhook_payload(&delivery(), &rendered(), &fields);
 
         assert_eq!(payload.as_object().unwrap().len(), 1);
         assert_eq!(
@@ -1322,195 +960,12 @@ mod tests {
         delivery.entry.content.display_location = "Group World groupPlus(Group Name)".into();
 
         let render = render_delivery(&delivery, OverlayLocale::ZhCn);
-        let payload = webhook_payload(
-            &delivery,
-            &render,
-            "generic",
-            &["location".into()],
-            OverlayLocale::En,
-        );
+        let payload = generic_webhook_payload(&delivery, &render, &["location".into()]);
 
         assert_eq!(
             payload.get("location").and_then(|value| value.as_str()),
             Some("Group World 群组+(Group Name)")
         );
-    }
-
-    #[test]
-    fn discord_webhook_payload_builds_rich_invite_embed() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "invite".into();
-        delivery.entry.actor_display_name = "Example".into();
-        delivery.entry.actor_user_id = "usr_abcdefg".into();
-        delivery.entry.created_at = "2026-06-29T08:11:00.000Z".into();
-        delivery.entry.content.location = "wrld_114514:810~private(usr_abcdefg)~region(jp)".into();
-        delivery.entry.content.world_id = "wrld_114514".into();
-        delivery.entry.content.world_name = "for Two".into();
-        delivery.entry.content.detail = "プラベいこ♡".into();
-        delivery.entry.content.image_url =
-            "https://api.vrchat.cloud/api/1/image/file_fallback/1/256".into();
-
-        let mut render = render_delivery(&delivery, OverlayLocale::En);
-        render.actor_image_url = "https://api.vrchat.cloud/api/1/image/file_icon/2/256".into();
-        render.world_image_url = "https://api.vrchat.cloud/api/1/file/file_world/8/file".into();
-
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::En);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(embed["title"].as_str(), Some("Example's invite"));
-        assert_eq!(embed["description"].as_str(), Some("「プラベいこ♡」"));
-        assert_eq!(
-            embed["url"].as_str(),
-            Some(
-                "https://vrchat.com/home/launch?worldId=wrld_114514&instanceId=810~private(usr_abcdefg)~region(jp)"
-            )
-        );
-        assert_eq!(embed["author"]["name"].as_str(), Some("Example"));
-        assert_eq!(
-            embed["author"]["url"].as_str(),
-            Some("https://vrchat.com/home/user/usr_abcdefg")
-        );
-        assert_eq!(
-            embed["author"]["icon_url"].as_str(),
-            Some("https://api.vrchat.cloud/api/1/image/file_icon/2/256")
-        );
-        assert_eq!(embed["footer"]["text"].as_str(), Some("#810 - Invite 🇯🇵"));
-        assert_eq!(
-            embed["timestamp"].as_str(),
-            Some("2026-06-29T08:11:00.000Z")
-        );
-        assert_eq!(
-            embed["thumbnail"]["url"].as_str(),
-            Some("https://api.vrchat.cloud/api/1/file/file_world/8/file")
-        );
-    }
-
-    #[test]
-    fn discord_webhook_payload_gps_uses_location_title_without_message() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "GPS".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location =
-            "wrld_named:810~private(usr_x)~canRequestInvite~region(jp)".into();
-        delivery.entry.content.world_id = "wrld_named".into();
-        delivery.entry.content.world_name = "Named World".into();
-        delivery.entry.content.detail = "Named World invite+".into();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(embed["title"].as_str(), Some("Traveler が移動しました"));
-        assert_eq!(embed["description"].as_str(), Some("→ Named World"));
-        assert_eq!(
-            embed["footer"]["text"].as_str(),
-            Some("#810 - インバイト+ 🇯🇵")
-        );
-    }
-
-    #[test]
-    fn discord_webhook_payload_status_uses_status_title_and_target() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "Status".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location = String::new();
-        delivery.entry.content.world_id = String::new();
-        delivery.entry.content.world_name = String::new();
-        delivery.entry.content.status = "join me".into();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(
-            embed["title"].as_str(),
-            Some("Traveler がステータスを変更しました")
-        );
-        assert_eq!(embed["description"].as_str(), Some("だれでもおいで"));
-        assert!(embed.get("footer").is_none());
-    }
-
-    #[test]
-    fn discord_webhook_payload_avatar_change_uses_rich_title_and_name() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "AvatarChange".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location = String::new();
-        delivery.entry.content.world_id = String::new();
-        delivery.entry.content.world_name = String::new();
-        delivery.entry.content.avatar_name = "Maple".into();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(
-            embed["title"].as_str(),
-            Some("Traveler がアバターを変更しました")
-        );
-        assert_eq!(embed["description"].as_str(), Some("Maple"));
-        assert!(embed.get("footer").is_none());
-    }
-
-    #[test]
-    fn discord_webhook_payload_offline_uses_rich_title_without_world_name() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "Offline".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location = String::new();
-        delivery.entry.content.world_id = String::new();
-        delivery.entry.content.world_name = String::new();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(embed["author"]["name"].as_str(), Some("Traveler"));
-        assert_eq!(
-            embed["title"].as_str(),
-            Some("Traveler がログアウトしました")
-        );
-        assert!(embed.get("description").is_none());
-        assert!(embed.get("footer").is_none());
-    }
-
-    #[test]
-    fn discord_webhook_payload_online_uses_rich_title() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "Online".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location = String::new();
-        delivery.entry.content.world_id = String::new();
-        delivery.entry.content.world_name = String::new();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(embed["author"]["name"].as_str(), Some("Traveler"));
-        assert_eq!(embed["title"].as_str(), Some("Traveler がログインしました"));
-        assert!(embed.get("footer").is_none());
-    }
-
-    #[test]
-    fn discord_webhook_payload_falls_back_to_legacy_for_unsupported_type() {
-        let mut delivery = delivery();
-        delivery.entry.activity_type = "Bio".into();
-        delivery.entry.actor_display_name = "Traveler".into();
-
-        let render = render_delivery(&delivery, OverlayLocale::Ja);
-        let payload = webhook_payload(&delivery, &render, "discord", &[], OverlayLocale::Ja);
-        let embed = &payload["embeds"][0];
-
-        assert_eq!(embed["author"]["name"].as_str(), Some("Traveler"));
-        assert!(embed.get("footer").is_none());
-    }
-
-    #[test]
-    fn avatar_name_from_file_name_extracts_name() {
-        let raw = "Avatar - Name - Image - 2022․3․22f1_1_standalonewindows_Release";
-        assert_eq!(avatar_name_from_file_name(raw).as_deref(), Some("Name"));
-        assert_eq!(avatar_name_from_file_name("just a name"), None);
     }
 
     fn rendered() -> RenderedNotification {
@@ -1520,8 +975,6 @@ mod tests {
             text: "Traveler joined Named World".into(),
             display_location: "Named World public".into(),
             image_url: String::new(),
-            actor_image_url: String::new(),
-            world_image_url: String::new(),
         }
     }
 

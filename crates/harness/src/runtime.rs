@@ -5,17 +5,15 @@ use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_application::{RuntimeEventBus, TaskSupervisor};
-use vrcx_0_integrations::llm::{LlmClient, ToolDefinition};
+use vrcx_0_integrations::llm::ToolDefinition;
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
-use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_runtime_host::RuntimeHostState;
 
 use crate::agent::{run_turn, TurnContext};
-use crate::config::{
-    obfuscate_api_key, AssistantConfig, PlaybookMode, ASSISTANT_ALLOW_WRITES_CONFIG_KEY,
-    ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY,
-    ASSISTANT_DISABLE_THINKING_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY,
-    ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY,
+use crate::config::{should_apply_playbook, PlaybookMode};
+use crate::endpoints::{
+    AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore, LlmEndpointDetectModelsInput,
+    LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
 };
 
 /// Tools that mutate state (local DB or the VRChat account). They are hidden
@@ -30,25 +28,13 @@ use crate::session::{
 };
 
 pub struct AssistantController {
-    config: ConfigRepository,
+    endpoints: EndpointStore,
     bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     tools: Arc<InProcessMcpTools>,
     tool_defs: Arc<Vec<ToolDefinition>>,
     sessions: Arc<SessionStore>,
     cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>>,
-}
-
-#[derive(Debug, Clone, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AssistantConfigStatus {
-    pub configured: bool,
-    pub base_url: String,
-    pub model: String,
-    pub is_local: bool,
-    pub allow_writes: bool,
-    pub playbook_mode: PlaybookMode,
-    pub disable_thinking: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -61,12 +47,13 @@ pub struct SendResult {
 impl AssistantController {
     pub async fn from_host(state: &RuntimeHostState) -> Result<Self, HarnessError> {
         let config = state.runtime_context.config.clone();
+        let endpoints = EndpointStore::new(config.clone());
         let bus = state.runtime_context.event_bus.clone();
         let tasks = state.runtime_context.tasks.clone();
         let tools = Arc::new(spawn_in_process_tools(McpRuntime::from_host(state)).await?);
         let tool_defs = Arc::new(load_tool_defs(&tools).await?);
         Ok(Self {
-            config,
+            endpoints,
             bus,
             tasks,
             tools,
@@ -76,79 +63,66 @@ impl AssistantController {
         })
     }
 
-    pub fn config_status(&self) -> Result<AssistantConfigStatus, HarnessError> {
-        let config = AssistantConfig::load(&self.config)?;
-        Ok(AssistantConfigStatus {
-            configured: config.is_configured(),
-            base_url: config.base_url.clone(),
-            model: config.model.clone(),
-            is_local: config.is_local(),
-            allow_writes: config.allow_writes,
-            playbook_mode: config.playbook_mode,
-            disable_thinking: config.disable_thinking,
-        })
+    pub fn endpoint_list(&self) -> Result<Vec<LlmEndpointDto>, HarnessError> {
+        self.endpoints.list()
     }
 
-    pub fn set_config(
+    pub fn endpoint_upsert(
         &self,
-        base_url: String,
-        api_key: Option<String>,
-        model: String,
+        input: LlmEndpointUpsertInput,
+    ) -> Result<LlmEndpointDto, HarnessError> {
+        self.endpoints.upsert(input)
+    }
+
+    pub fn endpoint_delete(&self, id: &str) -> Result<(), HarnessError> {
+        self.endpoints.delete(id)
+    }
+
+    pub async fn endpoint_detect_models(
+        &self,
+        input: LlmEndpointDetectModelsInput,
+    ) -> Result<Vec<String>, HarnessError> {
+        self.endpoints.detect_models(input).await
+    }
+
+    pub fn runtime_status(&self) -> Result<AssistantRuntimeStatus, HarnessError> {
+        self.endpoints.runtime_status()
+    }
+
+    pub fn set_session_runtime(
+        &self,
+        session_id: &str,
+        endpoint_id: Option<String>,
+        model: Option<String>,
         allow_writes: bool,
         playbook_mode: PlaybookMode,
-        disable_thinking: bool,
-    ) -> Result<AssistantConfigStatus, HarnessError> {
-        self.config
-            .set_bool(ASSISTANT_ALLOW_WRITES_CONFIG_KEY, allow_writes)?;
-        self.config
-            .set_bool(ASSISTANT_DISABLE_THINKING_CONFIG_KEY, disable_thinking)?;
-        self.config.set_string(
-            ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY,
-            playbook_mode.as_config_str(),
-        )?;
-        let previous_base_url = self.config.get_string(ASSISTANT_BASE_URL_CONFIG_KEY, "")?;
-        let base_url = base_url.trim();
-        self.config
-            .set_string(ASSISTANT_BASE_URL_CONFIG_KEY, base_url)?;
-        self.config
-            .set_string(ASSISTANT_MODEL_CONFIG_KEY, model.trim())?;
-        match api_key {
-            Some(api_key) => {
-                self.config.set_string(
-                    ASSISTANT_API_KEY_CONFIG_KEY,
-                    &obfuscate_api_key(api_key.trim()),
-                )?;
-            }
-            // Endpoint changed and no new key given: drop the old key so it is
-            // never sent to a different provider.
-            None if base_url != previous_base_url.trim() => {
-                self.config.set_string(ASSISTANT_API_KEY_CONFIG_KEY, "")?;
-            }
-            None => {}
-        }
-        self.config_status()
+    ) -> Result<Session, HarnessError> {
+        let selection =
+            self.set_default_runtime(endpoint_id, model, allow_writes, playbook_mode)?;
+        self.sessions
+            .set_runtime(session_id, selection)
+            .ok_or(HarnessError::SessionNotFound)
     }
 
-    pub async fn list_models(
+    pub fn set_default_runtime(
         &self,
-        base_url: String,
-        api_key: Option<String>,
-    ) -> Result<Vec<String>, HarnessError> {
-        let saved = AssistantConfig::load(&self.config)?;
-        let base_url = if base_url.trim().is_empty() {
-            saved.base_url.clone()
-        } else {
-            base_url.trim().to_string()
+        endpoint_id: Option<String>,
+        model: Option<String>,
+        allow_writes: bool,
+        playbook_mode: PlaybookMode,
+    ) -> Result<AssistantRuntimeSelection, HarnessError> {
+        let selection = AssistantRuntimeSelection {
+            endpoint_id,
+            model,
+            allow_writes,
+            playbook_mode,
         };
-        let api_key = match api_key {
-            Some(key) if !key.trim().is_empty() => key.trim().to_string(),
-            _ => saved.api_key.clone(),
-        };
-        if base_url.is_empty() {
-            return Err(HarnessError::NotConfigured);
-        }
-        let client = LlmClient::new(base_url, api_key, saved.model);
-        Ok(client.list_models().await?)
+        self.endpoints.set_last_selection(&selection)?;
+        Ok(selection)
+    }
+
+    pub async fn translate(&self, input: LlmTranslateInput) -> Result<String, HarnessError> {
+        self.endpoints.translate(input).await
     }
 
     pub fn list_sessions(&self) -> Vec<SessionSummary> {
@@ -160,7 +134,8 @@ impl AssistantController {
     }
 
     pub fn new_session(&self) -> Session {
-        self.sessions.create_session()
+        let runtime = self.endpoints.last_selection().unwrap_or_default();
+        self.sessions.create_session_with_runtime(runtime)
     }
 
     pub fn set_entity_panel_open(&self, session_id: &str, open: bool) {
@@ -184,9 +159,24 @@ impl AssistantController {
         text: String,
         locale: Option<String>,
     ) -> Result<SendResult, HarnessError> {
-        let assistant_config = AssistantConfig::load(&self.config)?;
-        let client = assistant_config.build_client()?;
-        let tool_defs = if assistant_config.allow_writes {
+        let runtime = self.endpoints.last_selection()?;
+        let session = self
+            .sessions
+            .ensure_session_with_runtime(session_id, runtime);
+        let endpoint_id = session
+            .endpoint_id
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .ok_or(HarnessError::NotConfigured)?;
+        let model = session
+            .model
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .ok_or(HarnessError::NotConfigured)?;
+        let endpoint = self.endpoints.resolve(endpoint_id)?;
+        let client =
+            vrcx_0_integrations::llm::LlmClient::new(&endpoint.base_url, &endpoint.api_key, model);
+        let tool_defs = if session.allow_writes {
             Arc::clone(&self.tool_defs)
         } else {
             Arc::new(
@@ -198,7 +188,6 @@ impl AssistantController {
             )
         };
 
-        let session = self.sessions.ensure_session(session_id);
         let session_id = session.id.clone();
         let turn_id = format!("turn_{}", random_hex());
 
@@ -237,8 +226,7 @@ impl AssistantController {
             turn_id: turn_id.clone(),
             locale,
             cancel,
-            disable_thinking: assistant_config.disable_thinking,
-            apply_playbook: assistant_config.should_apply_playbook(),
+            apply_playbook: should_apply_playbook(session.playbook_mode, &endpoint.base_url),
         };
 
         let cleanup = CancelCleanup {

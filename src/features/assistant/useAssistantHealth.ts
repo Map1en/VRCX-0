@@ -5,7 +5,7 @@ import { useAssistantChatStore } from '@/state/assistantChatStore';
 
 export type AssistantHealth = 'checking' | 'ok' | 'error' | 'unconfigured';
 
-export function useAssistantHealth(configured: boolean): AssistantHealth {
+export function useAssistantHealth(endpointId: string | null): AssistantHealth {
     const open = useAssistantChatStore((state) => state.open);
     const [health, setHealth] = useState<AssistantHealth>('unconfigured');
 
@@ -13,14 +13,19 @@ export function useAssistantHealth(configured: boolean): AssistantHealth {
         if (!open) {
             return;
         }
-        if (!configured) {
+        if (!endpointId) {
             setHealth('unconfigured');
             return;
         }
         let active = true;
         setHealth('checking');
         commands
-            .appAssistantListModels('', null)
+            .appLlmEndpointDetectModels({
+                id: endpointId,
+                baseUrl: null,
+                apiKey: null,
+                persist: false
+            })
             .then(() => {
                 if (active) {
                     setHealth('ok');
@@ -34,7 +39,7 @@ export function useAssistantHealth(configured: boolean): AssistantHealth {
         return () => {
             active = false;
         };
-    }, [open, configured]);
+    }, [open, endpointId]);
 
     return health;
 }

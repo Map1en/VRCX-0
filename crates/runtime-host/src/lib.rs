@@ -10,6 +10,7 @@ pub mod notification;
 mod process_monitor;
 mod registry_backup;
 mod state;
+pub mod telemetry;
 pub mod vr_overlay;
 
 pub use context::RuntimeHostContext;

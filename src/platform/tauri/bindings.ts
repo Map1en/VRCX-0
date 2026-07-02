@@ -45,6 +45,15 @@ export const commands = {
     async appAppendErrorLog(entry: string): Promise<null> {
         return await TAURI_INVOKE('app__append_error_log', { entry });
     },
+    async appDrainClientErrorLog(
+        sinceIso: string | null,
+        limit: number | null
+    ): Promise<ClientErrorLogEntry[]> {
+        return await TAURI_INVOKE('app__drain_client_error_log', {
+            sinceIso,
+            limit
+        });
+    },
     async assetBundleGetVrchatCacheFullLocation(
         fileId: string,
         fileVersion: number,
@@ -91,17 +100,8 @@ export const commands = {
     async assetBundleGetCacheSize(): Promise<number> {
         return await TAURI_INVOKE('asset_bundle__get_cache_size');
     },
-    async logWatcherGet(): Promise<string[][]> {
-        return await TAURI_INVOKE('log_watcher__get');
-    },
     async logWatcherGetCurrentLocation(): Promise<LogLocationSnapshot | null> {
         return await TAURI_INVOKE('log_watcher__get_current_location');
-    },
-    async logWatcherSetDateTill(date: string): Promise<null> {
-        return await TAURI_INVOKE('log_watcher__set_date_till', { date });
-    },
-    async logWatcherReset(): Promise<null> {
-        return await TAURI_INVOKE('log_watcher__reset');
     },
     async logWatcherVrcClosedGracefully(): Promise<boolean> {
         return await TAURI_INVOKE('log_watcher__vrc_closed_gracefully');
@@ -247,6 +247,9 @@ export const commands = {
     async appEnsureMainWindow(): Promise<null> {
         return await TAURI_INVOKE('app__ensure_main_window');
     },
+    async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
+        return await TAURI_INVOKE('app__telemetry_record_event', { event });
+    },
     async appMcpServerStatus(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_status');
     },
@@ -294,15 +297,6 @@ export const commands = {
             sessionId
         });
     },
-    async appAssistantListModels(
-        baseUrl: string,
-        apiKey: string | null
-    ): Promise<string[]> {
-        return await TAURI_INVOKE('app__assistant_list_models', {
-            baseUrl,
-            apiKey
-        });
-    },
     async appAssistantSetPanelOpen(
         sessionId: string,
         open: boolean
@@ -312,25 +306,55 @@ export const commands = {
             open
         });
     },
-    async appAssistantConfigStatus(): Promise<AssistantConfigStatus> {
-        return await TAURI_INVOKE('app__assistant_config_status');
+    async appAssistantRuntimeStatus(): Promise<AssistantRuntimeStatus> {
+        return await TAURI_INVOKE('app__assistant_runtime_status');
     },
-    async appAssistantSetConfig(
-        baseUrl: string,
-        apiKey: string | null,
-        model: string,
+    async appAssistantSetSessionRuntime(
+        sessionId: string,
+        endpointId: string | null,
+        model: string | null,
         allowWrites: boolean,
-        playbookMode: PlaybookMode,
-        disableThinking: boolean
-    ): Promise<AssistantConfigStatus> {
-        return await TAURI_INVOKE('app__assistant_set_config', {
-            baseUrl,
-            apiKey,
+        playbookMode: PlaybookMode
+    ): Promise<Session> {
+        return await TAURI_INVOKE('app__assistant_set_session_runtime', {
+            sessionId,
+            endpointId,
             model,
             allowWrites,
-            playbookMode,
-            disableThinking
+            playbookMode
         });
+    },
+    async appAssistantSetDefaultRuntime(
+        endpointId: string | null,
+        model: string | null,
+        allowWrites: boolean,
+        playbookMode: PlaybookMode
+    ): Promise<AssistantRuntimeSelection> {
+        return await TAURI_INVOKE('app__assistant_set_default_runtime', {
+            endpointId,
+            model,
+            allowWrites,
+            playbookMode
+        });
+    },
+    async appLlmEndpointList(): Promise<LlmEndpointDto[]> {
+        return await TAURI_INVOKE('app__llm_endpoint_list');
+    },
+    async appLlmEndpointUpsert(
+        input: LlmEndpointUpsertInput
+    ): Promise<LlmEndpointDto> {
+        return await TAURI_INVOKE('app__llm_endpoint_upsert', { input });
+    },
+    async appLlmEndpointDelete(id: string): Promise<null> {
+        return await TAURI_INVOKE('app__llm_endpoint_delete', { id });
+    },
+    async appLlmEndpointDetectModels(
+        input: LlmEndpointDetectModelsInput
+    ): Promise<string[]> {
+        return await TAURI_INVOKE('app__llm_endpoint_detect_models', { input });
+    },
+    async appLlmTranslate(input: LlmTranslateInput): Promise<string> {
+        return await TAURI_INVOKE('app__llm_translate', { input });
     },
     async appOverlayActivityDefinitionsGet(): Promise<
         OverlayActivityTypeDefinition[]
@@ -2839,15 +2863,6 @@ export type AppLauncherSnapshot = {
     testRuns: AppLauncherRun[];
 };
 export type AppLauncherStopPolicy = 'keepRunning' | 'closeByVrcx';
-export type AssistantConfigStatus = {
-    configured: boolean;
-    baseUrl: string;
-    model: string;
-    isLocal: boolean;
-    allowWrites: boolean;
-    playbookMode: PlaybookMode;
-    disableThinking: boolean;
-};
 export type AssistantDeltaEvent = {
     sessionId: string;
     turnId: string;
@@ -2859,6 +2874,16 @@ export type AssistantErrorEvent = {
     turnId: string;
     code: string;
     message: string;
+};
+export type AssistantRuntimeSelection = {
+    endpointId: string | null;
+    model: string | null;
+    allowWrites: boolean;
+    playbookMode: PlaybookMode;
+};
+export type AssistantRuntimeStatus = {
+    hasAnyEndpoint: boolean;
+    lastSelection: AssistantRuntimeSelection;
 };
 export type AssistantToolCallEvent = {
     sessionId: string;
@@ -2985,6 +3010,12 @@ export type ClientConfigSnippets = {
     claudeCodeCommand: string;
     mcpRemoteJson: string;
     genericJson: string;
+};
+export type ClientErrorLogEntry = {
+    tsIso: string;
+    appVersion: string | null;
+    source: string;
+    message: string;
 };
 export type CommunityThemeDebugLocalThemeOutput = {
     folderPath: string;
@@ -3359,6 +3390,34 @@ export type LegacyVrcxMigrationStatus = {
     dbPath?: string | null;
     configPath?: string | null;
     reason?: string | null;
+};
+export type LlmEndpointDetectModelsInput = {
+    id: string | null;
+    baseUrl: string | null;
+    apiKey: string | null;
+    persist: boolean | null;
+};
+export type LlmEndpointDto = {
+    id: string;
+    name: string;
+    baseUrl: string;
+    hasKey: boolean;
+    models: string[];
+    lastDetectedAt: string | null;
+};
+export type LlmEndpointUpsertInput = {
+    id: string | null;
+    name: string;
+    baseUrl: string;
+    apiKey: string | null;
+    models: string[];
+};
+export type LlmTranslateInput = {
+    endpointId: string;
+    model: string;
+    text: string;
+    targetLang: string;
+    prompt: string | null;
 };
 export type LocalFavoriteGroupInput = { kind?: string; groupName?: string };
 export type LocalFavoriteGroupRenameInput = {
@@ -3900,6 +3959,10 @@ export type Session = {
     title: string;
     messages: Message[];
     activeTurn: ActiveTurn | null;
+    endpointId: string | null;
+    model: string | null;
+    allowWrites: boolean;
+    playbookMode: PlaybookMode;
     entityPanelOpen: boolean;
     surfacedEntities: Entity[];
     createdAt: string;
@@ -3949,6 +4012,23 @@ export type TauriUpdateMetadata = {
     body: string | null;
     rawJson: JsonValue;
 };
+export type TelemetryClientEvent =
+    | { type: 'pageVisit'; route: string }
+    | {
+          type: 'routeError';
+          error_class: string;
+          name: string | null;
+          summary: string | null;
+      }
+    | { type: 'viewModeSwitch'; dimension: string; value: string }
+    | { type: 'assistantOpen' }
+    | { type: 'assistantApiKeyConfigured' }
+    | {
+          type: 'assistantToolError';
+          source: string | null;
+          summary: string | null;
+      }
+    | { type: 'assistantTurnError'; code: string; summary: string | null };
 export type TurnStatus = 'running' | 'done' | 'error' | 'cancelled';
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserNoteOutput = {

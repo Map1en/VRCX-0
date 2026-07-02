@@ -51,7 +51,11 @@
         },
         "feed": {
             "favorites_only_tooltip": "Zobrazit pouze oblíbené",
-            "search_placeholder": "Vyhledat"
+            "search_placeholder": "Vyhledat",
+            "context": {
+                "hide_user": "Skrýt z Feedu",
+                "unhide_user": "Zobrazit ve Feedu"
+            }
         },
         "game_log": {
             "filter_placeholder": "Filtrovat",
@@ -161,6 +165,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "LLM endpointy",
+                "llm_endpoints_description": "Spravujte připojení kompatibilní s OpenAI pro Social AI a překlad."
+            },
+            "llm_endpoints": {
+                "title": "LLM endpointy",
+                "description": "Sdílená připojení kompatibilní s OpenAI pro Social AI a překlad.",
+                "endpoint_count": "Endpointů: {count}",
+                "model_count": "Modelů: {count}",
+                "add": "Přidat endpoint",
+                "empty_description": "Přidejte endpoint kompatibilní s OpenAI pro Social AI a překlad kompatibilní s OpenAI.",
+                "name": "Název",
+                "base_url": "Základní URL",
+                "models": "Modely",
+                "key": "Klíč",
+                "actions": "Akce",
+                "no_models": "Žádné modely",
+                "key_saved": "Uloženo",
+                "key_empty": "Prázdné",
+                "detect_models": "Zjistit modely",
+                "edit": "Upravit endpoint",
+                "delete": "Odstranit endpoint",
+                "api_key": "API klíč",
+                "clear_key": "Vymazat klíč",
+                "key_preserve_placeholder": "Ponechte prázdné pro zachování uloženého klíče",
+                "saved": "Endpoint uložen",
+                "save_failed": "Nepodařilo se uložit endpoint",
+                "load_failed": "Nepodařilo se načíst endpointy",
+                "base_url_required": "Základní URL je povinné.",
+                "models_detected": "Zjištěno modelů: {count}",
+                "no_models_detected": "Nezjištěny žádné modely",
+                "detect_failed": "Nepodařilo se zjistit modely",
+                "deleted": "Endpoint odstraněn",
+                "delete_failed": "Nepodařilo se odstranit endpoint"
             }
         },
         "profile": {
@@ -186,6 +225,17 @@
                 "wrist_overlay": "Náramkový overlay",
                 "discord_presence": "Discord Presence",
                 "advanced": "Pokročilé"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "Skrytí uživatelé ve Feedu",
+                    "description": "Skryje vybrané uživatele ve Feedu bez odstranění uložených dat.",
+                    "add": "Přidat uživatele",
+                    "search_placeholder": "Hledat uživatele",
+                    "empty": "Ve Feedu nejsou skryti žádní uživatelé.",
+                    "remove": "Odebrat skrytého uživatele",
+                    "unknown_user": "Neznámý uživatel"
+                }
             },
             "general": {
                 "general": {
@@ -1361,6 +1411,20 @@
         "avatar_database_provider": {
             "header": "Avatar Database Provider",
             "add_provider": "Add Provider"
+        },
+        "translation_api": {
+            "openai": {
+                "connection": "LLM endpoint",
+                "connection_description": "Používá se překladem kompatibilním s OpenAI.",
+                "connection_placeholder": "Vyberte endpoint",
+                "model": "Název modelu",
+                "prompt_optional": "Prompt (volitelné)",
+                "prompt_optional_description": "Volitelný systémový prompt pro překladová API kompatibilní s OpenAI."
+            },
+            "mode_deepl": "DeepL Free API",
+            "deepl": {
+                "api_key": "API klíč DeepL"
+            }
         }
     },
     "confirm": {
@@ -1799,6 +1863,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -1814,5 +1893,21 @@
     },
     "nav_menu": {
         "update_downloaded": "Aktualizace připravena"
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "Běhové prostředí",
+            "connection": "Připojení",
+            "connection_unset": "Žádný endpoint",
+            "model": "Model",
+            "model_unset": "Pro tento endpoint nejsou uloženy žádné modely",
+            "playbook_mode": "Režim analýzy",
+            "allow_writes": "Povolit zápisové akce",
+            "manage_endpoints": "Spravovat LLM endpointy"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

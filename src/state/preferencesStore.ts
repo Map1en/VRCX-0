@@ -120,6 +120,12 @@ function normalizeBool(value: unknown): boolean {
     return Boolean(value);
 }
 
+function normalizeText(value: unknown): string {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
 function normalizeBoundedInt(
     value: unknown,
     {
@@ -263,6 +269,33 @@ export function parseSharedFeedFilters(value?: unknown) {
     }
 }
 
+export function normalizeFeedHiddenUsers(value: unknown): string[] {
+    if (typeof value === 'string') {
+        try {
+            return normalizeFeedHiddenUsers(JSON.parse(value));
+        } catch {
+            return [];
+        }
+    }
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const seen = new Set<string>();
+    const userIds: string[] = [];
+    for (const entry of value) {
+        const userId =
+            typeof entry === 'string'
+                ? normalizeText(entry)
+                : normalizeText(asRecord(entry).userId);
+        if (!userId || seen.has(userId)) {
+            continue;
+        }
+        seen.add(userId);
+        userIds.push(userId);
+    }
+    return userIds;
+}
+
 export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     notificationLayout: 'notification-center',
     dataTableStriped: false,
@@ -346,6 +379,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
         searchLimit: DEFAULT_SEARCH_LIMIT
     },
     localFavoriteFriendsGroups: [],
+    feedHiddenUsers: [],
     sharedFeedFilters: {
         noty: { ...sharedFeedFiltersDefaults.noty }
     },
@@ -360,6 +394,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     translationAPI: false,
     bioLanguage: 'en',
     translationAPIType: 'google',
+    translationEndpointId: '',
     translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
     translationAPIModel: DEFAULT_TRANSLATION_MODEL,
     translationAPIPrompt: '',
@@ -521,6 +556,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         )
             ? next.localFavoriteFriendsGroups.filter(Boolean)
             : [],
+        feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
         sharedFeedFilters: parseSharedFeedFilters(next.sharedFeedFilters),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
             hasOverlayActivityFiltersInput
@@ -547,6 +583,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         translationAPIType: normalizeTranslationApiType(
             next.translationAPIType
         ),
+        translationEndpointId: String(next.translationEndpointId || ''),
         translationAPIEndpoint:
             next.translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
         translationAPIModel:

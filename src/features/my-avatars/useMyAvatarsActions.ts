@@ -531,7 +531,6 @@ export function useMyAvatarsActions({
                     avatarId,
                     imageUrl: avatar.imageUrl || avatar.thumbnailImageUrl || '',
                     base64File,
-                    blob,
                     endpoint: currentEndpoint
                 })
             );

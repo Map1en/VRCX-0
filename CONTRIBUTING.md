@@ -20,6 +20,24 @@ Using AI is fine — no objection here. But you own what you submit:
 
 If you can't answer "why is this change correct?", it's not ready.
 
+## Contributor License Agreement
+
+VRCX-0 requires contributors to sign an Individual [Contributor License
+Agreement](CLA.md) before their pull requests can be merged.
+
+The CLA does not transfer copyright ownership. You keep the copyright to your own
+contributions. It grants the project maintainer broad rights to use, modify,
+distribute, and relicense your contributions, including for possible closed-source
+or mobile distributions.
+
+It's a one-click process: when you open a PR, the CLA bot comments with
+instructions and you sign by posting a single comment. You only need to sign
+once — it applies to all of your future contributions.
+
+If your employer may own rights to your work, or if you are contributing on behalf
+of a company or organization, please contact the maintainer before signing the
+individual CLA.
+
 ## Before submitting
 
 - Make sure it builds and the checks pass — see [README](README.md) for setup.

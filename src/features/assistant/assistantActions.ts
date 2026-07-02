@@ -1,4 +1,4 @@
-import { commands } from '@/platform/tauri/bindings';
+import { commands, type Session } from '@/platform/tauri/bindings';
 import { i18n } from '@/services/i18nService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 
@@ -24,12 +24,13 @@ export async function openSession(sessionId: string): Promise<void> {
     }
 }
 
-export async function startNewSession(): Promise<void> {
+export async function startNewSession(): Promise<Session> {
     const session = await commands.appAssistantNewSession();
     const store = useAssistantChatStore.getState();
     store.setActiveSession(session.id);
     store.hydrateSession(session);
     await refreshSessions();
+    return session;
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
@@ -63,6 +64,7 @@ export async function sendMessage(text: string): Promise<void> {
         );
     } catch (error) {
         if (sessionId) {
+            store.dropTrailingUserMessage(sessionId);
             store.markBusy(sessionId, false);
         }
         throw error;
@@ -89,7 +91,6 @@ export function setEntityPanelOpen(open: boolean): void {
     const sessionId = store.activeSessionId;
     store.setEntityPanelOpen(open);
     if (sessionId) {
-        // Persist so the panel state survives an app restart.
         void commands
             .appAssistantSetPanelOpen(sessionId, open)
             .catch((error) => {

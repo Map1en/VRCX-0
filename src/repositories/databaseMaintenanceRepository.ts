@@ -197,6 +197,10 @@ async function fixBrokenGameLogDisplayNames(): Promise<void> {
     await runMaintenanceTask('fixBrokenGameLogDisplayNames');
 }
 
+async function repairZeroCopresenceDurations(): Promise<void> {
+    await runMaintenanceTask('repairZeroCopresenceDurations');
+}
+
 const databaseMaintenanceRepository = Object.freeze({
     addFriendLogFriendNumber,
     addPerformanceIndexes,
@@ -218,6 +222,7 @@ const databaseMaintenanceRepository = Object.freeze({
     getUserTableSizes,
     initGlobalTables,
     optimize,
+    repairZeroCopresenceDurations,
     updateTableForAvatarHistory,
     updateTableForGroupNames,
     upgradeDatabaseVersion,
@@ -245,6 +250,7 @@ export {
     getUserTableSizes,
     initGlobalTables,
     optimize,
+    repairZeroCopresenceDurations,
     updateTableForAvatarHistory,
     updateTableForGroupNames,
     upgradeDatabaseVersion,

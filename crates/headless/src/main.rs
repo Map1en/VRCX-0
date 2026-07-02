@@ -66,7 +66,7 @@ async fn async_main() -> ExitCode {
         realtime_origin: "http://localhost:9000".into(),
         launched_from_autostart: false,
         app_data_dir: app_data_dir.clone(),
-        app_version: String::new(),
+        app_version: product_app_version(),
     }) {
         Ok(state) => state,
         Err(error) => {
@@ -101,7 +101,6 @@ async fn async_main() -> ExitCode {
             return ExitCode::from(1);
         }
     }
-
     println!("headless runtime is running. Press Ctrl+C to stop.");
     tokio::select! {
         signal = tokio::signal::ctrl_c() => {
@@ -112,13 +111,11 @@ async fn async_main() -> ExitCode {
                     format!("failed to wait for Ctrl+C: {error}"),
                 );
                 console_sink.begin_shutdown();
-                state.stop_backend_runtime("signal-error");
-                state.runtime_context.tasks.stop_all();
+                shutdown_runtime(&state, "signal-error");
                 return ExitCode::from(1);
             }
             console_sink.begin_shutdown();
-            state.stop_backend_runtime("ctrl-c");
-            state.runtime_context.tasks.stop_all();
+            shutdown_runtime(&state, "ctrl-c");
             ExitCode::SUCCESS
         }
         fatal = fatal_rx.recv() => {
@@ -129,11 +126,30 @@ async fn async_main() -> ExitCode {
                 format!("headless runtime fatal error: {reason}"),
             );
             console_sink.begin_shutdown();
-            state.stop_backend_runtime("fatal-error");
-            state.runtime_context.tasks.stop_all();
+            shutdown_runtime(&state, "fatal-error");
             ExitCode::from(1)
         }
     }
+}
+
+fn shutdown_runtime(state: &RuntimeHostState, reason: &str) {
+    state.stop_backend_runtime(reason);
+    state.runtime_context.tasks.stop_all();
+}
+
+fn product_app_version() -> String {
+    const TAURI_CONFIG: &str = include_str!("../../../src-tauri/tauri.conf.json");
+    serde_json::from_str::<Value>(TAURI_CONFIG)
+        .ok()
+        .and_then(|value| {
+            value
+                .get("version")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|version| !version.is_empty())
+                .map(ToOwned::to_owned)
+        })
+        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").into())
 }
 
 fn init_tls_crypto_provider() {

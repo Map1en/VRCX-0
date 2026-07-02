@@ -10,7 +10,7 @@
         "example_1": "这周我和谁玩得最多？",
         "example_2": "我正在和谁疏远？",
         "example_3": "什么时候最容易碰到我的好友在线？",
-        "not_configured": "请先在设置里填写模型和 API 密钥。",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "正在调用 {{name}}…",
         "entities_title": "提及",
         "entities_empty": "回答中提到的人和世界会显示在这里。",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "自动（按接口）",
             "playbook_mode_guided": "引导（本地 / 弱模型）",
             "playbook_mode_open": "开放（强模型）",
-            "disable_thinking": "关闭思考",
-            "disable_thinking_description": "跳过模型的隐藏推理链（如 Qwen 的 /no_think）。建议工具驱动的本地模型开启——快得多，且在此场景几乎不损失质量。",
             "privacy_title": "隐私",
             "privacy_local": "请求将发送到本地接口，你的社交数据不会离开你的计算机。",
             "privacy_remote": "使用在线 AI 服务可能会泄露你的数据，请谨慎操作。"
+        },
+        "runtime": {
+            "title": "运行时",
+            "connection": "连接",
+            "connection_unset": "无端点",
+            "model": "模型",
+            "model_unset": "此端点未保存任何模型",
+            "playbook_mode": "分析模式",
+            "allow_writes": "允许写入操作",
+            "manage_endpoints": "管理 LLM 端点"
         }
     },
     "user_hover_card": {
@@ -197,6 +205,21 @@
             "tools": {
                 "title": "工具",
                 "allTools": "所有工具..."
+            },
+            "edit": {
+                "title": "编辑",
+                "undo": "撤销",
+                "redo": "重做",
+                "cut": "剪切",
+                "copy": "复制",
+                "paste": "粘贴",
+                "selectAll": "全选"
+            },
+            "window": {
+                "title": "窗口",
+                "minimize": "最小化",
+                "maximize": "最大化",
+                "close": "关闭窗口"
             },
             "help": {
                 "title": "帮助",
@@ -710,6 +733,10 @@
             },
             "dynamic": {
                 "value_copied": "已复制{value}"
+            },
+            "context": {
+                "hide_user": "从 Feed 隐藏",
+                "unhide_user": "从 Feed 取消隐藏"
             }
         },
         "friends_locations": {
@@ -1589,7 +1616,9 @@
                 "app_launcher": "应用启动器",
                 "app_launcher_description": "管理会在 VRChat 启动时自动启动的应用和快捷方式。",
                 "registry_backup": "VRChat 设置数据备份工具",
-                "registry_backup_description": "创建或恢复 VRChat 的设置备份"
+                "registry_backup_description": "创建或恢复 VRChat 的设置备份",
+                "llm_endpoints": "LLM 端点",
+                "llm_endpoints_description": "管理供 Social AI 和翻译使用的 OpenAI 兼容连接。"
             },
             "vrchat_log": {
                 "title": "VRChat 日志查看器",
@@ -1787,6 +1816,37 @@
                     "too_many_favorites": "已收藏 Print 为 {favorites} 个，超过收藏上限 {max} 个中的 {over} 个。自动删除不会移除已收藏 Print。",
                     "too_many_favorites_event": "已收藏 Print 占满列表，自动删除无法降到配置上限以下。当前剩余 {remaining} 个 Print。"
                 }
+            },
+            "llm_endpoints": {
+                "title": "LLM 端点",
+                "description": "供 Social AI 和翻译共用的 OpenAI 兼容连接。",
+                "endpoint_count": "{count} 个端点",
+                "model_count": "{count} 个模型",
+                "add": "添加端点",
+                "empty_description": "添加一个 OpenAI 兼容端点，供 Social AI 和 OpenAI 兼容翻译使用。",
+                "name": "名称",
+                "base_url": "Base URL",
+                "models": "模型",
+                "key": "密钥",
+                "actions": "操作",
+                "no_models": "无模型",
+                "key_saved": "已保存",
+                "key_empty": "为空",
+                "detect_models": "检测模型",
+                "edit": "编辑端点",
+                "delete": "删除端点",
+                "api_key": "API 密钥",
+                "clear_key": "清除密钥",
+                "key_preserve_placeholder": "留空以保留已保存的密钥",
+                "saved": "端点已保存",
+                "save_failed": "保存端点失败",
+                "load_failed": "加载端点失败",
+                "base_url_required": "Base URL 为必填项。",
+                "models_detected": "检测到 {count} 个模型",
+                "no_models_detected": "未检测到模型",
+                "detect_failed": "检测模型失败",
+                "deleted": "端点已删除",
+                "delete_failed": "删除端点失败"
             }
         },
         "profile": {
@@ -1829,6 +1889,15 @@
                 },
                 "favorites": {
                     "header": "收藏"
+                },
+                "hidden_feed": {
+                    "header": "Feed 隐藏用户",
+                    "description": "从 Feed 视图隐藏所选用户，但不会删除已保存数据。",
+                    "add": "添加用户",
+                    "search_placeholder": "搜索用户",
+                    "empty": "Feed 中没有隐藏用户。",
+                    "remove": "移除隐藏用户",
+                    "unknown_user": "未知用户"
                 }
             },
             "vr": {
@@ -4539,7 +4608,7 @@
             "emoji_loop_pingpong": "往返循环播放",
             "flipbook_info": "选择一个 1024x1024 的 PNG 精灵表作为动画表情（最大 FPS 为64）",
             "note": "备注",
-            "crop_print_border": "裁剪白边",
+            "crop_print_border": "重传时裁剪原有边框",
             "upload_options": "上传选项",
             "consume_bundle": "拆开",
             "item": "物品",
@@ -4749,20 +4818,16 @@
             "msg_test_success": "测试成功",
             "msg_test_failed": "测试失败",
             "openai": {
-                "endpoint": "API 端点",
-                "api_key": "API 密钥（可选）",
-                "model": "要使用的大语言模型名称",
+                "model": "模型名称",
                 "prompt_optional": "提示词（可选）",
-                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。"
+                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。",
+                "connection": "LLM 端点",
+                "connection_description": "供 OpenAI 兼容翻译使用。",
+                "connection_placeholder": "选择一个端点"
             },
             "deepl": {
                 "api_key": "DeepL API 密钥"
-            },
-            "fetch_models": "获取大语言模型列表",
-            "fetching_models": "获取中...",
-            "msg_endpoint_required": "请先填写端点地址",
-            "msg_models_fetched": "找到 {count} 个可用的大语言模型",
-            "msg_no_models_found": "未找到任何可用的大语言模型"
+            }
         },
         "notification_position": {
             "header": "通知位置",

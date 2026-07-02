@@ -21,6 +21,7 @@ import {
 
 export function createDefaultSettingsPrefs() {
     const localFavoriteFriendsGroups: string[] = [];
+    const feedHiddenUsers: string[] = [];
 
     return {
         notificationLayout: 'notification-center',
@@ -106,6 +107,7 @@ export function createDefaultSettingsPrefs() {
             searchLimit: DEFAULT_SEARCH_LIMIT
         },
         localFavoriteFriendsGroups,
+        feedHiddenUsers,
         sharedFeedFilters: normalizeSharedFeedFilters(
             sharedFeedFiltersDefaults
         ),
@@ -119,6 +121,7 @@ export function createDefaultSettingsPrefs() {
         translationAPI: false,
         bioLanguage: 'en',
         translationAPIType: 'google',
+        translationEndpointId: '',
         translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
         translationAPIModel: DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: '',

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AssistantRuntimeStatus
+} from '@/platform/tauri/bindings';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 
-import type { AssistantConfigStatus } from './assistantTypes';
-
-export function useAssistantConfigStatus(): AssistantConfigStatus | null {
+export function useAssistantRuntimeStatus(): AssistantRuntimeStatus | null {
     const open = useAssistantChatStore((state) => state.open);
-    const [status, setStatus] = useState<AssistantConfigStatus | null>(null);
+    const [status, setStatus] = useState<AssistantRuntimeStatus | null>(null);
 
     useEffect(() => {
         if (!open) {
@@ -15,7 +16,7 @@ export function useAssistantConfigStatus(): AssistantConfigStatus | null {
         }
         let active = true;
         commands
-            .appAssistantConfigStatus()
+            .appAssistantRuntimeStatus()
             .then((next) => {
                 if (active) {
                     setStatus(next);

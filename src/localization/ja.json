@@ -10,7 +10,7 @@
         "example_1": "今週、誰と一番一緒に遊んだ？",
         "example_2": "最近疎遠になっている人は？",
         "example_3": "フレンドがオンラインになりやすい時間は？",
-        "not_configured": "開始するには設定でモデルと API キーを設定してください。",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "{{name}} を呼び出し中…",
         "entities_title": "言及",
         "entities_empty": "回答で言及された人やワールドがここに表示されます。",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "自動（エンドポイント基準）",
             "playbook_mode_guided": "ガイド（ローカル / 非力なモデル）",
             "playbook_mode_open": "オープン（強力なモデル）",
-            "disable_thinking": "思考を無効化",
-            "disable_thinking_description": "モデルの隠れた推論チェーンをスキップします（例：Qwen の /no_think）。ツール駆動のローカルモデルに推奨——大幅に高速化し、この用途では品質低下はほぼありません。",
             "privacy_title": "プライバシー",
             "privacy_local": "リクエストはこの PC 上のローカルエンドポイントに送信され、交流データは外部に出ません。",
             "privacy_remote": "オンラインの AI サービスを使うとデータが漏れる可能性があります。慎重に操作してください。"
+        },
+        "runtime": {
+            "title": "ランタイム",
+            "connection": "接続",
+            "connection_unset": "エンドポイントなし",
+            "model": "モデル",
+            "model_unset": "このエンドポイントに保存されたモデルはありません",
+            "playbook_mode": "分析モード",
+            "allow_writes": "書き込み操作を許可",
+            "manage_endpoints": "LLM エンドポイントを管理"
         }
     },
     "user_hover_card": {
@@ -197,6 +205,21 @@
             "tools": {
                 "title": "ツール",
                 "allTools": "すべてのツール..."
+            },
+            "edit": {
+                "title": "編集",
+                "undo": "元に戻す",
+                "redo": "やり直す",
+                "cut": "切り取り",
+                "copy": "コピー",
+                "paste": "ペースト",
+                "selectAll": "すべてを選択"
+            },
+            "window": {
+                "title": "ウインドウ",
+                "minimize": "最小化",
+                "maximize": "拡大",
+                "close": "ウインドウを閉じる"
             },
             "help": {
                 "title": "ヘルプ",
@@ -710,6 +733,10 @@
             },
             "dynamic": {
                 "value_copied": "{value}をコピーしました"
+            },
+            "context": {
+                "hide_user": "Feedから非表示",
+                "unhide_user": "Feedの非表示を解除"
             }
         },
         "friends_locations": {
@@ -1585,7 +1612,9 @@
                 "app_launcher": "アプリランチャー",
                 "app_launcher_description": "VRChat 起動時に自動起動するアプリやショートカットを管理します。",
                 "registry_backup": "VRChat レジストリバックアップ",
-                "registry_backup_description": "VRChat のレジストリバックアップを作成または復元"
+                "registry_backup_description": "VRChat のレジストリバックアップを作成または復元",
+                "llm_endpoints": "LLM エンドポイント",
+                "llm_endpoints_description": "Social AI と翻訳で使う OpenAI 互換の接続を管理します。"
             },
             "vrchat_log": {
                 "title": "VRChat ログビューアー",
@@ -1783,6 +1812,37 @@
                     "too_many_favorites": "お気に入りの Print が {favorites} 件あり、お気に入り上限 {max} 件を {over} 件超えています。自動削除はお気に入りの Print を削除しません。",
                     "too_many_favorites_event": "お気に入りの Print がリストを占めているため、自動削除で設定上限以下にできませんでした。残りは {remaining} 件です。"
                 }
+            },
+            "llm_endpoints": {
+                "title": "LLM エンドポイント",
+                "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
+                "endpoint_count": "{count} 件のエンドポイント",
+                "model_count": "{count} 件のモデル",
+                "add": "エンドポイントを追加",
+                "empty_description": "Social AI と OpenAI 互換翻訳で使う OpenAI 互換エンドポイントを追加します。",
+                "name": "名前",
+                "base_url": "Base URL",
+                "models": "モデル",
+                "key": "キー",
+                "actions": "操作",
+                "no_models": "モデルなし",
+                "key_saved": "保存済み",
+                "key_empty": "未設定",
+                "detect_models": "モデルを検出",
+                "edit": "エンドポイントを編集",
+                "delete": "エンドポイントを削除",
+                "api_key": "API キー",
+                "clear_key": "キーをクリア",
+                "key_preserve_placeholder": "空欄のままにすると保存済みのキーを保持します",
+                "saved": "エンドポイントを保存しました",
+                "save_failed": "エンドポイントの保存に失敗しました",
+                "load_failed": "エンドポイントの読み込みに失敗しました",
+                "base_url_required": "Base URL は必須です。",
+                "models_detected": "{count} 件のモデルを検出しました",
+                "no_models_detected": "モデルが検出されませんでした",
+                "detect_failed": "モデルの検出に失敗しました",
+                "deleted": "エンドポイントを削除しました",
+                "delete_failed": "エンドポイントの削除に失敗しました"
             }
         },
         "profile": {
@@ -1825,6 +1885,15 @@
                 },
                 "favorites": {
                     "header": "お気に入り"
+                },
+                "hidden_feed": {
+                    "header": "Feedで非表示のユーザー",
+                    "description": "保存済みデータを削除せずに、選択したユーザーをFeedから非表示にします。",
+                    "add": "ユーザーを追加",
+                    "search_placeholder": "ユーザーを検索",
+                    "empty": "Feedで非表示のユーザーはいません。",
+                    "remove": "非表示ユーザーを削除",
+                    "unknown_user": "不明なユーザー"
                 }
             },
             "vr": {
@@ -4534,7 +4603,7 @@
             "emoji_loop_pingpong": "ピンポンループ",
             "flipbook_info": "アニメーション絵文字として使用する1024x1024px の PNG スプライトシート画像を選択 (最大 64FPS)",
             "note": "ノート",
-            "crop_print_border": "プリントの外枠をトリミング",
+            "crop_print_border": "再アップロード時に既存の枠をトリミング",
             "upload_options": "アップロードオプション",
             "consume_bundle": "バンドルを消費",
             "item": "アイテム",
@@ -4744,20 +4813,16 @@
             "msg_test_success": "テストに成功しました",
             "msg_test_failed": "テストに失敗しました",
             "openai": {
-                "endpoint": "API エンドポイント",
-                "api_key": "API キー (オプション)",
                 "model": "モデル名",
                 "prompt_optional": "プロンプト (オプション)",
-                "prompt_optional_description": "OpenAI 互換翻訳 API 用の任意のシステムプロンプトです。"
+                "prompt_optional_description": "OpenAI 互換翻訳 API 用の任意のシステムプロンプトです。",
+                "connection": "LLM エンドポイント",
+                "connection_description": "OpenAI 互換翻訳で使用します。",
+                "connection_placeholder": "エンドポイントを選択"
             },
             "deepl": {
                 "api_key": "DeepL API キー"
-            },
-            "fetch_models": "モデルを取得",
-            "fetching_models": "取得中...",
-            "msg_endpoint_required": "先にエンドポイントを入力してください",
-            "msg_models_fetched": "{count}件のモデルが見つかりました",
-            "msg_no_models_found": "モデルが見つかりません"
+            }
         },
         "notification_position": {
             "header": "通知の位置",

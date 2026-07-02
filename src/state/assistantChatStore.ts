@@ -27,6 +27,7 @@ interface AssistantChatState {
     setActiveSession: (sessionId: string | null) => void;
     hydrateSession: (session: Session) => void;
     appendUserMessage: (sessionId: string, text: string) => void;
+    dropTrailingUserMessage: (sessionId: string) => void;
     markBusy: (sessionId: string, busy: boolean) => void;
     applyDelta: (event: AssistantDeltaEvent) => void;
     applyToolCall: (event: AssistantToolCallEvent) => void;
@@ -151,6 +152,16 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                     streaming: false,
                     toolCalls: []
                 });
+                return messages;
+            })
+        ),
+
+    dropTrailingUserMessage: (sessionId) =>
+        set((state) =>
+            updateMessages(state, sessionId, (messages) => {
+                if (messages[messages.length - 1]?.role === 'user') {
+                    messages.pop();
+                }
                 return messages;
             })
         ),

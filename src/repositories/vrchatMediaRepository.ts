@@ -114,7 +114,6 @@ interface LegacyImageUploadOptions {
     worldId?: unknown;
     imageUrl?: string;
     base64File: string;
-    blob?: Blob | { size?: number } | null;
     endpoint?: string;
 }
 
@@ -218,11 +217,6 @@ async function executeMediaCommand<TJson = MediaApiRecord>(
             options.fallbackMessage ?? 'Media request failed'
         );
     }
-}
-
-function resolveLegacyBlobSize(blob: LegacyImageUploadOptions['blob']) {
-    const size = Number(blob?.size);
-    return Number.isFinite(size) && size > 0 ? size : undefined;
 }
 
 async function getFiles(
@@ -675,7 +669,6 @@ async function uploadAvatarImageLegacy({
     avatarId,
     imageUrl = '',
     base64File,
-    blob,
     endpoint = ''
 }: LegacyImageUploadOptions) {
     const normalizedAvatarId =
@@ -695,7 +688,7 @@ async function uploadAvatarImageLegacy({
                 entityId: normalizedAvatarId,
                 imageUrl,
                 base64File,
-                fileSizeInBytes: resolveLegacyBlobSize(blob)
+                fileSizeInBytes: null
             }),
         {
             fallbackMessage: 'Avatar image upload failed'
@@ -714,7 +707,6 @@ async function uploadWorldImageLegacy({
     worldId,
     imageUrl = '',
     base64File,
-    blob,
     endpoint = ''
 }: LegacyImageUploadOptions) {
     const normalizedWorldId =
@@ -734,7 +726,7 @@ async function uploadWorldImageLegacy({
                 entityId: normalizedWorldId,
                 imageUrl,
                 base64File,
-                fileSizeInBytes: resolveLegacyBlobSize(blob)
+                fileSizeInBytes: null
             }),
         {
             fallbackMessage: 'World image upload failed'

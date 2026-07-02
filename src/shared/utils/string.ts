@@ -57,7 +57,6 @@ function localeIncludes(
         return false;
     }
 
-    // Now simply loop through each substring and compare them
     for (let i = 0; i < strObj.length - searchObj.length + 1; i++) {
         const substr = strObj.substring(i, i + searchObj.length);
         if (comparer.compare(substr, searchObj) === 0) {

@@ -262,6 +262,8 @@ export function useSettingsPreferenceActions({
             bioLanguage:
                 normalizedSnapshot.bioLanguage as SettingsIntegrationPrefs['bioLanguage'],
             translationAPIType: normalizedSnapshot.translationAPIType,
+            translationEndpointId:
+                normalizedSnapshot.translationEndpointId as SettingsIntegrationPrefs['translationEndpointId'],
             translationAPIEndpoint:
                 normalizedSnapshot.translationAPIEndpoint as SettingsIntegrationPrefs['translationAPIEndpoint'],
             translationAPIModel:

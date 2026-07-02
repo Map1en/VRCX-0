@@ -34,19 +34,3 @@ export const TELEMETRY_VIEW_MODE_DIMENSIONS = {
 
 export type TelemetryViewModeDimension =
     keyof typeof TELEMETRY_VIEW_MODE_DIMENSIONS;
-
-export const TELEMETRY_CONFIG_FIELDS = {
-    booleanFields: [
-        'backgroundModeEnabled',
-        'wristOverlayEnabled',
-        'xsNotifications',
-        'ovrtHudNotifications',
-        'ovrtWristNotifications',
-        'discordActive',
-        'mcpServerEnabled',
-        'webhookEnabled',
-        'autoStateChangeEnabled'
-    ],
-    optionalBooleanFields: ['mcpServerEnabled', 'webhookEnabled'],
-    enumFields: ['autoAcceptInviteRequests', 'avatarAutoCleanup', 'themeMode']
-} as const;

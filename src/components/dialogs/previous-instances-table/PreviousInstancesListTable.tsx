@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
-import { Location } from '@/components/Location';
+import { StaticLocation } from '@/components/location/StaticLocation';
 import { LocationWorld } from '@/components/LocationWorld';
 import { formatDateFilterOrFallback } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
@@ -63,12 +63,10 @@ function renderLocationCell(row: any, { variant, currentUserId }: any) {
         );
     }
     return (
-        <Location
+        <StaticLocation
             location={location}
             hint={row?.worldName || ''}
-            link={false}
             disableTooltip
-            asButton={false}
         />
     );
 }

@@ -79,8 +79,10 @@ impl VrcxMcpServer {
                 .then_with(|| left.user_id.cmp(&right.user_id))
         });
 
+        let summary = online_friends_summary(&rows);
         OnlineFriendsOutput {
             rows,
+            summary,
             caveats: vec![
                 "Realtime friend presence is maintained from the active VRChat websocket session."
                     .into(),
@@ -100,6 +102,7 @@ struct OnlineFriendsParams {
 #[serde(rename_all = "camelCase")]
 struct OnlineFriendsOutput {
     rows: Vec<OnlineFriendRow>,
+    summary: String,
     caveats: Vec<String>,
 }
 
@@ -115,4 +118,16 @@ struct OnlineFriendRow {
     instance_access_type: Option<String>,
     status: String,
     platform: String,
+}
+
+fn online_friends_summary(rows: &[OnlineFriendRow]) -> String {
+    if rows.is_empty() {
+        return "No friends are online right now.".to_string();
+    }
+    let names = rows
+        .iter()
+        .map(|row| row.display_name.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{} friends online now: {names}.", rows.len())
 }

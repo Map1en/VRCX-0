@@ -904,7 +904,7 @@ export function useUserDialogProfileResource({
                 );
             })
             .catch(() => {
-                // Keep the existing user profile; avatar details are optional.
+                // no-op
             });
 
         return () => {

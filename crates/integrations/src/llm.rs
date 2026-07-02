@@ -134,6 +134,24 @@ struct ChatChunk {
 }
 
 #[derive(Deserialize)]
+struct ChatCompletionResponse {
+    #[serde(default)]
+    choices: Vec<ChatCompletionChoice>,
+}
+
+#[derive(Deserialize, Default)]
+struct ChatCompletionChoice {
+    #[serde(default)]
+    message: ChatCompletionMessage,
+}
+
+#[derive(Deserialize, Default)]
+struct ChatCompletionMessage {
+    #[serde(default)]
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
 struct ChunkChoice {
     #[serde(default)]
     delta: ChunkDelta,
@@ -239,6 +257,35 @@ impl LlmClient {
         } else {
             request.bearer_auth(&self.api_key)
         }
+    }
+
+    /// Request one non-streaming chat completion.
+    pub async fn complete_chat(&self, messages: &[ChatMessage]) -> Result<String, LlmError> {
+        let body = ChatRequestBody {
+            model: &self.model,
+            messages,
+            tools: Vec::new(),
+            stream: false,
+        };
+
+        let response = self
+            .authorized(
+                self.http
+                    .post(format!("{}/chat/completions", self.base_url)),
+            )
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = response.status();
+        let body = response.text().await?;
+        if !status.is_success() {
+            return Err(LlmError::Api {
+                status: status.as_u16(),
+                message: body,
+            });
+        }
+        parse_chat_completion_content(&body)
     }
 
     /// Stream one chat completion. `on_text` is called with each content delta
@@ -364,6 +411,32 @@ fn normalize_base_url(raw: String) -> String {
     raw.trim().trim_end_matches('/').to_string()
 }
 
+fn parse_chat_completion_content(body: &str) -> Result<String, LlmError> {
+    let payload: ChatCompletionResponse =
+        serde_json::from_str(body).map_err(|error| LlmError::Api {
+            status: 200,
+            message: format!("unexpected chat completion response: {error}"),
+        })?;
+    let Some(content) = payload
+        .choices
+        .into_iter()
+        .find_map(|choice| choice.message.content)
+    else {
+        return Err(LlmError::Api {
+            status: 200,
+            message: "unexpected chat completion response: missing message content".into(),
+        });
+    };
+    let content = content.trim().to_string();
+    if content.is_empty() {
+        return Err(LlmError::Api {
+            status: 200,
+            message: "unexpected chat completion response: missing message content".into(),
+        });
+    }
+    Ok(content)
+}
+
 // Drain every complete (newline-terminated) line from the byte buffer, decoding
 // each as UTF-8. Partial trailing bytes stay buffered so a multibyte character
 // split across network chunks is never decoded until it is whole.
@@ -384,6 +457,35 @@ fn drain_complete_lines(buffer: &mut Vec<u8>) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn chat_completion_response_extracts_first_message_content() {
+        let body = r#"{
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "  translated text  "
+                    }
+                }
+            ]
+        }"#;
+
+        assert_eq!(
+            parse_chat_completion_content(body).unwrap(),
+            "translated text"
+        );
+    }
+
+    #[test]
+    fn chat_completion_response_rejects_missing_content() {
+        let body = r#"{"choices":[{"message":{"role":"assistant"}}]}"#;
+
+        assert!(matches!(
+            parse_chat_completion_content(body),
+            Err(LlmError::Api { status: 200, .. })
+        ));
+    }
 
     #[test]
     fn drain_complete_lines_reassembles_multibyte_split_across_chunks() {

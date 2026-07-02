@@ -28,6 +28,7 @@ use vrcx_0_runtime_host::notification::DesktopNotifier;
 use vrcx_0_runtime_host::RuntimeHostActions;
 
 const AUTH_FAILURE_NOTIFICATION_COOLDOWN: Duration = Duration::from_secs(5);
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const MAIN_WINDOW_REBUILD_DESTROY_TIMEOUT: Duration = Duration::from_secs(2);
 const MAIN_WINDOW_REBUILD_DESTROY_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
@@ -103,18 +104,41 @@ fn handle_runtime_auth_failure_notification(
         return;
     };
     let snapshot = state.snapshot_backend_runtime();
-    if snapshot.phase != BackendRuntimePhase::Running
-        || snapshot.auth_status != "authenticated"
-        || snapshot.ws_status != "authFailure"
-        || snapshot.auth_user_id.trim().is_empty()
-    {
+    let reason = json_string_field(payload, "reason");
+    if !should_show_runtime_auth_failure_notification(&snapshot, &reason) {
         return;
     }
 
     let user_id = snapshot.auth_user_id.trim().to_string();
-    let reason = json_string_field(payload, "reason");
     let notification_key = format!("{user_id}\n{reason}");
     show_auth_failure_notification_once(app_handle, &state, &notification_key);
+}
+
+fn should_show_runtime_auth_failure_notification(
+    snapshot: &BackendRuntimeSnapshot,
+    reason: &str,
+) -> bool {
+    snapshot.auth_status == "interactionRequired"
+        && !auth_failure_reason_allows_automatic_recovery(reason)
+}
+
+fn should_show_backend_start_auth_notification(
+    snapshot: &BackendRuntimeSnapshot,
+    reason: &str,
+) -> bool {
+    if auth_failure_reason_allows_automatic_recovery(reason) {
+        return false;
+    }
+    snapshot.auth_status == "interactionRequired"
+        || (snapshot.phase == BackendRuntimePhase::Idle && snapshot.auth_status == "signedOut")
+}
+
+fn auth_failure_reason_allows_automatic_recovery(reason: &str) -> bool {
+    let normalized = reason.trim().to_ascii_lowercase();
+    normalized.contains("missing credentials")
+        || normalized.contains("401")
+        || normalized == "unauthorized"
+        || normalized.contains("\"unauthorized\"")
 }
 
 pub(crate) fn show_auth_failure_notification_once(
@@ -153,7 +177,7 @@ pub(crate) fn show_auth_failure_notification_after_backend_start_error(
     reason: &str,
 ) {
     let snapshot = state.snapshot_backend_runtime();
-    if snapshot.phase != BackendRuntimePhase::Idle || snapshot.auth_status != "signedOut" {
+    if !should_show_backend_start_auth_notification(&snapshot, reason) {
         return;
     }
 
@@ -531,10 +555,11 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
     let default_panic_hook = std::panic::take_hook();
     let panic_app_data = app_data.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
-        vrcx_0_host::error_log::append_error_log(
+        vrcx_0_host::error_log::append_error_log_with_version(
             &panic_app_data,
             "rust:panic",
             &panic_info.to_string(),
+            APP_VERSION,
         );
         default_panic_hook(panic_info);
     }));
@@ -551,7 +576,10 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
             tracing_subscriber::fmt::layer()
                 .with_ansi(false)
                 .with_writer(move || {
-                    vrcx_0_host::error_log::ErrorLogWriter::new(tracing_app_data.clone())
+                    vrcx_0_host::error_log::ErrorLogWriter::new_with_version(
+                        tracing_app_data.clone(),
+                        APP_VERSION,
+                    )
                 })
                 .with_filter(LevelFilter::ERROR),
         )
@@ -1081,6 +1109,7 @@ fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
         .runtime_context
         .tasks
         .set_executor(TauriRuntimeTaskExecutor);
+    state.start_telemetry_runtime();
     state.start_shell_neutral_services();
 
     if is_host_capability_available(HostCapability::Ipc) {
@@ -1140,6 +1169,30 @@ fn start_mcp_server_if_enabled(app: &tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
+
+    fn backend_snapshot(
+        phase: BackendRuntimePhase,
+        auth_status: &str,
+        auth_user_id: &str,
+        ws_status: &str,
+    ) -> BackendRuntimeSnapshot {
+        BackendRuntimeSnapshot {
+            mode: BackendRuntimeMode::Background,
+            phase,
+            auth_status: auth_status.into(),
+            auth_user_id: auth_user_id.into(),
+            auth_display_name: String::new(),
+            ws_status: ws_status.into(),
+            game_log_status: "idle".into(),
+            process_status: "unknown".into(),
+            ws_message_counts: BTreeMap::new(),
+            ws_persisted_count: 0,
+            game_log_persisted_count: 0,
+            last_error: None,
+            updated_at: String::new(),
+        }
+    }
 
     #[test]
     fn auth_failure_notification_label_language_prefixes_are_localized() {
@@ -1155,6 +1208,46 @@ mod tests {
             auth_failure_notification_labels_for_language("ja").title,
             "VRChat ログインの有効期限が切れました"
         );
+    }
+
+    #[test]
+    fn realtime_auth_failure_notification_skips_recoverable_websocket_401() {
+        let snapshot = backend_snapshot(
+            BackendRuntimePhase::Running,
+            "authenticated",
+            "usr_1",
+            "authFailure",
+        );
+        assert!(!should_show_runtime_auth_failure_notification(
+            &snapshot,
+            "auth transport bootstrap failed (401): {\"error\":{\"message\":\"Missing Credentials\"}}"
+        ));
+    }
+
+    #[test]
+    fn backend_start_auth_notification_requires_manual_action() {
+        let recoverable = backend_snapshot(BackendRuntimePhase::Idle, "signedOut", "", "idle");
+        assert!(!should_show_backend_start_auth_notification(
+            &recoverable,
+            "Missing Credentials"
+        ));
+
+        let interaction_required = backend_snapshot(
+            BackendRuntimePhase::Error,
+            "interactionRequired",
+            "",
+            "idle",
+        );
+        assert!(should_show_backend_start_auth_notification(
+            &interaction_required,
+            "Re-authentication in the GUI is required because this account requires 2FA/OTP."
+        ));
+
+        let invalid_session = backend_snapshot(BackendRuntimePhase::Idle, "signedOut", "", "idle");
+        assert!(should_show_backend_start_auth_notification(
+            &invalid_session,
+            "VRChat config request failed with HTTP 403."
+        ));
     }
 
     #[test]

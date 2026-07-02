@@ -58,7 +58,6 @@ function DevKitPanelInner() {
     const [themeOpen, setThemeOpen] = useState(true);
     const [i18nOpen, setI18nOpen] = useState(true);
 
-    // — Theme —
     const localPreview = useCommunityThemeStore((s) => s.localPreview);
     const localPreviewWatch = useCommunityThemeStore(
         (s) => s.localPreviewWatch
@@ -74,7 +73,6 @@ function DevKitPanelInner() {
     const [themeLoading, setThemeLoading] = useState(false);
     const [themeError, setThemeError] = useState<string | null>(null);
 
-    // — i18n —
     const [i18nFilePath, setI18nFilePath] = useState(
         () => localStorage.getItem(STORAGE_I18N_PATH) || ''
     );

@@ -407,7 +407,6 @@ pub fn notification_list_query(
     query_notification_list(db, query)
 }
 
-// Notification row projection helpers.
 fn notification_v1_from_row(row: &[Value]) -> Result<NotificationV1RowOutput, Error> {
     Ok(NotificationV1RowOutput {
         id: strict_row_string(row, 0)?,

@@ -51,7 +51,11 @@
         },
         "feed": {
             "favorites_only_tooltip": "Lọc mỗi yêu thích",
-            "search_placeholder": "Tìm kiếm"
+            "search_placeholder": "Tìm kiếm",
+            "context": {
+                "hide_user": "Ẩn khỏi Feed",
+                "unhide_user": "Bỏ ẩn khỏi Feed"
+            }
         },
         "game_log": {
             "filter_placeholder": "Lọc",
@@ -154,6 +158,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "LLM Endpoints",
+                "llm_endpoints_description": "Quản lý các kết nối tương thích OpenAI cho Social AI và dịch thuật."
+            },
+            "llm_endpoints": {
+                "title": "LLM Endpoints",
+                "description": "Các kết nối tương thích OpenAI dùng chung cho Social AI và dịch thuật.",
+                "endpoint_count": "{count} endpoint",
+                "model_count": "{count} model",
+                "add": "Thêm endpoint",
+                "empty_description": "Thêm một endpoint tương thích OpenAI cho Social AI và dịch thuật tương thích OpenAI.",
+                "name": "Name",
+                "base_url": "Base URL",
+                "models": "Models",
+                "key": "Key",
+                "actions": "Actions",
+                "no_models": "Không có model",
+                "key_saved": "Đã lưu",
+                "key_empty": "Trống",
+                "detect_models": "Phát hiện model",
+                "edit": "Chỉnh sửa endpoint",
+                "delete": "Xóa endpoint",
+                "api_key": "API key",
+                "clear_key": "Xóa key",
+                "key_preserve_placeholder": "Để trống để giữ key đã lưu",
+                "saved": "Đã lưu endpoint",
+                "save_failed": "Lưu endpoint thất bại",
+                "load_failed": "Tải endpoint thất bại",
+                "base_url_required": "Base URL là bắt buộc.",
+                "models_detected": "Đã phát hiện {count} model",
+                "no_models_detected": "Không phát hiện model nào",
+                "detect_failed": "Phát hiện model thất bại",
+                "deleted": "Đã xóa endpoint",
+                "delete_failed": "Xóa endpoint thất bại"
             }
         },
         "profile": {
@@ -180,6 +219,17 @@
                 "wrist_overlay": "Overlay trên cổ tay",
                 "discord_presence": "Hiển thị trên Discord",
                 "advanced": "Nâng cao"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "Người dùng bị ẩn trong Feed",
+                    "description": "Ẩn người dùng đã chọn khỏi Feed mà không xóa dữ liệu đã lưu.",
+                    "add": "Thêm người dùng",
+                    "search_placeholder": "Tìm người dùng",
+                    "empty": "Không có người dùng nào bị ẩn trong Feed.",
+                    "remove": "Xóa người dùng bị ẩn",
+                    "unknown_user": "Người dùng không xác định"
+                }
             },
             "general": {
                 "general": {
@@ -1282,6 +1332,20 @@
         "avatar_database_provider": {
             "header": "Nguồn Avatar Database",
             "add_provider": "Thêm Nguồn"
+        },
+        "translation_api": {
+            "openai": {
+                "connection": "LLM Endpoint",
+                "connection_description": "Được sử dụng bởi dịch thuật tương thích OpenAI.",
+                "connection_placeholder": "Chọn một endpoint",
+                "model": "Tên Model",
+                "prompt_optional": "Prompt (Tùy chọn)",
+                "prompt_optional_description": "System prompt tùy chọn cho các API dịch thuật tương thích OpenAI."
+            },
+            "mode_deepl": "DeepL Free API",
+            "deepl": {
+                "api_key": "DeepL API Key"
+            }
         }
     },
     "prompt": {
@@ -1595,6 +1659,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -1610,5 +1689,21 @@
     },
     "nav_menu": {
         "update_downloaded": "Bản cập nhật đã sẵn sàng"
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "Runtime",
+            "connection": "Kết nối",
+            "connection_unset": "Không có endpoint",
+            "model": "Model",
+            "model_unset": "Không có model nào được lưu cho endpoint này",
+            "playbook_mode": "Chế độ phân tích",
+            "allow_writes": "Cho phép hành động ghi",
+            "manage_endpoints": "Quản lý LLM Endpoints"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

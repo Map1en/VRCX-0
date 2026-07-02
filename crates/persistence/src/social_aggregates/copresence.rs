@@ -59,7 +59,7 @@ pub fn get_copresence_summary(
                     ELSE 'unknown'
                 END AS access_bucket
             FROM gamelog_join_leave g
-            WHERE g.type = 'OnPlayerLeft' AND g.time > 0",
+            WHERE g.type = 'OnPlayerLeft'",
     );
     let mut params = ParamsBuilder::new();
     append_time_window_filter(&mut sql, &mut params, &input.time_window, "g.created_at");

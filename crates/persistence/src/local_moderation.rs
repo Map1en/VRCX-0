@@ -206,7 +206,6 @@ pub fn local_moderation_sync_snapshot(
     Ok(moderation_by_user_id.into_values().collect())
 }
 
-// Local moderation persistence helpers.
 pub(crate) fn set_local_moderation_row(
     db: &DatabaseService,
     owner_user_id: &str,

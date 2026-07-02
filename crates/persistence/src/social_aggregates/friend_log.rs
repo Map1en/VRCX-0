@@ -16,6 +16,7 @@ pub fn get_friend_log(
     if !table_exists(db, &table_name)? {
         return Ok(FriendLogOutput {
             rows: Vec::new(),
+            summary: "No relationship events found.".to_string(),
             total_rows: 0,
             returned_rows: 0,
             truncated: false,
@@ -83,14 +84,36 @@ pub fn get_friend_log(
         .collect::<Vec<_>>();
     let returned_rows = rows.len();
 
+    let summary = friend_log_summary(&rows, total_rows, truncated);
     Ok(FriendLogOutput {
         rows,
+        summary,
         total_rows,
         returned_rows,
         truncated,
         next_cursor,
         caveats: friend_log_caveats(),
     })
+}
+
+fn friend_log_summary(rows: &[FriendLogRow], total_rows: usize, truncated: bool) -> String {
+    if rows.is_empty() {
+        return "No relationship events found.".to_string();
+    }
+    let entries = rows
+        .iter()
+        .map(|row| format!("{} {}", row.kind, row.display_name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    if truncated {
+        format!(
+            "{} of {} relationship event(s): {entries}.",
+            rows.len(),
+            total_rows
+        )
+    } else {
+        format!("{} relationship event(s): {entries}.", rows.len())
+    }
 }
 
 struct FriendLogPageRow {

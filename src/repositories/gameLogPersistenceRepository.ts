@@ -9,16 +9,7 @@ import {
     hasWorldIdPrefix
 } from '@/shared/constants/vrchatIds';
 
-type GameLogKind =
-    | 'Location'
-    | 'LocationTime'
-    | 'JoinLeave'
-    | 'PortalSpawn'
-    | 'VideoPlay'
-    | 'ResourceLoad'
-    | 'Event'
-    | 'External'
-    | string;
+type GameLogKind = 'Event' | 'External';
 
 type GameLogParams = Record<string, unknown>;
 type GameLogEntry = Record<string, unknown>;
@@ -270,13 +261,6 @@ function getCachedGameLogWorldName(worldId: unknown) {
     return cached.worldName;
 }
 
-function rememberGameLogWorldName(worldId: unknown, worldName: unknown) {
-    const normalizedWorldName = normalizeGameLogIdentifier(worldName);
-    if (normalizedWorldName) {
-        setCachedGameLogWorldName(worldId, normalizedWorldName);
-    }
-}
-
 const gameLog = {
     async getGamelogDatabase(maxTableSize: number = DEFAULT_MAX_TABLE_SIZE) {
         var date = new Date();
@@ -287,38 +271,6 @@ const gameLog = {
             maxTableSize
         });
         return Array.isArray(rows) ? rows : [];
-    },
-
-    async addGamelogLocationToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('Location', [entry]);
-        rememberGameLogWorldName(entry.worldId, entry.worldName);
-    },
-
-    async updateGamelogLocationTimeToDatabase(entry: GameLogEntry) {
-        return addGameLogEntries('LocationTime', [entry]);
-    },
-
-    async addGamelogJoinLeaveToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('JoinLeave', [entry]);
-    },
-
-    async addGamelogJoinLeaveBulk(inputData: GameLogEntry[]) {
-        if (inputData.length === 0) {
-            return;
-        }
-        return addGameLogEntries('JoinLeave', inputData);
-    },
-
-    async addGamelogPortalSpawnToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('PortalSpawn', [entry]);
-    },
-
-    async addGamelogVideoPlayToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('VideoPlay', [entry]);
-    },
-
-    async addGamelogResourceLoadToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('ResourceLoad', [entry]);
     },
 
     async addGamelogEventToDatabase(entry: GameLogEntry) {
@@ -449,20 +401,6 @@ const gameLog = {
             maxEntries
         });
         return Array.isArray(rows) ? rows : [];
-    },
-
-    async getLastDateGameLogDatabase() {
-        var date = new Date().toJSON();
-        var dateOffset = new Date(Date.now() - DAY_MS).toJSON();
-        const newDate = await queryGameLog('lastDate');
-        if (
-            typeof newDate === 'string' &&
-            newDate > dateOffset &&
-            newDate < date
-        ) {
-            date = newDate;
-        }
-        return date;
     },
 
     async getGameLogWorldNameByWorldId(worldId: unknown) {

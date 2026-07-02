@@ -1,5 +1,7 @@
 import {
     CopyIcon,
+    EyeIcon,
+    EyeOffIcon,
     ExternalLinkIcon,
     GlobeIcon,
     UserIcon,
@@ -140,6 +142,7 @@ function FeedUserLink({
         parsedLocation.instanceId &&
         actions.canUseFeedFriendLocation(location)
     );
+    const isHiddenFromFeed = actions.isFeedUserHidden(userId);
 
     useEffect(() => {
         if (!userId || displayName !== UNKNOWN_FEED_USER_DISPLAY_NAME) {
@@ -306,6 +309,28 @@ function FeedUserLink({
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
                 <ContextMenuGroup>
+                    {!isCurrentUser ? (
+                        <ContextMenuItem
+                            disabled={!userId}
+                            onSelect={() => {
+                                if (!userId) {
+                                    return;
+                                }
+                                if (isHiddenFromFeed) {
+                                    void actions.removeFeedHiddenUser(userId);
+                                    return;
+                                }
+                                void actions.addFeedHiddenUser(userId);
+                            }}
+                        >
+                            {isHiddenFromFeed ? <EyeIcon /> : <EyeOffIcon />}
+                            {t(
+                                isHiddenFromFeed
+                                    ? 'view.feed.context.unhide_user'
+                                    : 'view.feed.context.hide_user'
+                            )}
+                        </ContextMenuItem>
+                    ) : null}
                     <ContextMenuItem
                         disabled={!displayName}
                         onSelect={() => {

@@ -3,7 +3,8 @@ use std::{borrow::Cow, sync::OnceLock};
 use serde_json::{json, Value};
 use vrcx_0_application::OverlayActivityText;
 use vrcx_0_core::location::{
-    format_display_location_with_labels, parse_location, DisplayLocationLabels,
+    access_type_label, format_display_location_with_labels, parse_location, DisplayLocationLabels,
+    ParsedLocation,
 };
 use vrcx_0_i18n::{collapse_whitespace, interpolate, parse_catalog, Catalog};
 
@@ -95,25 +96,8 @@ impl OverlayLocalizer {
         group_name: &str,
     ) -> String {
         let parsed = parse_location(location);
-        let public = self.label("overlay.access.public", "public");
-        let invite = self.label("overlay.access.invite", "invite");
-        let invite_plus = self.label("overlay.access.invite_plus", "invite+");
-        let friends = self.label("overlay.access.friends", "friends");
-        let friends_plus = self.label("overlay.access.friends_plus", "friends+");
-        let group = self.label("overlay.access.group", "group");
-        let group_public =
-            self.group_access_label(&group, "overlay.access.group_public", "groupPublic");
-        let group_plus = self.group_access_label(&group, "overlay.access.group_plus", "groupPlus");
-        let labels = DisplayLocationLabels {
-            public: &public,
-            invite: &invite,
-            invite_plus: &invite_plus,
-            friends: &friends,
-            friends_plus: &friends_plus,
-            group: &group,
-            group_public: &group_public,
-            group_plus: &group_plus,
-        };
+        let labels = self.access_labels(AccessLabelCase::Lower);
+        let labels = labels.as_display();
         format_display_location_with_labels(&parsed, world_name, group_name, &labels)
     }
 
@@ -141,25 +125,62 @@ impl OverlayLocalizer {
         }
     }
 
-    pub(crate) fn access_label(&self, location: &str) -> String {
-        let parsed = parse_location(location);
-        match parsed.access_type_name.as_str() {
-            "" => String::new(),
-            "public" => self.label("overlay.access.public", "Public"),
-            "invite" => self.label("overlay.access.invite", "Invite"),
-            "invite+" => self.label("overlay.access.invite_plus", "Invite+"),
-            "friends" => self.label("overlay.access.friends", "Friends"),
-            "friends+" => self.label("overlay.access.friends_plus", "Friends+"),
-            "group" => self.label("overlay.access.group", "Group"),
-            "groupPublic" => {
-                let group = self.label("overlay.access.group", "Group");
-                self.group_access_label(&group, "overlay.access.group_public", "groupPublic")
-            }
-            "groupPlus" => {
-                let group = self.label("overlay.access.group", "Group");
-                self.group_access_label(&group, "overlay.access.group_plus", "groupPlus")
-            }
-            other => other.to_string(),
+    pub(crate) fn access_label(&self, parsed: &ParsedLocation) -> String {
+        let labels = self.access_labels(AccessLabelCase::Title);
+        let labels = labels.as_display();
+        access_type_label(parsed, &labels).to_string()
+    }
+
+    fn access_labels(&self, case: AccessLabelCase) -> LocalizedAccessLabels {
+        let (
+            public_fallback,
+            invite_fallback,
+            invite_plus_fallback,
+            friends_fallback,
+            friends_plus_fallback,
+            group_fallback,
+            group_public_fallback,
+            group_plus_fallback,
+        ) = match case {
+            AccessLabelCase::Title => (
+                "Public",
+                "Invite",
+                "Invite+",
+                "Friends",
+                "Friends+",
+                "Group",
+                "Group Public",
+                "Group+",
+            ),
+            AccessLabelCase::Lower => (
+                "public",
+                "invite",
+                "invite+",
+                "friends",
+                "friends+",
+                "group",
+                "groupPublic",
+                "groupPlus",
+            ),
+        };
+        let group = self.label("overlay.access.group", group_fallback);
+        LocalizedAccessLabels {
+            public: self.label("overlay.access.public", public_fallback),
+            invite: self.label("overlay.access.invite", invite_fallback),
+            invite_plus: self.label("overlay.access.invite_plus", invite_plus_fallback),
+            friends: self.label("overlay.access.friends", friends_fallback),
+            friends_plus: self.label("overlay.access.friends_plus", friends_plus_fallback),
+            group_public: self.group_access_label(
+                &group,
+                "overlay.access.group_public",
+                group_public_fallback,
+            ),
+            group_plus: self.group_access_label(
+                &group,
+                "overlay.access.group_plus",
+                group_plus_fallback,
+            ),
+            group,
         }
     }
 
@@ -190,6 +211,37 @@ impl OverlayLocalizer {
         let mut localized = object.clone();
         localized.insert("status".to_string(), Value::String(label));
         Cow::Owned(Value::Object(localized))
+    }
+}
+
+enum AccessLabelCase {
+    Title,
+    Lower,
+}
+
+struct LocalizedAccessLabels {
+    public: String,
+    invite: String,
+    invite_plus: String,
+    friends: String,
+    friends_plus: String,
+    group: String,
+    group_public: String,
+    group_plus: String,
+}
+
+impl LocalizedAccessLabels {
+    fn as_display(&self) -> DisplayLocationLabels<'_> {
+        DisplayLocationLabels {
+            public: &self.public,
+            invite: &self.invite,
+            invite_plus: &self.invite_plus,
+            friends: &self.friends,
+            friends_plus: &self.friends_plus,
+            group: &self.group,
+            group_public: &self.group_public,
+            group_plus: &self.group_plus,
+        }
     }
 }
 

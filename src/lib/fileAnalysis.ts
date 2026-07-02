@@ -141,7 +141,7 @@ export async function getFileAnalysisForUnityPackages({
                 result[platform] = analysis;
             }
         } catch {
-            // Keep the dialog usable if an optional analysis endpoint fails for one platform.
+            // no-op
         }
     }
 

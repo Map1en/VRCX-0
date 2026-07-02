@@ -65,6 +65,20 @@ describe('preferencesStore normalizers', () => {
         );
     });
 
+    it('normalizes hidden feed users into a unique user id list', () => {
+        expect(
+            normalizePreferenceSnapshot({
+                feedHiddenUsers: [
+                    'usr_alice',
+                    { userId: '' },
+                    null,
+                    { userId: 'usr_alice' },
+                    ' usr_bob '
+                ]
+            }).feedHiddenUsers
+        ).toEqual(['usr_alice', 'usr_bob']);
+    });
+
     it('clamps table limits to supported bounds with defaults for invalid values', () => {
         expect(
             normalizeTableLimits({

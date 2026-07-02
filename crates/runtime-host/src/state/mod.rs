@@ -12,6 +12,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
+    telemetry::{TelemetryRuntime, TelemetryRuntimeDeps},
     vr_overlay::{
         start_preview_bridge_if_enabled, VrOverlayActivitySink, VrOverlayRuntime,
         VrOverlayRuntimeSnapshot, VR_OVERLAY_ENABLED_CONFIG_KEY,
@@ -159,6 +160,7 @@ pub struct RuntimeHostState {
     pub log_watcher: LogWatcher,
     pub runtime_context: Arc<RuntimeHostContext>,
     pub backend_runtime: BackendRuntime,
+    pub telemetry: TelemetryRuntime,
     pub game_log_runtime: Arc<GameLogHostRuntime>,
     pub game_client_runtime: Arc<GameClientHostRuntime>,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
@@ -252,6 +254,14 @@ impl RuntimeHostState {
             Arc::clone(&image_cache),
         ));
         let backend_runtime = BackendRuntime::new();
+        let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
+            config: runtime_context.config.clone(),
+            session: runtime_context.session.clone(),
+            tasks: runtime_context.tasks.clone(),
+            backend_runtime: backend_runtime.clone(),
+            app_version: app_version.clone(),
+            app_data: paths.app_data.clone(),
+        });
         let game_log_runtime = Arc::new(GameLogHostRuntime::new(
             Arc::clone(&runtime_context),
             host_file_access.clone(),
@@ -320,6 +330,7 @@ impl RuntimeHostState {
             log_watcher,
             runtime_context,
             backend_runtime,
+            telemetry,
             game_log_runtime,
             game_client_runtime,
             realtime_runtime,
@@ -342,5 +353,9 @@ impl RuntimeHostState {
             backend_frontend_session: Arc::new(Mutex::new(None)),
             _profile_lock: profile_lock,
         })
+    }
+
+    pub fn start_telemetry_runtime(&self) {
+        self.telemetry.start();
     }
 }

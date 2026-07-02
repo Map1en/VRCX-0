@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
 import { getLanguageName, languageCodes } from '@/localization/index';
+import type { LlmEndpointDto } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
+import { openLlmEndpointsManager } from '@/state/llmEndpointsStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -17,16 +19,42 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import {
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL
-} from '../../settingsValues';
+import { DEFAULT_TRANSLATION_MODEL } from '../../settingsValues';
 import { Field, FieldGroup } from '../SettingsField';
+
+type TranslationDraft = {
+    bioLanguage: string;
+    translationAPIType: string;
+    translationAPIKey: string;
+    translationEndpointId: string;
+    translationAPIEndpoint: string;
+    translationAPIModel: string;
+    translationAPIPrompt: string;
+};
+
+type TranslationProviderOption = readonly [value: string, labelKey: string];
+
+type TranslationApiDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    draft: TranslationDraft;
+    onDraftValueChange: (key: keyof TranslationDraft, value: string) => void;
+    providerOptions: readonly TranslationProviderOption[];
+    llmEndpoints: LlmEndpointDto[];
+    integrationStatus: {
+        translation: string;
+        models: string;
+    };
+    onFetchModels: (endpointId?: string) => void | Promise<void>;
+    onTest: () => void | Promise<void>;
+    onSave: () => void | Promise<void>;
+};
 
 export function TranslationApiDialog({
     open: translationApiDialogOpen,
@@ -34,26 +62,27 @@ export function TranslationApiDialog({
     draft: translationDraft,
     onDraftValueChange: setTranslationDraftValue,
     providerOptions: translationProviderOptions,
-    availableModels: availableTranslationModels,
+    llmEndpoints,
     integrationStatus,
     onFetchModels: fetchTranslationModels,
     onTest: testTranslationApiConfig,
     onSave: saveTranslationApiConfig
-}: any) {
+}: TranslationApiDialogProps) {
     const { t } = useTranslation();
     const translationProvider = translationDraft.translationAPIType;
+    const endpoints = llmEndpoints;
+    const selectedEndpoint = endpoints.find(
+        (endpoint) => endpoint.id === translationDraft.translationEndpointId
+    );
+    const modelOptions = selectedEndpoint?.models ?? [];
     const apiKeyLabel =
-        translationProvider === 'openai'
-            ? t('dialog.translation_api.openai.api_key')
-            : translationProvider === 'deepl'
-              ? t('dialog.translation_api.deepl.api_key')
-              : t('dialog.translation_api.description');
+        translationProvider === 'deepl'
+            ? t('dialog.translation_api.deepl.api_key')
+            : t('dialog.translation_api.description');
     const apiKeyPlaceholder =
-        translationProvider === 'openai'
-            ? 'sk-...'
-            : translationProvider === 'deepl'
-              ? 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx'
-              : 'AIzaSy...';
+        translationProvider === 'deepl'
+            ? 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx'
+            : 'AIzaSy...';
 
     return (
         <Dialog
@@ -90,7 +119,7 @@ export function TranslationApiDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {languageCodes.map((code: any) => (
+                                    {languageCodes.map((code: string) => (
                                         <SelectItem key={code} value={code}>
                                             {getLanguageName(code)}
                                         </SelectItem>
@@ -105,12 +134,20 @@ export function TranslationApiDialog({
                     >
                         <Select
                             value={translationDraft.translationAPIType}
-                            onValueChange={(value) =>
+                            onValueChange={(value) => {
                                 setTranslationDraftValue(
                                     'translationAPIType',
                                     value
-                                )
-                            }
+                                );
+                                if (
+                                    value === 'openai' &&
+                                    translationDraft.translationEndpointId
+                                ) {
+                                    fetchTranslationModels(
+                                        translationDraft.translationEndpointId
+                                    );
+                                }
+                            }}
                         >
                             <SelectTrigger
                                 id="settings-translation-mode"
@@ -121,7 +158,7 @@ export function TranslationApiDialog({
                             <SelectContent>
                                 <SelectGroup>
                                     {translationProviderOptions.map(
-                                        ([value, labelKey]: any) => (
+                                        ([value, labelKey]) => (
                                             <SelectItem
                                                 key={value}
                                                 value={value}
@@ -138,103 +175,137 @@ export function TranslationApiDialog({
                         <>
                             <Field
                                 label={t(
-                                    'dialog.translation_api.openai.endpoint'
+                                    'dialog.translation_api.openai.connection'
                                 )}
-                                controlId="settings-translation-endpoint"
+                                description={t(
+                                    'dialog.translation_api.openai.connection_description'
+                                )}
+                                controlId="settings-translation-endpoint-id"
                             >
-                                <Input
-                                    id="settings-translation-endpoint"
+                                <Select
                                     value={
-                                        translationDraft.translationAPIEndpoint
+                                        translationDraft.translationEndpointId ||
+                                        undefined
                                     }
-                                    name="translationApiEndpoint"
-                                    placeholder={DEFAULT_TRANSLATION_ENDPOINT}
-                                    onChange={(event) =>
+                                    disabled={!endpoints.length}
+                                    onValueChange={(value) => {
                                         setTranslationDraftValue(
-                                            'translationAPIEndpoint',
-                                            event.target.value
-                                        )
-                                    }
-                                    className="w-96 max-w-full"
-                                />
+                                            'translationEndpointId',
+                                            value
+                                        );
+                                        const endpoint = endpoints.find(
+                                            (item) => item.id === value
+                                        );
+                                        if (
+                                            endpoint?.models.length &&
+                                            !endpoint.models.includes(
+                                                translationDraft.translationAPIModel
+                                            )
+                                        ) {
+                                            setTranslationDraftValue(
+                                                'translationAPIModel',
+                                                endpoint.models[0]
+                                            );
+                                        }
+                                        fetchTranslationModels(value);
+                                    }}
+                                >
+                                    <SelectTrigger
+                                        id="settings-translation-endpoint-id"
+                                        className="w-96 max-w-full"
+                                    >
+                                        <SelectValue
+                                            placeholder={t(
+                                                'dialog.translation_api.openai.connection_placeholder'
+                                            )}
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {endpoints.map((endpoint) => (
+                                                <SelectItem
+                                                    key={endpoint.id}
+                                                    value={endpoint.id}
+                                                >
+                                                    {endpoint.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
                             </Field>
                             <Field
                                 label={t('dialog.translation_api.openai.model')}
                                 controlId="settings-translation-model"
                             >
-                                <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
-                                    {availableTranslationModels.length ? (
-                                        <Select
-                                            value={
-                                                translationDraft.translationAPIModel ||
-                                                availableTranslationModels[0]
-                                            }
-                                            onValueChange={(value) =>
-                                                setTranslationDraftValue(
-                                                    'translationAPIModel',
-                                                    value
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="settings-translation-model"
-                                                className="min-w-56"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {availableTranslationModels.map(
-                                                        (model: any) => (
-                                                            <SelectItem
-                                                                key={model}
-                                                                value={model}
-                                                            >
-                                                                {model}
-                                                            </SelectItem>
-                                                        )
-                                                    )}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                    ) : (
-                                        <Input
-                                            id="settings-translation-model"
-                                            name="translationApiModel"
-                                            value={
-                                                translationDraft.translationAPIModel
-                                            }
-                                            placeholder={
-                                                DEFAULT_TRANSLATION_MODEL
-                                            }
-                                            onChange={(event) =>
-                                                setTranslationDraftValue(
-                                                    'translationAPIModel',
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={
-                                            integrationStatus.models ===
-                                            'running'
+                                {modelOptions.length ? (
+                                    <Select
+                                        value={
+                                            translationDraft.translationAPIModel ||
+                                            modelOptions[0]
                                         }
-                                        onClick={() => {
-                                            fetchTranslationModels();
+                                        onValueChange={(value) =>
+                                            setTranslationDraftValue(
+                                                'translationAPIModel',
+                                                value
+                                            )
+                                        }
+                                        onOpenChange={(open) => {
+                                            if (
+                                                open &&
+                                                selectedEndpoint &&
+                                                integrationStatus.models !==
+                                                    'running'
+                                            ) {
+                                                fetchTranslationModels(
+                                                    selectedEndpoint.id
+                                                );
+                                            }
                                         }}
                                     >
-                                        {integrationStatus.models === 'running'
-                                            ? t(
-                                                  'dialog.translation_api.fetching_models'
-                                              )
-                                            : t(
-                                                  'dialog.translation_api.fetch_models'
-                                              )}
-                                    </Button>
-                                </div>
+                                        <SelectTrigger
+                                            id="settings-translation-model"
+                                            className="w-96 max-w-full"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {selectedEndpoint?.name ? (
+                                                    <SelectLabel>
+                                                        {selectedEndpoint.name}
+                                                    </SelectLabel>
+                                                ) : null}
+                                                {modelOptions.map(
+                                                    (model: string) => (
+                                                        <SelectItem
+                                                            key={model}
+                                                            value={model}
+                                                        >
+                                                            {model}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        id="settings-translation-model"
+                                        name="translationApiModel"
+                                        value={
+                                            translationDraft.translationAPIModel
+                                        }
+                                        placeholder={DEFAULT_TRANSLATION_MODEL}
+                                        className="w-96 max-w-full"
+                                        onChange={(event) =>
+                                            setTranslationDraftValue(
+                                                'translationAPIModel',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                )}
                             </Field>
                             <Field
                                 label={t(
@@ -263,27 +334,41 @@ export function TranslationApiDialog({
                             </Field>
                         </>
                     ) : null}
-                    <Field
-                        label={apiKeyLabel}
-                        controlId="settings-translation-api-key"
-                    >
-                        <Input
-                            id="settings-translation-api-key"
-                            type="password"
-                            name="translationApiKey"
-                            value={translationDraft.translationAPIKey}
-                            placeholder={apiKeyPlaceholder}
-                            onChange={(event) =>
-                                setTranslationDraftValue(
-                                    'translationAPIKey',
-                                    event.target.value
-                                )
-                            }
-                            className="w-96 max-w-full"
-                        />
-                    </Field>
+                    {translationDraft.translationAPIType !== 'openai' ? (
+                        <Field
+                            label={apiKeyLabel}
+                            controlId="settings-translation-api-key"
+                        >
+                            <Input
+                                id="settings-translation-api-key"
+                                type="password"
+                                name="translationApiKey"
+                                value={translationDraft.translationAPIKey}
+                                placeholder={apiKeyPlaceholder}
+                                onChange={(event) =>
+                                    setTranslationDraftValue(
+                                        'translationAPIKey',
+                                        event.target.value
+                                    )
+                                }
+                                className="w-96 max-w-full"
+                            />
+                        </Field>
+                    ) : null}
                 </FieldGroup>
                 <DialogFooter>
+                    {translationDraft.translationAPIType === 'openai' ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setTranslationApiDialogOpen(false);
+                                openLlmEndpointsManager();
+                            }}
+                        >
+                            {t('assistant.runtime.manage_endpoints')}
+                        </Button>
+                    ) : null}
                     {translationDraft.translationAPIType === 'google' ? (
                         <Button
                             type="button"

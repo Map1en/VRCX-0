@@ -95,7 +95,6 @@ export function useWorldImageUpload({
                         selectedWorld.thumbnailImageUrl ||
                         '',
                     base64File,
-                    blob,
                     endpoint: requestEndpoint
                 })
             );

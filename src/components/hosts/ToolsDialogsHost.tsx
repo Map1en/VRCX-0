@@ -8,6 +8,7 @@ import {
     ExportFriendsListDialog
 } from './tools-dialogs/ExportListDialogs';
 import { GroupCalendarDialog } from './tools-dialogs/GroupCalendarDialog';
+import { LlmEndpointsDialog } from './tools-dialogs/LlmEndpointsDialog';
 import { NoteExportDialog } from './tools-dialogs/NoteExportDialog';
 import {
     PresenceInviteRequestsDialog,
@@ -49,6 +50,9 @@ export function ToolsDialogsHost() {
     );
     const editInviteMessagesOpen = useRuntimeStore(
         (state) => state.systemHosts.editInviteMessagesOpen
+    );
+    const llmEndpointsOpen = useRuntimeStore(
+        (state) => state.systemHosts.llmEndpointsOpen
     );
     const setSystemHostOpen = useRuntimeStore(
         (state) => state.setSystemHostOpen
@@ -117,6 +121,12 @@ export function ToolsDialogsHost() {
                 }
                 currentUserId={getCurrentUserId()}
                 endpoint={getEndpoint()}
+            />
+            <LlmEndpointsDialog
+                open={Boolean(llmEndpointsOpen)}
+                onOpenChange={(open) =>
+                    setSystemHostOpen('llmEndpointsOpen', open)
+                }
             />
         </>
     );

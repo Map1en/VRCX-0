@@ -6,6 +6,7 @@ import {
 } from '@/state/preferencesStore';
 
 import type { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
+import type { FavoriteFriendGroupOption } from './settingsFavoriteGroupOptions';
 import {
     avatarAutoCleanupOptions,
     desktopToastOptions,
@@ -126,17 +127,24 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     speakNotificationTts: SettingsCallback<[unknown]>;
     toggleLocalFavoriteFriendsGroup: SettingsCallback<[unknown, boolean]>;
     ttsVoices: SpeechSynthesisVoice[];
+    addFeedHiddenUser: SettingsCallback<[string]>;
+    favoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    localFavoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    localFavoriteFriendsGroups: string[];
+    remoteFavoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    removeFeedHiddenUser: SettingsCallback<[string]>;
+    selectedFavoriteFriendGroupLabel: string;
 };
 
 export function buildSettingsPageStateSections({
     activeSettingsTab,
+    addFeedHiddenUser,
     addAvatarProvider,
     appDataDirState,
     applyAvatarProviderConfig,
     avatarProviderConfig,
     avatarProviderConfigRef,
     avatarProviderDialogOpen,
-    availableTranslationModels,
     cacheStats,
     cacheStatsVisible,
     clearVrcxCache,
@@ -158,6 +166,7 @@ export function buildSettingsPageStateSections({
     handleGameLogDisabledChange,
     integrationPrefs,
     integrationStatus,
+    llmEndpoints,
     locale,
     localFavoriteFriendGroupOptions,
     localFavoriteFriendsGroups,
@@ -188,6 +197,7 @@ export function buildSettingsPageStateSections({
     refreshRuntimeAppSnapshot,
     refreshSqliteTableSizes,
     remoteFavoriteFriendGroupOptions,
+    removeFeedHiddenUser,
     removeAvatarProvider,
     resetAppDataDir,
     resetSharedFeedFilters,
@@ -679,7 +689,10 @@ export function buildSettingsPageStateSections({
             remoteFavoriteFriendGroupOptions,
             localFavoriteFriendGroupOptions,
             localFavoriteFriendsGroups,
+            feedHiddenUsers: prefs.feedHiddenUsers,
             commit,
+            onAddFeedHiddenUser: addFeedHiddenUser,
+            onRemoveFeedHiddenUser: removeFeedHiddenUser,
             setRecentActionCooldownEnabledPreference,
             setRecentActionCooldownMinutesPreference,
             toggleLocalFavoriteFriendsGroup,
@@ -802,7 +815,7 @@ export function buildSettingsPageStateSections({
             translationDraft,
             setTranslationDraftValue,
             translationProviderOptions,
-            availableTranslationModels,
+            llmEndpoints,
             fetchTranslationModels,
             testTranslationApiConfig,
             saveTranslationApiConfig,

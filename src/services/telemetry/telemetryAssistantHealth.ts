@@ -1,27 +1,10 @@
-import { postTelemetry } from './telemetryClient';
-import { isAnonymousUsageTelemetryEnabled } from './telemetryConfig';
-import {
-    recordTelemetryErrorDetail,
-    serializeTelemetryErrorDetails
-} from './telemetryErrorDetails';
-import { buildTelemetryContext } from './telemetryPayload';
-import type {
-    TelemetryErrorDetail,
-    TelemetrySessionState
-} from './telemetryTypes';
+import { recordTelemetryEvent } from './telemetryEvent';
 
 type AssistantToolErrorInput = {
     source?: string;
     args?: string;
     summary?: string;
 };
-
-// Failures the chat UI cannot surface on its own: a tool call that errored (the
-// model silently works around it) or a turn that died without an answer. Counts
-// are cumulative per session and sent last-write-wins, mirroring page-health.
-let toolErrors = 0;
-let turnErrors = 0;
-const details = new Map<string, TelemetryErrorDetail>();
 
 const SAFE_STRING_ARG_KEYS = new Set([
     'access',
@@ -102,50 +85,26 @@ function buildToolErrorSummary(
     return parts.length ? parts.join('; ') : undefined;
 }
 
+function nullableTrimmed(value: string | undefined): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+}
+
 export function recordAssistantToolError(input: AssistantToolErrorInput): void {
-    if (!isAnonymousUsageTelemetryEnabled()) {
-        return;
-    }
-    toolErrors += 1;
-    recordTelemetryErrorDetail(details, {
-        kind: 'tool_error',
-        source: input.source,
-        summary: buildToolErrorSummary(input)
+    recordTelemetryEvent({
+        type: 'assistantToolError',
+        source: nullableTrimmed(input.source),
+        summary: buildToolErrorSummary(input) ?? null
     });
 }
 
 export function recordAssistantTurnError(code: string, summary?: string): void {
-    // `cancelled` is a user action (stop / superseded), not a failure.
-    if (!isAnonymousUsageTelemetryEnabled() || code === 'cancelled') {
+    if (code === 'cancelled') {
         return;
     }
-    turnErrors += 1;
-    recordTelemetryErrorDetail(details, {
-        kind: 'turn_error',
+    recordTelemetryEvent({
+        type: 'assistantTurnError',
         code,
-        summary
+        summary: nullableTrimmed(summary)
     });
-}
-
-export async function sendAssistantHealth(
-    session: TelemetrySessionState
-): Promise<void> {
-    if (
-        !isAnonymousUsageTelemetryEnabled() ||
-        (toolErrors === 0 && turnErrors === 0)
-    ) {
-        return;
-    }
-    await postTelemetry('/api/v1/telemetry/assistant-health', {
-        ...buildTelemetryContext(session),
-        toolErrors,
-        turnErrors,
-        details: serializeTelemetryErrorDetails(details)
-    });
-}
-
-export function resetAssistantHealth(): void {
-    toolErrors = 0;
-    turnErrors = 0;
-    details.clear();
 }

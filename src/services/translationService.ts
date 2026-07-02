@@ -1,3 +1,4 @@
+import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import externalApiRepository from '@/repositories/externalApiRepository';
 import {
@@ -17,6 +18,7 @@ type TranslationConfig = {
     bioLanguage: string;
     type: TranslationType;
     key: string;
+    endpointId: string;
     endpoint: string;
     model: string;
     prompt: string;
@@ -61,45 +63,68 @@ export function normalizeDeepLTargetLanguage(language: unknown): string {
 }
 
 export async function getTranslationConfig(): Promise<TranslationConfig> {
-    const [enabled, bioLanguage, type, key, endpoint, model, prompt] =
-        await Promise.all([
-            configRepository.getBool('translationAPI', false),
-            configRepository.getString('bioLanguage', 'en'),
-            configRepository.getString('translationAPIType', 'google'),
-            configRepository.getString('translationAPIKey', ''),
-            configRepository.getString(
-                'translationAPIEndpoint',
-                DEFAULT_TRANSLATION_ENDPOINT
-            ),
-            configRepository.getString(
-                'translationAPIModel',
-                DEFAULT_TRANSLATION_MODEL
-            ),
-            configRepository.getString('translationAPIPrompt', '')
-        ]);
+    const [
+        enabled,
+        bioLanguage,
+        type,
+        key,
+        endpointId,
+        endpoint,
+        model,
+        prompt
+    ] = await Promise.all([
+        configRepository.getBool('translationAPI', false),
+        configRepository.getString('bioLanguage', 'en'),
+        configRepository.getString('translationAPIType', 'google'),
+        configRepository.getString('translationAPIKey', ''),
+        configRepository.getString('translationEndpointId', ''),
+        configRepository.getString(
+            'translationAPIEndpoint',
+            DEFAULT_TRANSLATION_ENDPOINT
+        ),
+        configRepository.getString(
+            'translationAPIModel',
+            DEFAULT_TRANSLATION_MODEL
+        ),
+        configRepository.getString('translationAPIPrompt', '')
+    ]);
 
     return {
         enabled: Boolean(enabled),
         bioLanguage: String(bioLanguage || 'en'),
         type: normalizeTranslationApiType(type),
         key: String(key || ''),
+        endpointId: String(endpointId || ''),
         endpoint: String(endpoint || DEFAULT_TRANSLATION_ENDPOINT),
         model: String(model || DEFAULT_TRANSLATION_MODEL),
         prompt: String(prompt || '')
     };
 }
 
+async function resolveOpenAiTranslationEndpointId(
+    endpointId: string
+): Promise<string> {
+    const trimmed = endpointId.trim();
+    if (trimmed) {
+        return trimmed;
+    }
+    await commands.appLlmEndpointList();
+    return String(
+        (await configRepository.getString('translationEndpointId', '')) || ''
+    ).trim();
+}
+
 export async function translateText(
     text: string,
-    targetLanguage: any = '',
+    targetLanguage: unknown = '',
     overrides: TranslationOverrides = {}
 ): Promise<string> {
     const storedConfig = await getTranslationConfig();
-    const config: any = {
+    const config: TranslationConfig = {
         ...storedConfig,
         ...overrides
     };
-    const target = targetLanguage || config.bioLanguage || 'en';
+    const target = String(targetLanguage || config.bioLanguage || 'en');
 
     if (!config.enabled) {
         throw new Error('Translation API disabled.');
@@ -170,48 +195,19 @@ export async function translateText(
             : '';
     }
 
-    const endpoint = config.endpoint || DEFAULT_TRANSLATION_ENDPOINT;
+    const endpointId = await resolveOpenAiTranslationEndpointId(
+        config.endpointId
+    );
     const model = config.model || DEFAULT_TRANSLATION_MODEL;
-    if (!endpoint || !model) {
+    if (!endpointId || !model) {
         throw new Error('Translation endpoint/model missing.');
     }
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-    };
-    if (config.key) {
-        headers.Authorization = `Bearer ${config.key}`;
-    }
-
-    const response = await externalApiRepository.executeTranslationRequest({
-        url: endpoint,
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-            model,
-            messages: [
-                {
-                    role: 'system',
-                    content:
-                        config.prompt ||
-                        `You are a translation assistant. Translate the user message into ${target}. Only return the translated text.`
-                },
-                {
-                    role: 'user',
-                    content: text
-                }
-            ]
-        })
+    return commands.appLlmTranslate({
+        endpointId,
+        model,
+        prompt: config.prompt || null,
+        targetLang: target,
+        text
     });
-
-    if (response.status !== 200) {
-        throw new Error(`Translation API error: ${response.status}`);
-    }
-
-    const json = parseWebJson(response);
-    const choices = Array.isArray(json.choices) ? json.choices : [];
-    const firstChoice = isRecord(choices[0]) ? choices[0] : {};
-    const message = isRecord(firstChoice.message) ? firstChoice.message : {};
-    const translated = message.content;
-    return typeof translated === 'string' ? translated.trim() : '';
 }

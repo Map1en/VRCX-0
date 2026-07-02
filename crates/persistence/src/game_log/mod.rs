@@ -17,8 +17,8 @@ pub use query::{
 };
 pub use tables::ensure_game_log_tables;
 pub use types::{
-    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
-    GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogQueryInput,
+    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
+    GameLogLocationEntry, GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogQueryInput,
     GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };
 pub use write::write_batch;

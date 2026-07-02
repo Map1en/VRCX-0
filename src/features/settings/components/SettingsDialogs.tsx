@@ -52,7 +52,7 @@ export function SettingsDialogs({
                 draft={translationApi.draft}
                 onDraftValueChange={translationApi.setDraftValue}
                 providerOptions={translationApi.providerOptions}
-                availableModels={translationApi.fetchedModels}
+                llmEndpoints={translationApi.llmEndpoints}
                 integrationStatus={translationApi.integrationStatus}
                 onFetchModels={translationApi.onFetchModels}
                 onTest={translationApi.onTest}

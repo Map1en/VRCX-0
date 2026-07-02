@@ -1,6 +1,5 @@
 use super::*;
 
-// Game-log local query helpers.
 pub(crate) fn game_log_row_from_unified_row(row: &[Value]) -> Result<Value, Error> {
     let event_type = strict_row_string(row, 2)?;
     let mut object = serde_json::Map::new();

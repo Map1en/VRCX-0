@@ -39,6 +39,7 @@ export type TranslationApiConfigPreferenceInput = {
     bioLanguage?: unknown;
     translationAPIType?: unknown;
     translationAPIKey?: unknown;
+    translationEndpointId?: unknown;
     translationAPIEndpoint?: unknown;
     translationAPIModel?: unknown;
     translationAPIPrompt?: unknown;

@@ -96,6 +96,10 @@
                 "Status": "Status",
                 "Avatar": "Awatar",
                 "Bio": "Bio"
+            },
+            "context": {
+                "hide_user": "Ukryj z Feed",
+                "unhide_user": "Pokaż w Feed"
             }
         },
         "friends_locations": {
@@ -387,6 +391,41 @@
             },
             "toast": {
                 "failed_to_update_print_favorite": "Failed to update print favorite"
+            },
+            "system_tools": {
+                "llm_endpoints": "Endpointy LLM",
+                "llm_endpoints_description": "Zarządzaj połączeniami zgodnymi z OpenAI dla Social AI i tłumaczenia."
+            },
+            "llm_endpoints": {
+                "title": "Endpointy LLM",
+                "description": "Wspólne połączenia zgodne z OpenAI dla Social AI i tłumaczenia.",
+                "endpoint_count": "Endpointy: {count}",
+                "model_count": "Modele: {count}",
+                "add": "Dodaj endpoint",
+                "empty_description": "Dodaj endpoint zgodny z OpenAI dla Social AI i tłumaczenia zgodnego z OpenAI.",
+                "name": "Nazwa",
+                "base_url": "Bazowy URL",
+                "models": "Modele",
+                "key": "Klucz",
+                "actions": "Akcje",
+                "no_models": "Brak modeli",
+                "key_saved": "Zapisany",
+                "key_empty": "Pusty",
+                "detect_models": "Wykryj modele",
+                "edit": "Edytuj endpoint",
+                "delete": "Usuń endpoint",
+                "api_key": "Klucz API",
+                "clear_key": "Wyczyść klucz",
+                "key_preserve_placeholder": "Pozostaw puste, aby zachować zapisany klucz",
+                "saved": "Zapisano endpoint",
+                "save_failed": "Nie udało się zapisać endpointu",
+                "load_failed": "Nie udało się wczytać endpointów",
+                "base_url_required": "Bazowy URL jest wymagany.",
+                "models_detected": "Wykryto modeli: {count}",
+                "no_models_detected": "Nie wykryto modeli",
+                "detect_failed": "Nie udało się wykryć modeli",
+                "deleted": "Usunięto endpoint",
+                "delete_failed": "Nie udało się usunąć endpointu"
             }
         },
         "profile": {
@@ -414,6 +453,17 @@
                 "discord_presence": "Status Discord",
                 "pictures": "Obrazki",
                 "advanced": "Zaawansowane"
+            },
+            "social": {
+                "hidden_feed": {
+                    "header": "Ukryci użytkownicy w Feed",
+                    "description": "Ukrywa wybranych użytkowników w Feed bez usuwania zapisanych danych.",
+                    "add": "Dodaj użytkownika",
+                    "search_placeholder": "Szukaj użytkowników",
+                    "empty": "Brak ukrytych użytkowników w Feed.",
+                    "remove": "Usuń ukrytego użytkownika",
+                    "unknown_user": "Nieznany użytkownik"
+                }
             },
             "general": {
                 "general": {
@@ -1486,7 +1536,7 @@
             "emoji_loop_pingpong": "Pętla Ping Pong",
             "flipbook_info": "Wybierz spritesheet PNG 1024x1024, aby użyć go jako animowane emoji. Dostępne rozmiary siatki: 4, 16, lub 64 (maks. 64 FPS, maks. 64 klatek)",
             "note": "Note",
-            "crop_print_border": "Crop Print Border",
+            "crop_print_border": "Przytnij istniejącą ramkę (ponowne przesłanie)",
             "consume_bundle": "Consume",
             "item": "Przedmiot",
             "sticker": "Naklejka",
@@ -1608,10 +1658,12 @@
             "msg_test_success": "Powodzenie testu",
             "msg_test_failed": "Niepowodzenie testu",
             "openai": {
-                "endpoint": "Link API",
-                "api_key": "Klucz API (Opcjonalnie)",
                 "model": "Nazwa modelu",
-                "prompt_optional": "Prompt (Opcjonalnie)"
+                "prompt_optional": "Prompt (Opcjonalnie)",
+                "connection": "LLM Endpoint",
+                "connection_description": "Używany przez tłumaczenie zgodne z OpenAI.",
+                "connection_placeholder": "Wybierz endpoint",
+                "prompt_optional_description": "Opcjonalny prompt systemowy dla API tłumaczenia zgodnych z OpenAI."
             },
             "deepl": {
                 "api_key": "Klucz API DeepL"
@@ -2236,6 +2288,21 @@
                 "title": "Tools",
                 "allTools": "All Tools..."
             },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
+            },
             "help": {
                 "title": "Help",
                 "changelog": "Changelog",
@@ -2248,5 +2315,21 @@
                 "supportVrcx": "Support VRCX-0"
             }
         }
+    },
+    "assistant": {
+        "not_configured": "Select an LLM Endpoint and model to start.",
+        "runtime": {
+            "title": "Środowisko wykonawcze",
+            "connection": "Połączenie",
+            "connection_unset": "Brak endpointu",
+            "model": "Model",
+            "model_unset": "Brak zapisanych modeli dla tego endpointu",
+            "playbook_mode": "Tryb analizy",
+            "allow_writes": "Zezwól na akcje zapisu",
+            "manage_endpoints": "Zarządzaj endpointami LLM"
+        }
+    },
+    "app": {
+        "routes": {}
     }
 }

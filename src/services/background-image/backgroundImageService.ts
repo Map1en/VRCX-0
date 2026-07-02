@@ -5,9 +5,9 @@ import {
 } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
 import {
-    disableInstalledCommunityTheme,
-    stopLocalCommunityThemePreview
-} from '@/services/communityThemeService';
+    disableCommunityThemesForBackgroundImage,
+    registerBackgroundImageAppearanceHandlers
+} from '@/services/appearanceConflictCoordinator';
 import { HOUR_MS } from '@/shared/constants/time';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import {
@@ -262,11 +262,6 @@ function isCommunityAppearanceActive(): boolean {
         state.installedTheme,
         state.localPreview
     );
-}
-
-async function disableCommunityThemesForBackgroundImage(): Promise<void> {
-    await stopLocalCommunityThemePreview();
-    await disableInstalledCommunityTheme();
 }
 
 async function syncBackgroundImageAppearance(
@@ -887,5 +882,11 @@ export function getBackgroundImageProviderLabel(
 ): string {
     return resolveBackgroundImageProvider(providerId).name;
 }
+
+registerBackgroundImageAppearanceHandlers({
+    disableBackgroundImage,
+    isBackgroundImageActive,
+    migrateLegacyNasaApodCommunityTheme
+});
 
 export { backgroundImageRemoteProviders };

@@ -10,7 +10,7 @@
         "example_1": "Who have I played with most this week?",
         "example_2": "Who am I drifting away from?",
         "example_3": "When is the best time to catch my friends online?",
-        "not_configured": "Set your model and API key in Settings to start.",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "Calling {{name}}…",
         "entities_title": "Mentioned",
         "entities_empty": "People and worlds mentioned in answers show up here.",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "Auto (by endpoint)",
             "playbook_mode_guided": "Guided (local / weak models)",
             "playbook_mode_open": "Open (strong models)",
-            "disable_thinking": "Disable thinking",
-            "disable_thinking_description": "Skip the model's hidden reasoning chain (e.g. Qwen /no_think). Recommended for tool-driven local models — much faster with little quality loss here.",
             "privacy_title": "Privacy",
             "privacy_local": "Requests go to a local endpoint on this machine. Your social data does not leave your computer.",
             "privacy_remote": "Using an online AI service may expose your data. Proceed with caution."
+        },
+        "runtime": {
+            "title": "Runtime",
+            "connection": "Connection",
+            "connection_unset": "No endpoint",
+            "model": "Model",
+            "model_unset": "No models saved for this endpoint",
+            "playbook_mode": "Analysis mode",
+            "allow_writes": "Allow write actions",
+            "manage_endpoints": "Manage LLM Endpoints"
         }
     },
     "user_hover_card": {
@@ -197,6 +205,21 @@
             "tools": {
                 "title": "Tools",
                 "allTools": "All Tools..."
+            },
+            "edit": {
+                "title": "Edit",
+                "undo": "Undo",
+                "redo": "Redo",
+                "cut": "Cut",
+                "copy": "Copy",
+                "paste": "Paste",
+                "selectAll": "Select All"
+            },
+            "window": {
+                "title": "Window",
+                "minimize": "Minimize",
+                "maximize": "Maximize",
+                "close": "Close Window"
             },
             "help": {
                 "title": "Help",
@@ -710,6 +733,10 @@
             },
             "dynamic": {
                 "value_copied": "{value} copied"
+            },
+            "context": {
+                "hide_user": "Hide from Feed",
+                "unhide_user": "Unhide from Feed"
             }
         },
         "friends_locations": {
@@ -1589,7 +1616,9 @@
                 "app_launcher": "App Launcher",
                 "app_launcher_description": "Manage apps and shortcuts that launch automatically when VRChat starts.",
                 "registry_backup": "VRChat Registry Backup",
-                "registry_backup_description": "Create or restore a VRChat registry backup"
+                "registry_backup_description": "Create or restore a VRChat registry backup",
+                "llm_endpoints": "LLM Endpoints",
+                "llm_endpoints_description": "Manage OpenAI-compatible connections for Social AI and translation."
             },
             "vrchat_log": {
                 "title": "VRChat Log Viewer",
@@ -1787,6 +1816,37 @@
                     "too_many_favorites": "{favorites} favorite print(s) exceed the favorite limit of {max} by {over}. Auto-delete will not remove favorite prints.",
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
+            },
+            "llm_endpoints": {
+                "title": "LLM Endpoints",
+                "description": "Shared OpenAI-compatible connections for Social AI and translation.",
+                "endpoint_count": "{count} endpoints",
+                "model_count": "{count} models",
+                "add": "Add endpoint",
+                "empty_description": "Add an OpenAI-compatible endpoint for Social AI and OpenAI-compatible translation.",
+                "name": "Name",
+                "base_url": "Base URL",
+                "models": "Models",
+                "key": "Key",
+                "actions": "Actions",
+                "no_models": "No models",
+                "key_saved": "Saved",
+                "key_empty": "Empty",
+                "detect_models": "Detect models",
+                "edit": "Edit endpoint",
+                "delete": "Delete endpoint",
+                "api_key": "API key",
+                "clear_key": "Clear key",
+                "key_preserve_placeholder": "Leave blank to keep the saved key",
+                "saved": "Endpoint saved",
+                "save_failed": "Failed to save endpoint",
+                "load_failed": "Failed to load endpoints",
+                "base_url_required": "Base URL is required.",
+                "models_detected": "{count} models detected",
+                "no_models_detected": "No models detected",
+                "detect_failed": "Failed to detect models",
+                "deleted": "Endpoint deleted",
+                "delete_failed": "Failed to delete endpoint"
             }
         },
         "profile": {
@@ -1829,6 +1889,15 @@
                 },
                 "favorites": {
                     "header": "Favorites"
+                },
+                "hidden_feed": {
+                    "header": "Hidden Feed Users",
+                    "description": "Hide selected users from Feed without deleting saved data.",
+                    "add": "Add user",
+                    "search_placeholder": "Search users",
+                    "empty": "No hidden Feed users.",
+                    "remove": "Remove hidden user",
+                    "unknown_user": "Unknown user"
                 }
             },
             "vr": {
@@ -4539,7 +4608,7 @@
             "emoji_loop_pingpong": "Loop PingPong",
             "flipbook_info": "Select a 1024x1024 PNG spritesheet to use as an animated emoji, available frame grid sizes: 4, 16 or 64 (max FPS 64, max frames 64)",
             "note": "Note",
-            "crop_print_border": "Crop Print Border",
+            "crop_print_border": "Crop existing border (re-upload)",
             "upload_options": "Upload options",
             "consume_bundle": "Consume",
             "item": "Item",
@@ -4749,20 +4818,16 @@
             "msg_test_success": "Test succeeded",
             "msg_test_failed": "Test failed",
             "openai": {
-                "endpoint": "API Endpoint",
-                "api_key": "API Key (Optional)",
                 "model": "Model Name",
                 "prompt_optional": "Prompt (Optional)",
-                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs."
+                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs.",
+                "connection": "LLM Endpoint",
+                "connection_description": "Used by OpenAI-compatible translation.",
+                "connection_placeholder": "Select an endpoint"
             },
             "deepl": {
                 "api_key": "DeepL API Key"
-            },
-            "fetch_models": "Fetch Models",
-            "fetching_models": "Fetching...",
-            "msg_endpoint_required": "Please fill in the endpoint first",
-            "msg_models_fetched": "Found {count} models",
-            "msg_no_models_found": "No models found"
+            }
         },
         "notification_position": {
             "header": "Notification Position",

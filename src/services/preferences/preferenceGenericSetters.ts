@@ -8,7 +8,10 @@ import {
     normalizeTrustColors,
     TRUST_COLOR_DEFAULTS
 } from '@/shared/utils/trustColors';
-import { normalizeSharedFeedFilters } from '@/state/preferencesStore';
+import {
+    normalizeFeedHiddenUsers,
+    normalizeSharedFeedFilters
+} from '@/state/preferencesStore';
 import type { TrustColorKey } from '@/state/preferencesStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
@@ -515,4 +518,40 @@ export async function setLocalFavoriteFriendsGroupsPreference(value: unknown) {
         localFavoriteFriendsGroups
     );
     return localFavoriteFriendsGroups;
+}
+
+export async function setFeedHiddenUsersPreference(value: unknown) {
+    const feedHiddenUsers = normalizeFeedHiddenUsers(value);
+    await configRepository.setString(
+        'feedHiddenUsers',
+        JSON.stringify(feedHiddenUsers)
+    );
+    patchPreferences({ feedHiddenUsers });
+    publishPreferenceChanged('feedHiddenUsers', feedHiddenUsers);
+    return feedHiddenUsers;
+}
+
+export async function addFeedHiddenUserPreference(userId: unknown) {
+    const current = normalizeFeedHiddenUsers(
+        usePreferencesStore.getState().feedHiddenUsers
+    );
+    const [normalizedUserId] = normalizeFeedHiddenUsers([userId]);
+    if (!normalizedUserId || current.includes(normalizedUserId)) {
+        return current;
+    }
+    return setFeedHiddenUsersPreference([...current, normalizedUserId]);
+}
+
+export async function removeFeedHiddenUserPreference(userId: unknown) {
+    const [normalizedUserId] = normalizeFeedHiddenUsers([userId]);
+    const current = normalizeFeedHiddenUsers(
+        usePreferencesStore.getState().feedHiddenUsers
+    );
+    const next = normalizedUserId
+        ? current.filter((id) => id !== normalizedUserId)
+        : current;
+    if (next.length === current.length) {
+        return current;
+    }
+    return setFeedHiddenUsersPreference(next);
 }

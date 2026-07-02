@@ -3,7 +3,7 @@ import { Component, type ReactNode } from 'react';
 import { recordRouteError } from '@/services/telemetry/telemetryPageReach';
 import type { TelemetryRouteErrorClass } from '@/services/telemetry/telemetryTypes';
 
-function classifyRouteError(error: unknown): TelemetryRouteErrorClass {
+export function classifyRouteError(error: unknown): TelemetryRouteErrorClass {
     const name = error instanceof Error ? error.name : '';
     const message = error instanceof Error ? error.message : String(error);
     if (

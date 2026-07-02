@@ -15,7 +15,8 @@ import { useSessionStore } from '@/state/sessionStore';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 
 const LEGACY_SCHEMA_VERSION = 16;
-const DATABASE_VERSION = 17;
+const DATABASE_VERSION = 18;
+const COPRESENCE_DURATION_REPAIR_KEY = 'copresenceDurationRepairV1Done';
 const VRCX0_SCHEMA_VERSION_KEY = 'VRCX_0_databaseVersion';
 
 type DatabaseUpgradePatch = Record<string, unknown>;
@@ -70,6 +71,22 @@ async function blockOnFailedUpgrade(
     return false;
 }
 
+async function runCopresenceDurationRepairOnce(): Promise<void> {
+    try {
+        const done = await configRepository.getString(
+            COPRESENCE_DURATION_REPAIR_KEY,
+            ''
+        );
+        if (done === '1') {
+            return;
+        }
+        await databaseMaintenanceRepository.repairZeroCopresenceDurations();
+        await configRepository.setString(COPRESENCE_DURATION_REPAIR_KEY, '1');
+    } catch (error) {
+        console.error('Co-presence duration repair failed:', error);
+    }
+}
+
 async function writeUpgradeDatabaseVersion(): Promise<void> {
     await configRepository.setString(
         VRCX0_SCHEMA_VERSION_KEY,
@@ -120,6 +137,7 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
                 ),
                 legacyMigrationAvailable: false
             });
+            await runCopresenceDurationRepairOnce();
             useSessionStore.getState().setSessionState({ databaseReady: true });
             return true;
         }
@@ -160,6 +178,7 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
                 'service.database_upgrade_service.success.database_update_complete'
             )
         });
+        await runCopresenceDurationRepairOnce();
         useSessionStore.getState().setSessionState({ databaseReady: true });
         return true;
     } catch (error) {

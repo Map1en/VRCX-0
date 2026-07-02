@@ -7,10 +7,6 @@ import {
     runBackgroundMaintenanceTick
 } from './backgroundMaintenanceService';
 import {
-    isRuntimeGameLogSideEffectsActive,
-    syncGameLogTail
-} from './gameLogIngestService';
-import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
     refreshHostCapabilities
@@ -77,21 +73,12 @@ async function tickRuntimeLoop() {
     try {
         await refreshGameLogCapabilityIfPrewatching();
         const gameLogAvailable = isHostCapabilityAvailable('gameLogWatcher');
-        if (gameLogAvailable && isRuntimeGameLogSideEffectsActive()) {
-            runtimeStore.setUpdateLoopState({
-                lastGameLogSyncAt: new Date().toISOString(),
-                lastGameLogSyncDetail:
-                    'Backend GameLog side effects are active.'
-            });
-        } else if (gameLogAvailable) {
-            await syncGameLogTail();
-        } else {
-            runtimeStore.setUpdateLoopState({
-                lastGameLogSyncAt: new Date().toISOString(),
-                lastGameLogSyncDetail:
-                    getHostCapabilityUnavailableReason('gameLogWatcher')
-            });
-        }
+        runtimeStore.setUpdateLoopState({
+            lastGameLogSyncAt: new Date().toISOString(),
+            lastGameLogSyncDetail: gameLogAvailable
+                ? 'Backend GameLog side effects are active.'
+                : getHostCapabilityUnavailableReason('gameLogWatcher')
+        });
         if (stopped || tickToken !== activeTickToken) {
             return;
         }
@@ -102,8 +89,8 @@ async function tickRuntimeLoop() {
                 'updateLoop',
                 'running',
                 gameLogAvailable
-                    ? 'Game log tail sync and background maintenance are active.'
-                    : 'Background maintenance is active. Game log tail sync is unavailable in this host.'
+                    ? 'Backend game log ingest and background maintenance are active.'
+                    : 'Background maintenance is active. Game log ingest is unavailable in this host.'
             );
     } catch (error) {
         if (isVrchatMissingCredentialsError(error)) {

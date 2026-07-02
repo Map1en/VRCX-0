@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use chrono::DateTime;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -74,6 +75,7 @@ pub enum DatabaseMaintenanceTask {
     FixBrokenGroupChange,
     FixCancelFriendRequestTypo,
     FixBrokenGameLogDisplayNames,
+    RepairZeroCopresenceDurations,
 }
 
 impl DatabaseMaintenanceTask {
@@ -106,6 +108,9 @@ impl DatabaseMaintenanceTask {
             task if task == "fixBrokenGameLogDisplayNames" => {
                 Ok(Self::FixBrokenGameLogDisplayNames)
             }
+            task if task == "repairZeroCopresenceDurations" => {
+                Ok(Self::RepairZeroCopresenceDurations)
+            }
             task => Err(Error::Custom(format!("Unknown maintenance task: {task}"))),
         }
     }
@@ -133,6 +138,7 @@ impl DatabaseMaintenanceTask {
             Self::FixBrokenGroupChange => "fixBrokenGroupChange",
             Self::FixCancelFriendRequestTypo => "fixCancelFriendRequestTypo",
             Self::FixBrokenGameLogDisplayNames => "fixBrokenGameLogDisplayNames",
+            Self::RepairZeroCopresenceDurations => "repairZeroCopresenceDurations",
         }
     }
 }
@@ -358,8 +364,76 @@ fn run_database_maintenance_task(
                 )?;
             }
         }
+        DatabaseMaintenanceTask::RepairZeroCopresenceDurations => {
+            repair_zero_copresence_durations(db)?;
+        }
     }
     Ok(())
+}
+
+const MAX_COPRESENCE_DURATION_MS: i64 = 24 * 60 * 60 * 1000;
+const REPAIR_CHUNK_SIZE: usize = 5000;
+
+fn repair_zero_copresence_durations(db: &DatabaseService) -> Result<(), Error> {
+    ensure_game_log_tables(db)?;
+    let zero_leaves = db.execute(
+        "SELECT id, created_at, location, user_id, display_name FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND time = 0 AND location LIKE 'wrld_%'",
+        &Default::default(),
+    )?;
+    for chunk in zero_leaves.chunks(REPAIR_CHUNK_SIZE) {
+        db.write_transaction(|tx| {
+            for row in chunk {
+                let id = row.first().cloned().unwrap_or(Value::Null);
+                let leave_at = row_string(row, 1);
+                let location = row_string(row, 2);
+                let user_id = row_string(row, 3);
+                let display_name = row_string(row, 4);
+                let join_rows = tx.execute(
+                    "SELECT created_at FROM gamelog_join_leave
+                     WHERE type = 'OnPlayerJoined' AND location = @location AND created_at <= @created_at
+                       AND ((@user_id <> '' AND user_id = @user_id)
+                            OR (@user_id = '' AND display_name = @display_name))
+                     ORDER BY created_at DESC, id DESC LIMIT 1",
+                    &ParamsBuilder::new()
+                        .set("location", location)
+                        .set("created_at", leave_at.clone())
+                        .set("user_id", user_id)
+                        .set("display_name", display_name)
+                        .build(),
+                )?;
+                let Some(join_at) = join_rows
+                    .first()
+                    .map(|join| row_string(join, 0))
+                    .filter(|value| !value.is_empty())
+                else {
+                    continue;
+                };
+                let (Some(join_ms), Some(leave_ms)) = (rfc3339_ms(&join_at), rfc3339_ms(&leave_at))
+                else {
+                    continue;
+                };
+                let duration = leave_ms - join_ms;
+                if duration <= 0 || duration > MAX_COPRESENCE_DURATION_MS {
+                    continue;
+                }
+                tx.execute_non_query(
+                    "UPDATE gamelog_join_leave SET time = @time WHERE id = @id",
+                    &ParamsBuilder::new()
+                        .set("time", duration)
+                        .set("id", id)
+                        .build(),
+                )?;
+            }
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+fn rfc3339_ms(value: &str) -> Option<i64> {
+    DateTime::parse_from_rfc3339(value)
+        .ok()
+        .map(|dt| dt.timestamp_millis())
 }
 
 pub fn database_maintenance_table_sizes_get(
@@ -457,7 +531,6 @@ pub fn database_maintenance_broken_game_log_display_names_get(
         .collect())
 }
 
-// Maintenance table counters.
 pub(crate) fn count_table(db: &DatabaseService, table_name: &str) -> Result<i64, Error> {
     let table_name = safe_identifier(table_name, "Table name")?;
     Ok(db
@@ -479,4 +552,130 @@ pub(crate) fn max_friend_log_number(db: &DatabaseService, user_prefix: &str) -> 
         .first()
         .map(|row| row_i64(row, 0))
         .unwrap_or(0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestDir {
+        path: std::path::PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path =
+                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn insert_join_leave(
+        db: &DatabaseService,
+        created_at: &str,
+        event_type: &str,
+        display_name: &str,
+        location: &str,
+        user_id: &str,
+        time: i64,
+    ) {
+        db.execute_non_query(
+            "INSERT INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time)
+             VALUES (@created_at, @type, @name, @location, @user_id, @time)",
+            &ParamsBuilder::new()
+                .set("created_at", created_at)
+                .set("type", event_type)
+                .set("name", display_name)
+                .set("location", location)
+                .set("user_id", user_id)
+                .set("time", time)
+                .build(),
+        )
+        .unwrap();
+    }
+
+    fn leave_time(db: &DatabaseService, user_id: &str) -> i64 {
+        db.execute(
+            "SELECT time FROM gamelog_join_leave WHERE user_id = @user_id AND type = 'OnPlayerLeft'",
+            &ParamsBuilder::new().set("user_id", user_id).build(),
+        )
+        .unwrap()
+        .first()
+        .map(|row| row_i64(row, 0))
+        .unwrap()
+    }
+
+    #[test]
+    fn repair_zero_copresence_durations_pairs_leave_with_join() -> Result<(), Error> {
+        let dir = TestDir::new("gamelog-repair-durations");
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+        ensure_game_log_tables(&db)?;
+
+        // Alice: real 40-minute session whose leave was written as time=0.
+        insert_join_leave(
+            &db,
+            "2026-06-30T16:00:10.000Z",
+            "OnPlayerJoined",
+            "Alice",
+            "wrld_x:1",
+            "usr_alice",
+            0,
+        );
+        insert_join_leave(
+            &db,
+            "2026-06-30T16:40:10.000Z",
+            "OnPlayerLeft",
+            "Alice",
+            "wrld_x:1",
+            "usr_alice",
+            0,
+        );
+        // Bob: leave with no matching join stays 0.
+        insert_join_leave(
+            &db,
+            "2026-06-30T16:40:10.000Z",
+            "OnPlayerLeft",
+            "Bob",
+            "wrld_x:1",
+            "usr_bob",
+            0,
+        );
+        // Carol: a 'traveling' leave carries no world, so it is not repaired.
+        insert_join_leave(
+            &db,
+            "2026-06-30T16:05:00.000Z",
+            "OnPlayerJoined",
+            "Carol",
+            "wrld_x:1",
+            "usr_carol",
+            0,
+        );
+        insert_join_leave(
+            &db,
+            "2026-06-30T16:20:00.000Z",
+            "OnPlayerLeft",
+            "Carol",
+            "traveling",
+            "usr_carol",
+            0,
+        );
+
+        database_maintenance_run(&db, DatabaseMaintenanceTask::RepairZeroCopresenceDurations)?;
+
+        assert_eq!(leave_time(&db, "usr_alice"), 2_400_000);
+        assert_eq!(leave_time(&db, "usr_bob"), 0);
+        assert_eq!(leave_time(&db, "usr_carol"), 0);
+        Ok(())
+    }
 }

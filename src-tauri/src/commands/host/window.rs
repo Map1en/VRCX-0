@@ -15,7 +15,21 @@ pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
         state.log_watcher_compat_bridge.stop();
         state.ipc.stop();
         state.stop_backend_runtime("application-exit");
+        flush_telemetry_before_task_shutdown(&state);
         state.runtime_context.tasks.stop_all();
+    }
+}
+
+fn flush_telemetry_before_task_shutdown(state: &AppState) {
+    let telemetry = state.telemetry.clone();
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
+            tokio::task::block_in_place(|| handle.block_on(telemetry.shutdown_flush()));
+        }
+        Ok(_) => {}
+        Err(_) => {
+            tauri::async_runtime::block_on(telemetry.shutdown_flush());
+        }
     }
 }
 

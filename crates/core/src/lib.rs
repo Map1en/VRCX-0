@@ -1,6 +1,7 @@
 pub mod activity_buckets;
 pub mod activity_heatmap;
 pub mod activity_sessions;
+pub mod avatar;
 pub mod friends;
 pub mod game_process;
 pub mod ipc;

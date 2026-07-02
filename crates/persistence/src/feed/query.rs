@@ -363,7 +363,6 @@ pub fn feed_live_rows_merge(query: FeedLiveRowsMergeInput) -> FeedReadModelOutpu
     merge_feed_live_rows(query)
 }
 
-// Feed read-model helpers.
 const FEED_GPS_SOURCE_RANK: i64 = 60;
 const FEED_ONLINE_OFFLINE_SOURCE_RANK: i64 = 50;
 const FEED_STATUS_SOURCE_RANK: i64 = 40;

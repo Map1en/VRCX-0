@@ -117,6 +117,7 @@ pub struct SearchWorldsVisitedInput {
 #[serde(rename_all = "camelCase")]
 pub struct SearchWorldsVisitedOutput {
     pub rows: Vec<VisitedWorldRow>,
+    pub summary: String,
     pub caveats: Vec<String>,
 }
 
@@ -304,6 +305,7 @@ pub struct InviteHistoryInput {
 #[serde(rename_all = "camelCase")]
 pub struct InviteHistoryOutput {
     pub rows: Vec<InviteHistoryRow>,
+    pub summary: String,
     pub caveats: Vec<String>,
 }
 
@@ -337,6 +339,7 @@ pub struct FriendLogInput {
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogOutput {
     pub rows: Vec<FriendLogRow>,
+    pub summary: String,
     pub total_rows: usize,
     pub returned_rows: usize,
     pub truncated: bool,
@@ -496,6 +499,7 @@ pub struct RecallEncounterInput {
 #[serde(rename_all = "camelCase")]
 pub struct RecallEncounterOutput {
     pub rows: Vec<RecallEncounterRow>,
+    pub summary: String,
     pub caveats: Vec<String>,
 }
 

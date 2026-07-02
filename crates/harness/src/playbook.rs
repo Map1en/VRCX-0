@@ -27,6 +27,23 @@ impl Playbook {
     }
 }
 
+/// Tools kept out of a weak model's fallback toolset when no playbook matched:
+/// the raw mutual-friend graph (an answer-shaped tool supersedes it for the
+/// common question and weak models drown in its nodes+edges) and the
+/// graph-refresh action (infrastructure, not a question to answer). Strong
+/// models in open mode are never narrowed and keep these.
+const WEAK_FALLBACK_DENYLIST: &[&str] = &["get_social_graph", "refresh_mutual_graph"];
+
+/// Drop the advanced/non-answer tools above from the full toolset. Used only on
+/// a classify miss while a playbook mode is active; open mode keeps everything.
+pub(crate) fn weak_fallback_tools(tools: &[ToolDefinition]) -> Vec<ToolDefinition> {
+    tools
+        .iter()
+        .filter(|tool| !WEAK_FALLBACK_DENYLIST.contains(&tool.name.as_str()))
+        .cloned()
+        .collect()
+}
+
 struct Intent {
     label: &'static str,
     description: &'static str,
@@ -43,18 +60,145 @@ do NOT attempt graph reasoning yourself. Circles reflect who is friends with who
 connections), which is not the same as who plays together.",
 };
 
-const INTENTS: &[Intent] = &[Intent {
-    label: "circles",
-    description: "which of the user's own friends know each other; friend groups or \
-mutual-friendship clusters",
-    keywords: &[
-        "friend group",
-        "friend circle",
-        "know each other",
-        "knows who",
-    ],
-    playbook: FRIEND_CIRCLES,
-}];
+const CO_PRESENCE: Playbook = Playbook {
+    tool_whitelist: &["get_copresence_summary"],
+    constraint_prompt: "The user wants to know who they play with or spend the most time with. \
+Call get_copresence_summary once; it returns people ranked by time spent together, computed \
+from the local game log (reliable even for private instances you attended). It defaults to \
+current friends and is already ranked — read the top rows, do NOT loop or re-rank. For an \
+all-time / 'ever' question OMIT timeWindow entirely; only pass a window if the user named a \
+period. This measures time played together, which is not the same as who is friends with whom.",
+};
+
+const BEST_TIME: Playbook = Playbook {
+    tool_whitelist: &["get_best_time_to_play"],
+    constraint_prompt: "The user wants the best time to log on to find the most friends online. \
+Call get_best_time_to_play once; it returns hour-of-day or weekday buckets ranked by how many \
+distinct friends come online. Pass utcOffsetMinutes (e.g. 540 for UTC+9) so buckets are in the \
+user's local time. Narrate the peak buckets from the summary; do NOT tally the raw log \
+yourself. This is about the whole friend list, not one named person.",
+};
+
+const ACTIVITY_PATTERN: Playbook = Playbook {
+    tool_whitelist: &["get_friend_activity_pattern"],
+    constraint_prompt: "The user wants to know when a specific friend is usually online. Call \
+get_friend_activity_pattern once with that friend (a display name is accepted directly). It \
+buckets their online/offline log by hour-of-day or weekday. Pass utcOffsetMinutes for \
+local-time buckets. Narrate the busiest buckets from the summary. This describes one person's \
+pattern, not the best time to catch the most people.",
+};
+
+const ONLINE_FRIENDS: Playbook = Playbook {
+    tool_whitelist: &["get_online_friends"],
+    constraint_prompt: "The user wants to know who is online right now or who they can join. \
+Call get_online_friends once; it lists friends currently online with their location and \
+instance access, from live session memory (realtime, not history). Narrate the summary and \
+rows. Private instances may be redacted by VRChat privacy rules — say so if the list looks \
+incomplete; never guess hidden locations.",
+};
+
+const ACTIVITY_TIMELINE: Playbook = Playbook {
+    tool_whitelist: &["get_activity_timeline"],
+    constraint_prompt: "The user wants to know how their own playtime is distributed over time \
+(which months, weeks, or days they played most, or their trend). Call get_activity_timeline \
+once; it buckets the user's own play history by year/month/week/day-of-week/hour-of-day with a \
+ready summary. Pass utcOffsetMinutes for local buckets; OMIT timeWindow for all history. \
+Narrate the peak buckets from the summary; do NOT add up sessions yourself.",
+};
+
+const SOCIAL_RECAP: Playbook = Playbook {
+    tool_whitelist: &["summarize_social_period"],
+    constraint_prompt: "The user wants an overall recap of their recent social activity (their \
+week, month, or a period). Call summarize_social_period once; it composes several analyses — \
+your activity, top companions, new and fading friends, top worlds, best times — into one \
+bundle to narrate. Read the whole bundle and summarize it; do NOT separately call the \
+individual tools it already includes.",
+};
+
+const INTENTS: &[Intent] = &[
+    Intent {
+        label: "circles",
+        description: "which of the user's own friends know each other; friend groups or \
+mutual-friendship clusters (who is friends with whom, not who plays together)",
+        keywords: &[
+            "friend group",
+            "friend circle",
+            "know each other",
+            "knows who",
+        ],
+        playbook: FRIEND_CIRCLES,
+    },
+    Intent {
+        label: "copresence",
+        description: "who the user plays with or spends the most time together with \
+(co-presence ranking); not who is friends with whom",
+        keywords: &[
+            "play with most",
+            "play with the most",
+            "spend the most time",
+            "who do i play with",
+        ],
+        playbook: CO_PRESENCE,
+    },
+    Intent {
+        label: "best_time",
+        description: "the best time of day or week to log on to find the most friends online, \
+across the whole friend list",
+        keywords: &[
+            "best time to play",
+            "when can i find",
+            "when should i log",
+            "when are the most",
+        ],
+        playbook: BEST_TIME,
+    },
+    Intent {
+        label: "activity_pattern",
+        description: "when one specific named friend is usually online (that single person's \
+activity pattern)",
+        keywords: &["usually online", "usually on at", "what time is"],
+        playbook: ACTIVITY_PATTERN,
+    },
+    Intent {
+        label: "online_friends",
+        description: "who is online right now / who the user can join at this moment (realtime \
+presence)",
+        keywords: &[
+            "who is online",
+            "who's online",
+            "online right now",
+            "online now",
+            "who can i join",
+        ],
+        playbook: ONLINE_FRIENDS,
+    },
+    Intent {
+        label: "activity_timeline",
+        description: "how the user's own playtime is distributed over time — which months, \
+weeks, or days they played most, or their personal play trend",
+        keywords: &[
+            "which month",
+            "which week",
+            "most active month",
+            "play trend",
+            "when did i play",
+        ],
+        playbook: ACTIVITY_TIMELINE,
+    },
+    Intent {
+        label: "social_recap",
+        description: "an overall recap or summary of the user's recent social activity over a \
+period (their week or month)",
+        keywords: &[
+            "recap my",
+            "summarize my week",
+            "summarize my month",
+            "how was my week",
+            "how was my month",
+        ],
+        playbook: SOCIAL_RECAP,
+    },
+];
 
 pub(crate) fn classify_keyword(user_text: &str) -> Option<Playbook> {
     let text = user_text.to_lowercase();
@@ -134,7 +278,7 @@ mod tests {
 
     #[test]
     fn keyword_ignores_other_questions() {
-        assert!(classify_keyword("who is online now").is_none());
+        assert!(classify_keyword("what is the weather like").is_none());
         assert!(classify_keyword("who knows where alice went").is_none());
         assert!(classify_keyword("我的好友圈").is_none());
     }
@@ -150,7 +294,74 @@ mod tests {
             Some("circles")
         );
         assert!(matched_intent("none").is_none());
-        assert!(matched_intent("copresence").is_none());
+        assert!(matched_intent("teleport").is_none());
+    }
+
+    #[test]
+    fn keywords_do_not_collide_across_intents() {
+        for (index, left) in INTENTS.iter().enumerate() {
+            for right in &INTENTS[index + 1..] {
+                for left_keyword in left.keywords {
+                    for right_keyword in right.keywords {
+                        assert!(
+                            !left_keyword.contains(right_keyword)
+                                && !right_keyword.contains(left_keyword),
+                            "keyword collision between `{}` and `{}`: `{left_keyword}` vs `{right_keyword}` \
+(classify_keyword would silently resolve to whichever intent is listed first)",
+                            left.label,
+                            right.label,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn weak_fallback_drops_advanced_keeps_leaf_and_analyze() {
+        let tools = vec![
+            tool("get_social_graph"),
+            tool("refresh_mutual_graph"),
+            tool("get_friend_circles"),
+            tool("find_user"),
+            tool("get_copresence_summary"),
+        ];
+        let names: Vec<String> = weak_fallback_tools(&tools)
+            .into_iter()
+            .map(|definition| definition.name)
+            .collect();
+        assert!(!names.contains(&"get_social_graph".to_string()));
+        assert!(!names.contains(&"refresh_mutual_graph".to_string()));
+        assert!(names.contains(&"get_friend_circles".to_string()));
+        assert!(names.contains(&"find_user".to_string()));
+        assert!(names.contains(&"get_copresence_summary".to_string()));
+    }
+
+    #[test]
+    fn keyword_matches_new_intents() {
+        assert!(classify_keyword("who do i play with the most").is_some());
+        assert!(classify_keyword("best time to play tonight").is_some());
+        assert!(classify_keyword("who is online now").is_some());
+        assert!(classify_keyword("which month did i play most").is_some());
+        assert!(classify_keyword("recap my week").is_some());
+    }
+
+    #[test]
+    fn matched_intent_resolves_each_label() {
+        for label in [
+            "circles",
+            "copresence",
+            "best_time",
+            "activity_pattern",
+            "online_friends",
+            "activity_timeline",
+            "social_recap",
+        ] {
+            assert_eq!(
+                matched_intent(label).map(|intent| intent.label),
+                Some(label)
+            );
+        }
     }
 
     #[test]

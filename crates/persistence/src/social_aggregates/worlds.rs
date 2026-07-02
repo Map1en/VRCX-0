@@ -35,12 +35,32 @@ pub fn search_worlds_visited(
             stay_minutes: millis_to_minutes(row_i64(&row, 4).max(0)),
         })
         .filter(|row| !row.world_id.is_empty() || !row.location.is_empty())
-        .collect();
+        .collect::<Vec<_>>();
 
+    let summary = worlds_visited_summary(&rows);
     Ok(SearchWorldsVisitedOutput {
         rows,
+        summary,
         caveats: worlds_visited_caveats(),
     })
+}
+
+fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {
+    if rows.is_empty() {
+        return "No world visits found in this window.".to_string();
+    }
+    let names = rows
+        .iter()
+        .map(|row| {
+            if row.world_name.is_empty() {
+                row.location.as_str()
+            } else {
+                row.world_name.as_str()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{} recent world visit(s): {names}.", rows.len())
 }
 
 pub fn favorite_local(

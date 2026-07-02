@@ -1,7 +1,9 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_harness::{AssistantConfigStatus, PlaybookMode, Session, SessionSummary};
+use vrcx_0_harness::{
+    AssistantRuntimeSelection, AssistantRuntimeStatus, PlaybookMode, Session, SessionSummary,
+};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -67,21 +69,6 @@ pub async fn app__assistant_delete_session(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__assistant_list_models(
-    state: State<'_, AppState>,
-    baseUrl: String,
-    apiKey: Option<String>,
-) -> Result<Vec<String>, AppError> {
-    state
-        .assistant()
-        .await?
-        .list_models(baseUrl, apiKey)
-        .await
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn app__assistant_set_panel_open(
     state: State<'_, AppState>,
     sessionId: String,
@@ -96,37 +83,64 @@ pub async fn app__assistant_set_panel_open(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__assistant_config_status(
+pub async fn app__assistant_runtime_status(
     state: State<'_, AppState>,
-) -> Result<AssistantConfigStatus, AppError> {
+) -> Result<AssistantRuntimeStatus, AppError> {
     state
         .assistant()
         .await?
-        .config_status()
+        .runtime_status()
         .map_err(AppError::from)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__assistant_set_config(
+pub async fn app__assistant_set_session_runtime(
     state: State<'_, AppState>,
-    baseUrl: String,
-    apiKey: Option<String>,
-    model: String,
+    sessionId: String,
+    endpointId: Option<String>,
+    model: Option<String>,
     allowWrites: bool,
     playbookMode: PlaybookMode,
-    disableThinking: bool,
-) -> Result<AssistantConfigStatus, AppError> {
+) -> Result<Session, AppError> {
     state
         .assistant()
         .await?
-        .set_config(
-            baseUrl,
-            apiKey,
-            model,
+        .set_session_runtime(
+            &sessionId,
+            endpointId,
+            model
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_string),
             allowWrites,
             playbookMode,
-            disableThinking,
+        )
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__assistant_set_default_runtime(
+    state: State<'_, AppState>,
+    endpointId: Option<String>,
+    model: Option<String>,
+    allowWrites: bool,
+    playbookMode: PlaybookMode,
+) -> Result<AssistantRuntimeSelection, AppError> {
+    state
+        .assistant()
+        .await?
+        .set_default_runtime(
+            endpointId,
+            model
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_string),
+            allowWrites,
+            playbookMode,
         )
         .map_err(AppError::from)
 }

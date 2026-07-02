@@ -102,6 +102,20 @@ function AppRouterContent() {
     useEffect(() => {
         recordRouteEnter(pathname);
     }, [pathname]);
+    useEffect(() => {
+        if (!isMacHost) {
+            return undefined;
+        }
+
+        const handleContextMenu = (event: MouseEvent) => {
+            event.preventDefault();
+        };
+
+        document.addEventListener('contextmenu', handleContextMenu);
+        return () => {
+            document.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, [isMacHost]);
 
     return (
         <div

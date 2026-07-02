@@ -10,7 +10,7 @@
         "example_1": "這週我跟誰一起玩得最多呢？",
         "example_2": "我正逐漸遠離誰呢？",
         "example_3": "什麼時候是拜訪線上好友的最佳時機？",
-        "not_configured": "請在「設定」中設定你的模型和 API 金鑰，即可開始使用。",
+        "not_configured": "Select an LLM Endpoint and model to start.",
         "tool_running": "呼叫 {{name}}…",
         "entities_title": "提及",
         "entities_empty": "答案中提及的人物與世界會顯示在此處。",
@@ -45,11 +45,19 @@
             "playbook_mode_auto": "自動（依端點）",
             "playbook_mode_guided": "引導（本機 / 較弱模型）",
             "playbook_mode_open": "開放（強模型）",
-            "disable_thinking": "關閉思考",
-            "disable_thinking_description": "略過模型的隱藏推理鏈（如 Qwen 的 /no_think）。建議工具驅動的本機模型開啟——快得多，且在此情境幾乎不損失品質。",
             "privacy_title": "隱私權",
             "privacy_local": "請求會傳送至這台電腦上的本機端點。你的社交資料不會離開你的電腦。",
             "privacy_remote": "使用線上人工智慧服務可能會導致你的資料外洩。請謹慎行事。"
+        },
+        "runtime": {
+            "title": "執行階段",
+            "connection": "連線",
+            "connection_unset": "無端點",
+            "model": "模型",
+            "model_unset": "此端點未儲存任何模型",
+            "playbook_mode": "分析模式",
+            "allow_writes": "允許寫入操作",
+            "manage_endpoints": "管理 LLM 端點"
         }
     },
     "user_hover_card": {
@@ -197,6 +205,21 @@
             "tools": {
                 "title": "工具",
                 "allTools": "所有工具..."
+            },
+            "edit": {
+                "title": "編輯",
+                "undo": "復原",
+                "redo": "重做",
+                "cut": "剪下",
+                "copy": "複製",
+                "paste": "貼上",
+                "selectAll": "全選"
+            },
+            "window": {
+                "title": "視窗",
+                "minimize": "最小化",
+                "maximize": "最大化",
+                "close": "關閉視窗"
             },
             "help": {
                 "title": "幫助",
@@ -710,6 +733,10 @@
             },
             "dynamic": {
                 "value_copied": "已複製{value}"
+            },
+            "context": {
+                "hide_user": "從 Feed 隱藏",
+                "unhide_user": "從 Feed 取消隱藏"
             }
         },
         "friends_locations": {
@@ -1589,7 +1616,9 @@
                 "app_launcher": "應用程式啟動器",
                 "app_launcher_description": "管理會在 VRChat 啟動時自動啟動的應用程式和捷徑",
                 "registry_backup": "VRChat 登錄檔備份",
-                "registry_backup_description": "建立或還原 VRChat 登錄檔備份"
+                "registry_backup_description": "建立或還原 VRChat 登錄檔備份",
+                "llm_endpoints": "LLM 端點",
+                "llm_endpoints_description": "管理供 Social AI 和翻譯使用的 OpenAI 兼容連線。"
             },
             "vrchat_log": {
                 "title": "VRChat 紀錄查看器",
@@ -1787,6 +1816,37 @@
                     "too_many_favorites": "已收藏 Print 為 {favorites} 個，超過收藏上限 {max} 個中的 {over} 個。自動刪除不會移除已收藏 Print。",
                     "too_many_favorites_event": "已收藏 Print 佔滿列表，自動刪除無法降到設定上限以下。目前剩餘 {remaining} 個 Print。"
                 }
+            },
+            "llm_endpoints": {
+                "title": "LLM 端點",
+                "description": "供 Social AI 和翻譯共用的 OpenAI 兼容連線。",
+                "endpoint_count": "{count} 個端點",
+                "model_count": "{count} 個模型",
+                "add": "新增端點",
+                "empty_description": "新增一個 OpenAI 兼容端點，供 Social AI 和 OpenAI 兼容翻譯使用。",
+                "name": "名稱",
+                "base_url": "Base URL",
+                "models": "模型",
+                "key": "金鑰",
+                "actions": "操作",
+                "no_models": "無模型",
+                "key_saved": "已儲存",
+                "key_empty": "為空",
+                "detect_models": "偵測模型",
+                "edit": "編輯端點",
+                "delete": "刪除端點",
+                "api_key": "API 金鑰",
+                "clear_key": "清除金鑰",
+                "key_preserve_placeholder": "留空以保留已儲存的金鑰",
+                "saved": "端點已儲存",
+                "save_failed": "儲存端點失敗",
+                "load_failed": "載入端點失敗",
+                "base_url_required": "Base URL 為必填項。",
+                "models_detected": "偵測到 {count} 個模型",
+                "no_models_detected": "未偵測到模型",
+                "detect_failed": "偵測模型失敗",
+                "deleted": "端點已刪除",
+                "delete_failed": "刪除端點失敗"
             }
         },
         "profile": {
@@ -1829,6 +1889,15 @@
                 },
                 "favorites": {
                     "header": "收藏"
+                },
+                "hidden_feed": {
+                    "header": "Feed 隱藏使用者",
+                    "description": "從 Feed 視圖隱藏所選使用者，但不會刪除已儲存資料。",
+                    "add": "新增使用者",
+                    "search_placeholder": "搜尋使用者",
+                    "empty": "Feed 中沒有隱藏使用者。",
+                    "remove": "移除隱藏使用者",
+                    "unknown_user": "未知使用者"
                 }
             },
             "vr": {
@@ -4539,7 +4608,7 @@
             "emoji_loop_pingpong": "桌球循環",
             "flipbook_info": "選擇一張 1024×1024 的 PNG 精靈圖來製作動態表情符號，可用的影格格線大小為：4、16 或 64（最大 FPS 為 64，最多 64 個影格）",
             "note": "注意",
-            "crop_print_border": "裁切列印邊框",
+            "crop_print_border": "重傳時裁切原有邊框",
             "upload_options": "上傳選項",
             "consume_bundle": "使用",
             "item": "物品",
@@ -4741,7 +4810,7 @@
             "mode": "服務提供者",
             "mode_google": "Google 翻譯",
             "mode_openai": "OpenAI",
-            "mode_deepl": "DeepL 免費 API",
+            "mode_deepl": "DeepL Free API",
             "test": "測試",
             "save": "儲存",
             "msg_fill_endpoint_model": "請填寫 API 端點與模型",
@@ -4749,20 +4818,16 @@
             "msg_test_success": "測試成功",
             "msg_test_failed": "測試失敗",
             "openai": {
-                "endpoint": "API 端點",
-                "api_key": "API 金鑰（選填）",
                 "model": "模型名稱",
                 "prompt_optional": "提示詞（選填）",
-                "prompt_optional_description": "OpenAI 兼容翻譯 API 的可選系統提示詞。"
+                "prompt_optional_description": "OpenAI 兼容翻譯 API 的可選系統提示詞。",
+                "connection": "LLM 端點",
+                "connection_description": "供 OpenAI 兼容翻譯使用。",
+                "connection_placeholder": "選擇一個端點"
             },
             "deepl": {
                 "api_key": "DeepL API 金鑰"
-            },
-            "fetch_models": "取得模型",
-            "fetching_models": "正在取得…",
-            "msg_endpoint_required": "請先填寫端點位址",
-            "msg_models_fetched": "找到 {count} 個模型",
-            "msg_no_models_found": "找不到任何模型"
+            }
         },
         "notification_position": {
             "header": "通知位置",

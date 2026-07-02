@@ -11,6 +11,7 @@ import {
     normalizeAutoDeletePrintsLimit,
     normalizeDefaultLaunchMode,
     normalizeFeedTimeDisplayMode,
+    normalizeFeedHiddenUsers,
     normalizeTableLimits,
     normalizeTablePageSize,
     normalizeTablePageSizes,
@@ -139,6 +140,7 @@ export async function loadPreferenceSnapshot() {
         maxTableSize,
         searchLimit,
         localFavoriteFriendsGroups,
+        feedHiddenUsers,
         sharedFeedFilters,
         overlayActivityFilters,
         vrNotificationActivityFilters,
@@ -149,6 +151,7 @@ export async function loadPreferenceSnapshot() {
         translationAPI,
         bioLanguage,
         translationAPIType,
+        translationEndpointId,
         translationAPIEndpoint,
         translationAPIModel,
         translationAPIPrompt,
@@ -260,6 +263,7 @@ export async function loadPreferenceSnapshot() {
             DEFAULT_TABLE_LIMITS.searchLimit
         ),
         configRepository.getArray('localFavoriteFriendsGroups', []),
+        configRepository.getString('feedHiddenUsers', '[]'),
         configRepository.getString(
             'sharedFeedFilters',
             JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
@@ -273,6 +277,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('translationAPI', false),
         configRepository.getString('bioLanguage', 'en'),
         configRepository.getString('translationAPIType', 'google'),
+        configRepository.getString('translationEndpointId', ''),
         configRepository.getString(
             'translationAPIEndpoint',
             DEFAULT_TRANSLATION_ENDPOINT
@@ -434,6 +439,7 @@ export async function loadPreferenceSnapshot() {
         localFavoriteFriendsGroups: normalizeStringList(
             localFavoriteFriendsGroups
         ),
+        feedHiddenUsers: normalizeFeedHiddenUsers(feedHiddenUsers),
         sharedFeedFilters: parsedSharedFeedFilters,
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
             overlayActivityFilters,
@@ -453,6 +459,7 @@ export async function loadPreferenceSnapshot() {
         translationAPI: Boolean(translationAPI),
         bioLanguage: normalizeBioLanguage(bioLanguage),
         translationAPIType: normalizeTranslationApiType(translationAPIType),
+        translationEndpointId: String(translationEndpointId || ''),
         translationAPIEndpoint:
             translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
         translationAPIModel: translationAPIModel || DEFAULT_TRANSLATION_MODEL,

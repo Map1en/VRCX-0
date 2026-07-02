@@ -116,7 +116,21 @@ impl GameLogProcessor {
                 .ok()
                 .flatten()
             {
+                let location = last.location.clone();
+                let started_at = last.created_at.clone();
                 engine.seed_current_location(last.location, last.world_name, last.created_at);
+                if location.starts_with("wrld_") {
+                    if let Ok(entries) =
+                        vrcx_0_persistence::game_log::get_join_leave_entries_for_location_range(
+                            &deps.db,
+                            &location,
+                            &started_at,
+                            "9999-12-31T23:59:59Z",
+                        )
+                    {
+                        engine.seed_current_roster(&entries);
+                    }
+                }
             }
         }
         Self {
