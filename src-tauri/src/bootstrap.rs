@@ -446,7 +446,7 @@ pub async fn start_background_mode_for_current_session(
 ) -> Result<BackendRuntimeSnapshot, AppError> {
     capture_background_resume_route(app, state);
     let snapshot = match state
-        .start_backend_runtime(BackendRuntimeMode::Background)
+        .start_backend_runtime(BackendRuntimeMode::Background, false)
         .await
     {
         Ok(snapshot) => snapshot,

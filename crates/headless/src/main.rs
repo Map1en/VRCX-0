@@ -42,6 +42,9 @@ fn build_adaptive_tokio_runtime() -> tokio::runtime::Runtime {
 async fn async_main() -> ExitCode {
     init_tls_crypto_provider();
 
+    let args: Vec<String> = std::env::args().collect();
+    let force_login = args.iter().any(|arg| arg == "--login" || arg == "-l");
+
     let app_data_dir = match resolve_app_data_dir() {
         Ok(resolution) => {
             init_tracing(Some(resolution.current_dir.clone()));
@@ -85,7 +88,7 @@ async fn async_main() -> ExitCode {
         .set_executor(TokioRuntimeTaskExecutor);
 
     match state
-        .start_backend_runtime(BackendRuntimeMode::Headless)
+        .start_backend_runtime(BackendRuntimeMode::Headless, force_login)
         .await
     {
         Ok(_) => {}
