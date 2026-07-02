@@ -270,6 +270,8 @@ impl RuntimeHostState {
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
         let endpoint = String::new();
 
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
         print!("Username/Email: ");
         std::io::Write::flush(&mut std::io::stdout())
             .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
