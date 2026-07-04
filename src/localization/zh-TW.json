@@ -142,7 +142,7 @@
     },
     "overlay": {
         "footer": {
-            "players": "{count} 位玩家",
+            "players": "{count} 位用戶",
             "instance_duration": "停留 {duration}"
         },
         "generic_instance_location": "一個房間",
@@ -239,7 +239,7 @@
         "feed": "動態",
         "game_log": "遊戲紀錄",
         "instance_history": "房間歷史",
-        "player_list": "用戶列表",
+        "player_list": "房間用戶列表",
         "search": "搜尋",
         "favorites": "收藏",
         "favorite_friends": "收藏好友",
@@ -381,8 +381,8 @@
             "live_friend_location_board": "即時好友位置看板。",
             "game_log": "遊戲紀錄",
             "game_log_table_page": "遊戲紀錄表格頁面。",
-            "current_players": "目前玩家",
-            "current_instance_player_page": "目前房間玩家頁面。",
+            "current_players": "房間用戶列表",
+            "current_instance_player_page": "目前房間用戶頁面。",
             "search": "搜尋",
             "search_worlds_and_groups": "搜尋世界和群組。",
             "favorite_friends": "收藏好友",
@@ -395,7 +395,7 @@
             "friend_history_table_page": "好友歷史表格頁面。",
             "friends": "好友",
             "friend_management_page": "好友管理頁面。",
-            "moderation": "玩家管理",
+            "moderation": "用戶管理",
             "moderation_table_page": "封鎖表格頁面。",
             "notification_center": "通知中心",
             "notification_center_page": "通知中心頁面。",
@@ -418,7 +418,7 @@
         "settings": "設定...",
         "check_updates": "檢查更新",
         "restart": "重新啟動 VRCX-0",
-        "start_background_mode": "切換到 Background Mode",
+        "start_background_mode": "切換至背景模式",
         "logout": "登出",
         "quit": "退出 VRCX-0",
         "quick_search": "快速搜尋",
@@ -1093,7 +1093,7 @@
                 "item_s": "項",
                 "sort_favorites": "收藏排序",
                 "sort_by_date": "按日期排序",
-                "sort_by_players": "按玩家數量排序",
+                "sort_by_players": "按用戶數量排序",
                 "visibility": "可見性",
                 "group": "分組",
                 "favorite_group_renamed": "收藏分組已重新命名",
@@ -1191,25 +1191,25 @@
                 "unmuteChat": "顯示聊天框"
             },
             "loading": {
-                "loading_the_moderation_snapshot": "正在載入玩家管理紀錄快照"
+                "loading_the_moderation_snapshot": "正在載入用戶管理紀錄快照"
             },
             "error": {
-                "moderation_snapshot_failed_to_load": "玩家管理紀錄快照載入失敗"
+                "moderation_snapshot_failed_to_load": "用戶管理紀錄快照載入失敗"
             },
             "label": {
                 "showing": "顯示",
                 "of": "/",
-                "moderation_row": "玩家管理紀錄",
-                "moderation_rows": "玩家管理紀錄",
-                "moderation_filters": "玩家管理篩選",
+                "moderation_row": "用戶管理紀錄",
+                "moderation_rows": "用戶管理紀錄",
+                "moderation_filters": "用戶管理篩選",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "放寬類型篩選或搜尋詞以查看更多結果"
             },
             "empty": {
-                "no_moderation_rows_match_the_current_filters": "沒有符合目前篩選的玩家管理紀錄"
+                "no_moderation_rows_match_the_current_filters": "沒有符合目前篩選的用戶管理紀錄"
             },
             "dynamic": {
                 "deleted_value_for_value": "已刪除 {value2} 的 {value}",
-                "selected_moderation_filters": "已選 {count} 個玩家管理篩選"
+                "selected_moderation_filters": "已選 {count} 個用戶管理篩選"
             }
         },
         "notification": {
@@ -1518,7 +1518,7 @@
                 "no_friends_match_this_search": "沒有好友符合此搜尋",
                 "no_cached_mutual_graph_yet": "還沒有快取的共同好友關係圖",
                 "no_graph_nodes_match_the_current_search": "沒有圖譜節點符合目前搜尋",
-                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "這次房間訪問沒有符合的玩家活動行"
+                "no_matching_player_activity_rows_were_found_for_this_instance_visit": "這次房間訪問沒有符合的用戶活動行"
             },
             "error": {
                 "instance_activity_failed_to_load": "房間活動載入失敗",
@@ -1695,7 +1695,7 @@
                 "enable_legacy_auto_status": "啟用房間狀態規則",
                 "enable_legacy_auto_status_description": "根據你是否獨處或和其他人在一起自動修改狀態。",
                 "alone_condition": "什么時候算獨處？",
-                "any_player_counts_as_company": "有任意玩家就算有人同行",
+                "any_player_counts_as_company": "有任意用戶就算有人同行",
                 "only_friends_count_as_company": "只有好友算有人同行",
                 "friend_groups_counted_as_company": "計為有人同行的好友分組",
                 "allowed_room_types": "允許執行的房間類型",
@@ -1706,16 +1706,16 @@
                 "when": "條件",
                 "friend_groups": "好友分組",
                 "minimum_friends": "最少好友數",
-                "minimum_players": "最少玩家數",
+                "minimum_players": "最少用戶數",
                 "friend_user_ids": "好友用戶 ID",
                 "room_types": "房間類型",
                 "room_types_hint": "留空表示任意房間類型。會讓你看起來可加入的規則應保持限制。",
                 "no_custom_room_rules": "尚未設定自訂房間規則。",
                 "preset_alone": "獨處",
-                "preset_with_anyone": "和任意玩家在一起",
+                "preset_with_anyone": "和任意用戶在一起",
                 "preset_with_any_friend": "和任意好友在一起",
                 "preset_friend_count_at_least": "好友數至少為",
-                "preset_player_count_at_least": "玩家數至少為",
+                "preset_player_count_at_least": "用戶數至少為",
                 "preset_with_selected_groups": "和指定分組好友在一起",
                 "preset_with_selected_friend": "和指定好友在一起",
                 "preset_in_selected_room_types": "位於指定房間類型",
@@ -1749,7 +1749,7 @@
                 "no_current_user_is_available": "目前沒有可用的用戶",
                 "no_prints_loaded": "未載入任何拍立得",
                 "no_inventory_items_loaded": "未載入物品庫物品",
-                "no_player_metadata": "沒有玩家後設資料",
+                "no_player_metadata": "沒有用戶後設資料",
                 "no_screenshot_selected": "未選擇螢幕截圖"
             },
             "label": {
@@ -1763,10 +1763,10 @@
                 "preview": "預覽",
                 "refresh_this_tab_to_load_your_vrchat_prints": "重新整理此分頁以載入你的 VRChat 拍立得",
                 "refresh_this_tab_to_load_inventory_items": "重新整理此標籤頁以載入物品庫項目",
-                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "載入螢幕截圖以查看嵌入的世界、玩家和檔案後設資料"
+                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "載入螢幕截圖以查看嵌入的世界、用戶和檔案後設資料"
             },
             "error": {
-                "dropped_screenshot_path_is_not_available": "拖入的螢幕截圖路徑無法使用"
+                "dropped_screenshot_path_is_not_available": "無法取得拖曳的螢幕截圖路徑"
             },
             "loading": {
                 "deleting_metadata": "正在刪除後設資料",
@@ -2250,7 +2250,7 @@
                     "random_colors_from_user_id": "從用戶 ID 隨機挑選顏色",
                     "random_colors_from_user_id_description": "根據用戶 ID 為每位用戶指派固定顏色。",
                     "trust_colors": "信任等級顏色",
-                    "trust_colors_description": "調整按信任等級顯示的玩家名稱顏色。",
+                    "trust_colors_description": "調整按信任等級顯示的用戶名稱顏色。",
                     "trust_levels": {
                         "visitor": "Visitor",
                         "new_user": "New User",
@@ -2478,9 +2478,9 @@
                         "description": "將放置的貼紙保存到你的 VRChat 圖片資料夾"
                     },
                     "delete_all_screenshot_metadata": {
-                        "button": "刪除截圖附加資料",
-                        "ask": "你確定要刪除 VRChat 圖片資料夾中所有的 VRC & VRCX-0 螢幕截圖 metadata？",
-                        "confirm": "刪除所有螢幕截圖附加資料是非常具破壞性的動作，且無法撤銷！這包括你 VRChat 圖片資料夾中的所有列印、子資料夾和其他不相關的圖片，如果這些照片對你來說很珍貴，請在繼續之前先做備份",
+                        "button": "刪除螢幕截圖附加資料",
+                        "ask": "你確定要刪除 VRChat 圖片資料夾中所有的 VRC & VRCX-0 螢幕截圖附加資料？",
+                        "confirm": "刪除所有螢幕截圖中繼資料是無法復原的操作！這將刪除 VRChat 圖片資料夾中的所有拍立得、所有子資料夾，以及其他無關的圖片。如果其中有任何重要的照片，請務必先備份，再繼續操作。",
                         "confirm_yes": "確定",
                         "confirm_no": "稍等一下"
                     },
@@ -2713,7 +2713,7 @@
                 "game_log_unavailable": "遊戲紀錄無法使用",
                 "game_log_widget_failed": "遊戲紀錄小工具失敗",
                 "instance_widget_failed": "房間小工具失敗",
-                "current_players_are_not_available_yet": "目前玩家暫無法使用"
+                "current_players_are_not_available_yet": "目前用戶暫無法使用"
             },
             "empty": {
                 "no_feed_rows": "沒有動態行",
@@ -2729,7 +2729,7 @@
                 "back_to_feed": "返回動態",
                 "add_a_row_to_start_building_this_dashboard": "新增一行開始建立此儀錶板",
                 "add_row": "新增行：",
-                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "啟動 VRChat 後儀錶板才能重建目前房間玩家列表"
+                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "啟動 VRChat 後儀錶板才能重建目前房間用戶列表"
             },
             "description": {
                 "matches_the_stored_feed_widget_config": "與儲存的動態小工具設定一致",
@@ -2762,15 +2762,15 @@
                 "created": "建立時間"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "這個玩家行沒有用戶 ID",
+                "no_user_id_was_found_for_this_player_row": "這個用戶行沒有用戶 ID",
                 "currently_traveling_between_instances": "正在切換房間",
                 "no_current_instance_detected": "未檢測到目前房間",
-                "no_players_reconstructed_for_this_instance_yet": "還沒有為目前房間重建出玩家",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "請先在設定中啟用遊戲紀錄紀錄，之後才能重建目前玩家。",
+                "no_players_reconstructed_for_this_instance_yet": "還沒有為目前房間重建出用戶",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "請先在設定中啟用遊戲紀錄紀錄，之後才能重建目前用戶。",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "啟動 VRChat 並讓 VRCX-0 接收到遊戲紀錄事件後，此頁面才能重建目前房間。",
                 "stay_in_the_instance_until_local_join_leave_events_are_recorded": "請在房間中停留到本機加入/離開事件被紀錄，之後此列表會自動填入。",
-                "current_players_follow_live_instance_locations": "目前玩家跟隨即時房間位置；下一個位置事件到達後會重新填入。",
-                "local_join_leave_history_has_no_current_players": "本機加入/離開歷史中還沒有目前房間的玩家。"
+                "current_players_follow_live_instance_locations": "目前用戶跟隨即時房間位置；下一個位置事件到達後會重新填入。",
+                "local_join_leave_history_has_no_current_players": "本機加入/離開歷史中還沒有目前房間的用戶。"
             },
             "label": {
                 "instance_master": "房間主人",
@@ -2781,14 +2781,14 @@
                 "chatbox_muted": "聊天框已靜音",
                 "timeout": "超時",
                 "age_verified": "已年齡驗證",
-                "rebuilding_the_current_instance_roster_from_game_log_history": "正在從遊戲紀錄歷史重建目前房間玩家列表"
+                "rebuilding_the_current_instance_roster_from_game_log_history": "正在從遊戲紀錄歷史重建目前房間用戶列表"
             },
             "error": {
                 "blocked": "已封鎖",
-                "current_players_failed_to_load": "目前玩家載入失敗"
+                "current_players_failed_to_load": "房間用戶列表載入失敗"
             },
             "toast": {
-                "failed_to_look_up_this_player": "尋找這個玩家失敗"
+                "failed_to_look_up_this_player": "尋找這個用戶失敗"
             }
         },
         "auth": {
@@ -3278,7 +3278,7 @@
                 "reset_hidden_avatar": "重設隱藏角色",
                 "reset_shown_avatar": "重設顯示角色",
                 "reset_avatar_visibility": "重設角色可見性",
-                "moderation_actions": "玩家管理...",
+                "moderation_actions": "用戶管理...",
                 "moderation_enable_avatar_interaction": "開啟角色互動",
                 "moderation_disable_avatar_interaction": "關閉角色互動",
                 "moderation_enable_chatbox": "顯示聊天框",
@@ -3632,14 +3632,14 @@
                 "failed_to_value_user": "{value}用戶失敗",
                 "failed_to_value": "{value}失敗",
                 "failed_to_update_avatar_moderation": "更新角色封鎖狀態失敗",
-                "failed_to_report_user": "舉報玩家失敗",
+                "failed_to_report_user": "舉報用戶失敗",
                 "invite_message_sent": "邀請訊息已傳送",
                 "failed_to_send_invite": "傳送邀請失敗",
                 "invite_request_message_sent": "請求加入訊息已傳送",
                 "invite_request_sent": "邀請請求已傳送",
                 "failed_to_request_invite": "請求加入失敗",
                 "failed_to_send_boop": "傳送戳一戳失敗",
-                "already_viewing_user": "已在查看此玩家",
+                "already_viewing_user": "已在查看此用戶",
                 "failed_to_open_discord_profile": "開啟 Discord 資料失敗",
                 "translation_failed": "翻譯失敗",
                 "failed_to_load_avatar_author": "載入角色作者失敗",
@@ -3658,7 +3658,7 @@
                 "request_invite": "請求加入？",
                 "send_boop": "傳送戳一戳",
                 "send": "傳送",
-                "enter_the_vrchat_group_id_to_invite_this_user_to": "輸入要邀請此玩家加入的 VRChat 群組 ID",
+                "enter_the_vrchat_group_id_to_invite_this_user_to": "輸入要邀請此用戶加入的 VRChat 群組 ID",
                 "leave_group": "退出群組",
                 "leave": "退出",
                 "leave_selected_groups": "退出所選群組",
@@ -3788,7 +3788,7 @@
                 "queue_enabled": "佇列已啟用",
                 "age_gate": "年齡限制",
                 "display_name": "顯示名稱",
-                "user_id": "玩家 ID",
+                "user_id": "用戶 ID",
                 "strict": "嚴格",
                 "location": "位置變動",
                 "self_invite": "自我邀請",
@@ -4241,7 +4241,7 @@
             },
             "label": {
                 "group_left": "已退出群組",
-                "user": "玩家",
+                "user": "用戶",
                 "status": "狀態變動",
                 "date": "時間",
                 "actions": "操作",
@@ -4437,7 +4437,7 @@
                 "cannot_invite_location_is_not_a_concrete_instance": "無法邀請：目前位置不是具體房間"
             },
             "action": {
-                "select_at_least_one_user_to_invite": "請至少選擇一名要邀請的玩家",
+                "select_at_least_one_user_to_invite": "請至少選擇一名要邀請的用戶",
                 "search_online_friends": "搜尋線上好友"
             },
             "description": {
@@ -4711,7 +4711,7 @@
             "cancel": "Cancel"
         },
         "screenshot_metadata": {
-            "header": "螢幕截圖詳細資料",
+            "header": "螢幕截圖",
             "drag": "將螢幕截圖拖曳到這裡",
             "browse": "瀏覽",
             "last_screenshot": "最後一張螢幕截圖",
@@ -4732,7 +4732,7 @@
             "section_location": "位置",
             "section_players": "用戶",
             "section_file_info": "檔案資訊",
-            "unknown_player": "未知玩家",
+            "unknown_player": "未知用戶",
             "section_note": "備註",
             "section_actions": "操作",
             "col_date": "日期",
@@ -4954,9 +4954,9 @@
                 "boop": "噗",
                 "group_queueReady": "房間排隊就緒",
                 "instance_closed": "房間已關閉",
-                "OnPlayerJoining": "玩家正在加入",
-                "OnPlayerJoined": "玩家已加入",
-                "OnPlayerLeft": "玩家已離開",
+                "OnPlayerJoining": "用戶正在加入",
+                "OnPlayerJoined": "用戶已加入",
+                "OnPlayerLeft": "用戶已離開",
                 "AvatarChange": "Avatar 變更",
                 "Online": "上線",
                 "Offline": "離線",
@@ -4979,10 +4979,10 @@
                 "Unblocked": "取消封鎖",
                 "Muted": "靜音",
                 "Unmuted": "取消靜音",
-                "BlockedOnPlayerJoined": "已封鎖玩家加入",
-                "BlockedOnPlayerLeft": "已封鎖玩家離開",
-                "MutedOnPlayerJoined": "已靜音玩家加入",
-                "MutedOnPlayerLeft": "已靜音玩家離開",
+                "BlockedOnPlayerJoined": "已封鎖用戶加入",
+                "BlockedOnPlayerLeft": "已封鎖用戶離開",
+                "MutedOnPlayerJoined": "已靜音用戶加入",
+                "MutedOnPlayerLeft": "已靜音用戶離開",
                 "VideoPlay": "影片播放"
             },
             "favorite_groups": {
@@ -4999,10 +4999,10 @@
             "table_view": "表格檢視",
             "chart_view": "圖表檢視",
             "empty": {
-                "no_player_detail_rows": "沒有玩家詳細資訊行",
+                "no_player_detail_rows": "沒有用戶詳細資訊行",
                 "there_are_no_timeline_rows_for_this_instance": "這個房間沒有時間線紀錄",
                 "no_instance_selected": "未選擇任何房間",
-                "no_player_detail_rows_for_this_instance": "此房間沒有玩家詳細資訊",
+                "no_player_detail_rows_for_this_instance": "此房間沒有用戶詳細資訊",
                 "no_instance_records": "沒有房間紀錄"
             },
             "description": {
@@ -5021,10 +5021,10 @@
             },
             "error": {
                 "failed_to_load_instance_details": "載入房間詳細資訊失敗",
-                "this_user_instance_row_cannot_be_deleted_without_event_ids": "缺少事件 ID，無法刪除此玩家房間紀錄"
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "缺少事件 ID，無法刪除此用戶房間紀錄"
             },
             "label": {
-                "players_count": "{count} 名玩家",
+                "players_count": "{count} 名用戶",
                 "recorded_instance_visits": "條房間訪問紀錄",
                 "recorded_instance_visits_count": "{count} 條房間訪問紀錄",
                 "rows": "行",
@@ -5322,8 +5322,8 @@
                 "invite": "邀請"
             },
             "dynamic": {
-                "send_invite_to_value_user": "向 {value} 名玩家傳送邀請？",
-                "send_invites_to_value_users": "向 {value} 名玩家傳送邀請？"
+                "send_invite_to_value_user": "向 {value} 名用戶傳送邀請？",
+                "send_invites_to_value_users": "向 {value} 名用戶傳送邀請？"
             }
         },
         "previous_instances_table": {
@@ -6297,7 +6297,7 @@
             "modal": {
                 "launch_vrchat": "啟動 VRChat",
                 "launch": "啟動",
-                "vrchat_is_already_running_continue_launching_this_instance": "VRChat 已在執行。VRCX-0 會向執行中的用戶端再次傳送啟動請求。如果已經開啟多個用戶端，GameLog、目前位置、玩家列表以及部分背景服務可能變得不可靠。確定要繼續嗎？"
+                "vrchat_is_already_running_continue_launching_this_instance": "VRChat 已在執行。VRCX-0 會向執行中的用戶端再次傳送啟動請求。如果已經開啟多個用戶端，GameLog、目前位置、用戶列表以及部分背景服務可能變得不可靠。確定要繼續嗎？"
             },
             "dynamic": {
                 "value_copied": "已複製{value}"
@@ -6447,7 +6447,7 @@
             "table_heavy_game_event_log": "表格密集型遊戲事件紀錄。",
             "instance_history": "房間歷史",
             "local_instance_history_for_a_selected_user": "所選用戶的房間歷史。",
-            "current_players": "目前玩家",
+            "current_players": "房間用戶列表",
             "search": "搜尋",
             "world_and_group_search_route": "世界和群組搜尋路由。",
             "dashboard": "儀錶板",
@@ -6460,8 +6460,8 @@
             "favorite_avatars_groups_and_local_cache_view": "收藏角色分組和本機快取檢視。",
             "friend_history": "好友歷史",
             "friend_relationship_history_table_backed_by_loca": "由本機 SQL 支撐的好友關係歷史表。",
-            "moderation": "玩家管理",
-            "moderation_history_table": "玩家管理歷史表。",
+            "moderation": "用戶管理",
+            "moderation_history_table": "用戶管理歷史表。",
             "my_avatars": "我的角色",
             "my_avatars_browser_with_grid_and_table_modes": "帶網格和表格模式的我的角色瀏覽器。",
             "notification": "通知",
@@ -6484,7 +6484,7 @@
             "vrchat_log_viewer_for_local_output_logs": "本機 VRChat 輸出日誌查看器",
             "settings": "設定",
             "settings_and_diagnostics": "設定和診斷。",
-            "current_instance_player_roster_rebuilt_from_local_activity_data": "已根據本機活動資料重建目前房間玩家列表。",
+            "current_instance_player_roster_rebuilt_from_local_activity_data": "已根據本機活動資料重建目前房間用戶列表。",
             "themes": "主題",
             "themes_description": "主題來源和自訂 CSS 管理。",
             "community_themes": "社群主題",
