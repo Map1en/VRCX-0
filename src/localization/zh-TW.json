@@ -10,7 +10,7 @@
         "example_1": "這週我跟誰一起玩得最多呢？",
         "example_2": "我正逐漸遠離誰呢？",
         "example_3": "什麼時候是拜訪線上好友的最佳時機？",
-        "not_configured": "Select an LLM Endpoint and model to start.",
+        "not_configured": "請選擇一個 LLM 端點和模型以開始操作。",
         "tool_running": "呼叫 {{name}}…",
         "entities_title": "提及",
         "entities_empty": "答案中提及的人物與世界會顯示在此處。",
@@ -18,7 +18,7 @@
         "close": "關閉",
         "connection": {
             "checking": "檢查連線…",
-            "ok": "連線中",
+            "ok": "已連線",
             "error": "連線失敗",
             "unconfigured": "尚未設定"
         },
@@ -41,20 +41,20 @@
             "allow_writes": "允許寫入操作",
             "allow_writes_description": "允許助理編輯筆記和收藏項目。預設為關閉；精心撰寫的好友簡介可能會誤導系統進行非預期的變更。",
             "playbook_mode": "分析模式",
-            "playbook_mode_description": "控制助理如何用工具回答。預設用自動。引導：把較弱的本機模型引向最相關的工具，回答更穩；開放：放開全部工具，讓較強的模型自由分析、挖得更深。",
-            "playbook_mode_auto": "自動（依端點）",
-            "playbook_mode_guided": "引導（本機 / 較弱模型）",
-            "playbook_mode_open": "開放（強模型）",
+            "playbook_mode_description": "控制助理回答問題時使用工具的方式。「自動」為預設模式。\\n「引導」：引導較弱的本地模型使用最適合的工具，以提供更穩定的回答。\\n「開放」：開放所有工具，讓較強的模型能自由分析並深入探索。",
+            "playbook_mode_auto": "自動（依據端點）",
+            "playbook_mode_guided": "引導（本地／較弱模型）",
+            "playbook_mode_open": "開放（較強模型）",
             "privacy_title": "隱私權",
             "privacy_local": "請求會傳送至這台電腦上的本機端點。你的社交資料不會離開你的電腦。",
             "privacy_remote": "使用線上人工智慧服務可能會導致你的資料外洩。請謹慎行事。"
         },
         "runtime": {
-            "title": "執行階段",
+            "title": "執行環境",
             "connection": "連線",
-            "connection_unset": "無端點",
+            "connection_unset": "未選擇端點",
             "model": "模型",
-            "model_unset": "此端點未儲存任何模型",
+            "model_unset": "此端點尚未儲存任何模型。",
             "playbook_mode": "分析模式",
             "allow_writes": "允許寫入操作",
             "manage_endpoints": "管理 LLM 端點"
@@ -148,13 +148,13 @@
         "generic_instance_location": "一個房間",
         "discord": {
             "title": {
-                "invite": "{name} 的邀請",
-                "request_invite": "{name} 的邀請請求",
-                "invite_response": "{name} 的邀請回應",
-                "request_invite_response": "{name} 的邀請請求回應",
-                "gps": "{name} 的目前位置",
-                "status": "{name} 變更了狀態",
-                "avatar_change": "{name} 變更了角色",
+                "invite": "{name}的邀請",
+                "request_invite": "{name} 的加入請求",
+                "invite_response": "{name} 的邀請回覆",
+                "request_invite_response": "{name} 的加入請求回覆",
+                "gps": "{name} 的位置",
+                "status": "{name} 狀態已變更",
+                "avatar_change": "{name} 更換了角色",
                 "online": "{name} 已登入",
                 "offline": "{name} 已登出"
             }
@@ -208,7 +208,7 @@
             },
             "edit": {
                 "title": "編輯",
-                "undo": "復原",
+                "undo": "撤銷",
                 "redo": "重做",
                 "cut": "剪下",
                 "copy": "複製",
@@ -228,7 +228,7 @@
                 "reportIssue": "回報問題",
                 "github": "GitHub",
                 "discord": "加入我們的 Discord",
-                "qqGroup": "QQ 群組（中文社群）",
+                "qqGroup": "QQ 群組",
                 "openDevtools": "開啟開發者工具",
                 "supportVrcx": "支援 VRCX-0"
             }
@@ -262,7 +262,7 @@
     },
     "nav_menu": {
         "resources": "資源",
-        "qq_group": "QQ 群",
+        "qq_group": "QQ 群組",
         "get_help": "取得協助",
         "github": "在 GitHub 上查看 VRCX-0",
         "discord": "加入我們的 Discord",
@@ -735,8 +735,8 @@
                 "value_copied": "已複製{value}"
             },
             "context": {
-                "hide_user": "從 Feed 隱藏",
-                "unhide_user": "從 Feed 取消隱藏"
+                "hide_user": "從動態中隱藏",
+                "unhide_user": "從動態中取消隱藏"
             }
         },
         "friends_locations": {
@@ -1593,7 +1593,7 @@
                 "screenshot": "截圖管理",
                 "screenshot_description": "管理截圖並檢視後設資料",
                 "gallery": "圖片管理器",
-                "gallery_description": "管理圖片和庫存",
+                "gallery_description": "管理相片圖庫、個人資料圖示與 VRChat 拍立得",
                 "inventory": "庫存",
                 "inventory_description": "管理表情、貼紙、物品和裝飾"
             },
@@ -1618,7 +1618,7 @@
                 "registry_backup": "VRChat 登錄檔備份",
                 "registry_backup_description": "建立或還原 VRChat 登錄檔備份",
                 "llm_endpoints": "LLM 端點",
-                "llm_endpoints_description": "管理供 Social AI 和翻譯使用的 OpenAI 兼容連線。"
+                "llm_endpoints_description": "管理供社交 AI 與翻譯功能使用的 OpenAI 相容連線。"
             },
             "vrchat_log": {
                 "title": "VRChat 紀錄查看器",
@@ -1743,11 +1743,11 @@
             },
             "success": {
                 "media_item_deleted": "媒體項目已刪除",
-                "print_deleted": "Print已刪除"
+                "print_deleted": "已刪除拍立得"
             },
             "empty": {
                 "no_current_user_is_available": "目前沒有可用的用戶",
-                "no_prints_loaded": "未載入 Print",
+                "no_prints_loaded": "未載入任何拍立得",
                 "no_inventory_items_loaded": "未載入物品庫物品",
                 "no_player_metadata": "沒有玩家後設資料",
                 "no_screenshot_selected": "未選擇螢幕截圖"
@@ -1761,7 +1761,7 @@
             },
             "action": {
                 "preview": "預覽",
-                "refresh_this_tab_to_load_your_vrchat_prints": "重新整理此標籤頁以載入你的 VRChat Print",
+                "refresh_this_tab_to_load_your_vrchat_prints": "重新整理此分頁以載入你的 VRChat 拍立得",
                 "refresh_this_tab_to_load_inventory_items": "重新整理此標籤頁以載入物品庫項目",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "載入螢幕截圖以查看嵌入的世界、玩家和檔案後設資料"
             },
@@ -1782,10 +1782,10 @@
             },
             "toast": {
                 "failed_to_load_value": "載入{value}失敗",
-                "failed_to_load_prints": "載入 Print失敗",
+                "failed_to_load_prints": "載入拍立得失敗",
                 "failed_to_load_inventory": "載入物品庫失敗",
                 "failed_to_delete_media_item": "刪除媒體項目失敗",
-                "failed_to_delete_print": "刪除 Print失敗",
+                "failed_to_delete_print": "刪除拍立得失敗",
                 "failed_to_update_profile_media": "更新個人資料媒體失敗",
                 "failed_to_consume_inventory_bundle": "使用物品庫禮包失敗",
                 "failed_to_redeem_reward": "兌換獎勵失敗",
@@ -1794,59 +1794,59 @@
                 "failed_to_copy_image": "複製圖片失敗",
                 "failed_to_pin_tool_to_navigation": "固定工具到導航失敗",
                 "failed_to_unpin_tool_from_navigation": "從導航取消固定工具失敗",
-                "failed_to_update_print_favorite": "更新 Print 收藏狀態失敗"
+                "failed_to_update_print_favorite": "無法更新拍立得收藏"
             },
             "modal": {
                 "delete_value_item": "刪除 {value} 項目",
-                "delete_print": "刪除 Print"
+                "delete_print": "刪除拍立得"
             },
             "dynamic": {
                 "no_value_loaded": "未載入{value}",
                 "refresh_this_tab_to_load_value_files": "重新整理此標籤頁以載入{value}檔案"
             },
             "prints_favorites": {
-                "favorite": "收藏 Print",
-                "unfavorite": "取消收藏 Print",
-                "favorite_badge": "已收藏",
-                "favorited_toast": "已收藏 Print",
-                "unfavorited_toast": "已取消收藏 Print",
-                "favorite_limit_toast": "目前自動刪除上限下最多可收藏 {max} 個 Print。",
-                "cleanup_deleted": "已自動刪除 {count} 個舊 Print。目前剩餘 {remaining} 個 Print。",
+                "favorite": "拍立得收藏",
+                "unfavorite": "移除拍立得收藏？",
+                "favorite_badge": "收藏",
+                "favorited_toast": "已收藏拍立得",
+                "unfavorited_toast": "已取消收藏拍立得",
+                "favorite_limit_toast": "依目前的自動刪除上限，你最多可以收藏 {max} 張拍立得。",
+                "cleanup_deleted": "已自動刪除 {count} 張舊拍立得，剩餘 {remaining} 張。",
                 "warning": {
-                    "too_many_favorites": "已收藏 Print 為 {favorites} 個，超過收藏上限 {max} 個中的 {over} 個。自動刪除不會移除已收藏 Print。",
-                    "too_many_favorites_event": "已收藏 Print 佔滿列表，自動刪除無法降到設定上限以下。目前剩餘 {remaining} 個 Print。"
+                    "too_many_favorites": "目前已有 {favorites} 張已收藏的拍立得，超出收藏上限 {max} 張，共超出 {over} 張。自動刪除功能不會刪除已收藏的拍立得。",
+                    "too_many_favorites_event": "由於已收藏的拍立得已占滿清單，自動刪除無法將拍立得數量降至設定的上限。目前仍有 {remaining} 張拍立得。"
                 }
             },
             "llm_endpoints": {
                 "title": "LLM 端點",
-                "description": "供 Social AI 和翻譯共用的 OpenAI 兼容連線。",
+                "description": "適用於社交 AI 和翻譯的共享 OpenAI 相容連線。",
                 "endpoint_count": "{count} 個端點",
                 "model_count": "{count} 個模型",
                 "add": "新增端點",
-                "empty_description": "新增一個 OpenAI 兼容端點，供 Social AI 和 OpenAI 兼容翻譯使用。",
+                "empty_description": "新增供社交 AI 與 OpenAI 相容翻譯功能使用的 OpenAI 相容端點。",
                 "name": "名稱",
-                "base_url": "Base URL",
+                "base_url": "基礎網址",
                 "models": "模型",
                 "key": "金鑰",
                 "actions": "操作",
-                "no_models": "無模型",
+                "no_models": "沒有模型",
                 "key_saved": "已儲存",
-                "key_empty": "為空",
+                "key_empty": "空白",
                 "detect_models": "偵測模型",
                 "edit": "編輯端點",
                 "delete": "刪除端點",
                 "api_key": "API 金鑰",
-                "clear_key": "清除金鑰",
-                "key_preserve_placeholder": "留空以保留已儲存的金鑰",
-                "saved": "端點已儲存",
-                "save_failed": "儲存端點失敗",
-                "load_failed": "載入端點失敗",
-                "base_url_required": "Base URL 為必填項。",
-                "models_detected": "偵測到 {count} 個模型",
-                "no_models_detected": "未偵測到模型",
-                "detect_failed": "偵測模型失敗",
-                "deleted": "端點已刪除",
-                "delete_failed": "刪除端點失敗"
+                "clear_key": "清除鍵",
+                "key_preserve_placeholder": "若要保留已儲存的金鑰，請留空",
+                "saved": "已儲存終點",
+                "save_failed": "無法儲存端點",
+                "load_failed": "無法載入端點",
+                "base_url_required": "必須填寫基礎網址。",
+                "models_detected": "已偵測到 {count} 個模型",
+                "no_models_detected": "未偵測到任何模型",
+                "detect_failed": "無法偵測到模型",
+                "deleted": "已刪除端點",
+                "delete_failed": "無法刪除端點"
             }
         },
         "profile": {
@@ -1891,13 +1891,13 @@
                     "header": "收藏"
                 },
                 "hidden_feed": {
-                    "header": "Feed 隱藏使用者",
-                    "description": "從 Feed 視圖隱藏所選使用者，但不會刪除已儲存資料。",
-                    "add": "新增使用者",
-                    "search_placeholder": "搜尋使用者",
-                    "empty": "Feed 中沒有隱藏使用者。",
-                    "remove": "移除隱藏使用者",
-                    "unknown_user": "未知使用者"
+                    "header": "已隱藏動態的用戶",
+                    "description": "隱藏所選用戶的動態，但不會刪除已儲存的資料。",
+                    "add": "新增用戶",
+                    "search_placeholder": "搜尋用戶",
+                    "empty": "目前沒有已隱藏動態的用戶。",
+                    "remove": "移除已隱藏的用戶",
+                    "unknown_user": "未知用戶"
                 }
             },
             "vr": {
@@ -1918,9 +1918,9 @@
                     "position_top": "上方",
                     "position_left": "左側",
                     "position_right": "右側",
-                    "timeout": "顯示時長",
+                    "timeout": "通知時長",
                     "opacity": "不透明度",
-                    "filters": "頭顯通知篩選"
+                    "filters": "頭顯通知篩選器"
                 },
                 "wrist_overlay": {
                     "header": "手腕嵌入介面",
@@ -1962,13 +1962,13 @@
                 "header": "整合",
                 "mcp_server": {
                     "header": "VRCX-0 MCP 伺服器",
-                    "description": "將 VRCX-0 的本機社交資料公開給受信任的 MCP 客戶端。預設只監聽本機。",
+                    "description": "向受信任的 MCP 用戶端提供本機 VRCX-0 社交資料。預設僅監聽 localhost。",
                     "enable": "啟用 MCP 伺服器",
-                    "enable_description": "啟動使用 Bearer Token 保護的 HTTP MCP 伺服器，預設僅允許本機存取。",
+                    "enable_description": "啟動受 Bearer Token 保護的 HTTP MCP 伺服器。預設僅允許 localhost 存取。",
                     "allow_vrchat_writes": "允許寫入 VRChat 帳號資料",
                     "allow_vrchat_writes_description": "關閉時，所有寫入 VRChat 收藏的工具呼叫都會強制以模擬模式（Dry Run）執行。\n開啟後，AI 將可把收藏寫入你的實際 VRChat 帳號。\n每次伺服器啟動時，此選項都會重設為關閉。",
                     "allow_lan_connections": "允許區域網路連線",
-                    "allow_lan_connections_description": "監聽所有 IPv4 網路介面，讓同一區域網路中的其他裝置可透過此電腦的 IP 位址和 Bearer Token 連線。不受信任的網路中請保持關閉。",
+                    "allow_lan_connections_description": "在所有 IPv4 介面上監聽，讓區域網路中的其他裝置可透過這台電腦的 IP 位址與 Bearer Token 連線。請勿在不受信任的網路中啟用此功能。",
                     "port_label": "伺服器埠",
                     "port_description": "變更此設定會重新啟動伺服器。如果 8798 連接埠已被占用，請改用其他未被使用的連接埠，並重新複製用戶端設定。",
                     "port_apply": "套用",
@@ -1976,11 +1976,11 @@
                     "status_label": "狀態",
                     "port_active_connections": "連接埠：{port}；目前連線數：{count}",
                     "client_config": "客戶端設定",
-                    "client_config_description": "請選擇適合你的用戶端的選項。\nClaude Code： 一次性的 claude mcp add 終端機指令。\n通用（HTTP）： 用於直接 HTTP 連線的 JSON 設定檔——無需額外工具。\n通用（mcp-remote）： 適用於不支援原生 HTTP 的用戶端（例如 Claude Desktop），透過 Node.js Proxy 建立通道的 JSON 設定檔；需將 Node.js 加入 PATH。啟用區域網路連線後，複製出的設定會使用 `YOUR-LAN-IP`；在其他裝置上使用前請替換為本機區域網路 IP。",
+                    "client_config_description": "選擇適合你的用戶端。\nClaude Code：執行一次 `claude mcp add` 終端機命令即可完成設定。\nGeneric（HTTP）：透過 JSON 設定直接建立 HTTP 連線，無需額外工具。\nGeneric（mcp-remote）：透過 JSON 設定並經由 Node.js Proxy 建立通道，適用於不支援原生 HTTP 的用戶端（例如 Claude Desktop）；需先將 Node.js 加入 PATH。\n啟用 LAN 連線後，複製的設定會使用 `YOUR-LAN-IP`。若要在其他裝置上使用，請先將它替換為這台電腦的本機 IP 位址。",
                     "copy_claude_code": "Claude Code",
                     "copy_mcp_remote": "通用（mcp-remote）",
                     "copy_generic": "通用 (HTTP)",
-                    "security_note": "用戶端設定包含明文權杖，請僅與你信任的工具或裝置分享。",
+                    "security_note": "用戶端設定包含明文 Token。請僅與你信任的工具或裝置分享。",
                     "rotate_token": "輪替權杖",
                     "rotate_token_description": "權杖輪替後，舊的用戶端設定將無法再使用。",
                     "token_rotated": "MCP 權杖已輪替",
@@ -2060,7 +2060,7 @@
                     "tray": "最小化到系統列",
                     "tray_description": "啟用時，點擊關閉按鈕（X）會將 VRCX-0 最小化至系統匣，而非結束程式。\n停用時，點擊關閉按鈕（X）將直接結束 VRCX-0。",
                     "background_mode": "最小化到系統匣時切換到背景模式",
-                    "background_mode_description": "關閉到系統匣時切換到背景模式，記憶體用量降至約十分之一；恢復後部分頁面狀態可能重設。",
+                    "background_mode_description": "關閉到系統匣時切換到背景模式，記憶體用量降至約十分之一\n恢復後部分頁面狀態可能重設。",
                     "auto_install_updates_on_startup": "啟動時自動更新",
                     "auto_install_updates_on_startup_description": "啟用時，VRCX-0 會在啟動時檢查更新。\n如果有可安裝的更新，將會自動下載、安裝並重新啟動。",
                     "auto_background_download_updates": "在背景下載更新",
@@ -2181,8 +2181,8 @@
                     "table_page_sizes_error": "每頁筆數必須為 1 到 1000 之間的數字",
                     "show_notification_icon_dot": "顯示系統匣通知紅點",
                     "striped_data_table_mode": "表格條紋模式",
-                    "reduced_motion_and_blur": "減少特效",
-                    "reduced_motion_and_blur_description": "關閉動畫、轉場和背景模糊效果，改善低階裝置的效能。",
+                    "reduced_motion_and_blur": "減少視覺效果",
+                    "reduced_motion_and_blur_description": "關閉動畫、過場效果和背景模糊，以提升低階裝置的效能。",
                     "accessible_status_indicators": "無障礙狀態指示器",
                     "accessible_status_indicators_description": "除了顏色外，也使用形狀來區分不同狀態。",
                     "use_official_status_colors": "使用官方狀態顏色",
@@ -2325,8 +2325,8 @@
                     "webhook": {
                         "header": "Webhook 通知",
                         "enabled": "啟用 Webhook 傳送功能",
-                        "auth_events_enabled": "自動登入失敗時傳送通知",
-                        "auth_events_description": "當 VRCX-0 背景中斷後無法自動重新登入時傳送通知。",
+                        "auth_events_enabled": "傳送自動登入失敗通知",
+                        "auth_events_description": "當 VRCX-0 無法自動恢復中斷的背景登入時，傳送通知。",
                         "url": "Webhook 網址",
                         "url_placeholder": "https://example.com/webhook",
                         "format": "Payload 格式",
@@ -2424,7 +2424,7 @@
             "pictures": {
                 "pictures": {
                     "auto_delete_old_prints": "自動刪除舊拍立得",
-                    "auto_delete_prints_from_vrc": "達到拍立得上限時，從 VRC 刪除舊拍立得"
+                    "auto_delete_prints_from_vrc": "達到上限時自動刪除舊的拍立得"
                 }
             },
             "advanced": {
@@ -2461,11 +2461,11 @@
                         "description": "僅收集用於改進 VRCX-0 所必需的匿名資訊。"
                     },
                     "save_instance_prints_to_file": {
-                        "header": "將房間拍立得保存到檔案",
+                        "header": "將房間拍立得儲存至檔案",
                         "header_tooltip": "需要啟用 VRChat 啟動參數 --enable-sdk-log-levels。",
-                        "description": "將產生的拍立得保存到你的 VRChat 圖片資料夾",
+                        "description": "將生成的拍立得儲存至你的 VRChat 圖片資料夾",
                         "crop": "自動移除拍立得的白邊",
-                        "crop_convert_old": "你想裁剪所有已儲存的列印嗎？",
+                        "crop_convert_old": "是否要裁切所有已儲存的拍立得？",
                         "crop_convert_old_confirm": "是",
                         "crop_convert_old_cancel": "否"
                     },
@@ -2620,15 +2620,15 @@
                     "user_content": {
                         "header": "內容存放設定",
                         "folder": "開啟儲存資料夾",
-                        "description": "設定“拍立得”和“貼紙”等內容儲存的位置",
+                        "description": "開啟或設定用於儲存 VRChat 內容（例如拍立得和貼圖）的資料夾。",
                         "set_folder": "設定儲存資料夾",
                         "reset_override": "重設為預設"
                     },
                     "auto_delete_prints": {
-                        "enable": "自動刪除舊 VRChat Prints",
-                        "description": "當 Print 列表超過上限時，刪除最舊的未收藏 VRChat Print。",
+                        "enable": "自動刪除舊的 VRChat 拍立得",
+                        "description": "當 VRChat 拍立得數量超過設定上限時，自動刪除最舊且未收藏的拍立得。",
                         "limit": "最多保留",
-                        "limit_description": "允許範圍為 30-60。已收藏 Print 永遠不會被自動刪除；最多可收藏比該上限少 5 個的 Print。"
+                        "limit_description": "允許範圍為 30～60。已收藏的拍立得永遠不會被刪除。可收藏的拍立得數量最多比此上限少 5 張。"
                     }
                 }
             },
@@ -2639,7 +2639,7 @@
                 "screenshot_metadata_removed": "螢幕截圖後設資料已移除"
             },
             "label": {
-                "existing_saved_prints_cropped": "已裁剪現有儲存的照片",
+                "existing_saved_prints_cropped": "已裁剪現有儲存的拍立得",
                 "favorite_detail_cache": "收藏詳細資訊快取"
             },
             "loading": {
@@ -2655,15 +2655,15 @@
                 "failed_to_refresh_online_user_count": "重新整理線上用戶數失敗",
                 "failed_to_load_proxy_settings": "載入代理設定失敗",
                 "failed_to_save_proxy_settings": "儲存代理設定失敗",
-                "failed_to_crop_existing_prints": "裁剪已有 Print失敗",
+                "failed_to_crop_existing_prints": "裁剪已有的拍立得失敗",
                 "failed_to_save_translation_settings": "儲存翻譯設定失敗",
                 "failed_to_fetch_translation_models": "取得翻譯模型失敗",
                 "failed_to_save_feed_filters": "儲存動態篩選失敗"
             },
             "modal": {
-                "crop_existing_prints": "裁剪現有照片",
-                "crop_already_saved_instance_prints_in_the_config": "現在裁剪設定的 UGC 資料夾中已儲存的房間照片？",
-                "crop_prints": "裁剪照片",
+                "crop_existing_prints": "裁剪現有的拍立得",
+                "crop_already_saved_instance_prints_in_the_config": "要立即裁切已儲存在已設定 UGC 資料夾中的房間拍立得嗎？",
+                "crop_prints": "裁剪拍立得",
                 "skip": "跳過"
             },
             "dynamic": {
@@ -3158,17 +3158,17 @@
         },
         "about": {
             "title": "關於 VRCX-0",
-            "tagline": "以 Tauri 和 Rust 打造的快速、輕量 VRCX。",
+            "tagline": "這款採用 Tauri 和 Rust 開發的 VRCX，具備快速且輕量化的特點。",
             "copy_version": "複製版本資訊",
-            "version_copied": "版本資訊已複製。",
-            "link_source": "原始碼",
-            "link_qq": "QQ 群",
+            "version_copied": "已複製版本資訊。",
+            "link_source": "來源",
+            "link_qq": "QQ 群組",
             "link_issues": "回報問題",
             "contributors": "貢獻者",
-            "contributors_error": "貢獻者清單載入失敗。",
-            "thanks": "每一份翻譯、每一次測試、每則回報和每個想法，都來自社群。謝謝你們。",
-            "view_graph": "在 GitHub 查看完整貢獻圖",
-            "license_line": "GPL-3.0 自由開源"
+            "contributors_error": "無法載入貢獻者清單。",
+            "thanks": "每一則翻譯、每一次測試、每一份錯誤回報，以及每一個點子，都來自社群。謝謝你。",
+            "view_graph": "在 GitHub 上檢視完整的貢獻圖表",
+            "license_line": "依據 GPL-3.0 授權的免費及開源軟體"
         }
     },
     "dialog": {
@@ -4643,7 +4643,7 @@
             "emoji_loop_pingpong": "桌球循環",
             "flipbook_info": "選擇一張 1024×1024 的 PNG 精靈圖來製作動態表情符號，可用的影格格線大小為：4、16 或 64（最大 FPS 為 64，最多 64 個影格）",
             "note": "注意",
-            "crop_print_border": "重傳時裁切原有邊框",
+            "crop_print_border": "裁切現有邊框（重新上傳）",
             "upload_options": "上傳選項",
             "consume_bundle": "使用",
             "item": "物品",
@@ -4845,7 +4845,7 @@
             "mode": "服務提供者",
             "mode_google": "Google 翻譯",
             "mode_openai": "OpenAI",
-            "mode_deepl": "DeepL Free API",
+            "mode_deepl": "DeepL 免費 API",
             "test": "測試",
             "save": "儲存",
             "msg_fill_endpoint_model": "請填寫 API 端點與模型",
@@ -4857,7 +4857,7 @@
                 "prompt_optional": "提示詞（選填）",
                 "prompt_optional_description": "OpenAI 兼容翻譯 API 的可選系統提示詞。",
                 "connection": "LLM 端點",
-                "connection_description": "供 OpenAI 兼容翻譯使用。",
+                "connection_description": "用於與 OpenAI 相容的翻譯功能。",
                 "connection_placeholder": "選擇一個端點"
             },
             "deepl": {
@@ -4885,8 +4885,8 @@
             "description": "選擇 SteamVR 執行時哪些通知會傳送到 XSOverlay 和 OVR Toolkit。"
         },
         "hmd_notifications": {
-            "title": "頭顯通知篩選",
-            "description": "選擇哪些通知會顯示在頭顯視野內。"
+            "title": "頭顯通知篩選器",
+            "description": "選擇要在頭顯中顯示哪些執行時通知。"
         },
         "desktop_notifications": {
             "title": "桌面通知過濾器",
@@ -5537,15 +5537,15 @@
             "close": "關閉",
             "restart": "儲存並重新啟動",
             "enabled": "啟用代理",
-            "enabled_description": "啟用但未填寫位址時，VRCX-0 會直連，代理開關保持開啟。",
-            "address": "代理位址",
-            "address_description": "留空表示保持代理開關開啟，但網路邏輯走直連。",
+            "enabled_description": "啟用後若未填寫位址，VRCX-0 將直接連線，並保持代理開關啟用。",
+            "address": "代理地址",
+            "address_description": "留空即可直接連線，並保持代理開關啟用。",
             "test": "測試",
             "configure": "設定",
-            "configure_empty": "設定位址",
-            "saved_restart_required": "代理設定已儲存，重新啟動 VRCX-0 後網路代理變更生效。",
+            "configure_empty": "設定地址",
+            "saved_restart_required": "代理設定已儲存。請重新啟動 VRCX-0 以套用網路代理變更。",
             "test_success": "代理測試成功（HTTP {status}）。",
-            "test_failed": "代理測試失敗：{message}"
+            "test_failed": "代理測試失敗： {message}"
         },
         "redeem": {
             "header": "兌換代碼",
@@ -5775,8 +5775,8 @@
     "notifications": {
         "has_joined": "已加入",
         "has_left": "已離開",
-        "joined_with_others": "和另外 {count} 人已加入",
-        "left_with_others": "和另外 {count} 人已離開",
+        "joined_with_others": "以及另外 {count} 人加入",
+        "left_with_others": "以及另外 {count} 人離開",
         "is_joining": "正在加入",
         "gps": "位於 {location}",
         "online_location": "已登入到 {location}",
@@ -6154,10 +6154,10 @@
         "start_background_mode": "切換到背景模式",
         "start_background_mode_tooltip": "切換到背景模式",
         "modify_proxy_address": "修改代理位址",
-        "proxy_disabled": "代理已關閉",
-        "proxy_enabled_direct": "代理已啟用，目前直連",
-        "proxy_enabled_server": "代理已啟用：{proxy}",
-        "proxy_network_issue": "代理已啟用，網路請求失敗"
+        "proxy_disabled": "代理已停用",
+        "proxy_enabled_direct": "已啟用代理，正在直接連線",
+        "proxy_enabled_server": "已啟用代理： {proxy}",
+        "proxy_network_issue": "已啟用代理，網路請求失敗"
     },
     "component": {
         "favorite_action_menu": {
