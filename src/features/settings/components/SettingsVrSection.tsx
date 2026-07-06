@@ -6,9 +6,33 @@ type SettingsVrSectionProps = {
     vr: SettingsPageStateSections['vr'];
 };
 
+function secondsInputToMilliseconds(
+    value: unknown,
+    min: number,
+    max: number,
+    fallback: number
+): number {
+    const seconds = Number.parseInt(String(value), 10);
+    return Number.isFinite(seconds)
+        ? Math.min(max, Math.max(min, seconds * 1000))
+        : fallback;
+}
+
+function roundedBoundedNumber(
+    value: unknown,
+    min: number,
+    max: number,
+    fallback: number
+): number {
+    return Number.isFinite(Number(value))
+        ? Math.min(max, Math.max(min, Math.round(Number(value))))
+        : fallback;
+}
+
 export function SettingsVrSection({ vr }: SettingsVrSectionProps) {
     const {
         prefs,
+        setHmdNotificationsDialogOpen,
         setVrNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen,
         savePreferenceValue,
@@ -19,10 +43,7 @@ export function SettingsVrSection({ vr }: SettingsVrSectionProps) {
     } = vr;
 
     const saveNotificationTimeoutSeconds = (value: unknown) => {
-        const seconds = Number.parseInt(String(value), 10);
-        const milliseconds = Number.isFinite(seconds)
-            ? Math.min(600000, Math.max(0, seconds * 1000))
-            : 3000;
+        const milliseconds = secondsInputToMilliseconds(value, 0, 600000, 3000);
         savePreferenceValue('notificationTimeout', milliseconds, () =>
             setIntConfigPreference('notificationTimeout', milliseconds, {
                 min: 0,
@@ -33,11 +54,36 @@ export function SettingsVrSection({ vr }: SettingsVrSectionProps) {
     };
 
     const saveNotificationOpacity = (value: unknown) => {
-        const opacity = Number.isFinite(Number(value))
-            ? Math.min(100, Math.max(0, Math.round(Number(value))))
-            : 100;
+        const opacity = roundedBoundedNumber(value, 0, 100, 100);
         savePreferenceValue('notificationOpacity', opacity, () =>
             setIntConfigPreference('notificationOpacity', opacity, {
+                min: 0,
+                max: 100,
+                fallback: 100
+            })
+        );
+    };
+
+    const saveHmdNotificationTimeoutSeconds = (value: unknown) => {
+        const milliseconds = secondsInputToMilliseconds(
+            value,
+            1000,
+            30000,
+            5000
+        );
+        savePreferenceValue('hmdNotificationTimeout', milliseconds, () =>
+            setIntConfigPreference('hmdNotificationTimeout', milliseconds, {
+                min: 1000,
+                max: 30000,
+                fallback: 5000
+            })
+        );
+    };
+
+    const saveHmdNotificationOpacity = (value: unknown) => {
+        const opacity = roundedBoundedNumber(value, 0, 100, 100);
+        savePreferenceValue('hmdNotificationOpacity', opacity, () =>
+            setIntConfigPreference('hmdNotificationOpacity', opacity, {
                 min: 0,
                 max: 100,
                 fallback: 100
@@ -85,6 +131,53 @@ export function SettingsVrSection({ vr }: SettingsVrSectionProps) {
             onOpenVrNotificationFiltersDialog={() =>
                 setVrNotificationsDialogOpen(true)
             }
+            onHmdNotificationsEnabledChange={(checked: unknown) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'hmdNotificationsEnabled',
+                    'hmdNotificationsEnabled',
+                    enabled
+                );
+            }}
+            onHmdNotificationTimeoutSecondsChange={
+                saveHmdNotificationTimeoutSeconds
+            }
+            onHmdNotificationOpacityChange={saveHmdNotificationOpacity}
+            onHmdNotificationStartModeChange={(value: string) => {
+                saveStringPreference(
+                    'hmdNotificationStartMode',
+                    'hmdNotificationStartMode',
+                    value
+                );
+            }}
+            onHmdNotificationPositionChange={(value: string) => {
+                saveStringPreference(
+                    'hmdNotificationPosition',
+                    'hmdNotificationPosition',
+                    value
+                );
+            }}
+            onOpenHmdNotificationFiltersDialog={() =>
+                setHmdNotificationsDialogOpen(true)
+            }
+            onVrOverlayPanelEnabledChange={(checked: unknown) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'vrOverlayPanelEnabled',
+                    'vrOverlayPanelEnabled',
+                    enabled
+                );
+            }}
+            onVrOverlayPanelAllFriendsIncludesFavoritesChange={(
+                checked: unknown
+            ) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'vrOverlayPanelAllFriendsIncludesFavorites',
+                    'vrOverlayPanelAllFriendsIncludesFavorites',
+                    enabled
+                );
+            }}
             onWristOverlayEnabledChange={(checked: unknown) =>
                 saveWristOverlayEnabled(normalizeCheckedState(checked))
             }

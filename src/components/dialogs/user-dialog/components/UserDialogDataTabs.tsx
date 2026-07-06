@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
-import { userDialogMutualFriendSortingOptions } from '@/shared/constants/user';
+import {
+    userDialogMutualFriendSortingOptions,
+    userDialogWorldOrderOptions,
+    userDialogWorldSortingOptions
+} from '@/shared/constants/user';
 import { useDialogStore } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -56,8 +60,14 @@ export function UserDialogMutualTab({
                 </span>
                 <Select
                     value={mutualSort}
-                    onValueChange={setMutualSort}
+                    onValueChange={(value) => setMutualSort(value ?? '')}
                     disabled={remoteStatus.mutual === 'running'}
+                    items={Object.values(
+                        userDialogMutualFriendSortingOptions
+                    ).map((option) => ({
+                        value: option.value,
+                        label: t(option.name)
+                    }))}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />
@@ -118,8 +128,14 @@ export function UserDialogWorldsTab({
                 </span>
                 <Select
                     value={worldSort}
-                    onValueChange={changeWorldSort}
+                    onValueChange={(value) => changeWorldSort(value ?? '')}
                     disabled={remoteStatus.worlds === 'running'}
+                    items={Object.values(userDialogWorldSortingOptions).map(
+                        (option) => ({
+                            value: option.value,
+                            label: t(option.name)
+                        })
+                    )}
                 >
                     <SelectTrigger size="sm" className="w-32">
                         <SelectValue />
@@ -149,8 +165,14 @@ export function UserDialogWorldsTab({
                 </span>
                 <Select
                     value={worldOrder}
-                    onValueChange={changeWorldOrder}
+                    onValueChange={(value) => changeWorldOrder(value ?? '')}
                     disabled={remoteStatus.worlds === 'running'}
+                    items={Object.values(userDialogWorldOrderOptions).map(
+                        (option) => ({
+                            value: option.value,
+                            label: t(option.name)
+                        })
+                    )}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />
@@ -254,8 +276,28 @@ export function UserDialogAvatarsTab({
                         </span>
                         <Select
                             value={avatarSort}
-                            onValueChange={changeAvatarSort}
+                            onValueChange={(value) =>
+                                changeAvatarSort(value ?? '')
+                            }
                             disabled={remoteStatus.avatars === 'running'}
+                            items={[
+                                {
+                                    value: 'name',
+                                    label: t('dialog.user.avatars.sort_by_name')
+                                },
+                                {
+                                    value: 'update',
+                                    label: t(
+                                        'dialog.user.avatars.sort_by_update'
+                                    )
+                                },
+                                {
+                                    value: 'createdAt',
+                                    label: t(
+                                        'dialog.user.avatars.sort_by_uploaded'
+                                    )
+                                }
+                            ]}
                         >
                             <SelectTrigger size="sm" className="w-36">
                                 <SelectValue />
@@ -283,8 +325,24 @@ export function UserDialogAvatarsTab({
                         </span>
                         <Select
                             value={avatarReleaseStatus}
-                            onValueChange={changeAvatarReleaseStatus}
+                            onValueChange={(value) =>
+                                changeAvatarReleaseStatus(value ?? '')
+                            }
                             disabled={remoteStatus.avatars === 'running'}
+                            items={[
+                                {
+                                    value: 'all',
+                                    label: t('dialog.user.avatars.all')
+                                },
+                                {
+                                    value: 'public',
+                                    label: t('dialog.user.avatars.public')
+                                },
+                                {
+                                    value: 'private',
+                                    label: t('dialog.user.avatars.private')
+                                }
+                            ]}
                         >
                             <SelectTrigger size="sm" className="w-32">
                                 <SelectValue />
@@ -352,18 +410,20 @@ export function UserDialogInstanceHistoryTab({
                 className="flex-1"
                 headerActions={
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-sm"
-                                disabled={!userId}
-                                aria-label={openFullLabel}
-                                onClick={openFullHistory}
-                            >
-                                <Maximize2Icon className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    disabled={!userId}
+                                    aria-label={openFullLabel}
+                                    onClick={openFullHistory}
+                                >
+                                    <Maximize2Icon className="size-4" />
+                                </Button>
+                            }
+                        />
                         <TooltipContent>{openFullLabel}</TooltipContent>
                     </Tooltip>
                 }

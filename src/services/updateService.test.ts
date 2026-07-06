@@ -196,6 +196,41 @@ describe('updateService pending update downloads', () => {
         });
     });
 
+    it('does not pass a stored updater proxy when proxy is explicitly disabled', async () => {
+        mocks.getStorageString.mockImplementation(
+            (key: string, fallback = '') => {
+                if (key === 'VRCX_ProxyEnabled') {
+                    return Promise.resolve('false');
+                }
+                if (key === 'VRCX_ProxyServer') {
+                    return Promise.resolve('127.0.0.1:7890');
+                }
+                return Promise.resolve(String(fallback ?? ''));
+            }
+        );
+        mocks.downloadTauriUpdate.mockResolvedValue({
+            currentVersion: '2.6.0',
+            version: '2.7.0',
+            date: null,
+            body: null,
+            rawJson: {}
+        });
+
+        await downloadUpdate(installableRelease(), {
+            hostPlatform: 'windows',
+            hostArch: 'x86_64',
+            linuxPackageKind: ''
+        });
+
+        expect(mocks.downloadTauriUpdate).toHaveBeenCalledWith(
+            '2.7.0',
+            expect.objectContaining({
+                proxy: null
+            }),
+            expect.any(Function)
+        );
+    });
+
     it('reuses the same pending download promise for the same version', async () => {
         let resolveDownload: (value: any) => void = () => {};
         let markDownloadStarted: () => void = () => {};

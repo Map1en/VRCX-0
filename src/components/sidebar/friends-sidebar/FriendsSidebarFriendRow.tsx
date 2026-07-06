@@ -171,73 +171,75 @@ export function FriendRow({
                 seed={friend}
                 disabled={isCurrentUser}
             >
-                <ContextMenuTrigger asChild>
-                    <button
-                        type="button"
-                        data-slot="button"
-                        data-variant="ghost"
-                        data-size="default"
-                        className={buttonVariants({
-                            variant: 'ghost',
-                            className:
-                                'h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
-                        })}
-                        onClick={onOpen}
-                    >
-                        <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
-                            <span className="bg-muted relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border">
-                                {imageUrl ? (
-                                    <img
-                                        src={imageUrl}
-                                        alt=""
-                                        className="size-full object-cover"
-                                    />
-                                ) : (
-                                    <UserIcon
-                                        data-icon="inline-start"
-                                        className="text-muted-foreground"
-                                    />
-                                )}
+                <ContextMenuTrigger
+                    render={
+                        <button
+                            type="button"
+                            data-slot="button"
+                            data-variant="ghost"
+                            data-size="default"
+                            className={buttonVariants({
+                                variant: 'ghost',
+                                className:
+                                    'h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
+                            })}
+                            onClick={onOpen}
+                        >
+                            <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
+                                <span className="bg-muted relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border">
+                                    {imageUrl ? (
+                                        <img
+                                            src={imageUrl}
+                                            alt=""
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <UserIcon
+                                            data-icon="inline-start"
+                                            className="text-muted-foreground"
+                                        />
+                                    )}
+                                </span>
+                                <UserStatusDot
+                                    statusDotClassName={statusDotClassName}
+                                    className="absolute -right-0.5 -bottom-0.5 z-10 size-3.75"
+                                />
                             </span>
-                            <UserStatusDot
-                                statusDotClassName={statusDotClassName}
-                                className="absolute -right-0.5 -bottom-0.5 z-10 size-3.75"
-                            />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span
-                                className="block truncate leading-5 font-medium"
-                                style={nameStyle}
-                            >
-                                {displayName}
+                            <span className="min-w-0 flex-1">
+                                <span
+                                    className="block truncate leading-5 font-medium"
+                                    style={nameStyle}
+                                >
+                                    {displayName}
+                                </span>
+                                <span className="text-muted-foreground block truncate text-xs">
+                                    {groupByInstanceTimerVisible ? (
+                                        <FriendInstanceTimer
+                                            epoch={groupByInstanceEpoch}
+                                            traveling={isTraveling}
+                                        />
+                                    ) : showLocationSubline ? (
+                                        <StaticSidebarLocation
+                                            location={displayLocation}
+                                            traveling={displayTraveling}
+                                            hint={metadataHint}
+                                            metadata={locationMetadata}
+                                            tooltips={false}
+                                            showInstanceIdInLocation={
+                                                showInstanceIdInLocation
+                                            }
+                                            ageGatedInstancesVisible={
+                                                ageGatedInstancesVisible
+                                            }
+                                        />
+                                    ) : (
+                                        subline
+                                    )}
+                                </span>
                             </span>
-                            <span className="text-muted-foreground block truncate text-xs">
-                                {groupByInstanceTimerVisible ? (
-                                    <FriendInstanceTimer
-                                        epoch={groupByInstanceEpoch}
-                                        traveling={isTraveling}
-                                    />
-                                ) : showLocationSubline ? (
-                                    <StaticSidebarLocation
-                                        location={displayLocation}
-                                        traveling={displayTraveling}
-                                        hint={metadataHint}
-                                        metadata={locationMetadata}
-                                        tooltips={false}
-                                        showInstanceIdInLocation={
-                                            showInstanceIdInLocation
-                                        }
-                                        ageGatedInstancesVisible={
-                                            ageGatedInstancesVisible
-                                        }
-                                    />
-                                ) : (
-                                    subline
-                                )}
-                            </span>
-                        </span>
-                    </button>
-                </ContextMenuTrigger>
+                        </button>
+                    }
+                />
             </UserHoverCard>
             <ContextMenuContent className="w-56">
                 {isCurrentUser ? (

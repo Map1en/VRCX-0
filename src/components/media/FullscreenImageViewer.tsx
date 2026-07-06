@@ -186,8 +186,8 @@ export function FullscreenImageViewer({
             <DialogContent
                 showCloseButton={false}
                 onClick={onClose}
-                onOpenAutoFocus={(event) => event.preventDefault()}
-                onCloseAutoFocus={(event) => event.preventDefault()}
+                initialFocus={false}
+                finalFocus={false}
                 className="bg-background/90 fixed inset-x-0 top-8 bottom-0 left-0 h-auto max-h-none w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 p-4 shadow-none ring-0 sm:max-w-none sm:p-10"
             >
                 <DialogTitle className="sr-only">{resolvedTitle}</DialogTitle>
@@ -202,49 +202,55 @@ export function FullscreenImageViewer({
                         onClick={(event) => event.stopPropagation()}
                     >
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={copying || (!url && !sourcePath)}
-                                    aria-label={t('message.image.copy')}
-                                    onClick={() => {
-                                        copyImage();
-                                    }}
-                                >
-                                    {copying ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : (
-                                        <CopyIcon data-icon="inline-start" />
-                                    )}
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={
+                                            copying || (!url && !sourcePath)
+                                        }
+                                        aria-label={t('message.image.copy')}
+                                        onClick={() => {
+                                            copyImage();
+                                        }}
+                                    >
+                                        {copying ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <CopyIcon data-icon="inline-start" />
+                                        )}
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.copy')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={
-                                        downloading || (!url && !sourcePath)
-                                    }
-                                    aria-label={t('message.image.download')}
-                                    onClick={() => {
-                                        downloadImage();
-                                    }}
-                                >
-                                    {downloading ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : (
-                                        <DownloadIcon data-icon="inline-start" />
-                                    )}
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={
+                                            downloading || (!url && !sourcePath)
+                                        }
+                                        aria-label={t('message.image.download')}
+                                        onClick={() => {
+                                            downloadImage();
+                                        }}
+                                    >
+                                        {downloading ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <DownloadIcon data-icon="inline-start" />
+                                        )}
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.download')}
                             </TooltipContent>
@@ -254,85 +260,95 @@ export function FullscreenImageViewer({
                             className="mx-1 h-5 data-vertical:self-center"
                         />
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t('message.image.zoom_out')}
-                                    onClick={zoomOut}
-                                >
-                                    <ZoomOutIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t('message.image.zoom_out')}
+                                        onClick={zoomOut}
+                                    >
+                                        <ZoomOutIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.zoom_out')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t('message.image.zoom_in')}
-                                    onClick={zoomIn}
-                                >
-                                    <ZoomInIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t('message.image.zoom_in')}
+                                        onClick={zoomIn}
+                                    >
+                                        <ZoomInIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.zoom_in')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t(
-                                        'message.image.rotate_clockwise'
-                                    )}
-                                    onClick={rotateClockwise}
-                                >
-                                    <RotateCwIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t(
+                                            'message.image.rotate_clockwise'
+                                        )}
+                                        onClick={rotateClockwise}
+                                    >
+                                        <RotateCwIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.rotate_clockwise')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t(
-                                        'message.image.rotate_counterclockwise'
-                                    )}
-                                    onClick={rotateCounterClockwise}
-                                >
-                                    <RotateCcwIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t(
+                                            'message.image.rotate_counterclockwise'
+                                        )}
+                                        onClick={rotateCounterClockwise}
+                                    >
+                                        <RotateCcwIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.rotate_counterclockwise')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t('message.image.reset')}
-                                    onClick={resetTransform}
-                                >
-                                    <RefreshCcwIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t('message.image.reset')}
+                                        onClick={resetTransform}
+                                    >
+                                        <RefreshCcwIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.reset')}
                             </TooltipContent>
@@ -342,17 +358,19 @@ export function FullscreenImageViewer({
                             className="mx-1 h-5 data-vertical:self-center"
                         />
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t('message.image.close')}
-                                    onClick={onClose}
-                                >
-                                    <XIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={t('message.image.close')}
+                                        onClick={onClose}
+                                    >
+                                        <XIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('message.image.close')}
                             </TooltipContent>

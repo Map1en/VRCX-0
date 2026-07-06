@@ -79,6 +79,17 @@ type SettingsAdvancedTabProps = {
     };
 };
 
+const launchModeOptions = [
+    [
+        'vr',
+        'view.settings.advanced.advanced.launch_commands.default_launch_mode_vr'
+    ],
+    [
+        'desktop',
+        'view.settings.advanced.advanced.launch_commands.default_launch_mode_desktop'
+    ]
+] as const;
+
 function DataDirectoryPath({ value }: { value?: string | null }) {
     return (
         <div className="bg-muted/40 text-muted-foreground w-full min-w-0 rounded-md border px-2 py-1 font-mono text-xs break-all">
@@ -303,23 +314,24 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                 >
                     <Select
                         value={prefs.defaultLaunchMode}
-                        onValueChange={onDefaultLaunchModeChange}
+                        items={launchModeOptions.map(([value, labelKey]) => ({
+                            value,
+                            label: t(labelKey)
+                        }))}
+                        onValueChange={(value) =>
+                            onDefaultLaunchModeChange(value ?? '')
+                        }
                     >
                         <SelectTrigger className="w-44">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="vr">
-                                    {t(
-                                        'view.settings.advanced.advanced.launch_commands.default_launch_mode_vr'
-                                    )}
-                                </SelectItem>
-                                <SelectItem value="desktop">
-                                    {t(
-                                        'view.settings.advanced.advanced.launch_commands.default_launch_mode_desktop'
-                                    )}
-                                </SelectItem>
+                                {launchModeOptions.map(([value, labelKey]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {t(labelKey)}
+                                    </SelectItem>
+                                ))}
                             </SelectGroup>
                         </SelectContent>
                     </Select>

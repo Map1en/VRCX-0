@@ -44,23 +44,25 @@ export function LocationContextMenu({
     return (
         <>
             <ContextMenu>
-                <ContextMenuTrigger asChild>
-                    <span className="inline-flex max-w-full min-w-0">
-                        {children}
-                    </span>
-                </ContextMenuTrigger>
+                <ContextMenuTrigger
+                    render={
+                        <span className="inline-flex max-w-full min-w-0">
+                            {children}
+                        </span>
+                    }
+                />
                 <ContextMenuContent className="w-56">
                     <ContextMenuGroup>
                         <ContextMenuItem
                             disabled={!canOpenWorld}
-                            onSelect={onOpenWorld}
+                            onClick={onOpenWorld}
                         >
                             <ExternalLinkIcon />
                             {t('common.actions.view_details')}
                         </ContextMenuItem>
                         <ContextMenuItem
                             disabled={!shareUrl}
-                            onSelect={onCopyShareLink}
+                            onClick={onCopyShareLink}
                         >
                             <Share2Icon />
                             {t('dialog.world.actions.share')}
@@ -70,14 +72,14 @@ export function LocationContextMenu({
                     <ContextMenuGroup>
                         <ContextMenuItem
                             disabled={!worldId}
-                            onSelect={() => onNewInstance(false)}
+                            onClick={() => onNewInstance(false)}
                         >
                             <FlagIcon />
                             {t('dialog.world.actions.new_instance')}
                         </ContextMenuItem>
                         <ContextMenuItem
                             disabled={!worldId}
-                            onSelect={() => onNewInstance(true)}
+                            onClick={() => onNewInstance(true)}
                         >
                             <MessageSquareIcon />
                             {t(newInstanceFollowUpLabelKey)}
@@ -91,7 +93,7 @@ export function LocationContextMenu({
                                 previousInstancesLoading ||
                                 (!worldId && !isOpenPreviousInstanceInfoDialog)
                             }
-                            onSelect={() => {
+                            onClick={() => {
                                 if (isOpenPreviousInstanceInfoDialog) {
                                     onShowExactPreviousInstanceInfo();
                                     return;
@@ -109,14 +111,14 @@ export function LocationContextMenu({
                             <ContextMenuGroup>
                                 <ContextMenuItem
                                     disabled={!canUseCurrentInstance}
-                                    onSelect={onLaunchCurrentInstance}
+                                    onClick={onLaunchCurrentInstance}
                                 >
                                     <ExternalLinkIcon />
                                     {t('dialog.launch.open_ingame')}
                                 </ContextMenuItem>
                                 <ContextMenuItem
                                     disabled={!canUseCurrentInstance}
-                                    onSelect={() => {
+                                    onClick={() => {
                                         onSelfInviteCurrentInstance();
                                     }}
                                 >

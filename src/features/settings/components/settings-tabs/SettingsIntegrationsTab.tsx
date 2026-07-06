@@ -6,12 +6,19 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
+import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { normalizeCheckedState } from '../../settingsValues';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { WebhookSettingsGroup } from './WebhookSettingsGroup';
 
-export function SettingsIntegrationsTab({ integrations }: any) {
+type SettingsIntegrationsTabProps = {
+    integrations: SettingsPageStateSections['integrations'];
+};
+
+export function SettingsIntegrationsTab({
+    integrations
+}: SettingsIntegrationsTabProps) {
     const {
         prefs,
         discordPrefs,
@@ -53,8 +60,16 @@ export function SettingsIntegrationsTab({ integrations }: any) {
         );
     }
 
+    function saveWebhookAuthEventsEnabled(checked: boolean) {
+        saveBoolPreference(
+            'webhookAuthEventsEnabled',
+            'webhookAuthEventsEnabled',
+            normalizeCheckedState(checked)
+        );
+    }
+
     function setWebhookUrlDraft(value: string) {
-        setPrefs((current: any) => ({
+        setPrefs((current) => ({
             ...current,
             webhookUrl: String(value ?? '')
         }));
@@ -229,6 +244,7 @@ export function SettingsIntegrationsTab({ integrations }: any) {
             <WebhookSettingsGroup
                 prefs={prefs}
                 onWebhookEnabledChange={saveWebhookEnabled}
+                onWebhookAuthEventsEnabledChange={saveWebhookAuthEventsEnabled}
                 onWebhookUrlDraftChange={setWebhookUrlDraft}
                 onWebhookUrlBlur={saveWebhookUrl}
                 onWebhookFormatChange={saveWebhookFormat}

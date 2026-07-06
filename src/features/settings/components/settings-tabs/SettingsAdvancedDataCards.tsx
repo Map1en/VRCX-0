@@ -37,6 +37,7 @@ export function SettingsAdvancedDataCards({
     onClearConfigTreeData
 }: any) {
     const { t } = useTranslation();
+
     return (
         <>
             <SettingsGroup
@@ -80,6 +81,19 @@ export function SettingsAdvancedDataCards({
                 >
                     <Select
                         value={prefs.avatarAutoCleanup}
+                        items={avatarAutoCleanupOptions.map(
+                            (value: string) => ({
+                                value,
+                                label:
+                                    value === 'Off'
+                                        ? t(
+                                              'view.settings.advanced.advanced.database_cleanup.auto_cleanup_off'
+                                          )
+                                        : t(
+                                              `view.settings.advanced.advanced.database_cleanup.auto_cleanup_${value}`
+                                          )
+                            })
+                        )}
                         onValueChange={onAvatarAutoCleanupChange}
                     >
                         <SelectTrigger
@@ -90,17 +104,19 @@ export function SettingsAdvancedDataCards({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                {avatarAutoCleanupOptions.map((value: any) => (
-                                    <SelectItem key={value} value={value}>
-                                        {value === 'Off'
-                                            ? t(
-                                                  'view.settings.advanced.advanced.database_cleanup.auto_cleanup_off'
-                                              )
-                                            : t(
-                                                  `view.settings.advanced.advanced.database_cleanup.auto_cleanup_${value}`
-                                              )}
-                                    </SelectItem>
-                                ))}
+                                {avatarAutoCleanupOptions.map(
+                                    (value: string) => (
+                                        <SelectItem key={value} value={value}>
+                                            {value === 'Off'
+                                                ? t(
+                                                      'view.settings.advanced.advanced.database_cleanup.auto_cleanup_off'
+                                                  )
+                                                : t(
+                                                      `view.settings.advanced.advanced.database_cleanup.auto_cleanup_${value}`
+                                                  )}
+                                        </SelectItem>
+                                    )
+                                )}
                             </SelectGroup>
                         </SelectContent>
                     </Select>

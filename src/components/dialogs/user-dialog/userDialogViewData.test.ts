@@ -259,7 +259,7 @@ describe('userDialogViewData', () => {
         expect(summary.userJoinCount).toBe(9);
         expect(summary.lastSeen).toBe('2026-01-02T03:04:05');
         expect(summary.profileLanguages).toEqual([
-            { key: 'jpn', value: 'JPN' }
+            { key: 'jpn', value: '日本語' }
         ]);
         expect(summary.mutualFriendCount).toBe(4);
         expect(summary.friendNumber).toBe(42);

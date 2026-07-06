@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     appWriteConfigFile: vi.fn(),
     appSystemCulture: vi.fn(),
     getRawValue: vi.fn(),
+    has: vi.fn(),
     getBool: vi.fn(),
     getString: vi.fn(),
     getInt: vi.fn(),
@@ -55,6 +56,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 vi.mock('@/repositories/configRepository', () => ({
     default: {
         getRawValue: mocks.getRawValue,
+        has: mocks.has,
         getBool: mocks.getBool,
         getString: mocks.getString,
         getInt: mocks.getInt,
@@ -124,6 +126,7 @@ vi.mock('./trustColorService', () => ({
 }));
 
 import type { useSettingsPreferenceActions } from '@/features/settings/useSettingsPreferenceActions';
+import { OVERLAY_ACTIVITY_TYPE_DEFINITIONS } from '@/shared/constants/overlayActivityFilters';
 import {
     DEFAULT_PREFERENCES,
     usePreferencesStore
@@ -138,7 +141,9 @@ import {
     setDataTableStripedPreference,
     setDiscordBoolPreference,
     setIntConfigPreference,
+    setHmdNotificationActivityFiltersPreference,
     setNotificationLayoutPreference,
+    setProxyEnabledPreference,
     setProxyServerPreference,
     setRecentActionCooldownMinutesPreference,
     setStringConfigPreference,
@@ -152,6 +157,7 @@ import {
 function assertPreferenceSetterTypes() {
     setBoolConfigPreference('notificationIconDot', true);
     setBoolConfigPreference('VRCX_notificationIconDot', false);
+    setBoolConfigPreference('reducedMotionAndBlur', true);
     setStringConfigPreference('desktopToast', 'Always');
     setStringConfigPreference('VRCX_tableDensity', 'compact');
     setIntConfigPreference('notificationTimeout', '3000');
@@ -244,6 +250,7 @@ describe('preferencesService characterization', () => {
         } as any);
 
         mocks.getRawValue.mockResolvedValue(null);
+        mocks.has.mockResolvedValue(true);
         mocks.getBool.mockImplementation((_key: string, fallback = false) =>
             Promise.resolve(Boolean(fallback))
         );
@@ -270,6 +277,8 @@ describe('preferencesService characterization', () => {
                 Promise.resolve(String(fallback ?? ''))
         );
         mocks.storageSetString.mockResolvedValue(undefined);
+        mocks.appOverlayActivityDefinitionsGet.mockResolvedValue([]);
+        mocks.appOverlayActivityFiltersReload.mockResolvedValue(undefined);
         mocks.appVrOverlayConfigReload.mockResolvedValue(undefined);
         mocks.appLanguageChanged.mockResolvedValue(undefined);
         mocks.appRestartApplication.mockResolvedValue(undefined);
@@ -377,6 +386,46 @@ describe('preferencesService characterization', () => {
         );
     });
 
+    it('seeds hmdNotificationsEnabled off when external overlay forwarding is on', async () => {
+        mocks.has.mockResolvedValue(false);
+        mocks.getRawValue.mockImplementation((key: string) =>
+            Promise.resolve(key === 'xsNotifications' ? 'true' : null)
+        );
+        mocks.getBool.mockImplementation((key: string, fallback = false) =>
+            Promise.resolve(
+                key === 'xsNotifications' ? true : Boolean(fallback)
+            )
+        );
+
+        await loadPreferenceSnapshot();
+
+        expect(mocks.setBool).toHaveBeenCalledWith(
+            'hmdNotificationsEnabled',
+            false
+        );
+        expect(mocks.appVrOverlayConfigReload).toHaveBeenCalled();
+    });
+
+    it('seeds hmdNotificationsEnabled on when all external overlay forwarding is off', async () => {
+        mocks.has.mockResolvedValue(false);
+
+        await loadPreferenceSnapshot();
+
+        expect(mocks.setBool).toHaveBeenCalledWith(
+            'hmdNotificationsEnabled',
+            true
+        );
+    });
+
+    it('does not reseed hmdNotificationsEnabled when the key already exists', async () => {
+        await loadPreferenceSnapshot();
+
+        expect(mocks.setBool).not.toHaveBeenCalledWith(
+            'hmdNotificationsEnabled',
+            expect.anything()
+        );
+    });
+
     it('normalizes notification layout and syncs shell/store state', async () => {
         await expect(setNotificationLayoutPreference('unknown')).resolves.toBe(
             'notification-center'
@@ -430,6 +479,134 @@ describe('preferencesService characterization', () => {
         );
     });
 
+    it('persists HMD notification activity filters with HMD defaults and reloads filters', async () => {
+        mocks.appOverlayActivityDefinitionsGet.mockResolvedValue(
+            OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+        );
+
+        await expect(
+            setHmdNotificationActivityFiltersPreference({
+                types: {
+                    Online: {
+                        scope: 'off'
+                    }
+                }
+            })
+        ).resolves.toMatchObject({
+            types: {
+                OnPlayerJoined: {
+                    scope: 'friends',
+                    favoriteGroupKeys: 'all'
+                },
+                Online: {
+                    scope: 'off',
+                    favoriteGroupKeys: 'all'
+                },
+                VideoPlay: {
+                    scope: 'off',
+                    favoriteGroupKeys: 'all'
+                }
+            }
+        });
+
+        const hmdSetStringCall = mocks.setString.mock.calls.find(
+            ([key]) => key === 'hmdNotificationActivityFilters'
+        );
+        if (!hmdSetStringCall) {
+            throw new Error('Missing HMD activity filter persistence call');
+        }
+        const persisted: unknown = JSON.parse(String(hmdSetStringCall[1]));
+
+        expect(persisted).toMatchObject({
+            types: {
+                OnPlayerJoined: {
+                    scope: 'friends',
+                    favoriteGroupKeys: 'all'
+                },
+                Online: {
+                    scope: 'off',
+                    favoriteGroupKeys: 'all'
+                }
+            }
+        });
+        expect(mocks.appOverlayActivityFiltersReload).toHaveBeenCalledTimes(1);
+        expect(mocks.publishPreferenceChanged).toHaveBeenCalledWith(
+            'hmdNotificationActivityFilters',
+            expect.objectContaining({
+                types: expect.objectContaining({
+                    Online: {
+                        scope: 'off',
+                        favoriteGroupKeys: 'all'
+                    }
+                })
+            })
+        );
+        expect(
+            usePreferencesStore.getState().hmdNotificationActivityFilters.types
+                .OnPlayerJoined
+        ).toEqual({
+            scope: 'friends',
+            favoriteGroupKeys: 'all'
+        });
+    });
+
+    it('persists HMD notification activity filters with HMD defaults when definitions fail to load', async () => {
+        const warn = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => undefined);
+        mocks.appOverlayActivityDefinitionsGet.mockRejectedValueOnce(
+            new Error('definitions unavailable')
+        );
+
+        try {
+            await expect(
+                setHmdNotificationActivityFiltersPreference({})
+            ).resolves.toMatchObject({
+                types: {
+                    OnPlayerJoined: {
+                        scope: 'friends',
+                        favoriteGroupKeys: 'all'
+                    },
+                    Online: {
+                        scope: 'allFavorites',
+                        favoriteGroupKeys: 'all'
+                    },
+                    VideoPlay: {
+                        scope: 'off',
+                        favoriteGroupKeys: 'all'
+                    }
+                }
+            });
+        } finally {
+            warn.mockRestore();
+        }
+
+        const hmdSetStringCall = mocks.setString.mock.calls.find(
+            ([key]) => key === 'hmdNotificationActivityFilters'
+        );
+        if (!hmdSetStringCall) {
+            throw new Error('Missing HMD activity filter persistence call');
+        }
+        const persisted: unknown = JSON.parse(String(hmdSetStringCall[1]));
+
+        expect(persisted).toMatchObject({
+            types: {
+                OnPlayerJoined: {
+                    scope: 'friends',
+                    favoriteGroupKeys: 'all'
+                },
+                Online: {
+                    scope: 'allFavorites',
+                    favoriteGroupKeys: 'all'
+                },
+                VideoPlay: {
+                    scope: 'off',
+                    favoriteGroupKeys: 'all'
+                }
+            }
+        });
+    });
+
     it('syncs language, document lang, app fonts, and overlay runtime config', async () => {
         mocks.getString.mockImplementation((key: string, fallback = '') => {
             const values: Record<string, string> = {
@@ -463,14 +640,17 @@ describe('preferencesService characterization', () => {
 
         await setTableDensityPreference('compact');
         await setDataTableStripedPreference(true);
+        await setBoolConfigPreference('reducedMotionAndBlur', true);
         await setAccessibleStatusIndicatorsPreference(true);
 
         expect(classes.has('is-compact-table')).toBe(true);
         expect(classes.has('is-striped-table')).toBe(true);
+        expect(classes.has('reduce-effects')).toBe(true);
         expect(classes.has('accessible-status-indicators')).toBe(true);
         expect(usePreferencesStore.getState()).toMatchObject({
             tableDensity: 'compact',
             dataTableStriped: true,
+            reducedMotionAndBlur: true,
             accessibleStatusIndicators: true
         });
     });
@@ -595,11 +775,55 @@ describe('preferencesService characterization', () => {
         expect(usePreferencesStore.getState().discordActive).toBe(true);
     });
 
-    it('persists proxy server without restarting when requested', async () => {
+    it('loads legacy proxy enabled state from a non-empty proxy address', async () => {
+        mocks.storageGetString.mockImplementation(
+            (key: string, fallback = '') => {
+                if (key === 'VRCX_ProxyServer') {
+                    return Promise.resolve('127.0.0.1:7890');
+                }
+                return Promise.resolve(String(fallback ?? ''));
+            }
+        );
+
+        const snapshot = await loadPreferenceSnapshot();
+
+        expect(snapshot.proxyEnabled).toBe(true);
+        expect(snapshot.proxyServer).toBe('127.0.0.1:7890');
+    });
+
+    it('honors explicit disabled proxy state even with a configured address', async () => {
+        mocks.storageGetString.mockImplementation(
+            (key: string, fallback = '') => {
+                if (key === 'VRCX_ProxyEnabled') {
+                    return Promise.resolve('false');
+                }
+                if (key === 'VRCX_ProxyServer') {
+                    return Promise.resolve('127.0.0.1:7890');
+                }
+                return Promise.resolve(String(fallback ?? ''));
+            }
+        );
+
+        const snapshot = await loadPreferenceSnapshot();
+
+        expect(snapshot.proxyEnabled).toBe(false);
+        expect(snapshot.proxyServer).toBe('127.0.0.1:7890');
+    });
+
+    it('persists proxy enabled separately without restarting by default', async () => {
+        await expect(setProxyEnabledPreference(true)).resolves.toBe(true);
+
+        expect(mocks.storageSetString).toHaveBeenCalledWith(
+            'VRCX_ProxyEnabled',
+            'true'
+        );
+        expect(mocks.appRestartApplication).not.toHaveBeenCalled();
+        expect(usePreferencesStore.getState().proxyEnabled).toBe(true);
+    });
+
+    it('persists proxy server without restarting by default', async () => {
         await expect(
-            setProxyServerPreference('  http://127.0.0.1:8888  ', {
-                restart: false
-            })
+            setProxyServerPreference('  http://127.0.0.1:8888  ')
         ).resolves.toBe('http://127.0.0.1:8888');
 
         expect(mocks.storageSetString).toHaveBeenCalledWith(

@@ -25,20 +25,29 @@ mod state;
 mod utils;
 
 #[cfg(test)]
-#[path = "tests_baseline.rs"]
-mod tests_baseline;
+#[path = "../../../tests/realtime/friends/baseline_tests.rs"]
+mod baseline_tests;
 #[cfg(test)]
-#[path = "tests_feed.rs"]
-mod tests_feed;
+#[path = "../../../tests/realtime/friends/feed_tests.rs"]
+mod feed_tests;
 #[cfg(test)]
-#[path = "tests_location.rs"]
-mod tests_location;
+#[path = "../../../tests/realtime/friends/location_embedded_user_tests.rs"]
+mod location_embedded_user_tests;
 #[cfg(test)]
-#[path = "tests_presence.rs"]
-mod tests_presence;
+#[path = "../../../tests/realtime/friends/location_feed_tests.rs"]
+mod location_feed_tests;
 #[cfg(test)]
-#[path = "tests_profile.rs"]
-mod tests_profile;
+#[path = "../../../tests/realtime/friends/location_offline_tests.rs"]
+mod location_offline_tests;
+#[cfg(test)]
+#[path = "../../../tests/realtime/friends/location_state_tests.rs"]
+mod location_state_tests;
+#[cfg(test)]
+#[path = "../../../tests/realtime/friends/presence_tests.rs"]
+mod presence_tests;
+#[cfg(test)]
+#[path = "../../../tests/realtime/friends/profile_tests.rs"]
+mod profile_tests;
 
 pub use event_patch::is_friend_event_type;
 pub use state::RealtimeFriendsRuntime;

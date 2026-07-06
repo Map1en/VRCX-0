@@ -42,7 +42,7 @@ impl FriendChangedProps {
         self.changes.get(key)
     }
 
-    fn has(&self, key: &str) -> bool {
+    pub(super) fn has(&self, key: &str) -> bool {
         self.changes.contains_key(key)
     }
 }
@@ -54,7 +54,7 @@ fn previous_value_for_diff(previous: &Value, key: &str) -> Value {
     })
 }
 
-fn value_equal_for_diff(next: &Value, previous: &Value) -> bool {
+pub(super) fn value_equal_for_diff(next: &Value, previous: &Value) -> bool {
     if next == previous {
         return true;
     }

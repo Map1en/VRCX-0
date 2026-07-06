@@ -1,4 +1,3 @@
-import { commands } from '@/platform/tauri/bindings';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import {
@@ -7,7 +6,7 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
-import { isHostCapabilityAvailable } from '@/services/hostCapabilityService';
+import { openInstanceInGame } from '@/services/instanceActionService';
 import {
     hasAvatarIdPrefix,
     hasGroupIdPrefix,
@@ -131,29 +130,12 @@ export async function tryOpenLaunchLocation(
     shortName: unknown = '',
     endpoint: unknown = ''
 ) {
-    if (!isHostCapabilityAvailable('vrchatLaunchPipe')) {
-        return false;
-    }
-
     const normalizedLocation = normalizeString(location);
     if (!normalizedLocation || !normalizedLocation.includes(':')) {
         return false;
     }
 
-    try {
-        return Boolean(
-            await commands.appTryOpenInstanceInVrc(
-                await resolveVrcLaunchUrl(
-                    normalizedLocation,
-                    shortName,
-                    endpoint
-                )
-            )
-        );
-    } catch (error) {
-        console.warn('Failed to open VRChat launch URL through IPC:', error);
-        return false;
-    }
+    return openInstanceInGame(normalizedLocation, shortName, endpoint);
 }
 
 async function verifyShortName(

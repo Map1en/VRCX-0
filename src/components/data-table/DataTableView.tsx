@@ -403,7 +403,9 @@ export function DataTablePagination<TData extends RowData>({
                     </span>
                     <Select
                         value={String(resolvedPageSize)}
-                        onValueChange={onPageSizeChange}
+                        onValueChange={(value) =>
+                            onPageSizeChange?.(value ?? '')
+                        }
                     >
                         <SelectTrigger size="sm" className="w-20">
                             <SelectValue placeholder={resolvedPageSizeLabel} />

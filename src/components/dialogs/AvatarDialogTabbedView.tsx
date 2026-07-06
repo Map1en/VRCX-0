@@ -110,18 +110,22 @@ function AvatarOverviewReferences({
                             {compactAvatarId(avatar.id)}
                         </span>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    aria-label={t('dialog.avatar.info.copy_id')}
-                                    size="icon-xs"
-                                    variant="ghost"
-                                    className="shrink-0"
-                                    onClick={onCopyAvatarId}
-                                >
-                                    <CopyIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        aria-label={t(
+                                            'dialog.avatar.info.copy_id'
+                                        )}
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        className="shrink-0"
+                                        onClick={onCopyAvatarId}
+                                    >
+                                        <CopyIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('dialog.avatar.info.copy_id')}
                             </TooltipContent>
@@ -139,37 +143,43 @@ function AvatarOverviewReferences({
                             {compactAvatarUrl(avatarUrl)}
                         </span>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    aria-label={t('common.actions.open_link')}
-                                    size="icon-xs"
-                                    variant="ghost"
-                                    className="shrink-0"
-                                    onClick={onOpenAvatarUrl}
-                                >
-                                    <ExternalLinkIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        aria-label={t(
+                                            'common.actions.open_link'
+                                        )}
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        className="shrink-0"
+                                        onClick={onOpenAvatarUrl}
+                                    >
+                                        <ExternalLinkIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('common.actions.open_link')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    aria-label={t(
-                                        'dialog.avatar.info.copy_url'
-                                    )}
-                                    size="icon-xs"
-                                    variant="ghost"
-                                    className="shrink-0"
-                                    onClick={onCopyAvatarUrl}
-                                >
-                                    <CopyIcon data-icon="inline-start" />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        aria-label={t(
+                                            'dialog.avatar.info.copy_url'
+                                        )}
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        className="shrink-0"
+                                        onClick={onCopyAvatarUrl}
+                                    >
+                                        <CopyIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t('dialog.avatar.info.copy_url')}
                             </TooltipContent>
@@ -195,6 +205,7 @@ function AvatarDialogOverviewSection({
     onCopyAvatarUrl,
     onOpenAvatarUrl
 }: any) {
+    const { t } = useTranslation();
     const imageClickable = Boolean(
         (imageUrl || avatar.imageUrl) && onImageClick
     );
@@ -229,17 +240,24 @@ function AvatarDialogOverviewSection({
             }
         >
             <div className="flex min-w-0 flex-col gap-2">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={!avatar.name}
-                    className="hover:text-primary h-auto min-w-0 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal disabled:pointer-events-none disabled:opacity-100"
-                    onClick={avatar.name ? onTitleClick : undefined}
-                >
-                    <span className="line-clamp-2 min-w-0 break-words">
-                        {avatar.name || avatarFallbackLabel}
-                    </span>
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                disabled={!avatar.name}
+                                className="hover:text-primary h-auto min-w-0 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal disabled:pointer-events-none disabled:opacity-100"
+                                onClick={avatar.name ? onTitleClick : undefined}
+                            >
+                                <span className="line-clamp-2 min-w-0 break-words">
+                                    {avatar.name || avatarFallbackLabel}
+                                </span>
+                            </Button>
+                        }
+                    />
+                    <TooltipContent>{t('common.actions.copy')}</TooltipContent>
+                </Tooltip>
                 {avatar.authorName ? (
                     <Button
                         type="button"

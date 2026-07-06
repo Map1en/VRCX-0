@@ -68,6 +68,12 @@ export function UserActivityOverlapSection({
                             onValueChange={(value) => {
                                 changeExcludeRange('start', value);
                             }}
+                            items={USER_ACTIVITY_HOUR_LABELS.map(
+                                (label, index) => ({
+                                    value: String(index),
+                                    label
+                                })
+                            )}
                         >
                             <SelectTrigger
                                 size="sm"
@@ -96,6 +102,12 @@ export function UserActivityOverlapSection({
                             onValueChange={(value) => {
                                 changeExcludeRange('end', value);
                             }}
+                            items={USER_ACTIVITY_HOUR_LABELS.map(
+                                (label, index) => ({
+                                    value: String(index),
+                                    label
+                                })
+                            )}
                         >
                             <SelectTrigger
                                 size="sm"
@@ -242,6 +254,20 @@ export function UserActivityTopWorldsSection({
                                     changeTopWorldsSort(value);
                                 }}
                                 disabled={topWorldsLoading}
+                                items={[
+                                    {
+                                        value: 'time',
+                                        label: t(
+                                            'dialog.user.activity.most_visited_worlds.sort_by_time'
+                                        )
+                                    },
+                                    {
+                                        value: 'count',
+                                        label: t(
+                                            'dialog.user.activity.most_visited_worlds.sort_by_count'
+                                        )
+                                    }
+                                ]}
                             >
                                 <SelectTrigger size="sm" className="w-32">
                                     <SelectValue />

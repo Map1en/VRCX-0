@@ -107,11 +107,13 @@ export function useNotificationColumns({
                     const longText = formatDateFilter(createdAt, 'long');
                     return (
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="text-muted-foreground min-w-32 text-sm">
-                                    {shortText}
-                                </div>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <div className="text-muted-foreground min-w-32 text-sm">
+                                        {shortText}
+                                    </div>
+                                }
+                            />
                             <TooltipContent>{longText}</TooltipContent>
                         </Tooltip>
                     );
@@ -282,30 +284,32 @@ export function useNotificationColumns({
                         t('table.notification.photo');
                     return (
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto p-1"
-                                    aria-label={previewLabel}
-                                    onClick={() =>
-                                        onOpenNotificationImagePreview(
-                                            row.original
-                                        )
-                                    }
-                                >
-                                    <img
-                                        src={convertFileUrlToImageUrl(
-                                            imageUrl,
-                                            64
-                                        )}
-                                        alt={previewLabel}
-                                        width={40}
-                                        height={40}
-                                        className="size-10 rounded-md object-cover"
-                                    />
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="h-auto p-1"
+                                        aria-label={previewLabel}
+                                        onClick={() =>
+                                            onOpenNotificationImagePreview(
+                                                row.original
+                                            )
+                                        }
+                                    >
+                                        <img
+                                            src={convertFileUrlToImageUrl(
+                                                imageUrl,
+                                                64
+                                            )}
+                                            alt={previewLabel}
+                                            width={40}
+                                            height={40}
+                                            className="size-10 rounded-md object-cover"
+                                        />
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>{previewLabel}</TooltipContent>
                         </Tooltip>
                     );
@@ -397,23 +401,25 @@ export function useNotificationColumns({
                             {remoteActionsVisible &&
                             notification.type === 'friendRequest' ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.accept'
-                                            )}
-                                            onClick={() => {
-                                                onAcceptFriendRequest(
-                                                    notification
-                                                );
-                                            }}
-                                        >
-                                            <CheckIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.accept'
+                                                )}
+                                                onClick={() => {
+                                                    onAcceptFriendRequest(
+                                                        notification
+                                                    );
+                                                }}
+                                            >
+                                                <CheckIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t('view.notification.actions.accept')}
                                     </TooltipContent>
@@ -423,23 +429,25 @@ export function useNotificationColumns({
                             notification.type === 'requestInvite' &&
                             canInviteFromCurrentLocation ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.invite'
-                                            )}
-                                            onClick={() => {
-                                                onAcceptRequestInvite(
-                                                    notification
-                                                );
-                                            }}
-                                        >
-                                            <SendIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.invite'
+                                                )}
+                                                onClick={() => {
+                                                    onAcceptRequestInvite(
+                                                        notification
+                                                    );
+                                                }}
+                                            >
+                                                <SendIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t('view.notification.actions.invite')}
                                     </TooltipContent>
@@ -448,24 +456,26 @@ export function useNotificationColumns({
                             {remoteActionsVisible &&
                             notification.type === 'invite' ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.decline_with_message'
-                                            )}
-                                            onClick={() => {
-                                                onSendInviteResponseWithMessage(
-                                                    notification,
-                                                    'response'
-                                                );
-                                            }}
-                                        >
-                                            <SendIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.decline_with_message'
+                                                )}
+                                                onClick={() => {
+                                                    onSendInviteResponseWithMessage(
+                                                        notification,
+                                                        'response'
+                                                    );
+                                                }}
+                                            >
+                                                <SendIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t(
                                             'view.notification.actions.decline_with_message'
@@ -476,24 +486,26 @@ export function useNotificationColumns({
                             {remoteActionsVisible &&
                             notification.type === 'requestInvite' ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.decline_with_message'
-                                            )}
-                                            onClick={() => {
-                                                onSendInviteResponseWithMessage(
-                                                    notification,
-                                                    'requestResponse'
-                                                );
-                                            }}
-                                        >
-                                            <SendIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.decline_with_message'
+                                                )}
+                                                onClick={() => {
+                                                    onSendInviteResponseWithMessage(
+                                                        notification,
+                                                        'requestResponse'
+                                                    );
+                                                }}
+                                            >
+                                                <SendIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t(
                                             'view.notification.actions.decline_with_message'
@@ -512,22 +524,24 @@ export function useNotificationColumns({
                                           <Tooltip
                                               key={`${notification.id}:${response?.type}:${response?.text || response?.data || ''}`}
                                           >
-                                              <TooltipTrigger asChild>
-                                                  <Button
-                                                      type="button"
-                                                      variant="ghost"
-                                                      size="icon-xs"
-                                                      aria-label={label}
-                                                      onClick={() => {
-                                                          onSendNotificationResponse(
-                                                              notification,
-                                                              response
-                                                          );
-                                                      }}
-                                                  >
-                                                      <ResponseIcon data-icon="inline-start" />
-                                                  </Button>
-                                              </TooltipTrigger>
+                                              <TooltipTrigger
+                                                  render={
+                                                      <Button
+                                                          type="button"
+                                                          variant="ghost"
+                                                          size="icon-xs"
+                                                          aria-label={label}
+                                                          onClick={() => {
+                                                              onSendNotificationResponse(
+                                                                  notification,
+                                                                  response
+                                                              );
+                                                          }}
+                                                      >
+                                                          <ResponseIcon data-icon="inline-start" />
+                                                      </Button>
+                                                  }
+                                              />
                                               <TooltipContent>
                                                   {label}
                                               </TooltipContent>
@@ -538,36 +552,38 @@ export function useNotificationColumns({
                             {remoteActionsVisible &&
                             canDeclineNotification(notification) ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.decline'
-                                            )}
-                                            onClick={(
-                                                event: MouseEvent<HTMLButtonElement>
-                                            ) => {
-                                                onHideNotification(
-                                                    notification,
-                                                    {
-                                                        skipConfirm:
-                                                            shiftHeld ||
-                                                            event.shiftKey
-                                                    }
-                                                );
-                                            }}
-                                        >
-                                            <XIcon
-                                                data-icon="inline-start"
-                                                className={cn(
-                                                    shiftHeld &&
-                                                        'text-destructive'
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.decline'
                                                 )}
-                                            />
-                                        </Button>
-                                    </TooltipTrigger>
+                                                onClick={(
+                                                    event: MouseEvent<HTMLButtonElement>
+                                                ) => {
+                                                    onHideNotification(
+                                                        notification,
+                                                        {
+                                                            skipConfirm:
+                                                                shiftHeld ||
+                                                                event.shiftKey
+                                                        }
+                                                    );
+                                                }}
+                                            >
+                                                <XIcon
+                                                    data-icon="inline-start"
+                                                    className={cn(
+                                                        shiftHeld &&
+                                                            'text-destructive'
+                                                    )}
+                                                />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t('view.notification.actions.decline')}
                                     </TooltipContent>
@@ -576,21 +592,23 @@ export function useNotificationColumns({
                             {notification.version === 2 &&
                             !notification.seen ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.action.mark_seen'
-                                            )}
-                                            onClick={() => {
-                                                onMarkSeen(notification);
-                                            }}
-                                        >
-                                            <CheckIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.action.mark_seen'
+                                                )}
+                                                onClick={() => {
+                                                    onMarkSeen(notification);
+                                                }}
+                                            >
+                                                <CheckIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t(
                                             'view.notification.action.mark_seen'
@@ -600,37 +618,39 @@ export function useNotificationColumns({
                             ) : null}
                             {localDeleteVisible ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'view.notification.actions.delete_log'
-                                            )}
-                                            onClick={(
-                                                event: MouseEvent<HTMLButtonElement>
-                                            ) => {
-                                                onDeleteNotification(
-                                                    notification,
-                                                    {
-                                                        skipConfirm:
-                                                            shiftHeld ||
-                                                            event.shiftKey
-                                                    }
-                                                );
-                                            }}
-                                        >
-                                            {shiftHeld ? (
-                                                <XIcon
-                                                    data-icon="inline-start"
-                                                    className="text-destructive"
-                                                />
-                                            ) : (
-                                                <Trash2Icon data-icon="inline-start" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                aria-label={t(
+                                                    'view.notification.actions.delete_log'
+                                                )}
+                                                onClick={(
+                                                    event: MouseEvent<HTMLButtonElement>
+                                                ) => {
+                                                    onDeleteNotification(
+                                                        notification,
+                                                        {
+                                                            skipConfirm:
+                                                                shiftHeld ||
+                                                                event.shiftKey
+                                                        }
+                                                    );
+                                                }}
+                                            >
+                                                {shiftHeld ? (
+                                                    <XIcon
+                                                        data-icon="inline-start"
+                                                        className="text-destructive"
+                                                    />
+                                                ) : (
+                                                    <Trash2Icon data-icon="inline-start" />
+                                                )}
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t(
                                             'view.notification.actions.delete_log'

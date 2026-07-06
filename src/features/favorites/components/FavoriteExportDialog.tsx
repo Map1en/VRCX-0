@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -28,6 +28,13 @@ import {
     FAVORITES_EXPORT_NONE_VALUE as EXPORT_NONE_VALUE,
     getFavoriteExportFieldOptions
 } from '../favoritesExport';
+
+type FavoriteExportGroupOption = {
+    capacity?: number;
+    count: number;
+    key: string;
+    label: string;
+};
 
 function FavoriteExportDialog({
     open,
@@ -81,20 +88,17 @@ function FavoriteExportDialog({
     }
 
     async function copyExportContent() {
-        try {
-            await navigator.clipboard.writeText(content);
-            toast.success(
-                t('view.favorite.success.copied_favorite_export_data')
-            );
-        } catch (error) {
-            toast.error(
+        await copyTextToClipboard(content, {
+            successMessage: t(
+                'view.favorite.success.copied_favorite_export_data'
+            ),
+            errorMessage: (error) =>
                 error instanceof Error
                     ? error.message
                     : t(
                           'view.favorites.toast.failed_to_copy_favorite_export_data'
                       )
-            );
-        }
+        });
     }
 
     return (
@@ -139,7 +143,27 @@ function FavoriteExportDialog({
                 <div className="flex flex-wrap items-center gap-2">
                     <Select
                         value={remoteGroupKey}
-                        onValueChange={setRemoteGroupKey}
+                        items={[
+                            {
+                                value: EXPORT_ALL_VALUE,
+                                label: t(
+                                    'view.favorite.label.all_vrchat_favorites'
+                                )
+                            },
+                            ...remoteGroups.map(
+                                (group: FavoriteExportGroupOption) => ({
+                                    value: group.key,
+                                    label: `${group.label} (${
+                                        group.capacity
+                                            ? `${group.count}/${group.capacity}`
+                                            : group.count
+                                    })`
+                                })
+                            )
+                        ]}
+                        onValueChange={(value) =>
+                            setRemoteGroupKey(value ?? '')
+                        }
                     >
                         <SelectTrigger size="sm" className="min-w-52">
                             <SelectValue
@@ -172,7 +196,19 @@ function FavoriteExportDialog({
                     </Select>
                     <Select
                         value={localGroupKey}
-                        onValueChange={setLocalGroupKey}
+                        items={[
+                            {
+                                value: EXPORT_NONE_VALUE,
+                                label: t('view.favorite.empty.no_local_group')
+                            },
+                            ...localGroups.map(
+                                (group: FavoriteExportGroupOption) => ({
+                                    value: group.key,
+                                    label: `${group.label} (${group.count})`
+                                })
+                            )
+                        ]}
+                        onValueChange={(value) => setLocalGroupKey(value ?? '')}
                     >
                         <SelectTrigger size="sm" className="min-w-52">
                             <SelectValue

@@ -6,6 +6,7 @@ import {
 } from '@/state/preferencesStore';
 
 import type { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
+import type { FavoriteFriendGroupOption } from './settingsFavoriteGroupOptions';
 import {
     avatarAutoCleanupOptions,
     desktopToastOptions,
@@ -16,6 +17,11 @@ import {
     translationProviderOptions
 } from './settingsOptions';
 import { normalizeCheckedState } from './settingsValues';
+import type { AvatarProviderConfig } from './useAvatarProviderConfig';
+import type {
+    SettingsDiscordPrefs,
+    SettingsIntegrationPrefs
+} from './useSettingsIntegrations';
 
 export type SettingsPagePrefs = ReturnType<typeof createDefaultSettingsPrefs> &
     Record<string, unknown>;
@@ -41,14 +47,17 @@ type SetSettingsPrefs = SettingsCallback<
 export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     activeSettingsTab: string;
     appDataDirState?: SettingsAppDataDirState | null;
+    avatarProviderConfig: AvatarProviderConfig;
     cacheStatsVisible: boolean;
     clearVrcxCache: SettingsCallback;
     commit: SettingsCallback<
         [action: SettingsAction, optimistic?: () => unknown]
     >;
     deleteAllScreenshotMetadata: SettingsCallback;
+    discordPrefs: SettingsDiscordPrefs;
     handleCropInstancePrintsChange: SettingsCallback<[boolean]>;
     handleGameLogDisabledChange: SettingsCallback<[boolean]>;
+    integrationPrefs: SettingsIntegrationPrefs;
     loading: boolean;
     migrateLegacyVrcxData: SettingsCallback;
     normalizeRecentActionCooldownMinutes: (value: unknown) => number;
@@ -63,7 +72,6 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     openYoutubeApiDialog: SettingsCallback;
     promptAutoClearVrcxCacheFrequency: SettingsCallback;
     promptAutoLoginDelaySeconds: SettingsCallback;
-    promptProxySettings: SettingsCallback;
     prefs: SettingsPrefs;
     refreshCacheSize: SettingsCallback;
     refreshConfigTreeData: SettingsCallback;
@@ -106,6 +114,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     setNotificationTtsTestVisible: SettingsCallback<[boolean]>;
     setPrefs: SetSettingsPrefs;
     setPurgeDialogOpen: SettingsCallback<[boolean]>;
+    setProxyEnabledPreference: SettingsCallback<[boolean]>;
     setRecentActionCooldownEnabledPreference: SettingsCallback<[boolean]>;
     setRecentActionCooldownMinutesPreference: SettingsCallback<[number]>;
     setSaveInstanceEmojiPreference: SettingsCallback<[boolean]>;
@@ -118,18 +127,28 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     setStartAsMinimizedPreference: SettingsCallback<[boolean]>;
     setStartAtWindowsStartupPreference: SettingsCallback<[boolean]>;
     setTableDensityPreference: SettingsCallback<[unknown]>;
+    setHmdNotificationsDialogOpen: SettingsCallback<[boolean]>;
     setTranslationApiEnabledPreference: SettingsCallback<[boolean]>;
     setVrNotificationsDialogOpen: SettingsCallback<[boolean]>;
+    setWebhookNotificationsDialogOpen: SettingsCallback<[boolean]>;
     setWristFeedNotificationsDialogOpen: SettingsCallback<[boolean]>;
     setYoutubeApiEnabledPreference: SettingsCallback<[boolean]>;
     setZoomInput: SettingsCallback<[unknown]>;
     speakNotificationTts: SettingsCallback<[unknown]>;
     toggleLocalFavoriteFriendsGroup: SettingsCallback<[unknown, boolean]>;
     ttsVoices: SpeechSynthesisVoice[];
+    addFeedHiddenUser: SettingsCallback<[string]>;
+    favoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    localFavoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    localFavoriteFriendsGroups: string[];
+    remoteFavoriteFriendGroupOptions: FavoriteFriendGroupOption[];
+    removeFeedHiddenUser: SettingsCallback<[string]>;
+    selectedFavoriteFriendGroupLabel: string;
 };
 
 export function buildSettingsPageStateSections({
     activeSettingsTab,
+    addFeedHiddenUser,
     addAvatarProvider,
     appDataDirState,
     applyAvatarProviderConfig,
@@ -148,6 +167,7 @@ export function buildSettingsPageStateSections({
     customFontOptionsLoading,
     deleteAllScreenshotMetadata,
     desktopNotificationsDialogOpen,
+    hmdNotificationsDialogOpen,
     discordPrefs,
     favoriteFriendGroupOptions,
     feedFilterDialogOpen,
@@ -177,7 +197,6 @@ export function buildSettingsPageStateSections({
     prefs,
     promptAutoClearVrcxCacheFrequency,
     promptAutoLoginDelaySeconds,
-    promptProxySettings,
     purgeAvatarFeedData,
     purgeDialogOpen,
     purgeInProgress,
@@ -188,6 +207,7 @@ export function buildSettingsPageStateSections({
     refreshRuntimeAppSnapshot,
     refreshSqliteTableSizes,
     remoteFavoriteFriendGroupOptions,
+    removeFeedHiddenUser,
     removeAvatarProvider,
     resetAppDataDir,
     resetSharedFeedFilters,
@@ -202,6 +222,7 @@ export function buildSettingsPageStateSections({
     saveDesktopNotificationActivityFilters,
     saveDiscordBoolPreference,
     saveFontFamilyPreference,
+    saveHmdNotificationActivityFilters,
     saveIntegrationBoolPreference,
     saveInterfaceZoomLevel,
     saveNotificationTtsMode,
@@ -230,6 +251,7 @@ export function buildSettingsPageStateSections({
     setDataTableStripedPreference,
     setDesktopNotificationsDialogOpen,
     setFeedFilterDialogOpen,
+    setHmdNotificationsDialogOpen,
     setIntConfigPreference,
     setIntegrationValue,
     setNotificationLayoutPreference,
@@ -238,6 +260,7 @@ export function buildSettingsPageStateSections({
     setPrefs,
     setPurgeDialogOpen,
     setPurgePeriod,
+    setProxyEnabledPreference,
     setRecentActionCooldownEnabledPreference,
     setRecentActionCooldownMinutesPreference,
     setSaveInstanceEmojiPreference,
@@ -299,10 +322,10 @@ export function buildSettingsPageStateSections({
             prefs,
             savePreferenceValue,
             saveBoolPreference,
+            setProxyEnabledPreference,
             setStartAtWindowsStartupPreference,
             setStartAsMinimizedPreference,
             setCloseToTrayPreference,
-            promptProxySettings,
             promptAutoLoginDelaySeconds
         },
         interface: {
@@ -364,6 +387,14 @@ export function buildSettingsPageStateSections({
                 const enabled = normalizeCheckedState(checked);
                 savePreferenceValue('accessibleStatusIndicators', enabled, () =>
                     setAccessibleStatusIndicatorsPreference(enabled)
+                );
+            },
+            onReducedMotionAndBlurChange: (checked: unknown) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'reducedMotionAndBlur',
+                    'reducedMotionAndBlur',
+                    enabled
                 );
             },
             onShowInstanceIdInLocationChange: (checked: unknown) => {
@@ -450,13 +481,6 @@ export function buildSettingsPageStateSections({
                     'hideUserMemos',
                     'hideUserMemos',
                     !normalizeCheckedState(checked)
-                );
-            },
-            onHideUnfriendsChange: (checked: unknown) => {
-                saveBoolPreference(
-                    'hideUnfriends',
-                    'hideUnfriends',
-                    normalizeCheckedState(checked)
                 );
             },
             onRandomUserColoursChange: (checked: unknown) => {
@@ -679,11 +703,21 @@ export function buildSettingsPageStateSections({
             remoteFavoriteFriendGroupOptions,
             localFavoriteFriendGroupOptions,
             localFavoriteFriendsGroups,
+            feedHiddenUsers: prefs.feedHiddenUsers,
             commit,
+            onAddFeedHiddenUser: addFeedHiddenUser,
+            onRemoveFeedHiddenUser: removeFeedHiddenUser,
             setRecentActionCooldownEnabledPreference,
             setRecentActionCooldownMinutesPreference,
             toggleLocalFavoriteFriendsGroup,
             setPrefs,
+            onHideUnfriendsChange: (checked: unknown) => {
+                saveBoolPreference(
+                    'hideUnfriends',
+                    'hideUnfriends',
+                    normalizeCheckedState(checked)
+                );
+            },
             onRecentActionCooldownEnabledChange: (checked: unknown) => {
                 const enabled = normalizeCheckedState(checked);
                 savePreferenceValue(
@@ -740,6 +774,7 @@ export function buildSettingsPageStateSections({
         vr: {
             prefs,
             setVrNotificationsDialogOpen,
+            setHmdNotificationsDialogOpen,
             setWristFeedNotificationsDialogOpen,
             savePreferenceValue,
             saveStringPreference,
@@ -841,6 +876,8 @@ export function buildSettingsPageStateSections({
             setWristFeedNotificationsDialogOpen,
             vrNotificationsDialogOpen,
             setVrNotificationsDialogOpen,
+            hmdNotificationsDialogOpen,
+            setHmdNotificationsDialogOpen,
             desktopNotificationsDialogOpen,
             setDesktopNotificationsDialogOpen,
             webhookNotificationsDialogOpen,
@@ -849,6 +886,9 @@ export function buildSettingsPageStateSections({
             saveOverlayActivityFilters,
             vrNotificationActivityFilters: prefs.vrNotificationActivityFilters,
             saveVrNotificationActivityFilters,
+            hmdNotificationActivityFilters:
+                prefs.hmdNotificationActivityFilters,
+            saveHmdNotificationActivityFilters,
             desktopNotificationActivityFilters:
                 prefs.desktopNotificationActivityFilters,
             saveDesktopNotificationActivityFilters,

@@ -108,26 +108,28 @@ function FontFamilyPreferenceField({
     return (
         <Field label={t('view.settings.appearance.appearance.font_family')}>
             <DropdownMenu open={fontMenuOpen} onOpenChange={setFontMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="min-w-44 justify-between font-normal"
-                    >
-                        <span className="truncate">
-                            {getFontDropdownDisplayText(
-                                t,
-                                prefs,
-                                showCjkFontPack
-                            )}
-                        </span>
-                        <ChevronDownIcon
-                            data-icon="inline-end"
-                            className="opacity-50"
-                        />
-                    </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="min-w-44 justify-between font-normal"
+                        >
+                            <span className="truncate">
+                                {getFontDropdownDisplayText(
+                                    t,
+                                    prefs,
+                                    showCjkFontPack
+                                )}
+                            </span>
+                            <ChevronDownIcon
+                                data-icon="inline-end"
+                                className="opacity-50"
+                            />
+                        </Button>
+                    }
+                />
                 <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                         <DropdownMenuRadioGroup
@@ -146,7 +148,7 @@ function FontFamilyPreferenceField({
                             )}
                             <DropdownMenuRadioItem
                                 value="custom"
-                                onSelect={() => {
+                                onClick={() => {
                                     if (prefs.appFontFamily === 'custom') {
                                         openCustomFontDialogAfterMenuClose();
                                     }
@@ -202,7 +204,8 @@ export function SettingsInterfaceAppearanceCard({
     onZoomBlur,
     onTableDensityChange,
     onDataTableStripedChange,
-    onAccessibleStatusIndicatorsChange
+    onAccessibleStatusIndicatorsChange,
+    onReducedMotionAndBlurChange
 }: any) {
     const { t } = useTranslation();
 
@@ -214,7 +217,9 @@ export function SettingsInterfaceAppearanceCard({
             >
                 <Select value={locale || 'en'} onValueChange={onLanguageChange}>
                     <SelectTrigger id="settings-language" className="w-56">
-                        <SelectValue />
+                        <SelectValue>
+                            {getLanguageName(locale || 'en')}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
@@ -292,6 +297,20 @@ export function SettingsInterfaceAppearanceCard({
                 <Switch
                     checked={prefs.dataTableStriped}
                     onCheckedChange={onDataTableStripedChange}
+                />
+            </Field>
+
+            <Field
+                label={t(
+                    'view.settings.appearance.appearance.reduced_motion_and_blur'
+                )}
+                description={t(
+                    'view.settings.appearance.appearance.reduced_motion_and_blur_description'
+                )}
+            >
+                <Switch
+                    checked={prefs.reducedMotionAndBlur}
+                    onCheckedChange={onReducedMotionAndBlurChange}
                 />
             </Field>
 

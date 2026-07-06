@@ -13,11 +13,16 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SegmentedPreference, SettingsGroup } from '../SettingsField';
 
+const timeFormatOptions = [
+    ['12', 'view.settings.appearance.timedate.time_format_12'],
+    ['24', 'view.settings.appearance.timedate.time_format_24']
+] as const;
+
 const weekStartOptions = [
     ['1', 'common.days.monday'],
     ['0', 'common.days.sunday'],
     ['6', 'common.days.saturday']
-];
+] as const;
 
 export function SettingsInterfaceDisplayCards({
     prefs,
@@ -33,10 +38,10 @@ export function SettingsInterfaceDisplayCards({
     onWeekStartsOnChange,
     onFeedTimeDisplayModeChange,
     onHideUserNotesChange,
-    onHideUserMemosChange,
-    onHideUnfriendsChange
+    onHideUserMemosChange
 }: any) {
     const { t } = useTranslation();
+
     return (
         <>
             <SettingsGroup title={t('view.settings.appearance.display.header')}>
@@ -153,6 +158,10 @@ export function SettingsInterfaceDisplayCards({
                 >
                     <Select
                         value={prefs.dtHour12 ? '12' : '24'}
+                        items={timeFormatOptions.map(([value, labelKey]) => ({
+                            value,
+                            label: t(labelKey)
+                        }))}
                         onValueChange={onHour12Change}
                     >
                         <SelectTrigger
@@ -163,16 +172,11 @@ export function SettingsInterfaceDisplayCards({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="12">
-                                    {t(
-                                        'view.settings.appearance.timedate.time_format_12'
-                                    )}
-                                </SelectItem>
-                                <SelectItem value="24">
-                                    {t(
-                                        'view.settings.appearance.timedate.time_format_24'
-                                    )}
-                                </SelectItem>
+                                {timeFormatOptions.map(([value, labelKey]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {t(labelKey)}
+                                    </SelectItem>
+                                ))}
                             </SelectGroup>
                         </SelectContent>
                     </Select>
@@ -200,6 +204,10 @@ export function SettingsInterfaceDisplayCards({
                 >
                     <Select
                         value={String(prefs.weekStartsOn)}
+                        items={weekStartOptions.map(([value, labelKey]) => ({
+                            value,
+                            label: t(labelKey)
+                        }))}
                         onValueChange={onWeekStartsOnChange}
                     >
                         <SelectTrigger
@@ -210,13 +218,11 @@ export function SettingsInterfaceDisplayCards({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                {weekStartOptions.map(
-                                    ([value, labelKey]: any) => (
-                                        <SelectItem key={value} value={value}>
-                                            {t(labelKey)}
-                                        </SelectItem>
-                                    )
-                                )}
+                                {weekStartOptions.map(([value, labelKey]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {t(labelKey)}
+                                    </SelectItem>
+                                ))}
                             </SelectGroup>
                         </SelectContent>
                     </Select>
@@ -274,21 +280,6 @@ export function SettingsInterfaceDisplayCards({
                     <Switch
                         checked={!prefs.hideUserMemos}
                         onCheckedChange={onHideUserMemosChange}
-                    />
-                </Field>
-            </SettingsGroup>
-
-            <SettingsGroup
-                title={t('view.settings.appearance.friend_log.header')}
-            >
-                <Field
-                    label={t(
-                        'view.settings.appearance.friend_log.hide_unfriends'
-                    )}
-                >
-                    <Switch
-                        checked={prefs.hideUnfriends}
-                        onCheckedChange={onHideUnfriendsChange}
                     />
                 </Field>
             </SettingsGroup>

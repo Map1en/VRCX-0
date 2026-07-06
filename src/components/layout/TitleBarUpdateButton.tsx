@@ -48,20 +48,24 @@ export function TitleBarUpdateButton({ onClick }: { onClick: () => void }) {
     const progressPercent = clampUpdateProgress(downloadProgress);
 
     return (
-        <HoverCard openDelay={150} closeDelay={80}>
-            <HoverCardTrigger asChild>
-                <Button
-                    type="button"
-                    variant={isDownloaded ? 'default' : 'secondary'}
-                    size="sm"
-                    className="h-6 gap-1.5 rounded-md px-2 text-xs shadow-none"
-                    onClick={onClick}
-                >
-                    {isDownloaded
-                        ? t('nav_menu.update_downloaded')
-                        : t('nav_menu.update')}
-                </Button>
-            </HoverCardTrigger>
+        <HoverCard>
+            <HoverCardTrigger
+                delay={150}
+                closeDelay={80}
+                render={
+                    <Button
+                        type="button"
+                        variant={isDownloaded ? 'default' : 'secondary'}
+                        size="sm"
+                        className="h-6 gap-1.5 rounded-md px-2 text-xs shadow-none"
+                        onClick={onClick}
+                    >
+                        {isDownloaded
+                            ? t('nav_menu.update_downloaded')
+                            : t('nav_menu.update')}
+                    </Button>
+                }
+            />
             <HoverCardContent side="bottom" align="end" className="w-80 p-3">
                 <div className="flex flex-col gap-2">
                     <div className="text-sm font-semibold">

@@ -158,17 +158,19 @@ function SearchEntityCard({
 function TruncatedBadge({ children, tooltip, className }: any) {
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Badge
-                    variant="outline"
-                    className={cn(
-                        'max-w-36 min-w-0 justify-start rounded-sm px-1.5',
-                        className
-                    )}
-                >
-                    <span className="min-w-0 truncate">{children}</span>
-                </Badge>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            'max-w-36 min-w-0 justify-start rounded-sm px-1.5',
+                            className
+                        )}
+                    >
+                        <span className="min-w-0 truncate">{children}</span>
+                    </Badge>
+                }
+            />
             <TooltipContent className="max-w-72 break-words">
                 {tooltip || children}
             </TooltipContent>

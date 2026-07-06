@@ -53,10 +53,6 @@ type StateSetter<Value> = {
         value: Value | ((current: Value) => Value | Record<string, unknown>)
     ): void;
 }['bivarianceHack'];
-type SettingsPromptResult = {
-    ok: boolean;
-    value?: unknown;
-};
 type SettingsPreferenceActionsDeps = {
     APP_FONT_DEFAULT_KEY: string;
     DEFAULT_MAX_TABLE_SIZE: number;
@@ -89,13 +85,6 @@ type SettingsPreferenceActionsDeps = {
     normalizePreferenceSnapshot: (snapshot?: unknown) => PreferencesSnapshot;
     parseIntegerInput: (value: unknown, fallback: number) => number;
     prefs: SettingsPrefs;
-    prompt: (options: {
-        title: string;
-        description: string;
-        inputValue: string;
-        confirmText: string;
-        cancelText: string;
-    }) => Promise<SettingsPromptResult>;
     resetTrustColorsPreference: () => Promise<
         PreferencesSnapshot['trustColor']
     >;
@@ -120,7 +109,7 @@ type SettingsPreferenceActionsDeps = {
         definitions?: OverlayActivityTypeDefinition[]
     ) => Promise<PreferencesSnapshot['overlayActivityFilters']>;
     setPrefs: StateSetter<SettingsPrefs>;
-    setProxyServerPreference: (value: string) => Promise<string>;
+    setProxyEnabledPreference: (value: boolean) => Promise<boolean>;
     setSharedFeedFilters: (
         value: PreferencesSnapshot['sharedFeedFilters']
     ) => void;
@@ -146,6 +135,9 @@ type SettingsPreferenceActionsDeps = {
     setVrNotificationActivityFiltersPreference: (
         value: unknown
     ) => Promise<PreferencesSnapshot['vrNotificationActivityFilters']>;
+    setHmdNotificationActivityFiltersPreference: (
+        value: unknown
+    ) => Promise<PreferencesSnapshot['hmdNotificationActivityFilters']>;
     setDesktopNotificationActivityFiltersPreference: (
         value: unknown
     ) => Promise<PreferencesSnapshot['desktopNotificationActivityFilters']>;
@@ -183,6 +175,7 @@ type FontPreferencesInput = Partial<{
 
 type ActivityFilterSurfaceField =
     | 'vrNotificationActivityFilters'
+    | 'hmdNotificationActivityFilters'
     | 'desktopNotificationActivityFilters'
     | 'webhookActivityFilters';
 
@@ -214,7 +207,6 @@ export function useSettingsPreferenceActions({
     normalizePreferenceSnapshot,
     parseIntegerInput,
     prefs,
-    prompt,
     resetTrustColorsPreference,
     setBoolConfigPreference,
     setConfigTreeData,
@@ -229,7 +221,7 @@ export function useSettingsPreferenceActions({
     setOverlayActivityFiltersPreference,
     setOnlineVisitCount,
     setPrefs,
-    setProxyServerPreference,
+    setProxyEnabledPreference,
     setSharedFeedFilters,
     setSqliteTableSizes,
     setStringConfigPreference,
@@ -239,6 +231,7 @@ export function useSettingsPreferenceActions({
     setTablePageSizesDialogOpen,
     setTrustColorPreference,
     setVrNotificationActivityFiltersPreference,
+    setHmdNotificationActivityFiltersPreference,
     setDesktopNotificationActivityFiltersPreference,
     setWebhookActivityFiltersPreference,
     setWristOverlayEnabledPreference,
@@ -291,7 +284,7 @@ export function useSettingsPreferenceActions({
         value: PreferencesSnapshot[K],
         action: PreferenceAction
     ) {
-        await commit(action, () => {
+        return commit(action, () => {
             const previous = prefs[key] as unknown as PreferencesSnapshot[K];
             setPrefs((current) => ({
                 ...current,
@@ -556,44 +549,6 @@ export function useSettingsPreferenceActions({
             );
         }
     }
-    async function promptProxySettings() {
-        let result;
-        try {
-            result = await prompt({
-                title: t('view.settings.general.application.proxy'),
-                description: t(
-                    'view.settings.general.application.proxy_description'
-                ),
-                inputValue: usePreferencesStore.getState().proxyServer || '',
-                confirmText: t('prompt.proxy_settings.restart'),
-                cancelText: t('dialog.alertdialog.cancel')
-            });
-            if (!result.ok) {
-                return;
-            }
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_load_proxy_settings')
-            );
-            return;
-        }
-        const nextProxyServer = String(result.value ?? '').trim();
-        try {
-            const proxyServer = await setProxyServerPreference(nextProxyServer);
-            setPrefs((current) => ({
-                ...current,
-                proxyServer
-            }));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_save_proxy_settings')
-            );
-        }
-    }
     async function openTablePageSizesDialog() {
         setTablePageSizesDialogOpen(true);
     }
@@ -735,6 +690,10 @@ export function useSettingsPreferenceActions({
         'vrNotificationActivityFilters',
         setVrNotificationActivityFiltersPreference
     );
+    const saveHmdNotificationActivityFilters = makeSaveActivityFilterSurface(
+        'hmdNotificationActivityFilters',
+        setHmdNotificationActivityFiltersPreference
+    );
     const saveDesktopNotificationActivityFilters =
         makeSaveActivityFilterSurface(
             'desktopNotificationActivityFilters',
@@ -813,13 +772,14 @@ export function useSettingsPreferenceActions({
         refreshSqliteTableSizes,
         refreshConfigTreeData,
         refreshOnlineVisits,
-        promptProxySettings,
+        setProxyEnabledPreference,
         openTablePageSizesDialog,
         openTableLimitsDialog,
         saveTableLimitsDialog,
         toggleLocalFavoriteFriendsGroup,
         saveOverlayActivityFilters,
         saveVrNotificationActivityFilters,
+        saveHmdNotificationActivityFilters,
         saveDesktopNotificationActivityFilters,
         saveWebhookActivityFilters,
         saveWristOverlayEnabled,

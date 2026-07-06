@@ -222,8 +222,8 @@ export function ImageCropDialog({
         [minZoom]
     );
     const onZoomSlider = useCallback(
-        (values: number[]) => {
-            const pct = values[0] ?? 0;
+        (value: number | readonly number[]) => {
+            const pct = (Array.isArray(value) ? value[0] : value) ?? 0;
             setZoom(
                 Math.exp(logZoomMin + (pct / 100) * (LOG_ZOOM_MAX - logZoomMin))
             );
@@ -302,23 +302,25 @@ export function ImageCropDialog({
         active?: boolean
     ) => (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={onClick}
-                    disabled={toolsDisabled}
-                    aria-label={label}
-                    aria-pressed={active}
-                    className={cn(
-                        'text-muted-foreground hover:text-foreground',
-                        active && 'bg-muted text-foreground'
-                    )}
-                >
-                    {icon}
-                </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={onClick}
+                        disabled={toolsDisabled}
+                        aria-label={label}
+                        aria-pressed={active}
+                        className={cn(
+                            'text-muted-foreground hover:text-foreground',
+                            active && 'bg-muted text-foreground'
+                        )}
+                    >
+                        {icon}
+                    </Button>
+                }
+            />
             <TooltipContent>{label}</TooltipContent>
         </Tooltip>
     );

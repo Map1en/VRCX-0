@@ -46,14 +46,6 @@ type OpenExternalLinkOptions = {
 
 export { getNameColour };
 
-export async function copyTextToClipboard(text: string) {
-    try {
-        await navigator.clipboard.writeText(text);
-    } catch (error) {
-        console.warn('Failed to copy link:', error);
-    }
-}
-
 export async function openExternalLink(
     link: unknown,
     options: OpenExternalLinkOptions = {}

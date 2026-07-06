@@ -112,9 +112,19 @@ function SortSelect({
     return (
         <Select
             value={value || '__none__'}
+            items={[
+                {
+                    value: '__none__',
+                    label: t('dialog.gallery_select.none')
+                },
+                ...sortOptions.map(([option, labelKey]) => ({
+                    value: option,
+                    label: t(labelKey)
+                }))
+            ]}
             disabled={disabled}
             onValueChange={(nextValue) =>
-                onChange(normalizeSortSelectValue(nextValue))
+                onChange(normalizeSortSelectValue(nextValue ?? ''))
             }
         >
             <SelectTrigger size="sm" className="w-full">
@@ -185,21 +195,23 @@ export function SidePanelSettingsPopover({
 
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto"
-                    aria-label={t('side_panel.settings.display')}
-                >
-                    {isRefreshing ? (
-                        <Spinner data-icon="inline-start" />
-                    ) : (
-                        <MoreHorizontalIcon data-icon="inline-start" />
-                    )}
-                </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto"
+                        aria-label={t('side_panel.settings.display')}
+                    >
+                        {isRefreshing ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <MoreHorizontalIcon data-icon="inline-start" />
+                        )}
+                    </Button>
+                }
+            />
             <PopoverContent side="bottom" align="end" className="w-72 p-3">
                 <div className="flex flex-col gap-2.5">
                     <Button

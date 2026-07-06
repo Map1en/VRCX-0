@@ -15,6 +15,7 @@ import type {
     VrchatLogEntryOutput,
     VrchatLogFileOutput
 } from '@/platform/tauri/bindings';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -709,10 +710,10 @@ export function useVrchatLogController() {
                 return;
             }
             const text = sourceEntries.map(entryToText).join('\n\n');
-            await navigator.clipboard.writeText(text);
-            toast.success(t('view.tools.vrchat_log.copied'));
-        } catch {
-            toast.error(t('view.tools.vrchat_log.copy_failed'));
+            await copyTextToClipboard(text, {
+                successMessage: t('view.tools.vrchat_log.copied'),
+                errorMessage: t('view.tools.vrchat_log.copy_failed')
+            });
         } finally {
             setIsCopying(false);
         }
@@ -726,12 +727,10 @@ export function useVrchatLogController() {
         if (!text.trim()) {
             return;
         }
-        try {
-            await navigator.clipboard.writeText(text);
-            toast.success(t('view.tools.vrchat_log.copied'));
-        } catch {
-            toast.error(t('view.tools.vrchat_log.copy_failed'));
-        }
+        await copyTextToClipboard(text, {
+            successMessage: t('view.tools.vrchat_log.copied'),
+            errorMessage: t('view.tools.vrchat_log.copy_failed')
+        });
     }
 
     return {

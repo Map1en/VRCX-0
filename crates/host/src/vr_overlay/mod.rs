@@ -13,7 +13,7 @@ mod policy;
 mod status;
 mod types;
 
-pub use actor::{OverlayActorHandle, OverlayBackend};
+pub use actor::{OverlayActorHandle, OverlayBackend, TickOutcome};
 pub use command::{OverlayCommandError, OverlayServiceCommand};
 pub use noop::NoopOverlayBackend;
 #[cfg(all(feature = "steamvr-overlay", any(windows, target_os = "linux")))]
@@ -22,6 +22,7 @@ pub use openvr_backend::OpenVrOverlayBackend;
 pub use openxr_backend::{probe_runtime as probe_openxr_runtime, OpenXrOverlayBackend};
 pub use status::{OverlayServicePhase, OverlayServiceStatus};
 pub use types::{
-    BackendStartError, OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig,
+    BackendStartError, OverlayActivationButton, OverlayHand, OverlayInputEvent,
+    OverlayInputEventSink, OverlayInputKind, OverlayPlacement, OverlaySurfaceConfig,
     VrDeviceSnapshot, VrDeviceStatus,
 };

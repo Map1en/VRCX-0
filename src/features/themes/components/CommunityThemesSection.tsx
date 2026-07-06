@@ -50,22 +50,24 @@ export function CommunityThemesSection({
                     </TabsList>
                 </div>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-fit shrink-0"
-                            onClick={() => {
-                                void openExternalLink(
-                                    COMMUNITY_THEMES_REPOSITORY_URL
-                                );
-                            }}
-                        >
-                            <ExternalLinkIcon data-icon="inline-start" />
-                            {t('view.community_themes.action.contribute')}
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-fit shrink-0"
+                                onClick={() => {
+                                    void openExternalLink(
+                                        COMMUNITY_THEMES_REPOSITORY_URL
+                                    );
+                                }}
+                            >
+                                <ExternalLinkIcon data-icon="inline-start" />
+                                {t('view.community_themes.action.contribute')}
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.community_themes.action.contribute_tooltip')}
                     </TooltipContent>

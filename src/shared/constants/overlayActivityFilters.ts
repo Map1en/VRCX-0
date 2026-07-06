@@ -1,4 +1,9 @@
-export type OverlayActivitySurface = 'wrist' | 'desktop' | 'vr' | 'webhook';
+export type OverlayActivitySurface =
+    | 'wrist'
+    | 'desktop'
+    | 'vr'
+    | 'hmd'
+    | 'webhook';
 
 export type OverlayActivityCategory =
     | 'actionRequired'
@@ -34,12 +39,16 @@ export interface OverlayActivityTypeDefinition {
     category: OverlayActivityCategory;
     allowedScopes: OverlayActivityScope[];
     defaultScope: OverlayActivityScope;
+    hmdDefaultScope?: OverlayActivityScope;
     aliases?: string[];
 }
 
 export interface OverlayActivityFiltersPreference {
     version: 1;
     wrist: {
+        types: Record<string, OverlayActivityRule>;
+    };
+    hmd: {
         types: Record<string, OverlayActivityRule>;
     };
 }
@@ -267,6 +276,36 @@ export const OVERLAY_ACTIVITY_RAW_TYPES: Record<
 export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY =
     overlayActivityDefinitionByKey(OVERLAY_ACTIVITY_TYPE_DEFINITIONS);
 
+const HMD_DEFAULT_SCOPE_OVERRIDES: Record<string, OverlayActivityScope> = {
+    OnPlayerJoined: 'friends',
+    OnPlayerLeft: 'friends',
+    Online: 'allFavorites',
+    Offline: 'allFavorites',
+    GPS: 'allFavorites',
+    Status: 'allFavorites',
+    Unfriend: 'off',
+    DisplayName: 'friends',
+    TrustLevel: 'friends',
+    groupChange: 'off',
+    'group.announcement': 'off',
+    'group.informative': 'off',
+    'group.joinRequest': 'off',
+    'group.transfer': 'off',
+    Event: 'off',
+    External: 'off',
+    Blocked: 'off',
+    Unblocked: 'off',
+    Muted: 'off',
+    Unmuted: 'off',
+    BlockedOnPlayerJoined: 'everyoneInInstance',
+    VideoPlay: 'off'
+};
+
+for (const definition of OVERLAY_ACTIVITY_TYPE_DEFINITIONS) {
+    definition.hmdDefaultScope =
+        HMD_DEFAULT_SCOPE_OVERRIDES[definition.key] ?? definition.defaultScope;
+}
+
 export const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<
     string,
     OverlayActivityRule
@@ -286,12 +325,25 @@ export const DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE: OverlayActivityFilterProfi
         types: cloneOverlayActivityTypeRules(DEFAULT_OVERLAY_ACTIVITY_TYPES)
     };
 
+export const DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS: OverlayActivityFilterProfilePreference =
+    {
+        version: 1,
+        types: hmdDefaultOverlayActivityTypeRulesFromDefinitions(
+            OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+        )
+    };
+
 export const DEFAULT_OVERLAY_ACTIVITY_FILTERS: OverlayActivityFiltersPreference =
     {
         version: 1,
         wrist: {
             types: cloneOverlayActivityTypeRules(
                 DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE.types
+            )
+        },
+        hmd: {
+            types: cloneOverlayActivityTypeRules(
+                DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS.types
             )
         }
     };
@@ -352,6 +404,20 @@ export function defaultOverlayActivityTypeRulesFromDefinitions(
     );
 }
 
+export function hmdDefaultOverlayActivityTypeRulesFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): Record<string, OverlayActivityRule> {
+    return Object.fromEntries(
+        definitions.map((definition) => [
+            definition.key,
+            {
+                scope: definition.hmdDefaultScope ?? definition.defaultScope,
+                favoriteGroupKeys: 'all'
+            }
+        ])
+    );
+}
+
 export function defaultOverlayActivityFilterProfileFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): OverlayActivityFilterProfilePreference {
@@ -364,15 +430,32 @@ export function defaultOverlayActivityFilterProfileFromDefinitions(
     };
 }
 
+export function hmdDefaultOverlayActivityFilterProfileFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFilterProfilePreference {
+    return {
+        version: 1,
+        types: cloneOverlayActivityTypeRules(
+            hmdDefaultOverlayActivityTypeRulesFromDefinitions(definitions),
+            definitions
+        )
+    };
+}
+
 export function defaultOverlayActivityFiltersFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): OverlayActivityFiltersPreference {
     const profile =
         defaultOverlayActivityFilterProfileFromDefinitions(definitions);
+    const hmdProfile =
+        hmdDefaultOverlayActivityFilterProfileFromDefinitions(definitions);
     return {
         version: 1,
         wrist: {
             types: profile.types
+        },
+        hmd: {
+            types: hmdProfile.types
         }
     };
 }
@@ -615,7 +698,8 @@ export function normalizeOverlayActivityFilters(
 
 export function normalizeOverlayActivityFilterProfileWithDefinitions(
     value: unknown = {},
-    definitions: OverlayActivityTypeDefinition[]
+    definitions: OverlayActivityTypeDefinition[],
+    fallbackTypes?: Record<string, OverlayActivityRule>
 ): OverlayActivityFilterProfilePreference {
     const source = isRecord(value) ? value : {};
     const filterProfile = isRecord(source.wrist) ? source.wrist : source;
@@ -627,6 +711,7 @@ export function normalizeOverlayActivityFilterProfileWithDefinitions(
         filterProfile.favoriteGroupKeys
     );
     const defaultTypes =
+        fallbackTypes ??
         defaultOverlayActivityTypeRulesFromDefinitions(definitions);
     const definitionKeys = new Set(
         definitions.map((definition) => definition.key)
@@ -685,19 +770,41 @@ export function normalizeOverlayActivityFilterProfile(
     );
 }
 
+export function normalizeHmdOverlayActivityFilterProfile(
+    value: unknown = {},
+    definitions: OverlayActivityTypeDefinition[] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS
+): OverlayActivityFilterProfilePreference {
+    const source = isRecord(value) && isRecord(value.hmd) ? value.hmd : value;
+    return normalizeOverlayActivityFilterProfileWithDefinitions(
+        source,
+        definitions,
+        hmdDefaultOverlayActivityTypeRulesFromDefinitions(definitions)
+    );
+}
+
 export function normalizeOverlayActivityFiltersWithDefinitions(
     value: unknown = {},
     definitions: OverlayActivityTypeDefinition[]
 ): OverlayActivityFiltersPreference {
     const source = isRecord(value) ? value : {};
-    const profile = normalizeOverlayActivityFilterProfileWithDefinitions(
+    const wristProfile = normalizeOverlayActivityFilterProfileWithDefinitions(
         isRecord(source.wrist) ? source.wrist : source,
         definitions
+    );
+    const hmdDefaults =
+        hmdDefaultOverlayActivityFilterProfileFromDefinitions(definitions);
+    const hmdProfile = normalizeOverlayActivityFilterProfileWithDefinitions(
+        isRecord(source.hmd) ? source.hmd : hmdDefaults,
+        definitions,
+        hmdDefaults.types
     );
     return {
         version: 1,
         wrist: {
-            types: profile.types
+            types: wristProfile.types
+        },
+        hmd: {
+            types: hmdProfile.types
         }
     };
 }
@@ -772,5 +879,23 @@ export function parseOverlayActivityFilterProfile(
         return normalizeOverlayActivityFilterProfile(JSON.parse(String(value)));
     } catch {
         return normalizeOverlayActivityFilterProfile();
+    }
+}
+
+export function parseHmdOverlayActivityFilterProfile(
+    value: unknown
+): OverlayActivityFilterProfilePreference {
+    if (!value) {
+        return normalizeHmdOverlayActivityFilterProfile();
+    }
+    if (typeof value === 'object') {
+        return normalizeHmdOverlayActivityFilterProfile(value);
+    }
+    try {
+        return normalizeHmdOverlayActivityFilterProfile(
+            JSON.parse(String(value))
+        );
+    } catch {
+        return normalizeHmdOverlayActivityFilterProfile();
     }
 }

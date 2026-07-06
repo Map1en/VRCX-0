@@ -68,6 +68,7 @@ impl RuntimeHostState {
             .and_then(|mut slot| slot.take());
         self.runtime_context.overlay_activity.clear_runtime_state();
         self.realtime_runtime.stop(RealtimeStopRequest::default());
+        self.vr_overlay_runtime.clear_friends_panel_session_state();
         self.runtime_context.session.clear_realtime_context();
         if let Some(previous) = previous {
             self.runtime_context
@@ -103,6 +104,7 @@ impl RuntimeHostState {
                 .unwrap_or(true);
             if scope_changed {
                 self.runtime_context.overlay_activity.clear_runtime_state();
+                self.vr_overlay_runtime.clear_friends_panel_session_state();
             }
             *slot = Some(snapshot);
         }
@@ -142,6 +144,7 @@ impl RuntimeHostState {
                 .unwrap_or(true);
             if scope_changed {
                 self.runtime_context.overlay_activity.clear_runtime_state();
+                self.vr_overlay_runtime.clear_friends_panel_session_state();
             }
             *slot = Some(snapshot);
         }

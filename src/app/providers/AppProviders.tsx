@@ -10,7 +10,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <TooltipProvider delayDuration={100}>{children}</TooltipProvider>
+            <TooltipProvider delay={100}>{children}</TooltipProvider>
         </QueryClientProvider>
     );
 }

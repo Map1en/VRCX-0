@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkCanInvite, checkCanInviteSelf } from './invite';
+import gateParityCases from './instanceActionGateParityCases.json';
+import {
+    buildLocalInstanceActionGateMap,
+    checkCanInvite,
+    checkCanInviteSelf,
+    evaluateLocalInstanceActionGates,
+    type CheckCanInviteDeps,
+    type CheckCanInviteSelfDeps,
+    type LocalInstanceActionGates
+} from './invite';
 
 describe('invite permissions', () => {
     it('allows invite actions for public, group, and owned private instances', () => {
-        const deps: any = {
+        const deps: CheckCanInviteDeps = {
             currentUserId: 'usr_me',
             lastLocationStr: '',
             cachedInstances: new Map()
@@ -24,7 +33,7 @@ describe('invite permissions', () => {
 
     it('blocks invite actions for closed or inaccessible private instances', () => {
         const friendsPlusLocation = 'wrld_hidden:12345~hidden(usr_owner)';
-        const deps: any = {
+        const deps: CheckCanInviteDeps = {
             currentUserId: 'usr_me',
             lastLocationStr: '',
             cachedInstances: new Map([
@@ -49,7 +58,7 @@ describe('invite permissions', () => {
     });
 
     it('allows self-invite only when the target instance is joinable by the current user', () => {
-        const deps: any = {
+        const deps: CheckCanInviteSelfDeps = {
             currentUserId: 'usr_me',
             friends: new Map([['usr_friend', {}]]),
             cachedInstances: new Map()
@@ -81,5 +90,49 @@ describe('invite permissions', () => {
                 ])
             })
         ).toBe(false);
+    });
+
+    it('matches the shared backend gate parity cases', () => {
+        for (const batch of gateParityCases) {
+            const output = evaluateLocalInstanceActionGates(batch);
+            expect(output.targets).toEqual(
+                batch.targets.map((target) => ({
+                    key: target.key,
+                    ...target.expected
+                }))
+            );
+        }
+    });
+
+    it('merges duplicate gate keys by preserving any allowed action', () => {
+        const rows = [
+            {
+                key: 'wrld_same:12345',
+                canJoin: false,
+                canOpenInGame: false,
+                canSelfInvite: false,
+                canRequestInvite: false,
+                canInvite: false
+            },
+            {
+                key: 'wrld_same:12345',
+                canJoin: true,
+                canOpenInGame: true,
+                canSelfInvite: true,
+                canRequestInvite: true,
+                canInvite: true
+            }
+        ] satisfies LocalInstanceActionGates[];
+
+        expect(
+            buildLocalInstanceActionGateMap(rows).get('wrld_same:12345')
+        ).toEqual({
+            key: 'wrld_same:12345',
+            canJoin: true,
+            canOpenInGame: true,
+            canSelfInvite: true,
+            canRequestInvite: true,
+            canInvite: true
+        });
     });
 });

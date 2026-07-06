@@ -35,17 +35,19 @@ function TileActionsMenu({ actions, label }: any) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon-sm"
-                    className="bg-background/70 backdrop-blur"
-                    aria-label={label}
-                >
-                    <MoreHorizontalIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon-sm"
+                        className="bg-background/70 backdrop-blur"
+                        aria-label={label}
+                    >
+                        <MoreHorizontalIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuGroup>
                     {visibleActions.map((action: any) => (
@@ -55,7 +57,8 @@ function TileActionsMenu({ actions, label }: any) {
                                 action.destructive ? 'destructive' : 'default'
                             }
                             disabled={action.disabled}
-                            onSelect={(event) => {
+                            closeOnClick={false}
+                            onClick={(event) => {
                                 event.preventDefault();
                                 action.onSelect?.();
                             }}

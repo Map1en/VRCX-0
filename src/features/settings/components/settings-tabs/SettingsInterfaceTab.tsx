@@ -23,6 +23,7 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
         onTableDensityChange,
         onDataTableStripedChange,
         onAccessibleStatusIndicatorsChange,
+        onReducedMotionAndBlurChange,
         onShowInstanceIdInLocationChange,
         onAgeGatedInstancesVisibleChange,
         onHideNicknamesChange,
@@ -36,7 +37,6 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
         onFeedTimeDisplayModeChange,
         onHideUserNotesChange,
         onHideUserMemosChange,
-        onHideUnfriendsChange,
         onRandomUserColoursChange,
         onResetTrustColors,
         onSaveTrustColor,
@@ -60,6 +60,7 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
                 onAccessibleStatusIndicatorsChange={
                     onAccessibleStatusIndicatorsChange
                 }
+                onReducedMotionAndBlurChange={onReducedMotionAndBlurChange}
             />
             <SettingsInterfaceThemesCard />
             <SettingsInterfaceDisplayCards
@@ -83,7 +84,6 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
                 onFeedTimeDisplayModeChange={onFeedTimeDisplayModeChange}
                 onHideUserNotesChange={onHideUserNotesChange}
                 onHideUserMemosChange={onHideUserMemosChange}
-                onHideUnfriendsChange={onHideUnfriendsChange}
             />
             <SettingsInterfaceUserColorsCard
                 prefs={prefs}

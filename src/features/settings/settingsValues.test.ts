@@ -8,6 +8,7 @@ import {
     buildTablePageSizeOptions,
     composeCustomFontFamily,
     createCustomFontDraftFromPrefs,
+    DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_TRANSLATION_ENDPOINT,
     filterTablePageSizeOptions,
     formatByteSize,
@@ -146,6 +147,35 @@ describe('settingsValues', () => {
         expect(filters.wrist.types.unknown).toEqual({
             scope: 'on',
             favoriteGroupKeys: 'all'
+        });
+    });
+
+    it('builds HMD activity filters from the interruptive notification defaults', () => {
+        expect(DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS.types).toMatchObject({
+            OnPlayerJoined: {
+                scope: 'friends',
+                favoriteGroupKeys: 'all'
+            },
+            OnPlayerLeft: {
+                scope: 'friends',
+                favoriteGroupKeys: 'all'
+            },
+            Online: {
+                scope: 'allFavorites',
+                favoriteGroupKeys: 'all'
+            },
+            GPS: {
+                scope: 'allFavorites',
+                favoriteGroupKeys: 'all'
+            },
+            Status: {
+                scope: 'allFavorites',
+                favoriteGroupKeys: 'all'
+            },
+            VideoPlay: {
+                scope: 'off',
+                favoriteGroupKeys: 'all'
+            }
         });
     });
 

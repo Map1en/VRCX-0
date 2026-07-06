@@ -67,18 +67,22 @@ export function FriendsLocationsToolbar({
 
             <Popover>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <PopoverTrigger asChild>
-                            <Button
-                                type="button"
-                                size="icon-sm"
-                                variant="ghost"
-                                aria-label={t('common.settings')}
-                            >
-                                <Settings2Icon data-icon="inline-start" />
-                            </Button>
-                        </PopoverTrigger>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <PopoverTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        aria-label={t('common.settings')}
+                                    >
+                                        <Settings2Icon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
+                        }
+                    />
                     <TooltipContent>{t('common.settings')}</TooltipContent>
                 </Tooltip>
                 <PopoverContent className="w-72" align="end">
@@ -106,14 +110,13 @@ export function FriendsLocationsToolbar({
                                 </FieldLabel>
                             </FieldContent>
                             <ToggleGroup
-                                type="single"
                                 variant="outline"
                                 size="sm"
                                 spacing={1}
-                                value={density}
+                                value={density ? [density] : []}
                                 onValueChange={(nextValue) => {
-                                    if (nextValue) {
-                                        onDensityChange(nextValue);
+                                    if (nextValue[0]) {
+                                        onDensityChange(nextValue[0]);
                                     }
                                 }}
                                 className="grid w-full grid-cols-3"

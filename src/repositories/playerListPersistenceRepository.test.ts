@@ -6,174 +6,90 @@ import { getCurrentInstanceSnapshot } from './playerListPersistenceRepository';
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        appPlayerListLocationGet: vi.fn(),
-        appPlayerListLatestLocationGet: vi.fn(),
-        appPlayerListJoinLeaveRows: vi.fn()
+        appPlayerListCurrentSnapshot: vi.fn()
     }
 }));
 
 describe('playerListPersistenceRepository', () => {
     beforeEach(() => {
-        vi.mocked(commands.appPlayerListLocationGet).mockReset();
-        vi.mocked(commands.appPlayerListLatestLocationGet).mockReset();
-        vi.mocked(commands.appPlayerListJoinLeaveRows).mockReset();
+        vi.mocked(commands.appPlayerListCurrentSnapshot).mockReset();
     });
 
-    it('does not include join rows from earlier visits to the same instance', async () => {
-        vi.mocked(commands.appPlayerListLocationGet).mockResolvedValueOnce({
-            createdAt: '2026-04-30T10:00:00.000Z',
-            location: 'wrld_live:123',
-            worldId: 'wrld_live',
-            worldName: 'Live World',
-            time: 0,
-            groupName: ''
-        });
-        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
-            {
-                id: 1,
-                createdAt: '2026-01-01T10:00:00.000Z',
-                type: 'OnPlayerJoined',
-                displayName: 'Old Player',
-                userId: 'usr_old',
-                time: 0
+    it('normalizes inputs before invoking the snapshot command', async () => {
+        vi.mocked(commands.appPlayerListCurrentSnapshot).mockResolvedValueOnce({
+            context: {
+                createdAt: '',
+                location: '',
+                worldId: '',
+                worldName: '',
+                time: 0,
+                groupName: '',
+                source: 'none'
             },
-            {
-                id: 2,
-                createdAt: '2026-04-30T10:01:00.000Z',
-                type: 'OnPlayerJoined',
-                displayName: 'Current Player',
-                userId: 'usr_current',
-                time: 0
-            }
-        ]);
+            players: []
+        });
 
-        await expect(
-            getCurrentInstanceSnapshot({
-                currentLocation: 'wrld_live:123'
-            })
-        ).resolves.toMatchObject({
+        await getCurrentInstanceSnapshot({
+            currentUserId: ' usr_me ',
+            currentLocation: ' wrld_live:123 ',
+            currentLocationStartedAt: undefined
+        });
+
+        expect(commands.appPlayerListCurrentSnapshot).toHaveBeenCalledWith(
+            'usr_me',
+            'wrld_live:123',
+            ''
+        );
+    });
+
+    it('sorts players by join time with locale-aware name tie-break', async () => {
+        vi.mocked(commands.appPlayerListCurrentSnapshot).mockResolvedValueOnce({
+            context: {
+                createdAt: '2026-04-30T10:00:00.000Z',
+                location: 'wrld_live:123',
+                worldId: 'wrld_live',
+                worldName: 'Live World',
+                time: 0,
+                groupName: '',
+                source: 'database',
+                playerCount: 3,
+                observedPlayerEventCount: 3,
+                playerFactsKnown: true
+            },
             players: [
                 {
-                    userId: 'usr_current',
-                    displayName: 'Current Player'
+                    id: 'usr_b',
+                    userId: 'usr_b',
+                    displayName: 'beta',
+                    joinedAt: '2026-04-30T10:02:00.000Z',
+                    joinedAtMs: 2
+                },
+                {
+                    id: 'usr_c',
+                    userId: 'usr_c',
+                    displayName: 'Alpha',
+                    joinedAt: '2026-04-30T10:02:00.000Z',
+                    joinedAtMs: 2
+                },
+                {
+                    id: 'usr_a',
+                    userId: 'usr_a',
+                    displayName: 'Zed',
+                    joinedAt: '2026-04-30T10:01:00.000Z',
+                    joinedAtMs: 1
                 }
             ]
         });
-    });
-
-    it('uses the runtime location start time over stale database location rows', async () => {
-        vi.mocked(commands.appPlayerListLocationGet).mockResolvedValueOnce({
-            createdAt: '2026-01-01T10:00:00.000Z',
-            location: 'wrld_live:123',
-            worldId: 'wrld_live',
-            worldName: 'Live World',
-            time: 0,
-            groupName: ''
-        });
-        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
-            {
-                id: 1,
-                createdAt: '2026-01-01T10:01:00.000Z',
-                type: 'OnPlayerJoined',
-                displayName: 'Old Player',
-                userId: 'usr_old',
-                time: 0
-            },
-            {
-                id: 2,
-                createdAt: '2026-04-30T10:01:00.000Z',
-                type: 'OnPlayerJoined',
-                displayName: 'Current Player',
-                userId: 'usr_current',
-                time: 0
-            }
-        ]);
 
         const snapshot = await getCurrentInstanceSnapshot({
-            currentLocation: 'wrld_live:123',
-            currentLocationStartedAt: '2026-04-30T10:00:00.000Z'
+            currentLocation: 'wrld_live:123'
         });
 
-        expect(snapshot.context.createdAt).toBe('2026-04-30T10:00:00.000Z');
-        expect(snapshot.players).toEqual([
-            expect.objectContaining({
-                userId: 'usr_current',
-                displayName: 'Current Player'
-            })
+        expect(snapshot.players.map((player) => player.displayName)).toEqual([
+            'Zed',
+            'Alpha',
+            'beta'
         ]);
-    });
-
-    it('removes a joined row by unique display name when the leave row has a different id key', async () => {
-        vi.mocked(commands.appPlayerListLocationGet).mockResolvedValueOnce({
-            createdAt: '2026-04-30T10:00:00.000Z',
-            location: 'wrld_live:123',
-            worldId: 'wrld_live',
-            worldName: 'Live World',
-            time: 0,
-            groupName: ''
-        });
-        vi.mocked(commands.appPlayerListJoinLeaveRows).mockResolvedValueOnce([
-            {
-                id: 1,
-                createdAt: '2026-04-30T10:01:00.000Z',
-                type: 'OnPlayerJoined',
-                displayName: 'Left Player',
-                userId: '',
-                time: 0
-            },
-            {
-                id: 2,
-                createdAt: '2026-04-30T10:02:00.000Z',
-                type: 'OnPlayerLeft',
-                displayName: 'Left Player',
-                userId: 'usr_left',
-                time: 60000
-            }
-        ]);
-
-        await expect(
-            getCurrentInstanceSnapshot({
-                currentLocation: 'wrld_live:123'
-            })
-        ).resolves.toMatchObject({
-            players: []
-        });
-    });
-
-    it('falls back to the database enter time when a stale runtime start filters the roster out', async () => {
-        vi.mocked(commands.appPlayerListLocationGet).mockResolvedValueOnce({
-            createdAt: '2026-06-09T12:26:31.000Z',
-            location: 'wrld_live:83220',
-            worldId: 'wrld_live',
-            worldName: 'Live World',
-            time: 0,
-            groupName: ''
-        });
-        const joinRow = {
-            id: 1,
-            createdAt: '2026-06-09T12:26:59.000Z',
-            type: 'OnPlayerJoined',
-            displayName: 'CyanChanges',
-            userId: 'usr_cyan',
-            time: 0
-        };
-        vi.mocked(commands.appPlayerListJoinLeaveRows)
-            .mockResolvedValueOnce([joinRow])
-            .mockResolvedValueOnce([joinRow]);
-
-        const snapshot = await getCurrentInstanceSnapshot({
-            currentLocation: 'wrld_live:83220',
-            // WS user-location fallback "now", later than every join row
-            currentLocationStartedAt: '2026-06-10T19:00:00.000Z'
-        });
-
-        expect(snapshot.players).toEqual([
-            expect.objectContaining({
-                userId: 'usr_cyan',
-                displayName: 'CyanChanges'
-            })
-        ]);
-        expect(snapshot.context.createdAt).toBe('2026-06-09T12:26:31.000Z');
         expect(snapshot.context.playerFactsKnown).toBe(true);
     });
 });

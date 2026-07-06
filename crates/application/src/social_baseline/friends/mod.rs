@@ -13,6 +13,7 @@ mod profile;
 mod state_map;
 
 #[cfg(test)]
+#[path = "../../../tests/social_baseline/friends/tests.rs"]
 mod tests;
 
 use entry::{build_fast_roster_snapshot, infer_state_from_platform};

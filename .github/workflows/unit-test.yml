@@ -20,6 +20,46 @@ permissions:
     contents: write
 
 jobs:
+    changes:
+        name: Detect Changes
+        runs-on: ubuntu-latest
+        outputs:
+            rust_backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust_backend }}
+            native_locales: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.native_locales }}
+            tauri_bindings: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_bindings }}
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dorny/paths-filter@v3
+              if: github.event_name != 'workflow_dispatch'
+              id: filter
+              with:
+                  filters: |
+                      rust_backend:
+                        - '.github/workflows/unit-test.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'src-tauri/**'
+                      native_locales:
+                        - '.github/workflows/unit-test.yml'
+                        - 'crates/runtime-host/src/vr_overlay/localization/**'
+                        - 'crates/i18n/**'
+                        - 'scripts/generate-native-locales.mjs'
+                        - 'src/localization/**'
+                        - 'src-tauri/src/localization/**'
+                      tauri_bindings:
+                        - '.github/workflows/unit-test.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'scripts/generate-native-locales.mjs'
+                        - 'src/platform/tauri/**'
+                        - 'src-tauri/**'
+
     frontend:
         name: Vitest
         runs-on: ubuntu-latest
@@ -143,6 +183,8 @@ jobs:
     rust-windows:
         name: Rust Backend (Windows)
         runs-on: windows-latest
+        needs: changes
+        if: needs.changes.outputs.rust_backend == 'true'
         defaults:
             run:
                 shell: bash
@@ -157,6 +199,8 @@ jobs:
     rust-linux:
         name: Rust Backend (Linux)
         runs-on: ubuntu-24.04
+        needs: changes
+        if: needs.changes.outputs.rust_backend == 'true'
         steps:
             - uses: actions/checkout@v5
             - name: Install Linux dependencies
@@ -180,6 +224,8 @@ jobs:
     rust-macos:
         name: Rust Backend (macOS)
         runs-on: macos-latest
+        needs: changes
+        if: needs.changes.outputs.rust_backend == 'true'
         defaults:
             run:
                 shell: bash
@@ -194,6 +240,8 @@ jobs:
     native-locales:
         name: Native Locales Up-to-date
         runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.native_locales == 'true'
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
@@ -208,6 +256,8 @@ jobs:
     tauri-bindings:
         name: Tauri Bindings Up-to-date
         runs-on: ubuntu-24.04
+        needs: changes
+        if: needs.changes.outputs.tauri_bindings == 'true'
         steps:
             - uses: actions/checkout@v5
             - name: Install Linux dependencies

@@ -1,13 +1,18 @@
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use serde_json::json;
+use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
 use vrcx_0_application::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
     OverlayActivityDelivery, OverlayActivityEntry,
 };
+use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::DatabaseService;
 use vrcx_0_runtime_host::notification::{
-    decide_notification_plan, DesktopNotifier, DesktopNotifierSlot, NotificationDeliveryGameState,
-    NotificationDeliveryPreferences,
+    auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
+    decide_notification_plan, AuthWebhookEvent, AuthWebhookEventKind, DesktopNotifier,
+    DesktopNotifierSlot, NotificationDeliveryGameState, NotificationDeliveryPreferences,
 };
 
 #[test]
@@ -90,6 +95,87 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
     );
 }
 
+#[test]
+fn auth_webhook_defaults_to_enabled_when_url_exists() {
+    let test_db = test_db("auth-webhook-defaults");
+    let config = ConfigRepository::new(Arc::clone(&test_db.db));
+    config
+        .set_string("webhookUrl", "https://example.com/webhook")
+        .unwrap();
+
+    assert!(auth_webhook_is_enabled(&config));
+
+    config.set_bool("webhookAuthEventsEnabled", false).unwrap();
+
+    assert!(!auth_webhook_is_enabled(&config));
+}
+
+#[test]
+fn auth_webhook_payload_uses_fixed_safe_fields() {
+    let payload = auth_webhook_generic_payload(&AuthWebhookEvent {
+        kind: AuthWebhookEventKind::ReloginFailed,
+        user_id: "usr_123".into(),
+        display_name: "Pizza".into(),
+        reason: "expired token secret_cookie=abc".into(),
+        mode: "background".into(),
+        timestamp: "2026-07-03T08:30:00.000Z".into(),
+    });
+
+    assert_eq!(payload["event"], "auth.relogin.failed");
+    assert_eq!(payload["user"]["id"], "usr_123");
+    assert_eq!(payload["mode"], "background");
+    assert_eq!(payload["reason"], "expired [redacted] [redacted]");
+    let serialized = payload.to_string();
+    assert!(!serialized.contains("password"));
+    assert!(!serialized.contains("token"));
+    assert!(!serialized.contains("cookie"));
+}
+
+#[test]
+fn auth_webhook_recovery_only_targets_authenticated_background_sessions() {
+    assert!(auth_webhook_should_recover(&backend_snapshot(
+        BackendRuntimeMode::Background,
+        BackendRuntimePhase::Running,
+        "authenticated",
+        "usr_1"
+    )));
+    assert!(!auth_webhook_should_recover(&backend_snapshot(
+        BackendRuntimeMode::Foreground,
+        BackendRuntimePhase::Running,
+        "authenticated",
+        "usr_1"
+    )));
+    assert!(!auth_webhook_should_recover(&backend_snapshot(
+        BackendRuntimeMode::Background,
+        BackendRuntimePhase::Running,
+        "authenticated",
+        ""
+    )));
+}
+
+fn backend_snapshot(
+    mode: BackendRuntimeMode,
+    phase: BackendRuntimePhase,
+    auth_status: &str,
+    auth_user_id: &str,
+) -> BackendRuntimeSnapshot {
+    BackendRuntimeSnapshot {
+        mode,
+        phase,
+        auth_status: auth_status.into(),
+        auth_user_id: auth_user_id.into(),
+        auth_display_name: "Pizza".into(),
+        ws_status: "authFailure".into(),
+        game_log_status: "idle".into(),
+        process_status: "unknown".into(),
+        ws_message_counts: Default::default(),
+        ws_persisted_count: 0,
+        game_log_persisted_count: 0,
+        last_error: None,
+        updated_at: "2026-07-03T08:30:00.000Z".into(),
+    }
+}
+
 fn delivery(desktop: bool, vr: bool, webhook: bool) -> OverlayActivityDelivery {
     OverlayActivityDelivery {
         entry: OverlayActivityEntry {
@@ -106,6 +192,7 @@ fn delivery(desktop: bool, vr: bool, webhook: bool) -> OverlayActivityDelivery {
         },
         desktop,
         vr,
+        hmd: false,
         webhook,
     }
 }
@@ -142,4 +229,38 @@ impl DesktopNotifier for RecordingDesktopNotifier {
             });
         Ok(())
     }
+}
+
+struct TestDir {
+    path: PathBuf,
+}
+
+impl TestDir {
+    fn new(name: &str) -> Self {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path =
+            std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
+        std::fs::create_dir_all(&path).unwrap();
+        Self { path }
+    }
+}
+
+impl Drop for TestDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
+struct TestDatabase {
+    _dir: TestDir,
+    db: Arc<DatabaseService>,
+}
+
+fn test_db(name: &str) -> TestDatabase {
+    let dir = TestDir::new(name);
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
+    TestDatabase { _dir: dir, db }
 }

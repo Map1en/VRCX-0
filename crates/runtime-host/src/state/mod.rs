@@ -12,6 +12,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
+    telemetry::{TelemetryRuntime, TelemetryRuntimeDeps},
     vr_overlay::{
         start_preview_bridge_if_enabled, VrOverlayActivitySink, VrOverlayRuntime,
         VrOverlayRuntimeSnapshot, VR_OVERLAY_ENABLED_CONFIG_KEY,
@@ -62,6 +63,7 @@ use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 mod auth_session;
 mod background;
+mod background_auth;
 mod background_ticks;
 mod capabilities;
 mod frontend_session;
@@ -70,6 +72,7 @@ mod services;
 mod startup;
 
 use auth_session::{string_field, BackendSocialBaseline};
+pub use auth_session::{CliLoginPrompt, CliTwoFactorChoice};
 use background::{
     background_capability_session, background_capability_session_matches, emit_background_error,
     emit_background_info, emit_background_info_if_changed, gui_maintenance_runtime_mode,
@@ -159,6 +162,7 @@ pub struct RuntimeHostState {
     pub log_watcher: LogWatcher,
     pub runtime_context: Arc<RuntimeHostContext>,
     pub backend_runtime: BackendRuntime,
+    pub telemetry: TelemetryRuntime,
     pub game_log_runtime: Arc<GameLogHostRuntime>,
     pub game_client_runtime: Arc<GameClientHostRuntime>,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
@@ -175,6 +179,7 @@ pub struct RuntimeHostState {
     pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
     pub launched_from_autostart: bool,
     backend_starting: AtomicBool,
+    background_auth_recovery_running: Arc<AtomicBool>,
     registry_backup_maintenance_running: Arc<AtomicBool>,
     background_capabilities_running: Arc<AtomicBool>,
     background_group_instances_refresh_running: Arc<AtomicBool>,
@@ -252,6 +257,14 @@ impl RuntimeHostState {
             Arc::clone(&image_cache),
         ));
         let backend_runtime = BackendRuntime::new();
+        let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
+            config: runtime_context.config.clone(),
+            session: runtime_context.session.clone(),
+            tasks: runtime_context.tasks.clone(),
+            backend_runtime: backend_runtime.clone(),
+            app_version: app_version.clone(),
+            app_data: paths.app_data.clone(),
+        });
         let game_log_runtime = Arc::new(GameLogHostRuntime::new(
             Arc::clone(&runtime_context),
             host_file_access.clone(),
@@ -293,7 +306,18 @@ impl RuntimeHostState {
             overlay_activity: runtime_context.overlay_activity.clone(),
             world_cache: Arc::clone(&runtime_context.world_cache),
             print_cleanup: runtime_context.print_cleanup.clone(),
+            friend_note_change_sink: Some({
+                let vr_overlay_runtime = Arc::clone(&vr_overlay_runtime);
+                Arc::new(move || {
+                    vr_overlay_runtime.invalidate_friends_panel_note_memo_cache();
+                })
+            }),
         }));
+        {
+            let realtime_runtime = Arc::clone(&realtime_runtime);
+            vr_overlay_runtime
+                .set_friends_panel_snapshot_provider(move || realtime_runtime.friend_snapshot());
+        }
         let session_runtime = Arc::new(SessionHostRuntime::new(
             runtime_context.session.clone(),
             runtime_context.event_bus.clone(),
@@ -320,6 +344,7 @@ impl RuntimeHostState {
             log_watcher,
             runtime_context,
             backend_runtime,
+            telemetry,
             game_log_runtime,
             game_client_runtime,
             realtime_runtime,
@@ -335,6 +360,7 @@ impl RuntimeHostState {
             legacy_vrcx_migration_status,
             launched_from_autostart,
             backend_starting: AtomicBool::new(false),
+            background_auth_recovery_running: Arc::new(AtomicBool::new(false)),
             registry_backup_maintenance_running: Arc::new(AtomicBool::new(false)),
             background_capabilities_running: Arc::new(AtomicBool::new(false)),
             background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
@@ -342,5 +368,9 @@ impl RuntimeHostState {
             backend_frontend_session: Arc::new(Mutex::new(None)),
             _profile_lock: profile_lock,
         })
+    }
+
+    pub fn start_telemetry_runtime(&self) {
+        self.telemetry.start();
     }
 }

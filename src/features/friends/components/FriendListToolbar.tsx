@@ -57,26 +57,30 @@ export function FriendListToolbar({
             <PageToolbarRow className="justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                type="button"
-                                variant={favoritesOnly ? 'default' : 'outline'}
-                                size="icon"
-                                className="size-9"
-                                disabled={!isFavoritesLoaded}
-                                aria-label={t(
-                                    'view.friend_list.favorites_only_tooltip'
-                                )}
-                                onClick={onToggleFavoritesOnly}
-                            >
-                                <StarIcon
-                                    data-icon="inline-start"
-                                    className={cn(
-                                        favoritesOnly ? 'fill-current' : ''
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant={
+                                        favoritesOnly ? 'default' : 'outline'
+                                    }
+                                    size="icon"
+                                    className="size-9"
+                                    disabled={!isFavoritesLoaded}
+                                    aria-label={t(
+                                        'view.friend_list.favorites_only_tooltip'
                                     )}
-                                />
-                            </Button>
-                        </TooltipTrigger>
+                                    onClick={onToggleFavoritesOnly}
+                                >
+                                    <StarIcon
+                                        data-icon="inline-start"
+                                        className={cn(
+                                            favoritesOnly ? 'fill-current' : ''
+                                        )}
+                                    />
+                                </Button>
+                            }
+                        />
                         <TooltipContent>
                             {t('view.friend_list.favorites_only_tooltip')}
                         </TooltipContent>

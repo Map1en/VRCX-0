@@ -9,10 +9,10 @@ import {
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openUserDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
-    copyTextToClipboard,
     openExternalLink
 } from '@/services/entityMediaService';
 import { vrchatGroupUrl } from '@/shared/constants/vrchatWebUrls';
@@ -546,9 +546,12 @@ export function GroupDialogTabbedView({
         group.membershipStatus
     );
 
-    async function copyGroupText(text: any, label: any) {
-        await copyTextToClipboard(text);
-        toast.success(t('dialog.group.dynamic.value_copied', { value: label }));
+    function copyGroupText(text: string, label: string) {
+        return copyTextToClipboard(text, {
+            successMessage: t('dialog.group.dynamic.value_copied', {
+                value: label
+            })
+        });
     }
 
     function openGroupOwner() {

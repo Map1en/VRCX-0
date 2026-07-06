@@ -49,27 +49,29 @@ export function CustomCssSection({
                                 : t('view.themes.custom_css.disabled_summary')}
                         </div>
                     </div>
-                    <CollapsibleTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 shrink-0"
-                        >
-                            {t(
-                                customCssOpen
-                                    ? 'view.themes.custom_css.hide_editor'
-                                    : 'view.themes.custom_css.edit'
-                            )}
-                            <ChevronDownIcon
-                                data-icon="inline-end"
-                                className={cn(
-                                    'opacity-60 transition-transform',
-                                    customCssOpen && 'rotate-180'
+                    <CollapsibleTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shrink-0"
+                            >
+                                {t(
+                                    customCssOpen
+                                        ? 'view.themes.custom_css.hide_editor'
+                                        : 'view.themes.custom_css.edit'
                                 )}
-                            />
-                        </Button>
-                    </CollapsibleTrigger>
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className={cn(
+                                        'opacity-60 transition-transform',
+                                        customCssOpen && 'rotate-180'
+                                    )}
+                                />
+                            </Button>
+                        }
+                    />
                 </div>
                 <CollapsibleContent>
                     <div className="flex flex-col gap-3 border-t pt-3">

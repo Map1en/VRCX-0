@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use thiserror::Error;
 use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
 
@@ -15,6 +17,11 @@ pub enum OverlayServiceCommand {
     },
     Show(OverlaySurfaceId),
     Hide(OverlaySurfaceId),
+    SetAlpha {
+        surface_id: OverlaySurfaceId,
+        alpha: f32,
+    },
+    SetInteractionActive(bool),
     Stop,
 }
 
@@ -30,4 +37,9 @@ pub enum OverlayCommandError {
     Backend(String),
     #[error("overlay backend is unsupported by the current VR runtime: {0}")]
     BackendUnsupported(String),
+    #[error("overlay command timed out after {waited:?}: {command}")]
+    Timeout {
+        command: &'static str,
+        waited: Duration,
+    },
 }

@@ -53,18 +53,6 @@ pub(crate) fn game_log_row_from_unified_row(row: &[Value]) -> Result<Value, Erro
     Ok(Value::Object(object))
 }
 
-pub(crate) fn game_log_location_segment_from_row(row: &[Value]) -> Result<Value, Error> {
-    Ok(json!({
-        "id": strict_row_json(row, 0)?,
-        "created_at": strict_row_json(row, 1)?,
-        "location": strict_row_json(row, 2)?,
-        "worldId": strict_row_json(row, 3)?,
-        "worldName": strict_row_json(row, 4)?,
-        "time": strict_row_json(row, 5)?,
-        "groupName": strict_row_json(row, 6)?
-    }))
-}
-
 pub(crate) fn game_log_base_columns(include_extra: bool) -> &'static str {
     if include_extra {
         "id, created_at, type, display_name, location, user_id, time, world_id, world_name, group_name, instance_id, video_url, video_name, video_id, resource_url, resource_type, data, message"

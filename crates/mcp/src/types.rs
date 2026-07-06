@@ -20,6 +20,7 @@ pub enum McpServerState {
 #[serde(rename_all = "camelCase")]
 pub struct McpServerStatus {
     pub enabled: bool,
+    pub allow_lan_connections: bool,
     pub allow_vrchat_writes: bool,
     pub state: McpServerState,
     pub port: Option<u16>,

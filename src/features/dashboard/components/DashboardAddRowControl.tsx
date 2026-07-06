@@ -35,65 +35,75 @@ export function DashboardAddRowControl({ onAddRow }: any) {
                     {t('view.dashboard.action.add_row')}
                 </span>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-16 border-2 border-dashed"
-                            aria-label={t('dashboard.actions.add_full_row')}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                addRow(1);
-                            }}
-                        >
-                            <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-16 border-2 border-dashed"
+                                aria-label={t('dashboard.actions.add_full_row')}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    addRow(1);
+                                }}
+                            >
+                                <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('dashboard.actions.add_full_row')}
                     </TooltipContent>
                 </Tooltip>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-16 gap-1 border-2 border-dashed"
-                            aria-label={t('dashboard.actions.add_split_row')}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                addRow(2);
-                            }}
-                        >
-                            <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                            <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-16 gap-1 border-2 border-dashed"
+                                aria-label={t(
+                                    'dashboard.actions.add_split_row'
+                                )}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    addRow(2);
+                                }}
+                            >
+                                <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                                <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('dashboard.actions.add_split_row')}
                     </TooltipContent>
                 </Tooltip>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-16 gap-1 border-2 border-dashed"
-                            aria-label={t('dashboard.actions.add_vertical_row')}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                addRow(2, 'vertical');
-                            }}
-                        >
-                            <div className="flex flex-col gap-0.5">
-                                <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                                <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                            </div>
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-16 gap-1 border-2 border-dashed"
+                                aria-label={t(
+                                    'dashboard.actions.add_vertical_row'
+                                )}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    addRow(2, 'vertical');
+                                }}
+                            >
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                                    <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                                </div>
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('dashboard.actions.add_vertical_row')}
                     </TooltipContent>

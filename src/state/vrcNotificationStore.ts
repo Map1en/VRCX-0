@@ -8,6 +8,7 @@ import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
+import { getNotificationLifecycleBucket } from '@/shared/utils/notificationLifecycle';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -155,7 +156,10 @@ function shouldMarkSeenOnCenterClose(
 ): boolean {
     const version = Number(notification?.version ?? 1);
     const type = String(notification?.type || '');
-    return !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type));
+    return (
+        getNotificationLifecycleBucket(type) !== 'system' &&
+        !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type))
+    );
 }
 
 function createEmptyCategories(): NotificationCategories {

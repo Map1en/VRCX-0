@@ -18,12 +18,15 @@ type SettingsSystemTabProps = {
     isCloseToTray?: boolean;
     isStartAsMinimizedState?: boolean;
     isStartAtWindowsStartup?: boolean;
+    proxyEnabled?: boolean;
+    proxyServer?: string;
     onAutoBackgroundDownloadUpdatesChange: (checked: boolean) => unknown;
     onAutoInstallUpdatesOnStartupChange: (checked: boolean) => unknown;
     onAutoLoginDelayEnabledChange: (checked: boolean) => unknown;
     onBackgroundModeEnabledChange: (checked: boolean) => unknown;
     onCloseToTrayChange: (checked: boolean) => unknown;
     onPromptAutoLoginDelaySeconds: () => unknown;
+    onProxyEnabledChange: (checked: boolean) => unknown;
     onProxySettings: () => unknown;
     onStartAsMinimizedChange: (checked: boolean) => unknown;
     onStartAtWindowsStartupChange: (checked: boolean) => unknown;
@@ -39,6 +42,8 @@ export function SettingsSystemTab({
     autoInstallUpdatesOnStartup,
     autoBackgroundDownloadUpdates,
     backgroundModeEnabled,
+    proxyEnabled,
+    proxyServer,
     onStartAtWindowsStartupChange,
     onStartAsMinimizedChange,
     onCloseToTrayChange,
@@ -47,6 +52,7 @@ export function SettingsSystemTab({
     onBackgroundModeEnabledChange,
     onAutoInstallUpdatesOnStartupChange,
     onAutoBackgroundDownloadUpdatesChange,
+    onProxyEnabledChange,
     onProxySettings
 }: SettingsSystemTabProps) {
     const { t } = useTranslation();
@@ -177,14 +183,22 @@ export function SettingsSystemTab({
                     </Field>
                 ) : null}
                 <Field label={t('view.settings.general.application.proxy')}>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={onProxySettings}
-                    >
-                        {t('view.settings.general.application.proxy')}
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Switch
+                            checked={proxyEnabled}
+                            onCheckedChange={onProxyEnabledChange}
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onProxySettings}
+                        >
+                            {proxyServer
+                                ? t('prompt.proxy_settings.configure')
+                                : t('prompt.proxy_settings.configure_empty')}
+                        </Button>
+                    </div>
                 </Field>
             </SettingsGroup>
         </SettingsTabContent>

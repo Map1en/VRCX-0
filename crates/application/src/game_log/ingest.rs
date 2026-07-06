@@ -97,27 +97,15 @@ impl GameLogIngestEngine {
         if self.state.current_location.is_empty() || !self.state.players_by_key.is_empty() {
             return;
         }
-        for entry in entries {
-            if entry.user_id.trim().is_empty() && entry.display_name.trim().is_empty() {
-                continue;
-            }
-            let key = player_key(&entry.user_id, &entry.display_name);
-            match entry.event_type.as_str() {
-                "OnPlayerJoined" => {
-                    self.state.players_by_key.insert(
-                        key,
-                        PlayerState {
-                            user_id: entry.user_id.clone(),
-                            display_name: entry.display_name.clone(),
-                            join_time_ms: parse_event_time_ms(&entry.created_at),
-                        },
-                    );
-                }
-                "OnPlayerLeft" => {
-                    self.state.players_by_key.remove(&key);
-                }
-                _ => {}
-            }
+        for (key, player) in super::roster::fold_roster(entries) {
+            self.state.players_by_key.insert(
+                key,
+                PlayerState {
+                    user_id: player.user_id,
+                    display_name: player.display_name,
+                    join_time_ms: player.joined_at_ms,
+                },
+            );
         }
     }
 
@@ -492,32 +480,13 @@ fn remove_player_for_leave(
     display_name: &str,
     user_id: &str,
 ) -> Option<PlayerState> {
-    let key = player_key(user_id, display_name);
-    if let Some(player) = state.players_by_key.remove(&key) {
-        return Some(player);
-    }
-
-    let normalized_display_name = display_name.trim();
-    if normalized_display_name.is_empty() {
-        return None;
-    }
-
-    let matches = state
+    let candidates = state
         .players_by_key
         .iter()
-        .filter(|(_, player)| {
-            player
-                .display_name
-                .trim()
-                .eq_ignore_ascii_case(normalized_display_name)
-        })
-        .map(|(key, _)| key.clone())
+        .map(|(key, player)| (key.clone(), player.display_name.clone()))
         .collect::<Vec<_>>();
-    if matches.len() != 1 {
-        return None;
-    }
-
-    state.players_by_key.remove(&matches[0])
+    let key = super::roster::resolve_leave_key(&candidates, user_id, display_name)?;
+    state.players_by_key.remove(&key)
 }
 
 fn decode_video_url(value: &str) -> String {
@@ -538,6 +507,22 @@ mod tests {
             file_name: "output_log.txt".into(),
             created_at: created_at.into(),
             kind,
+        }
+    }
+
+    fn join_leave_snapshot(
+        created_at: &str,
+        event_type: &str,
+        display_name: &str,
+        user_id: &str,
+    ) -> GameLogJoinLeaveSnapshot {
+        GameLogJoinLeaveSnapshot {
+            id: 0,
+            created_at: created_at.into(),
+            event_type: event_type.into(),
+            display_name: display_name.into(),
+            user_id: user_id.into(),
+            time: 0,
         }
     }
 
@@ -647,24 +632,19 @@ mod tests {
             "2026-05-14T04:00:00.000Z".into(),
         );
         let entries = vec![
-            GameLogJoinLeaveSnapshot {
-                created_at: "2026-05-14T04:00:10.000Z".into(),
-                event_type: "OnPlayerJoined".into(),
-                display_name: "Alice".into(),
-                user_id: "usr_alice".into(),
-            },
-            GameLogJoinLeaveSnapshot {
-                created_at: "2026-05-14T04:00:20.000Z".into(),
-                event_type: "OnPlayerJoined".into(),
-                display_name: "Bob".into(),
-                user_id: "usr_bob".into(),
-            },
-            GameLogJoinLeaveSnapshot {
-                created_at: "2026-05-14T04:05:00.000Z".into(),
-                event_type: "OnPlayerLeft".into(),
-                display_name: "Bob".into(),
-                user_id: "usr_bob".into(),
-            },
+            join_leave_snapshot(
+                "2026-05-14T04:00:10.000Z",
+                "OnPlayerJoined",
+                "Alice",
+                "usr_alice",
+            ),
+            join_leave_snapshot(
+                "2026-05-14T04:00:20.000Z",
+                "OnPlayerJoined",
+                "Bob",
+                "usr_bob",
+            ),
+            join_leave_snapshot("2026-05-14T04:05:00.000Z", "OnPlayerLeft", "Bob", "usr_bob"),
         ];
         engine.seed_current_roster(&entries);
 
@@ -703,12 +683,12 @@ mod tests {
             )],
             GameLogIngestOptions::default(),
         );
-        engine.seed_current_roster(&[GameLogJoinLeaveSnapshot {
-            created_at: "2020-01-01T00:00:00.000Z".into(),
-            event_type: "OnPlayerJoined".into(),
-            display_name: "Alice".into(),
-            user_id: "usr_alice".into(),
-        }]);
+        engine.seed_current_roster(&[join_leave_snapshot(
+            "2020-01-01T00:00:00.000Z",
+            "OnPlayerJoined",
+            "Alice",
+            "usr_alice",
+        )]);
 
         let output = engine.ingest_events(
             &[event(

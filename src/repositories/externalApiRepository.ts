@@ -66,6 +66,19 @@ async function fetchGithubReleases({
     });
 }
 
+async function fetchGithubContributors({
+    url,
+    headers = {}
+}: {
+    url: string;
+    headers?: ExternalHeaders;
+}) {
+    return commands.appExternalApiGithubContributorsGet({
+        url,
+        headers
+    });
+}
+
 async function fetchImageDataUrl(url: string) {
     return commands.appExternalApiImageDataUrlGet({ url });
 }
@@ -76,11 +89,13 @@ const externalApiRepository = Object.freeze({
     fetchYoutubeVideoMetadata,
     fetchVrcStatusJson,
     fetchGithubReleases,
+    fetchGithubContributors,
     fetchImageDataUrl
 });
 
 export {
     executeTranslationRequest,
+    fetchGithubContributors,
     fetchGithubReleases,
     fetchImageDataUrl,
     fetchVrcStatusJson,

@@ -89,7 +89,6 @@ export function DialogHost() {
                                     <BreadcrumbItem>
                                         {index < breadcrumbs.length - 1 ? (
                                             <BreadcrumbLink
-                                                asChild={false}
                                                 className="cursor-pointer"
                                                 onClick={() =>
                                                     popToBreadcrumb(index)

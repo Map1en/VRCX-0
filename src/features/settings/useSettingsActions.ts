@@ -14,14 +14,16 @@ import mediaRepository from '@/repositories/mediaRepository';
 import runtimeDiagnosticsRepository from '@/repositories/runtimeDiagnosticsRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import {
+    addFeedHiddenUserPreference,
     setBoolConfigPreference,
     setCropInstancePrintsPreference,
     setIntConfigPreference,
     setLocalFavoriteFriendsGroupsPreference,
     setOverlayActivityFiltersPreference,
-    setProxyServerPreference,
+    setProxyEnabledPreference,
     setSharedFeedFiltersPreference,
     setStringConfigPreference,
+    setHmdNotificationActivityFiltersPreference,
     setTableLimitsPreference,
     setTrustColorPreference,
     setUserGeneratedContentPathPreference,
@@ -30,6 +32,7 @@ import {
     setWebhookActivityFiltersPreference,
     setWristOverlayEnabledPreference,
     loadTrustColorPreference,
+    removeFeedHiddenUserPreference,
     resetTrustColorsPreference
 } from '@/services/preferencesService';
 import {
@@ -191,9 +194,10 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         setIntConfigPreference,
         setLocalFavoriteFriendsGroupsPreference,
         setOverlayActivityFiltersPreference,
-        setProxyServerPreference,
+        setProxyEnabledPreference,
         setSharedFeedFiltersPreference,
         setStringConfigPreference,
+        setHmdNotificationActivityFiltersPreference,
         setTableLimitsPreference,
         setTrustColorPreference,
         setUserGeneratedContentPathPreference,
@@ -215,6 +219,56 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         ...actionDeps,
         ...preferenceActions
     });
+    function normalizeCurrentFeedHiddenUsers() {
+        return normalizePreferenceSnapshot({
+            feedHiddenUsers: deps.prefs.feedHiddenUsers
+        }).feedHiddenUsers;
+    }
+    async function addFeedHiddenUser(userId: string) {
+        const previous = normalizeCurrentFeedHiddenUsers();
+        const next = normalizePreferenceSnapshot({
+            feedHiddenUsers: [...previous, userId]
+        }).feedHiddenUsers;
+        await deps.commit(
+            () => addFeedHiddenUserPreference(userId),
+            () => {
+                deps.setPrefs((current) => ({
+                    ...current,
+                    feedHiddenUsers: next
+                }));
+                return () =>
+                    deps.setPrefs((current) => ({
+                        ...current,
+                        feedHiddenUsers: previous
+                    }));
+            }
+        );
+    }
+    async function removeFeedHiddenUser(userId: unknown) {
+        const normalizedUserId =
+            typeof userId === 'string'
+                ? userId.trim()
+                : String(userId ?? '').trim();
+        if (!normalizedUserId) {
+            return;
+        }
+        const previous = normalizeCurrentFeedHiddenUsers();
+        const next = previous.filter((id) => id !== normalizedUserId);
+        await deps.commit(
+            () => removeFeedHiddenUserPreference(normalizedUserId),
+            () => {
+                deps.setPrefs((current) => ({
+                    ...current,
+                    feedHiddenUsers: next
+                }));
+                return () =>
+                    deps.setPrefs((current) => ({
+                        ...current,
+                        feedHiddenUsers: previous
+                    }));
+            }
+        );
+    }
     async function refreshRuntimeAppSnapshot() {
         try {
             deps.setRuntimeAppSnapshot(
@@ -227,6 +281,8 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
     return {
         ...preferenceActions,
         ...maintenanceActions,
+        addFeedHiddenUser,
+        removeFeedHiddenUser,
         refreshRuntimeAppSnapshot,
         searchLimitError,
         tableLimitsSaveDisabled,

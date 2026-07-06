@@ -119,6 +119,12 @@ export function StatusEditor({
                         value={status}
                         disabled={disabled}
                         onValueChange={onStatusChange}
+                        items={statusOptions.map((statusOption) => ({
+                            value: statusOption,
+                            label: t(
+                                `dialog.user.status.${statusOption.replace(' ', '_')}`
+                            )
+                        }))}
                     >
                         <SelectTrigger aria-label={label}>
                             <SelectValue />

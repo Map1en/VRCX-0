@@ -145,7 +145,22 @@ function NavIconSelect({
     const normalizedIcon = normalizeNavIconKey(value, fallbackIcon);
 
     return (
-        <Select value={normalizedIcon} onValueChange={onValueChange}>
+        <Select
+            value={normalizedIcon}
+            items={NAV_ICON_OPTIONS.map((option) => {
+                const OptionIcon = getNavIconComponent(option.key);
+                return {
+                    value: option.key,
+                    label: (
+                        <span className="flex min-w-0 items-center gap-2">
+                            <OptionIcon data-icon="inline-start" />
+                            <span className="truncate">{option.label}</span>
+                        </span>
+                    )
+                };
+            })}
+            onValueChange={(value) => onValueChange(value ?? '')}
+        >
             <SelectTrigger size="sm" className="w-32" aria-label={ariaLabel}>
                 <SelectValue />
             </SelectTrigger>

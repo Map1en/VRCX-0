@@ -50,24 +50,27 @@ export function FriendLogPageToolbar({
                         />
                     </InputGroup>
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                aria-label={t('common.actions.refresh')}
-                                disabled={
-                                    !currentUserId || loadStatus === 'running'
-                                }
-                                onClick={onRefresh}
-                            >
-                                {loadStatus === 'running' ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <RefreshCwIcon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label={t('common.actions.refresh')}
+                                    disabled={
+                                        !currentUserId ||
+                                        loadStatus === 'running'
+                                    }
+                                    onClick={onRefresh}
+                                >
+                                    {loadStatus === 'running' ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <RefreshCwIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            }
+                        />
                         <TooltipContent>
                             {t('common.actions.refresh')}
                         </TooltipContent>

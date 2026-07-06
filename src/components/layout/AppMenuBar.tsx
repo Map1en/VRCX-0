@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { SupportVrcxDialog } from '@/components/support/SupportVrcxDialog';
+import { AboutVrcxDialog } from '@/components/about/AboutDialog';
 import { OpenSourceNoticeDialog } from '@/features/settings/components/OpenSourceNoticeDialog';
+import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import { logoutFromReactShell } from '@/services/authExecutionService';
@@ -42,15 +43,6 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
 import {
     Menubar,
     MenubarContent,
@@ -68,11 +60,16 @@ import {
 
 const ZOOM_STEP = 10;
 
-function MenuItem({ children, onSelect, ...props }: any) {
+function MenuItem({
+    children,
+    onClick,
+    className,
+    ...props
+}: ComponentProps<typeof MenubarItem>) {
     return (
         <MenubarItem
-            className="min-h-7 min-w-48 text-xs"
-            onSelect={onSelect}
+            className={cn('min-h-7 min-w-48 text-xs', className)}
+            onClick={onClick}
             {...props}
         >
             {children}
@@ -94,7 +91,7 @@ function ToolMenuItem({ tool }: { tool: ToolDefinition }) {
 
     return (
         <MenuItem
-            onSelect={() => {
+            onClick={() => {
                 triggerToolByKey(tool.key, { navigate, t });
             }}
         >
@@ -112,7 +109,6 @@ export function AppMenuBar({
     const navigate = useNavigate();
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
-    const [supportOpen, setSupportOpen] = useState(false);
     const [quickAccessKeys, setQuickAccessKeys] = useState<string[]>([]);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
     const navbarOpen = useShellStore((state) => state.sidebarOpen);
@@ -268,25 +264,25 @@ export function AppMenuBar({
                     </MenubarTrigger>
                     <MenubarContent align="start">
                         <MenubarGroup>
-                            <MenuItem onSelect={() => navigate('/settings')}>
+                            <MenuItem onClick={() => navigate('/settings')}>
                                 {t('app_menu.settings')}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() =>
+                                onClick={() =>
                                     setSystemHostOpen('updaterOpen', true)
                                 }
                             >
                                 {t('app_menu.check_updates')}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     runRestartApplication();
                                 }}
                             >
                                 {t('app_menu.restart')}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     runStartBackgroundMode();
                                 }}
                             >
@@ -297,7 +293,7 @@ export function AppMenuBar({
                         <MenubarGroup>
                             <MenuItem
                                 variant="destructive"
-                                onSelect={() => {
+                                onClick={() => {
                                     runLogout();
                                 }}
                             >
@@ -305,7 +301,7 @@ export function AppMenuBar({
                             </MenuItem>
                             <MenuItem
                                 variant="destructive"
-                                onSelect={() => {
+                                onClick={() => {
                                     exitApplication();
                                 }}
                             >
@@ -321,13 +317,11 @@ export function AppMenuBar({
                     </MenubarTrigger>
                     <MenubarContent align="start">
                         <MenubarGroup>
-                            <MenuItem
-                                onSelect={() => openNotificationSurface()}
-                            >
+                            <MenuItem onClick={() => openNotificationSurface()}>
                                 {t('app_menu.notification_center')}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     setNavbarCollapsedPreference(navbarOpen);
                                 }}
                             >
@@ -337,7 +331,7 @@ export function AppMenuBar({
                                         : 'nav_tooltip.expand_nav'
                                 )}
                             </MenuItem>
-                            <MenuItem onSelect={() => onToggleRightSidebar?.()}>
+                            <MenuItem onClick={() => onToggleRightSidebar?.()}>
                                 {t(
                                     rightSidebarOpen
                                         ? 'app_menu.hide_friends_sidebar'
@@ -345,7 +339,7 @@ export function AppMenuBar({
                                 )}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => publishNavCustomizeRequested()}
+                                onClick={() => publishNavCustomizeRequested()}
                             >
                                 {t('nav_menu.custom_nav.header')}
                             </MenuItem>
@@ -353,7 +347,7 @@ export function AppMenuBar({
                         <MenubarSeparator />
                         <MenubarGroup>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     navigate('/themes');
                                 }}
                             >
@@ -363,7 +357,7 @@ export function AppMenuBar({
                         <MenubarSeparator />
                         <MenubarGroup>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     applyZoomLevel(currentZoom + ZOOM_STEP);
                                 }}
                             >
@@ -375,7 +369,7 @@ export function AppMenuBar({
                                 </MenubarShortcut>
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     applyZoomLevel(currentZoom - ZOOM_STEP);
                                 }}
                             >
@@ -387,7 +381,7 @@ export function AppMenuBar({
                                 </MenubarShortcut>
                             </MenuItem>
                             <MenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     applyZoomLevel(100);
                                 }}
                             >
@@ -406,7 +400,7 @@ export function AppMenuBar({
                     </MenubarTrigger>
                     <MenubarContent align="start" className="w-56">
                         <MenubarGroup>
-                            <MenuItem onSelect={() => navigate('/tools')}>
+                            <MenuItem onClick={() => navigate('/tools')}>
                                 {t('app_menu.all_tools')}
                             </MenuItem>
                         </MenubarGroup>
@@ -464,14 +458,14 @@ export function AppMenuBar({
                     <MenubarContent align="start">
                         <MenubarGroup>
                             <MenuItem
-                                onSelect={() =>
+                                onClick={() =>
                                     setSystemHostOpen('changelogOpen', true)
                                 }
                             >
                                 {t('nav_menu.changelog')}
                             </MenuItem>
                             <MenuItem
-                                onSelect={() =>
+                                onClick={() =>
                                     setSystemHostOpen(
                                         'keyboardShortcutsOpen',
                                         true
@@ -483,7 +477,7 @@ export function AppMenuBar({
                         </MenubarGroup>
                         <MenubarSeparator />
                         <MenubarGroup>
-                            <MenuItem onSelect={() => openLink(links.issues)}>
+                            <MenuItem onClick={() => openLink(links.issues)}>
                                 {t('app_menu.report_issue')}
                             </MenuItem>
                         </MenubarGroup>
@@ -492,13 +486,13 @@ export function AppMenuBar({
                             <MenuGroupLabel>
                                 {t('app_menu.community')}
                             </MenuGroupLabel>
-                            <MenuItem onSelect={() => openLink(links.github)}>
+                            <MenuItem onClick={() => openLink(links.github)}>
                                 {t('app_menu.github')}
                             </MenuItem>
-                            <MenuItem onSelect={() => openLink(links.discord)}>
+                            <MenuItem onClick={() => openLink(links.discord)}>
                                 {t('nav_menu.discord')}
                             </MenuItem>
-                            <MenuItem onSelect={() => openLink(links.qqGroup)}>
+                            <MenuItem onClick={() => openLink(links.qqGroup)}>
                                 {t('nav_menu.qq_group')}
                             </MenuItem>
                         </MenubarGroup>
@@ -506,9 +500,7 @@ export function AppMenuBar({
                         {developerToolsAvailable ? (
                             <>
                                 <MenubarGroup>
-                                    <MenuItem
-                                        onSelect={() => runOpenDevtools()}
-                                    >
+                                    <MenuItem onClick={() => runOpenDevtools()}>
                                         {t('app_menu.open_devtools')}
                                     </MenuItem>
                                 </MenubarGroup>
@@ -516,12 +508,13 @@ export function AppMenuBar({
                             </>
                         ) : null}
                         <MenubarGroup>
-                            <MenuItem onSelect={() => setSupportOpen(true)}>
-                                {t('support_vrcx.title')}
-                            </MenuItem>
-                            <MenuItem onSelect={() => setAboutOpen(true)}>
+                            <MenuItem
+                                label={t('app_menu.about')}
+                                className="min-w-56"
+                                onClick={() => setAboutOpen(true)}
+                            >
                                 {t('app_menu.about')}
-                                <MenubarShortcut className="tracking-normal">
+                                <MenubarShortcut className="font-mono tracking-normal tabular-nums">
                                     {appVersion}
                                 </MenubarShortcut>
                             </MenuItem>
@@ -534,40 +527,15 @@ export function AppMenuBar({
                 open={openSourceNoticeOpen}
                 onOpenChange={setOpenSourceNoticeOpen}
             />
-            <SupportVrcxDialog
-                open={supportOpen}
-                onOpenChange={setSupportOpen}
-            />
 
-            <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-                <DialogContent showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle>{t('app_menu.about_title')}</DialogTitle>
-                        <DialogDescription>
-                            {t('app_menu.about_description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="bg-muted/30 rounded-lg border p-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">
-                                {t('app_menu.version')}
-                            </span>
-                            <span className="font-medium">{appVersion}</span>
-                        </div>
-                    </div>
-                    <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => {
-                            setAboutOpen(false);
-                            setOpenSourceNoticeOpen(true);
-                        }}
-                    >
-                        {t('app_menu.open_source_licenses')}
-                    </Button>
-                    <DialogFooter showCloseButton />
-                </DialogContent>
-            </Dialog>
+            <AboutVrcxDialog
+                open={aboutOpen}
+                onOpenChange={setAboutOpen}
+                onOpenLicenses={() => {
+                    setAboutOpen(false);
+                    setOpenSourceNoticeOpen(true);
+                }}
+            />
         </>
     );
 }

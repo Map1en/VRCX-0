@@ -217,16 +217,14 @@ export function ModalHost() {
             />
             <Dialog
                 open={otpDialog.open}
+                disablePointerDismissal
                 onOpenChange={(open) => {
                     if (!open) {
                         handleOtpDismiss(otpDialog.value);
                     }
                 }}
             >
-                <DialogContent
-                    onPointerDownOutside={(event) => event.preventDefault()}
-                    onInteractOutside={(event) => event.preventDefault()}
-                >
+                <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{otpDialog.title}</DialogTitle>
                         <DialogDescription>

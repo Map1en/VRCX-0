@@ -79,17 +79,12 @@ export function AvatarActionMenuItems({
     const releaseAction: MyAvatarAction =
         avatar?.releaseStatus === 'public' ? 'makePrivate' : 'makePublic';
 
-    const stopMenuClick = (event: MouseEvent) => {
-        event.stopPropagation();
-    };
-
     const handleAction = (action: MyAvatarAction) => {
         onAction(action, avatar);
     };
 
     const actionItemProps = (action: MyAvatarAction) => ({
-        onClick: stopMenuClick,
-        onSelect: (event: Event) => {
+        onClick: (event: MouseEvent) => {
             event.stopPropagation();
             handleAction(action);
         }
@@ -204,204 +199,217 @@ export function MyAvatarGridCard({
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div className="group/card relative min-w-0">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className={cn(
-                            'h-auto min-w-0 flex-col items-stretch overflow-hidden p-0 text-left font-normal whitespace-normal',
-                            disabled && 'cursor-not-allowed opacity-60',
-                            isActive && 'ring-primary ring-2'
-                        )}
-                        aria-disabled={!canWear}
-                        tabIndex={disabled ? -1 : undefined}
-                        onClick={() => {
-                            if (!canWear) {
-                                return;
-                            }
-                            onAction('wear', avatar);
-                        }}
-                    >
-                        <div
-                            className="bg-muted relative w-full overflow-hidden"
-                            style={{
-                                aspectRatio: `${1 / densityConfig.imageHeightRatio}`
+            <ContextMenuTrigger
+                render={
+                    <div className="group/card relative min-w-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className={cn(
+                                'h-auto min-w-0 flex-col items-stretch overflow-hidden p-0 text-left font-normal whitespace-normal',
+                                disabled && 'cursor-not-allowed opacity-60',
+                                isActive && 'ring-primary ring-2'
+                            )}
+                            aria-disabled={!canWear}
+                            tabIndex={disabled ? -1 : undefined}
+                            onClick={() => {
+                                if (!canWear) {
+                                    return;
+                                }
+                                onAction('wear', avatar);
                             }}
                         >
-                            {avatar?.thumbnailImageUrl ? (
-                                <img
-                                    src={avatar.thumbnailImageUrl}
-                                    alt={avatar?.name || 'Avatar'}
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                />
-                            ) : (
-                                <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
-                                    <PersonStandingIcon />
-                                </div>
-                            )}
-                            <div className="absolute top-1 left-1 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1">
-                                {isActive ? (
-                                    <span className="bg-primary text-primary-foreground grid size-5 place-items-center rounded-full shadow-sm">
-                                        <CheckCircle2Icon className="size-3.5" />
-                                    </span>
-                                ) : null}
-                                {tags.length ? (
-                                    <HoverCard openDelay={200} closeDelay={100}>
-                                        <HoverCardTrigger asChild>
-                                            <div
-                                                className="flex max-w-full min-w-0 flex-nowrap gap-1 overflow-hidden"
-                                                aria-label={t(
-                                                    'dialog.avatar.info.tags'
-                                                )}
+                            <div
+                                className="bg-muted relative w-full overflow-hidden"
+                                style={{
+                                    aspectRatio: `${1 / densityConfig.imageHeightRatio}`
+                                }}
+                            >
+                                {avatar?.thumbnailImageUrl ? (
+                                    <img
+                                        src={avatar.thumbnailImageUrl}
+                                        alt={avatar?.name || 'Avatar'}
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-6">
+                                        <PersonStandingIcon />
+                                    </div>
+                                )}
+                                <div className="absolute top-1 left-1 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1">
+                                    {isActive ? (
+                                        <span className="bg-primary text-primary-foreground grid size-5 place-items-center rounded-full shadow-sm">
+                                            <CheckCircle2Icon className="size-3.5" />
+                                        </span>
+                                    ) : null}
+                                    {tags.length ? (
+                                        <HoverCard>
+                                            <HoverCardTrigger
+                                                delay={200}
+                                                closeDelay={100}
+                                                render={
+                                                    <div
+                                                        className="flex max-w-full min-w-0 flex-nowrap gap-1 overflow-hidden"
+                                                        aria-label={t(
+                                                            'dialog.avatar.info.tags'
+                                                        )}
+                                                    >
+                                                        {visibleTags.map(
+                                                            (entry) => (
+                                                                <Badge
+                                                                    key={`${avatar.id}:${entry.tag}`}
+                                                                    variant="secondary"
+                                                                    className={cn(
+                                                                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                                        'max-w-16 min-w-0 shrink truncate shadow-sm'
+                                                                    )}
+                                                                    style={{
+                                                                        ...resolveMyAvatarGridTagBadgeStyle(
+                                                                            entry
+                                                                        ),
+                                                                        fontSize: `${densityConfig.tagFontSize}px`
+                                                                    }}
+                                                                >
+                                                                    {entry.tag}
+                                                                </Badge>
+                                                            )
+                                                        )}
+                                                        {hiddenTagCount ? (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                                                    'bg-background/80 text-foreground/90 shrink-0 shadow-sm backdrop-blur-[1px]'
+                                                                )}
+                                                                style={{
+                                                                    fontSize: `${densityConfig.tagFontSize}px`
+                                                                }}
+                                                            >
+                                                                +
+                                                                {hiddenTagCount}
+                                                            </Badge>
+                                                        ) : null}
+                                                    </div>
+                                                }
+                                            />
+                                            <HoverCardContent
+                                                side="bottom"
+                                                align="start"
+                                                className="flex w-64 flex-wrap gap-1.5"
                                             >
-                                                {visibleTags.map((entry) => (
+                                                {tags.map((entry) => (
                                                     <Badge
-                                                        key={`${avatar.id}:${entry.tag}`}
+                                                        key={`${avatar.id}:hover:${entry.tag}`}
                                                         variant="secondary"
                                                         className={cn(
                                                             MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                            'max-w-16 min-w-0 shrink truncate shadow-sm'
+                                                            'max-w-full truncate'
                                                         )}
-                                                        style={{
-                                                            ...resolveMyAvatarGridTagBadgeStyle(
-                                                                entry
-                                                            ),
-                                                            fontSize: `${densityConfig.tagFontSize}px`
-                                                        }}
+                                                        style={resolveMyAvatarGridTagBadgeStyle(
+                                                            entry
+                                                        )}
                                                     >
                                                         {entry.tag}
                                                     </Badge>
                                                 ))}
-                                                {hiddenTagCount ? (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={cn(
-                                                            MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                            'bg-background/80 text-foreground/90 shrink-0 shadow-sm backdrop-blur-[1px]'
-                                                        )}
-                                                        style={{
-                                                            fontSize: `${densityConfig.tagFontSize}px`
-                                                        }}
-                                                    >
-                                                        +{hiddenTagCount}
-                                                    </Badge>
-                                                ) : null}
-                                            </div>
-                                        </HoverCardTrigger>
-                                        <HoverCardContent
-                                            side="bottom"
-                                            align="start"
-                                            className="flex w-64 flex-wrap gap-1.5"
-                                        >
-                                            {tags.map((entry) => (
-                                                <Badge
-                                                    key={`${avatar.id}:hover:${entry.tag}`}
-                                                    variant="secondary"
-                                                    className={cn(
-                                                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
-                                                        'max-w-full truncate'
-                                                    )}
-                                                    style={resolveMyAvatarGridTagBadgeStyle(
-                                                        entry
-                                                    )}
-                                                >
-                                                    {entry.tag}
-                                                </Badge>
-                                            ))}
-                                        </HoverCardContent>
-                                    </HoverCard>
-                                ) : null}
-                                {canWear && !tags.length ? (
-                                    <div className="bg-background/85 text-foreground max-w-full -translate-y-1 rounded-sm px-1.5 py-0 text-xs font-medium opacity-0 shadow-sm backdrop-blur-[1px] transition-all group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:opacity-100">
-                                        {t(
-                                            'view.my_avatars.label.click_to_wear'
-                                        )}
-                                    </div>
-                                ) : null}
-                            </div>
-                            {platforms?.isQuest || platforms?.isIos ? (
-                                <div className="absolute top-1 right-1 flex">
-                                    {platforms?.isPC ? (
-                                        <span
-                                            className={cn(
-                                                platformDotClassName,
-                                                'bg-platform-pc'
-                                            )}
-                                        />
+                                            </HoverCardContent>
+                                        </HoverCard>
                                     ) : null}
-                                    {platforms?.isQuest ? (
-                                        <span
-                                            className={cn(
-                                                platformDotClassName,
-                                                'bg-platform-quest'
+                                    {canWear && !tags.length ? (
+                                        <div className="bg-background/85 text-foreground max-w-full -translate-y-1 rounded-sm px-1.5 py-0 text-xs font-medium opacity-0 shadow-sm backdrop-blur-[1px] transition-all group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:opacity-100">
+                                            {t(
+                                                'view.my_avatars.label.click_to_wear'
                                             )}
-                                        />
-                                    ) : null}
-                                    {platforms?.isIos ? (
-                                        <span
-                                            className={cn(
-                                                platformDotClassName,
-                                                'bg-platform-ios'
-                                            )}
-                                        />
+                                        </div>
                                     ) : null}
                                 </div>
-                            ) : null}
-                            <div
-                                className="absolute right-0 bottom-0 left-0 flex min-w-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
-                                style={overlayStyle}
-                            >
-                                <span
-                                    className="block truncate font-semibold text-white"
-                                    style={avatarNameStyle}
+                                {platforms?.isQuest || platforms?.isIos ? (
+                                    <div className="absolute top-1 right-1 flex">
+                                        {platforms?.isPC ? (
+                                            <span
+                                                className={cn(
+                                                    platformDotClassName,
+                                                    'bg-platform-pc'
+                                                )}
+                                            />
+                                        ) : null}
+                                        {platforms?.isQuest ? (
+                                            <span
+                                                className={cn(
+                                                    platformDotClassName,
+                                                    'bg-platform-quest'
+                                                )}
+                                            />
+                                        ) : null}
+                                        {platforms?.isIos ? (
+                                            <span
+                                                className={cn(
+                                                    platformDotClassName,
+                                                    'bg-platform-ios'
+                                                )}
+                                            />
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                                <div
+                                    className="absolute right-0 bottom-0 left-0 flex min-w-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
+                                    style={overlayStyle}
                                 >
-                                    {avatarName}
-                                </span>
+                                    <span
+                                        className="block truncate font-semibold text-white"
+                                        style={avatarNameStyle}
+                                    >
+                                        {avatarName}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="icon-xs"
-                                className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-[state=open]:opacity-100"
-                                aria-label={t(
-                                    'view.my_avatars.action.open_avatar_actions'
-                                )}
-                                disabled={isUpdating}
-                                onPointerDown={(event) =>
-                                    event.stopPropagation()
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="icon-xs"
+                                        className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-popup-open:opacity-100"
+                                        aria-label={t(
+                                            'view.my_avatars.action.open_avatar_actions'
+                                        )}
+                                        disabled={isUpdating}
+                                        onPointerDown={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        {isUpdating ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <MoreHorizontalIcon data-icon="inline-start" />
+                                        )}
+                                    </Button>
                                 }
-                                onClick={(event) => event.stopPropagation()}
-                            >
-                                {isUpdating ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <MoreHorizontalIcon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className="w-max max-w-[90vw] min-w-52"
-                        >
-                            <AvatarActionMenuItems
-                                avatar={avatar}
-                                isActive={isActive}
-                                disabled={disabled}
-                                Item={DropdownMenuItem}
-                                Group={DropdownMenuGroup}
-                                Separator={DropdownMenuSeparator}
-                                onAction={onAction}
                             />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </ContextMenuTrigger>
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-max max-w-[90vw] min-w-52"
+                            >
+                                <AvatarActionMenuItems
+                                    avatar={avatar}
+                                    isActive={isActive}
+                                    disabled={disabled}
+                                    Item={DropdownMenuItem}
+                                    Group={DropdownMenuGroup}
+                                    Separator={DropdownMenuSeparator}
+                                    onAction={onAction}
+                                />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                }
+            />
             <ContextMenuContent className="w-max max-w-[90vw] min-w-52">
                 <AvatarActionMenuItems
                     avatar={avatar}

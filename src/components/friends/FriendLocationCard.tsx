@@ -411,109 +411,111 @@ export function FriendLocationCard({
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <Card
-                    size="sm"
-                    className={cn(
-                        'border-border/70 bg-card/40 hover:bg-muted/40 h-full cursor-pointer overflow-hidden backdrop-blur',
-                        isDense
-                            ? 'flex-row items-center gap-[var(--friend-card-gap)] rounded-lg p-[var(--friend-card-padding)]'
-                            : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
-                    )}
-                    onClick={onOpenUser}
-                    style={{
-                        '--friend-card-padding': `${resolvedDensityConfig.cardPadding}px`,
-                        '--friend-card-gap': `${resolvedDensityConfig.cardGap}px`,
-                        '--friend-card-inner-gap': `${resolvedDensityConfig.cardInnerGap}px`
-                    }}
-                >
-                    {isDense ? (
-                        <>
-                            <CardHeader className="flex shrink-0 p-0">
-                                {avatarNode}
-                            </CardHeader>
-                            <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0">
-                                {titleNode}
-                                {showLocationInfo ? (
-                                    <div
-                                        className="text-muted-foreground min-w-0 text-left text-xs leading-4"
-                                        onClick={(event) =>
-                                            event.stopPropagation()
-                                        }
-                                    >
-                                        <span
-                                            className={cn(
-                                                'min-w-0 break-words',
-                                                locationLineClampClass
-                                            )}
-                                        >
-                                            {locationNode}
-                                        </span>
-                                    </div>
-                                ) : null}
-                            </CardContent>
-                        </>
-                    ) : (
-                        <>
-                            <CardHeader className="flex flex-row gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
-                                {avatarNode}
-                                <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <ContextMenuTrigger
+                render={
+                    <Card
+                        size="sm"
+                        className={cn(
+                            'border-border/70 bg-card/40 hover:bg-muted/40 h-full cursor-pointer overflow-hidden backdrop-blur',
+                            isDense
+                                ? 'flex-row items-center gap-[var(--friend-card-gap)] rounded-lg p-[var(--friend-card-padding)]'
+                                : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
+                        )}
+                        onClick={onOpenUser}
+                        style={{
+                            '--friend-card-padding': `${resolvedDensityConfig.cardPadding}px`,
+                            '--friend-card-gap': `${resolvedDensityConfig.cardGap}px`,
+                            '--friend-card-inner-gap': `${resolvedDensityConfig.cardInnerGap}px`
+                        }}
+                    >
+                        {isDense ? (
+                            <>
+                                <CardHeader className="flex shrink-0 p-0">
+                                    {avatarNode}
+                                </CardHeader>
+                                <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0">
                                     {titleNode}
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
-                                {showLocationInfo ? (
-                                    <div
-                                        className="text-muted-foreground w-full min-w-0 text-left text-xs leading-4"
-                                        onClick={(event) =>
-                                            event.stopPropagation()
-                                        }
-                                    >
-                                        <span
-                                            className={cn(
-                                                'text-foreground min-w-0 break-words',
-                                                locationLineClampClass
-                                            )}
+                                    {showLocationInfo ? (
+                                        <div
+                                            className="text-muted-foreground min-w-0 text-left text-xs leading-4"
+                                            onClick={(event) =>
+                                                event.stopPropagation()
+                                            }
                                         >
-                                            {locationNode}
-                                        </span>
+                                            <span
+                                                className={cn(
+                                                    'min-w-0 break-words',
+                                                    locationLineClampClass
+                                                )}
+                                            >
+                                                {locationNode}
+                                            </span>
+                                        </div>
+                                    ) : null}
+                                </CardContent>
+                            </>
+                        ) : (
+                            <>
+                                <CardHeader className="flex flex-row gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
+                                    {avatarNode}
+                                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                        {titleNode}
                                     </div>
-                                ) : null}
+                                </CardHeader>
 
-                                {resolvedDensityConfig.showStatusDescription ? (
-                                    <CardDescription className="text-muted-foreground/70 flex items-start gap-2">
-                                        {friend?.statusDescription ? (
-                                            <PencilIcon className="mt-0.5 size-4 shrink-0" />
-                                        ) : null}
-                                        <span
-                                            className={cn(
-                                                'min-w-0 text-xs leading-5 break-words',
-                                                statusLineClampClass
-                                            )}
+                                <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
+                                    {showLocationInfo ? (
+                                        <div
+                                            className="text-muted-foreground w-full min-w-0 text-left text-xs leading-4"
+                                            onClick={(event) =>
+                                                event.stopPropagation()
+                                            }
                                         >
-                                            {friend?.statusDescription ||
-                                                '\u00a0'}
-                                        </span>
-                                    </CardDescription>
-                                ) : null}
-                            </CardContent>
-                        </>
-                    )}
-                </Card>
-            </ContextMenuTrigger>
+                                            <span
+                                                className={cn(
+                                                    'text-foreground min-w-0 break-words',
+                                                    locationLineClampClass
+                                                )}
+                                            >
+                                                {locationNode}
+                                            </span>
+                                        </div>
+                                    ) : null}
+
+                                    {resolvedDensityConfig.showStatusDescription ? (
+                                        <CardDescription className="text-muted-foreground/70 flex items-start gap-2">
+                                            {friend?.statusDescription ? (
+                                                <PencilIcon className="mt-0.5 size-4 shrink-0" />
+                                            ) : null}
+                                            <span
+                                                className={cn(
+                                                    'min-w-0 text-xs leading-5 break-words',
+                                                    statusLineClampClass
+                                                )}
+                                            >
+                                                {friend?.statusDescription ||
+                                                    '\u00a0'}
+                                            </span>
+                                        </CardDescription>
+                                    ) : null}
+                                </CardContent>
+                            </>
+                        )}
+                    </Card>
+                }
+            />
             <ContextMenuContent className="w-56">
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canOpenUser}
-                        onSelect={onOpenUser}
+                        onClick={onOpenUser}
                     >
                         <UserIcon />
                         {t('table.playerList.user')}
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canOpenWorld}
-                        onSelect={onOpenWorld}
+                        onClick={onOpenWorld}
                     >
                         <GlobeIcon />
                         {resolvedWorldActionLabel}
@@ -523,7 +525,7 @@ export function FriendLocationCard({
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
-                        onSelect={() => {
+                        onClick={() => {
                             onLaunchLocation?.();
                         }}
                     >
@@ -532,7 +534,7 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
-                        onSelect={() => {
+                        onClick={() => {
                             onSelfInviteLocation?.();
                         }}
                     >
@@ -544,7 +546,7 @@ export function FriendLocationCard({
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canSendInvite}
-                        onSelect={() => {
+                        onClick={() => {
                             onSendInvite?.();
                         }}
                     >
@@ -552,7 +554,7 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canRequestInvite}
-                        onSelect={() => {
+                        onClick={() => {
                             onRequestInvite?.();
                         }}
                     >
@@ -560,7 +562,7 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canBoop}
-                        onSelect={() => {
+                        onClick={() => {
                             onSendBoop?.();
                         }}
                     >

@@ -1,5 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import {
+    buildLocalInstanceActionGateMap,
+    evaluateLocalInstanceActionGates,
+    type LocalInstanceActionGateTarget
+} from '@/shared/utils/invite';
+
+import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type { FavoriteKind } from './favoritesTypes';
 import { useFavoritesActions } from './useFavoritesActions';
 import { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
@@ -11,6 +18,49 @@ import { useFavoritesLayoutPreferences } from './useFavoritesLayoutPreferences';
 import { useFavoritesRuntime } from './useFavoritesRuntime';
 import { useFavoritesSelectionState } from './useFavoritesSelectionState';
 import { useFavoritesViewData } from './useFavoritesViewData';
+
+type FavoriteSeedRecord = Record<string, unknown> & {
+    state?: unknown;
+    stateBucket?: unknown;
+    status?: unknown;
+};
+
+function textValue(value: unknown): string {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
+function isFavoriteSeedRecord(value: unknown): value is FavoriteSeedRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+export function buildFavoriteGateTarget(item: {
+    id: string;
+    key: string;
+    kind: FavoriteKind;
+    seedData?: unknown;
+}): LocalInstanceActionGateTarget | null {
+    if (item.kind !== 'friend') {
+        return null;
+    }
+    const location = resolveFavoritePresenceLocation(item.seedData);
+    if (!location) {
+        return null;
+    }
+    const seed = isFavoriteSeedRecord(item.seedData) ? item.seedData : {};
+    const stateBucket =
+        textValue(seed.status).toLowerCase() === 'active'
+            ? 'online'
+            : textValue(seed.stateBucket || seed.state);
+    return {
+        key: item.key,
+        userId: item.id,
+        location,
+        stateBucket,
+        isCurrentUser: false
+    };
+}
 
 export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
     const filters = useFavoritesFilters({ kind });
@@ -33,6 +83,37 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         selectedSource: filters.selectedSource,
         sortValue: layout.sortValue
     });
+    const instanceActionGateTargets = useMemo(
+        () =>
+            viewData.contentItems
+                .map(buildFavoriteGateTarget)
+                .filter(
+                    (target): target is LocalInstanceActionGateTarget =>
+                        target != null
+                ),
+        [viewData.contentItems]
+    );
+    const instanceActionGatesByItemKey = useMemo(
+        () =>
+            buildLocalInstanceActionGateMap(
+                evaluateLocalInstanceActionGates({
+                    currentUserId: runtime.currentUserId,
+                    currentInviteLocation: runtime.currentInviteLocation,
+                    isGameRunning: Boolean(runtime.gameState?.isGameRunning),
+                    friendUserIds: Object.keys(
+                        collections.actionInputs.friendsById || {}
+                    ),
+                    targets: instanceActionGateTargets
+                }).targets
+            ),
+        [
+            collections.actionInputs.friendsById,
+            runtime.currentInviteLocation,
+            runtime.currentUserId,
+            runtime.gameState?.isGameRunning,
+            instanceActionGateTargets
+        ]
+    );
     const selection = useFavoritesSelectionState({
         contentItems: viewData.contentItems,
         isSearchActive: viewData.isSearchActive,
@@ -88,6 +169,7 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
 
     return {
         actions,
+        instanceActionGatesByItemKey,
         collections,
         creatingLocalGroup,
         exportDialogOpen,

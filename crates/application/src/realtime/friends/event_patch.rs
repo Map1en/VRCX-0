@@ -1,7 +1,7 @@
 use super::persistence::{
     add_location_metadata, add_profile_diff_feed_entries, friend_log_upsert,
     friend_relationship_feed_entry, gps_feed_entry, is_online_state, online_offline_feed_entry,
-    FriendChangedProps,
+    value_equal_for_diff, FriendChangedProps,
 };
 use super::projection::resolve_state_bucket;
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
@@ -94,6 +94,7 @@ fn apply_friend_event_with_options(
             let state_bucket =
                 resolve_state_bucket(content, &patch, previous.as_ref(), false, "offline");
             let already_friend = previous.is_some();
+            output.friend_note_changed |= patch_changes_note(&patch, previous.as_ref());
             apply_patch_to_state(state, &mut output, &user_id, patch.clone(), &state_bucket);
             if !already_friend {
                 output
@@ -156,6 +157,7 @@ fn apply_friend_event_with_options(
             }
             let previous = get_friend_value(state, &user_id);
             let changes = FriendChangedProps::from_patch(&patch, previous.as_ref());
+            output.friend_note_changed |= changes.has("note");
             let state_bucket = if options.trust_event_state {
                 resolve_state_bucket(
                     content,
@@ -213,6 +215,7 @@ fn apply_friend_event_with_options(
             let user_patch =
                 event_user_patch(content, &user_id).unwrap_or_else(|| json!({ "id": user_id }));
             let patch = online_patch(content, user_patch, previous.as_ref(), now, "online");
+            output.friend_note_changed |= patch_changes_note(&patch, previous.as_ref());
             if !canceled_pending
                 && !previous_record
                     .as_ref()
@@ -356,6 +359,7 @@ fn apply_friend_event_with_options(
                     patch_object.remove("pendingOffline");
                 }
             }
+            output.friend_note_changed |= patch_changes_note(&patch, previous.as_ref());
             if let Some(previous) = previous.as_ref() {
                 add_gps_feed_entry_if_not_repeated(
                     state,
@@ -490,6 +494,17 @@ fn remember_gps_event(state: &mut RealtimeFriendState, user_id: &str, location: 
         .or_default()
         .locations_by_tag
         .insert(location.to_string(), now_ms);
+}
+
+fn patch_changes_note(patch: &Value, previous: Option<&Value>) -> bool {
+    let Some(next) = patch.get("note") else {
+        return false;
+    };
+    let previous = previous
+        .and_then(|previous| previous.get("note"))
+        .cloned()
+        .unwrap_or_else(|| Value::String(String::new()));
+    !value_equal_for_diff(next, &previous)
 }
 
 fn add_gps_feed_entry_if_not_repeated(
@@ -998,5 +1013,36 @@ mod tests {
         assert_eq!(patch["$location"]["isOffline"], json!(true));
         assert_eq!(patch["$travelingToLocation"]["tag"], json!("offline"));
         assert_eq!(patch["$travelingToLocation"]["isOffline"], json!(true));
+    }
+
+    #[test]
+    fn event_user_patch_strips_state_and_state_bucket_uses_trust_gate() {
+        let content = json!({
+            "userId": "usr_friend",
+            "user": {
+                "id": "usr_friend",
+                "displayName": "Friend",
+                "state": "online"
+            }
+        });
+
+        let patch = event_user_patch(&content, "usr_friend").expect("user patch");
+        assert_eq!(patch["id"], json!("usr_friend"));
+        assert_eq!(patch["displayName"], json!("Friend"));
+        assert!(patch.get("state").is_none());
+
+        let previous = json!({
+            "id": "usr_friend",
+            "state": "active",
+            "stateBucket": "active"
+        });
+        assert_eq!(
+            resolve_state_bucket(&content, &patch, Some(&previous), false, "offline"),
+            "active"
+        );
+        assert_eq!(
+            resolve_state_bucket(&content, &patch, Some(&previous), true, "offline"),
+            "online"
+        );
     }
 }

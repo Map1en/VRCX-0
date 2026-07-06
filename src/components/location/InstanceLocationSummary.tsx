@@ -220,9 +220,11 @@ export function InstanceLocationSummary({
                     />
                 ) : (
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <AlertTriangleIcon className="text-destructive ml-1 size-4 shrink-0" />
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <AlertTriangleIcon className="text-destructive ml-1 size-4 shrink-0" />
+                            }
+                        />
                         <TooltipContent>
                             {t('dialog.user.info.instance_closed')}
                         </TooltipContent>

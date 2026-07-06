@@ -138,23 +138,27 @@ export function AvatarActionsDropdown({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={t('view.my_avatars.action.open_avatar_actions')}
-                    disabled={isUpdating}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => event.stopPropagation()}
-                >
-                    {isUpdating ? (
-                        <Spinner data-icon="inline-start" />
-                    ) : (
-                        <MoreHorizontalIcon data-icon="inline-start" />
-                    )}
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={t(
+                            'view.my_avatars.action.open_avatar_actions'
+                        )}
+                        disabled={isUpdating}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        {isUpdating ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <MoreHorizontalIcon data-icon="inline-start" />
+                        )}
+                    </Button>
+                }
+            />
             <DropdownMenuContent
                 align="end"
                 className="w-max max-w-[90vw] min-w-52"
@@ -202,15 +206,19 @@ export function MyAvatarFilterPopover({
 
     return (
         <Popover>
-            <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                    <ListFilterIcon data-icon="inline-start" />
-                    {t('view.my_avatars.filter')}
-                    {activeFilterCount ? (
-                        <Badge variant="secondary">{activeFilterCount}</Badge>
-                    ) : null}
-                </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+                render={
+                    <Button type="button" variant="outline" size="sm">
+                        <ListFilterIcon data-icon="inline-start" />
+                        {t('view.my_avatars.filter')}
+                        {activeFilterCount ? (
+                            <Badge variant="secondary">
+                                {activeFilterCount}
+                            </Badge>
+                        ) : null}
+                    </Button>
+                }
+            />
             <PopoverContent align="start" className="w-80 p-3">
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
@@ -218,14 +226,16 @@ export function MyAvatarFilterPopover({
                             {t('view.my_avatars.label.visibility')}
                         </div>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={releaseStatusFilter}
+                            value={
+                                releaseStatusFilter ? [releaseStatusFilter] : []
+                            }
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
-                                    onReleaseStatusChange(nextValue);
+                                const next = nextValue[0];
+                                if (next) {
+                                    onReleaseStatusChange(next);
                                 }
                             }}
                             className="grid w-full grid-cols-3"
@@ -249,14 +259,14 @@ export function MyAvatarFilterPopover({
                             {t('view.my_avatars.label.platform')}
                         </div>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={platformFilter}
+                            value={platformFilter ? [platformFilter] : []}
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
-                                    onPlatformChange(nextValue);
+                                const next = nextValue[0];
+                                if (next) {
+                                    onPlatformChange(next);
                                 }
                             }}
                             className="grid w-full grid-cols-4"
@@ -289,7 +299,6 @@ export function MyAvatarFilterPopover({
                                     return (
                                         <Badge
                                             key={tag}
-                                            asChild
                                             variant="secondary"
                                             className={cn(
                                                 MY_AVATAR_TAG_BADGE_CLASS_NAME,
@@ -301,23 +310,24 @@ export function MyAvatarFilterPopover({
                                             style={resolveMyAvatarTagBadgeStyle(
                                                 { tag }
                                             )}
-                                        >
-                                            <button
-                                                type="button"
-                                                aria-pressed={selected}
-                                                onClick={() =>
-                                                    onTagFiltersChange(
-                                                        (current) =>
-                                                            toggleMyAvatarsTagFilter(
-                                                                current,
-                                                                tag
-                                                            )
-                                                    )
-                                                }
-                                            >
-                                                {tag}
-                                            </button>
-                                        </Badge>
+                                            render={
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={selected}
+                                                    onClick={() =>
+                                                        onTagFiltersChange(
+                                                            (current) =>
+                                                                toggleMyAvatarsTagFilter(
+                                                                    current,
+                                                                    tag
+                                                                )
+                                                        )
+                                                    }
+                                                >
+                                                    {tag}
+                                                </button>
+                                            }
+                                        />
                                     );
                                 })}
                             </div>
@@ -347,16 +357,18 @@ export function GridSettingsMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t('view.my_avatars.label.grid_settings')}
-                >
-                    <SettingsIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t('view.my_avatars.label.grid_settings')}
+                    >
+                        <SettingsIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent className="w-72 p-3" align="end">
                 <FieldGroup>
                     <Field>
@@ -364,14 +376,14 @@ export function GridSettingsMenu({
                             {t('view.my_avatars.label.grid_density')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={gridDensity}
+                            value={gridDensity ? [gridDensity] : []}
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
-                                    onGridDensityChange(nextValue);
+                                const next = nextValue[0];
+                                if (next) {
+                                    onGridDensityChange(next);
                                 }
                             }}
                             className="grid w-full grid-cols-3"

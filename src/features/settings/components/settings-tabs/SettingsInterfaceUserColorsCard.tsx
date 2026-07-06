@@ -95,23 +95,25 @@ export function SettingsInterfaceUserColorsCard({
                             })}
                         </div>
                     </div>
-                    <CollapsibleTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0 justify-between"
-                        >
-                            {t('common.actions.configure')}
-                            <ChevronDownIcon
-                                data-icon="inline-end"
-                                className={cn(
-                                    'opacity-50 transition-transform',
-                                    trustColorsOpen && 'rotate-180'
-                                )}
-                            />
-                        </Button>
-                    </CollapsibleTrigger>
+                    <CollapsibleTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 justify-between"
+                            >
+                                {t('common.actions.configure')}
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className={cn(
+                                        'opacity-50 transition-transform',
+                                        trustColorsOpen && 'rotate-180'
+                                    )}
+                                />
+                            </Button>
+                        }
+                    />
                 </div>
                 <CollapsibleContent>
                     <div className="flex flex-col gap-3 border-t p-3">

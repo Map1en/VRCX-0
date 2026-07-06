@@ -101,6 +101,48 @@ impl OverlayLocalizer {
         format_display_location_with_labels(&parsed, world_name, group_name, &labels)
     }
 
+    pub(crate) fn panel_display_location(
+        &self,
+        location: &str,
+        world_name: &str,
+        group_name: &str,
+    ) -> String {
+        let parsed = parse_location(location);
+        let labels = self.access_labels(AccessLabelCase::Title);
+        let labels = labels.as_display();
+        format_display_location_with_labels(&parsed, world_name, group_name, &labels)
+    }
+
+    pub(crate) fn friends_panel_strings(&self) -> vrcx_0_vr_overlay::FriendPanelStrings {
+        vrcx_0_vr_overlay::FriendPanelStrings {
+            title: self.label("overlay.friends_panel.title", "Favorite Friends"),
+            all_label: self.label("overlay.friends_panel.all", "All"),
+            empty_label: self.label("overlay.friends_panel.empty", "No favorite friends online"),
+            note_label: self.label("overlay.friends_panel.note", "Note"),
+            memo_label: self.label("overlay.friends_panel.memo", "Memo"),
+        }
+    }
+
+    pub(crate) fn friends_panel_traveling_label(&self) -> String {
+        self.label("overlay.friends_panel.traveling", "Traveling")
+    }
+
+    pub(crate) fn friends_panel_favorites_online_label(&self) -> String {
+        self.label("overlay.friends_panel.favorites_online", "Favorites Online")
+    }
+
+    pub(crate) fn friends_panel_local_favorites_label(&self) -> String {
+        self.label("overlay.friends_panel.local_favorites", "Local Favorites")
+    }
+
+    pub(crate) fn friends_panel_private_label(&self) -> String {
+        self.label("overlay.friends_panel.private", "Private")
+    }
+
+    pub(crate) fn friends_panel_offline_label(&self) -> String {
+        self.label("overlay.friends_panel.offline", "Offline")
+    }
+
     pub(super) fn generic_instance_location(&self) -> String {
         self.label("overlay.generic_instance_location", "an instance")
     }

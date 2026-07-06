@@ -321,8 +321,8 @@ export function normalizeFriendEntry(
     };
 }
 
-export function buildFriendLogRowsById(rows: FriendLogRow[] = []) {
-    const rowsById = new Map<string, FriendLogRow>();
+export function buildFriendLogRowsById(rows: FriendLogSeedRow[] = []) {
+    const rowsById = new Map<string, FriendLogSeedRow>();
     if (!Array.isArray(rows)) {
         return rowsById;
     }
@@ -339,7 +339,7 @@ export function buildFriendLogRowsById(rows: FriendLogRow[] = []) {
 
 export function buildSeedRosterFriendsById(
     stateById: Map<string, FriendStateBucket>,
-    friendLogRows: FriendLogRow[] = []
+    friendLogRows: FriendLogSeedRow[] = []
 ) {
     const rowsById = buildFriendLogRowsById(friendLogRows);
     const friendsById: Record<string, FriendRecord> = {};

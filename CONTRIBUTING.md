@@ -10,6 +10,8 @@ Thanks for your interest in VRCX-0. Please read this before opening a pull reque
 
 Small, focused fixes (clear bugs, typos, localization, obvious correctness issues) are always welcome and don't need a prior issue.
 
+For localization work, download a DevKit build from the [package-devkit workflow](https://github.com/Map1en/VRCX-0/actions/workflows/package-devkit.yml) and use it to load local translations for review. Please also check the [localization glossary](src/localization/GLOSSARY.md) to keep domain terms consistent.
+
 ## Using AI to write your PR
 
 Using AI is fine — no objection here. But you own what you submit:

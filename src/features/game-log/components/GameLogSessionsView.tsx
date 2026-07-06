@@ -364,27 +364,29 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         >
             <div className="border-border bg-muted/80 sticky top-0 z-[5] border-b transition-colors">
                 <div className="flex min-h-9 w-full items-center gap-2 px-3 py-1.5 text-left">
-                    <CollapsibleTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t(
-                                isOpen
-                                    ? 'view.game_log.sessions.collapse_session'
-                                    : 'view.game_log.sessions.expand_session'
-                            )}
-                            className="-ml-1 shrink-0"
-                        >
-                            <ChevronRightIcon
-                                data-icon="inline-start"
-                                className={cn(
-                                    'text-muted-foreground shrink-0 transition-transform duration-150',
-                                    isOpen && 'rotate-90'
+                    <CollapsibleTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label={t(
+                                    isOpen
+                                        ? 'view.game_log.sessions.collapse_session'
+                                        : 'view.game_log.sessions.expand_session'
                                 )}
-                            />
-                        </Button>
-                    </CollapsibleTrigger>
+                                className="-ml-1 shrink-0"
+                            >
+                                <ChevronRightIcon
+                                    data-icon="inline-start"
+                                    className={cn(
+                                        'text-muted-foreground shrink-0 transition-transform duration-150',
+                                        isOpen && 'rotate-90'
+                                    )}
+                                />
+                            </Button>
+                        }
+                    />
                     <div className="min-w-0 flex-1">
                         {sessionLocation ? (
                             <Location

@@ -1,0 +1,162 @@
+[
+    {
+        "name": "mixed invite gate permissions",
+        "currentUserId": "usr_me",
+        "currentInviteLocation": "wrld_hidden:12345~hidden(usr_owner)",
+        "isGameRunning": true,
+        "friendUserIds": ["usr_friend"],
+        "closedLocations": ["wrld_closed:1"],
+        "targets": [
+            {
+                "key": "public-online",
+                "userId": "usr_public",
+                "location": "wrld_public:12345",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": true,
+                    "canOpenInGame": true,
+                    "canSelfInvite": true,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "friends-stranger",
+                "userId": "usr_stranger",
+                "location": "wrld_friends:12345~friends(usr_stranger)",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": false,
+                    "canOpenInGame": true,
+                    "canSelfInvite": false,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "friends-owner-is-friend-active",
+                "userId": "usr_other",
+                "location": "wrld_friends:12345~friends(usr_friend)",
+                "stateBucket": "active",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": true,
+                    "canOpenInGame": true,
+                    "canSelfInvite": true,
+                    "canRequestInvite": false,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "invite-plus-online",
+                "userId": "usr_other",
+                "location": "wrld_private:12345~private(usr_other)~canRequestInvite",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": false,
+                    "canOpenInGame": true,
+                    "canSelfInvite": false,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "invite-online",
+                "userId": "usr_invite",
+                "location": "wrld_invite:12345~private(usr_invite)",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": false,
+                    "canOpenInGame": true,
+                    "canSelfInvite": false,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "group-online",
+                "userId": "usr_group",
+                "location": "wrld_group:12345~group(grp_team)~groupAccessType(members)",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": true,
+                    "canOpenInGame": true,
+                    "canSelfInvite": true,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "closed-online",
+                "userId": "usr_closed",
+                "location": "wrld_closed:1",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": false,
+                    "canOpenInGame": false,
+                    "canSelfInvite": false,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "invalid-online",
+                "userId": "usr_invalid",
+                "location": "private",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": false,
+                    "canOpenInGame": false,
+                    "canSelfInvite": false,
+                    "canRequestInvite": true,
+                    "canInvite": true
+                }
+            },
+            {
+                "key": "current-user-online",
+                "userId": "usr_me",
+                "location": "wrld_public:12345",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": true,
+                    "canOpenInGame": true,
+                    "canSelfInvite": true,
+                    "canRequestInvite": false,
+                    "canInvite": false
+                }
+            }
+        ]
+    },
+    {
+        "name": "game stopped disables invite and open but not joinability",
+        "currentUserId": "usr_me",
+        "currentInviteLocation": "wrld_public:12345",
+        "isGameRunning": false,
+        "friendUserIds": [],
+        "closedLocations": [],
+        "targets": [
+            {
+                "key": "public-online",
+                "userId": "usr_friend",
+                "location": "wrld_public:54321",
+                "stateBucket": "online",
+                "isCurrentUser": false,
+                "expected": {
+                    "canJoin": true,
+                    "canOpenInGame": false,
+                    "canSelfInvite": true,
+                    "canRequestInvite": true,
+                    "canInvite": false
+                }
+            }
+        ]
+    }
+]

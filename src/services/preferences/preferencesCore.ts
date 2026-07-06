@@ -47,6 +47,10 @@ export function applyDataTableStripedClass(enabled: boolean) {
     document.documentElement.classList.toggle('is-striped-table', enabled);
 }
 
+export function applyReducedMotionAndBlurClass(enabled: boolean) {
+    document.documentElement.classList.toggle('reduce-effects', enabled);
+}
+
 export function patchPreferences(patch: Partial<PreferencesSnapshot>) {
     usePreferencesStore.getState().patchPreferences(patch);
 }

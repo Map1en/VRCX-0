@@ -109,6 +109,20 @@ export function InviteRulesTab({
                                 values.autoAcceptInviteRequests
                             )}
                             disabled={loading || !autoAcceptEnabled}
+                            items={[
+                                {
+                                    value: 'All Favorites',
+                                    label: t(
+                                        `${I18N_ROOT}.all_favorite_friends`
+                                    )
+                                },
+                                {
+                                    value: 'Selected Favorites',
+                                    label: t(
+                                        `${I18N_ROOT}.selected_favorite_groups`
+                                    )
+                                }
+                            ]}
                             onValueChange={(value) => {
                                 onSaveValue('autoAcceptInviteRequests', value);
                             }}

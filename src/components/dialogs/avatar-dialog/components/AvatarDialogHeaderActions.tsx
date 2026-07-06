@@ -84,7 +84,7 @@ export function AvatarDialogHeaderActions({
                 <EntityActionItem
                     icon={RefreshCwIcon}
                     disabled={actionStatus === 'refresh'}
-                    onSelect={onRefresh}
+                    onClick={onRefresh}
                 >
                     {t('common.actions.refresh')}
                 </EntityActionItem>
@@ -93,7 +93,7 @@ export function AvatarDialogHeaderActions({
                     disabled={
                         !canSelectFallbackAvatar || actionStatus === 'fallback'
                     }
-                    onSelect={onSelectFallback}
+                    onClick={onSelectFallback}
                 >
                     {t('dialog.avatar.actions.select_fallback')}
                 </EntityActionItem>
@@ -103,28 +103,28 @@ export function AvatarDialogHeaderActions({
                         <EntityActionItem
                             icon={PencilIcon}
                             disabled={actionStatus !== 'idle'}
-                            onSelect={onEditDetails}
+                            onClick={onEditDetails}
                         >
                             {t('dialog.avatar.actions.edit_details')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={ImageIcon}
                             disabled={actionStatus === 'image-upload'}
-                            onSelect={onChangeImage}
+                            onClick={onChangeImage}
                         >
                             {t('dialog.avatar.actions.change_image')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={PencilIcon}
                             disabled={actionStatus === 'tags'}
-                            onSelect={onChangeContentTags}
+                            onClick={onChangeContentTags}
                         >
                             {t('dialog.avatar.actions.change_content_tags')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={PersonStandingIcon}
                             disabled={actionStatus === 'release-status'}
-                            onSelect={() =>
+                            onClick={() =>
                                 onReleaseStatus(
                                     avatar.releaseStatus === 'public'
                                         ? 'private'
@@ -144,7 +144,7 @@ export function AvatarDialogHeaderActions({
                 {canManageAvatar && packageUrl ? (
                     <EntityActionItem
                         icon={DownloadIcon}
-                        onSelect={() => onOpenLink(packageUrl)}
+                        onClick={() => onOpenLink(packageUrl)}
                     >
                         {t('dialog.avatar.actions.download_package')}
                     </EntityActionItem>
@@ -153,7 +153,7 @@ export function AvatarDialogHeaderActions({
                     <EntityActionItem
                         icon={RefreshCwIcon}
                         disabled={actionStatus === 'imposter'}
-                        onSelect={onRegenerateImposter}
+                        onClick={onRegenerateImposter}
                     >
                         {t('dialog.avatar.actions.regenerate_impostor')}
                     </EntityActionItem>
@@ -161,7 +161,7 @@ export function AvatarDialogHeaderActions({
                     <EntityActionItem
                         icon={PersonStandingIcon}
                         disabled={actionStatus === 'imposter'}
-                        onSelect={onCreateImposter}
+                        onClick={onCreateImposter}
                     >
                         {t('dialog.avatar.actions.create_impostor')}
                     </EntityActionItem>
@@ -171,7 +171,7 @@ export function AvatarDialogHeaderActions({
                         icon={BanIcon}
                         destructive={avatarBlocked}
                         disabled={actionStatus === 'avatar-block'}
-                        onSelect={() => onAvatarBlock(!avatarBlocked)}
+                        onClick={() => onAvatarBlock(!avatarBlocked)}
                     >
                         {avatarBlocked
                             ? t('dialog.avatar.actions.unblock')
@@ -185,7 +185,7 @@ export function AvatarDialogHeaderActions({
                             <EntityActionItem
                                 icon={Trash2Icon}
                                 disabled={actionStatus === 'cache'}
-                                onSelect={onDeleteCache}
+                                onClick={onDeleteCache}
                             >
                                 {t(
                                     'dialog.avatar.actions.delete_cache_tooltip'
@@ -197,7 +197,7 @@ export function AvatarDialogHeaderActions({
                                 icon={Trash2Icon}
                                 destructive
                                 disabled={actionStatus === 'imposter'}
-                                onSelect={onDeleteImposter}
+                                onClick={onDeleteImposter}
                             >
                                 {t('dialog.avatar.actions.delete_impostor')}
                             </EntityActionItem>
@@ -207,7 +207,7 @@ export function AvatarDialogHeaderActions({
                                 icon={Trash2Icon}
                                 destructive
                                 disabled={actionStatus === 'delete'}
-                                onSelect={onDelete}
+                                onClick={onDelete}
                             >
                                 {t('common.actions.delete')}
                             </EntityActionItem>

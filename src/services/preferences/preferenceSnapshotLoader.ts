@@ -3,14 +3,19 @@ import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
 import {
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
+    parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile
 } from '@/shared/constants/overlayActivityFilters';
+import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { normalizeTrustColors } from '@/shared/utils/trustColors';
 import {
     DEFAULT_PREFERENCES,
     normalizeAutoDeletePrintsLimit,
     normalizeDefaultLaunchMode,
     normalizeFeedTimeDisplayMode,
+    normalizeFeedHiddenUsers,
+    normalizeHmdNotificationPosition,
+    normalizeOverlayStartMode,
     normalizeTableLimits,
     normalizeTablePageSize,
     normalizeTablePageSizes,
@@ -45,6 +50,7 @@ import {
 import {
     applyAccessibleStatusClass,
     applyDataTableStripedClass,
+    applyReducedMotionAndBlurClass,
     applyTableDensityClass,
     getBoolConfigWithLegacy,
     getIntConfigWithLegacy,
@@ -53,7 +59,38 @@ import {
     setDocumentLanguage
 } from './preferencesCore';
 
+async function seedHmdNotificationsDefault() {
+    if (await configRepository.has('hmdNotificationsEnabled')) {
+        return;
+    }
+    const [xsNotifications, ovrtHudNotifications, ovrtWristNotifications] =
+        await Promise.all([
+            getBoolConfigWithLegacy('xsNotifications', false),
+            getBoolConfigWithLegacy('ovrtHudNotifications', false),
+            getBoolConfigWithLegacy('ovrtWristNotifications', false)
+        ]);
+    const externalOverlayEnabled =
+        xsNotifications || ovrtHudNotifications || ovrtWristNotifications;
+    await configRepository.setBool(
+        'hmdNotificationsEnabled',
+        !externalOverlayEnabled
+    );
+    await commands.appVrOverlayConfigReload();
+}
+
+function resolveProxyEnabled(
+    rawEnabled: unknown,
+    proxyServer: unknown
+): boolean {
+    const enabledText = String(rawEnabled ?? '').trim();
+    if (enabledText) {
+        return ['true', '1', 'yes', 'on'].includes(enabledText.toLowerCase());
+    }
+    return String(proxyServer ?? '').trim() !== '';
+}
+
 export async function loadPreferenceSnapshot() {
+    await seedHmdNotificationsDefault();
     const [
         navIsCollapsed,
         navPanelWidth,
@@ -62,6 +99,7 @@ export async function loadPreferenceSnapshot() {
         dataTableStriped,
         tableDensity,
         compactTableMode,
+        reducedMotionAndBlur,
         accessibleStatusIndicators,
         showNewDashboardButton,
         recentActionCooldownEnabled,
@@ -101,9 +139,17 @@ export async function loadPreferenceSnapshot() {
         imageNotifications,
         notificationTimeout,
         notificationOpacity,
+        hmdNotificationsEnabled,
+        hmdNotificationStartMode,
+        hmdNotificationTimeout,
+        hmdNotificationOpacity,
+        hmdNotificationPosition,
         webhookEnabled,
+        webhookAuthEventsEnabled,
         webhookUrl,
         webhookFormat,
+        vrOverlayPanelEnabled,
+        vrOverlayPanelAllFriendsIncludesFavorites,
         wristOverlayEnabled,
         wristOverlayStartMode,
         wristOverlayButton,
@@ -133,15 +179,18 @@ export async function loadPreferenceSnapshot() {
         dtHour12,
         trustColor,
         currentCulture,
+        proxyEnabledRaw,
         proxyServer,
         tablePageSize,
         tablePageSizes,
         maxTableSize,
         searchLimit,
         localFavoriteFriendsGroups,
+        feedHiddenUsers,
         sharedFeedFilters,
         overlayActivityFilters,
         vrNotificationActivityFilters,
+        hmdNotificationActivityFilters,
         desktopNotificationActivityFilters,
         webhookActivityFilters,
         feedTimeDisplayMode,
@@ -175,6 +224,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('dataTableStriped', false),
         configRepository.getString('tableDensity', null),
         configRepository.getBool('compactTableMode', false),
+        configRepository.getBool('reducedMotionAndBlur', false),
         configRepository.getBool('VRCX_accessibleStatusIndicators', false),
         configRepository.getBool('showNewDashboardButton', true),
         configRepository.getBool('recentActionCooldownEnabled', false),
@@ -208,15 +258,26 @@ export async function loadPreferenceSnapshot() {
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSVoice', '0'),
-        getBoolConfigWithLegacy('xsNotifications', true),
-        getBoolConfigWithLegacy('ovrtHudNotifications', true),
+        getBoolConfigWithLegacy('xsNotifications', false),
+        getBoolConfigWithLegacy('ovrtHudNotifications', false),
         getBoolConfigWithLegacy('ovrtWristNotifications', false),
         getBoolConfigWithLegacy('imageNotifications', true),
         getIntConfigWithLegacy('notificationTimeout', 3000),
         getIntConfigWithLegacy('notificationOpacity', 100),
+        configRepository.getBool('hmdNotificationsEnabled', false),
+        configRepository.getString('hmdNotificationStartMode', 'vrchatVrMode'),
+        configRepository.getInt('hmdNotificationTimeout', 5000),
+        configRepository.getInt('hmdNotificationOpacity', 100),
+        configRepository.getString('hmdNotificationPosition', 'bottom'),
         configRepository.getBool('webhookEnabled', false),
+        configRepository.getBool('webhookAuthEventsEnabled', true),
         configRepository.getString('webhookUrl', ''),
         configRepository.getString('webhookFormat', 'generic'),
+        configRepository.getBool('vrOverlayPanelEnabled', true),
+        configRepository.getBool(
+            'vrOverlayPanelAllFriendsIncludesFavorites',
+            true
+        ),
         configRepository.getBool('wristOverlayEnabled', false),
         configRepository.getString('wristOverlayStartMode', 'vrchatVrMode'),
         configRepository.getString('wristOverlayButton', 'grip'),
@@ -246,6 +307,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('dtHour12', false),
         configRepository.getObject('VRCX_trustColor', null),
         commands.appSystemCulture().catch(() => navigator.language || 'en-gb'),
+        storageRepository.getString('VRCX_ProxyEnabled', ''),
         storageRepository.getString('VRCX_ProxyServer', ''),
         configRepository.getInt('VRCX_tablePageSize', DEFAULT_TABLE_PAGE_SIZE),
         configRepository.getArray(
@@ -261,12 +323,14 @@ export async function loadPreferenceSnapshot() {
             DEFAULT_TABLE_LIMITS.searchLimit
         ),
         configRepository.getArray('localFavoriteFriendsGroups', []),
+        configRepository.getString('feedHiddenUsers', '[]'),
         configRepository.getString(
             'sharedFeedFilters',
             JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
         ),
         configRepository.getString('overlayActivityFilters', ''),
         configRepository.getString('vrNotificationActivityFilters', ''),
+        configRepository.getString('hmdNotificationActivityFilters', ''),
         configRepository.getString('desktopNotificationActivityFilters', ''),
         configRepository.getString('webhookActivityFilters', ''),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
@@ -322,10 +386,11 @@ export async function loadPreferenceSnapshot() {
     const normalizedRecentActionCooldownMinutes = Number.isFinite(
         recentActionCooldownMinutes
     )
-        ? recentActionCooldownMinutes
+        ? Math.min(MINUTES_PER_DAY, Math.max(1, recentActionCooldownMinutes))
         : 60;
     applyTableDensityClass(resolvedTableDensity);
     applyDataTableStripedClass(dataTableStriped);
+    applyReducedMotionAndBlurClass(reducedMotionAndBlur);
     applyAccessibleStatusClass(accessibleStatusIndicators);
     applyTrustColorClasses(trustColor);
     configureRecentActionCooldown({
@@ -345,6 +410,7 @@ export async function loadPreferenceSnapshot() {
         notificationLayout: notificationLayout || DEFAULT_NOTIFICATION_LAYOUT,
         dataTableStriped: Boolean(dataTableStriped),
         tableDensity: resolvedTableDensity,
+        reducedMotionAndBlur: Boolean(reducedMotionAndBlur),
         accessibleStatusIndicators: Boolean(accessibleStatusIndicators),
         showNewDashboardButton: Boolean(showNewDashboardButton),
         recentActionCooldownEnabled: Boolean(recentActionCooldownEnabled),
@@ -392,9 +458,27 @@ export async function loadPreferenceSnapshot() {
         notificationOpacity: Number.isFinite(notificationOpacity)
             ? notificationOpacity
             : 100,
+        hmdNotificationsEnabled: Boolean(hmdNotificationsEnabled),
+        hmdNotificationStartMode: normalizeOverlayStartMode(
+            hmdNotificationStartMode
+        ),
+        hmdNotificationTimeout: Number.isFinite(hmdNotificationTimeout)
+            ? Math.min(30000, Math.max(1000, hmdNotificationTimeout))
+            : 5000,
+        hmdNotificationOpacity: Number.isFinite(hmdNotificationOpacity)
+            ? Math.min(100, Math.max(0, hmdNotificationOpacity))
+            : 100,
+        hmdNotificationPosition: normalizeHmdNotificationPosition(
+            hmdNotificationPosition
+        ),
         webhookEnabled: Boolean(webhookEnabled),
+        webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
+        vrOverlayPanelEnabled: Boolean(vrOverlayPanelEnabled),
+        vrOverlayPanelAllFriendsIncludesFavorites: Boolean(
+            vrOverlayPanelAllFriendsIncludesFavorites
+        ),
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             wristOverlayStartMode
@@ -429,6 +513,7 @@ export async function loadPreferenceSnapshot() {
         trustColor: normalizeTrustColors(trustColor),
         navPanelWidth: normalizeNavWidth(navPanelWidth),
         navIsCollapsed: Boolean(navIsCollapsed),
+        proxyEnabled: resolveProxyEnabled(proxyEnabledRaw, proxyServer),
         proxyServer: proxyServer || '',
         tablePageSize: normalizeTablePageSize(tablePageSize),
         tablePageSizes: normalizeTablePageSizes(tablePageSizes),
@@ -436,6 +521,7 @@ export async function loadPreferenceSnapshot() {
         localFavoriteFriendsGroups: normalizeStringList(
             localFavoriteFriendsGroups
         ),
+        feedHiddenUsers: normalizeFeedHiddenUsers(feedHiddenUsers),
         sharedFeedFilters: parsedSharedFeedFilters,
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
             overlayActivityFilters,
@@ -443,6 +529,9 @@ export async function loadPreferenceSnapshot() {
         ),
         vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
             vrNotificationActivityFilters
+        ),
+        hmdNotificationActivityFilters: parseHmdOverlayActivityFilterProfile(
+            hmdNotificationActivityFilters
         ),
         desktopNotificationActivityFilters: parseOverlayActivityFilterProfile(
             desktopNotificationActivityFilters

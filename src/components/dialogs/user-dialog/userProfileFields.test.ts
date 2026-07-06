@@ -57,8 +57,10 @@ describe('userProfileFields', () => {
         ]);
         expect(fallbackLanguageOptions()).toEqual(
             expect.arrayContaining([
-                { key: 'eng', value: 'ENG' },
-                { key: 'jpn', value: 'JPN' }
+                { key: 'eng', value: 'English' },
+                { key: 'jpn', value: '日本語' },
+                { key: 'zho', value: '中文' },
+                { key: 'yue', value: '廣東話' }
             ])
         );
     });
@@ -85,6 +87,46 @@ describe('userProfileFields', () => {
             { key: 'spa', value: 'Spanish' }
         ]);
         expect(languageOptionLabel(rows[0])).toBe('English (ENG)');
+    });
+
+    it('uses local language names before VRChat config finishes loading', () => {
+        const rows = normalizeProfileLanguageRows({
+            tags: ['language_zho', 'language_yue', 'language_custom']
+        });
+
+        expect(rows).toEqual([
+            { key: 'zho', value: '中文' },
+            { key: 'yue', value: '廣東話' },
+            { key: 'custom', value: 'CUSTOM' }
+        ]);
+        expect(languageOptionLabel(rows[0])).toBe('中文 (ZHO)');
+        expect(languageOptionLabel(rows[1])).toBe('廣東話 (YUE)');
+        expect(languageOptionLabel({ key: 'zho' })).toBe('中文 (ZHO)');
+    });
+
+    it('prefers VRChat config names over local language fallback names', () => {
+        const rows = normalizeProfileLanguageRows(
+            {
+                tags: ['language_zho', 'language_yue']
+            },
+            new Map([
+                ['zho', { key: 'zho', value: 'Config Chinese' }],
+                ['yue', { key: 'yue', value: 'Config Cantonese' }]
+            ])
+        );
+
+        expect(rows).toEqual([
+            { key: 'zho', value: 'Config Chinese' },
+            { key: 'yue', value: 'Config Cantonese' }
+        ]);
+    });
+
+    it('keeps cached profile language names ahead of local fallback names', () => {
+        const rows = normalizeProfileLanguageRows({
+            $languages: [{ key: 'zho', value: 'Cached Chinese' }]
+        });
+
+        expect(rows).toEqual([{ key: 'zho', value: 'Cached Chinese' }]);
     });
 
     it('suggests recent statuses as readable unique entries with profile history first', () => {

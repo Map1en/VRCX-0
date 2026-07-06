@@ -122,7 +122,22 @@ function NavIconSelect({
     const normalizedIcon = normalizeNavIconKey(value, fallbackIcon);
 
     return (
-        <Select value={normalizedIcon} onValueChange={onValueChange}>
+        <Select
+            value={normalizedIcon}
+            items={NAV_ICON_OPTIONS.map((option) => {
+                const OptionIcon = getNavIconComponent(option.key);
+                return {
+                    value: option.key,
+                    label: (
+                        <span className="flex min-w-0 items-center gap-2">
+                            <OptionIcon data-icon="inline-start" />
+                            <span className="truncate">{option.label}</span>
+                        </span>
+                    )
+                };
+            })}
+            onValueChange={(value) => onValueChange(value ?? '')}
+        >
             <SelectTrigger size="sm" className="w-32" aria-label={ariaLabel}>
                 <SelectValue />
             </SelectTrigger>
@@ -390,6 +405,26 @@ export function SidePanelCustomTabsDialog({
                             </FieldContent>
                             <Select
                                 value={draftDisplayMode}
+                                items={[
+                                    {
+                                        value: 'auto',
+                                        label: t(
+                                            'side_panel.settings.custom_tabs.display_auto'
+                                        )
+                                    },
+                                    {
+                                        value: 'iconText',
+                                        label: t(
+                                            'side_panel.settings.custom_tabs.display_icon_text'
+                                        )
+                                    },
+                                    {
+                                        value: 'iconOnly',
+                                        label: t(
+                                            'side_panel.settings.custom_tabs.display_icon_only'
+                                        )
+                                    }
+                                ]}
                                 onValueChange={(value) =>
                                     setDraftDisplayMode(
                                         normalizeSidebarTabDisplayMode(value)

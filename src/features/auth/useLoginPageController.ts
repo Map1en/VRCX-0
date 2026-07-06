@@ -53,10 +53,15 @@ export function useLoginPageController() {
             hasSavedAccounts: page.hasSavedAccounts
         },
         proxyDialog: {
+            enabled: page.proxyEnabledInput,
             isSaving: page.isSavingProxySettings,
+            isTesting: page.isTestingProxySettings,
             onOpenChange: page.setIsProxyDialogOpen,
+            onProxyEnabledChange: page.setProxyEnabledInput,
             onProxyInputChange: page.setProxyInput,
-            onSubmit: page.saveProxySettings,
+            onSave: () => page.saveProxySettings(false),
+            onSaveAndRestart: () => page.saveProxySettings(true),
+            onTest: page.testProxySettings,
             open: page.isProxyDialogOpen,
             proxyInput: page.proxyInput
         },

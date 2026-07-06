@@ -1,5 +1,10 @@
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+
 use serde::{Deserialize, Serialize};
-use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId};
+use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId, OverlayTransform, UvPoint};
+
+const MAX_OVERLAY_INPUT_EVENTS: usize = 512;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackendStartError {
@@ -37,12 +42,15 @@ pub struct OverlaySurfaceConfig {
     pub placement: OverlayPlacement,
     #[serde(default)]
     pub activation_button: OverlayActivationButton,
+    #[serde(default)]
+    pub interactive: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum OverlayPlacement {
     TrackedDeviceRelative { device_hint: String },
+    Absolute { transform: OverlayTransform },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -51,6 +59,59 @@ pub enum OverlayActivationButton {
     #[default]
     Grip,
     Menu,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum OverlayHand {
+    Left,
+    Right,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayInputEvent {
+    pub surface_id: OverlaySurfaceId,
+    pub panel_id: String,
+    pub hand: OverlayHand,
+    pub uv: UvPoint,
+    pub kind: OverlayInputKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum OverlayInputKind {
+    Summon { transform: OverlayTransform },
+    Hover,
+    ClickDown,
+    ClickUp,
+    Scroll { delta: f32 },
+    GrabStart,
+    GrabMove { transform: OverlayTransform },
+    GrabEnd { transform: OverlayTransform },
+}
+
+#[derive(Clone, Default)]
+pub struct OverlayInputEventSink {
+    queue: Arc<Mutex<VecDeque<OverlayInputEvent>>>,
+}
+
+impl OverlayInputEventSink {
+    pub fn push(&self, event: OverlayInputEvent) {
+        if let Ok(mut queue) = self.queue.lock() {
+            if queue.len() >= MAX_OVERLAY_INPUT_EVENTS {
+                queue.pop_front();
+            }
+            queue.push_back(event);
+        }
+    }
+
+    pub fn drain(&self) -> Vec<OverlayInputEvent> {
+        self.queue
+            .lock()
+            .map(|mut queue| queue.drain(..).collect())
+            .unwrap_or_default()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]

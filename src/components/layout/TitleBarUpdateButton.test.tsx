@@ -45,15 +45,37 @@ vi.mock('@/ui/shadcn/button', async () => {
 });
 
 vi.mock('@/ui/shadcn/hover-card', async () => {
-    const React = await import('react');
+    const ReactRuntime = await import('react');
+    type MockRender =
+        | React.ReactNode
+        | ((props: object, state: object) => React.ReactNode);
+    const renderMockSlot = (
+        render: MockRender | undefined,
+        children: React.ReactNode
+    ) => {
+        if (typeof render === 'function') {
+            return render({}, {});
+        }
+        return ReactRuntime.isValidElement(render) ? render : children;
+    };
 
     return {
         HoverCard: ({ children }: any) =>
-            React.createElement('div', null, children),
+            ReactRuntime.createElement('div', null, children),
         HoverCardContent: ({ children }: any) =>
-            React.createElement('div', null, children),
-        HoverCardTrigger: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children)
+            ReactRuntime.createElement('div', null, children),
+        HoverCardTrigger: ({
+            children,
+            render
+        }: {
+            children?: React.ReactNode;
+            render?: MockRender;
+        }) =>
+            ReactRuntime.createElement(
+                ReactRuntime.Fragment,
+                null,
+                renderMockSlot(render, children)
+            )
     };
 });
 

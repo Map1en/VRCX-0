@@ -15,7 +15,7 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
-import { checkCanInviteSelf } from '@/shared/utils/invite';
+import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
 
@@ -42,15 +42,15 @@ export function useFriendsLocationsActions({
     currentEndpoint,
     currentInviteLocation,
     currentUserId,
-    friendsMap,
-    setCollapsedFavoriteGroups
+    setCollapsedFavoriteGroups,
+    instanceActionGatesByLocation
 }: {
     canInviteFromCurrentLocation: boolean;
     currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
-    friendsMap: Map<string, unknown>;
     setCollapsedFavoriteGroups: Dispatch<SetStateAction<Set<string>>>;
+    instanceActionGatesByLocation: Map<string, LocalInstanceActionGates>;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
@@ -77,11 +77,7 @@ export function useFriendsLocationsActions({
         ) {
             return false;
         }
-        return checkCanInviteSelf(location, {
-            currentUserId,
-            cachedInstances: new Map(),
-            friends: friendsMap
-        });
+        return Boolean(instanceActionGatesByLocation.get(location)?.canJoin);
     }
 
     async function launchFriendLocation(location: string) {

@@ -133,19 +133,23 @@ function FeedColumnsSettingsMenu({
     return (
         <DropdownMenu>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground shrink-0"
-                            aria-label={t('view.feed.columns.settings')}
-                        >
-                            <Settings2Icon data-icon="icon" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground hover:text-foreground shrink-0"
+                                    aria-label={t('view.feed.columns.settings')}
+                                >
+                                    <Settings2Icon data-icon="icon" />
+                                </Button>
+                            }
+                        />
+                    }
+                />
                 <TooltipContent>
                     {t('view.feed.columns.settings')}
                 </TooltipContent>
@@ -157,15 +161,14 @@ function FeedColumnsSettingsMenu({
                             {t('view.feed.columns.density')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={density}
+                            value={density ? [density] : []}
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
+                                if (nextValue[0]) {
                                     onDensityChange(
-                                        nextValue as FeedColumnDensity
+                                        nextValue[0] as FeedColumnDensity
                                     );
                                 }
                             }}

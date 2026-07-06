@@ -23,6 +23,10 @@ import { applySavedAuthSnapshot } from './authSnapshotService';
 import i18n from './i18nService';
 
 const MAX_AUTO_LOGIN_DELAY_SECONDS = 10;
+const MANUAL_AUTH_FAILURE_NOTIFICATION_CODES = new Set([
+    'AUTH_SAVED_CREDENTIALS_INVALID',
+    'AUTH_RESTORE_INTERACTIVE_REQUIRED'
+]);
 
 type AutoLoginDelayOptions = {
     signal?: AbortSignal;
@@ -60,6 +64,15 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
         return error.message;
     }
     return fallbackMessage;
+}
+
+function shouldShowManualAuthFailureNotification(
+    error: AuthAutoLoginError
+): boolean {
+    return (
+        typeof error.code === 'string' &&
+        MANUAL_AUTH_FAILURE_NOTIFICATION_CODES.has(error.code)
+    );
 }
 
 function normalizeAutoLoginDelaySeconds(seconds: unknown) {
@@ -378,7 +391,11 @@ export async function executeReactAutoLogin(
                 await i18n.t('message.auth.auto_login_failed')
             )
         );
-        await showAuthFailureNotificationSafely('frontend-auto-login-failed');
+        if (shouldShowManualAuthFailureNotification(authError)) {
+            await showAuthFailureNotificationSafely(
+                'frontend-auto-login-failed'
+            );
+        }
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
             toast.error(await i18n.t('message.auth.offline'));

@@ -13,6 +13,7 @@ mod game_client;
 mod game_log;
 pub mod groups;
 mod image_cache;
+mod instance_launch;
 mod interruptible_sleep;
 mod local_favorites;
 mod log_watcher;
@@ -89,10 +90,13 @@ pub use game_client::{
     NoopGameClientWindowActions,
 };
 pub use game_log::{
-    duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogHostActions,
-    GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent,
-    GameLogProjection, GameLogRuntime, GameLogRuntimeDeps, GameLogRuntimeState, GameLogSideEffect,
-    NoopGameLogHostActions, PlayerState, RuntimeSnapshot, ScreenshotInput,
+    duration_ms, game_log_sessions_query, parse_event_time_ms, player_key,
+    player_list_current_snapshot, world_id_from_location, GameLogHostActions, GameLogIngestEngine,
+    GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent, GameLogProjection,
+    GameLogRuntime, GameLogRuntimeDeps, GameLogRuntimeState, GameLogSessionDto,
+    GameLogSessionEventDto, GameLogSessionMemberDto, GameLogSessionsQueryInput, GameLogSideEffect,
+    NoopGameLogHostActions, PlayerListSnapshotContext, PlayerListSnapshotOutput,
+    PlayerListSnapshotPlayer, PlayerState, RuntimeSnapshot, ScreenshotInput,
 };
 pub use groups::{
     ban_member, block_group, cancel_request, create_post, delete_invite, delete_post, edit_post,
@@ -111,6 +115,12 @@ pub use groups::{
     VrchatGroupUserInput,
 };
 pub use image_cache::{save_ugc_image_to_file, ImageCache};
+pub use instance_launch::{
+    evaluate_instance_action_gates, join_instance_launch, InstanceActionGateTarget,
+    InstanceActionGates, InstanceActionGatesBatchInput, InstanceActionGatesBatchOutput,
+    InstanceLaunchApiFuture, InstanceLaunchDeps, InstanceLaunchHttpClient, InstanceLaunchInput,
+    InstanceLaunchMode, InstanceLaunchOutcome, InstanceLaunchPipe,
+};
 pub use local_favorites::{
     create_local_favorite_group, delete_local_favorite_group, rename_local_favorite_group,
 };
@@ -155,6 +165,7 @@ pub use process_monitor::{
     GameProcessEvent, GameProcessEventSink, GameProcessMonitorActions, GameProcessStatus,
     ProcessMonitor,
 };
+pub use proxy::{test_proxy_connectivity, ProxySettingsTestResult};
 pub use realtime::{
     is_friend_event_type, FriendBaselineResult, FriendProjection, FriendProjectionPatch,
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput,

@@ -3,10 +3,12 @@ import { create } from 'zustand';
 import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
+    parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile,
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
@@ -46,8 +48,14 @@ export type DefaultLaunchModePreference = 'vr' | 'desktop';
 export type WeekStartsOnPreference = 0 | 1 | 6;
 export type WristOverlayHandPreference = 'left' | 'right' | 'both';
 export type WristOverlaySizePreference = 'compact' | 'normal' | 'large';
-export type WristOverlayStartModePreference = 'steamvr' | 'vrchatVrMode';
+export type OverlayStartModePreference = 'steamvr' | 'vrchatVrMode';
+export type WristOverlayStartModePreference = OverlayStartModePreference;
 export type WristOverlayButtonPreference = 'grip' | 'menu';
+export type HmdNotificationPositionPreference =
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right';
 export type TrustColorKey = keyof typeof TRUST_COLOR_DEFAULTS;
 export type TrustColorsPreference = Record<TrustColorKey, string>;
 export type DiscordPreferenceKey =
@@ -120,6 +128,12 @@ function normalizeBool(value: unknown): boolean {
     return Boolean(value);
 }
 
+function normalizeText(value: unknown): string {
+    return typeof value === 'string'
+        ? value.trim()
+        : String(value ?? '').trim();
+}
+
 function normalizeBoundedInt(
     value: unknown,
     {
@@ -170,16 +184,30 @@ export function normalizeWristOverlaySize(
     return value === 'compact' || value === 'large' ? value : 'normal';
 }
 
+export function normalizeOverlayStartMode(
+    value: unknown
+): OverlayStartModePreference {
+    return value === 'steamvr' ? 'steamvr' : 'vrchatVrMode';
+}
+
 export function normalizeWristOverlayStartMode(
     value: unknown
 ): WristOverlayStartModePreference {
-    return value === 'steamvr' ? 'steamvr' : 'vrchatVrMode';
+    return normalizeOverlayStartMode(value);
 }
 
 export function normalizeWristOverlayButton(
     value: unknown
 ): WristOverlayButtonPreference {
     return value === 'menu' ? 'menu' : 'grip';
+}
+
+export function normalizeHmdNotificationPosition(
+    value: unknown
+): HmdNotificationPositionPreference {
+    return value === 'top' || value === 'left' || value === 'right'
+        ? value
+        : 'bottom';
 }
 
 export function normalizeTablePageSizes(value: unknown): number[] {
@@ -263,10 +291,38 @@ export function parseSharedFeedFilters(value?: unknown) {
     }
 }
 
+export function normalizeFeedHiddenUsers(value: unknown): string[] {
+    if (typeof value === 'string') {
+        try {
+            return normalizeFeedHiddenUsers(JSON.parse(value));
+        } catch {
+            return [];
+        }
+    }
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const seen = new Set<string>();
+    const userIds: string[] = [];
+    for (const entry of value) {
+        const userId =
+            typeof entry === 'string'
+                ? normalizeText(entry)
+                : normalizeText(asRecord(entry).userId);
+        if (!userId || seen.has(userId)) {
+            continue;
+        }
+        seen.add(userId);
+        userIds.push(userId);
+    }
+    return userIds;
+}
+
 export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     notificationLayout: 'notification-center',
     dataTableStriped: false,
     tableDensity: 'standard',
+    reducedMotionAndBlur: false,
     accessibleStatusIndicators: false,
     showNewDashboardButton: true,
     recentActionCooldownEnabled: false,
@@ -302,15 +358,23 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     notificationTTS: 'Never',
     notificationTTSNickName: false,
     notificationTTSVoice: '0',
-    xsNotifications: true,
-    ovrtHudNotifications: true,
+    xsNotifications: false,
+    ovrtHudNotifications: false,
     ovrtWristNotifications: false,
     imageNotifications: true,
     notificationTimeout: 3000,
     notificationOpacity: 100,
+    hmdNotificationsEnabled: false,
+    hmdNotificationStartMode: 'vrchatVrMode',
+    hmdNotificationTimeout: 5000,
+    hmdNotificationOpacity: 100,
+    hmdNotificationPosition: 'bottom',
     webhookEnabled: false,
+    webhookAuthEventsEnabled: true,
     webhookUrl: '',
     webhookFormat: 'generic',
+    vrOverlayPanelEnabled: true,
+    vrOverlayPanelAllFriendsIncludesFavorites: true,
     wristOverlayEnabled: false,
     wristOverlayStartMode: 'vrchatVrMode',
     wristOverlayButton: 'grip',
@@ -338,6 +402,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     isCloseToTray: false,
     navPanelWidth: 240,
     navIsCollapsed: false,
+    proxyEnabled: false,
     proxyServer: '',
     tablePageSize: DEFAULT_TABLE_PAGE_SIZE,
     tablePageSizes: DEFAULT_TABLE_PAGE_SIZES,
@@ -346,11 +411,13 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
         searchLimit: DEFAULT_SEARCH_LIMIT
     },
     localFavoriteFriendsGroups: [],
+    feedHiddenUsers: [],
     sharedFeedFilters: {
         noty: { ...sharedFeedFiltersDefaults.noty }
     },
     overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
+    hmdNotificationActivityFilters: DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     desktopNotificationActivityFilters:
         DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
@@ -395,6 +462,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
                 : 'notification-center',
         dataTableStriped: normalizeBool(next.dataTableStriped),
         tableDensity: normalizeTableDensity(next.tableDensity),
+        reducedMotionAndBlur: normalizeBool(next.reducedMotionAndBlur),
         accessibleStatusIndicators: normalizeBool(
             next.accessibleStatusIndicators
         ),
@@ -467,9 +535,37 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             max: 100,
             fallback: 100
         }),
+        hmdNotificationsEnabled: normalizeBool(next.hmdNotificationsEnabled),
+        hmdNotificationStartMode: normalizeOverlayStartMode(
+            next.hmdNotificationStartMode
+        ),
+        hmdNotificationTimeout: normalizeBoundedInt(
+            next.hmdNotificationTimeout,
+            {
+                min: 1000,
+                max: 30000,
+                fallback: 5000
+            }
+        ),
+        hmdNotificationOpacity: normalizeBoundedInt(
+            next.hmdNotificationOpacity,
+            {
+                min: 0,
+                max: 100,
+                fallback: 100
+            }
+        ),
+        hmdNotificationPosition: normalizeHmdNotificationPosition(
+            next.hmdNotificationPosition
+        ),
         webhookEnabled: normalizeBool(next.webhookEnabled),
+        webhookAuthEventsEnabled: normalizeBool(next.webhookAuthEventsEnabled),
         webhookUrl: String(next.webhookUrl || ''),
         webhookFormat: next.webhookFormat === 'discord' ? 'discord' : 'generic',
+        vrOverlayPanelEnabled: normalizeBool(next.vrOverlayPanelEnabled),
+        vrOverlayPanelAllFriendsIncludesFavorites: normalizeBool(
+            next.vrOverlayPanelAllFriendsIncludesFavorites
+        ),
         wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             next.wristOverlayStartMode
@@ -513,6 +609,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         isCloseToTray: normalizeBool(next.isCloseToTray),
         navPanelWidth: normalizeNavWidth(next.navPanelWidth),
         navIsCollapsed: normalizeBool(next.navIsCollapsed),
+        proxyEnabled: normalizeBool(next.proxyEnabled),
         proxyServer: String(next.proxyServer || ''),
         tablePageSize: normalizeTablePageSize(next.tablePageSize),
         tablePageSizes: normalizeTablePageSizes(next.tablePageSizes),
@@ -522,6 +619,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         )
             ? next.localFavoriteFriendsGroups.filter(Boolean)
             : [],
+        feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
         sharedFeedFilters: parseSharedFeedFilters(next.sharedFeedFilters),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
             hasOverlayActivityFiltersInput
@@ -531,6 +629,9 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         ),
         vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
             next.vrNotificationActivityFilters
+        ),
+        hmdNotificationActivityFilters: parseHmdOverlayActivityFilterProfile(
+            next.hmdNotificationActivityFilters
         ),
         desktopNotificationActivityFilters: parseOverlayActivityFilterProfile(
             next.desktopNotificationActivityFilters

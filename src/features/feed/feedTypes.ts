@@ -49,6 +49,9 @@ export type FeedPreviousInstanceRow = Record<string, unknown>;
 export type FeedFriendActions = {
     canSendInviteFromFeed: boolean;
     canBoopFromFeed: boolean;
+    isFeedUserHidden(userId: unknown): boolean;
+    addFeedHiddenUser(userId: unknown): Promise<void>;
+    removeFeedHiddenUser(userId: unknown): Promise<void>;
     canUseFeedFriendLocation(location: unknown): boolean;
     launchFeedFriendLocation(location: unknown): Promise<void>;
     selfInviteFeedFriendLocation(location: unknown): Promise<void>;

@@ -30,6 +30,22 @@ type PurgeConfirmDialogProps = {
     onConfirm: () => void;
 };
 
+const purgePeriodOptions = [
+    [
+        '180',
+        'view.settings.advanced.advanced.database_cleanup.purge_option_180'
+    ],
+    [
+        '365',
+        'view.settings.advanced.advanced.database_cleanup.purge_option_365'
+    ],
+    [
+        '730',
+        'view.settings.advanced.advanced.database_cleanup.purge_option_730'
+    ],
+    ['all', 'view.settings.advanced.advanced.database_cleanup.purge_option_all']
+] as const;
+
 export function PurgeConfirmDialog({
     open: purgeDialogOpen,
     onOpenChange: setPurgeDialogOpen,
@@ -79,7 +95,15 @@ export function PurgeConfirmDialog({
                     >
                         <Select
                             value={purgePeriod}
-                            onValueChange={setPurgePeriod}
+                            items={purgePeriodOptions.map(
+                                ([value, labelKey]) => ({
+                                    value,
+                                    label: t(labelKey)
+                                })
+                            )}
+                            onValueChange={(value) =>
+                                setPurgePeriod(value ?? '')
+                            }
                         >
                             <SelectTrigger
                                 id="settings-purge-period"
@@ -89,26 +113,16 @@ export function PurgeConfirmDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="180">
-                                        {t(
-                                            'view.settings.advanced.advanced.database_cleanup.purge_option_180'
-                                        )}
-                                    </SelectItem>
-                                    <SelectItem value="365">
-                                        {t(
-                                            'view.settings.advanced.advanced.database_cleanup.purge_option_365'
-                                        )}
-                                    </SelectItem>
-                                    <SelectItem value="730">
-                                        {t(
-                                            'view.settings.advanced.advanced.database_cleanup.purge_option_730'
-                                        )}
-                                    </SelectItem>
-                                    <SelectItem value="all">
-                                        {t(
-                                            'view.settings.advanced.advanced.database_cleanup.purge_option_all'
-                                        )}
-                                    </SelectItem>
+                                    {purgePeriodOptions.map(
+                                        ([value, labelKey]) => (
+                                            <SelectItem
+                                                key={value}
+                                                value={value}
+                                            >
+                                                {t(labelKey)}
+                                            </SelectItem>
+                                        )
+                                    )}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>

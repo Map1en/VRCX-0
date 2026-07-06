@@ -459,20 +459,22 @@ export function VrcNotificationCenterHost() {
                                     {unseenCount}
                                 </Badge>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            aria-label={t(
-                                                'side_panel.notification_center.mark_all_read'
-                                            )}
-                                            disabled={unseenCount <= 0}
-                                            onClick={markAllRead}
-                                        >
-                                            <CheckCheckIcon data-icon="inline-start" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={t(
+                                                    'side_panel.notification_center.mark_all_read'
+                                                )}
+                                                disabled={unseenCount <= 0}
+                                                onClick={markAllRead}
+                                            >
+                                                <CheckCheckIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t(
                                             'side_panel.notification_center.mark_all_read'
@@ -480,37 +482,41 @@ export function VrcNotificationCenterHost() {
                                     </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            aria-label={t(
-                                                'view.notification.refresh_tooltip'
-                                            )}
-                                            disabled={loadStatus === 'running'}
-                                            onClick={() => {
-                                                loadForCurrentUser().catch(
-                                                    (error: unknown) => {
-                                                        toast.error(
-                                                            userFacingErrorMessage(
-                                                                error,
-                                                                t(
-                                                                    'host.vrc_notification_center.toast.failed_to_refresh_notifications'
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={t(
+                                                    'view.notification.refresh_tooltip'
+                                                )}
+                                                disabled={
+                                                    loadStatus === 'running'
+                                                }
+                                                onClick={() => {
+                                                    loadForCurrentUser().catch(
+                                                        (error: unknown) => {
+                                                            toast.error(
+                                                                userFacingErrorMessage(
+                                                                    error,
+                                                                    t(
+                                                                        'host.vrc_notification_center.toast.failed_to_refresh_notifications'
+                                                                    )
                                                                 )
-                                                            )
-                                                        );
-                                                    }
-                                                );
-                                            }}
-                                        >
-                                            {loadStatus === 'running' ? (
-                                                <Spinner data-icon="inline-start" />
-                                            ) : (
-                                                <RefreshCcwIcon data-icon="inline-start" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
+                                                            );
+                                                        }
+                                                    );
+                                                }}
+                                            >
+                                                {loadStatus === 'running' ? (
+                                                    <Spinner data-icon="inline-start" />
+                                                ) : (
+                                                    <RefreshCcwIcon data-icon="inline-start" />
+                                                )}
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {t('view.notification.refresh_tooltip')}
                                     </TooltipContent>

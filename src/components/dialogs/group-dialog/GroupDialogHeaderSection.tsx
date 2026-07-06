@@ -168,14 +168,23 @@ export function GroupDialogHeaderSection(props: any) {
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <CardTitle className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight">
                         {onCopyGroupName && group.name ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold break-words whitespace-normal"
-                                onClick={onCopyGroupName}
-                            >
-                                {groupTitle}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold break-words whitespace-normal"
+                                            onClick={onCopyGroupName}
+                                        >
+                                            {groupTitle}
+                                        </Button>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {t('common.actions.copy')}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : (
                             <span className="min-w-0 break-words">
                                 {groupTitle}
@@ -193,20 +202,22 @@ export function GroupDialogHeaderSection(props: any) {
                     ) : null}
                     {group.ownerId ? (
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal"
-                                    onClick={onOpenOwner}
-                                >
-                                    <UserIcon data-icon="inline-start" />
-                                    <span className="truncate">
-                                        {t('dialog.group.label.owner')}{' '}
-                                        {ownerLinkLabel}
-                                    </span>
-                                </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal"
+                                        onClick={onOpenOwner}
+                                    >
+                                        <UserIcon data-icon="inline-start" />
+                                        <span className="truncate">
+                                            {t('dialog.group.label.owner')}{' '}
+                                            {ownerLinkLabel}
+                                        </span>
+                                    </Button>
+                                }
+                            />
                             <TooltipContent>
                                 {t(
                                     'dialog.group.action.open_group_owner_profile'
@@ -219,7 +230,7 @@ export function GroupDialogHeaderSection(props: any) {
                     <EntityActionItem
                         icon={RefreshCwIcon}
                         disabled={actionStatus === 'refresh'}
-                        onSelect={onRefresh}
+                        onClick={onRefresh}
                     >
                         {t('common.actions.refresh')}
                     </EntityActionItem>
@@ -227,7 +238,7 @@ export function GroupDialogHeaderSection(props: any) {
                         <>
                             <EntityActionItem
                                 icon={Share2Icon}
-                                onSelect={() => {
+                                onClick={() => {
                                     onCopyGroupUrl();
                                 }}
                             >
@@ -235,13 +246,13 @@ export function GroupDialogHeaderSection(props: any) {
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={ExternalLinkIcon}
-                                onSelect={onOpenGroupPage}
+                                onClick={onOpenGroupPage}
                             >
                                 {t('common.actions.open_link')}
                             </EntityActionItem>
                             <EntityActionItem
                                 icon={CopyIcon}
-                                onSelect={() => {
+                                onClick={() => {
                                     onCopyGroupId();
                                 }}
                             >
@@ -258,7 +269,7 @@ export function GroupDialogHeaderSection(props: any) {
                                     actionStatus === 'represent' ||
                                     isPrivateGroup
                                 }
-                                onSelect={onRepresentToggle}
+                                onClick={onRepresentToggle}
                             >
                                 {t(
                                     isRepresenting
@@ -273,7 +284,7 @@ export function GroupDialogHeaderSection(props: any) {
                                         : BellIcon
                                 }
                                 disabled={actionStatus === 'member-props'}
-                                onSelect={onSubscribeToggle}
+                                onClick={onSubscribeToggle}
                             >
                                 {t(
                                     isSubscribedToAnnouncements
@@ -287,7 +298,7 @@ export function GroupDialogHeaderSection(props: any) {
                                     disabled={
                                         remoteStatus.members === 'running'
                                     }
-                                    onSelect={() => {
+                                    onClick={() => {
                                         onInviteUserToGroup();
                                     }}
                                 >
@@ -298,7 +309,7 @@ export function GroupDialogHeaderSection(props: any) {
                                 <EntityActionItem
                                     icon={TicketIcon}
                                     disabled={remoteStatus.posts === 'running'}
-                                    onSelect={() => {
+                                    onClick={() => {
                                         onCreateGroupPost();
                                     }}
                                 >
@@ -308,7 +319,7 @@ export function GroupDialogHeaderSection(props: any) {
                             {canModerateGroup ? (
                                 <EntityActionItem
                                     icon={SettingsIcon}
-                                    onSelect={onOpenModeration}
+                                    onClick={onOpenModeration}
                                 >
                                     {t('dialog.group.actions.moderation_tools')}
                                 </EntityActionItem>
@@ -390,7 +401,7 @@ export function GroupDialogHeaderSection(props: any) {
                                 icon={LogOutIcon}
                                 destructive
                                 disabled={actionStatus === 'leave'}
-                                onSelect={onLeave}
+                                onClick={onLeave}
                             >
                                 {t('dialog.group.actions.leave')}
                             </EntityActionItem>
@@ -402,7 +413,7 @@ export function GroupDialogHeaderSection(props: any) {
                                 icon={isBlocked ? ShieldIcon : ShieldOffIcon}
                                 destructive={isBlocked}
                                 disabled={actionStatus === 'block'}
-                                onSelect={onBlockToggle}
+                                onClick={onBlockToggle}
                             >
                                 {t(
                                     isBlocked

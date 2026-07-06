@@ -36,25 +36,32 @@ export function GroupTitleLanguages({ languages, limit = Infinity }: any) {
                 const label = languageOptionLabel(language);
                 return (
                     <Tooltip key={`${key}:${language?.value || ''}`}>
-                        <TooltipTrigger asChild>
-                            <Badge
-                                variant="outline"
-                                className="shrink-0 text-xs"
-                            >
-                                {label}
-                            </Badge>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Badge
+                                    variant="outline"
+                                    className="shrink-0 text-xs"
+                                >
+                                    {label}
+                                </Badge>
+                            }
+                        />
                         <TooltipContent>{label}</TooltipContent>
                     </Tooltip>
                 );
             })}
             {hiddenLanguages.length ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Badge variant="outline" className="shrink-0 text-xs">
-                            +{hiddenLanguages.length}
-                        </Badge>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Badge
+                                variant="outline"
+                                className="shrink-0 text-xs"
+                            >
+                                +{hiddenLanguages.length}
+                            </Badge>
+                        }
+                    />
                     <TooltipContent>{hiddenLabel}</TooltipContent>
                 </Tooltip>
             ) : null}

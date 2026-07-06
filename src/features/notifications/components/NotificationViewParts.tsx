@@ -137,15 +137,17 @@ export function NotificationTypeFilterDropdown({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 min-w-0 flex-1 basis-64 justify-start truncate"
-                >
-                    {label}
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 min-w-0 flex-1 basis-64 justify-start truncate"
+                    >
+                        {label}
+                    </Button>
+                }
+            />
             <DropdownMenuContent
                 align="start"
                 className="max-h-96 w-80 overflow-y-auto"
@@ -168,7 +170,7 @@ export function NotificationTypeFilterDropdown({
                                     )
                                 );
                             }}
-                            onSelect={(event) => event.preventDefault()}
+                            onClick={(event) => event.preventDefault()}
                         >
                             {getTypeLabel(type)}
                         </DropdownMenuCheckboxItem>

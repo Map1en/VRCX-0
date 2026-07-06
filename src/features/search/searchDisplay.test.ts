@@ -13,7 +13,7 @@ describe('search display helpers', () => {
             })
         ).toEqual([
             { key: 'eng', value: 'English' },
-            { key: 'jpn', value: 'JPN' }
+            { key: 'jpn', value: '日本語' }
         ]);
     });
 
@@ -28,8 +28,8 @@ describe('search display helpers', () => {
                 ]
             })
         ).toEqual([
-            { key: 'eng', value: 'ENG' },
-            { key: 'jpn', value: 'JPN' },
+            { key: 'eng', value: 'English' },
+            { key: 'jpn', value: '日本語' },
             { key: 'custom', value: 'CUSTOM' }
         ]);
     });

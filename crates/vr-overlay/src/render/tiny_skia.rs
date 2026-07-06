@@ -99,6 +99,24 @@ impl OverlayRenderer for TinySkiaRenderer {
                         None,
                     );
                 }
+                DrawCommand::Image {
+                    rect,
+                    rgba,
+                    width,
+                    height,
+                } => {
+                    let surface_width = pixmap.width();
+                    let surface_height = pixmap.height();
+                    blit_image(
+                        pixmap.data_mut(),
+                        surface_width,
+                        surface_height,
+                        rect,
+                        rgba,
+                        *width,
+                        *height,
+                    );
+                }
                 DrawCommand::Text {
                     origin_x,
                     origin_y,
@@ -188,6 +206,56 @@ fn blend_rect(data: &mut [u8], surface_size: (u32, u32), rect: PixelRect, color:
             data[index + 1] = alpha_over(g, data[index + 1], src_a);
             data[index + 2] = alpha_over(b, data[index + 2], src_a);
             data[index + 3] = out_a.min(255) as u8;
+        }
+    }
+}
+
+fn blit_image(
+    data: &mut [u8],
+    surface_width: u32,
+    surface_height: u32,
+    rect: &crate::model::Rect,
+    rgba: &[u8],
+    image_width: u32,
+    image_height: u32,
+) {
+    if image_width == 0
+        || image_height == 0
+        || rgba.len() != (image_width * image_height * 4) as usize
+    {
+        return;
+    }
+    let target_x = rect.x.round() as i32;
+    let target_y = rect.y.round() as i32;
+    let target_width = rect.width.round().max(1.0) as u32;
+    let target_height = rect.height.round().max(1.0) as u32;
+    for dy in 0..target_height {
+        let py = target_y + dy as i32;
+        if py < 0 || py >= surface_height as i32 {
+            continue;
+        }
+        let sy = (dy.saturating_mul(image_height) / target_height).min(image_height - 1);
+        for dx in 0..target_width {
+            let px = target_x + dx as i32;
+            if px < 0 || px >= surface_width as i32 {
+                continue;
+            }
+            let sx = (dx.saturating_mul(image_width) / target_width).min(image_width - 1);
+            let src_index = ((sy * image_width + sx) * 4) as usize;
+            let color = [
+                rgba[src_index],
+                rgba[src_index + 1],
+                rgba[src_index + 2],
+                rgba[src_index + 3],
+            ];
+            let dst_index = ((py as u32 * surface_width + px as u32) * 4) as usize;
+            let src_a = color[3] as u16;
+            let dst_a = data[dst_index + 3] as u16;
+            let out_a = src_a + dst_a.saturating_mul(255 - src_a) / 255;
+            data[dst_index] = alpha_over(color[0], data[dst_index], src_a);
+            data[dst_index + 1] = alpha_over(color[1], data[dst_index + 1], src_a);
+            data[dst_index + 2] = alpha_over(color[2], data[dst_index + 2], src_a);
+            data[dst_index + 3] = out_a.min(255) as u8;
         }
     }
 }

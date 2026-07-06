@@ -87,6 +87,7 @@ pub struct RealtimeHostRuntimeDeps {
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,
     pub print_cleanup: PrintCleanupQueue,
+    pub friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
 pub struct RealtimeHostRuntime {

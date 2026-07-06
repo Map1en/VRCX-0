@@ -142,27 +142,31 @@ export function InstanceOwnerCell({
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="hover:text-primary h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs"
-                    onClick={() =>
-                        openUserDialog({
-                            userId,
-                            title: displayName || undefined,
-                            seedData: knownUser || null
-                        })
-                    }
-                >
-                    <span className="truncate">{displayName || userId}</span>
-                    {displayName && displayName !== userId ? (
-                        <span className="text-muted-foreground max-w-full truncate text-xs">
-                            {userId}
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="hover:text-primary h-auto max-w-full flex-col items-start justify-start gap-0 p-0 text-left text-xs"
+                        onClick={() =>
+                            openUserDialog({
+                                userId,
+                                title: displayName || undefined,
+                                seedData: knownUser || null
+                            })
+                        }
+                    >
+                        <span className="truncate">
+                            {displayName || userId}
                         </span>
-                    ) : null}
-                </Button>
-            </TooltipTrigger>
+                        {displayName && displayName !== userId ? (
+                            <span className="text-muted-foreground max-w-full truncate text-xs">
+                                {userId}
+                            </span>
+                        ) : null}
+                    </Button>
+                }
+            />
             <TooltipContent>
                 {[displayName || userId, userId, location]
                     .filter(Boolean)

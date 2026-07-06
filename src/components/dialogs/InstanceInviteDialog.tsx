@@ -389,28 +389,34 @@ export function InstanceInviteDialog({
                             {t('dialog.invite.add_friends_in_instance')}
                         </Button>
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                        sending ||
-                                        (!favoriteGroupItems.remote.length &&
-                                            !favoriteGroupItems.local.length)
-                                    }
-                                >
-                                    <PlusIcon data-icon="inline-start" />
-                                    {t('dialog.invite.add_favorite_friends')}
-                                </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                            sending ||
+                                            (!favoriteGroupItems.remote
+                                                .length &&
+                                                !favoriteGroupItems.local
+                                                    .length)
+                                        }
+                                    >
+                                        <PlusIcon data-icon="inline-start" />
+                                        {t(
+                                            'dialog.invite.add_favorite_friends'
+                                        )}
+                                    </Button>
+                                }
+                            />
                             <DropdownMenuContent align="start" className="w-56">
                                 <DropdownMenuGroup>
                                     {favoriteGroupItems.remote.map(
                                         (group: any) => (
                                             <DropdownMenuItem
                                                 key={group.key}
-                                                onSelect={() =>
+                                                onClick={() =>
                                                     addUserIds(group.userIds)
                                                 }
                                             >
@@ -428,7 +434,7 @@ export function InstanceInviteDialog({
                                         (group: any) => (
                                             <DropdownMenuItem
                                                 key={group.key}
-                                                onSelect={() =>
+                                                onClick={() =>
                                                     addUserIds(group.userIds)
                                                 }
                                             >

@@ -277,14 +277,16 @@ export function useFriendListColumns({
                                     <Tooltip
                                         key={`${key}:${entry?.value || ''}`}
                                     >
-                                        <TooltipTrigger asChild>
-                                            <span
-                                                className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold"
-                                                aria-label={tooltipLabel}
-                                            >
-                                                {code}
-                                            </span>
-                                        </TooltipTrigger>
+                                        <TooltipTrigger
+                                            render={
+                                                <span
+                                                    className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold"
+                                                    aria-label={tooltipLabel}
+                                                >
+                                                    {code}
+                                                </span>
+                                            }
+                                        />
                                         <TooltipContent side="top">
                                             {tooltipLabel}
                                         </TooltipContent>
@@ -312,25 +314,27 @@ export function useFriendListColumns({
                         <div className="flex items-center gap-1">
                             {links.map((link) => (
                                 <Tooltip key={link}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon-sm"
-                                            className="size-7"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                openExternalLink(link);
-                                            }}
-                                        >
-                                            <img
-                                                src={getFaviconUrl(link)}
-                                                alt=""
-                                                className="size-4"
-                                                loading="lazy"
-                                            />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon-sm"
+                                                className="size-7"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openExternalLink(link);
+                                                }}
+                                            >
+                                                <img
+                                                    src={getFaviconUrl(link)}
+                                                    alt=""
+                                                    className="size-4"
+                                                    loading="lazy"
+                                                />
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>{link}</TooltipContent>
                                 </Tooltip>
                             ))}
@@ -413,11 +417,13 @@ export function useFriendListColumns({
                             {count || ''}
                             {optedOut ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="inline-flex">
-                                            <EyeOffIcon className="text-muted-foreground size-3.5" />
-                                        </span>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <span className="inline-flex">
+                                                <EyeOffIcon className="text-muted-foreground size-3.5" />
+                                            </span>
+                                        }
+                                    />
                                     <TooltipContent side="top">
                                         {t('table.friendList.mutualOptedOut')}
                                     </TooltipContent>

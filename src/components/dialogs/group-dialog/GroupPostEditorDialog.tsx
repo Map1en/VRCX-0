@@ -182,11 +182,11 @@ export function GroupPostEditorDialog({
                             {t('dialog.group.posts.visibility')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
-                            value={form.visibility}
-                            onValueChange={(visibility) => {
+                            value={form.visibility ? [form.visibility] : []}
+                            onValueChange={(value) => {
+                                const visibility = value[0];
                                 if (visibility) {
                                     updateForm({ visibility });
                                 }

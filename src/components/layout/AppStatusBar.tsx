@@ -11,10 +11,12 @@ import {
     startMutualGraphFetchStatusPolling,
     wasMutualGraphFetchStartedInThisSession
 } from '@/services/mutualGraphFetchService';
+import { loadPreferenceSnapshot } from '@/services/preferencesService';
 import {
-    loadPreferenceSnapshot,
-    setProxyServerPreference
-} from '@/services/preferencesService';
+    proxySettingsErrorMessage,
+    saveProxySettingsPreferences,
+    testProxySettings
+} from '@/services/proxySettingsService';
 import { openExternalLink } from '@/services/shellIntegrationService';
 import {
     formatZoomPercentage,
@@ -33,7 +35,6 @@ import {
     SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE
 } from '@/shared/constants/time';
-import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
@@ -271,9 +272,14 @@ export function AppStatusBar() {
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
+    const proxyEnabled = usePreferencesStore((state) => state.proxyEnabled);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
-    const prompt = useModalStore((state) => state.prompt);
+    const [proxyEditorOpen, setProxyEditorOpen] = useState(false);
+    const [proxyDraftEnabled, setProxyDraftEnabled] = useState(proxyEnabled);
+    const [proxyDraftServer, setProxyDraftServer] = useState(proxyServer);
+    const [proxySaving, setProxySaving] = useState(false);
+    const [proxyTesting, setProxyTesting] = useState(false);
     const visibleClocks = clocks.slice(
         0,
         Math.max(0, Math.min(3, Number(clockCount) || 0))
@@ -367,6 +373,13 @@ export function AppStatusBar() {
     useEffect(() => {
         syncQueuedZoomLevel(currentZoomLevel);
     }, [currentZoomLevel]);
+
+    useEffect(() => {
+        if (!proxyEditorOpen) {
+            setProxyDraftEnabled(proxyEnabled);
+            setProxyDraftServer(proxyServer);
+        }
+    }, [proxyEditorOpen, proxyEnabled, proxyServer]);
 
     useEffect(() => {
         refreshMutualGraphFetchStatus().catch(() => {});
@@ -593,26 +606,81 @@ export function AppStatusBar() {
         await refreshStatusPromise;
     }
 
-    async function promptProxySettings() {
+    async function openProxyEditor() {
         if (!preferencesHydrated) {
             await loadPreferenceSnapshot();
         }
-        const currentProxyServer = usePreferencesStore.getState().proxyServer;
-        const result = await prompt({
-            title: t('component.app_status_bar.modal.proxy_settings'),
-            description: t(
-                'component.app_status_bar.modal.set_the_proxy_server_used_by_vrcx_0_restart_is_required'
-            ),
-            inputValue: currentProxyServer,
-            confirmText: t('component.app_status_bar.modal.restart'),
-            cancelText: t('common.actions.close')
+        const state = usePreferencesStore.getState();
+        setProxyDraftEnabled(state.proxyEnabled);
+        setProxyDraftServer(state.proxyServer);
+        setProxyEditorOpen(true);
+    }
+
+    function openProxyEditorWithToast() {
+        openProxyEditor().catch((error: unknown) => {
+            toast.error(
+                proxySettingsErrorMessage(error) ||
+                    t(
+                        'component.app_status_bar.toast.failed_to_update_proxy_settings'
+                    )
+            );
         });
-        if (!result.ok) {
+    }
+
+    function setProxyEditorOpenValue(open: boolean) {
+        if (!open) {
+            setProxyEditorOpen(false);
             return;
         }
+        openProxyEditorWithToast();
+    }
 
-        const nextProxyServer = String(result.value ?? '').trim();
-        await setProxyServerPreference(nextProxyServer);
+    async function saveProxyEditor(restart: boolean) {
+        setProxySaving(true);
+        try {
+            await saveProxySettingsPreferences(
+                {
+                    enabled: proxyDraftEnabled,
+                    server: proxyDraftServer
+                },
+                { restart }
+            );
+            if (!restart) {
+                toast.success(
+                    t('prompt.proxy_settings.saved_restart_required')
+                );
+                setProxyEditorOpen(false);
+            }
+        } catch (error) {
+            toast.error(
+                proxySettingsErrorMessage(error) ||
+                    t(
+                        'component.app_status_bar.toast.failed_to_update_proxy_settings'
+                    )
+            );
+        } finally {
+            setProxySaving(false);
+        }
+    }
+
+    async function testProxyEditor() {
+        setProxyTesting(true);
+        try {
+            const result = await testProxySettings(proxyDraftServer);
+            toast.success(
+                t('prompt.proxy_settings.test_success', {
+                    status: result.status
+                })
+            );
+        } catch (error) {
+            toast.error(
+                t('prompt.proxy_settings.test_failed', {
+                    message: proxySettingsErrorMessage(error)
+                })
+            );
+        } finally {
+            setProxyTesting(false);
+        }
     }
 
     function showZoomError(error: unknown) {
@@ -659,6 +727,14 @@ export function AppStatusBar() {
         instanceQueue,
         mutualGraph,
         nowPlaying,
+        proxyEditor: {
+            enabled: proxyDraftEnabled,
+            open: proxyEditorOpen,
+            saving: proxySaving,
+            server: proxyDraftServer,
+            testing: proxyTesting
+        },
+        proxyEnabled,
         proxyServer,
         runtimeGameState,
         runtimeTransport,
@@ -681,17 +757,16 @@ export function AppStatusBar() {
         },
         onOpenStatusPage: openStatusPage,
         onStartBackgroundMode: startBackgroundMode,
-        onPromptProxySettings: () => {
-            promptProxySettings().catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_status_bar.toast.failed_to_update_proxy_settings'
-                          )
-                );
-            });
+        onProxyDraftEnabledChange: setProxyDraftEnabled,
+        onProxyDraftServerChange: setProxyDraftServer,
+        onProxyEditorOpenChange: setProxyEditorOpenValue,
+        onProxySave: () => {
+            saveProxyEditor(false);
         },
+        onProxySaveAndRestart: () => {
+            saveProxyEditor(true);
+        },
+        onProxyTest: testProxyEditor,
         onSetClockPopoverValue: setClockPopoverValue,
         onSetZoomLevel: setQueuedZoomLevel,
         onStepZoomLevel: stepQueuedZoomLevel,
@@ -700,11 +775,10 @@ export function AppStatusBar() {
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <StatusBarFooter footer={footer} />
-            </ContextMenuTrigger>
+            <ContextMenuTrigger render={<StatusBarFooter footer={footer} />} />
             <StatusBarContextMenuContent
                 clockCount={clockCount}
+                onOpenProxySettings={openProxyEditorWithToast}
                 onSetClockCountValue={setClockCountValue}
                 onToggleVisibility={toggleVisibility}
                 visibility={visibility}

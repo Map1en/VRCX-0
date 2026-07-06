@@ -3,7 +3,7 @@ use vrcx_0_core::log_watcher::GameLogEventKind;
 use vrcx_0_runtime_host::vr_overlay::VrOverlayRuntime;
 
 #[test]
-fn runtime_keeps_overlay_service_stopped_until_user_and_vr_state_are_enabled() {
+fn runtime_starts_panel_listener_before_wrist_overlay_is_enabled() {
     let runtime = VrOverlayRuntime::new_for_test();
 
     runtime
@@ -13,10 +13,10 @@ fn runtime_keeps_overlay_service_stopped_until_user_and_vr_state_are_enabled() {
             game_changed: true,
         })
         .expect("record process status");
-    assert!(!runtime.is_running());
+    assert!(runtime.is_running());
 
     runtime.set_enabled(true);
-    assert!(!runtime.is_running());
+    assert!(runtime.is_running());
 
     runtime
         .ingest_game_log_event(&game_log_event(GameLogEventKind::OpenVrInit))
@@ -26,7 +26,7 @@ fn runtime_keeps_overlay_service_stopped_until_user_and_vr_state_are_enabled() {
     runtime
         .ingest_game_log_event(&game_log_event(GameLogEventKind::DesktopMode))
         .expect("record desktop mode");
-    assert!(!runtime.is_running());
+    assert!(runtime.is_running());
 
     runtime
         .ingest_game_log_event(&game_log_event(GameLogEventKind::OpenVrInit))
@@ -37,6 +37,15 @@ fn runtime_keeps_overlay_service_stopped_until_user_and_vr_state_are_enabled() {
         .on_game_process_event(GameProcessEvent {
             is_game_running: false,
             is_steamvr_running: true,
+            game_changed: true,
+        })
+        .expect("record process status");
+    assert!(runtime.is_running());
+
+    runtime
+        .on_game_process_event(GameProcessEvent {
+            is_game_running: false,
+            is_steamvr_running: false,
             game_changed: true,
         })
         .expect("record process status");

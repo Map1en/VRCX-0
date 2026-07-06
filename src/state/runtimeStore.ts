@@ -237,6 +237,7 @@ type RuntimeStore = {
     setShellState(patch: Record<string, unknown>): void;
     setGameState(patch: Partial<RuntimeStore['gameState']>): void;
     setNowPlayingState(patch: Record<string, unknown>): void;
+    resetNowPlayingState(): void;
     setInstanceQueueState(patch: Partial<InstanceQueueState>): void;
     clearInstanceQueueState(): void;
     setVrcStatusState(patch: Partial<VrcStatusState>): void;
@@ -308,6 +309,20 @@ function createMutualGraphState(): MutualGraphState {
         updatedAt: null,
         finishedAt: null,
         lastError: null
+    };
+}
+
+function createNowPlayingState(): RuntimeStore['nowPlaying'] {
+    return {
+        url: '',
+        name: '',
+        source: '',
+        displayName: '',
+        thumbnailUrl: '',
+        length: 0,
+        position: 0,
+        startedAt: null,
+        updatedAt: null
     };
 }
 
@@ -396,6 +411,7 @@ type RuntimeStoreState = Omit<
     | 'setBackendRuntimeSnapshot'
     | 'setShellState'
     | 'setNowPlayingState'
+    | 'resetNowPlayingState'
     | 'setInstanceQueueState'
     | 'clearInstanceQueueState'
     | 'setVrcStatusState'
@@ -465,17 +481,7 @@ const initialState: RuntimeStoreState = {
         lastBrowserFocusAt: null,
         externalNotifierVersion: 0
     },
-    nowPlaying: {
-        url: '',
-        name: '',
-        source: '',
-        displayName: '',
-        thumbnailUrl: '',
-        length: 0,
-        position: 0,
-        startedAt: null,
-        updatedAt: null
-    },
+    nowPlaying: createNowPlayingState(),
     instanceQueue: createInstanceQueueState(),
     vrcStatus: {
         status: '',
@@ -493,6 +499,7 @@ const initialState: RuntimeStoreState = {
         updaterOpen: false,
         changelogOpen: false,
         keyboardShortcutsOpen: false,
+        proxySettingsOpen: false,
         registryBackupOpen: false,
         appLauncherOpen: false,
         launchOptionsOpen: false,
@@ -680,6 +687,14 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
                 ...patch
             }
         }));
+    },
+    resetNowPlayingState() {
+        set({
+            nowPlaying: {
+                ...createNowPlayingState(),
+                updatedAt: new Date().toISOString()
+            }
+        });
     },
     setInstanceQueueState(patch: Partial<InstanceQueueState>) {
         set((state) => ({

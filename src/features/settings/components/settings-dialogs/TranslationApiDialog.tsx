@@ -108,14 +108,21 @@ export function TranslationApiDialog({
                         <Select
                             value={translationDraft.bioLanguage || 'en'}
                             onValueChange={(value) =>
-                                setTranslationDraftValue('bioLanguage', value)
+                                setTranslationDraftValue(
+                                    'bioLanguage',
+                                    value ?? ''
+                                )
                             }
                         >
                             <SelectTrigger
                                 id="settings-translation-bio-language"
                                 className="w-56"
                             >
-                                <SelectValue />
+                                <SelectValue>
+                                    {getLanguageName(
+                                        translationDraft.bioLanguage || 'en'
+                                    )}
+                                </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -134,10 +141,16 @@ export function TranslationApiDialog({
                     >
                         <Select
                             value={translationDraft.translationAPIType}
+                            items={translationProviderOptions.map(
+                                ([value, labelKey]) => ({
+                                    value,
+                                    label: t(labelKey)
+                                })
+                            )}
                             onValueChange={(value) => {
                                 setTranslationDraftValue(
                                     'translationAPIType',
-                                    value
+                                    value ?? ''
                                 );
                                 if (
                                     value === 'openai' &&
@@ -187,11 +200,15 @@ export function TranslationApiDialog({
                                         translationDraft.translationEndpointId ||
                                         undefined
                                     }
+                                    items={endpoints.map((endpoint) => ({
+                                        value: endpoint.id,
+                                        label: endpoint.name
+                                    }))}
                                     disabled={!endpoints.length}
                                     onValueChange={(value) => {
                                         setTranslationDraftValue(
                                             'translationEndpointId',
-                                            value
+                                            value ?? ''
                                         );
                                         const endpoint = endpoints.find(
                                             (item) => item.id === value
@@ -207,7 +224,7 @@ export function TranslationApiDialog({
                                                 endpoint.models[0]
                                             );
                                         }
-                                        fetchTranslationModels(value);
+                                        fetchTranslationModels(value ?? '');
                                     }}
                                 >
                                     <SelectTrigger
@@ -244,10 +261,14 @@ export function TranslationApiDialog({
                                             translationDraft.translationAPIModel ||
                                             modelOptions[0]
                                         }
+                                        items={modelOptions.map((model) => ({
+                                            value: model,
+                                            label: model
+                                        }))}
                                         onValueChange={(value) =>
                                             setTranslationDraftValue(
                                                 'translationAPIModel',
-                                                value
+                                                value ?? ''
                                             )
                                         }
                                         onOpenChange={(open) => {

@@ -20,9 +20,44 @@ permissions:
     contents: read
 
 jobs:
+    changes:
+        name: Detect Changes
+        runs-on: ubuntu-latest
+        outputs:
+            frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
+            rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust }}
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dorny/paths-filter@v3
+              if: github.event_name != 'workflow_dispatch'
+              id: filter
+              with:
+                  filters: |
+                      frontend:
+                        - '.github/workflows/build.yml'
+                        - 'index.html'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'public/**'
+                        - 'scripts/**'
+                        - 'src/**'
+                        - 'tsconfig*.json'
+                        - 'vite.config.*'
+                      rust:
+                        - '.github/workflows/build.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'scripts/**'
+                        - 'src-tauri/**'
+
     frontend-checks:
         name: Frontend Checks
         runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
@@ -37,6 +72,8 @@ jobs:
     frontend:
         name: Frontend React
         runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
@@ -54,6 +91,8 @@ jobs:
     rust-checks:
         name: Rust Checks
         runs-on: ubuntu-24.04
+        needs: changes
+        if: needs.changes.outputs.rust == 'true'
         steps:
             - uses: actions/checkout@v5
             - name: Install Linux dependencies
@@ -84,6 +123,8 @@ jobs:
     tauri:
         name: Tauri Rust (${{ matrix.label }})
         runs-on: ${{ matrix.os }}
+        needs: changes
+        if: needs.changes.outputs.rust == 'true'
         defaults:
             run:
                 shell: bash

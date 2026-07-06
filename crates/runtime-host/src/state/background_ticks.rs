@@ -5,6 +5,7 @@ pub(super) struct BackgroundTickContext<'a> {
     pub(super) web: &'a Arc<WebClient>,
     pub(super) session_slot: &'a Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
     pub(super) realtime_runtime: &'a Arc<RealtimeHostRuntime>,
+    pub(super) vr_overlay_runtime: &'a Arc<VrOverlayRuntime>,
     pub(super) runtime_context: &'a Arc<RuntimeHostContext>,
     pub(super) backend_runtime: &'a BackendRuntime,
     pub(super) background_jobs: &'a RuntimeBackgroundJobs,
@@ -652,8 +653,11 @@ pub(super) async fn run_background_social_baseline_refresh(
                     .await
                     {
                         if let Some(snapshot) = favorites_output.snapshot {
-                            let groups =
-                                favorite_group_membership_from_snapshot(snapshot.into_value());
+                            let value = snapshot.into_value();
+                            context
+                                .vr_overlay_runtime
+                                .update_friends_panel_favorite_groups_from_baseline(&value);
+                            let groups = favorite_group_membership_from_snapshot(value);
                             context
                                 .runtime_context
                                 .overlay_activity

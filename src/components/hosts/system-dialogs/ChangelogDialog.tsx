@@ -292,11 +292,13 @@ export function ChangelogDialog({ open, onOpenChange, targetVersion }: any) {
                             <StarIcon data-icon="inline-start" />
                             {t('dialog.change_log.star_on_github')}
                         </Button>
-                        <DialogClose asChild>
-                            <Button type="button" variant="outline">
-                                {t('common.actions.close')}
-                            </Button>
-                        </DialogClose>
+                        <DialogClose
+                            render={
+                                <Button type="button" variant="outline">
+                                    {t('common.actions.close')}
+                                </Button>
+                            }
+                        />
                     </div>
                 </DialogFooter>
             </DialogContent>

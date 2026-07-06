@@ -7,23 +7,19 @@ import {
     UserIcon,
     UsersIcon
 } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import { memo, type KeyboardEvent, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
 import { cn } from '@/lib/utils';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import {
     openAvatarDialog,
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
-import { copyTextToClipboard } from '@/services/entityMediaService';
-import { checkCanInvite } from '@/shared/utils/invite';
-import {
-    parseLocation,
-    resolveFriendPresenceLocation
-} from '@/shared/utils/location';
+import type { LocalInstanceActionGates } from '@/shared/utils/invite';
+import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -37,17 +33,63 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-import {
-    normalizeFavoriteEntityId as normalizeEntityId,
-    resolveCurrentInviteLocation
-} from '../favoritesItems';
+import { normalizeFavoriteEntityId as normalizeEntityId } from '../favoritesItems';
 
-function resolvePresenceLocation(profile: any) {
+function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
+type FavoriteCardSeedData = Record<string, unknown> & {
+    groupName?: unknown;
+    state?: unknown;
+    stateBucket?: unknown;
+    status?: unknown;
+    travelingToWorld?: unknown;
+    worldName?: unknown;
+};
+
+type FavoriteCardItem = {
+    id: string;
+    key: string;
+    kind: 'friend' | 'world' | 'avatar' | string;
+    source?: 'local' | 'remote' | 'history' | string;
+    title?: string;
+    subtitle?: string;
+    imageUrl?: string;
+    seedData?: FavoriteCardSeedData | null;
+    groupLabel?: string;
+    isPrivate?: boolean;
+    isUnavailable?: boolean;
+    titleColor?: string;
+    travelingToLocation?: unknown;
+};
+
+type FavoriteCardProps = {
+    item: FavoriteCardItem;
+    instanceActionGate?: LocalInstanceActionGates;
+    editMode?: boolean;
+    selected?: boolean;
+    showGroupLabel?: boolean;
+    cardScale?: number;
+    cardHeight?: number;
+    cardSpacing?: number;
+    removing?: boolean;
+    onToggleSelect?: (key: string, selected: boolean) => void;
+    onRemoveLocal?: (item: FavoriteCardItem) => void;
+    onRemoveRemote?: (item: FavoriteCardItem) => void;
+    onFriendLaunch?: (item: FavoriteCardItem) => void;
+    onFriendSelfInvite?: (item: FavoriteCardItem) => void;
+    onFriendInvite?: (item: FavoriteCardItem) => void;
+    onFriendRequestInvite?: (item: FavoriteCardItem) => void;
+    onFriendBoop?: (item: FavoriteCardItem) => void;
+    onWorldNewInstance?: (item: FavoriteCardItem) => void;
+    onWorldSelfInvite?: (item: FavoriteCardItem) => void;
+    onAvatarSelect?: (item: FavoriteCardItem) => void;
+};
+
 const FavoriteCard = memo(function FavoriteCard({
     item,
+    instanceActionGate,
     editMode,
     selected,
     showGroupLabel,
@@ -66,46 +108,17 @@ const FavoriteCard = memo(function FavoriteCard({
     onWorldNewInstance,
     onWorldSelfInvite,
     onAvatarSelect
-}: any) {
+}: FavoriteCardProps) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const runtimeCurrentLocation = useRuntimeStore(
-        (state) => state.gameState.currentLocation
-    );
-    const runtimeCurrentDestination = useRuntimeStore(
-        (state) => state.gameState.currentDestination
-    );
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
     );
     const normalizedCurrentUserId = normalizeEntityId(currentUserId);
-    const gameState = useMemo(
-        () => ({
-            currentLocation: runtimeCurrentLocation,
-            currentDestination: runtimeCurrentDestination,
-            isGameRunning
-        }),
-        [isGameRunning, runtimeCurrentDestination, runtimeCurrentLocation]
-    );
-    const currentInviteLocation = useMemo(
-        () => resolveCurrentInviteLocation(gameState, currentUserSnapshot),
-        [currentUserSnapshot, gameState]
-    );
-    const canInviteFromCurrentLocation = useMemo(
-        () =>
-            checkCanInvite(currentInviteLocation, {
-                currentUserId: normalizedCurrentUserId,
-                lastLocationStr: currentInviteLocation,
-                cachedInstances: new Map()
-            }),
-        [currentInviteLocation, normalizedCurrentUserId]
-    );
-    const canSendInvite = Boolean(
-        isGameRunning && currentInviteLocation && canInviteFromCurrentLocation
-    );
+    const canSendInvite = Boolean(instanceActionGate?.canInvite);
     const canBoop = Boolean(currentUserSnapshot?.isBoopingEnabled);
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
 
@@ -142,16 +155,7 @@ const FavoriteCard = memo(function FavoriteCard({
         item.source === 'local' && typeof onRemoveLocal === 'function';
     const canRemoveRemote =
         item.source === 'remote' && typeof onRemoveRemote === 'function';
-    const friendActionLocation =
-        item.kind === 'friend' ? resolvePresenceLocation(item.seedData) : '';
-    const parsedFriendLocation: any = friendActionLocation
-        ? parseLocation(friendActionLocation)
-        : {};
-    const canUseFriendLocation = Boolean(
-        parsedFriendLocation.isRealInstance &&
-        parsedFriendLocation.worldId &&
-        parsedFriendLocation.instanceId
-    );
+    const canUseFriendLocation = Boolean(instanceActionGate?.canJoin);
     const isCurrentUser = Boolean(
         item.id && item.id === normalizedCurrentUserId
     );
@@ -159,6 +163,9 @@ const FavoriteCard = memo(function FavoriteCard({
         item.seedData?.state === 'online' ||
         item.seedData?.stateBucket === 'online' ||
         item.seedData?.status === 'active'
+    );
+    const canRequestInvite = Boolean(
+        instanceActionGate?.canRequestInvite || isFriendOnline
     );
     const canSelectAvatar = Boolean(
         item.kind === 'avatar' &&
@@ -199,17 +206,20 @@ const FavoriteCard = memo(function FavoriteCard({
         if (!item.id) {
             return;
         }
-        await copyTextToClipboard(item.id);
-        toast.success(t('message.world.id_copied'));
+        await copyTextToClipboard(item.id, {
+            successMessage: t('message.world.id_copied')
+        });
     };
-    const handleCardKeyDown = (event: any) => {
+    const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         if (!openHandler || (event.key !== 'Enter' && event.key !== ' ')) {
             return;
         }
         event.preventDefault();
         openHandler();
     };
-    const stopCardInteraction = (event: any) => {
+    const stopCardInteraction = (
+        event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
+    ) => {
         event.stopPropagation();
     };
 
@@ -323,23 +333,25 @@ const FavoriteCard = memo(function FavoriteCard({
                 />
             ) : hasCardActions ? (
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            className="rounded-full"
-                            aria-label={t('common.actions.configure')}
-                            disabled={removing}
-                            onClick={stopCardInteraction}
-                        >
-                            {removing ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <MoreHorizontalIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                className="rounded-full"
+                                aria-label={t('common.actions.configure')}
+                                disabled={removing}
+                                onClick={stopCardInteraction}
+                            >
+                                {removing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <MoreHorizontalIcon data-icon="inline-start" />
+                                )}
+                            </Button>
+                        }
+                    />
                     <DropdownMenuContent
                         align="end"
                         onClick={stopCardInteraction}
@@ -347,7 +359,7 @@ const FavoriteCard = memo(function FavoriteCard({
                         onPointerDown={stopCardInteraction}
                     >
                         <DropdownMenuGroup>
-                            <DropdownMenuItem onSelect={() => openHandler?.()}>
+                            <DropdownMenuItem onClick={() => openHandler?.()}>
                                 {t('common.actions.view_details')}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -357,10 +369,10 @@ const FavoriteCard = memo(function FavoriteCard({
                                     <DropdownMenuItem
                                         disabled={
                                             isCurrentUser ||
-                                            !isFriendOnline ||
+                                            !canRequestInvite ||
                                             !onFriendRequestInvite
                                         }
-                                        onSelect={() =>
+                                        onClick={() =>
                                             onFriendRequestInvite?.(item)
                                         }
                                     >
@@ -374,7 +386,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             !canSendInvite ||
                                             !onFriendInvite
                                         }
-                                        onSelect={() => onFriendInvite?.(item)}
+                                        onClick={() => onFriendInvite?.(item)}
                                     >
                                         {t('dialog.user.actions.invite')}
                                     </DropdownMenuItem>
@@ -384,7 +396,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             !canBoop ||
                                             !onFriendBoop
                                         }
-                                        onSelect={() => onFriendBoop?.(item)}
+                                        onClick={() => onFriendBoop?.(item)}
                                     >
                                         {t('dialog.user.actions.send_boop')}
                                     </DropdownMenuItem>
@@ -396,7 +408,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             !canUseFriendLocation ||
                                             !onFriendLaunch
                                         }
-                                        onSelect={() => onFriendLaunch?.(item)}
+                                        onClick={() => onFriendLaunch?.(item)}
                                     >
                                         {t('dialog.launch.open_ingame')}
                                     </DropdownMenuItem>
@@ -405,7 +417,7 @@ const FavoriteCard = memo(function FavoriteCard({
                                             !canUseFriendLocation ||
                                             !onFriendSelfInvite
                                         }
-                                        onSelect={() =>
+                                        onClick={() =>
                                             onFriendSelfInvite?.(item)
                                         }
                                     >
@@ -418,13 +430,13 @@ const FavoriteCard = memo(function FavoriteCard({
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
                                     disabled={!onWorldNewInstance}
-                                    onSelect={() => onWorldNewInstance?.(item)}
+                                    onClick={() => onWorldNewInstance?.(item)}
                                 >
                                     {t('dialog.world.actions.new_instance')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!onWorldSelfInvite}
-                                    onSelect={() => onWorldSelfInvite?.(item)}
+                                    onClick={() => onWorldSelfInvite?.(item)}
                                 >
                                     {t(worldFollowUpActionLabelKey)}
                                 </DropdownMenuItem>
@@ -433,7 +445,7 @@ const FavoriteCard = memo(function FavoriteCard({
                         {canCopyUnavailableWorldId ? (
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
-                                    onSelect={() => {
+                                    onClick={() => {
                                         copyWorldId();
                                     }}
                                 >
@@ -445,7 +457,7 @@ const FavoriteCard = memo(function FavoriteCard({
                             <DropdownMenuGroup>
                                 <DropdownMenuItem
                                     disabled={!canSelectAvatar}
-                                    onSelect={() => onAvatarSelect?.(item)}
+                                    onClick={() => onAvatarSelect?.(item)}
                                 >
                                     {t('dialog.avatar.actions.select')}
                                 </DropdownMenuItem>
@@ -457,12 +469,12 @@ const FavoriteCard = memo(function FavoriteCard({
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
                                         variant="destructive"
-                                        onSelect={() => {
+                                        onClick={() => {
                                             if (canRemoveLocal) {
-                                                onRemoveLocal(item);
+                                                onRemoveLocal?.(item);
                                                 return;
                                             }
-                                            onRemoveRemote(item);
+                                            onRemoveRemote?.(item);
                                         }}
                                     >
                                         {canRemoveLocal

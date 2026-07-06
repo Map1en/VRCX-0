@@ -724,15 +724,14 @@ function ToggleField({
         <Field data-disabled={disabled || undefined}>
             <FieldLabel>{label}</FieldLabel>
             <ToggleGroup
-                type="single"
                 variant="outline"
                 size="sm"
-                value={value}
+                value={value ? [value] : []}
                 disabled={disabled}
                 className="w-full"
                 onValueChange={(next) => {
-                    if (next) {
-                        onValueChange(next);
+                    if (next[0]) {
+                        onValueChange(next[0]);
                     }
                 }}
             >

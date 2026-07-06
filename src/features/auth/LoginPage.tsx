@@ -98,11 +98,16 @@ export function LoginPage() {
             />
             <LoginProxySettingsDialog
                 open={proxyDialog.open}
+                enabled={proxyDialog.enabled}
                 proxyInput={proxyDialog.proxyInput}
                 isSaving={proxyDialog.isSaving}
+                isTesting={proxyDialog.isTesting}
                 onOpenChange={proxyDialog.onOpenChange}
+                onProxyEnabledChange={proxyDialog.onProxyEnabledChange}
                 onProxyInputChange={proxyDialog.onProxyInputChange}
-                onSubmit={proxyDialog.onSubmit}
+                onSave={proxyDialog.onSave}
+                onSaveAndRestart={proxyDialog.onSaveAndRestart}
+                onTest={proxyDialog.onTest}
             />
             <DeleteSavedAccountDialog
                 deleteTarget={deleteDialog.deleteTarget}

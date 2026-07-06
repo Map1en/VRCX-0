@@ -34,18 +34,20 @@ export function InstanceActivitySettingsPopover({
 
     return (
         <Popover>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t(
-                        'view.charts.instance_activity.settings.header'
-                    )}
-                >
-                    <Settings2Icon data-icon="inline-start" />
-                </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t(
+                            'view.charts.instance_activity.settings.header'
+                        )}
+                    >
+                        <Settings2Icon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <PopoverContent
                 side="bottom"
                 align="end"
@@ -60,8 +62,10 @@ export function InstanceActivitySettingsPopover({
                         max={50}
                         step={1}
                         value={[barWidth]}
-                        onValueChange={([value]: number[]) =>
-                            onBarWidthCommit(value)
+                        onValueChange={(value) =>
+                            onBarWidthCommit(
+                                Array.isArray(value) ? value[0] : value
+                            )
                         }
                         className="w-40"
                     />

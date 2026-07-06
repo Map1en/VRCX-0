@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { buildFeedFavoriteGroupOptions } from '@/features/feed/feedColumnScope';
 import { commands } from '@/platform/tauri/bindings';
 import {
+    DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
     defaultOverlayActivityFilterProfileFromDefinitions,
+    hmdDefaultOverlayActivityFilterProfileFromDefinitions,
     normalizeOverlayActivityFilterProfile,
     normalizeOverlayActivityFilterProfileWithDefinitions,
     normalizeOverlayActivityFilters,
@@ -80,6 +82,10 @@ type OverlayActivityFilterDialogProps = {
     titleKey: string;
     descriptionKey: string;
     value: OverlayActivityFilterProfilePreference;
+    defaultProfileFromDefinitions?: (
+        definitions: OverlayActivityTypeDefinition[]
+    ) => OverlayActivityFilterProfilePreference;
+    fallbackDefaultProfile?: OverlayActivityFilterProfilePreference;
     onSave(
         value: OverlayActivityFilterProfilePreference,
         definitions: OverlayActivityTypeDefinition[]
@@ -174,6 +180,28 @@ export function DesktopNotificationsDialog({
     );
 }
 
+export function HmdNotificationsDialog({
+    open,
+    onOpenChange,
+    value,
+    onSave
+}: VrNotificationsDialogProps) {
+    return (
+        <OverlayActivityFilterDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            titleKey="dialog.hmd_notifications.title"
+            descriptionKey="dialog.hmd_notifications.description"
+            value={value}
+            defaultProfileFromDefinitions={
+                hmdDefaultOverlayActivityFilterProfileFromDefinitions
+            }
+            fallbackDefaultProfile={DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS}
+            onSave={onSave}
+        />
+    );
+}
+
 export function WebhookNotificationsDialog({
     open,
     onOpenChange,
@@ -198,6 +226,8 @@ function OverlayActivityFilterDialog({
     titleKey,
     descriptionKey,
     value,
+    defaultProfileFromDefinitions,
+    fallbackDefaultProfile,
     onSave
 }: OverlayActivityFilterDialogProps) {
     const { t } = useTranslation();
@@ -354,16 +384,14 @@ function OverlayActivityFilterDialog({
     }
 
     function resetRecommended() {
-        setDraft(
-            normalizeDraft(
-                activityDefinitions.length
-                    ? defaultOverlayActivityFilterProfileFromDefinitions(
-                          activityDefinitions
-                      )
-                    : DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
-                activityDefinitions
-            )
-        );
+        const defaultProfile = activityDefinitions.length
+            ? (
+                  defaultProfileFromDefinitions ??
+                  defaultOverlayActivityFilterProfileFromDefinitions
+              )(activityDefinitions)
+            : (fallbackDefaultProfile ??
+              DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE);
+        setDraft(normalizeDraft(defaultProfile, activityDefinitions));
     }
 
     const selectedCategoryTypes = rawTypesByCategory[selectedCategory] || [];
@@ -471,9 +499,18 @@ function OverlayActivityFilterDialog({
                                             <div className="grid w-full gap-2 sm:w-56">
                                                 <Select
                                                     value={rule.scope}
+                                                    items={definition.allowedScopes.map(
+                                                        (scope) => ({
+                                                            value: scope,
+                                                            label: t(
+                                                                `dialog.wrist_feed_notifications.scopes.${scope}`
+                                                            )
+                                                        })
+                                                    )}
                                                     onValueChange={(scope) =>
                                                         updateTypeRule(type, {
-                                                            scope: scope as OverlayActivityScope
+                                                            scope: (scope ??
+                                                                '') as OverlayActivityScope
                                                         })
                                                     }
                                                 >
@@ -558,11 +595,13 @@ function OverlayActivityFilterDialog({
                         {t('dialog.wrist_feed_notifications.reset_recommended')}
                     </Button>
                     <div className="flex gap-2">
-                        <DialogClose asChild>
-                            <Button type="button" variant="outline">
-                                {t('common.actions.cancel')}
-                            </Button>
-                        </DialogClose>
+                        <DialogClose
+                            render={
+                                <Button type="button" variant="outline">
+                                    {t('common.actions.cancel')}
+                                </Button>
+                            }
+                        />
                         <Button
                             type="button"
                             onClick={saveDraft}
@@ -600,17 +639,19 @@ function FavoriteGroupMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="justify-between"
-                    disabled={disabled}
-                >
-                    <span className="min-w-0 truncate">{summary}</span>
-                    <ChevronDownIcon data-icon="inline-end" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="justify-between"
+                        disabled={disabled}
+                    >
+                        <span className="min-w-0 truncate">{summary}</span>
+                        <ChevronDownIcon data-icon="inline-end" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="end" className="w-72">
                 <DropdownMenuLabel>
                     {t(
@@ -623,7 +664,7 @@ function FavoriteGroupMenu({
                         onCheckedChange={(checked) =>
                             onToggleAll(Boolean(checked))
                         }
-                        onSelect={(event) => event.preventDefault()}
+                        onClick={(event) => event.preventDefault()}
                     >
                         {t(
                             'dialog.wrist_feed_notifications.favorite_groups.all_groups'
@@ -636,7 +677,7 @@ function FavoriteGroupMenu({
                             key={group.key}
                             checked={selectedGroups.includes(group.key)}
                             onCheckedChange={() => onToggleGroup(group.key)}
-                            onSelect={(event) => event.preventDefault()}
+                            onClick={(event) => event.preventDefault()}
                         >
                             {group.label}
                         </DropdownMenuCheckboxItem>

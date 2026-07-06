@@ -213,13 +213,12 @@ export function SegmentedPreference({
 }: SegmentedPreferenceProps) {
     return (
         <ToggleGroup
-            type="single"
             variant="outline"
             size="sm"
-            value={value}
+            value={value ? [value] : []}
             onValueChange={(nextValue) => {
-                if (nextValue) {
-                    onChange?.(nextValue);
+                if (nextValue[0]) {
+                    onChange?.(nextValue[0]);
                 }
             }}
         >

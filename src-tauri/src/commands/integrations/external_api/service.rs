@@ -69,6 +69,16 @@ fn github_releases_input(input: ExternalApiUrlInput) -> Result<ExternalHttpReque
     Ok(external_api::github_releases_get_input(&url, input.headers))
 }
 
+fn github_contributors_input(
+    input: ExternalApiUrlInput,
+) -> Result<ExternalHttpRequestInput, AppError> {
+    let url = require_text(input.url, "ExternalApiGithubContributorsGet requires url.")?;
+    Ok(external_api::github_contributors_get_input(
+        &url,
+        input.headers,
+    ))
+}
+
 fn image_data_url_input(
     input: ExternalApiImageInput,
 ) -> Result<ExternalHttpRequestInput, AppError> {
@@ -180,6 +190,14 @@ external_command!(
     github_releases_input,
     ExternalApiScope::UpdateRelease,
     "Getting external update release metadata."
+);
+
+external_command!(
+    app__external_api_github_contributors_get,
+    ExternalApiUrlInput,
+    github_contributors_input,
+    ExternalApiScope::GithubContributors,
+    "Getting GitHub contributors metadata."
 );
 
 external_command!(

@@ -12,6 +12,7 @@ import { TRUST_COLOR_DEFAULTS } from '@/shared/utils/trustColors';
 import {
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
+    DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
@@ -21,11 +22,13 @@ import {
 
 export function createDefaultSettingsPrefs() {
     const localFavoriteFriendsGroups: string[] = [];
+    const feedHiddenUsers: string[] = [];
 
     return {
         notificationLayout: 'notification-center',
         dataTableStriped: false,
         tableDensity: 'standard',
+        reducedMotionAndBlur: false,
         accessibleStatusIndicators: false,
         showNewDashboardButton: false,
         recentActionCooldownEnabled: false,
@@ -61,17 +64,25 @@ export function createDefaultSettingsPrefs() {
         notificationTTS: 'Never',
         notificationTTSNickName: false,
         notificationTTSVoice: '0',
-        xsNotifications: true,
-        ovrtHudNotifications: true,
+        xsNotifications: false,
+        ovrtHudNotifications: false,
         ovrtWristNotifications: false,
         imageNotifications: true,
         notificationTimeout: 3000,
         notificationOpacity: 100,
+        hmdNotificationsEnabled: false,
+        hmdNotificationStartMode: 'vrchatVrMode',
+        hmdNotificationTimeout: 5000,
+        hmdNotificationOpacity: 100,
+        hmdNotificationPosition: 'bottom',
         webhookEnabled: false,
+        webhookAuthEventsEnabled: true,
         webhookUrl: '',
         webhookFormat: 'generic',
         webhookFields:
             '["version","event","category","title","message","user","location","locationId","worldId","worldName","timestamp","localTime"]',
+        vrOverlayPanelEnabled: true,
+        vrOverlayPanelAllFriendsIncludesFavorites: true,
         wristOverlayEnabled: false,
         wristOverlayStartMode: 'vrchatVrMode',
         wristOverlayButton: 'grip',
@@ -98,6 +109,7 @@ export function createDefaultSettingsPrefs() {
         isStartAsMinimizedState: false,
         isCloseToTray: false,
         navIsCollapsed: false,
+        proxyEnabled: false,
         proxyServer: '',
         tablePageSize: 20,
         tablePageSizes: [...TABLE_PAGE_SIZE_DEFAULTS],
@@ -106,11 +118,14 @@ export function createDefaultSettingsPrefs() {
             searchLimit: DEFAULT_SEARCH_LIMIT
         },
         localFavoriteFriendsGroups,
+        feedHiddenUsers,
         sharedFeedFilters: normalizeSharedFeedFilters(
             sharedFeedFiltersDefaults
         ),
         overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
         vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
+        hmdNotificationActivityFilters:
+            DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
         desktopNotificationActivityFilters:
             DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
         webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,

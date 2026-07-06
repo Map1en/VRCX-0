@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next';
 
 import {
     sharedFeedFiltersDefaults,
-    type SharedFeedFilterDefaults
+    type SharedFeedFilterDefaults,
+    type SharedFeedFilterDefinition,
+    type SharedFeedFilterOption
 } from '@/shared/constants/feedFilters';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -52,58 +54,70 @@ export function FeedFilterDialog({
                 </DialogHeader>
                 <div className="flex flex-col gap-4 overflow-hidden">
                     <FieldGroup className="max-h-[60vh] overflow-y-auto pr-1">
-                        {currentSharedFeedFilterOptions.map((setting: any) => (
-                            <Field
-                                key={`${feedFilterMode}:${setting.key}`}
-                                label={
-                                    setting.textKey
-                                        ? t(setting.textKey)
-                                        : setting.name
-                                }
-                                description={setting.tooltip}
-                                controlId={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
-                            >
-                                <Select
-                                    value={
-                                        sharedFeedFilters[feedFilterMode]?.[
-                                            setting.key
-                                        ] ||
-                                        sharedFeedFiltersDefaults[
-                                            feedFilterMode as keyof SharedFeedFilterDefaults
-                                        ]?.[setting.key] ||
-                                        setting.options[0]?.label
+                        {currentSharedFeedFilterOptions.map(
+                            (setting: SharedFeedFilterDefinition) => (
+                                <Field
+                                    key={`${feedFilterMode}:${setting.key}`}
+                                    label={
+                                        setting.textKey
+                                            ? t(setting.textKey)
+                                            : setting.name
                                     }
-                                    onValueChange={(value) =>
-                                        updateSharedFeedFilter(
-                                            feedFilterMode,
-                                            setting.key,
-                                            value
-                                        )
-                                    }
+                                    description={setting.tooltip}
+                                    controlId={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
                                 >
-                                    <SelectTrigger
-                                        id={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
-                                        className="w-40"
+                                    <Select
+                                        value={
+                                            sharedFeedFilters[feedFilterMode]?.[
+                                                setting.key
+                                            ] ||
+                                            sharedFeedFiltersDefaults[
+                                                feedFilterMode as keyof SharedFeedFilterDefaults
+                                            ]?.[setting.key] ||
+                                            setting.options[0]?.label
+                                        }
+                                        items={setting.options.map(
+                                            (
+                                                option: SharedFeedFilterOption
+                                            ) => ({
+                                                value: option.label,
+                                                label: t(option.textKey)
+                                            })
+                                        )}
+                                        onValueChange={(value) =>
+                                            updateSharedFeedFilter(
+                                                feedFilterMode,
+                                                setting.key,
+                                                value
+                                            )
+                                        }
                                     >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {setting.options.map(
-                                                (option: any) => (
-                                                    <SelectItem
-                                                        key={option.label}
-                                                        value={option.label}
-                                                    >
-                                                        {t(option.textKey)}
-                                                    </SelectItem>
-                                                )
-                                            )}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        ))}
+                                        <SelectTrigger
+                                            id={`settings-feed-filter-${feedFilterMode}-${setting.key}`}
+                                            className="w-40"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {setting.options.map(
+                                                    (
+                                                        option: SharedFeedFilterOption
+                                                    ) => (
+                                                        <SelectItem
+                                                            key={option.label}
+                                                            value={option.label}
+                                                        >
+                                                            {t(option.textKey)}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            )
+                        )}
                     </FieldGroup>
                     <div className="flex justify-end gap-2">
                         <Button

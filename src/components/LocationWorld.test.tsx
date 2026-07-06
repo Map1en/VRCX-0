@@ -72,15 +72,37 @@ vi.mock('@/ui/shadcn/button', async () => {
 });
 
 vi.mock('@/ui/shadcn/tooltip', async () => {
-    const React = await import('react');
+    const ReactRuntime = await import('react');
+    type MockRender =
+        | React.ReactNode
+        | ((props: object, state: object) => React.ReactNode);
+    const renderMockSlot = (
+        render: MockRender | undefined,
+        children: React.ReactNode
+    ) => {
+        if (typeof render === 'function') {
+            return render({}, {});
+        }
+        return ReactRuntime.isValidElement(render) ? render : children;
+    };
 
     return {
         Tooltip: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children),
-        TooltipTrigger: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children),
+            ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
+        TooltipTrigger: ({
+            children,
+            render
+        }: {
+            children?: React.ReactNode;
+            render?: MockRender;
+        }) =>
+            ReactRuntime.createElement(
+                ReactRuntime.Fragment,
+                null,
+                renderMockSlot(render, children)
+            ),
         TooltipContent: ({ children }: any) =>
-            React.createElement(
+            ReactRuntime.createElement(
                 'span',
                 { 'data-tooltip-content': true },
                 children

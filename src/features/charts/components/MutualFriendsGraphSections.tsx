@@ -81,21 +81,23 @@ function MutualFriendsNodePicker({
 
     return (
         <Popover open={nodePickerOpen} onOpenChange={onNodePickerOpenChange}>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="min-w-60 justify-start px-3 font-normal"
-                >
-                    <span className="truncate">
-                        {selectedNode
-                            ? `${selectedNode.label} (${selectedNode.degree})`
-                            : t(
-                                  'view.charts.mutual_friend.actions.go_to_friend'
-                              )}
-                    </span>
-                </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="min-w-60 justify-start px-3 font-normal"
+                    >
+                        <span className="truncate">
+                            {selectedNode
+                                ? `${selectedNode.label} (${selectedNode.degree})`
+                                : t(
+                                      'view.charts.mutual_friend.actions.go_to_friend'
+                                  )}
+                        </span>
+                    </Button>
+                }
+            />
             <PopoverContent align="start" className="w-80 p-2">
                 <Input
                     autoFocus
@@ -178,16 +180,18 @@ function MutualFriendsSettingsSheet({
 
     return (
         <Sheet>
-            <SheetTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={'Graph Layout Settings'}
-                >
-                    <Settings2Icon data-icon="inline-start" />
-                </Button>
-            </SheetTrigger>
+            <SheetTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={'Graph Layout Settings'}
+                    >
+                        <Settings2Icon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <SheetContent side="right" className="w-90 overflow-y-auto">
                 <SheetHeader>
                     <SheetTitle>
@@ -210,8 +214,11 @@ function MutualFriendsSettingsSheet({
                                 max={control.limits.max}
                                 step={control.step}
                                 value={[layoutSettings[control.key]]}
-                                onValueChange={([value]) =>
-                                    setLayoutSetting(control.key, value)
+                                onValueChange={(value) =>
+                                    setLayoutSetting(
+                                        control.key,
+                                        Array.isArray(value) ? value[0] : value
+                                    )
                                 }
                             />
                             <p className="text-muted-foreground text-xs">

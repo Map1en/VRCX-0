@@ -313,7 +313,28 @@ export function FeedColumnsManagerDialog({
                                     value={resolveScopeSelectValue(
                                         selectedColumn.friendScope
                                     )}
-                                    onValueChange={(value) => {
+                                    items={[
+                                        {
+                                            value: 'all',
+                                            label: t(
+                                                'view.feed.columns.all_friends'
+                                            )
+                                        },
+                                        {
+                                            value: 'favorites-all',
+                                            label: t(
+                                                'view.feed.columns.all_favorites'
+                                            )
+                                        },
+                                        {
+                                            value: 'favorites-selected',
+                                            label: t(
+                                                'view.feed.columns.selected_favorites'
+                                            )
+                                        }
+                                    ]}
+                                    onValueChange={(rawValue) => {
+                                        const value = rawValue ?? '';
                                         if (value === 'all') {
                                             updateSelectedColumn({
                                                 friendScope:
@@ -392,7 +413,28 @@ export function FeedColumnsManagerDialog({
                                     value={resolveExcludedFavoriteGroupSelectValue(
                                         selectedColumn.friendScope
                                     )}
-                                    onValueChange={(value) => {
+                                    items={[
+                                        {
+                                            value: 'exclude-none',
+                                            label: t(
+                                                'view.feed.columns.exclude_none'
+                                            )
+                                        },
+                                        {
+                                            value: 'exclude-all',
+                                            label: t(
+                                                'view.feed.columns.exclude_all_favorites'
+                                            )
+                                        },
+                                        {
+                                            value: 'exclude-selected',
+                                            label: t(
+                                                'view.feed.columns.exclude_selected_favorites'
+                                            )
+                                        }
+                                    ]}
+                                    onValueChange={(rawValue) => {
+                                        const value = rawValue ?? '';
                                         if (value === 'exclude-all') {
                                             updateSelectedColumn({
                                                 friendScope:
@@ -585,11 +627,13 @@ export function FeedColumnsManagerDialog({
                         <RotateCcwIcon data-icon="inline-start" />
                         {t('view.feed.columns.restore_preset')}
                     </Button>
-                    <DialogClose asChild>
-                        <Button type="button">
-                            {t('common.actions.save')}
-                        </Button>
-                    </DialogClose>
+                    <DialogClose
+                        render={
+                            <Button type="button">
+                                {t('common.actions.save')}
+                            </Button>
+                        }
+                    />
                 </DialogFooter>
             </DialogContent>
             <AlertDialog

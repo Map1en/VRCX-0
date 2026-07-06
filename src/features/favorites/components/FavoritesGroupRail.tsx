@@ -56,18 +56,20 @@ function GroupMenu({
     if (group.source === 'history') {
         return (
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="ghost"
-                        className="rounded-full"
-                        aria-label={t('common.actions.configure')}
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <EllipsisIcon data-icon="inline-start" />
-                    </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            className="rounded-full"
+                            aria-label={t('common.actions.configure')}
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <EllipsisIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
                 <DropdownMenuContent
                     side="right"
                     align="start"
@@ -76,7 +78,7 @@ function GroupMenu({
                     <DropdownMenuGroup>
                         <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => onHistoryClear(group)}
+                            onClick={() => onHistoryClear(group)}
                         >
                             {t('common.actions.clear')}
                         </DropdownMenuItem>
@@ -89,27 +91,27 @@ function GroupMenu({
     if (group.source === 'remote') {
         return (
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="ghost"
-                        className="rounded-full"
-                        aria-label={t('common.actions.configure')}
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <MoreHorizontalIcon data-icon="inline-start" />
-                    </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            className="rounded-full"
+                            aria-label={t('common.actions.configure')}
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <MoreHorizontalIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
                 <DropdownMenuContent
                     side="right"
                     align="start"
                     className="w-52"
                 >
                     <DropdownMenuGroup>
-                        <DropdownMenuItem
-                            onSelect={() => onRemoteRename(group)}
-                        >
+                        <DropdownMenuItem onClick={() => onRemoteRename(group)}>
                             {t('view.favorite.rename_tooltip')}
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -125,7 +127,7 @@ function GroupMenu({
                                         checked={
                                             group.visibility === visibility
                                         }
-                                        onSelect={() =>
+                                        onClick={() =>
                                             onRemoteVisibility(
                                                 group,
                                                 visibility
@@ -142,7 +144,7 @@ function GroupMenu({
                     <DropdownMenuGroup>
                         <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => onRemoteClear(group)}
+                            onClick={() => onRemoteClear(group)}
                         >
                             {t('common.actions.clear')}
                         </DropdownMenuItem>
@@ -154,26 +156,28 @@ function GroupMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="ghost"
-                    className="rounded-full"
-                    aria-label={t('common.actions.configure')}
-                    onClick={(event) => event.stopPropagation()}
-                >
-                    <EllipsisIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        className="rounded-full"
+                        aria-label={t('common.actions.configure')}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <EllipsisIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent side="right" align="start" className="w-48">
                 <DropdownMenuGroup>
-                    <DropdownMenuItem onSelect={() => onLocalRename(group)}>
+                    <DropdownMenuItem onClick={() => onLocalRename(group)}>
                         {t('view.favorite.rename_tooltip')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() => onLocalDelete(group)}
+                        onClick={() => onLocalDelete(group)}
                     >
                         {t('common.actions.delete')}
                     </DropdownMenuItem>

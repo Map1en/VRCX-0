@@ -8,6 +8,7 @@ import {
     type ClientConfigSnippets,
     type McpServerStatus
 } from '@/platform/tauri/bindings';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Switch } from '@/ui/shadcn/switch';
@@ -116,6 +117,13 @@ export function McpServerSettingsGroup() {
         });
     }
 
+    function setMcpAllowLanConnections(checked: boolean) {
+        void runMcpCommand(
+            () => commands.appMcpServerSetAllowLanConnections(checked),
+            { toastError: true }
+        );
+    }
+
     function setMcpAllowVrchatWrites(checked: boolean) {
         void runMcpCommand(
             () => commands.appMcpServerSetAllowVrchatWrites(checked),
@@ -153,16 +161,12 @@ export function McpServerSettingsGroup() {
         if (!value) {
             return;
         }
-        try {
-            await navigator.clipboard.writeText(value);
-            toast.success(
-                t('view.settings.integrations.mcp_server.copied', {
-                    target: t(labelKey)
-                })
-            );
-        } catch (error: unknown) {
-            toast.error(String(error));
-        }
+        await copyTextToClipboard(value, {
+            successMessage: t('view.settings.integrations.mcp_server.copied', {
+                target: t(labelKey)
+            }),
+            errorMessage: (error) => String(error)
+        });
     }
 
     return (
@@ -180,6 +184,21 @@ export function McpServerSettingsGroup() {
                     checked={Boolean(mcpStatus?.enabled)}
                     disabled={mcpBusy}
                     onCheckedChange={setMcpEnabled}
+                />
+            </Field>
+
+            <Field
+                label={t(
+                    'view.settings.integrations.mcp_server.allow_lan_connections'
+                )}
+                description={t(
+                    'view.settings.integrations.mcp_server.allow_lan_connections_description'
+                )}
+            >
+                <Switch
+                    checked={Boolean(mcpStatus?.allowLanConnections)}
+                    disabled={mcpBusy}
+                    onCheckedChange={setMcpAllowLanConnections}
                 />
             </Field>
 

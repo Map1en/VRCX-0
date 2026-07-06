@@ -49,21 +49,43 @@ vi.mock('@/ui/shadcn/button', async () => {
 });
 
 vi.mock('@/ui/shadcn/dialog', async () => {
-    const React = await import('react');
+    const ReactRuntime = await import('react');
+    type MockRender =
+        | React.ReactNode
+        | ((props: object, state: object) => React.ReactNode);
+    const renderMockSlot = (
+        render: MockRender | undefined,
+        children: React.ReactNode
+    ) => {
+        if (typeof render === 'function') {
+            return render({}, {});
+        }
+        return ReactRuntime.isValidElement(render) ? render : children;
+    };
 
     return {
         Dialog: ({ children }: any) =>
-            React.createElement('div', null, children),
-        DialogClose: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children),
+            ReactRuntime.createElement('div', null, children),
+        DialogClose: ({
+            children,
+            render
+        }: {
+            children?: React.ReactNode;
+            render?: MockRender;
+        }) =>
+            ReactRuntime.createElement(
+                ReactRuntime.Fragment,
+                null,
+                renderMockSlot(render, children)
+            ),
         DialogContent: ({ children }: any) =>
-            React.createElement('section', null, children),
+            ReactRuntime.createElement('section', null, children),
         DialogFooter: ({ children }: any) =>
-            React.createElement('footer', null, children),
+            ReactRuntime.createElement('footer', null, children),
         DialogHeader: ({ children }: any) =>
-            React.createElement('header', null, children),
+            ReactRuntime.createElement('header', null, children),
         DialogTitle: ({ children }: any) =>
-            React.createElement('h1', null, children)
+            ReactRuntime.createElement('h1', null, children)
     };
 });
 

@@ -59,6 +59,8 @@ export function SettingsDialogsSection({ dialogs }: any) {
         setWristFeedNotificationsDialogOpen,
         vrNotificationsDialogOpen,
         setVrNotificationsDialogOpen,
+        hmdNotificationsDialogOpen,
+        setHmdNotificationsDialogOpen,
         desktopNotificationsDialogOpen,
         setDesktopNotificationsDialogOpen,
         webhookNotificationsDialogOpen,
@@ -67,6 +69,8 @@ export function SettingsDialogsSection({ dialogs }: any) {
         saveOverlayActivityFilters,
         vrNotificationActivityFilters,
         saveVrNotificationActivityFilters,
+        hmdNotificationActivityFilters,
+        saveHmdNotificationActivityFilters,
         desktopNotificationActivityFilters,
         saveDesktopNotificationActivityFilters,
         webhookActivityFilters,
@@ -160,6 +164,12 @@ export function SettingsDialogsSection({ dialogs }: any) {
                 setOpen: setVrNotificationsDialogOpen,
                 value: vrNotificationActivityFilters,
                 onSave: saveVrNotificationActivityFilters
+            }}
+            hmdNotifications={{
+                open: hmdNotificationsDialogOpen,
+                setOpen: setHmdNotificationsDialogOpen,
+                value: hmdNotificationActivityFilters,
+                onSave: saveHmdNotificationActivityFilters
             }}
             desktopNotifications={{
                 open: desktopNotificationsDialogOpen,

@@ -67,7 +67,17 @@ export function PresenceRuleActionFields({
                     <Select
                         value={status || 'no-change'}
                         disabled={disabled}
-                        onValueChange={onStatusChange}
+                        onValueChange={(value) => onStatusChange(value ?? '')}
+                        items={[
+                            {
+                                value: 'no-change',
+                                label: t(`${I18N_ROOT}.do_not_change`)
+                            },
+                            ...statusOptions.map((statusOption) => ({
+                                value: statusOption,
+                                label: userStatusLabel(statusOption, t)
+                            }))
+                        ]}
                     >
                         <SelectTrigger id={statusId}>
                             <SelectValue />

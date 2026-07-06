@@ -9,16 +9,7 @@ import {
     hasWorldIdPrefix
 } from '@/shared/constants/vrchatIds';
 
-type GameLogKind =
-    | 'Location'
-    | 'LocationTime'
-    | 'JoinLeave'
-    | 'PortalSpawn'
-    | 'VideoPlay'
-    | 'ResourceLoad'
-    | 'Event'
-    | 'External'
-    | string;
+type GameLogKind = 'Event' | 'External';
 
 type GameLogParams = Record<string, unknown>;
 type GameLogEntry = Record<string, unknown>;
@@ -26,6 +17,11 @@ type GameLogEntry = Record<string, unknown>;
 type GameLogUserIdentity = {
     id?: unknown;
     displayName?: unknown;
+};
+
+type GameLogPreviousInstancesOptions = {
+    dateFrom?: unknown;
+    dateTo?: unknown;
 };
 
 type GameLogWorldCacheEntry = {
@@ -95,16 +91,6 @@ type GameLogOnlineSessionRow = {
     time: number;
 };
 
-type GameLogSessionLocationSegmentRow = {
-    created_at: string;
-    groupName: string;
-    id: number;
-    location: string;
-    time: number;
-    worldId: string;
-    worldName: string;
-};
-
 type GameLogPreviousDisplayNameRow = {
     created_at: string;
     displayName: string;
@@ -125,8 +111,6 @@ type GameLogQueryResultMap = {
     playerDetailFromInstance: GameLogPlayerDetailRow[];
     joinLeaveRange: GameLogJoinLeaveRangeRow[];
     onlineSessions: GameLogOnlineSessionRow[];
-    sessionsEventsForSegments: GameLogPlayerEventRow[];
-    sessionsLocationSegments: GameLogSessionLocationSegmentRow[];
     userStats: GameLogUserStatsQueryResult;
     worldNameByWorldId: string;
 };
@@ -270,13 +254,6 @@ function getCachedGameLogWorldName(worldId: unknown) {
     return cached.worldName;
 }
 
-function rememberGameLogWorldName(worldId: unknown, worldName: unknown) {
-    const normalizedWorldName = normalizeGameLogIdentifier(worldName);
-    if (normalizedWorldName) {
-        setCachedGameLogWorldName(worldId, normalizedWorldName);
-    }
-}
-
 const gameLog = {
     async getGamelogDatabase(maxTableSize: number = DEFAULT_MAX_TABLE_SIZE) {
         var date = new Date();
@@ -287,38 +264,6 @@ const gameLog = {
             maxTableSize
         });
         return Array.isArray(rows) ? rows : [];
-    },
-
-    async addGamelogLocationToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('Location', [entry]);
-        rememberGameLogWorldName(entry.worldId, entry.worldName);
-    },
-
-    async updateGamelogLocationTimeToDatabase(entry: GameLogEntry) {
-        return addGameLogEntries('LocationTime', [entry]);
-    },
-
-    async addGamelogJoinLeaveToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('JoinLeave', [entry]);
-    },
-
-    async addGamelogJoinLeaveBulk(inputData: GameLogEntry[]) {
-        if (inputData.length === 0) {
-            return;
-        }
-        return addGameLogEntries('JoinLeave', inputData);
-    },
-
-    async addGamelogPortalSpawnToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('PortalSpawn', [entry]);
-    },
-
-    async addGamelogVideoPlayToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('VideoPlay', [entry]);
-    },
-
-    async addGamelogResourceLoadToDatabase(entry: GameLogEntry) {
-        await addGameLogEntries('ResourceLoad', [entry]);
     },
 
     async addGamelogEventToDatabase(entry: GameLogEntry) {
@@ -451,20 +396,6 @@ const gameLog = {
         return Array.isArray(rows) ? rows : [];
     },
 
-    async getLastDateGameLogDatabase() {
-        var date = new Date().toJSON();
-        var dateOffset = new Date(Date.now() - DAY_MS).toJSON();
-        const newDate = await queryGameLog('lastDate');
-        if (
-            typeof newDate === 'string' &&
-            newDate > dateOffset &&
-            newDate < date
-        ) {
-            date = newDate;
-        }
-        return date;
-    },
-
     async getGameLogWorldNameByWorldId(worldId: unknown) {
         const normalizedWorldId = normalizeGameLogIdentifier(worldId);
         if (!normalizedWorldId) {
@@ -500,8 +431,13 @@ const gameLog = {
         }
     },
 
-    async getPreviousInstancesByUserId(input: GameLogUserIdentity) {
+    async getPreviousInstancesByUserId(
+        input: GameLogUserIdentity,
+        options: GameLogPreviousInstancesOptions = {}
+    ) {
         const normalizedUserId = normalizeGameLogIdentifier(input?.id);
+        const dateFrom = normalizeGameLogIdentifier(options.dateFrom);
+        const dateTo = normalizeGameLogIdentifier(options.dateTo);
         var groupingTimeTolerance = HOUR_MS;
         var data = new Set<PreviousInstanceGroup>();
         var currentGroup: PreviousInstanceGroup | undefined;
@@ -511,9 +447,20 @@ const gameLog = {
             return data;
         }
 
-        const rows = await queryGameLogRows('previousInstancesByUserIdRows', {
+        const queryParams: GameLogParams = {
             userId: normalizedUserId
-        });
+        };
+        if (dateFrom) {
+            queryParams.dateFrom = dateFrom;
+        }
+        if (dateTo) {
+            queryParams.dateTo = dateTo;
+        }
+
+        const rows = await queryGameLogRows(
+            'previousInstancesByUserIdRows',
+            queryParams
+        );
         for (const row of rows) {
             const created_at_iso = row.created_at;
             const created_at_ts = row.createdAtTs;
@@ -814,53 +761,6 @@ const gameLog = {
             normalizeGameLogIdentifier(input.type) || 'ResourceLoad',
             input
         );
-    },
-
-    async getSessionsLocationSegments(beforeId: unknown, limit: number) {
-        const rows = await queryGameLog('sessionsLocationSegments', {
-            beforeId,
-            limit
-        });
-        return Array.isArray(rows) ? rows : [];
-    },
-
-    async getSessionsLocationSegmentsByDateRange(
-        afterDate: unknown,
-        beforeDate: unknown,
-        limit: number
-    ) {
-        const rows = await queryGameLog('sessionsLocationSegmentsByDateRange', {
-            afterDate,
-            beforeDate,
-            limit
-        });
-        return Array.isArray(rows) ? rows : [];
-    },
-
-    async getSessionsEventsForSegments(
-        locationTags: string[],
-        afterDate: unknown,
-        beforeDate: unknown
-    ) {
-        if (!locationTags || locationTags.length === 0) return [];
-
-        const rows = await queryGameLog('sessionsEventsForSegments', {
-            locationTags,
-            afterDate,
-            beforeDate
-        });
-        return Array.isArray(rows) ? rows : [];
-    },
-
-    async getSessionsLocationSegmentsByAnchor(
-        sinceDate: unknown,
-        limit: number
-    ) {
-        const rows = await queryGameLog('sessionsLocationSegmentsByAnchor', {
-            sinceDate,
-            limit
-        });
-        return Array.isArray(rows) ? rows : [];
     }
 };
 

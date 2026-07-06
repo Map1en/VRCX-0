@@ -73,6 +73,17 @@ const WEBHOOK_PAYLOAD_FIELDS: Array<[string, string]> = [
 
 const DEFAULT_WEBHOOK_FIELDS = WEBHOOK_PAYLOAD_FIELDS.map(([field]) => field);
 
+const webhookFormatOptions = [
+    [
+        'generic',
+        'view.settings.notifications.notifications.webhook.format_generic'
+    ],
+    [
+        'discord',
+        'view.settings.notifications.notifications.webhook.format_discord'
+    ]
+] as const;
+
 type WebhookPayloadFieldsDialogProps = {
     webhookEnabled: boolean;
     webhookFormat: string;
@@ -80,9 +91,18 @@ type WebhookPayloadFieldsDialogProps = {
     onWebhookFieldsChange(value: string): void;
 };
 
+type WebhookSettingsPrefs = Record<string, unknown> & {
+    webhookAuthEventsEnabled?: boolean;
+    webhookEnabled?: boolean;
+    webhookFields?: unknown;
+    webhookFormat?: string;
+    webhookUrl?: string;
+};
+
 type WebhookSettingsGroupProps = {
-    prefs: any;
+    prefs: WebhookSettingsPrefs;
     onWebhookEnabledChange(value: boolean): void;
+    onWebhookAuthEventsEnabledChange(value: boolean): void;
     onWebhookUrlDraftChange(value: string): void;
     onWebhookUrlBlur(value: string): void;
     onWebhookFormatChange(value: string): void;
@@ -136,6 +156,7 @@ function updateWebhookFields(
 export function WebhookSettingsGroup({
     prefs,
     onWebhookEnabledChange,
+    onWebhookAuthEventsEnabledChange,
     onWebhookUrlDraftChange,
     onWebhookUrlBlur,
     onWebhookFormatChange,
@@ -144,6 +165,9 @@ export function WebhookSettingsGroup({
     onTestWebhook
 }: WebhookSettingsGroupProps) {
     const { t } = useTranslation();
+    const webhookControlsEnabled =
+        Boolean(prefs.webhookEnabled) ||
+        Boolean(prefs.webhookAuthEventsEnabled);
 
     return (
         <SettingsGroup
@@ -164,6 +188,20 @@ export function WebhookSettingsGroup({
 
             <Field
                 label={t(
+                    'view.settings.notifications.notifications.webhook.auth_events_enabled'
+                )}
+                description={t(
+                    'view.settings.notifications.notifications.webhook.auth_events_description'
+                )}
+            >
+                <Switch
+                    checked={Boolean(prefs.webhookAuthEventsEnabled)}
+                    onCheckedChange={onWebhookAuthEventsEnabledChange}
+                />
+            </Field>
+
+            <Field
+                label={t(
                     'view.settings.notifications.notifications.webhook.url'
                 )}
                 controlId="settings-webhook-url"
@@ -172,7 +210,7 @@ export function WebhookSettingsGroup({
                     id="settings-webhook-url"
                     className="w-full max-w-lg"
                     value={prefs.webhookUrl || ''}
-                    disabled={!prefs.webhookEnabled}
+                    disabled={!webhookControlsEnabled}
                     placeholder={t(
                         'view.settings.notifications.notifications.webhook.url_placeholder'
                     )}
@@ -191,8 +229,14 @@ export function WebhookSettingsGroup({
             >
                 <Select
                     value={prefs.webhookFormat || 'generic'}
-                    disabled={!prefs.webhookEnabled}
-                    onValueChange={onWebhookFormatChange}
+                    items={webhookFormatOptions.map(([value, labelKey]) => ({
+                        value,
+                        label: t(labelKey)
+                    }))}
+                    disabled={!webhookControlsEnabled}
+                    onValueChange={(value) =>
+                        onWebhookFormatChange(value ?? '')
+                    }
                 >
                     <div className="flex items-center gap-2">
                         <SelectTrigger
@@ -203,16 +247,13 @@ export function WebhookSettingsGroup({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="generic">
-                                    {t(
-                                        'view.settings.notifications.notifications.webhook.format_generic'
-                                    )}
-                                </SelectItem>
-                                <SelectItem value="discord">
-                                    {t(
-                                        'view.settings.notifications.notifications.webhook.format_discord'
-                                    )}
-                                </SelectItem>
+                                {webhookFormatOptions.map(
+                                    ([value, labelKey]) => (
+                                        <SelectItem key={value} value={value}>
+                                            {t(labelKey)}
+                                        </SelectItem>
+                                    )
+                                )}
                             </SelectGroup>
                         </SelectContent>
                     </div>
@@ -259,7 +300,7 @@ export function WebhookSettingsGroup({
                     type="button"
                     variant="outline"
                     disabled={
-                        !prefs.webhookEnabled ||
+                        !webhookControlsEnabled ||
                         !String(prefs.webhookUrl || '').trim()
                     }
                     onClick={onTestWebhook}
@@ -292,12 +333,14 @@ function WebhookPayloadFieldsDialog({
 
     return (
         <Dialog>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                    <CircleHelpIcon data-icon="inline-start" />
-                    {t('common.actions.configure')}
-                </Button>
-            </DialogTrigger>
+            <DialogTrigger
+                render={
+                    <Button type="button" variant="outline" size="sm">
+                        <CircleHelpIcon data-icon="inline-start" />
+                        {t('common.actions.configure')}
+                    </Button>
+                }
+            />
             <DialogContent className="flex max-h-[calc(100vh-4rem)] min-h-0 flex-col sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
@@ -432,7 +475,13 @@ function WebhookPayloadFieldsDialog({
     );
 }
 
-function WebhookExampleBlock({ title, value }: any) {
+function WebhookExampleBlock({
+    title,
+    value
+}: {
+    title: string;
+    value: string;
+}) {
     return (
         <section className="flex min-w-0 flex-col gap-2">
             <div className="text-sm font-medium">{title}</div>

@@ -32,9 +32,10 @@ export type IntConfigPreferenceOptions = {
     max?: number;
     fallback?: number;
 };
-export type ProxyServerPreferenceOptions = {
+export type ProxyPreferenceOptions = {
     restart?: boolean;
 };
+export type ProxyServerPreferenceOptions = ProxyPreferenceOptions;
 export type TranslationApiConfigPreferenceInput = {
     bioLanguage?: unknown;
     translationAPIType?: unknown;

@@ -1,7 +1,10 @@
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
-
-export type NotificationLifecycleBucket = 'action' | 'activity' | 'system';
+import {
+    getNotificationLifecycleBucket,
+    NOTIFICATION_LIFECYCLE_ORDER,
+    type NotificationLifecycleBucket
+} from '@/shared/utils/notificationLifecycle';
 
 export type NotificationDrawerEntry = {
     notification: NotificationRow;
@@ -12,43 +15,6 @@ export type NotificationDrawerGroups = Record<
     NotificationLifecycleBucket,
     NotificationDrawerEntry[]
 >;
-
-export const NOTIFICATION_LIFECYCLE_ORDER: NotificationLifecycleBucket[] = [
-    'action',
-    'activity',
-    'system'
-];
-
-const ACTION_TYPES = new Set<string>([
-    'friendRequest',
-    'invite',
-    'requestInvite',
-    'boop',
-    'group.invite',
-    'group.joinRequest',
-    'group.transfer',
-    'group.queueReady'
-]);
-
-const ACTIVITY_TYPES = new Set<string>([
-    'inviteResponse',
-    'requestInviteResponse',
-    'message',
-    'ignoredFriendRequest'
-]);
-
-export function getNotificationLifecycleBucket(
-    type: unknown
-): NotificationLifecycleBucket {
-    const normalized = String(type || '');
-    if (ACTION_TYPES.has(normalized)) {
-        return 'action';
-    }
-    if (ACTIVITY_TYPES.has(normalized)) {
-        return 'activity';
-    }
-    return 'system';
-}
 
 export function groupDrawerEntries(
     entries: readonly NotificationDrawerEntry[]
@@ -83,3 +49,9 @@ export function groupDrawerEntries(
     }
     return groups;
 }
+
+export {
+    getNotificationLifecycleBucket,
+    NOTIFICATION_LIFECYCLE_ORDER,
+    type NotificationLifecycleBucket
+};

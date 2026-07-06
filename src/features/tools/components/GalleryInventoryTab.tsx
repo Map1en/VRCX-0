@@ -38,7 +38,7 @@ export function GalleryInventoryTab({
     return (
         <TabsContent
             value="inventory"
-            className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=inactive]:hidden"
+            className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
         >
             <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <CardHeader className="gap-4">

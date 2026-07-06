@@ -3,7 +3,7 @@ use vrcx_0_runtime_host::vr_overlay::{
     OverlayServiceStartError, VrOverlayEligibility, VrOverlayManager, VrOverlayServiceControl,
     WristOverlayStartMode,
 };
-use vrcx_0_vr_overlay::{OverlaySize, RgbaFrame};
+use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId, RgbaFrame};
 
 fn eligible(start_mode: WristOverlayStartMode) -> VrOverlayEligibility {
     VrOverlayEligibility {
@@ -195,6 +195,28 @@ fn manager_forwards_frames_and_show_to_running_service() {
 }
 
 #[test]
+fn manager_forwards_targeted_surface_frames_and_alpha() {
+    let service = RecordingOverlayService::default();
+    let surface_frames = service.surface_frames.clone();
+    let surface_alpha = service.surface_alpha.clone();
+    let mut manager = VrOverlayManager::new(service);
+
+    manager.reconcile(eligible(WristOverlayStartMode::VrchatVrMode));
+    manager
+        .update_surface_frame(
+            &OverlaySurfaceId::new("main"),
+            RgbaFrame::new(OverlaySize::new(32, 16), vec![0; 32 * 16 * 4]),
+        )
+        .expect("update main frame");
+    manager
+        .set_surface_alpha(&OverlaySurfaceId::new("main"), 0.5)
+        .expect("set alpha");
+
+    assert_eq!(surface_frames.borrow().as_slice(), ["main:32x16"]);
+    assert_eq!(surface_alpha.borrow().as_slice(), ["main:0.50"]);
+}
+
+#[test]
 fn manager_does_not_render_frames_when_service_is_not_running() {
     let service = RecordingOverlayService::default();
     let frames = service.frames.clone();
@@ -210,6 +232,8 @@ struct RecordingOverlayService {
     starts: std::rc::Rc<std::cell::RefCell<u32>>,
     stops: std::rc::Rc<std::cell::RefCell<u32>>,
     frames: std::rc::Rc<std::cell::RefCell<u32>>,
+    surface_frames: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
+    surface_alpha: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
     shows: std::rc::Rc<std::cell::RefCell<u32>>,
     running: bool,
     report_running_after_start: bool,
@@ -222,6 +246,8 @@ impl Default for RecordingOverlayService {
             starts: std::rc::Rc::new(std::cell::RefCell::new(0)),
             stops: std::rc::Rc::new(std::cell::RefCell::new(0)),
             frames: std::rc::Rc::new(std::cell::RefCell::new(0)),
+            surface_frames: std::rc::Rc::new(std::cell::RefCell::new(Vec::new())),
+            surface_alpha: std::rc::Rc::new(std::cell::RefCell::new(Vec::new())),
             shows: std::rc::Rc::new(std::cell::RefCell::new(0)),
             running: false,
             report_running_after_start: true,
@@ -245,6 +271,37 @@ impl VrOverlayServiceControl for RecordingOverlayService {
             return Err("not running".to_string());
         }
         *self.frames.borrow_mut() += 1;
+        Ok(())
+    }
+
+    fn update_surface_frame(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        frame: RgbaFrame,
+    ) -> Result<(), String> {
+        if !self.running {
+            return Err("not running".to_string());
+        }
+        self.surface_frames.borrow_mut().push(format!(
+            "{}:{}x{}",
+            surface_id.as_str(),
+            frame.size.width,
+            frame.size.height
+        ));
+        Ok(())
+    }
+
+    fn set_surface_alpha(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        alpha: f32,
+    ) -> Result<(), String> {
+        if !self.running {
+            return Err("not running".to_string());
+        }
+        self.surface_alpha
+            .borrow_mut()
+            .push(format!("{}:{alpha:.2}", surface_id.as_str()));
         Ok(())
     }
 

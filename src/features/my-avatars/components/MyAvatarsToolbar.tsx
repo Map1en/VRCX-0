@@ -76,43 +76,47 @@ export function MyAvatarsToolbar({
         <div className="flex shrink-0 flex-col gap-2 px-0.5 pt-1.5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <ToggleGroup
-                    type="single"
                     variant="outline"
                     size="sm"
-                    value={viewMode}
+                    value={viewMode ? [viewMode] : []}
                     onValueChange={(nextValue) => {
-                        if (nextValue) {
-                            onViewModeChange(nextValue as MyAvatarsViewMode);
+                        const next = nextValue[0];
+                        if (next) {
+                            onViewModeChange(next as MyAvatarsViewMode);
                         }
                     }}
                     className="shrink-0"
                 >
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <ToggleGroupItem
-                                value="grid"
-                                aria-label={t(
-                                    'view.my_avatars.action.show_avatar_grid'
-                                )}
-                            >
-                                <LayoutGridIcon data-icon="inline-start" />
-                            </ToggleGroupItem>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <ToggleGroupItem
+                                    value="grid"
+                                    aria-label={t(
+                                        'view.my_avatars.action.show_avatar_grid'
+                                    )}
+                                >
+                                    <LayoutGridIcon data-icon="inline-start" />
+                                </ToggleGroupItem>
+                            }
+                        />
                         <TooltipContent>
                             {t('view.my_avatars.action.show_avatar_grid')}
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <ToggleGroupItem
-                                value="table"
-                                aria-label={t(
-                                    'view.my_avatars.action.show_avatar_table'
-                                )}
-                            >
-                                <ListIcon data-icon="inline-start" />
-                            </ToggleGroupItem>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <ToggleGroupItem
+                                    value="table"
+                                    aria-label={t(
+                                        'view.my_avatars.action.show_avatar_table'
+                                    )}
+                                >
+                                    <ListIcon data-icon="inline-start" />
+                                </ToggleGroupItem>
+                            }
+                        />
                         <TooltipContent>
                             {t('view.my_avatars.action.show_avatar_table')}
                         </TooltipContent>
@@ -160,26 +164,28 @@ export function MyAvatarsToolbar({
                     <TableColumnVisibilityMenu table={table} />
                 ) : null}
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={t(
-                                'view.my_avatars.action.refresh_avatar_inventory'
-                            )}
-                            disabled={
-                                !currentUserId || loadStatus === 'running'
-                            }
-                            onClick={onRefresh}
-                        >
-                            {loadStatus === 'running' ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <RefreshCwIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={t(
+                                    'view.my_avatars.action.refresh_avatar_inventory'
+                                )}
+                                disabled={
+                                    !currentUserId || loadStatus === 'running'
+                                }
+                                onClick={onRefresh}
+                            >
+                                {loadStatus === 'running' ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <RefreshCwIcon data-icon="inline-start" />
+                                )}
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.my_avatars.action.refresh_avatar_inventory')}
                     </TooltipContent>

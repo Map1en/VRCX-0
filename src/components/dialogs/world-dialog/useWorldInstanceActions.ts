@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { parseLocation } from '@/shared/utils/location';
 
@@ -413,8 +413,9 @@ export function useWorldInstanceActions({
         if (!created?.url) {
             return;
         }
-        await copyTextToClipboard(created.url);
-        toast.success(t('dialog.world.success.instance_url_copied'));
+        await copyTextToClipboard(created.url, {
+            successMessage: t('dialog.world.success.instance_url_copied')
+        });
     }
 
     async function selfInviteCreatedInstance(created: any) {

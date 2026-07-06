@@ -341,6 +341,7 @@ pub(super) fn activity_type_definitions() -> Vec<OverlayActivityTypeDefinition> 
             category: definition.category,
             allowed_scopes: definition.allowed_scopes.to_vec(),
             default_scope: definition.default_scope,
+            hmd_default_scope: hmd_scope_for_definition(definition),
             aliases: definition
                 .aliases
                 .iter()
@@ -354,6 +355,21 @@ pub(super) fn default_activity_rules() -> BTreeMap<String, OverlayActivityRule> 
     ACTIVITY_TYPES
         .iter()
         .map(|definition| (definition.key.to_string(), default_rule(definition)))
+        .collect()
+}
+
+pub(super) fn hmd_activity_rules() -> BTreeMap<String, OverlayActivityRule> {
+    ACTIVITY_TYPES
+        .iter()
+        .map(|definition| {
+            (
+                definition.key.to_string(),
+                OverlayActivityRule {
+                    scope: hmd_scope_for_definition(definition),
+                    favorite_group_keys: OverlayActivityFavoriteGroupKeys::All,
+                },
+            )
+        })
         .collect()
 }
 
@@ -380,18 +396,20 @@ pub(super) fn default_rule(definition: &ActivityTypeDefinition) -> OverlayActivi
 }
 
 pub(super) fn has_persisted_filter_rules(value: &Value) -> bool {
-    ["wrist", "desktop", "vr", "webhook"].iter().any(|surface| {
-        value
-            .get(*surface)
-            .and_then(Value::as_object)
-            .is_some_and(|surface| {
-                surface.get("types").and_then(Value::as_object).is_some()
-                    || surface
-                        .get("categories")
-                        .and_then(Value::as_object)
-                        .is_some()
-            })
-    })
+    ["wrist", "desktop", "vr", "hmd", "webhook"]
+        .iter()
+        .any(|surface| {
+            value
+                .get(*surface)
+                .and_then(Value::as_object)
+                .is_some_and(|surface| {
+                    surface.get("types").and_then(Value::as_object).is_some()
+                        || surface
+                            .get("categories")
+                            .and_then(Value::as_object)
+                            .is_some()
+                })
+        })
 }
 
 pub(super) fn normalize_filters(value: Value) -> OverlayActivityFilters {
@@ -400,6 +418,10 @@ pub(super) fn normalize_filters(value: Value) -> OverlayActivityFilters {
         wrist: normalize_surface(value.get("wrist")),
         desktop: normalize_surface(value.get("desktop")),
         vr: normalize_surface(value.get("vr")),
+        hmd: value
+            .get("hmd")
+            .map(|surface| normalize_surface_with_default(Some(surface), &hmd_activity_rules()))
+            .unwrap_or_else(OverlayActivitySurfaceFilters::hmd_default_rules),
         webhook: value
             .get("webhook")
             .map(|surface| normalize_surface(Some(surface)))
@@ -408,6 +430,13 @@ pub(super) fn normalize_filters(value: Value) -> OverlayActivityFilters {
 }
 
 pub(super) fn normalize_surface(value: Option<&Value>) -> OverlayActivitySurfaceFilters {
+    normalize_surface_with_default(value, &default_activity_rules())
+}
+
+fn normalize_surface_with_default(
+    value: Option<&Value>,
+    default_types: &BTreeMap<String, OverlayActivityRule>,
+) -> OverlayActivitySurfaceFilters {
     let surface = value.and_then(Value::as_object);
     let types = surface
         .and_then(|surface| surface.get("types"))
@@ -417,17 +446,38 @@ pub(super) fn normalize_surface(value: Option<&Value>) -> OverlayActivitySurface
         .and_then(Value::as_object);
     let legacy_favorite_group_keys =
         normalize_favorite_group_keys(surface.and_then(|surface| surface.get("favoriteGroupKeys")));
-    let mut normalized = OverlayActivitySurfaceFilters::default_rules();
+    let mut normalized = OverlayActivitySurfaceFilters {
+        types: default_types.clone(),
+    };
     for definition in ACTIVITY_TYPES {
         let legacy_rule = legacy_category_rule(definition, categories, &legacy_favorite_group_keys);
         let source = types.and_then(|types| get_type_candidate(types, definition));
-        let fallback_rule = legacy_rule.unwrap_or_else(|| default_rule(definition));
+        let fallback_rule = legacy_rule.unwrap_or_else(|| {
+            default_types
+                .get(definition.key)
+                .cloned()
+                .unwrap_or_else(|| default_rule(definition))
+        });
         let rule = source
             .map(|source| normalize_rule(source, definition, &fallback_rule))
             .unwrap_or(fallback_rule);
         normalized.types.insert(definition.key.to_string(), rule);
     }
     normalized
+}
+
+fn hmd_scope_for_definition(definition: &ActivityTypeDefinition) -> OverlayActivityScope {
+    match definition.key {
+        "OnPlayerJoined" | "OnPlayerLeft" | "DisplayName" | "TrustLevel" => {
+            OverlayActivityScope::Friends
+        }
+        "Online" | "Offline" | "GPS" | "Status" => OverlayActivityScope::AllFavorites,
+        "Unfriend" | "groupChange" | "group.announcement" | "group.informative"
+        | "group.joinRequest" | "group.transfer" | "Event" | "External" | "Blocked"
+        | "Unblocked" | "Muted" | "Unmuted" | "VideoPlay" => OverlayActivityScope::Off,
+        "BlockedOnPlayerJoined" => OverlayActivityScope::EveryoneInInstance,
+        _ => definition.default_scope,
+    }
 }
 
 pub(super) fn migrate_legacy_shared_feed_wrist_filters(value: Value) -> OverlayActivityFilters {

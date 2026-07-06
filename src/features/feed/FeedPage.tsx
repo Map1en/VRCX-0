@@ -32,30 +32,36 @@ function FeedViewModeToggle({
 
     return (
         <ToggleGroup
-            type="single"
             variant="outline"
             size="sm"
-            value={value}
+            value={value ? [value] : []}
             onValueChange={(nextValue) => {
-                if (nextValue) {
-                    onValueChange(nextValue as FeedViewMode);
+                if (nextValue[0]) {
+                    onValueChange(nextValue[0] as FeedViewMode);
                 }
             }}
         >
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <ToggleGroupItem value="table" aria-label={tableLabel}>
-                        <TableIcon data-icon="icon" />
-                    </ToggleGroupItem>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <ToggleGroupItem value="table" aria-label={tableLabel}>
+                            <TableIcon data-icon="icon" />
+                        </ToggleGroupItem>
+                    }
+                />
                 <TooltipContent>{tableLabel}</TooltipContent>
             </Tooltip>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <ToggleGroupItem value="columns" aria-label={columnsLabel}>
-                        <Columns3Icon data-icon="icon" />
-                    </ToggleGroupItem>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <ToggleGroupItem
+                            value="columns"
+                            aria-label={columnsLabel}
+                        >
+                            <Columns3Icon data-icon="icon" />
+                        </ToggleGroupItem>
+                    }
+                />
                 <TooltipContent>{columnsLabel}</TooltipContent>
             </Tooltip>
         </ToggleGroup>

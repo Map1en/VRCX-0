@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { AboutVrcxDialog } from '@/components/about/AboutDialog';
 import { useDirectAccessAction } from '@/components/layout/directAccessAction';
 import { useRightSidePanelVisibility } from '@/components/layout/useRightSidePanelVisibility';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog';
-import { SupportVrcxDialog } from '@/components/support/SupportVrcxDialog';
 import { OpenSourceNoticeDialog } from '@/features/settings/components/OpenSourceNoticeDialog';
 import { commands } from '@/platform/tauri/bindings';
 import { tauriEvents } from '@/platform/tauri/events';
@@ -24,21 +24,11 @@ import {
 import { normalizeZoomLevel } from '@/services/themeService';
 import { links } from '@/shared/constants/link';
 import { publishNavCustomizeRequested } from '@/shared/events/navLayoutEvents';
-import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
-import { Button } from '@/ui/shadcn/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/ui/shadcn/dialog';
 
 const MAC_NATIVE_MENU_ACTION_EVENT = 'macNativeMenuAction';
 const ZOOM_STEP = 10;
@@ -59,7 +49,6 @@ export function MacNativeMenuActionHost() {
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
-    const [supportOpen, setSupportOpen] = useState(false);
     const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
@@ -81,8 +70,6 @@ export function MacNativeMenuActionHost() {
     const { toggleSidePanelOpen: toggleFriendsSidebar } =
         useRightSidePanelVisibility(location.pathname);
     const currentZoom = normalizeZoomLevel(zoomLevel);
-    // oxlint-disable-next-line no-undef
-    const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
 
     const applyZoomLevel = useCallback(
         async (nextZoom: number) => {
@@ -166,7 +153,6 @@ export function MacNativeMenuActionHost() {
                 action !== 'discord' &&
                 action !== 'qq-group' &&
                 action !== 'changelog' &&
-                action !== 'support-vrcx' &&
                 action !== 'keyboard-shortcuts' &&
                 action !== 'about' &&
                 action !== 'open-devtools';
@@ -245,9 +231,6 @@ export function MacNativeMenuActionHost() {
                 case 'keyboard-shortcuts':
                     setSystemHostOpen('keyboardShortcutsOpen', true);
                     break;
-                case 'support-vrcx':
-                    setSupportOpen(true);
-                    break;
                 case 'open-devtools':
                     runOpenDevtools();
                     break;
@@ -320,39 +303,14 @@ export function MacNativeMenuActionHost() {
                 open={openSourceNoticeOpen}
                 onOpenChange={setOpenSourceNoticeOpen}
             />
-            <SupportVrcxDialog
-                open={supportOpen}
-                onOpenChange={setSupportOpen}
+            <AboutVrcxDialog
+                open={aboutOpen}
+                onOpenChange={setAboutOpen}
+                onOpenLicenses={() => {
+                    setAboutOpen(false);
+                    setOpenSourceNoticeOpen(true);
+                }}
             />
-            <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-                <DialogContent showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle>{t('app_menu.about_title')}</DialogTitle>
-                        <DialogDescription>
-                            {t('app_menu.about_description')}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="bg-muted/30 rounded-lg border p-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">
-                                {t('app_menu.version')}
-                            </span>
-                            <span className="font-medium">{appVersion}</span>
-                        </div>
-                    </div>
-                    <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => {
-                            setAboutOpen(false);
-                            setOpenSourceNoticeOpen(true);
-                        }}
-                    >
-                        {t('app_menu.open_source_licenses')}
-                    </Button>
-                    <DialogFooter showCloseButton />
-                </DialogContent>
-            </Dialog>
         </>
     );
 }

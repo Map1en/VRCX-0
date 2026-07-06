@@ -12,18 +12,30 @@ English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | 
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
 [![Discord](https://img.shields.io/discord/1494343220467994644?logo=discord&logoColor=white&label=discord&style=flat)](https://discord.gg/fehKP3SVPN)
 
+### The fast, lightweight VRCX.
+
 </div>
 
-VRCX-0 is a ground-up rewrite of VRCX built on **Tauri + React**, replacing the original CefSharp + Vue stack. It is developed by one of VRCX's former maintainers.
+VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers, rebuilt on a native Rust core (Tauri + React). The most direct payoff of the rewrite is performance: years of accumulated history stay smooth, and both memory usage and install size are far below the original.
 
-VRCX-0 is designed for everyday use: dramatically lower resource usage, a smaller install, and an active development roadmap. As the upstream VRCX project has shifted toward maintenance, VRCX-0 is where new features are being built.
+On first launch it automatically imports your existing VRCX data and settings. The original data is never modified — you can switch back at any time.
+
+As the upstream VRCX project has shifted toward maintenance, VRCX-0 is where new features are being built.
 
 ## Highlights
 
-- **50%–70% lower memory usage** than VRCX
-- Just over 10 MB to download, just over 30 MB on disk — over 10× smaller than VRCX
-- **Background mode** — a step beyond minimizing to tray: opt in to drop memory
-  to just tens of MB while all core features keep running normally
+- **Years of history won't slow it down** — data that makes VRCX visibly
+  sluggish stays smooth in VRCX-0; it runs fine even on a potato PC or a home
+  server
+- **About 50%–70% less memory than VRCX** — **Background mode** drops it to
+  just tens of MB while all core features keep running normally
+- **Smaller than a single avatar bundle** — just over 10 MB to download, just
+  over 30 MB on disk; over 10× smaller than VRCX
+- **Zero-friction migration** — your VRCX database and settings import
+  automatically; the original data is never modified
+
+Beyond that:
+
 - **Social AI** — a built-in assistant that helps you make sense of your VRChat
   social life: ask who you play with most, who you're drifting away from, or the
   best time to catch friends online. Powered by your own OpenAI-compatible
@@ -44,7 +56,6 @@ VRCX-0 is designed for everyday use: dramatically lower resource usage, a smalle
   Discord-compatible payload; choose exactly which fields to send
 - Full keyboard navigation
 - Headless mode for advanced setups — see `crates/headless`
-- Actively developed with new features on its own roadmap
 
 ## Data Migration
 

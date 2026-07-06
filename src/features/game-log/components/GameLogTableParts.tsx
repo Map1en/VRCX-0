@@ -61,16 +61,18 @@ function GameLogLocationDetail({
     if (!targetLocation) {
         return (
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
-                        <span className="min-w-0 truncate">{primary}</span>
-                        {secondary ? (
-                            <span className="text-muted-foreground min-w-0 truncate text-xs">
-                                {secondary}
-                            </span>
-                        ) : null}
-                    </div>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                            <span className="min-w-0 truncate">{primary}</span>
+                            {secondary ? (
+                                <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                    {secondary}
+                                </span>
+                            ) : null}
+                        </div>
+                    }
+                />
                 <TooltipContent>
                     {[primary, secondary].filter(Boolean).join(' · ')}
                 </TooltipContent>
@@ -80,26 +82,28 @@ function GameLogLocationDetail({
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="flex min-w-0 items-center gap-1.5 text-sm">
-                    <Location
-                        location={String(targetLocation)}
-                        hint={String(row?.worldName || primary)}
-                        grouphint={String(row?.groupName || '')}
-                        enableContextMenu
-                        showLaunchActions
-                        onShowPreviousInstances={() => {
-                            onPreviousInstances?.(row);
-                        }}
-                        className="text-sm"
-                    />
-                    {secondary ? (
-                        <span className="text-muted-foreground min-w-0 truncate text-xs">
-                            {secondary}
-                        </span>
-                    ) : null}
-                </div>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                        <Location
+                            location={String(targetLocation)}
+                            hint={String(row?.worldName || primary)}
+                            grouphint={String(row?.groupName || '')}
+                            enableContextMenu
+                            showLaunchActions
+                            onShowPreviousInstances={() => {
+                                onPreviousInstances?.(row);
+                            }}
+                            className="text-sm"
+                        />
+                        {secondary ? (
+                            <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                {secondary}
+                            </span>
+                        ) : null}
+                    </div>
+                }
+            />
             <TooltipContent>
                 {[primary, secondary].filter(Boolean).join(' · ')}
             </TooltipContent>
@@ -120,28 +124,28 @@ function TypeFilterDropdown({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="min-w-44 justify-between"
-                >
-                    <span>
-                        {selectedTypes.length
-                            ? `${selectedTypes.length}/${types.length}`
-                            : t('view.game_log.filter_placeholder')}
-                    </span>
-                    <ChevronRightIcon
-                        data-icon="inline-end"
-                        className="text-muted-foreground rotate-90"
-                    />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="min-w-44 justify-between"
+                    >
+                        <span>
+                            {selectedTypes.length
+                                ? `${selectedTypes.length}/${types.length}`
+                                : t('view.game_log.filter_placeholder')}
+                        </span>
+                        <ChevronRightIcon
+                            data-icon="inline-end"
+                            className="text-muted-foreground rotate-90"
+                        />
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuGroup>
-                    <DropdownMenuItem
-                        onSelect={() => onSelectedTypesChange([])}
-                    >
+                    <DropdownMenuItem onClick={() => onSelectedTypesChange([])}>
                         {t('view.search.avatar.all')}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -151,7 +155,7 @@ function TypeFilterDropdown({
                         <DropdownMenuCheckboxItem
                             key={type}
                             checked={selectedTypes.includes(type)}
-                            onSelect={(event) => event.preventDefault()}
+                            onClick={(event) => event.preventDefault()}
                             onCheckedChange={(checked) => {
                                 onSelectedTypesChange(
                                     checked
@@ -195,7 +199,7 @@ function TypeFilterToggleGroup({
                 {t('view.search.avatar.all')}
             </Button>
             <ToggleGroup
-                type="multiple"
+                multiple
                 variant="outline"
                 size="sm"
                 spacing={1}

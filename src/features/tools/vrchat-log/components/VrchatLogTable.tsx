@@ -62,100 +62,107 @@ export function VrchatLogTable({
 
                     return (
                         <ContextMenu key={row.key}>
-                            <ContextMenuTrigger asChild>
-                                <div
-                                    style={{
-                                        height: `${LOG_ROW_HEIGHT}px`,
-                                        transform: `translateY(${row.start + LOG_HEADER_HEIGHT}px)`
-                                    }}
-                                    onClick={(event) => {
-                                        const target =
-                                            event.target as HTMLElement;
-                                        if (
-                                            target.closest(
-                                                '[data-log-select-control]'
-                                            )
-                                        ) {
-                                            return;
-                                        }
-                                        toggleEntrySelected(entry, !selected);
-                                    }}
-                                    className={cn(
-                                        'border-border hover:bg-accent/25 absolute top-0 right-0 left-0 grid cursor-default items-center gap-2 border-b px-2 text-[13px] leading-5',
-                                        LOG_TABLE_GRID_CLASS,
-                                        selected && 'bg-accent/30'
-                                    )}
-                                >
+                            <ContextMenuTrigger
+                                render={
                                     <div
-                                        className="flex justify-center"
-                                        data-log-select-control
-                                    >
-                                        <Checkbox
-                                            checked={selected}
-                                            onCheckedChange={(checked) =>
-                                                toggleEntrySelected(
-                                                    entry,
-                                                    checked === true
+                                        style={{
+                                            height: `${LOG_ROW_HEIGHT}px`,
+                                            transform: `translateY(${row.start + LOG_HEADER_HEIGHT}px)`
+                                        }}
+                                        onClick={(event) => {
+                                            const target =
+                                                event.target as HTMLElement;
+                                            if (
+                                                target.closest(
+                                                    '[data-log-select-control]'
                                                 )
+                                            ) {
+                                                return;
                                             }
-                                        />
-                                    </div>
-                                    <div className="text-muted-foreground whitespace-nowrap tabular-nums">
-                                        {entry.timestamp}
-                                    </div>
-                                    <div>
-                                        <Badge
-                                            className={cn(
-                                                'h-5 px-2 text-[11px] font-semibold',
-                                                levelClassName(entry.level)
-                                            )}
-                                        >
-                                            {entry.level}
-                                        </Badge>
-                                    </div>
-                                    <div className="text-muted-foreground min-w-0">
-                                        {entry.category ? (
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span className="block truncate">
-                                                        {categoryLabel}
-                                                    </span>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="max-w-md break-words">
-                                                    {categoryLabel}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        ) : (
-                                            <span className="block truncate">
-                                                {categoryLabel}
-                                            </span>
+                                            toggleEntrySelected(
+                                                entry,
+                                                !selected
+                                            );
+                                        }}
+                                        className={cn(
+                                            'border-border hover:bg-accent/25 absolute top-0 right-0 left-0 grid cursor-default items-center gap-2 border-b px-2 text-[13px] leading-5',
+                                            LOG_TABLE_GRID_CLASS,
+                                            selected && 'bg-accent/30'
                                         )}
-                                    </div>
-                                    <div
-                                        className="text-foreground flex min-w-0 items-center gap-2"
-                                        title={entryMessageText(entry)}
                                     >
-                                        <span className="min-w-0 truncate">
-                                            {entry.message}
-                                        </span>
-                                        {entry.continuationLines.length ? (
-                                            <Badge className="bg-muted text-muted-foreground h-5 shrink-0 px-1.5 text-[11px] font-medium">
-                                                {t(
-                                                    'view.tools.vrchat_log.continuation_count',
-                                                    {
-                                                        count: entry
-                                                            .continuationLines
-                                                            .length
-                                                    }
+                                        <div
+                                            className="flex justify-center"
+                                            data-log-select-control
+                                        >
+                                            <Checkbox
+                                                checked={selected}
+                                                onCheckedChange={(checked) =>
+                                                    toggleEntrySelected(
+                                                        entry,
+                                                        checked === true
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div className="text-muted-foreground whitespace-nowrap tabular-nums">
+                                            {entry.timestamp}
+                                        </div>
+                                        <div>
+                                            <Badge
+                                                className={cn(
+                                                    'h-5 px-2 text-[11px] font-semibold',
+                                                    levelClassName(entry.level)
                                                 )}
+                                            >
+                                                {entry.level}
                                             </Badge>
-                                        ) : null}
+                                        </div>
+                                        <div className="text-muted-foreground min-w-0">
+                                            {entry.category ? (
+                                                <Tooltip>
+                                                    <TooltipTrigger
+                                                        render={
+                                                            <span className="block truncate">
+                                                                {categoryLabel}
+                                                            </span>
+                                                        }
+                                                    />
+                                                    <TooltipContent className="max-w-md break-words">
+                                                        {categoryLabel}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            ) : (
+                                                <span className="block truncate">
+                                                    {categoryLabel}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div
+                                            className="text-foreground flex min-w-0 items-center gap-2"
+                                            title={entryMessageText(entry)}
+                                        >
+                                            <span className="min-w-0 truncate">
+                                                {entry.message}
+                                            </span>
+                                            {entry.continuationLines.length ? (
+                                                <Badge className="bg-muted text-muted-foreground h-5 shrink-0 px-1.5 text-[11px] font-medium">
+                                                    {t(
+                                                        'view.tools.vrchat_log.continuation_count',
+                                                        {
+                                                            count: entry
+                                                                .continuationLines
+                                                                .length
+                                                        }
+                                                    )}
+                                                </Badge>
+                                            ) : null}
+                                        </div>
                                     </div>
-                                </div>
-                            </ContextMenuTrigger>
+                                }
+                            />
                             <ContextMenuContent>
                                 <ContextMenuItem
-                                    onSelect={() => {
+                                    onClick={() => {
                                         copyText(entryToText(entry));
                                     }}
                                 >
@@ -163,7 +170,7 @@ export function VrchatLogTable({
                                     {t('view.tools.vrchat_log.copy_entry')}
                                 </ContextMenuItem>
                                 <ContextMenuItem
-                                    onSelect={() => {
+                                    onClick={() => {
                                         copyText(entryMessageText(entry));
                                     }}
                                 >
@@ -173,7 +180,7 @@ export function VrchatLogTable({
                                 <ContextMenuSeparator />
                                 <ContextMenuItem
                                     disabled={!selectedCount || isCopying}
-                                    onSelect={copySelectedEntries}
+                                    onClick={copySelectedEntries}
                                 >
                                     <ClipboardCopyIcon />
                                     {t('view.tools.vrchat_log.copy_selected')}

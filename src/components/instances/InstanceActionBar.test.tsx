@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     },
     showLaunchDialog: vi.fn(),
     tryOpenLaunchLocation: vi.fn(),
+    selfInviteToInstance: vi.fn(),
     confirm: vi.fn(),
     getInstance: vi.fn(),
     closeInstance: vi.fn(),
@@ -39,6 +40,10 @@ vi.mock('@/repositories/vrchatInstanceRepository', () => ({
 
 vi.mock('@/services/directAccessService', () => ({
     tryOpenLaunchLocation: mocks.tryOpenLaunchLocation
+}));
+
+vi.mock('@/services/launchService', () => ({
+    selfInviteToInstance: mocks.selfInviteToInstance
 }));
 
 vi.mock('@/state/launchStore', () => ({
@@ -78,15 +83,37 @@ vi.mock('react-i18next', () => {
 });
 
 vi.mock('@/ui/shadcn/tooltip', async () => {
-    const React = await import('react');
+    const ReactRuntime = await import('react');
+    type MockRender =
+        | React.ReactNode
+        | ((props: object, state: object) => React.ReactNode);
+    const renderMockSlot = (
+        render: MockRender | undefined,
+        children: React.ReactNode
+    ) => {
+        if (typeof render === 'function') {
+            return render({}, {});
+        }
+        return ReactRuntime.isValidElement(render) ? render : children;
+    };
 
     return {
         Tooltip: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children),
-        TooltipTrigger: ({ children }: any) =>
-            React.createElement(React.Fragment, null, children),
+            ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
+        TooltipTrigger: ({
+            children,
+            render
+        }: {
+            children?: React.ReactNode;
+            render?: MockRender;
+        }) =>
+            ReactRuntime.createElement(
+                ReactRuntime.Fragment,
+                null,
+                renderMockSlot(render, children)
+            ),
         TooltipContent: ({ children }: any) =>
-            React.createElement(
+            ReactRuntime.createElement(
                 'span',
                 { 'data-tooltip-content': true },
                 children
@@ -94,12 +121,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
     };
 });
 
-import { buildInstanceActionTarget } from '@/components/location/locationModel';
-
-import {
-    buildInstanceActionSelfInviteRequest,
-    InstanceActionBar
-} from './InstanceActionBar';
+import { InstanceActionBar } from './InstanceActionBar';
 
 function renderActionBar(props: any = {}) {
     return renderToStaticMarkup(React.createElement(InstanceActionBar, props));
@@ -113,6 +135,7 @@ describe('InstanceActionBar', () => {
         mocks.runtimeState.gameState.isGameRunning = true;
         mocks.showLaunchDialog.mockReset();
         mocks.tryOpenLaunchLocation.mockReset();
+        mocks.selfInviteToInstance.mockReset();
         mocks.confirm.mockReset();
         mocks.getInstance.mockReset();
         mocks.closeInstance.mockReset();
@@ -217,44 +240,6 @@ describe('InstanceActionBar', () => {
         expect(html).toContain('aria-label="Launch instance"');
         expect(html).not.toContain('aria-label="Open In-Game"');
         expect(html).toContain('aria-label="Self invite"');
-    });
-
-    it('builds self invite requests from target shortName without resolving shortName first', () => {
-        const actionTarget = buildInstanceActionTarget({
-            target: {
-                location: 'wrld_test:12345~hidden(usr_owner)',
-                shortName: 'tok'
-            }
-        });
-
-        expect(
-            buildInstanceActionSelfInviteRequest(
-                actionTarget,
-                'https://api.example.test/api/1'
-            )
-        ).toEqual({
-            worldId: 'wrld_test',
-            instanceId: '12345~hidden(usr_owner)',
-            shortName: 'tok',
-            endpoint: 'https://api.example.test/api/1'
-        });
-    });
-
-    it('prefers shortName embedded in the invite location', () => {
-        const actionTarget = buildInstanceActionTarget({
-            target: {
-                location:
-                    'wrld_test:12345~hidden(usr_owner)&shortName=fromLocation',
-                shortName: 'fromTarget'
-            }
-        });
-
-        expect(
-            buildInstanceActionSelfInviteRequest(
-                actionTarget,
-                'https://api.example.test/api/1'
-            ).shortName
-        ).toBe('fromLocation');
     });
 
     it('does not render instance actions for private or non-instance locations', () => {

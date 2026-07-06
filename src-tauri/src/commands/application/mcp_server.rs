@@ -42,6 +42,19 @@ pub async fn app__mcp_server_set_allow_vrchat_writes(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__mcp_server_set_allow_lan_connections(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<McpServerStatus, AppError> {
+    state
+        .mcp_controller
+        .set_allow_lan_connections(enabled)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__mcp_server_set_port(
     state: State<'_, AppState>,
     port: u16,

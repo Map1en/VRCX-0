@@ -46,18 +46,20 @@ export function FriendLogTypeFilterDropdown({ value, onChange }: any) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="min-w-56 justify-between"
-                >
-                    <span className="max-w-52 truncate">{label}</span>
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="min-w-56 justify-between"
+                    >
+                        <span className="max-w-52 truncate">{label}</span>
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuGroup>
-                    <DropdownMenuItem onSelect={() => onChange([])}>
+                    <DropdownMenuItem onClick={() => onChange([])}>
                         {t('view.friend_log.filter_placeholder')}
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -67,7 +69,7 @@ export function FriendLogTypeFilterDropdown({ value, onChange }: any) {
                         <DropdownMenuCheckboxItem
                             key={type}
                             checked={valueSet.has(type)}
-                            onSelect={(event) => event.preventDefault()}
+                            onClick={(event) => event.preventDefault()}
                             onCheckedChange={(checked) => {
                                 onChange(
                                     checked

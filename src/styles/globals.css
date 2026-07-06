@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source("../");
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
@@ -403,6 +403,32 @@
         @apply bg-muted/20;
     }
 
+    .reduce-effects *,
+    .reduce-effects *::before,
+    .reduce-effects *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+    }
+
+    .reduce-effects [class*='backdrop-blur'],
+    .reduce-effects [class*='backdrop-blur']::before,
+    .reduce-effects [class*='backdrop-blur']::after,
+    .reduce-effects [data-slot='dropdown-menu-content']::before,
+    .reduce-effects [data-slot='context-menu-content']::before,
+    .reduce-effects [data-slot='select-content']::before,
+    .reduce-effects [data-slot='combobox-content']::before,
+    .reduce-effects [data-slot='menubar-content']::before,
+    .reduce-effects [data-slot='dialog-content'],
+    .reduce-effects [data-slot='popover-content'],
+    .reduce-effects [data-slot='card'],
+    .reduce-effects [data-slot='dialog-overlay'],
+    .reduce-effects [data-slot='alert-dialog-overlay'],
+    .reduce-effects [data-slot='sheet-overlay'] {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
     @keyframes feed-column-row-enter {
         0% {
             opacity: 0;
@@ -507,4 +533,13 @@
     .owner-dialog {
         animation: none;
     }
+}
+
+.reduce-effects [data-slot='dialog-overlay'],
+.reduce-effects [data-slot='alert-dialog-overlay'],
+.reduce-effects [data-slot='sheet-overlay'] {
+    --tw-backdrop-blur: initial;
+    background-color: rgb(0 0 0 / 0.4) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }

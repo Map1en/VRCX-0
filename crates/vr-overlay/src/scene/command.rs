@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::model::{Color, Rect};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -16,6 +18,12 @@ pub enum DrawCommand {
         center_y: f32,
         radius: f32,
         color: Color,
+    },
+    Image {
+        rect: Rect,
+        rgba: Arc<[u8]>,
+        width: u32,
+        height: u32,
     },
     Text {
         origin_x: f32,

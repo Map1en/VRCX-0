@@ -757,4 +757,80 @@ mod tests {
             json!(false)
         );
     }
+
+    #[test]
+    fn refreshed_current_user_snapshot_preserves_local_authority_fields() {
+        let runtime = RealtimeCurrentUserRuntime::new();
+        runtime.set_snapshot(
+            "usr_self".into(),
+            7,
+            json!({
+                "id": "usr_self",
+                "displayName": "Self",
+                "location": "wrld_local:1",
+                "worldId": "wrld_local",
+                "instanceId": "1",
+                "state": "online",
+                "stateBucket": "online",
+                "status": "join me",
+                "statusDescription": "Local status",
+                "worldName": "Local World",
+                "bio": "old bio"
+            }),
+        );
+
+        let output = runtime
+            .apply_refreshed_snapshot(
+                7,
+                json!({
+                    "id": "usr_self",
+                    "displayName": "Self Fresh",
+                    "location": "offline",
+                    "worldId": "offline",
+                    "instanceId": "offline",
+                    "state": "offline",
+                    "stateBucket": "offline",
+                    "status": "busy",
+                    "statusDescription": "REST status",
+                    "worldName": "REST World",
+                    "bio": "fresh bio"
+                }),
+                json!({}),
+                RealtimeCurrentUserAuthority {
+                    is_game_running: true,
+                    game_log_enabled: true,
+                    game_log_location: "wrld_auth:123".into(),
+                    game_log_world_name: "Authoritative World".into(),
+                    ..RealtimeCurrentUserAuthority::default()
+                },
+            )
+            .expect("refreshed snapshot should update profile fields");
+
+        assert_eq!(
+            output.projection.snapshot["displayName"],
+            json!("Self Fresh")
+        );
+        assert_eq!(output.projection.snapshot["bio"], json!("fresh bio"));
+        assert_eq!(output.projection.snapshot["status"], json!("join me"));
+        assert_eq!(
+            output.projection.snapshot["statusDescription"],
+            json!("Local status")
+        );
+        assert_eq!(output.projection.snapshot["stateBucket"], json!("online"));
+        assert_eq!(
+            output.projection.snapshot["location"],
+            json!("wrld_auth:123")
+        );
+        assert_eq!(output.projection.snapshot["worldId"], json!("wrld_auth"));
+        assert_eq!(output.projection.snapshot["instanceId"], json!("123"));
+        assert_eq!(
+            output.projection.snapshot["worldName"],
+            json!("Authoritative World")
+        );
+        assert_eq!(output.projection.patch["location"], json!("wrld_auth:123"));
+        assert_eq!(
+            output.projection.patch["$location"]["tag"],
+            json!("wrld_auth:123")
+        );
+    }
 }

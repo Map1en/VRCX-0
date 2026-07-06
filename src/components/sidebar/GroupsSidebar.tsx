@@ -59,25 +59,27 @@ function GroupHeaderRow({ row, onToggleGroup }: any) {
                 }
             }}
         >
-            <CollapsibleTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-between aria-expanded:bg-transparent aria-expanded:text-inherit dark:aria-expanded:bg-transparent"
-                >
-                    <span className="min-w-0 flex-1 truncate text-left">
-                        {row.name} - {row.count}
-                    </span>
-                    <ChevronDownIcon
-                        data-icon="inline-end"
-                        className={cn(
-                            'transition-transform',
-                            !isOpen && '-rotate-90'
-                        )}
-                    />
-                </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-between aria-expanded:bg-transparent aria-expanded:text-inherit dark:aria-expanded:bg-transparent"
+                    >
+                        <span className="min-w-0 flex-1 truncate text-left">
+                            {row.name} - {row.count}
+                        </span>
+                        <ChevronDownIcon
+                            data-icon="inline-end"
+                            className={cn(
+                                'transition-transform',
+                                !isOpen && '-rotate-90'
+                            )}
+                        />
+                    </Button>
+                }
+            />
         </Collapsible>
     );
 }
@@ -298,66 +300,69 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div className="hover:bg-muted/50 flex w-full items-center rounded-lg">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
-                        onClick={() =>
-                            openGroupDialog({
-                                groupId,
-                                title: name,
-                                seedData: instance?.group || instance
-                            })
-                        }
-                    >
-                        <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border">
-                            {iconUrl ? (
-                                <img
-                                    src={iconUrl}
-                                    alt=""
-                                    className="size-full object-cover"
-                                />
-                            ) : (
-                                <UsersIcon
-                                    data-icon="inline-start"
-                                    className="text-muted-foreground"
-                                />
-                            )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="block truncate leading-5 font-medium">
-                                {name}
-                                {userCount !== '' || capacity !== '' ? (
-                                    <span className="ml-1 font-normal">
-                                        ({userCount || '?'}/{capacity || '?'})
-                                    </span>
-                                ) : null}
-                            </span>
-                            <span className="text-muted-foreground block truncate text-xs">
-                                {location ? (
-                                    <Location
-                                        location={location}
-                                        hint={worldHint}
-                                        grouphint={name}
-                                        link={false}
-                                        asButton={false}
-                                        showGroupLink={false}
+            <ContextMenuTrigger
+                render={
+                    <div className="hover:bg-muted/50 flex w-full items-center rounded-lg">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-auto min-w-0 flex-1 justify-start gap-2 p-1.5 text-left font-normal"
+                            onClick={() =>
+                                openGroupDialog({
+                                    groupId,
+                                    title: name,
+                                    seedData: instance?.group || instance
+                                })
+                            }
+                        >
+                            <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border">
+                                {iconUrl ? (
+                                    <img
+                                        src={iconUrl}
+                                        alt=""
+                                        className="size-full object-cover"
                                     />
                                 ) : (
-                                    groupId
+                                    <UsersIcon
+                                        data-icon="inline-start"
+                                        className="text-muted-foreground"
+                                    />
                                 )}
                             </span>
-                        </span>
-                    </Button>
-                </div>
-            </ContextMenuTrigger>
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate leading-5 font-medium">
+                                    {name}
+                                    {userCount !== '' || capacity !== '' ? (
+                                        <span className="ml-1 font-normal">
+                                            ({userCount || '?'}/
+                                            {capacity || '?'})
+                                        </span>
+                                    ) : null}
+                                </span>
+                                <span className="text-muted-foreground block truncate text-xs">
+                                    {location ? (
+                                        <Location
+                                            location={location}
+                                            hint={worldHint}
+                                            grouphint={name}
+                                            link={false}
+                                            asButton={false}
+                                            showGroupLink={false}
+                                        />
+                                    ) : (
+                                        groupId
+                                    )}
+                                </span>
+                            </span>
+                        </Button>
+                    </div>
+                }
+            />
             <ContextMenuContent className="w-52">
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canUseInstanceAction}
-                        onSelect={() => {
+                        onClick={() => {
                             launchInstance();
                         }}
                     >
@@ -365,7 +370,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseInstanceAction}
-                        onSelect={() => {
+                        onClick={() => {
                             sendSelfInvite();
                         }}
                     >

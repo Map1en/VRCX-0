@@ -2,6 +2,7 @@
 name = "vrcx-0-core"
 version = "0.1.0"
 edition = "2021"
+autotests = false
 
 [dependencies]
 chrono = { workspace = true }
@@ -10,3 +11,23 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
 tracing = { workspace = true }
+
+[[test]]
+name = "activity_buckets"
+path = "tests/activity_buckets.rs"
+
+[[test]]
+name = "activity_heatmap"
+path = "tests/activity_heatmap.rs"
+
+[[test]]
+name = "activity_sessions"
+path = "tests/activity_sessions.rs"
+
+[[test]]
+name = "game_log_sessions"
+path = "tests/game_log_sessions.rs"
+
+[[test]]
+name = "social_circles"
+path = "tests/social_circles.rs"

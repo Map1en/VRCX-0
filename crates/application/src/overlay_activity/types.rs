@@ -5,8 +5,8 @@ use serde_json::Value;
 
 use super::definitions::{
     default_activity_rules, default_rule, disabled_activity_rules, has_persisted_filter_rules,
-    known_definition_for_type, migrate_legacy_shared_feed_wrist_filters, normalize_filters,
-    normalize_surface,
+    hmd_activity_rules, known_definition_for_type, migrate_legacy_shared_feed_wrist_filters,
+    normalize_filters, normalize_surface,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -41,6 +41,7 @@ pub struct OverlayActivityTypeDefinition {
     pub category: OverlayActivityCategory,
     pub allowed_scopes: Vec<OverlayActivityScope>,
     pub default_scope: OverlayActivityScope,
+    pub hmd_default_scope: OverlayActivityScope,
     pub aliases: Vec<String>,
 }
 
@@ -118,6 +119,7 @@ pub enum OverlayActivitySurface {
     Wrist,
     Desktop,
     Vr,
+    Hmd,
     Webhook,
 }
 
@@ -130,6 +132,8 @@ pub struct OverlayActivityFilters {
     pub desktop: OverlayActivitySurfaceFilters,
     #[serde(default = "OverlayActivitySurfaceFilters::default_rules")]
     pub vr: OverlayActivitySurfaceFilters,
+    #[serde(default = "OverlayActivitySurfaceFilters::hmd_default_rules")]
+    pub hmd: OverlayActivitySurfaceFilters,
     #[serde(default = "OverlayActivitySurfaceFilters::disabled_rules")]
     pub webhook: OverlayActivitySurfaceFilters,
 }
@@ -153,6 +157,12 @@ impl OverlayActivitySurfaceFilters {
         }
     }
 
+    pub(super) fn hmd_default_rules() -> Self {
+        Self {
+            types: hmd_activity_rules(),
+        }
+    }
+
     pub fn from_types_json(value: &Value) -> Self {
         normalize_surface(Some(value))
     }
@@ -165,6 +175,7 @@ impl Default for OverlayActivityFilters {
             wrist: OverlayActivitySurfaceFilters::default_rules(),
             desktop: OverlayActivitySurfaceFilters::default_rules(),
             vr: OverlayActivitySurfaceFilters::default_rules(),
+            hmd: OverlayActivitySurfaceFilters::hmd_default_rules(),
             webhook: OverlayActivitySurfaceFilters::disabled_rules(),
         }
     }
@@ -188,6 +199,7 @@ impl OverlayActivityFilters {
             OverlayActivitySurface::Wrist => &self.wrist,
             OverlayActivitySurface::Desktop => &self.desktop,
             OverlayActivitySurface::Vr => &self.vr,
+            OverlayActivitySurface::Hmd => &self.hmd,
             OverlayActivitySurface::Webhook => &self.webhook,
         }
     }
@@ -287,5 +299,6 @@ pub struct OverlayActivityDelivery {
     pub entry: OverlayActivityEntry,
     pub desktop: bool,
     pub vr: bool,
+    pub hmd: bool,
     pub webhook: bool,
 }

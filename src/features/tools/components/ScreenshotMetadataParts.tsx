@@ -82,22 +82,26 @@ export function MetadataAuthorLink({ author, endpoint }: any) {
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left"
-                    onClick={() =>
-                        openUserDialog({
-                            userId,
-                            title: displayName || userId
-                        })
-                    }
-                >
-                    <CameraIcon data-icon="inline-start" />
-                    <span className="truncate">{displayName || userId}</span>
-                </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left"
+                        onClick={() =>
+                            openUserDialog({
+                                userId,
+                                title: displayName || userId
+                            })
+                        }
+                    >
+                        <CameraIcon data-icon="inline-start" />
+                        <span className="truncate">
+                            {displayName || userId}
+                        </span>
+                    </Button>
+                }
+            />
             <TooltipContent>{userId}</TooltipContent>
         </Tooltip>
     );

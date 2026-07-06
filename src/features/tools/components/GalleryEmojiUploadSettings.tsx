@@ -48,6 +48,12 @@ export function GalleryEmojiUploadSettings({
                 </FieldLabel>
                 <Select
                     value={emojiAnimationStyle}
+                    items={Object.keys(emojiAnimationStyleList).map(
+                        (styleName) => ({
+                            value: styleName,
+                            label: styleName
+                        })
+                    )}
                     onValueChange={onEmojiAnimationStyleChange}
                 >
                     <SelectTrigger className="w-full">

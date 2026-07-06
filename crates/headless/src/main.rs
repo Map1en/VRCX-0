@@ -21,7 +21,9 @@ use vrcx_0_host::app_paths::resolve_app_data_dir;
 use vrcx_0_host::error_log::{
     append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
 };
-use vrcx_0_runtime_host::{RuntimeHostOptions, RuntimeHostState};
+use vrcx_0_runtime_host::{
+    CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostState,
+};
 
 fn main() -> ExitCode {
     build_adaptive_tokio_runtime().block_on(async_main())
@@ -41,6 +43,11 @@ fn build_adaptive_tokio_runtime() -> tokio::runtime::Runtime {
 
 async fn async_main() -> ExitCode {
     init_tls_crypto_provider();
+
+    let args: Vec<String> = std::env::args().collect();
+    let force_login = args.iter().any(|arg| arg == "--login" || arg == "-l");
+    let cli_login_prompt: Option<Arc<dyn CliLoginPrompt>> =
+        force_login.then(|| Arc::new(StdinLoginPrompt) as Arc<dyn CliLoginPrompt>);
 
     let app_data_dir = match resolve_app_data_dir() {
         Ok(resolution) => {
@@ -63,7 +70,7 @@ async fn async_main() -> ExitCode {
         realtime_origin: "http://localhost:9000".into(),
         launched_from_autostart: false,
         app_data_dir: app_data_dir.clone(),
-        app_version: String::new(),
+        app_version: product_app_version(),
     }) {
         Ok(state) => state,
         Err(error) => {
@@ -85,7 +92,7 @@ async fn async_main() -> ExitCode {
         .set_executor(TokioRuntimeTaskExecutor);
 
     match state
-        .start_backend_runtime(BackendRuntimeMode::Headless)
+        .start_backend_runtime(BackendRuntimeMode::Headless, cli_login_prompt)
         .await
     {
         Ok(_) => {}
@@ -98,7 +105,6 @@ async fn async_main() -> ExitCode {
             return ExitCode::from(1);
         }
     }
-
     println!("headless runtime is running. Press Ctrl+C to stop.");
     tokio::select! {
         signal = tokio::signal::ctrl_c() => {
@@ -109,13 +115,11 @@ async fn async_main() -> ExitCode {
                     format!("failed to wait for Ctrl+C: {error}"),
                 );
                 console_sink.begin_shutdown();
-                state.stop_backend_runtime("signal-error");
-                state.runtime_context.tasks.stop_all();
+                shutdown_runtime(&state, "signal-error");
                 return ExitCode::from(1);
             }
             console_sink.begin_shutdown();
-            state.stop_backend_runtime("ctrl-c");
-            state.runtime_context.tasks.stop_all();
+            shutdown_runtime(&state, "ctrl-c");
             ExitCode::SUCCESS
         }
         fatal = fatal_rx.recv() => {
@@ -126,10 +130,71 @@ async fn async_main() -> ExitCode {
                 format!("headless runtime fatal error: {reason}"),
             );
             console_sink.begin_shutdown();
-            state.stop_backend_runtime("fatal-error");
-            state.runtime_context.tasks.stop_all();
+            shutdown_runtime(&state, "fatal-error");
             ExitCode::from(1)
         }
+    }
+}
+
+fn shutdown_runtime(state: &RuntimeHostState, reason: &str) {
+    state.stop_backend_runtime(reason);
+    state.runtime_context.tasks.stop_all();
+}
+
+fn product_app_version() -> String {
+    const TAURI_CONFIG: &str = include_str!("../../../src-tauri/tauri.conf.json");
+    serde_json::from_str::<Value>(TAURI_CONFIG)
+        .ok()
+        .and_then(|value| {
+            value
+                .get("version")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|version| !version.is_empty())
+                .map(ToOwned::to_owned)
+        })
+        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").into())
+}
+
+struct StdinLoginPrompt;
+
+impl CliLoginPrompt for StdinLoginPrompt {
+    fn prompt_username(&self) -> std::io::Result<String> {
+        print!("Username/Email: ");
+        std::io::Write::flush(&mut std::io::stdout())?;
+        let mut username = String::new();
+        std::io::stdin().read_line(&mut username)?;
+        Ok(username.trim().to_string())
+    }
+
+    fn prompt_password(&self) -> std::io::Result<String> {
+        rpassword::prompt_password("Password: ")
+    }
+
+    fn prompt_two_factor(&self, methods: &[String]) -> std::io::Result<CliTwoFactorChoice> {
+        println!("2FA is required. Select an authentication method:");
+        for (index, method) in methods.iter().enumerate() {
+            println!("{}: {}", index + 1, method);
+        }
+        print!("Selection [1]: ");
+        std::io::Write::flush(&mut std::io::stdout())?;
+
+        let mut selection = String::new();
+        std::io::stdin().read_line(&mut selection)?;
+        let selection = selection.trim();
+        let method_index = if selection.is_empty() {
+            0
+        } else {
+            selection.parse::<usize>().unwrap_or(1).saturating_sub(1)
+        };
+
+        let method = methods
+            .get(method_index)
+            .or_else(|| methods.first())
+            .cloned()
+            .unwrap_or_default();
+        let code = rpassword::prompt_password(format!("Enter {method} code: "))?;
+        Ok(CliTwoFactorChoice { method, code })
     }
 }
 

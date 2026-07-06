@@ -1,5 +1,5 @@
 import { ChevronDownIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
@@ -20,12 +20,7 @@ import {
     InputGroupButton,
     InputGroupInput
 } from '@/ui/shadcn/input-group';
-import {
-    Popover,
-    PopoverAnchor,
-    PopoverContent,
-    PopoverTrigger
-} from '@/ui/shadcn/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
     SelectContent,
@@ -75,17 +70,24 @@ const groupAccessTypeOptions = [
     }
 ];
 
+type InstanceGroupOption = {
+    displayName?: unknown;
+    groupId?: unknown;
+    id?: unknown;
+    name?: unknown;
+};
+
 function normalizeText(value: any) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
-function groupIdForOption(group: any) {
+function groupIdForOption(group?: InstanceGroupOption | null) {
     return normalizeText(group?.groupId || group?.id);
 }
 
-function groupLabel(group: any) {
+function groupLabel(group?: InstanceGroupOption | null) {
     const groupId = groupIdForOption(group);
     return normalizeText(group?.name || group?.displayName) || groupId;
 }
@@ -137,6 +139,7 @@ export function WorldNewInstanceDialog({
     });
     const [legacySeed, setLegacySeed] = useState('00001');
     const [displayNamePresetsOpen, setDisplayNamePresetsOpen] = useState(false);
+    const displayNameAnchorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (open && request?.defaults) {
@@ -262,6 +265,13 @@ export function WorldNewInstanceDialog({
         return (
             <Select
                 value={form.groupId}
+                items={visibleGroupOptions.map((group: InstanceGroupOption) => {
+                    const groupId = groupIdForOption(group);
+                    return {
+                        value: groupId,
+                        label: groupLabel(group)
+                    };
+                })}
                 disabled={disabled}
                 onValueChange={patchGroupId}
             >
@@ -319,6 +329,10 @@ export function WorldNewInstanceDialog({
                                 </FieldLabel>
                                 <Select
                                     value={form.accessType}
+                                    items={accessTypeOptions.map((option) => ({
+                                        value: option.value,
+                                        label: t(option.labelKey)
+                                    }))}
                                     disabled={Boolean(request?.created)}
                                     onValueChange={(value) =>
                                         patchForm({ accessType: value })
@@ -349,6 +363,10 @@ export function WorldNewInstanceDialog({
                                 </FieldLabel>
                                 <Select
                                     value={form.region}
+                                    items={regionOptions.map((region) => ({
+                                        value: region.value,
+                                        label: t(region.labelKey)
+                                    }))}
                                     disabled={Boolean(request?.created)}
                                     onValueChange={(value) =>
                                         patchForm({ region: value })
@@ -392,6 +410,12 @@ export function WorldNewInstanceDialog({
                                         </FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
+                                            items={groupAccessTypeOptions.map(
+                                                (option) => ({
+                                                    value: option.value,
+                                                    label: t(option.labelKey)
+                                                })
+                                            )}
                                             disabled={Boolean(request?.created)}
                                             onValueChange={(value) =>
                                                 patchForm({
@@ -507,23 +531,21 @@ export function WorldNewInstanceDialog({
                                     open={displayNamePresetsOpen}
                                     onOpenChange={setDisplayNamePresetsOpen}
                                 >
-                                    <PopoverAnchor asChild>
-                                        <InputGroup>
-                                            <InputGroupInput
-                                                id="world-instance-display-name"
-                                                value={form.displayName}
-                                                disabled={Boolean(
-                                                    request?.created
-                                                )}
-                                                onChange={(event) =>
-                                                    patchDisplayName(
-                                                        event.target.value
-                                                    )
-                                                }
-                                            />
-                                            {displayNamePresets.length ? (
-                                                <InputGroupAddon align="inline-end">
-                                                    <PopoverTrigger asChild>
+                                    <InputGroup ref={displayNameAnchorRef}>
+                                        <InputGroupInput
+                                            id="world-instance-display-name"
+                                            value={form.displayName}
+                                            disabled={Boolean(request?.created)}
+                                            onChange={(event) =>
+                                                patchDisplayName(
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                        {displayNamePresets.length ? (
+                                            <InputGroupAddon align="inline-end">
+                                                <PopoverTrigger
+                                                    render={
                                                         <InputGroupButton
                                                             size="icon-xs"
                                                             aria-label={t(
@@ -535,14 +557,15 @@ export function WorldNewInstanceDialog({
                                                         >
                                                             <ChevronDownIcon data-icon="inline-start" />
                                                         </InputGroupButton>
-                                                    </PopoverTrigger>
-                                                </InputGroupAddon>
-                                            ) : null}
-                                        </InputGroup>
-                                    </PopoverAnchor>
+                                                    }
+                                                />
+                                            </InputGroupAddon>
+                                        ) : null}
+                                    </InputGroup>
                                     {displayNamePresets.length ? (
                                         <PopoverContent
                                             align="start"
+                                            anchor={displayNameAnchorRef}
                                             className="w-80 p-1"
                                         >
                                             <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
@@ -580,6 +603,10 @@ export function WorldNewInstanceDialog({
                                 </FieldLabel>
                                 <Select
                                     value={form.accessType}
+                                    items={accessTypeOptions.map((option) => ({
+                                        value: option.value,
+                                        label: t(option.labelKey)
+                                    }))}
                                     onValueChange={(value) =>
                                         patchForm({ accessType: value })
                                     }
@@ -609,6 +636,10 @@ export function WorldNewInstanceDialog({
                                 </FieldLabel>
                                 <Select
                                     value={form.region}
+                                    items={regionOptions.map((region) => ({
+                                        value: region.value,
+                                        label: t(region.labelKey)
+                                    }))}
                                     onValueChange={(value) =>
                                         patchForm({ region: value })
                                     }
@@ -687,6 +718,12 @@ export function WorldNewInstanceDialog({
                                         </FieldLabel>
                                         <Select
                                             value={form.groupAccessType}
+                                            items={groupAccessTypeOptions.map(
+                                                (option) => ({
+                                                    value: option.value,
+                                                    label: t(option.labelKey)
+                                                })
+                                            )}
                                             onValueChange={(value) =>
                                                 patchForm({
                                                     groupAccessType: value

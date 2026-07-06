@@ -6,6 +6,7 @@ import { TableLimitsDialog } from './settings-dialogs/TableLimitsDialog';
 import { TranslationApiDialog } from './settings-dialogs/TranslationApiDialog';
 import {
     DesktopNotificationsDialog,
+    HmdNotificationsDialog,
     WebhookNotificationsDialog,
     VrNotificationsDialog,
     WristFeedNotificationsDialog
@@ -24,6 +25,7 @@ export function SettingsDialogs({
     feedFilter,
     wristFeedNotifications,
     vrNotifications,
+    hmdNotifications,
     desktopNotifications,
     webhookNotifications
 }: any) {
@@ -110,6 +112,12 @@ export function SettingsDialogs({
                 onOpenChange={vrNotifications.setOpen}
                 value={vrNotifications.value}
                 onSave={vrNotifications.onSave}
+            />
+            <HmdNotificationsDialog
+                open={hmdNotifications.open}
+                onOpenChange={hmdNotifications.setOpen}
+                value={hmdNotifications.value}
+                onSave={hmdNotifications.onSave}
             />
             <DesktopNotificationsDialog
                 open={desktopNotifications.open}

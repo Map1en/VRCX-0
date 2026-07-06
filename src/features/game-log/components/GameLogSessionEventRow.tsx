@@ -11,10 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
-import {
-    copyTextToClipboard,
-    openExternalLink
-} from '@/services/entityMediaService';
+import { copyTextToClipboard } from '@/services/clipboardService';
+import { openExternalLink } from '@/services/entityMediaService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -205,35 +203,37 @@ function GroupActivityRow({ durationByKey, event }: any) {
 
     return (
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="hover:bg-muted/45 grid min-h-8 w-full grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left text-sm"
-                >
-                    <EventTime value={event?.created_at} />
-                    <EventBadge event={event} />
-                    <span className="flex min-w-0 items-center gap-2 font-normal">
-                        <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 tabular-nums">
-                            <UsersIcon className="size-3.5 shrink-0" />
-                            {count}
-                        </span>
-                        {friendCount > 0 ? (
-                            <span className="text-muted-foreground min-w-0 truncate">
-                                {`· ${t('view.game_log.sessions.friends_count', { count: friendCount })}`}
+            <CollapsibleTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="hover:bg-muted/45 grid min-h-8 w-full grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left text-sm"
+                    >
+                        <EventTime value={event?.created_at} />
+                        <EventBadge event={event} />
+                        <span className="flex min-w-0 items-center gap-2 font-normal">
+                            <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 tabular-nums">
+                                <UsersIcon className="size-3.5 shrink-0" />
+                                {count}
                             </span>
-                        ) : null}
-                    </span>
-                    <ChevronRightIcon
-                        data-icon="inline-end"
-                        className={cn(
-                            'text-muted-foreground shrink-0 transition-transform duration-150',
-                            isExpanded && 'rotate-90'
-                        )}
-                    />
-                </Button>
-            </CollapsibleTrigger>
+                            {friendCount > 0 ? (
+                                <span className="text-muted-foreground min-w-0 truncate">
+                                    {`· ${t('view.game_log.sessions.friends_count', { count: friendCount })}`}
+                                </span>
+                            ) : null}
+                        </span>
+                        <ChevronRightIcon
+                            data-icon="inline-end"
+                            className={cn(
+                                'text-muted-foreground shrink-0 transition-transform duration-150',
+                                isExpanded && 'rotate-90'
+                            )}
+                        />
+                    </Button>
+                }
+            />
             {members.length ? (
                 <CollapsibleContent>
                     <div className="border-border/70 ml-[5.75rem] border-l pl-3">
@@ -263,57 +263,61 @@ function VideoActivityRow({ event }: any) {
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div className="hover:bg-muted/45 grid min-h-8 grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
-                    <EventTime value={event?.created_at} />
-                    <EventBadge event={event} />
-                    <div className="flex min-w-0 items-center gap-1.5">
-                        <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
-                        {showVideoLink ? (
-                            <Button
-                                type="button"
-                                variant="link"
-                                className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal"
-                                onClick={(eventObject) => {
-                                    eventObject.stopPropagation();
-                                    openExternalLink(event.videoUrl);
-                                }}
-                            >
-                                <span className="truncate">{videoLabel}</span>
-                            </Button>
-                        ) : (
-                            <span className="min-w-0 truncate">
-                                {videoLabel}
-                            </span>
-                        )}
-                        {event?.playCount > 1 ? (
-                            <Badge
-                                variant="secondary"
-                                className="h-4 shrink-0 px-1 text-xs"
-                            >
-                                {t('view.game_log.sessions.play_count', {
-                                    count: event.playCount
+            <ContextMenuTrigger
+                render={
+                    <div className="hover:bg-muted/45 grid min-h-8 grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
+                        <EventTime value={event?.created_at} />
+                        <EventBadge event={event} />
+                        <div className="flex min-w-0 items-center gap-1.5">
+                            <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
+                            {showVideoLink ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal"
+                                    onClick={(eventObject) => {
+                                        eventObject.stopPropagation();
+                                        openExternalLink(event.videoUrl);
+                                    }}
+                                >
+                                    <span className="truncate">
+                                        {videoLabel}
+                                    </span>
+                                </Button>
+                            ) : (
+                                <span className="min-w-0 truncate">
+                                    {videoLabel}
+                                </span>
+                            )}
+                            {event?.playCount > 1 ? (
+                                <Badge
+                                    variant="secondary"
+                                    className="h-4 shrink-0 px-1 text-xs"
+                                >
+                                    {t('view.game_log.sessions.play_count', {
+                                        count: event.playCount
+                                    })}
+                                </Badge>
+                            ) : null}
+                        </div>
+                        {event?.displayName ? (
+                            <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                {t('view.game_log.sessions.played_by', {
+                                    name: event.displayName
                                 })}
-                            </Badge>
-                        ) : null}
+                            </span>
+                        ) : (
+                            <span aria-hidden="true" />
+                        )}
                     </div>
-                    {event?.displayName ? (
-                        <span className="text-muted-foreground min-w-0 truncate text-xs">
-                            {t('view.game_log.sessions.played_by', {
-                                name: event.displayName
-                            })}
-                        </span>
-                    ) : (
-                        <span aria-hidden="true" />
-                    )}
-                </div>
-            </ContextMenuTrigger>
+                }
+            />
             <ContextMenuContent>
                 {showVideoLink ? (
                     <>
                         <ContextMenuGroup>
                             <ContextMenuItem
-                                onSelect={() => {
+                                onClick={() => {
                                     openExternalLink(event.videoUrl);
                                 }}
                             >
@@ -326,8 +330,15 @@ function VideoActivityRow({ event }: any) {
                 ) : null}
                 <ContextMenuGroup>
                     <ContextMenuItem
-                        onSelect={() => {
-                            copyTextToClipboard(event?.videoUrl || videoLabel);
+                        onClick={() => {
+                            void copyTextToClipboard(
+                                event?.videoUrl || videoLabel,
+                                {
+                                    successMessage: t(
+                                        'view.game_log.success.copied_game_log_detail'
+                                    )
+                                }
+                            );
                         }}
                     >
                         <CopyIcon data-icon="inline-start" />

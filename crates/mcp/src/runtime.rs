@@ -37,17 +37,8 @@ impl McpRuntime {
     }
 
     pub(crate) fn current_user_id(&self) -> Option<String> {
-        // The auth scope holds the signed-in user across WebSocket reconnects;
-        // the realtime friend snapshot is only populated while a live session is
-        // active, so prefer the auth scope and fall back to the snapshot.
         let from_auth = self.auth_scope.snapshot().current_user_id;
-        if !from_auth.trim().is_empty() {
-            return Some(from_auth);
-        }
-        self.realtime_runtime
-            .friend_snapshot()
-            .map(|snapshot| snapshot.current_user_id)
-            .filter(|value| !value.trim().is_empty())
+        current_user_id_from_sources(&from_auth, None)
     }
 
     pub(crate) fn current_endpoint(&self) -> String {
@@ -56,5 +47,41 @@ impl McpRuntime {
             .map(|snapshot| snapshot.endpoint)
             .filter(|value| !value.trim().is_empty())
             .unwrap_or_default()
+    }
+}
+
+fn current_user_id_from_sources(
+    auth_scope_user_id: &str,
+    _realtime_user_id: Option<&str>,
+) -> Option<String> {
+    let auth_scope_user_id = auth_scope_user_id.trim();
+    if !auth_scope_user_id.is_empty() {
+        return Some(auth_scope_user_id.to_string());
+    }
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::current_user_id_from_sources;
+
+    #[test]
+    fn current_user_owner_prefers_auth_scope_over_realtime_snapshot() {
+        let owner = current_user_id_from_sources(" usr_auth ", Some("usr_ws"));
+
+        assert_eq!(owner.as_deref(), Some("usr_auth"));
+    }
+
+    #[test]
+    fn current_user_owner_does_not_fall_back_to_realtime_when_auth_scope_is_empty() {
+        let owner = current_user_id_from_sources(" ", Some(" usr_ws "));
+
+        assert_eq!(owner, None);
+    }
+
+    #[test]
+    fn current_user_owner_stays_empty_when_all_sources_are_empty() {
+        assert_eq!(current_user_id_from_sources("", None), None);
+        assert_eq!(current_user_id_from_sources(" ", Some(" ")), None);
     }
 }

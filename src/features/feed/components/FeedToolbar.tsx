@@ -104,19 +104,29 @@ function FeedDateFilterControl({
     return (
         <Popover open={dateFilterOpen} onOpenChange={onDateFilterOpenChange}>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                        <InputGroupButton
-                            type="button"
-                            size="icon-xs"
-                            variant={activeFilterCount ? 'secondary' : 'ghost'}
-                            aria-label={dateRangeLabel}
-                            onMouseDown={(event) => event.preventDefault()}
-                        >
-                            <CalendarRangeIcon data-icon="icon" />
-                        </InputGroupButton>
-                    </PopoverTrigger>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <PopoverTrigger
+                            render={
+                                <InputGroupButton
+                                    type="button"
+                                    size="icon-xs"
+                                    variant={
+                                        activeFilterCount
+                                            ? 'secondary'
+                                            : 'ghost'
+                                    }
+                                    aria-label={dateRangeLabel}
+                                    onMouseDown={(event) =>
+                                        event.preventDefault()
+                                    }
+                                >
+                                    <CalendarRangeIcon data-icon="icon" />
+                                </InputGroupButton>
+                            }
+                        />
+                    }
+                />
                 <TooltipContent>{dateRangeLabel}</TooltipContent>
             </Tooltip>
             <PopoverContent className="w-auto" align="end">
@@ -302,19 +312,21 @@ export function FeedToolbar({
 
                 <div className="flex shrink-0 items-center">
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                type="button"
-                                variant={
-                                    favoritesOnly ? 'secondary' : 'outline'
-                                }
-                                size="icon-sm"
-                                aria-label={favoritesOnlyLabel}
-                                onClick={onToggleFavoritesOnly}
-                            >
-                                <StarIcon data-icon="icon" />
-                            </Button>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant={
+                                        favoritesOnly ? 'secondary' : 'outline'
+                                    }
+                                    size="icon-sm"
+                                    aria-label={favoritesOnlyLabel}
+                                    onClick={onToggleFavoritesOnly}
+                                >
+                                    <StarIcon data-icon="icon" />
+                                </Button>
+                            }
+                        />
                         <TooltipContent>{favoritesOnlyLabel}</TooltipContent>
                     </Tooltip>
                 </div>

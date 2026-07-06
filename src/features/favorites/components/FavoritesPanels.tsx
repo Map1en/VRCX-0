@@ -134,7 +134,8 @@ export function FavoritesContentPanel({
     kind,
     layout,
     selection,
-    viewData
+    viewData,
+    instanceActionGatesByItemKey
 }: any) {
     const { t } = useTranslation();
     const remoteDetails = collections.remoteEntityDetails || {};
@@ -328,6 +329,9 @@ export function FavoritesContentPanel({
                                     <FavoriteCard
                                         key={item.key}
                                         item={item}
+                                        instanceActionGate={instanceActionGatesByItemKey?.get(
+                                            item.key
+                                        )}
                                         editMode={
                                             selection.editMode &&
                                             !viewData.isSearchActive

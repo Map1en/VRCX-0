@@ -478,17 +478,19 @@ function NotificationActionButton({
 }) {
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={label}
-                    onClick={onClick}
-                >
-                    {children}
-                </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={label}
+                        onClick={onClick}
+                    >
+                        {children}
+                    </Button>
+                }
+            />
             <TooltipContent>{label}</TooltipContent>
         </Tooltip>
     );
@@ -634,179 +636,194 @@ export function NotificationDrawerRow({
             : undefined;
 
     return (
-        <HoverCard openDelay={400} closeDelay={100}>
-            <HoverCardTrigger asChild>
-                <div
-                    className="bg-card text-card-foreground mb-1.5 flex gap-3 rounded-md border p-2"
-                    style={rowStyle}
-                >
-                    <button
-                        type="button"
-                        className="shrink-0"
-                        aria-label={senderName}
-                        onClick={() => openSender(notification, t)}
+        <HoverCard>
+            <HoverCardTrigger
+                delay={400}
+                closeDelay={100}
+                render={
+                    <div
+                        className="bg-card text-card-foreground mb-1.5 flex gap-3 rounded-md border p-2"
+                        style={rowStyle}
                     >
-                        {showAvatar ? (
-                            <NotificationPersonAvatar
-                                notification={notification}
-                            />
-                        ) : (
-                            <NotificationIconDisc notification={notification} />
-                        )}
-                    </button>
-                    <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                            <button
-                                type="button"
-                                className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:underline"
-                                onClick={() => openSender(notification, t)}
-                            >
-                                {senderName}
-                            </button>
-                            {relativeTime ? (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-                                            {relativeTime}
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        {absoluteTime}
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : null}
-                        </div>
-                        {message ? (
-                            <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs break-words">
-                                {message}
-                            </p>
-                        ) : null}
-                        <div className="mt-1.5 flex items-center gap-2">
-                            <Badge
-                                className={cn(
-                                    'border-0',
-                                    !isAction &&
-                                        'bg-muted text-muted-foreground'
-                                )}
-                                style={
-                                    isAction
-                                        ? {
-                                              backgroundColor:
-                                                  STATUS_JOINME_TINT
-                                          }
-                                        : undefined
-                                }
-                            >
-                                {typeLabel}
-                            </Badge>
-                            <div className="min-w-0 flex-1 truncate text-xs">
-                                <NotificationLocationLine
+                        <button
+                            type="button"
+                            className="shrink-0"
+                            aria-label={senderName}
+                            onClick={() => openSender(notification, t)}
+                        >
+                            {showAvatar ? (
+                                <NotificationPersonAvatar
                                     notification={notification}
                                 />
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                                {isQueueReady ? (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
-                                        style={{
-                                            backgroundColor: STATUS_ASKME_TINT
-                                        }}
-                                        onClick={() =>
-                                            handlers.onJoinQueueReady(
-                                                notification
-                                            )
-                                        }
-                                    >
-                                        {t(
-                                            'side_panel.notification_center.join_now'
-                                        )}
-                                        {countdownLabel ? (
-                                            <span className="tabular-nums">
-                                                {countdownLabel}
-                                            </span>
-                                        ) : null}
-                                    </Button>
+                            ) : (
+                                <NotificationIconDisc
+                                    notification={notification}
+                                />
+                            )}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <button
+                                    type="button"
+                                    className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:underline"
+                                    onClick={() => openSender(notification, t)}
+                                >
+                                    {senderName}
+                                </button>
+                                {relativeTime ? (
+                                    <Tooltip>
+                                        <TooltipTrigger
+                                            render={
+                                                <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+                                                    {relativeTime}
+                                                </span>
+                                            }
+                                        />
+                                        <TooltipContent>
+                                            {absoluteTime}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ) : null}
-                                {inlineActions.map((action) => (
-                                    <NotificationActionButton
-                                        key={action.key}
-                                        label={action.label}
-                                        onClick={action.onClick}
-                                    >
-                                        <action.Icon data-icon="icon" />
-                                    </NotificationActionButton>
-                                ))}
-                                {hasMenu ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon-xs"
-                                                aria-label={t(
-                                                    'side_panel.notification_center.more_actions'
-                                                )}
-                                            >
-                                                <MoreHorizontalIcon data-icon="icon" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            {showMarkRead ? (
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        handlers.onMarkSeen(
-                                                            notification
-                                                        )
-                                                    }
-                                                >
-                                                    <CheckIcon data-icon="inline-start" />
-                                                    {t(
-                                                        'side_panel.notification_center.mark_as_read'
-                                                    )}
-                                                </DropdownMenuItem>
+                            </div>
+                            {message ? (
+                                <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs break-words">
+                                    {message}
+                                </p>
+                            ) : null}
+                            <div className="mt-1.5 flex items-center gap-2">
+                                <Badge
+                                    className={cn(
+                                        'border-0',
+                                        !isAction &&
+                                            'bg-muted text-muted-foreground'
+                                    )}
+                                    style={
+                                        isAction
+                                            ? {
+                                                  backgroundColor:
+                                                      STATUS_JOINME_TINT
+                                              }
+                                            : undefined
+                                    }
+                                >
+                                    {typeLabel}
+                                </Badge>
+                                <div className="min-w-0 flex-1 truncate text-xs">
+                                    <NotificationLocationLine
+                                        notification={notification}
+                                    />
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    {isQueueReady ? (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
+                                            style={{
+                                                backgroundColor:
+                                                    STATUS_ASKME_TINT
+                                            }}
+                                            onClick={() =>
+                                                handlers.onJoinQueueReady(
+                                                    notification
+                                                )
+                                            }
+                                        >
+                                            {t(
+                                                'side_panel.notification_center.join_now'
+                                            )}
+                                            {countdownLabel ? (
+                                                <span className="tabular-nums">
+                                                    {countdownLabel}
+                                                </span>
                                             ) : null}
-                                            {overflowActions.map((action) => (
-                                                <DropdownMenuItem
-                                                    key={action.key}
-                                                    onClick={action.onClick}
-                                                >
-                                                    <action.Icon data-icon="inline-start" />
-                                                    {action.label}
-                                                </DropdownMenuItem>
-                                            ))}
-                                            {showDelete ? (
-                                                <>
-                                                    {showMarkRead ||
-                                                    overflowActions.length >
-                                                        0 ? (
-                                                        <DropdownMenuSeparator />
-                                                    ) : null}
+                                        </Button>
+                                    ) : null}
+                                    {inlineActions.map((action) => (
+                                        <NotificationActionButton
+                                            key={action.key}
+                                            label={action.label}
+                                            onClick={action.onClick}
+                                        >
+                                            <action.Icon data-icon="icon" />
+                                        </NotificationActionButton>
+                                    ))}
+                                    {hasMenu ? (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger
+                                                render={
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon-xs"
+                                                        aria-label={t(
+                                                            'side_panel.notification_center.more_actions'
+                                                        )}
+                                                    >
+                                                        <MoreHorizontalIcon data-icon="icon" />
+                                                    </Button>
+                                                }
+                                            />
+                                            <DropdownMenuContent align="end">
+                                                {showMarkRead ? (
                                                     <DropdownMenuItem
-                                                        variant="destructive"
                                                         onClick={() =>
-                                                            handlers.onDeleteNotification(
+                                                            handlers.onMarkSeen(
                                                                 notification
                                                             )
                                                         }
                                                     >
-                                                        <Trash2Icon data-icon="inline-start" />
+                                                        <CheckIcon data-icon="inline-start" />
                                                         {t(
-                                                            'view.notification.actions.delete_log'
+                                                            'side_panel.notification_center.mark_as_read'
                                                         )}
                                                     </DropdownMenuItem>
-                                                </>
-                                            ) : null}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
+                                                ) : null}
+                                                {overflowActions.map(
+                                                    (action) => (
+                                                        <DropdownMenuItem
+                                                            key={action.key}
+                                                            onClick={
+                                                                action.onClick
+                                                            }
+                                                        >
+                                                            <action.Icon data-icon="inline-start" />
+                                                            {action.label}
+                                                        </DropdownMenuItem>
+                                                    )
+                                                )}
+                                                {showDelete ? (
+                                                    <>
+                                                        {showMarkRead ||
+                                                        overflowActions.length >
+                                                            0 ? (
+                                                            <DropdownMenuSeparator />
+                                                        ) : null}
+                                                        <DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={() =>
+                                                                handlers.onDeleteNotification(
+                                                                    notification
+                                                                )
+                                                            }
+                                                        >
+                                                            <Trash2Icon data-icon="inline-start" />
+                                                            {t(
+                                                                'view.notification.actions.delete_log'
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                ) : null}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ) : null}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </HoverCardTrigger>
+                }
+            />
             <NotificationHoverContent
                 notification={notification}
                 senderName={senderName}

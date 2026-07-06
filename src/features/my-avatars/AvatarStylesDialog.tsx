@@ -311,9 +311,21 @@ export function AvatarStylesDialog({
                         </FieldLabel>
                         <Select
                             value={primaryStyle || CLEAR_STYLE_VALUE}
+                            items={[
+                                {
+                                    value: CLEAR_STYLE_VALUE,
+                                    label: t('view.my_avatars.label.none')
+                                },
+                                ...styleNames.map((styleName) => ({
+                                    value: styleName,
+                                    label: styleName
+                                }))
+                            ]}
                             onValueChange={(value) =>
                                 setPrimaryStyle(
-                                    value === CLEAR_STYLE_VALUE ? '' : value
+                                    value === CLEAR_STYLE_VALUE
+                                        ? ''
+                                        : (value ?? '')
                                 )
                             }
                         >
@@ -347,9 +359,21 @@ export function AvatarStylesDialog({
                         </FieldLabel>
                         <Select
                             value={secondaryStyle || CLEAR_STYLE_VALUE}
+                            items={[
+                                {
+                                    value: CLEAR_STYLE_VALUE,
+                                    label: t('view.my_avatars.label.none')
+                                },
+                                ...styleNames.map((styleName) => ({
+                                    value: styleName,
+                                    label: styleName
+                                }))
+                            ]}
                             onValueChange={(value) =>
                                 setSecondaryStyle(
-                                    value === CLEAR_STYLE_VALUE ? '' : value
+                                    value === CLEAR_STYLE_VALUE
+                                        ? ''
+                                        : (value ?? '')
                                 )
                             }
                         >

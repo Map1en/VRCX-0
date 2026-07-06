@@ -9,12 +9,12 @@ use tokio_util::sync::CancellationToken;
 
 use crate::auth::{client_config_snippets, generate_mcp_token, McpAuthPolicy};
 use crate::config::{
-    DEFAULT_MCP_PORT, MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY, MCP_ENABLED_CONFIG_KEY,
-    MCP_PORT_CONFIG_KEY, MCP_TOKEN_CONFIG_KEY,
+    DEFAULT_MCP_PORT, MCP_ALLOW_LAN_CONNECTIONS_CONFIG_KEY, MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY,
+    MCP_ENABLED_CONFIG_KEY, MCP_PORT_CONFIG_KEY, MCP_TOKEN_CONFIG_KEY,
 };
 use crate::error::McpError;
 use crate::runtime::McpRuntime;
-use crate::transport::{bind_loopback_listener, build_mcp_router};
+use crate::transport::{bind_mcp_listener, build_mcp_router};
 use crate::types::{McpServerState, McpServerStatus};
 
 pub struct McpServerController {
@@ -85,6 +85,26 @@ impl McpServerController {
         self.status().await
     }
 
+    pub async fn set_allow_lan_connections(
+        &self,
+        enabled: bool,
+    ) -> Result<McpServerStatus, McpError> {
+        let previous = self.configured_allow_lan_connections()?;
+        self.runtime
+            .config
+            .set_bool(MCP_ALLOW_LAN_CONNECTIONS_CONFIG_KEY, enabled)?;
+        if let Err(error) = self.restart_if_enabled().await {
+            let _ = self
+                .runtime
+                .config
+                .set_bool(MCP_ALLOW_LAN_CONNECTIONS_CONFIG_KEY, previous);
+            let _ = self.start_locked().await;
+            self.set_last_error(error.to_string());
+            return Err(error);
+        }
+        self.status().await
+    }
+
     pub async fn set_port(&self, port: u16) -> Result<McpServerStatus, McpError> {
         if port < 1024 {
             return Err(McpError::Custom(
@@ -95,20 +115,13 @@ impl McpServerController {
         self.runtime
             .config
             .set_string(MCP_PORT_CONFIG_KEY, &port.to_string())?;
-        if self
-            .runtime
-            .config
-            .get_bool(MCP_ENABLED_CONFIG_KEY, false)?
-        {
-            self.stop_locked().await?;
-            if let Err(error) = self.start_locked().await {
-                self.runtime
-                    .config
-                    .set_string(MCP_PORT_CONFIG_KEY, &previous_port.to_string())?;
-                let _ = self.start_locked().await;
-                self.set_last_error(error.to_string());
-                return Err(error);
-            }
+        if let Err(error) = self.restart_if_enabled().await {
+            self.runtime
+                .config
+                .set_string(MCP_PORT_CONFIG_KEY, &previous_port.to_string())?;
+            let _ = self.start_locked().await;
+            self.set_last_error(error.to_string());
+            return Err(error);
         }
         self.status().await
     }
@@ -118,16 +131,9 @@ impl McpServerController {
         self.runtime
             .config
             .set_string(MCP_TOKEN_CONFIG_KEY, token.as_str())?;
-        if self
-            .runtime
-            .config
-            .get_bool(MCP_ENABLED_CONFIG_KEY, false)?
-        {
-            self.stop_locked().await?;
-            if let Err(error) = self.start_locked().await {
-                self.set_last_error(error.to_string());
-                return Err(error);
-            }
+        if let Err(error) = self.restart_if_enabled().await {
+            self.set_last_error(error.to_string());
+            return Err(error);
         }
         self.status().await
     }
@@ -141,22 +147,29 @@ impl McpServerController {
             .runtime
             .config
             .get_bool(MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY, false)?;
+        let allow_lan_connections = self.configured_allow_lan_connections()?;
         let handle = self.handle.lock().await;
         let active_connections = self.active_connections.load(Ordering::Relaxed);
         let last_error = self.last_error.lock().ok().and_then(|slot| slot.clone());
         let status = if let Some(handle) = handle.as_ref() {
             McpServerStatus {
                 enabled,
+                allow_lan_connections,
                 allow_vrchat_writes,
                 state: McpServerState::Running,
                 port: Some(handle.port),
                 active_connections,
                 last_error,
-                client_config: Some(client_config_snippets(handle.port, &handle.token)),
+                client_config: Some(client_config_snippets(
+                    handle.port,
+                    &handle.token,
+                    allow_lan_connections,
+                )),
             }
         } else {
             McpServerStatus {
                 enabled,
+                allow_lan_connections,
                 allow_vrchat_writes,
                 state: McpServerState::Disabled,
                 port: Some(self.configured_port()?),
@@ -166,6 +179,18 @@ impl McpServerController {
             }
         };
         Ok(status)
+    }
+
+    async fn restart_if_enabled(&self) -> Result<(), McpError> {
+        if !self
+            .runtime
+            .config
+            .get_bool(MCP_ENABLED_CONFIG_KEY, false)?
+        {
+            return Ok(());
+        }
+        self.stop_locked().await?;
+        self.start_locked().await
     }
 
     async fn start_locked(&self) -> Result<(), McpError> {
@@ -180,7 +205,8 @@ impl McpServerController {
             .set_bool(MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY, false)?;
         let port = self.configured_port()?;
         let token = self.ensure_token()?;
-        let listener = bind_loopback_listener(port)?;
+        let allow_lan_connections = self.configured_allow_lan_connections()?;
+        let listener = bind_mcp_listener(port, allow_lan_connections)?;
         let bound_port = listener.local_addr()?.port();
         self.runtime
             .config
@@ -192,6 +218,7 @@ impl McpServerController {
             McpAuthPolicy {
                 port: bound_port,
                 token: token.clone(),
+                allow_lan_connections,
             },
             Arc::clone(&self.active_connections),
             cancel.child_token(),
@@ -244,6 +271,13 @@ impl McpServerController {
             .config
             .get_string(MCP_PORT_CONFIG_KEY, &DEFAULT_MCP_PORT.to_string())?;
         Ok(raw.trim().parse::<u16>().unwrap_or(DEFAULT_MCP_PORT))
+    }
+
+    fn configured_allow_lan_connections(&self) -> Result<bool, McpError> {
+        Ok(self
+            .runtime
+            .config
+            .get_bool(MCP_ALLOW_LAN_CONNECTIONS_CONFIG_KEY, false)?)
     }
 
     fn ensure_token(&self) -> Result<String, McpError> {

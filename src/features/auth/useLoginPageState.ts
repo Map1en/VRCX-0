@@ -19,9 +19,13 @@ import { openExternalLink } from '@/services/entityMediaService';
 import { promptLegacyVrcxForceMigration } from '@/services/legacyVrcxMigrationService';
 import {
     loadPreferenceSnapshot,
-    setAppLanguagePreference,
-    setProxyServerPreference
+    setAppLanguagePreference
 } from '@/services/preferencesService';
+import {
+    proxySettingsErrorMessage,
+    saveProxySettingsPreferences,
+    testProxySettings as testProxySettingsConnectivity
+} from '@/services/proxySettingsService';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -48,6 +52,7 @@ type LoginErrors = {
 export function useLoginPageState() {
     const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
+    const proxyEnabled = usePreferencesStore((state) => state.proxyEnabled);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const confirm = useModalStore((state) => state.confirm);
     const preferencesHydrated = usePreferencesStore(
@@ -62,8 +67,10 @@ export function useLoginPageState() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isProxyDialogOpen, setIsProxyDialogOpen] = useState(false);
+    const [proxyEnabledInput, setProxyEnabledInput] = useState(false);
     const [proxyInput, setProxyInput] = useState('');
     const [isSavingProxySettings, setIsSavingProxySettings] = useState(false);
+    const [isTestingProxySettings, setIsTestingProxySettings] = useState(false);
     const isSavingProxySettingsRef = useRef(false);
     const [activeSavedUserId, setActiveSavedUserId] = useState('');
     const [loginForm, setLoginForm] = useState<LoginFormState>({
@@ -77,8 +84,9 @@ export function useLoginPageState() {
     });
 
     useEffect(() => {
+        setProxyEnabledInput(proxyEnabled);
         setProxyInput(proxyServer || '');
-    }, [proxyServer]);
+    }, [proxyEnabled, proxyServer]);
 
     function applySnapshot(nextSnapshot: any) {
         setSnapshot(nextSnapshot);
@@ -164,6 +172,7 @@ export function useLoginPageState() {
                 );
             }
         }
+        setProxyEnabledInput(usePreferencesStore.getState().proxyEnabled);
         setProxyInput(usePreferencesStore.getState().proxyServer || '');
         setIsProxyDialogOpen(true);
     }
@@ -172,25 +181,54 @@ export function useLoginPageState() {
         await promptLegacyVrcxForceMigration({ confirm, t, toast });
     }
 
-    async function saveProxySettings(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
+    async function saveProxySettings(restart: boolean = true) {
         if (isSavingProxySettingsRef.current) {
             return;
         }
         isSavingProxySettingsRef.current = true;
         setIsSavingProxySettings(true);
         try {
-            const nextProxyServer = proxyInput.trim();
-            await setProxyServerPreference(nextProxyServer);
+            await saveProxySettingsPreferences(
+                {
+                    enabled: proxyEnabledInput,
+                    server: proxyInput
+                },
+                { restart }
+            );
+            if (!restart) {
+                toast.success(
+                    t('prompt.proxy_settings.saved_restart_required')
+                );
+                setIsProxyDialogOpen(false);
+            }
         } catch (error) {
             toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.auth.toast.failed_to_save_proxy_settings')
+                proxySettingsErrorMessage(error) ||
+                    t('view.auth.toast.failed_to_save_proxy_settings')
             );
         } finally {
             isSavingProxySettingsRef.current = false;
             setIsSavingProxySettings(false);
+        }
+    }
+
+    async function testProxySettings() {
+        setIsTestingProxySettings(true);
+        try {
+            const result = await testProxySettingsConnectivity(proxyInput);
+            toast.success(
+                t('prompt.proxy_settings.test_success', {
+                    status: result.status
+                })
+            );
+        } catch (error) {
+            toast.error(
+                t('prompt.proxy_settings.test_failed', {
+                    message: proxySettingsErrorMessage(error)
+                })
+            );
+        } finally {
+            setIsTestingProxySettings(false);
         }
     }
 
@@ -351,6 +389,7 @@ export function useLoginPageState() {
         isDeleting,
         isProxyDialogOpen,
         isSavingProxySettings,
+        isTestingProxySettings,
         isSubmitting,
         locale,
         loginErrors,
@@ -358,6 +397,7 @@ export function useLoginPageState() {
         migrateLegacyVrcxData,
         openExternalLink,
         openProxyDialog,
+        proxyEnabledInput,
         proxyInput,
         retryAutoLogin,
         saveProxySettings,
@@ -366,7 +406,9 @@ export function useLoginPageState() {
         setIsProxyDialogOpen,
         setLoginErrors,
         setLoginForm,
+        setProxyEnabledInput,
         setProxyInput,
+        testProxySettings,
         shouldShowAutoLogin,
         showLegacyMigrationAction
     };

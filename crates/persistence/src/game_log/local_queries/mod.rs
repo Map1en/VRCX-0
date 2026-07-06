@@ -26,11 +26,18 @@ mod rows;
 mod sql;
 
 #[cfg(test)]
-mod tests;
+#[path = "../../../tests/game_log/local_queries/aggregate_stats_tests.rs"]
+mod aggregate_stats_tests;
+#[cfg(test)]
+#[path = "../../../tests/game_log/local_queries/recent_lookup_tests.rs"]
+mod recent_lookup_tests;
+#[cfg(test)]
+#[path = "../../../tests/game_log/local_queries/support.rs"]
+mod test_support;
 
 use rows::{
     game_log_base_columns, game_log_batch_for_kind, game_log_filter_flags,
-    game_log_location_segment_from_row, game_log_row_from_unified_row,
+    game_log_row_from_unified_row,
 };
 use sql::{
     append_i64_in_params, game_log_event_union_select, game_log_external_union_select,

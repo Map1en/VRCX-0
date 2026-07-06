@@ -745,40 +745,43 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                               );
                                     return (
                                         <ContextMenu key={item.value}>
-                                            <ContextMenuTrigger asChild>
-                                                <TabsTrigger
-                                                    value={item.value}
-                                                    title={item.title}
-                                                    data-active={
-                                                        activeTab === item.value
-                                                            ? ''
-                                                            : undefined
-                                                    }
-                                                    className={cn(
-                                                        'min-w-0 flex-none',
-                                                        showTabText
-                                                            ? 'max-w-40'
-                                                            : 'w-8 px-1'
-                                                    )}
-                                                >
-                                                    <Icon data-icon="inline-start" />
-                                                    <span
+                                            <ContextMenuTrigger
+                                                render={
+                                                    <TabsTrigger
+                                                        value={item.value}
+                                                        title={item.title}
+                                                        data-active={
+                                                            activeTab ===
+                                                            item.value
+                                                                ? ''
+                                                                : undefined
+                                                        }
                                                         className={cn(
+                                                            'min-w-0 flex-none',
                                                             showTabText
-                                                                ? 'min-w-0 truncate'
-                                                                : 'sr-only'
+                                                                ? 'max-w-40'
+                                                                : 'w-8 px-1'
                                                         )}
                                                     >
-                                                        {item.label}
-                                                    </span>
-                                                </TabsTrigger>
-                                            </ContextMenuTrigger>
+                                                        <Icon data-icon="inline-start" />
+                                                        <span
+                                                            className={cn(
+                                                                showTabText
+                                                                    ? 'min-w-0 truncate'
+                                                                    : 'sr-only'
+                                                            )}
+                                                        >
+                                                            {item.label}
+                                                        </span>
+                                                    </TabsTrigger>
+                                                }
+                                            />
                                             <ContextMenuContent className="w-44">
                                                 {canHideTab ? (
                                                     <>
                                                         <ContextMenuGroup>
                                                             <ContextMenuItem
-                                                                onSelect={() =>
+                                                                onClick={() =>
                                                                     setTabVisibilityFromMenu(
                                                                         item
                                                                             .layoutItem
@@ -796,7 +799,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                 ) : null}
                                                 <ContextMenuGroup>
                                                     <ContextMenuItem
-                                                        onSelect={() =>
+                                                        onClick={() =>
                                                             setCustomTabsDialogOpen(
                                                                 true
                                                             )
@@ -848,7 +851,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                     </div>
                     <TabsContent
                         value="friends"
-                        className="mt-1 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+                        className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                     >
                         <FriendsSidebar
                             prefs={prefs}
@@ -860,7 +863,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                     {groupsTabVisible ? (
                         <TabsContent
                             value="groups"
-                            className="mt-1 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+                            className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                         >
                             <GroupsSidebar />
                         </TabsContent>
@@ -876,7 +879,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             <TabsContent
                                 key={item.id}
                                 value={item.id}
-                                className="mt-1 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+                                className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                             >
                                 <FriendsSidebar
                                     prefs={prefs}

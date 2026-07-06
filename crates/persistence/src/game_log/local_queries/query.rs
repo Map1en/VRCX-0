@@ -559,44 +559,60 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
         }
         "previousInstancesByUserIdRows" => {
             let user_id = query_param_string(&params, "userId");
+            let date_from = query_param_string(&params, "dateFrom");
+            let date_to = query_param_string(&params, "dateTo");
             if user_id.is_empty() {
                 return Ok(Value::Array(Vec::new()));
             }
+            let mut clauses = vec!["jl.user_id = @user_id"];
+            let mut db_params = ParamsBuilder::new().set("user_id", user_id);
+            if !date_from.is_empty() {
+                clauses.push("jl.created_at >= @date_from");
+                db_params = db_params.set("date_from", date_from);
+            }
+            if !date_to.is_empty() {
+                clauses.push("jl.created_at <= @date_to");
+                db_params = db_params.set("date_to", date_to);
+            }
+            let where_clause = clauses.join(" AND ");
             Ok(Value::Array(
-                db
-                    .execute(
-                        "WITH grouped_locations AS (
-                            SELECT DISTINCT location, world_name, group_name
-                            FROM gamelog_location
+                db.execute(
+                    &format!(
+                        "SELECT jl.created_at,
+                               strftime('%s', jl.created_at) * 1000 created_at_ts,
+                               jl.location,
+                               jl.time,
+                               gl.world_name,
+                               gl.group_name,
+                               jl.id,
+                               jl.type
+                        FROM gamelog_join_leave jl
+                        INNER JOIN gamelog_location gl ON gl.id = (
+                            SELECT gl2.id
+                            FROM gamelog_location gl2
+                            WHERE gl2.location = jl.location
+                            ORDER BY gl2.id DESC
+                            LIMIT 1
                         )
-                        SELECT gamelog_join_leave.created_at,
-                               strftime('%s', gamelog_join_leave.created_at) * 1000 created_at_ts,
-                               gamelog_join_leave.location,
-                               gamelog_join_leave.time,
-                               grouped_locations.world_name,
-                               grouped_locations.group_name,
-                               gamelog_join_leave.id,
-                               gamelog_join_leave.type
-                        FROM gamelog_join_leave
-                        INNER JOIN grouped_locations ON gamelog_join_leave.location = grouped_locations.location
-                        WHERE user_id = @user_id
-                        ORDER BY gamelog_join_leave.id ASC",
-                        &ParamsBuilder::new().set("user_id", user_id).build(),
-                    )?
-                    .into_iter()
-                    .map(|row| {
-                        json!({
-                            "created_at": row_json(&row, 0),
-                            "createdAtTs": row_json(&row, 1),
-                            "location": row_json(&row, 2),
-                            "time": row_json(&row, 3),
-                            "worldName": row_json(&row, 4),
-                            "groupName": row_json(&row, 5),
-                            "eventId": row_json(&row, 6),
-                            "eventType": row_json(&row, 7)
-                        })
+                        WHERE {where_clause}
+                        ORDER BY jl.id ASC"
+                    ),
+                    &db_params.build(),
+                )?
+                .into_iter()
+                .map(|row| {
+                    json!({
+                        "created_at": row_json(&row, 0),
+                        "createdAtTs": row_json(&row, 1),
+                        "location": row_json(&row, 2),
+                        "time": row_json(&row, 3),
+                        "worldName": row_json(&row, 4),
+                        "groupName": row_json(&row, 5),
+                        "eventId": row_json(&row, 6),
+                        "eventType": row_json(&row, 7)
                     })
-                    .collect(),
+                })
+                .collect(),
             ))
         }
         "previousInstancesByWorldId" => {
@@ -955,132 +971,6 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 .map(|row| row_string(row, 0))
                 .unwrap_or_default();
             Ok(Value::String(user_id))
-        }
-        "sessionsLocationSegments" => {
-            let before_id = params
-                .get("beforeId")
-                .filter(|value| !value.is_null())
-                .map(value_as_i64)
-                .filter(|value| *value > 0);
-            let limit = non_negative_query_param_i64(&params, "limit", 100);
-            let cursor_clause = if before_id.is_some() {
-                "AND id < @before_id"
-            } else {
-                ""
-            };
-            let mut db_params = HashMap::new();
-            db_params.insert("@limit".into(), Value::from(limit));
-            if let Some(before_id) = before_id {
-                db_params.insert("@before_id".into(), Value::from(before_id));
-            }
-            Ok(Value::Array(
-                db.execute(
-                    &format!(
-                        "SELECT id, created_at, location, world_id, world_name, time, group_name
-                             FROM gamelog_location
-                             WHERE 1=1 {cursor_clause}
-                             ORDER BY id DESC
-                             LIMIT @limit"
-                    ),
-                    &db_params,
-                )?
-                .into_iter()
-                .map(|row| game_log_location_segment_from_row(&row))
-                .collect::<Result<Vec<_>, _>>()?,
-            ))
-        }
-        "sessionsLocationSegmentsByDateRange" => {
-            let after_date = query_param_string(&params, "afterDate");
-            let before_date = query_param_string(&params, "beforeDate");
-            let limit = non_negative_query_param_i64(&params, "limit", 100);
-            Ok(Value::Array(
-                db.execute(
-                    "SELECT id, created_at, location, world_id, world_name, time, group_name
-                         FROM gamelog_location
-                         WHERE created_at >= @after_date
-                           AND created_at <= @before_date
-                         ORDER BY id DESC
-                         LIMIT @limit",
-                    &ParamsBuilder::new()
-                        .set("after_date", after_date)
-                        .set("before_date", before_date)
-                        .set("limit", limit)
-                        .build(),
-                )?
-                .into_iter()
-                .map(|row| game_log_location_segment_from_row(&row))
-                .collect::<Result<Vec<_>, _>>()?,
-            ))
-        }
-        "sessionsEventsForSegments" => {
-            let location_tags = query_param_string_array(&params, "locationTags");
-            if location_tags.is_empty() {
-                return Ok(Value::Array(Vec::new()));
-            }
-            let after_date = query_param_string(&params, "afterDate");
-            let before_date = query_param_string(&params, "beforeDate");
-            let mut db_params = HashMap::new();
-            db_params.insert("@after_date".into(), Value::String(after_date));
-            db_params.insert("@before_date".into(), Value::String(before_date));
-            let mut rows = Vec::new();
-            for row in db.execute(
-                "SELECT id, type, created_at, display_name, user_id, location
-                     FROM gamelog_join_leave
-                     WHERE created_at >= @after_date
-                       AND created_at <= @before_date
-                     ORDER BY created_at ASC, id ASC",
-                &db_params,
-            )? {
-                rows.push(json!({
-                    "rowId": row_json(&row, 0),
-                    "type": row_json(&row, 1),
-                    "created_at": row_json(&row, 2),
-                    "displayName": row_json(&row, 3),
-                    "userId": row_json(&row, 4),
-                    "location": row_json(&row, 5)
-                }));
-            }
-            for row in db.execute(
-                "SELECT id, created_at, video_url, video_name, video_id, display_name, user_id, location
-                     FROM gamelog_video_play
-                     WHERE created_at >= @after_date
-                       AND created_at <= @before_date
-                     ORDER BY created_at ASC, id ASC",
-                &db_params,
-            )? {
-                rows.push(json!({
-                    "rowId": row_json(&row, 0),
-                    "type": "VideoPlay",
-                    "created_at": row_json(&row, 1),
-                    "videoUrl": row_json(&row, 2),
-                    "videoName": row_json(&row, 3),
-                    "videoId": row_json(&row, 4),
-                    "displayName": row_json(&row, 5),
-                    "userId": row_json(&row, 6),
-                    "location": row_json(&row, 7)
-                }));
-            }
-            Ok(Value::Array(rows))
-        }
-        "sessionsLocationSegmentsByAnchor" => {
-            let since_date = query_param_string(&params, "sinceDate");
-            let limit = non_negative_query_param_i64(&params, "limit", 100);
-            Ok(Value::Array(
-                db.execute(
-                    "SELECT id, created_at, location, world_id, world_name, time, group_name
-                         FROM gamelog_location
-                         WHERE created_at >= @since_date
-                         ORDER BY id DESC
-                         LIMIT @limit",
-                    &ParamsBuilder::new()
-                        .set("since_date", since_date)
-                        .set("limit", limit)
-                        .build(),
-                )?
-                .into_iter()
-                .map(|row| game_log_location_segment_from_row(&row))
-                .collect::<Result<Vec<_>, _>>()?,
-            ))
         }
         _ => Err(Error::Custom(format!(
             "Unknown game log query: {}",

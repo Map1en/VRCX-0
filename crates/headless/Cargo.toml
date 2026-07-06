@@ -8,6 +8,7 @@ name = "vrcx-0-headless"
 path = "src/main.rs"
 
 [dependencies]
+rpassword = "7.5.4"
 rustls = { version = "0.23", features = ["aws_lc_rs"] }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = [

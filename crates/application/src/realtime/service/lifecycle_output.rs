@@ -12,6 +12,7 @@ impl RealtimeHostRuntime {
                 .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
             return;
         }
+        let friend_note_changed = output.friend_note_changed;
         let mut world_name_fetch_ids =
             self.enrich_projection_world_names(&mut projection.feed_entries);
         world_name_fetch_ids.extend(self.enrich_persistence_world_names(&mut output.persistence));
@@ -37,6 +38,11 @@ impl RealtimeHostRuntime {
         self.deps
             .overlay_activity
             .ingest_friend_projection(&projection);
+        if friend_note_changed {
+            if let Some(sink) = &self.deps.friend_note_change_sink {
+                sink();
+            }
+        }
         if !projection.patches.is_empty() {
             let values: Vec<Value> = projection
                 .patches

@@ -22,7 +22,8 @@ import {
 import { links } from '@/shared/constants/link';
 import {
     VRChatCameraResolutions,
-    VRChatScreenshotResolutions
+    VRChatScreenshotResolutions,
+    type VRChatResolution
 } from '@/shared/constants/settings';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
@@ -101,11 +102,28 @@ function normalizeVrchatConfigForSave(config: any) {
     return output;
 }
 
-function ResolutionSelect({ label, value, rows, onValueChange }: any) {
+function ResolutionSelect({
+    label,
+    value,
+    rows,
+    onValueChange
+}: {
+    label: string;
+    value: string;
+    rows: VRChatResolution[];
+    onValueChange: (value: string | null) => void;
+}) {
     return (
         <Field>
             <FieldLabel>{label}</FieldLabel>
-            <Select value={value} onValueChange={onValueChange}>
+            <Select
+                value={value}
+                onValueChange={onValueChange}
+                items={rows.map((row) => ({
+                    value: getResolutionKey(row),
+                    label: row.name
+                }))}
+            >
                 <SelectTrigger>
                     <SelectValue />
                 </SelectTrigger>

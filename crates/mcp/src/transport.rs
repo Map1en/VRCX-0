@@ -146,11 +146,19 @@ fn header_to_str<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
     headers.get(name).and_then(|value| value.to_str().ok())
 }
 
-pub(crate) fn bind_loopback_listener(port: u16) -> Result<TcpListener, std::io::Error> {
+pub(crate) fn bind_mcp_listener(
+    port: u16,
+    allow_lan_connections: bool,
+) -> Result<TcpListener, std::io::Error> {
     let socket = Socket::new(Domain::IPV4, SocketType::STREAM, Some(Protocol::TCP))?;
     #[cfg(not(windows))]
     socket.set_reuse_address(true)?;
-    socket.bind(&SocketAddr::V4(SocketAddrV4::new([127, 0, 0, 1].into(), port)).into())?;
+    let address = if allow_lan_connections {
+        [0, 0, 0, 0]
+    } else {
+        [127, 0, 0, 1]
+    };
+    socket.bind(&SocketAddr::V4(SocketAddrV4::new(address.into(), port)).into())?;
     socket.listen(1024)?;
     socket.set_nonblocking(true)?;
     TcpListener::from_std(socket.into())

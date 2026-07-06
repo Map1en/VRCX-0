@@ -25,6 +25,11 @@ import {
     WorldCard
 } from './SearchResultParts';
 
+type WorldCategoryOption = {
+    index: number;
+    name: string;
+};
+
 export function SearchUserTabPanel({
     searchUserByBio,
     onSearchUserByBioChange,
@@ -46,8 +51,8 @@ export function SearchUserTabPanel({
     return (
         <TabsContent
             value="user"
-            forceMount
-            className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+            keepMounted
+            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
                 <FieldGroup
@@ -128,8 +133,8 @@ export function SearchWorldTabPanel({
     return (
         <TabsContent
             value="world"
-            forceMount
-            className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+            keepMounted
+            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
                 <div className="mb-4 flex w-full shrink-0 justify-end gap-2">
@@ -147,6 +152,12 @@ export function SearchWorldTabPanel({
                     </Field>
                     <Select
                         value={selectedWorldCategory}
+                        items={worldCategories.map(
+                            (row: WorldCategoryOption) => ({
+                                value: String(row.index),
+                                label: row.name
+                            })
+                        )}
                         onValueChange={onWorldCategoryChange}
                     >
                         <SelectTrigger size="sm">
@@ -208,14 +219,20 @@ export function SearchAvatarTabPanel({
     return (
         <TabsContent
             value="avatar"
-            forceMount
-            className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+            keepMounted
+            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
                 <div className="mb-3 flex shrink-0 items-center justify-end gap-2">
                     {avatarProviderList.length > 0 ? (
                         <Select
                             value={selectedAvatarProvider}
+                            items={avatarProviderList
+                                .filter(Boolean)
+                                .map((provider: string) => ({
+                                    value: provider,
+                                    label: provider
+                                }))}
                             onValueChange={onAvatarProviderChange}
                         >
                             <SelectTrigger size="sm">
@@ -285,8 +302,8 @@ export function SearchGroupTabPanel({ isLoading, results, pagination }: any) {
     return (
         <TabsContent
             value="group"
-            forceMount
-            className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+            keepMounted
+            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="min-h-0 flex-1 overflow-y-auto" style={{ flex: 9 }}>
                 {isLoading ? (

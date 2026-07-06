@@ -1,23 +1,31 @@
 const APP_TITLE_BAR_SELECTOR = '[data-app-titlebar="true"]';
 
-type OutsideInteractionEvent = Event & {
-    detail?: {
-        originalEvent?: Event;
-    };
+type OverlayCloseEventDetails = {
+    reason: string;
+    event: Event;
+    cancel: () => void;
 };
 
-function isAppTitleBarOutsideInteraction(event: OutsideInteractionEvent) {
-    const target = event.detail?.originalEvent?.target ?? event.target;
+function isAppTitleBarTarget(target: EventTarget | null) {
     return (
         target instanceof Element &&
         Boolean(target.closest(APP_TITLE_BAR_SELECTOR))
     );
 }
 
-function preserveAppTitleBarOutsideInteraction(event: OutsideInteractionEvent) {
-    if (!event.defaultPrevented && isAppTitleBarOutsideInteraction(event)) {
-        event.preventDefault();
+function preserveAppTitleBarOnOpenChange(
+    open: boolean,
+    eventDetails: OverlayCloseEventDetails
+) {
+    if (
+        !open &&
+        eventDetails.reason === 'outside-press' &&
+        isAppTitleBarTarget(eventDetails.event.target)
+    ) {
+        eventDetails.cancel();
+        return true;
     }
+    return false;
 }
 
-export { preserveAppTitleBarOutsideInteraction };
+export { preserveAppTitleBarOnOpenChange };

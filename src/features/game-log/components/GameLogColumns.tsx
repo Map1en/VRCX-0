@@ -50,11 +50,13 @@ function DateCell({ row }: { row: Row<GameLogRow> }) {
     const createdAt = row.original?.created_at || '';
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <span className="text-sm">
-                    {formatDateFilter(createdAt, 'short')}
-                </span>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <span className="text-sm">
+                        {formatDateFilter(createdAt, 'short')}
+                    </span>
+                }
+            />
             <TooltipContent>
                 {formatDateFilter(createdAt, 'long')}
             </TooltipContent>
@@ -284,85 +286,87 @@ export function useGameLogColumns({
                     const secondary = String(detailValue.secondary || '');
                     return (
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="flex min-w-0 items-center gap-1.5 text-sm">
-                                    {canOpenWorld ? (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm"
-                                            onClick={() =>
-                                                openWorldDialog({
-                                                    worldId: worldTarget,
-                                                    title:
-                                                        String(
-                                                            row.original
-                                                                ?.worldName ||
-                                                                ''
-                                                        ) ||
-                                                        primary ||
-                                                        worldTarget
-                                                })
-                                            }
-                                        >
-                                            <span className="truncate">
+                            <TooltipTrigger
+                                render={
+                                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                                        {canOpenWorld ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm"
+                                                onClick={() =>
+                                                    openWorldDialog({
+                                                        worldId: worldTarget,
+                                                        title:
+                                                            String(
+                                                                row.original
+                                                                    ?.worldName ||
+                                                                    ''
+                                                            ) ||
+                                                            primary ||
+                                                            worldTarget
+                                                    })
+                                                }
+                                            >
+                                                <span className="truncate">
+                                                    {primary}
+                                                </span>
+                                            </Button>
+                                        ) : (
+                                            <span className="min-w-0 truncate">
                                                 {primary}
                                             </span>
-                                        </Button>
-                                    ) : (
-                                        <span className="min-w-0 truncate">
-                                            {primary}
-                                        </span>
-                                    )}
-                                    {secondary ? (
-                                        <span className="text-muted-foreground min-w-0 truncate text-xs">
-                                            {secondary}
-                                        </span>
-                                    ) : null}
-                                    {externalTarget || copyTarget ? (
-                                        <div className="ml-auto flex shrink-0 items-center gap-1">
-                                            {externalTarget ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    aria-label={t(
-                                                        'view.game_log.action.open_link'
-                                                    )}
-                                                    className="size-6 p-0"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        openExternalLink(
-                                                            externalTarget
-                                                        );
-                                                    }}
-                                                >
-                                                    <ExternalLinkIcon data-icon="inline-start" />
-                                                </Button>
-                                            ) : null}
-                                            {copyTarget ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    aria-label={t(
-                                                        'view.game_log.action.copy_detail'
-                                                    )}
-                                                    className="size-6 p-0"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        onCopyDetail(
-                                                            row.original
-                                                        );
-                                                    }}
-                                                >
-                                                    <CopyIcon data-icon="inline-start" />
-                                                </Button>
-                                            ) : null}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </TooltipTrigger>
+                                        )}
+                                        {secondary ? (
+                                            <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                                {secondary}
+                                            </span>
+                                        ) : null}
+                                        {externalTarget || copyTarget ? (
+                                            <div className="ml-auto flex shrink-0 items-center gap-1">
+                                                {externalTarget ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={t(
+                                                            'view.game_log.action.open_link'
+                                                        )}
+                                                        className="size-6 p-0"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            openExternalLink(
+                                                                externalTarget
+                                                            );
+                                                        }}
+                                                    >
+                                                        <ExternalLinkIcon data-icon="inline-start" />
+                                                    </Button>
+                                                ) : null}
+                                                {copyTarget ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={t(
+                                                            'view.game_log.action.copy_detail'
+                                                        )}
+                                                        className="size-6 p-0"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            onCopyDetail(
+                                                                row.original
+                                                            );
+                                                        }}
+                                                    >
+                                                        <CopyIcon data-icon="inline-start" />
+                                                    </Button>
+                                                ) : null}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                }
+                            />
                             <TooltipContent>
                                 {[primary, secondary]
                                     .filter(Boolean)

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { checkCanInviteSelf } from '@/shared/utils/invite';
+import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -10,9 +10,7 @@ import {
 } from './FriendsSidebarHeaders';
 import {
     normalizeLocationStatus,
-    readFriendRefLocation,
     readFriendStatusSource,
-    resolvePresenceLocation,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
@@ -29,15 +27,13 @@ type FriendCommandsView = {
 };
 
 type RuntimeView = {
-    canInviteFromCurrentLocation?: boolean;
-    currentInviteLocation?: unknown;
     currentUser?:
         | (Record<string, unknown> & { isBoopingEnabled?: unknown })
         | null;
     currentUserId?: string | null;
-    friendsMap: Map<string, unknown>;
     gameState: { isGameRunning?: boolean | null };
     onlineIdSet: Set<string>;
+    instanceActionGatesByUserId: Map<string, LocalInstanceActionGates>;
 };
 
 type AppearanceView = {
@@ -135,6 +131,8 @@ function FriendVirtualRow({
     const friendId = friend.id || '';
     const isOnlineFriend =
         runtime.onlineIdSet.has(friendId) || state === 'online';
+    const instanceActionGates =
+        runtime.instanceActionGatesByUserId.get(friendId);
 
     return (
         <FriendRow
@@ -142,25 +140,13 @@ function FriendVirtualRow({
             rowModel={{
                 isCurrentUser,
                 isGroupByInstance,
-                canSendInvite: Boolean(
-                    runtime.gameState.isGameRunning &&
-                    runtime.currentInviteLocation &&
-                    runtime.canInviteFromCurrentLocation
+                canSendInvite: Boolean(instanceActionGates?.canInvite),
+                canRequestInvite: Boolean(
+                    instanceActionGates?.canRequestInvite ?? isOnlineFriend
                 ),
-                canRequestInvite: isOnlineFriend,
                 canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
                 canUseFriendInstance: Boolean(
-                    isOnlineFriend &&
-                    checkCanInviteSelf(
-                        isCurrentUser
-                            ? resolvePresenceLocation(friend)
-                            : readFriendRefLocation(friend),
-                        {
-                            currentUserId: runtime.currentUserId || '',
-                            cachedInstances: new Map(),
-                            friends: runtime.friendsMap
-                        }
-                    )
+                    isOnlineFriend && instanceActionGates?.canJoin
                 )
             }}
             rowCommands={{

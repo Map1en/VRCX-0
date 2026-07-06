@@ -5,9 +5,10 @@ import {
     NetworkIcon,
     PlusIcon
 } from 'lucide-react';
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ProxySettingsEditor } from '@/components/proxy/ProxySettingsEditor';
 import { cn } from '@/lib/utils';
 import {
     MAX_ZOOM_LEVEL,
@@ -36,6 +37,7 @@ import { Slider } from '@/ui/shadcn/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { StatusDot, StatusSegment } from './StatusBarParts';
+import { resolveProxyIndicatorState } from './statusBarProxy';
 import type {
     DurationValueProps,
     StatusBarFooterProps,
@@ -261,6 +263,8 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             instanceQueue,
             mutualGraph,
             nowPlaying,
+            proxyEditor,
+            proxyEnabled,
             proxyServer,
             runtimeGameState,
             runtimeTransport,
@@ -277,7 +281,12 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             onOpenMediaLink,
             onOpenStatusPage,
             onStartBackgroundMode,
-            onPromptProxySettings,
+            onProxyDraftEnabledChange,
+            onProxyDraftServerChange,
+            onProxyEditorOpenChange,
+            onProxySave,
+            onProxySaveAndRestart,
+            onProxyTest,
             onSetClockPopoverValue,
             onSetZoomLevel,
             onStepZoomLevel,
@@ -285,6 +294,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
         } = footer;
         const { t } = useTranslation();
         const [zoomPopoverOpen, setZoomPopoverOpen] = useState(false);
+        const proxyAnchorRef = useRef<HTMLSpanElement>(null);
         const instanceQueueActive = Boolean(
             instanceQueue?.active && instanceQueue?.instanceLocation
         );
@@ -303,6 +313,11 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
         const vrcStatusIsMajor = ['major', 'critical'].includes(
             vrcStatusIndicator
         );
+        const proxyIndicator = resolveProxyIndicatorState({
+            enabled: proxyEnabled,
+            server: proxyServer,
+            hasNetworkIssue: Boolean(proxyEnabled && vrcStatus.error)
+        });
 
         useEffect(() => {
             if (!zoomPopoverOpen) {
@@ -506,20 +521,22 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                         />
                         {visibility.ws ? (
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="-ml-px flex h-6 shrink-0 items-center gap-1.5 border-x px-2">
-                                        <StatusDot
-                                            active={Boolean(
-                                                runtimeTransport.websocketConnected
-                                            )}
-                                        />
-                                        <span className="text-muted-foreground text-xs">
-                                            {t(
-                                                'status_bar.realtime_connection'
-                                            )}
-                                        </span>
-                                    </div>
-                                </TooltipTrigger>
+                                <TooltipTrigger
+                                    render={
+                                        <div className="-ml-px flex h-6 shrink-0 items-center gap-1.5 border-x px-2">
+                                            <StatusDot
+                                                active={Boolean(
+                                                    runtimeTransport.websocketConnected
+                                                )}
+                                            />
+                                            <span className="text-muted-foreground text-xs">
+                                                {t(
+                                                    'status_bar.realtime_connection'
+                                                )}
+                                            </span>
+                                        </div>
+                                    }
+                                />
                                 <TooltipContent className="flex max-w-xs flex-col gap-1 text-xs">
                                     <span>
                                         {t('view.login.field.websocket')}{' '}
@@ -568,23 +585,25 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                           onSetClockPopoverValue(index, open)
                                       }
                                   >
-                                      <PopoverTrigger asChild>
-                                          <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="sm"
-                                              className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal tabular-nums"
-                                          >
-                                              <ClockIcon
-                                                  data-icon="inline-start"
-                                                  className="text-muted-foreground"
-                                              />
-                                              <ClockValue
-                                                  formatter={formatClock}
-                                                  offset={clock.offset}
-                                              />
-                                          </Button>
-                                      </PopoverTrigger>
+                                      <PopoverTrigger
+                                          render={
+                                              <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal tabular-nums"
+                                              >
+                                                  <ClockIcon
+                                                      data-icon="inline-start"
+                                                      className="text-muted-foreground"
+                                                  />
+                                                  <ClockValue
+                                                      formatter={formatClock}
+                                                      offset={clock.offset}
+                                                  />
+                                              </Button>
+                                          }
+                                      />
                                       <PopoverContent
                                           side="top"
                                           align="center"
@@ -596,6 +615,14 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                               </label>
                                               <Select
                                                   value={String(clock.offset)}
+                                                  items={timezoneOptions.map(
+                                                      (option) => ({
+                                                          value: String(
+                                                              option.value
+                                                          ),
+                                                          label: option.label
+                                                      })
+                                                  )}
                                                   onValueChange={(offset) =>
                                                       onUpdateClockTimezone(
                                                           index,
@@ -646,24 +673,26 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 open={zoomPopoverOpen}
                                 onOpenChange={setZoomPopoverOpen}
                             >
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label={t(
-                                            'status_bar.zoom_tooltip'
-                                        )}
-                                        className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal"
-                                    >
-                                        <span className="text-muted-foreground">
-                                            {t('status_bar.zoom')}
-                                        </span>
-                                        <span className="text-muted-foreground tabular-nums">
-                                            {zoomLabel}
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
+                                <PopoverTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            aria-label={t(
+                                                'status_bar.zoom_tooltip'
+                                            )}
+                                            className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal"
+                                        >
+                                            <span className="text-muted-foreground">
+                                                {t('status_bar.zoom')}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {zoomLabel}
+                                            </span>
+                                        </Button>
+                                    }
+                                />
                                 <PopoverContent
                                     side="top"
                                     align="end"
@@ -719,7 +748,11 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                         step={ZOOM_STEP}
                                         value={[zoomLevel]}
                                         onValueChange={(value) =>
-                                            onSetZoomLevel(value[0])
+                                            onSetZoomLevel(
+                                                Array.isArray(value)
+                                                    ? value[0]
+                                                    : value
+                                            )
                                         }
                                     />
                                     <div className="text-muted-foreground flex justify-between text-[11px] tabular-nums">
@@ -731,64 +764,124 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                         ) : null}
                         {visibility.uptime ? (
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="-ml-px flex h-6 items-center gap-1.5 border-r px-2">
-                                        <span className="text-muted-foreground">
-                                            {t('status_bar.app_uptime_short')}
-                                        </span>
-                                        <span className="text-muted-foreground tabular-nums">
-                                            <AppUptimeValue
-                                                formatter={formatAppUptime}
-                                                startedAtMs={appStartedAt}
-                                            />
-                                        </span>
-                                    </div>
-                                </TooltipTrigger>
+                                <TooltipTrigger
+                                    render={
+                                        <div className="-ml-px flex h-6 items-center gap-1.5 border-r px-2">
+                                            <span className="text-muted-foreground">
+                                                {t(
+                                                    'status_bar.app_uptime_short'
+                                                )}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                <AppUptimeValue
+                                                    formatter={formatAppUptime}
+                                                    startedAtMs={appStartedAt}
+                                                />
+                                            </span>
+                                        </div>
+                                    }
+                                />
                                 <TooltipContent>
                                     {t('status_bar.app_uptime')}
                                 </TooltipContent>
                             </Tooltip>
                         ) : null}
-                        {visibility.proxy && proxyServer ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
+                        {proxyEnabled ? (
+                            <Popover
+                                open={proxyEditor.open}
+                                onOpenChange={onProxyEditorOpenChange}
+                            >
+                                <span
+                                    ref={proxyAnchorRef}
+                                    className="-ml-px inline-flex h-6 shrink-0 border-l"
+                                >
+                                    <Tooltip>
+                                        <TooltipTrigger
+                                            render={
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={t(
+                                                        'status_bar.proxy'
+                                                    )}
+                                                    className={cn(
+                                                        'size-6 rounded-none',
+                                                        proxyIndicator.className
+                                                    )}
+                                                    onClick={() =>
+                                                        onProxyEditorOpenChange(
+                                                            true
+                                                        )
+                                                    }
+                                                >
+                                                    <NetworkIcon data-icon="icon" />
+                                                </Button>
+                                            }
+                                        />
+                                        <TooltipContent className="max-w-xs">
+                                            {t(
+                                                proxyIndicator.tooltipKey,
+                                                proxyIndicator.tooltipValues
+                                            )}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </span>
+                                <PopoverContent
+                                    side="top"
+                                    align="end"
+                                    anchor={proxyAnchorRef}
+                                    className="w-96"
+                                >
+                                    <PopoverHeader>
+                                        <PopoverTitle>
+                                            {t('prompt.proxy_settings.header')}
+                                        </PopoverTitle>
+                                        <PopoverDescription>
+                                            {t(
+                                                'prompt.proxy_settings.description'
+                                            )}
+                                        </PopoverDescription>
+                                    </PopoverHeader>
+                                    <ProxySettingsEditor
+                                        enabled={proxyEditor.enabled}
+                                        idPrefix="status-bar-proxy-settings"
+                                        saving={proxyEditor.saving}
+                                        server={proxyEditor.server}
+                                        testing={proxyEditor.testing}
+                                        onEnabledChange={
+                                            onProxyDraftEnabledChange
+                                        }
+                                        onSave={onProxySave}
+                                        onSaveAndRestart={onProxySaveAndRestart}
+                                        onServerChange={
+                                            onProxyDraftServerChange
+                                        }
+                                        onTest={onProxyTest}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        ) : null}
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        aria-label="Proxy settings"
+                                        aria-label={t(
+                                            'status_bar.start_background_mode'
+                                        )}
                                         className={cn(
-                                            '-ml-px h-6 w-7 rounded-none border-l',
+                                            '-ml-px size-6 shrink-0 rounded-none border-l',
                                             'text-muted-foreground hover:text-muted-foreground'
                                         )}
-                                        onClick={onPromptProxySettings}
+                                        onClick={onStartBackgroundMode}
                                     >
-                                        <NetworkIcon data-icon="icon" />
+                                        <Minimize2Icon data-icon="icon" />
                                     </Button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                    {`Proxy: ${proxyServer}`}
-                                </TooltipContent>
-                            </Tooltip>
-                        ) : null}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={t(
-                                        'status_bar.start_background_mode'
-                                    )}
-                                    className={cn(
-                                        '-ml-px size-6 shrink-0 rounded-none border-l',
-                                        'text-muted-foreground hover:text-muted-foreground'
-                                    )}
-                                    onClick={onStartBackgroundMode}
-                                >
-                                    <Minimize2Icon data-icon="icon" />
-                                </Button>
-                            </TooltipTrigger>
+                                }
+                            />
                             <TooltipContent>
                                 {t('status_bar.start_background_mode_tooltip')}
                             </TooltipContent>

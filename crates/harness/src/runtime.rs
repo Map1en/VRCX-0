@@ -280,3 +280,64 @@ impl Drop for CancelCleanup {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn superseded_turn_cleanup_keeps_newer_cancel_token() {
+        let cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        let first_token = CancellationToken::new();
+        let second_token = CancellationToken::new();
+
+        cancels
+            .lock()
+            .unwrap()
+            .insert("session_1".into(), ("turn_a".into(), first_token.clone()));
+        let cleanup = CancelCleanup {
+            cancels: Arc::clone(&cancels),
+            session_id: "session_1".into(),
+            turn_id: "turn_a".into(),
+        };
+
+        let previous = cancels
+            .lock()
+            .unwrap()
+            .insert("session_1".into(), ("turn_b".into(), second_token.clone()));
+        previous.unwrap().1.cancel();
+        drop(cleanup);
+
+        let guard = cancels.lock().unwrap();
+        let (turn_id, token) = guard.get("session_1").unwrap();
+        assert_eq!(turn_id, "turn_b");
+        assert!(!token.is_cancelled());
+        assert!(first_token.is_cancelled());
+    }
+
+    #[test]
+    fn cancel_after_turn_swap_cancels_only_the_active_turn() {
+        let cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        let first_token = CancellationToken::new();
+        let second_token = CancellationToken::new();
+
+        cancels
+            .lock()
+            .unwrap()
+            .insert("session_1".into(), ("turn_a".into(), first_token.clone()));
+        let previous = cancels
+            .lock()
+            .unwrap()
+            .insert("session_1".into(), ("turn_b".into(), second_token.clone()));
+        previous.unwrap().1.cancel();
+
+        let active = cancels.lock().unwrap().remove("session_1").unwrap();
+        active.1.cancel();
+
+        assert!(first_token.is_cancelled());
+        assert!(second_token.is_cancelled());
+        assert!(cancels.lock().unwrap().is_empty());
+    }
+}

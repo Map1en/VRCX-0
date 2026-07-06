@@ -489,6 +489,50 @@ function entryHasWorldNameFromQueryOrCache(
     return Boolean(cachedWorldName || queriedWorldName);
 }
 
+function entryHasWorldNameWithoutRemoteQuery(
+    entry: NormalizedLocationMetadataEntry,
+    {
+        cachedInstances,
+        currentEndpoint,
+        locationHintsByKey,
+        localWorldNamesById
+    }: Pick<
+        MetadataContext,
+        | 'cachedInstances'
+        | 'currentEndpoint'
+        | 'locationHintsByKey'
+        | 'localWorldNamesById'
+    >
+) {
+    const cachedInstance = resolveEntryCachedInstance(entry, cachedInstances);
+    const locationHint = resolveEntryLocationHint(
+        entry,
+        locationHintsByKey,
+        currentEndpoint
+    );
+    const cachedWorldName = normalizeWorldNameHint(
+        readInstanceWorldName(cachedInstance),
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    const hintedWorldName = normalizeWorldNameHint(
+        locationHint?.worldName,
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    const localWorldName = normalizeWorldNameHint(
+        localWorldNamesById.get(entry.worldId),
+        entry.locationInfo,
+        entry.currentLocation
+    );
+    return Boolean(
+        resolveEntryWorldNameHint(entry) ||
+        cachedWorldName ||
+        hintedWorldName ||
+        localWorldName
+    );
+}
+
 export function useLocationMetadataBatch(
     entries: readonly (LocationMetadataEntry | null | undefined)[] = [],
     { endpoint = '' }: { endpoint?: unknown } = {}
@@ -527,10 +571,33 @@ export function useLocationMetadataBatch(
             ),
         [entries]
     );
-    const worldIds = useMemo(
-        () => uniqueIds(normalizedEntries, 'worldId'),
-        [normalizedEntries]
+    const [localWorldNamesById, setLocalWorldNamesById] = useState(
+        () => new Map<string, string>()
     );
+    const worldIds = useMemo(() => {
+        const ids = new Set<string>();
+        for (const entry of normalizedEntries) {
+            if (
+                !entry.worldId ||
+                entryHasWorldNameWithoutRemoteQuery(entry, {
+                    cachedInstances,
+                    currentEndpoint,
+                    locationHintsByKey,
+                    localWorldNamesById
+                })
+            ) {
+                continue;
+            }
+            ids.add(entry.worldId);
+        }
+        return Array.from(ids);
+    }, [
+        cachedInstances,
+        currentEndpoint,
+        localWorldNamesById,
+        locationHintsByKey,
+        normalizedEntries
+    ]);
     const groupIds = useMemo(
         () => uniqueIds(normalizedEntries, 'groupId'),
         [normalizedEntries]
@@ -571,9 +638,6 @@ export function useLocationMetadataBatch(
         combine: (results) =>
             mapQueryResults<GroupProfileRecord>(groupIds, results)
     });
-    const [localWorldNamesById, setLocalWorldNamesById] = useState(
-        () => new Map<string, string>()
-    );
     const localWorldNameRequestIdsRef = useRef(new Set<string>());
     const mountedRef = useRef(true);
 
@@ -592,6 +656,12 @@ export function useLocationMetadataBatch(
                 !entry.worldId ||
                 localWorldNamesById.has(entry.worldId) ||
                 localWorldNameRequestIdsRef.current.has(entry.worldId) ||
+                entryHasWorldNameWithoutRemoteQuery(entry, {
+                    cachedInstances,
+                    currentEndpoint,
+                    locationHintsByKey,
+                    localWorldNamesById
+                }) ||
                 entryHasWorldNameFromQueryOrCache(
                     entry,
                     cachedInstances,
@@ -644,7 +714,9 @@ export function useLocationMetadataBatch(
         });
     }, [
         cachedInstances,
+        currentEndpoint,
         localWorldNamesById,
+        locationHintsByKey,
         normalizedEntries,
         worldProfilesById
     ]);

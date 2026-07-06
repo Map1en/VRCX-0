@@ -52,24 +52,29 @@ export function PreviousDisplayNamesBadge({ names }: any) {
     const primaryName = names[0]?.displayName || label;
 
     return (
-        <HoverCard openDelay={150}>
-            <HoverCardTrigger asChild>
-                <Badge
-                    asChild
-                    variant="outline"
-                    className="bg-background max-w-52 cursor-default text-xs"
-                >
-                    <button type="button" aria-label={label}>
-                        <HistoryIcon data-icon="inline-start" />
-                        <span className="min-w-0 truncate">{primaryName}</span>
-                        {names.length > 1 ? (
-                            <span className="text-muted-foreground shrink-0">
-                                +{names.length - 1}
-                            </span>
-                        ) : null}
-                    </button>
-                </Badge>
-            </HoverCardTrigger>
+        <HoverCard>
+            <HoverCardTrigger
+                delay={150}
+                render={
+                    <Badge
+                        variant="outline"
+                        className="bg-background max-w-52 cursor-default text-xs"
+                        render={
+                            <button type="button" aria-label={label}>
+                                <HistoryIcon data-icon="inline-start" />
+                                <span className="min-w-0 truncate">
+                                    {primaryName}
+                                </span>
+                                {names.length > 1 ? (
+                                    <span className="text-muted-foreground shrink-0">
+                                        +{names.length - 1}
+                                    </span>
+                                ) : null}
+                            </button>
+                        }
+                    />
+                }
+            />
             <HoverCardContent align="start" className="w-72 p-0">
                 <div className="flex flex-col">
                     <div className="border-border flex items-center justify-between gap-3 border-b px-3 py-2">

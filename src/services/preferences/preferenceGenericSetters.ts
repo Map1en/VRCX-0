@@ -8,7 +8,10 @@ import {
     normalizeTrustColors,
     TRUST_COLOR_DEFAULTS
 } from '@/shared/utils/trustColors';
-import { normalizeSharedFeedFilters } from '@/state/preferencesStore';
+import {
+    normalizeFeedHiddenUsers,
+    normalizeSharedFeedFilters
+} from '@/state/preferencesStore';
 import type { TrustColorKey } from '@/state/preferencesStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
@@ -44,6 +47,7 @@ import {
     appLanguageChanged,
     applyAccessibleStatusClass,
     applyDataTableStripedClass,
+    applyReducedMotionAndBlurClass,
     applyTableDensityClass,
     normalizePreferenceKey,
     normalizeStringList,
@@ -61,6 +65,7 @@ import type {
     BoolConfigPreferenceKey,
     IntConfigPreferenceKey,
     IntConfigPreferenceOptions,
+    ProxyPreferenceOptions,
     ProxyServerPreferenceOptions,
     StringConfigPreferenceKey
 } from './preferencesTypes';
@@ -330,6 +335,8 @@ export async function setBoolConfigPreference(
             dateIsoFormat: enabled,
             dateHour12: state.dateHour12
         });
+    } else if (normalizedKey === 'reducedMotionAndBlur') {
+        applyReducedMotionAndBlurClass(enabled);
     }
     patchPreferenceValue(key, enabled);
     publishPreferenceChanged(key, enabled);
@@ -367,7 +374,7 @@ export async function setIntConfigPreference(
 
 export async function setProxyServerPreference(
     value: string,
-    { restart = true }: ProxyServerPreferenceOptions = {}
+    { restart = false }: ProxyServerPreferenceOptions = {}
 ) {
     const nextProxyServer = String(value ?? '').trim();
     await storageRepository.setString('VRCX_ProxyServer', nextProxyServer);
@@ -377,6 +384,23 @@ export async function setProxyServerPreference(
         await commands.appRestartApplication();
     }
     return nextProxyServer;
+}
+
+export async function setProxyEnabledPreference(
+    value: boolean,
+    { restart = false }: ProxyPreferenceOptions = {}
+) {
+    const proxyEnabled = value === true;
+    await storageRepository.setString(
+        'VRCX_ProxyEnabled',
+        String(proxyEnabled)
+    );
+    patchPreferences({ proxyEnabled });
+    publishPreferenceChanged('VRCX_ProxyEnabled', proxyEnabled);
+    if (restart) {
+        await commands.appRestartApplication();
+    }
+    return proxyEnabled;
 }
 
 export async function setTablePageSizesPreference(value: unknown) {
@@ -515,4 +539,40 @@ export async function setLocalFavoriteFriendsGroupsPreference(value: unknown) {
         localFavoriteFriendsGroups
     );
     return localFavoriteFriendsGroups;
+}
+
+export async function setFeedHiddenUsersPreference(value: unknown) {
+    const feedHiddenUsers = normalizeFeedHiddenUsers(value);
+    await configRepository.setString(
+        'feedHiddenUsers',
+        JSON.stringify(feedHiddenUsers)
+    );
+    patchPreferences({ feedHiddenUsers });
+    publishPreferenceChanged('feedHiddenUsers', feedHiddenUsers);
+    return feedHiddenUsers;
+}
+
+export async function addFeedHiddenUserPreference(userId: unknown) {
+    const current = normalizeFeedHiddenUsers(
+        usePreferencesStore.getState().feedHiddenUsers
+    );
+    const [normalizedUserId] = normalizeFeedHiddenUsers([userId]);
+    if (!normalizedUserId || current.includes(normalizedUserId)) {
+        return current;
+    }
+    return setFeedHiddenUsersPreference([...current, normalizedUserId]);
+}
+
+export async function removeFeedHiddenUserPreference(userId: unknown) {
+    const [normalizedUserId] = normalizeFeedHiddenUsers([userId]);
+    const current = normalizeFeedHiddenUsers(
+        usePreferencesStore.getState().feedHiddenUsers
+    );
+    const next = normalizedUserId
+        ? current.filter((id) => id !== normalizedUserId)
+        : current;
+    if (next.length === current.length) {
+        return current;
+    }
+    return setFeedHiddenUsersPreference(next);
 }

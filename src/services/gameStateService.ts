@@ -18,11 +18,7 @@ import {
     shouldSkipFrontendCrashRelaunch,
     waitForRuntimeCrashRelaunchDecision
 } from '@/services/gameClientLifecycle';
-import {
-    finalizeCurrentGameLogSession,
-    resetGameLogIngestSessionState,
-    resetNowPlayingState
-} from '@/services/gameLogIngestService';
+import { resetGameLogSessionState } from '@/services/gameLogIngestService';
 import {
     isHostCapabilityAvailable,
     isHostCapabilitySupported,
@@ -260,24 +256,12 @@ async function handleGameStopped(
     currentUserSnapshot: unknown
 ) {
     const stoppedAt = new Date().toISOString();
-    resetNowPlayingState();
     useRuntimeStore.getState().clearInstanceQueueState();
     useRuntimeStore.getState().setTransportState({
         ipcAnnounced: false
     });
 
-    const finalizeResult = await Promise.allSettled([
-        finalizeCurrentGameLogSession(stoppedAt)
-    ]);
-    for (const result of finalizeResult) {
-        if (result.status === 'rejected') {
-            showSQLiteErrorDialog(result.reason);
-            console.warn(
-                'Game stop session finalization failed:',
-                result.reason
-            );
-        }
-    }
+    resetGameLogSessionState(stoppedAt);
 
     clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot);
     queueDiscordPresenceGameStopCloseAttempts();
@@ -487,8 +471,7 @@ export async function handleGameRunningUpdate(payload: unknown = {}) {
     if (nextGameRunning) {
         if (gameRunningChanged) {
             resetRuntimeCrashRelaunchDecision();
-            resetGameLogIngestSessionState();
-            resetNowPlayingState();
+            useRuntimeStore.getState().resetNowPlayingState();
             startCurrentAvatarWearTimer();
         }
         clearCrashRelaunchTimer();

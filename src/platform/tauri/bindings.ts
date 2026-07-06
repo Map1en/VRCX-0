@@ -100,17 +100,8 @@ export const commands = {
     async assetBundleGetCacheSize(): Promise<number> {
         return await TAURI_INVOKE('asset_bundle__get_cache_size');
     },
-    async logWatcherGet(): Promise<string[][]> {
-        return await TAURI_INVOKE('log_watcher__get');
-    },
     async logWatcherGetCurrentLocation(): Promise<LogLocationSnapshot | null> {
         return await TAURI_INVOKE('log_watcher__get_current_location');
-    },
-    async logWatcherSetDateTill(date: string): Promise<null> {
-        return await TAURI_INVOKE('log_watcher__set_date_till', { date });
-    },
-    async logWatcherReset(): Promise<null> {
-        return await TAURI_INVOKE('log_watcher__reset');
     },
     async logWatcherVrcClosedGracefully(): Promise<boolean> {
         return await TAURI_INVOKE('log_watcher__vrc_closed_gracefully');
@@ -256,6 +247,14 @@ export const commands = {
     async appEnsureMainWindow(): Promise<null> {
         return await TAURI_INVOKE('app__ensure_main_window');
     },
+    async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
+        return await TAURI_INVOKE('app__telemetry_record_event', { event });
+    },
+    async appProxySettingsTest(
+        input: ProxySettingsTestInput
+    ): Promise<ProxySettingsTestResult> {
+        return await TAURI_INVOKE('app__proxy_settings_test', { input });
+    },
     async appMcpServerStatus(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_status');
     },
@@ -266,6 +265,13 @@ export const commands = {
         enabled: boolean
     ): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_set_allow_vrchat_writes', {
+            enabled
+        });
+    },
+    async appMcpServerSetAllowLanConnections(
+        enabled: boolean
+    ): Promise<McpServerStatus> {
+        return await TAURI_INVOKE('app__mcp_server_set_allow_lan_connections', {
             enabled
         });
     },
@@ -641,6 +647,11 @@ export const commands = {
     async appGameLogQuery(query: GameLogQueryInput): Promise<JsonValue> {
         return await TAURI_INVOKE('app__game_log_query', { query });
     },
+    async appGameLogSessionsQuery(
+        input: GameLogSessionsQueryInput
+    ): Promise<GameLogSessionDto[]> {
+        return await TAURI_INVOKE('app__game_log_sessions_query', { input });
+    },
     async appPlayerListLocationGet(
         location: string
     ): Promise<PlayerLocationOutput | null> {
@@ -658,6 +669,17 @@ export const commands = {
         return await TAURI_INVOKE('app__player_list_join_leave_rows', {
             location,
             startedAt
+        });
+    },
+    async appPlayerListCurrentSnapshot(
+        currentUserId: string,
+        currentLocation: string,
+        currentLocationStartedAt: string
+    ): Promise<PlayerListSnapshotOutput> {
+        return await TAURI_INVOKE('app__player_list_current_snapshot', {
+            currentUserId,
+            currentLocation,
+            currentLocationStartedAt
         });
     },
     async appInstanceActivityDatesGet(userId: string): Promise<string[]> {
@@ -1129,6 +1151,13 @@ export const commands = {
         input: ExternalApiAvatarSearchInput
     ): Promise<ExternalApiExecuteResponse> {
         return await TAURI_INVOKE('app__external_api_avatar_search_get', {
+            input
+        });
+    },
+    async appExternalApiGithubContributorsGet(
+        input: ExternalApiUrlInput
+    ): Promise<ExternalApiExecuteResponse> {
+        return await TAURI_INVOKE('app__external_api_github_contributors_get', {
             input
         });
     },
@@ -1635,6 +1664,11 @@ export const commands = {
         input: VrchatInstanceIdentityInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_instance_get', { input });
+    },
+    async appVrchatInstanceJoin(
+        input: InstanceLaunchInput
+    ): Promise<InstanceLaunchOutcome> {
+        return await TAURI_INVOKE('app__vrchat_instance_join', { input });
     },
     async appVrchatInstanceSelfInvite(
         input: VrchatInstanceSelfInviteInput
@@ -3308,6 +3342,47 @@ export type GameLogRuntimeSnapshotDto = {
     destination: string;
     players: PlayerState[];
 };
+export type GameLogSessionDto = {
+    id?: number | null;
+    created_at: string;
+    location: string;
+    worldId: string;
+    worldName: string;
+    groupName: string;
+    duration: number | null;
+    events: GameLogSessionEventDto[];
+};
+export type GameLogSessionEventDto = {
+    type: string;
+    created_at: string;
+    rowId?: number | null;
+    userId?: string | null;
+    displayName?: string | null;
+    location?: string | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    playCount?: number | null;
+    isFavorite?: boolean | null;
+    count?: number | null;
+    members?: GameLogSessionMemberDto[] | null;
+};
+export type GameLogSessionMemberDto = {
+    displayName: string;
+    userId: string;
+    created_at: string;
+    isFavorite: boolean;
+};
+export type GameLogSessionsQueryInput = {
+    search?: string;
+    filters?: string[];
+    favoriteUserIds?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
+    maxTableSize?: number;
+    searchLimit?: number;
+};
 export type GroupQuickModerationActionInput = {
     currentUserId?: string;
     targetUserId?: string;
@@ -3388,6 +3463,17 @@ export type InstanceActivityRowOutput = {
     userId: string;
     time: number;
 };
+export type InstanceLaunchInput = {
+    location?: string;
+    shortName?: string;
+    endpoint?: string;
+    mode?: InstanceLaunchMode;
+};
+export type InstanceLaunchMode = 'auto' | 'openOnly' | 'selfInviteOnly';
+export type InstanceLaunchOutcome =
+    | { status: 'opened' }
+    | { status: 'selfInvited' }
+    | { status: 'failed'; reason: string };
 export type JsonValue = any;
 export type LegacyVrcxMigrationStatus = {
     detected: boolean;
@@ -3468,6 +3554,7 @@ export type MaintenanceTableSizesOutput = {
 export type McpServerState = 'disabled' | 'running';
 export type McpServerStatus = {
     enabled: boolean;
+    allowLanConnections: boolean;
     allowVrchatWrites: boolean;
     state: McpServerState;
     port: number | null;
@@ -3681,6 +3768,7 @@ export type OverlayActivityTypeDefinition = {
     category: OverlayActivityCategory;
     allowedScopes: OverlayActivityScope[];
     defaultScope: OverlayActivityScope;
+    hmdDefaultScope: OverlayActivityScope;
     aliases: string[];
 };
 export type ParsedLocation = {
@@ -3720,6 +3808,29 @@ export type PlayerJoinLeaveOutput = {
     userId: string;
     time: number;
 };
+export type PlayerListSnapshotContext = {
+    createdAt: string;
+    location: string;
+    worldId: string;
+    worldName: string;
+    time: number;
+    groupName: string;
+    source: string;
+    playerCount?: number | null;
+    observedPlayerEventCount?: number | null;
+    playerFactsKnown?: boolean | null;
+};
+export type PlayerListSnapshotOutput = {
+    context: PlayerListSnapshotContext;
+    players: PlayerListSnapshotPlayer[];
+};
+export type PlayerListSnapshotPlayer = {
+    id: string;
+    userId: string;
+    displayName: string;
+    joinedAt: string;
+    joinedAtMs: number;
+};
 export type PlayerLocationOutput = {
     createdAt: string;
     location: string;
@@ -3742,6 +3853,11 @@ export type PrintFavoriteState = {
     favoriteIds: string[];
     maxFavorites: number;
     warning: CleanupWarning | null;
+};
+export type ProxySettingsTestInput = { proxy?: string };
+export type ProxySettingsTestResult = {
+    normalizedProxy: string | null;
+    status: number;
 };
 export type RawJson = JsonValue;
 export type RealtimeCurrentUserProjection = {
@@ -4018,6 +4134,23 @@ export type TauriUpdateMetadata = {
     body: string | null;
     rawJson: JsonValue;
 };
+export type TelemetryClientEvent =
+    | { type: 'pageVisit'; route: string }
+    | {
+          type: 'routeError';
+          error_class: string;
+          name: string | null;
+          summary: string | null;
+      }
+    | { type: 'viewModeSwitch'; dimension: string; value: string }
+    | { type: 'assistantOpen' }
+    | { type: 'assistantApiKeyConfigured' }
+    | {
+          type: 'assistantToolError';
+          source: string | null;
+          summary: string | null;
+      }
+    | { type: 'assistantTurnError'; code: string; summary: string | null };
 export type TurnStatus = 'running' | 'done' | 'error' | 'cancelled';
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserNoteOutput = {

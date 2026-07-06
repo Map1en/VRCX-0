@@ -1,5 +1,7 @@
 import {
     CopyIcon,
+    EyeIcon,
+    EyeOffIcon,
     ExternalLinkIcon,
     GlobeIcon,
     UserIcon,
@@ -7,19 +9,19 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import userProfileRepository from '@/repositories/userProfileRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import {
     openGroupDialog,
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
-import { copyTextToClipboard, userImage } from '@/services/entityMediaService';
+import { userImage } from '@/services/entityMediaService';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -73,8 +75,7 @@ async function copyFeedText(text: unknown, successMessage: string) {
     if (!value) {
         return;
     }
-    await copyTextToClipboard(value);
-    toast.success(successMessage);
+    await copyTextToClipboard(value, { successMessage });
 }
 
 function FeedUserLink({
@@ -140,6 +141,7 @@ function FeedUserLink({
         parsedLocation.instanceId &&
         actions.canUseFeedFriendLocation(location)
     );
+    const isHiddenFromFeed = actions.isFeedUserHidden(userId);
 
     useEffect(() => {
         if (!userId || displayName !== UNKNOWN_FEED_USER_DISPLAY_NAME) {
@@ -159,63 +161,69 @@ function FeedUserLink({
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className={cn(
-                        'hover:text-primary h-auto max-w-full justify-start self-start text-left font-medium',
-                        showAvatar && 'gap-2',
-                        className
-                    )}
-                    disabled={!userId}
-                    onClick={() =>
-                        openUserDialog({
-                            userId,
-                            title: userLabel,
-                            seedData: displayUser || null
-                        })
-                    }
-                >
-                    {showAvatar ? (
-                        <Avatar
-                            size="default"
-                            style={{
-                                height: avatarSize,
-                                width: avatarSize
-                            }}
-                        >
-                            {imageUrl ? (
-                                <AvatarImage src={imageUrl} alt="" />
-                            ) : null}
-                            <AvatarFallback
-                                className={cn(
-                                    avatarSize >= 40 ? 'text-xs' : 'text-[10px]'
-                                )}
-                            >
-                                <UserIcon
-                                    className={
-                                        avatarSize >= 40 ? 'size-4' : 'size-3.5'
-                                    }
-                                />
-                            </AvatarFallback>
-                        </Avatar>
-                    ) : null}
-                    <span
+            <ContextMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
                         className={cn(
-                            'truncate',
-                            showAvatar ? 'min-w-0 flex-1' : 'max-w-full'
+                            'hover:text-primary h-auto max-w-full justify-start self-start text-left font-medium',
+                            showAvatar && 'gap-2',
+                            className
                         )}
+                        disabled={!userId}
+                        onClick={() =>
+                            openUserDialog({
+                                userId,
+                                title: userLabel,
+                                seedData: displayUser || null
+                            })
+                        }
                     >
-                        {userLabel}
-                    </span>
-                </Button>
-            </ContextMenuTrigger>
+                        {showAvatar ? (
+                            <Avatar
+                                size="default"
+                                style={{
+                                    height: avatarSize,
+                                    width: avatarSize
+                                }}
+                            >
+                                {imageUrl ? (
+                                    <AvatarImage src={imageUrl} alt="" />
+                                ) : null}
+                                <AvatarFallback
+                                    className={cn(
+                                        avatarSize >= 40
+                                            ? 'text-xs'
+                                            : 'text-[10px]'
+                                    )}
+                                >
+                                    <UserIcon
+                                        className={
+                                            avatarSize >= 40
+                                                ? 'size-4'
+                                                : 'size-3.5'
+                                        }
+                                    />
+                                </AvatarFallback>
+                            </Avatar>
+                        ) : null}
+                        <span
+                            className={cn(
+                                'truncate',
+                                showAvatar ? 'min-w-0 flex-1' : 'max-w-full'
+                            )}
+                        >
+                            {userLabel}
+                        </span>
+                    </Button>
+                }
+            />
             <ContextMenuContent className="w-56">
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!userId}
-                        onSelect={() =>
+                        onClick={() =>
                             openUserDialog({
                                 userId,
                                 title: userLabel,
@@ -228,7 +236,7 @@ function FeedUserLink({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!worldTarget}
-                        onSelect={() =>
+                        onClick={() =>
                             openWorldDialog({
                                 worldId: worldDialogTarget,
                                 title: friend?.worldName || worldTarget
@@ -240,7 +248,7 @@ function FeedUserLink({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!groupTarget}
-                        onSelect={() =>
+                        onClick={() =>
                             openGroupDialog({
                                 groupId: groupTarget,
                                 title: undefined
@@ -255,7 +263,7 @@ function FeedUserLink({
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
-                        onSelect={() => {
+                        onClick={() => {
                             actions.launchFeedFriendLocation(location);
                         }}
                     >
@@ -264,7 +272,7 @@ function FeedUserLink({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
-                        onSelect={() => {
+                        onClick={() => {
                             actions.selfInviteFeedFriendLocation(location);
                         }}
                     >
@@ -278,7 +286,7 @@ function FeedUserLink({
                         disabled={
                             isCurrentUser || !actions.canSendInviteFromFeed
                         }
-                        onSelect={() => {
+                        onClick={() => {
                             actions.sendFeedFriendInvite(actionTarget);
                         }}
                     >
@@ -287,7 +295,7 @@ function FeedUserLink({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !canRequestInvite}
-                        onSelect={() => {
+                        onClick={() => {
                             actions.requestFeedFriendInvite(actionTarget);
                         }}
                     >
@@ -296,7 +304,7 @@ function FeedUserLink({
                     </ContextMenuItem>
                     <ContextMenuItem
                         disabled={isCurrentUser || !actions.canBoopFromFeed}
-                        onSelect={() => {
+                        onClick={() => {
                             actions.sendFeedFriendBoop(actionTarget);
                         }}
                     >
@@ -306,9 +314,31 @@ function FeedUserLink({
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
                 <ContextMenuGroup>
+                    {!isCurrentUser ? (
+                        <ContextMenuItem
+                            disabled={!userId}
+                            onClick={() => {
+                                if (!userId) {
+                                    return;
+                                }
+                                if (isHiddenFromFeed) {
+                                    void actions.removeFeedHiddenUser(userId);
+                                    return;
+                                }
+                                void actions.addFeedHiddenUser(userId);
+                            }}
+                        >
+                            {isHiddenFromFeed ? <EyeIcon /> : <EyeOffIcon />}
+                            {t(
+                                isHiddenFromFeed
+                                    ? 'view.feed.context.unhide_user'
+                                    : 'view.feed.context.hide_user'
+                            )}
+                        </ContextMenuItem>
+                    ) : null}
                     <ContextMenuItem
                         disabled={!displayName}
-                        onSelect={() => {
+                        onClick={() => {
                             copyFeedText(
                                 displayName,
                                 t('view.feed.dynamic.value_copied', {

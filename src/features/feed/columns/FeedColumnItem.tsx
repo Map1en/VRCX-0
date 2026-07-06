@@ -50,11 +50,13 @@ function FeedColumnTime({ label, title }: { label: string; title: string }) {
     return (
         <div className="ml-auto flex shrink-0 items-center">
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <span className="text-muted-foreground text-[11px] tabular-nums">
-                        {label}
-                    </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <span className="text-muted-foreground text-[11px] tabular-nums">
+                            {label}
+                        </span>
+                    }
+                />
                 <TooltipContent>{title}</TooltipContent>
             </Tooltip>
         </div>

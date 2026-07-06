@@ -55,6 +55,12 @@ export function UserDialogGroupsTab({
                     value={effectiveGroupSort}
                     onValueChange={setGroupSort}
                     disabled={remoteStatus.groups === 'running'}
+                    items={Object.values(userDialogGroupSortingOptions).map(
+                        (option) => ({
+                            value: option.value,
+                            label: t(option.name)
+                        })
+                    )}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />

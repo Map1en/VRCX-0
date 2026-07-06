@@ -436,6 +436,16 @@ export function DashboardEditorRow({
                     {panels.length === 2 ? (
                         <Select
                             value={direction}
+                            items={[
+                                {
+                                    value: 'horizontal',
+                                    label: t('view.dashboard.label.horizontal')
+                                },
+                                {
+                                    value: 'vertical',
+                                    label: t('view.dashboard.label.vertical')
+                                }
+                            ]}
                             onValueChange={onDirectionChange}
                         >
                             <SelectTrigger size="sm" className="h-7 w-32">

@@ -354,4 +354,19 @@ mod validate_tests {
 
         assert!(validate_legacy_source(&source(db_path, MAX_IMPORTABLE_UPSTREAM_VERSION)).is_ok());
     }
+
+    #[test]
+    fn existing_vrcx0_target_skips_auto_migration_without_version_gate() {
+        let dir = TestDir::new("legacy-target-present");
+        let target_db = dir.path.join("VRCX-0.sqlite3");
+        let target_config = dir.path.join("VRCX-0.json");
+        std::fs::write(&target_db, b"already-created").unwrap();
+
+        let (source, status) = discover_legacy_vrcx_migration(&target_db, &target_config);
+
+        assert!(source.is_none());
+        assert!(!status.detected);
+        assert!(!status.available);
+        assert_eq!(status.version, None);
+    }
 }

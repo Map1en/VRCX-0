@@ -1,27 +1,41 @@
-import { NetworkIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@/ui/shadcn/button';
+import { ProxySettingsEditor } from '@/components/proxy/ProxySettingsEditor';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
-import { Spinner } from '@/ui/shadcn/spinner';
+
+type LoginProxySettingsDialogProps = {
+    enabled: boolean;
+    isSaving: boolean;
+    isTesting: boolean;
+    open: boolean;
+    proxyInput: string;
+    onOpenChange: (open: boolean) => unknown;
+    onProxyEnabledChange: (enabled: boolean) => unknown;
+    onProxyInputChange: (value: string) => unknown;
+    onSave: () => unknown;
+    onSaveAndRestart: () => unknown;
+    onTest: () => unknown;
+};
 
 export function LoginProxySettingsDialog({
+    enabled,
     open,
     proxyInput,
     isSaving,
+    isTesting,
     onOpenChange,
+    onProxyEnabledChange,
     onProxyInputChange,
-    onSubmit
-}: any) {
+    onSave,
+    onSaveAndRestart,
+    onTest
+}: LoginProxySettingsDialogProps) {
     const { t } = useTranslation();
 
     return (
@@ -33,37 +47,18 @@ export function LoginProxySettingsDialog({
                         {t('view.login.proxy_description')}
                     </DialogDescription>
                 </DialogHeader>
-                <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="react-login-proxy">
-                                <NetworkIcon className="size-4" />
-                                {t('status_bar.proxy')}
-                            </FieldLabel>
-                            <Input
-                                id="react-login-proxy"
-                                disabled={isSaving}
-                                placeholder="127.0.0.1:7890"
-                                value={proxyInput}
-                                onChange={(event) =>
-                                    onProxyInputChange(event.target.value)
-                                }
-                            />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
-                        <Button type="submit" disabled={isSaving}>
-                            {isSaving ? (
-                                <>
-                                    <Spinner data-icon="inline-start" />
-                                    {t('prompt.proxy_settings.restart')}
-                                </>
-                            ) : (
-                                t('prompt.proxy_settings.restart')
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </form>
+                <ProxySettingsEditor
+                    enabled={enabled}
+                    idPrefix="react-login-proxy"
+                    saving={isSaving}
+                    server={proxyInput}
+                    testing={isTesting}
+                    onEnabledChange={onProxyEnabledChange}
+                    onSave={onSave}
+                    onSaveAndRestart={onSaveAndRestart}
+                    onServerChange={onProxyInputChange}
+                    onTest={onTest}
+                />
             </DialogContent>
         </Dialog>
     );

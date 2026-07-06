@@ -31,6 +31,8 @@ export const VRCHAT_RICH_PRESENCE_CONFIG_KEY = 'disableRichPresence';
 export const WRIST_OVERLAY_RUNTIME_CONFIG_KEYS = new Set([
     'appLanguage',
     'dtHour12',
+    'vrOverlayPanelEnabled',
+    'vrOverlayPanelAllFriendsIncludesFavorites',
     'wristOverlayStartMode',
     'wristOverlayButton',
     'wristOverlayHand',
@@ -38,7 +40,12 @@ export const WRIST_OVERLAY_RUNTIME_CONFIG_KEYS = new Set([
     'wristOverlayHidePrivateWorlds',
     'wristOverlayDarkBackground',
     'wristOverlayShowDevices',
-    'wristOverlayShowBatteryPercent'
+    'wristOverlayShowBatteryPercent',
+    'hmdNotificationsEnabled',
+    'hmdNotificationStartMode',
+    'hmdNotificationTimeout',
+    'hmdNotificationOpacity',
+    'hmdNotificationPosition'
 ]);
 export const LEGACY_OVERLAY_NOTIFICATION_KEYS = Object.freeze({
     xsNotifications: 'VRCX-0_xsNotifications',

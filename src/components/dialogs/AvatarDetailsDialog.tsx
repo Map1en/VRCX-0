@@ -319,10 +319,20 @@ export function AvatarDetailsDialog({
                             </FieldLabel>
                             <Select
                                 value={primaryStyle || noneValue}
+                                items={[
+                                    {
+                                        value: noneValue,
+                                        label: t('dialog.avatar.label.none')
+                                    },
+                                    ...styleNames.map((styleNameValue) => ({
+                                        value: styleNameValue,
+                                        label: styleNameValue
+                                    }))
+                                ]}
                                 disabled={controlsDisabled}
                                 onValueChange={(value) =>
                                     setPrimaryStyle(
-                                        value === noneValue ? '' : value
+                                        value === noneValue ? '' : (value ?? '')
                                     )
                                 }
                             >
@@ -356,10 +366,20 @@ export function AvatarDetailsDialog({
                             </FieldLabel>
                             <Select
                                 value={secondaryStyle || noneValue}
+                                items={[
+                                    {
+                                        value: noneValue,
+                                        label: t('dialog.avatar.label.none')
+                                    },
+                                    ...styleNames.map((styleNameValue) => ({
+                                        value: styleNameValue,
+                                        label: styleNameValue
+                                    }))
+                                ]}
                                 disabled={controlsDisabled}
                                 onValueChange={(value) =>
                                     setSecondaryStyle(
-                                        value === noneValue ? '' : value
+                                        value === noneValue ? '' : (value ?? '')
                                     )
                                 }
                             >

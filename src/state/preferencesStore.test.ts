@@ -35,6 +35,44 @@ describe('preferencesStore normalizers', () => {
         ).toBe(true);
     });
 
+    it('keeps auth recovery webhook events enabled by default', () => {
+        expect(DEFAULT_PREFERENCES.webhookAuthEventsEnabled).toBe(true);
+        expect(normalizePreferenceSnapshot({}).webhookAuthEventsEnabled).toBe(
+            true
+        );
+        expect(
+            normalizePreferenceSnapshot({
+                webhookAuthEventsEnabled: false
+            }).webhookAuthEventsEnabled
+        ).toBe(false);
+    });
+
+    it('keeps reduced motion and blur disabled by default', () => {
+        expect(DEFAULT_PREFERENCES.reducedMotionAndBlur).toBe(false);
+        expect(normalizePreferenceSnapshot({}).reducedMotionAndBlur).toBe(
+            false
+        );
+        expect(
+            normalizePreferenceSnapshot({
+                reducedMotionAndBlur: 'true'
+            }).reducedMotionAndBlur
+        ).toBe(true);
+    });
+
+    it('keeps proxy enabled separate from the proxy address', () => {
+        expect(DEFAULT_PREFERENCES.proxyEnabled).toBe(false);
+        expect(normalizePreferenceSnapshot({}).proxyEnabled).toBe(false);
+        expect(
+            normalizePreferenceSnapshot({
+                proxyEnabled: true,
+                proxyServer: ''
+            })
+        ).toMatchObject({
+            proxyEnabled: true,
+            proxyServer: ''
+        });
+    });
+
     it('keeps custom font selector fields round-trippable', () => {
         expect(DEFAULT_PREFERENCES.customFontPrimary).toBe('');
         expect(DEFAULT_PREFERENCES.customFontSecondary).toBe('');
@@ -63,6 +101,20 @@ describe('preferencesStore normalizers', () => {
         expect(normalizeTablePageSizes('not an array')).toEqual(
             DEFAULT_PREFERENCES.tablePageSizes
         );
+    });
+
+    it('normalizes hidden feed users into a unique user id list', () => {
+        expect(
+            normalizePreferenceSnapshot({
+                feedHiddenUsers: [
+                    'usr_alice',
+                    { userId: '' },
+                    null,
+                    { userId: 'usr_alice' },
+                    ' usr_bob '
+                ]
+            }).feedHiddenUsers
+        ).toEqual(['usr_alice', 'usr_bob']);
     });
 
     it('clamps table limits to supported bounds with defaults for invalid values', () => {
@@ -147,6 +199,42 @@ describe('preferencesStore normalizers', () => {
             scope: 'selectedFavorites',
             favoriteGroupKeys: ['group_future']
         });
+        expect(filters.hmd.types.OnPlayerJoined).toEqual({
+            scope: 'friends',
+            favoriteGroupKeys: 'all'
+        });
+        expect(filters.hmd.types.Online).toEqual({
+            scope: 'allFavorites',
+            favoriteGroupKeys: 'all'
+        });
+        expect(filters.hmd.types.VideoPlay).toEqual({
+            scope: 'off',
+            favoriteGroupKeys: 'all'
+        });
+    });
+
+    it('uses HMD defaults for standalone HMD activity filter snapshots', () => {
+        const malformed = normalizePreferenceSnapshot({
+            hmdNotificationActivityFilters: '{bad json'
+        }).hmdNotificationActivityFilters.types;
+        const empty = normalizePreferenceSnapshot({
+            hmdNotificationActivityFilters: {}
+        }).hmdNotificationActivityFilters.types;
+
+        for (const types of [malformed, empty]) {
+            expect(types.OnPlayerJoined).toEqual({
+                scope: 'friends',
+                favoriteGroupKeys: 'all'
+            });
+            expect(types.Online).toEqual({
+                scope: 'allFavorites',
+                favoriteGroupKeys: 'all'
+            });
+            expect(types.VideoPlay).toEqual({
+                scope: 'off',
+                favoriteGroupKeys: 'all'
+            });
+        }
     });
 
     it('migrates legacy shared wrist filters when overlay activity filters are missing', () => {
@@ -183,12 +271,14 @@ describe('preferencesStore normalizers', () => {
             notificationLayout: 'table',
             dataTableStriped: 'true',
             tableDensity: 'tiny',
+            reducedMotionAndBlur: 'true',
             recentActionCooldownMinutes: '9999',
             autoLoginDelaySeconds: '99',
             weekStartsOn: 2,
             navPanelWidth: 9999,
             tablePageSizes: ['25', '10', '25'],
             wristOverlayStartMode: 'steamvr',
+            vrOverlayPanelAllFriendsIncludesFavorites: 'false',
             wristOverlayButton: 'menu',
             wristOverlayHand: 'both',
             wristOverlaySize: 'large',
@@ -196,6 +286,11 @@ describe('preferencesStore normalizers', () => {
             wristOverlayShowDevices: 'true',
             wristOverlayShowBatteryPercent: 'true',
             wristOverlayHidePrivateWorlds: 'true',
+            hmdNotificationsEnabled: 'true',
+            hmdNotificationStartMode: 'steamvr',
+            hmdNotificationTimeout: 999999,
+            hmdNotificationOpacity: -1,
+            hmdNotificationPosition: 'right',
             tableLimits: {
                 maxTableSize: 5,
                 searchLimit: 999999
@@ -241,6 +336,7 @@ describe('preferencesStore normalizers', () => {
             notificationLayout: 'table',
             dataTableStriped: true,
             tableDensity: 'standard',
+            reducedMotionAndBlur: true,
             recentActionCooldownMinutes: 1440,
             autoLoginDelaySeconds: 10,
             weekStartsOn: 1,
@@ -251,6 +347,7 @@ describe('preferencesStore normalizers', () => {
                 searchLimit: 100000
             },
             localFavoriteFriendsGroups: ['VIP'],
+            vrOverlayPanelAllFriendsIncludesFavorites: false,
             wristOverlayStartMode: 'steamvr',
             wristOverlayButton: 'menu',
             wristOverlayHand: 'both',
@@ -259,6 +356,11 @@ describe('preferencesStore normalizers', () => {
             wristOverlayShowDevices: true,
             wristOverlayShowBatteryPercent: true,
             wristOverlayHidePrivateWorlds: true,
+            hmdNotificationsEnabled: true,
+            hmdNotificationStartMode: 'steamvr',
+            hmdNotificationTimeout: 30000,
+            hmdNotificationOpacity: 0,
+            hmdNotificationPosition: 'right',
             translationAPIType: 'openai',
             translationAPIEndpoint: DEFAULT_PREFERENCES.translationAPIEndpoint,
             translationAPIModel: DEFAULT_PREFERENCES.translationAPIModel,
@@ -299,10 +401,12 @@ describe('preferencesStore normalizers', () => {
         expect(
             normalizePreferenceSnapshot({
                 wristOverlayStartMode: 'invalid',
+                hmdNotificationStartMode: 'invalid',
                 wristOverlayButton: 'trigger'
             })
         ).toMatchObject({
             wristOverlayStartMode: 'vrchatVrMode',
+            hmdNotificationStartMode: 'vrchatVrMode',
             wristOverlayButton: 'grip'
         });
     });

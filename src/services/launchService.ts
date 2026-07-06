@@ -3,13 +3,13 @@ import { toast } from 'sonner';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
-import {
-    resolveInstanceLaunchToken,
-    resolveVrcLaunchUrl,
-    tryOpenLaunchLocation
-} from '@/services/directAccessService';
+import { resolveVrcLaunchUrl } from '@/services/directAccessService';
 import { requireHostCapabilitySupported } from '@/services/hostCapabilityService';
 import i18n from '@/services/i18nService';
+import {
+    joinInstanceWithFallback,
+    sendSelfInviteToInstance
+} from '@/services/instanceActionService';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -116,35 +116,24 @@ export async function attachRunningVrchat(
 ): Promise<void> {
     const launchLocation = normalizeString(location);
     const launchShortName = normalizeString(shortName);
-    if (
-        !(await tryOpenLaunchLocation(
-            launchLocation,
-            launchShortName,
-            endpoint
-        ))
-    ) {
-        const parsed = parseLocation(location);
-        if (!parsed.worldId || !parsed.instanceId) {
-            throw new Error('Unable to open this instance in VRChat.');
-        }
+    const outcome = await joinInstanceWithFallback(
+        launchLocation,
+        launchShortName,
+        endpoint
+    );
+    if (outcome.status === 'opened') {
+        return;
+    }
+    if (outcome.status === 'selfInvited') {
         toast.warning(
             i18n.t(
                 'common.error.failed_open_instance_in_vrchat_falling_back_to_self_invite'
             )
         );
-        const launchToken = await resolveInstanceLaunchToken(
-            launchLocation,
-            launchShortName,
-            endpoint
-        );
-        await vrchatInstanceRepository.selfInvite({
-            worldId: parsed.worldId,
-            instanceId: parsed.instanceId,
-            shortName: parsed.shortName || launchToken,
-            endpoint
-        });
         toast.success(i18n.t('message.invite.self_sent'));
+        return;
     }
+    throw new Error(outcome.reason);
 }
 
 export async function selfInviteToInstance(
@@ -160,17 +149,7 @@ export async function selfInviteToInstance(
             'Cannot self invite: location is not a concrete instance.'
         );
     }
-    const launchToken = await resolveInstanceLaunchToken(
-        launchLocation,
-        launchShortName,
-        endpoint
-    );
-    await vrchatInstanceRepository.selfInvite({
-        worldId: parsed.worldId,
-        instanceId: parsed.instanceId,
-        shortName: parsed.shortName || launchToken,
-        endpoint
-    });
+    await sendSelfInviteToInstance(launchLocation, launchShortName, endpoint);
 }
 
 export async function launchVrchat(

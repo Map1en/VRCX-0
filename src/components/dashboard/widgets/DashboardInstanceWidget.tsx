@@ -185,16 +185,18 @@ function DashboardInstanceSettingsMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={'Widget settings'}
-                >
-                    <SettingsIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={'Widget settings'}
+                    >
+                        <SettingsIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuGroup>
                     {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
@@ -203,9 +205,7 @@ function DashboardInstanceSettingsMenu({
                                 key={column.key}
                                 checked={activeColumns.includes(column.key)}
                                 disabled={column.required}
-                                onSelect={(event: any) =>
-                                    event.preventDefault()
-                                }
+                                onClick={(event) => event.preventDefault()}
                                 onCheckedChange={() =>
                                     configUpdater(
                                         getNextColumnConfig(
@@ -345,9 +345,11 @@ function DashboardInstancePlayersTable({ activeColumns, rows }: any) {
                                         {activeColumns.includes('status') ? (
                                             row.statusValue ? (
                                                 <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <span className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border" />
-                                                    </TooltipTrigger>
+                                                    <TooltipTrigger
+                                                        render={
+                                                            <span className="bg-muted-foreground/70 inline-block size-2.5 rounded-full border" />
+                                                        }
+                                                    />
                                                     <TooltipContent>
                                                         {row.statusValue}
                                                     </TooltipContent>
@@ -393,11 +395,13 @@ function DashboardInstancePlayersTable({ activeColumns, rows }: any) {
                                                 <Tooltip
                                                     key={`${row.id}:${entry.key}`}
                                                 >
-                                                    <TooltipTrigger asChild>
-                                                        <span className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold">
-                                                            {entry.code}
-                                                        </span>
-                                                    </TooltipTrigger>
+                                                    <TooltipTrigger
+                                                        render={
+                                                            <span className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold">
+                                                                {entry.code}
+                                                            </span>
+                                                        }
+                                                    />
                                                     <TooltipContent>
                                                         {entry.value ||
                                                             entry.key}

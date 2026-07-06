@@ -113,7 +113,9 @@ export function GroupModerationTabPanel({
                     <Select
                         value={String(pageSize)}
                         onValueChange={(value) =>
-                            onPageSizeChange(Number.parseInt(value, 10) || 25)
+                            onPageSizeChange(
+                                Number.parseInt(value ?? '', 10) || 25
+                            )
                         }
                     >
                         <SelectTrigger size="sm" className="w-24">

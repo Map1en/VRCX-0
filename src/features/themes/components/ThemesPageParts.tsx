@@ -78,11 +78,13 @@ export function ThemeCatalogCard({
                             {theme.name}
                         </CardTitle>
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <p className="text-muted-foreground mt-1 line-clamp-2 h-8 text-xs leading-4">
-                                    {theme.description}
-                                </p>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <p className="text-muted-foreground mt-1 line-clamp-2 h-8 text-xs leading-4">
+                                        {theme.description}
+                                    </p>
+                                }
+                            />
                             <TooltipContent className="max-w-72">
                                 {theme.description}
                             </TooltipContent>

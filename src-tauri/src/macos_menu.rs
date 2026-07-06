@@ -84,10 +84,7 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
     let help_menu = help_menu
         .separator()
         .text("mac-menu-open-devtools", help_i18n.open_devtools);
-    let help_menu = help_menu
-        .separator()
-        .text("mac-menu-support-vrcx", help_i18n.support_vrcx)
-        .build()?;
+    let help_menu = help_menu.build()?;
 
     let menu = MenuBuilder::new(app)
         .item(&app_menu)

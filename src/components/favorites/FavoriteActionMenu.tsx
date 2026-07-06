@@ -374,32 +374,34 @@ export function FavoriteActionMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    size={iconOnly ? 'icon-lg' : 'sm'}
-                    variant={
-                        iconOnly
-                            ? 'outline'
-                            : remoteFavorite
-                              ? 'default'
-                              : 'outline'
-                    }
-                    disabled={actionStatus !== 'idle'}
-                    aria-label={triggerLabel}
-                    title={triggerLabel}
-                >
-                    {actionStatus !== 'idle' ? (
-                        <Spinner data-icon="inline-start" />
-                    ) : (
-                        <HeartIcon
-                            data-icon="inline-start"
-                            className={favorited ? 'fill-current' : ''}
-                        />
-                    )}
-                    {iconOnly ? null : triggerLabel}
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        size={iconOnly ? 'icon-lg' : 'sm'}
+                        variant={
+                            iconOnly
+                                ? 'outline'
+                                : remoteFavorite
+                                  ? 'default'
+                                  : 'outline'
+                        }
+                        disabled={actionStatus !== 'idle'}
+                        aria-label={triggerLabel}
+                        title={triggerLabel}
+                    >
+                        {actionStatus !== 'idle' ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <HeartIcon
+                                data-icon="inline-start"
+                                className={favorited ? 'fill-current' : ''}
+                            />
+                        )}
+                        {iconOnly ? null : triggerLabel}
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>
                     {t('view.favorite.label.vrchat_favorites')}
@@ -415,7 +417,8 @@ export function FavoriteActionMenu({
                         <DropdownMenuGroup>
                             <DropdownMenuItem
                                 variant="destructive"
-                                onSelect={(event) => {
+                                closeOnClick={false}
+                                onClick={(event) => {
                                     event.preventDefault();
                                     deleteFavorite();
                                 }}
@@ -436,7 +439,8 @@ export function FavoriteActionMenu({
                                 <DropdownMenuItem
                                     key={String(group.key ?? '')}
                                     disabled={isFull}
-                                    onSelect={(event) => {
+                                    closeOnClick={false}
+                                    onClick={(event) => {
                                         event.preventDefault();
                                         addFavorite(group);
                                     }}
@@ -467,7 +471,7 @@ export function FavoriteActionMenu({
                                 <DropdownMenuCheckboxItem
                                     key={groupName}
                                     checked={isLocalFavorite}
-                                    onSelect={(event) => event.preventDefault()}
+                                    onClick={(event) => event.preventDefault()}
                                     onCheckedChange={() => {
                                         if (isLocalFavorite) {
                                             removeLocalFavoriteFromGroup(

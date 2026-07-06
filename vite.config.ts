@@ -38,7 +38,6 @@ const webkitBuildTarget = {
     vite: 'safari17',
     browserslist: 'Safari 17.0'
 };
-const productionTelemetryEndpoint = 'https://stats.vrcx-0.dev';
 
 function getPlatformBuildTarget() {
     switch (process.platform) {
@@ -91,12 +90,8 @@ export default defineConfig(({ mode }) => {
     );
     const version = tauriConf.version;
     const buildTarget = getPlatformBuildTarget();
-    const isProductionBuild = mode === 'production';
     const enableReactDevtoolsStandalone =
         mode === 'development' && process.env.VITE_REACT_DEVTOOLS === '1';
-    const telemetryEndpoint = isProductionBuild
-        ? process.env.VRCX_0_TELEMETRY_ENDPOINT || productionTelemetryEndpoint
-        : '';
     const macosSystemFontsEnabled = process.platform === 'darwin';
     const bundledCjkFontsEnabled = !macosSystemFontsEnabled;
 
@@ -125,26 +120,7 @@ export default defineConfig(({ mode }) => {
             }
         },
         optimizeDeps: {
-            include: [
-                '@base-ui/react',
-                'i18next',
-                'radix-ui',
-                'react',
-                'react-dom',
-                'react-router-dom',
-                '@tanstack/react-query',
-                'zustand',
-                'lucide-react',
-                'tailwindcss',
-                'graphology',
-                'graphology-communities-louvain',
-                'graphology-layout-forceatlas2',
-                'graphology-layout-noverlap',
-                'sigma',
-                '@sigma/edge-curve',
-                '@sigma/node-border'
-            ],
-            holdUntilCrawlEnd: false
+            entries: []
         },
         define: {
             VERSION: JSON.stringify(version),
@@ -154,10 +130,6 @@ export default defineConfig(({ mode }) => {
             VRCX_0_BUILD_BADGE: JSON.stringify(
                 process.env['VRCX_0_BUILD_BADGE'] || ''
             ),
-            VRCX_0_TELEMETRY_ENABLED: JSON.stringify(
-                isProductionBuild && telemetryEndpoint.length > 0
-            ),
-            VRCX_0_TELEMETRY_ENDPOINT: JSON.stringify(telemetryEndpoint),
             VRCX_0_BUNDLED_CJK_FONTS_ENABLED: JSON.stringify(
                 bundledCjkFontsEnabled
             ),

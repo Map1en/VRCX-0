@@ -171,7 +171,14 @@ export function ScreenshotMetadataToolbar({
                         <KeyboardShortcut keys="Enter" />
                     </InputGroupAddon>
                 </InputGroup>
-                <Select value={searchType} onValueChange={onSearchTypeChange}>
+                <Select
+                    value={searchType}
+                    items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
+                        value: type.value,
+                        label: t(type.labelKey)
+                    }))}
+                    onValueChange={onSearchTypeChange}
+                >
                     <SelectTrigger className="w-full lg:w-52">
                         <SelectValue
                             placeholder={t(

@@ -23,7 +23,7 @@ type ContextMenuItemComponent = ComponentType<{
     children?: ReactNode;
     checked?: boolean;
     disabled?: boolean;
-    onSelect?: () => void;
+    onClick?: () => void;
 }>;
 
 type ContextMenuContainerComponent = ComponentType<{
@@ -73,9 +73,7 @@ export function CurrentUserActionItems({
     return (
         <>
             <Group>
-                <MenuItem onSelect={onOpen}>
-                    {t('common.actions.open')}
-                </MenuItem>
+                <MenuItem onClick={onOpen}>{t('common.actions.open')}</MenuItem>
             </Group>
             <Separator />
             <Group>
@@ -83,7 +81,7 @@ export function CurrentUserActionItems({
                     <CheckboxItem
                         key={option.value}
                         checked={friend?.status === option.value}
-                        onSelect={() => {
+                        onClick={() => {
                             onChangeStatus?.(option.value);
                         }}
                     >
@@ -98,7 +96,7 @@ export function CurrentUserActionItems({
                     </CheckboxItem>
                 ))}
                 <MenuItem
-                    onSelect={() => {
+                    onClick={() => {
                         onEditStatusDescription?.();
                     }}
                 >
@@ -114,7 +112,7 @@ export function CurrentUserActionItems({
                     <Group>
                         <CheckboxItem
                             checked={!friend?.statusDescription}
-                            onSelect={() => {
+                            onClick={() => {
                                 onSetStatusDescription?.('');
                             }}
                         >
@@ -126,7 +124,7 @@ export function CurrentUserActionItems({
                                 <CheckboxItem
                                     key={`${item}:${index}`}
                                     checked={friend?.statusDescription === item}
-                                    onSelect={() => {
+                                    onClick={() => {
                                         onSetStatusDescription?.(String(item));
                                     }}
                                 >
@@ -145,7 +143,7 @@ export function CurrentUserActionItems({
                         {statusPresets.map((preset, index) => (
                             <MenuItem
                                 key={`${preset?.status || 'status'}:${preset?.statusDescription || ''}:${index}`}
-                                onSelect={() => {
+                                onClick={() => {
                                     onApplyStatusPreset?.(preset);
                                 }}
                             >
@@ -205,15 +203,13 @@ export function FriendActionItems({
     return (
         <>
             <Group>
-                <MenuItem onSelect={onOpen}>
-                    {t('common.actions.open')}
-                </MenuItem>
+                <MenuItem onClick={onOpen}>{t('common.actions.open')}</MenuItem>
             </Group>
             <Separator />
             <Group>
                 <MenuItem
                     disabled={!canUseFriendLocation}
-                    onSelect={() => {
+                    onClick={() => {
                         onLaunch?.(friendLocation);
                     }}
                 >
@@ -221,7 +217,7 @@ export function FriendActionItems({
                 </MenuItem>
                 <MenuItem
                     disabled={!canUseFriendLocation}
-                    onSelect={() => {
+                    onClick={() => {
                         onSelfInvite?.(friendLocation);
                     }}
                 >
@@ -232,7 +228,7 @@ export function FriendActionItems({
             <Group>
                 <MenuItem
                     disabled={!canSendInvite}
-                    onSelect={() => {
+                    onClick={() => {
                         onInvite?.(friend);
                     }}
                 >
@@ -245,7 +241,7 @@ export function FriendActionItems({
                 </MenuItem>
                 <MenuItem
                     disabled={!canRequestInvite}
-                    onSelect={() => {
+                    onClick={() => {
                         onRequestInvite?.(friend);
                     }}
                 >
@@ -258,7 +254,7 @@ export function FriendActionItems({
                 </MenuItem>
                 <MenuItem
                     disabled={!canBoop}
-                    onSelect={() => {
+                    onClick={() => {
                         onBoop?.(friend);
                     }}
                 >

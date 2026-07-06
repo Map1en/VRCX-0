@@ -50,34 +50,38 @@ function GameLogViewModeToggle({
 
     return (
         <ToggleGroup
-            type="single"
             variant="outline"
             size="sm"
-            value={viewMode}
+            value={viewMode ? [viewMode] : []}
             onValueChange={(nextValue) => {
-                if (nextValue) {
-                    onViewModeChange(nextValue as GameLogViewMode);
+                const next = nextValue[0];
+                if (next) {
+                    onViewModeChange(next as GameLogViewMode);
                 }
             }}
             className="shrink-0"
         >
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <ToggleGroupItem
-                        value="sessions"
-                        aria-label={sessionsLabel}
-                    >
-                        <LogsIcon data-icon="inline-start" />
-                    </ToggleGroupItem>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <ToggleGroupItem
+                            value="sessions"
+                            aria-label={sessionsLabel}
+                        >
+                            <LogsIcon data-icon="inline-start" />
+                        </ToggleGroupItem>
+                    }
+                />
                 <TooltipContent>{sessionsLabel}</TooltipContent>
             </Tooltip>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <ToggleGroupItem value="table" aria-label={tableLabel}>
-                        <Table2Icon data-icon="inline-start" />
-                    </ToggleGroupItem>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <ToggleGroupItem value="table" aria-label={tableLabel}>
+                            <Table2Icon data-icon="inline-start" />
+                        </ToggleGroupItem>
+                    }
+                />
                 <TooltipContent>{tableLabel}</TooltipContent>
             </Tooltip>
         </ToggleGroup>
@@ -96,17 +100,19 @@ function GameLogFavoritesToggle({
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant={favoritesOnly ? 'secondary' : 'outline'}
-                    size="icon-sm"
-                    aria-label={label}
-                    onClick={onToggle}
-                >
-                    <StarIcon data-icon="inline-start" />
-                </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant={favoritesOnly ? 'secondary' : 'outline'}
+                        size="icon-sm"
+                        aria-label={label}
+                        onClick={onToggle}
+                    >
+                        <StarIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <TooltipContent>{label}</TooltipContent>
         </Tooltip>
     );
@@ -219,22 +225,24 @@ function GameLogToolbarControls({
     return (
         <div className="flex shrink-0 items-center gap-2">
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label={t('common.actions.refresh')}
-                        disabled={!canRefresh || loadStatus === 'running'}
-                        onClick={onRefresh}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            aria-label={t('common.actions.refresh')}
+                            disabled={!canRefresh || loadStatus === 'running'}
+                            onClick={onRefresh}
+                        >
+                            {loadStatus === 'running' ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCwIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    }
+                />
                 <TooltipContent>{t('common.actions.refresh')}</TooltipContent>
             </Tooltip>
             {showColumnVisibilityMenu ? (

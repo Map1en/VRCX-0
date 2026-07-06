@@ -5,6 +5,7 @@ import avatarCacheRepository from '@/repositories/avatarCacheRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import configRepository from '@/repositories/configRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openWorldDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
@@ -455,22 +456,20 @@ export function useFavoritesItemActions({
         if (!selectedContentItems.length) {
             return;
         }
-        try {
-            await navigator.clipboard.writeText(
-                selectedContentItems.map((item: any) => `${item.id}\n`).join('')
-            );
-            toast.success(
-                t('view.favorite.success.copied_selected_favorite_ids')
-            );
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_copy_selected_favorites'
-                      )
-            );
-        }
+        await copyTextToClipboard(
+            selectedContentItems.map((item: any) => `${item.id}\n`).join(''),
+            {
+                successMessage: t(
+                    'view.favorite.success.copied_selected_favorite_ids'
+                ),
+                errorMessage: (error) =>
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_copy_selected_favorites'
+                          )
+            }
+        );
     }
 
     return {

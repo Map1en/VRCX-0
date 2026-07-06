@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import {
@@ -91,19 +92,14 @@ async function copyEventLink(event: any, t: any) {
     if (!groupId || !eventId) {
         return;
     }
-    try {
-        await navigator.clipboard.writeText(
-            vrchatGroupCalendarUrl(groupId, eventId)
-        );
-        toast.success(t('dialog.group_calendar.event_card.copied_event_link'));
-    } catch (error) {
-        toast.error(
+    await copyTextToClipboard(vrchatGroupCalendarUrl(groupId, eventId), {
+        successMessage: t('dialog.group_calendar.event_card.copied_event_link'),
+        errorMessage: (error) =>
             userFacingErrorMessage(
                 error,
                 t('host.tools_dialogs.toast.failed_to_copy_event_link')
             )
-        );
-    }
+    });
 }
 
 function getEventBannerUrl(event: any, groupProfile: any) {
@@ -204,148 +200,152 @@ export function GroupEventCard({
 
     return (
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-                <div
-                    className="bg-card mb-3 overflow-hidden rounded-md border"
-                    onMouseEnter={openPopover}
-                    onMouseLeave={scheduleClosePopover}
-                >
-                    {bannerUrl ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="bg-muted h-28 w-full overflow-hidden rounded-none p-0"
-                            aria-label={title}
-                            onClick={stopAndRun(() =>
-                                openImagePreview({
-                                    url: convertFileUrlToImageUrl(
-                                        event.imageUrl || bannerUrl,
-                                        1024
-                                    ),
-                                    title
-                                })
-                            )}
-                        >
-                            <img
-                                src={bannerUrl}
-                                alt=""
-                                loading="lazy"
-                                className="size-full object-cover"
-                                onError={() => setBannerError(true)}
-                            />
-                        </Button>
-                    ) : (
-                        <div className="bg-muted text-muted-foreground flex h-28 items-center justify-center">
-                            <ImageIcon className="size-6" />
-                        </div>
-                    )}
-                    <div className="p-3">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex min-w-0 flex-col gap-1">
-                                {showGroupName ? (
+            <PopoverTrigger
+                render={
+                    <div
+                        className="bg-card mb-3 overflow-hidden rounded-md border"
+                        onMouseEnter={openPopover}
+                        onMouseLeave={scheduleClosePopover}
+                    >
+                        {bannerUrl ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="bg-muted h-28 w-full overflow-hidden rounded-none p-0"
+                                aria-label={title}
+                                onClick={stopAndRun(() =>
+                                    openImagePreview({
+                                        url: convertFileUrlToImageUrl(
+                                            event.imageUrl || bannerUrl,
+                                            1024
+                                        ),
+                                        title
+                                    })
+                                )}
+                            >
+                                <img
+                                    src={bannerUrl}
+                                    alt=""
+                                    loading="lazy"
+                                    className="size-full object-cover"
+                                    onError={() => setBannerError(true)}
+                                />
+                            </Button>
+                        ) : (
+                            <div className="bg-muted text-muted-foreground flex h-28 items-center justify-center">
+                                <ImageIcon className="size-6" />
+                            </div>
+                        )}
+                        <div className="p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex min-w-0 flex-col gap-1">
+                                    {showGroupName ? (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs font-normal"
+                                            onClick={stopAndRun(() =>
+                                                openGroupDialog({ groupId })
+                                            )}
+                                        >
+                                            <span className="truncate">
+                                                {groupName || groupId}
+                                            </span>
+                                        </Button>
+                                    ) : null}
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs font-normal"
+                                        className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-sm font-medium"
                                         onClick={stopAndRun(() =>
                                             openGroupDialog({ groupId })
                                         )}
                                     >
                                         <span className="truncate">
-                                            {groupName || groupId}
+                                            {title}
                                         </span>
                                     </Button>
-                                ) : null}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-sm font-medium"
-                                    onClick={stopAndRun(() =>
-                                        openGroupDialog({ groupId })
-                                    )}
-                                >
-                                    <span className="truncate">{title}</span>
-                                </Button>
-                                <div className="text-muted-foreground text-xs">
-                                    {formatEventTimeRange(event, mode)}{' '}
-                                    {'\u00b7'}{' '}
-                                    {capitalizeFirst(event.accessType)}
+                                    <div className="text-muted-foreground text-xs">
+                                        {formatEventTimeRange(event, mode)}{' '}
+                                        {'\u00b7'}{' '}
+                                        {capitalizeFirst(event.accessType)}
+                                    </div>
+                                    {event.description ? (
+                                        <p className="text-muted-foreground line-clamp-2 text-sm">
+                                            {event.description}
+                                        </p>
+                                    ) : null}
                                 </div>
-                                {event.description ? (
-                                    <p className="text-muted-foreground line-clamp-2 text-sm">
-                                        {event.description}
-                                    </p>
-                                ) : null}
+                                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        size="icon-sm"
+                                        variant="outline"
+                                        aria-label={t(
+                                            'dialog.tools.action.copy_event_link'
+                                        )}
+                                        onClick={stopAndRun(() => {
+                                            copyEventLink(event, t);
+                                        })}
+                                    >
+                                        <Share2Icon data-icon="inline-start" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="icon-sm"
+                                        variant={
+                                            isFollowing ? 'default' : 'outline'
+                                        }
+                                        aria-label={
+                                            isFollowing
+                                                ? t(
+                                                      'dialog.tools.label.unfollow_event'
+                                                  )
+                                                : t(
+                                                      'dialog.tools.label.follow_event'
+                                                  )
+                                        }
+                                        disabled={!onToggleFollow}
+                                        onClick={stopAndRun(() =>
+                                            onToggleFollow?.()
+                                        )}
+                                    >
+                                        <StarIcon data-icon="inline-start" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                            <div className="mt-3 flex flex-wrap justify-end gap-2">
                                 <Button
                                     type="button"
-                                    size="icon-sm"
+                                    size="sm"
                                     variant="outline"
-                                    aria-label={t(
-                                        'dialog.tools.action.copy_event_link'
-                                    )}
                                     onClick={stopAndRun(() => {
-                                        copyEventLink(event, t);
+                                        openCalendarEvent(event, t);
                                     })}
                                 >
-                                    <Share2Icon data-icon="inline-start" />
+                                    <CalendarIcon data-icon="inline-start" />
+                                    {t(
+                                        'dialog.group_calendar.event_card.export_to_calendar'
+                                    )}
                                 </Button>
                                 <Button
                                     type="button"
-                                    size="icon-sm"
-                                    variant={
-                                        isFollowing ? 'default' : 'outline'
-                                    }
-                                    aria-label={
-                                        isFollowing
-                                            ? t(
-                                                  'dialog.tools.label.unfollow_event'
-                                              )
-                                            : t(
-                                                  'dialog.tools.label.follow_event'
-                                              )
-                                    }
-                                    disabled={!onToggleFollow}
-                                    onClick={stopAndRun(() =>
-                                        onToggleFollow?.()
-                                    )}
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={stopAndRun(() => {
+                                        downloadEventIcs(event, t);
+                                    })}
                                 >
-                                    <StarIcon data-icon="inline-start" />
+                                    <DownloadIcon data-icon="inline-start" />
+                                    {t(
+                                        'dialog.group_calendar.event_card.download_ics'
+                                    )}
                                 </Button>
                             </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap justify-end gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={stopAndRun(() => {
-                                    openCalendarEvent(event, t);
-                                })}
-                            >
-                                <CalendarIcon data-icon="inline-start" />
-                                {t(
-                                    'dialog.group_calendar.event_card.export_to_calendar'
-                                )}
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={stopAndRun(() => {
-                                    downloadEventIcs(event, t);
-                                })}
-                            >
-                                <DownloadIcon data-icon="inline-start" />
-                                {t(
-                                    'dialog.group_calendar.event_card.download_ics'
-                                )}
-                            </Button>
-                        </div>
                     </div>
-                </div>
-            </PopoverTrigger>
+                }
+            />
             <PopoverContent
                 side="right"
                 align="start"

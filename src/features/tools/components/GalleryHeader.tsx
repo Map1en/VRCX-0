@@ -27,16 +27,18 @@ function GalleryGridSettingsMenu({ gridDensity, onGridDensityChange }: any) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t('dialog.gallery_icons.grid_settings')}
-                >
-                    <SettingsIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t('dialog.gallery_icons.grid_settings')}
+                    >
+                        <SettingsIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent className="w-72 p-3" align="end">
                 <FieldGroup>
                     <Field>
@@ -44,14 +46,13 @@ function GalleryGridSettingsMenu({ gridDensity, onGridDensityChange }: any) {
                             {t('dialog.gallery_icons.grid_density')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={gridDensity}
+                            value={gridDensity ? [gridDensity] : []}
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
-                                    onGridDensityChange(nextValue);
+                                if (nextValue[0]) {
+                                    onGridDensityChange(nextValue[0]);
                                 }
                             }}
                             className="grid w-full grid-cols-3"

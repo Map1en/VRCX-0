@@ -73,10 +73,6 @@ function normalizeLanguageComboboxValues(values: any) {
     return nextKeys;
 }
 
-function preventDialogOutsideClose(event: any) {
-    event.preventDefault();
-}
-
 export function UserSocialStatusDialog({
     open,
     onOpenChange,
@@ -150,17 +146,19 @@ export function UserSocialStatusDialog({
                                     </InputGroupButton>
                                 ) : null}
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <InputGroupButton
-                                            size="icon-xs"
-                                            disabled={busy}
-                                            aria-label={t(
-                                                'dialog.user.label.status_history'
-                                            )}
-                                        >
-                                            <HistoryIcon data-icon="inline-start" />
-                                        </InputGroupButton>
-                                    </DropdownMenuTrigger>
+                                    <DropdownMenuTrigger
+                                        render={
+                                            <InputGroupButton
+                                                size="icon-xs"
+                                                disabled={busy}
+                                                aria-label={t(
+                                                    'dialog.user.label.status_history'
+                                                )}
+                                            >
+                                                <HistoryIcon data-icon="inline-start" />
+                                            </InputGroupButton>
+                                        }
+                                    />
                                     <DropdownMenuContent
                                         align="end"
                                         className="max-w-72"
@@ -174,7 +172,7 @@ export function UserSocialStatusDialog({
                                                     ) => (
                                                         <DropdownMenuItem
                                                             key={`${status}:${index}`}
-                                                            onSelect={() => {
+                                                            onClick={() => {
                                                                 setDraft(
                                                                     (
                                                                         current: any
@@ -216,13 +214,13 @@ export function UserSocialStatusDialog({
                             {t('dialog.user.label.social_status')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
-                            value={draft.status}
+                            value={draft.status ? [draft.status] : []}
                             spacing={2}
                             className="w-full flex-wrap"
                             aria-label={t('dialog.user.label.social_status')}
-                            onValueChange={(nextStatus) => {
+                            onValueChange={(value) => {
+                                const nextStatus = value[0] ?? '';
                                 if (!nextStatus) {
                                     return;
                                 }
@@ -414,12 +412,8 @@ export function UserProfileDetailsDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                className="grid max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-xl"
-                onPointerDownOutside={preventDialogOutsideClose}
-                onInteractOutside={preventDialogOutsideClose}
-            >
+        <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
+            <DialogContent className="grid max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
                         {t('dialog.user.description.edit_profile_details')}

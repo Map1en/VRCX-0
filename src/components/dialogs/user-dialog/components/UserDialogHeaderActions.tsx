@@ -107,17 +107,17 @@ export function UserDialogHeaderActions(props: any) {
                 <EntityActionItem
                     icon={RefreshCwIcon}
                     disabled={loadStatus === 'running'}
-                    onSelect={onRefresh}
+                    onClick={onRefresh}
                 >
                     {t('common.actions.refresh')}
                 </EntityActionItem>
-                <EntityActionItem icon={NotebookPenIcon} onSelect={onEditMemo}>
+                <EntityActionItem icon={NotebookPenIcon} onClick={onEditMemo}>
                     {t('dialog.user.actions.edit_note_memo')}
                 </EntityActionItem>
                 {currentAvatarTarget ? (
                     <EntityActionItem
                         icon={UserIcon}
-                        onSelect={() => {
+                        onClick={() => {
                             onShowAvatarAuthor();
                         }}
                     >
@@ -127,7 +127,7 @@ export function UserDialogHeaderActions(props: any) {
                 {fallbackAvatarTarget ? (
                     <EntityActionItem
                         icon={UserIcon}
-                        onSelect={onOpenFallbackAvatar}
+                        onClick={onOpenFallbackAvatar}
                     >
                         {t('dialog.user.actions.show_fallback_avatar')}
                     </EntityActionItem>
@@ -136,7 +136,7 @@ export function UserDialogHeaderActions(props: any) {
                     <EntityActionItem
                         icon={HistoryIcon}
                         disabled={!previousInstances.length}
-                        onSelect={onShowInstanceHistory}
+                        onClick={onShowInstanceHistory}
                     >
                         {t('dialog.user.actions.show_previous_instances')}
                     </EntityActionItem>
@@ -147,21 +147,21 @@ export function UserDialogHeaderActions(props: any) {
                         <EntityActionItem
                             icon={PencilIcon}
                             disabled={actionsDisabled}
-                            onSelect={onEditSelfStatus}
+                            onClick={onEditSelfStatus}
                         >
                             {t('dialog.user.actions.edit_status')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={PencilIcon}
                             disabled={actionsDisabled}
-                            onSelect={onEditSelfProfileDetails}
+                            onClick={onEditSelfProfileDetails}
                         >
                             {t('dialog.user.actions.edit_profile_details')}
                         </EntityActionItem>
                         <EntityActionItem
                             icon={ImageIcon}
                             disabled={actionsDisabled}
-                            onSelect={onEditSelfProfileMedia}
+                            onClick={onEditSelfProfileMedia}
                         >
                             {t('dialog.user.actions.edit_profile_media')}
                         </EntityActionItem>
@@ -175,7 +175,7 @@ export function UserDialogHeaderActions(props: any) {
                                 <EntityActionItem
                                     icon={UserCheckIcon}
                                     disabled={actionsDisabled}
-                                    onSelect={() => onFriendRequest('accept')}
+                                    onClick={() => onFriendRequest('accept')}
                                 >
                                     {t(
                                         'dialog.user.actions.accept_friend_request'
@@ -185,7 +185,7 @@ export function UserDialogHeaderActions(props: any) {
                                     icon={UserXIcon}
                                     destructive
                                     disabled={actionsDisabled}
-                                    onSelect={() => onFriendRequest('decline')}
+                                    onClick={() => onFriendRequest('decline')}
                                 >
                                     {t(
                                         'dialog.user.actions.decline_friend_request'
@@ -196,7 +196,7 @@ export function UserDialogHeaderActions(props: any) {
                             <EntityActionItem
                                 icon={XIcon}
                                 disabled={actionsDisabled}
-                                onSelect={() => onFriendRequest('cancel')}
+                                onClick={() => onFriendRequest('cancel')}
                             >
                                 {t('dialog.user.actions.cancel_friend_request')}
                             </EntityActionItem>
@@ -207,7 +207,7 @@ export function UserDialogHeaderActions(props: any) {
                                     'Send Friend Request'
                                 )}
                                 disabled={actionsDisabled}
-                                onSelect={() => onFriendRequest('send')}
+                                onClick={() => onFriendRequest('send')}
                             >
                                 {t('dialog.user.actions.send_friend_request')}
                             </EntityActionItem>
@@ -221,7 +221,7 @@ export function UserDialogHeaderActions(props: any) {
                                         actionsDisabled ||
                                         !canInviteFromCurrentLocation
                                     }
-                                    onSelect={onInvite}
+                                    onClick={onInvite}
                                 >
                                     {t('dialog.user.actions.invite')}
                                 </EntityActionItem>
@@ -234,7 +234,7 @@ export function UserDialogHeaderActions(props: any) {
                                         actionsDisabled ||
                                         !canInviteFromCurrentLocation
                                     }
-                                    onSelect={onInviteMessage}
+                                    onClick={onInviteMessage}
                                 >
                                     {t('dialog.invite_message.header')}
                                 </EntityActionItem>
@@ -244,7 +244,7 @@ export function UserDialogHeaderActions(props: any) {
                                         'Request Invite'
                                     )}
                                     disabled={actionsDisabled}
-                                    onSelect={onInviteRequest}
+                                    onClick={onInviteRequest}
                                 >
                                     {t('dialog.user.actions.request_invite')}
                                 </EntityActionItem>
@@ -254,7 +254,7 @@ export function UserDialogHeaderActions(props: any) {
                                         'Request Invite Message'
                                     )}
                                     disabled={actionsDisabled}
-                                    onSelect={onInviteRequestMessage}
+                                    onClick={onInviteRequestMessage}
                                 >
                                     {t('dialog.invite_request_message.header')}
                                 </EntityActionItem>
@@ -264,7 +264,7 @@ export function UserDialogHeaderActions(props: any) {
                                         actionsDisabled ||
                                         !currentUserBoopingEnabled
                                     }
-                                    onSelect={onBoop}
+                                    onClick={onBoop}
                                 >
                                     {t('dialog.user.actions.send_boop')}
                                 </EntityActionItem>
@@ -279,7 +279,7 @@ export function UserDialogHeaderActions(props: any) {
                             <EntityActionItem
                                 icon={UsersRoundIcon}
                                 disabled={actionsDisabled}
-                                onSelect={() => {
+                                onClick={() => {
                                     onInviteToGroup();
                                 }}
                             >
@@ -288,7 +288,7 @@ export function UserDialogHeaderActions(props: any) {
                             <EntityActionItem
                                 icon={SettingsIcon}
                                 disabled={actionsDisabled}
-                                onSelect={onGroupModeration}
+                                onClick={onGroupModeration}
                             >
                                 {t('dialog.user.actions.group_moderation')}
                             </EntityActionItem>
@@ -306,7 +306,7 @@ export function UserDialogHeaderActions(props: any) {
                                     (!moderationState.block &&
                                         Boolean(profile.$isModerator))
                                 }
-                                onSelect={() =>
+                                onClick={() =>
                                     onModeration(
                                         'block',
                                         !moderationState.block
@@ -326,7 +326,7 @@ export function UserDialogHeaderActions(props: any) {
                                     (!moderationState.mute &&
                                         Boolean(profile.$isModerator))
                                 }
-                                onSelect={() =>
+                                onClick={() =>
                                     onModeration('mute', !moderationState.mute)
                                 }
                             >
@@ -340,7 +340,7 @@ export function UserDialogHeaderActions(props: any) {
                                 <EntityActionItem
                                     icon={RotateCcwIcon}
                                     disabled={actionsDisabled}
-                                    onSelect={() =>
+                                    onClick={() =>
                                         onAvatarOverride?.(
                                             avatarOverrideState.hideAvatar
                                                 ? 'hideAvatar'
@@ -357,7 +357,7 @@ export function UserDialogHeaderActions(props: any) {
                                     <EntityActionItem
                                         icon={EyeOffIcon}
                                         disabled={actionsDisabled}
-                                        onSelect={() =>
+                                        onClick={() =>
                                             onAvatarOverride?.('hideAvatar')
                                         }
                                     >
@@ -368,7 +368,7 @@ export function UserDialogHeaderActions(props: any) {
                                     <EntityActionItem
                                         icon={EyeIcon}
                                         disabled={actionsDisabled}
-                                        onSelect={() =>
+                                        onClick={() =>
                                             onAvatarOverride?.('showAvatar')
                                         }
                                     >
@@ -381,7 +381,7 @@ export function UserDialogHeaderActions(props: any) {
                             <EntityActionItem
                                 icon={HandIcon}
                                 disabled={actionsDisabled}
-                                onSelect={() =>
+                                onClick={() =>
                                     onExtendedModeration?.(
                                         'interactOff',
                                         !extendedModerationState.interactOff
@@ -397,7 +397,7 @@ export function UserDialogHeaderActions(props: any) {
                             <EntityActionItem
                                 icon={MessageSquareXIcon}
                                 disabled={actionsDisabled}
-                                onSelect={() =>
+                                onClick={() =>
                                     onExtendedModeration?.(
                                         'muteChat',
                                         !extendedModerationState.muteChat
@@ -417,7 +417,7 @@ export function UserDialogHeaderActions(props: any) {
                                 icon={UserRoundMinusIcon}
                                 destructive
                                 disabled={actionsDisabled}
-                                onSelect={onUnfriend}
+                                onClick={onUnfriend}
                             >
                                 {t('dialog.user.actions.unfriend')}
                             </EntityActionItem>
@@ -426,7 +426,7 @@ export function UserDialogHeaderActions(props: any) {
                             icon={BugIcon}
                             destructive
                             disabled={actionsDisabled}
-                            onSelect={onReportHacking}
+                            onClick={onReportHacking}
                         >
                             {t('dialog.user.actions.report_hacking')}
                         </EntityActionItem>

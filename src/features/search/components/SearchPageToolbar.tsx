@@ -76,21 +76,25 @@ export function SearchPageToolbar({
                     )}
                 </div>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            className="ml-2"
-                            size="icon"
-                            variant="ghost"
-                            aria-label={t('view.search.clear_results_tooltip')}
-                            onClick={onClearSearch}
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                            <span className="sr-only">
-                                {t('view.search.clear_results_tooltip')}
-                            </span>
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                className="ml-2"
+                                size="icon"
+                                variant="ghost"
+                                aria-label={t(
+                                    'view.search.clear_results_tooltip'
+                                )}
+                                onClick={onClearSearch}
+                            >
+                                <Trash2Icon data-icon="inline-start" />
+                                <span className="sr-only">
+                                    {t('view.search.clear_results_tooltip')}
+                                </span>
+                            </Button>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.search.clear_results_tooltip')}
                     </TooltipContent>

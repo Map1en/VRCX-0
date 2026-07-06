@@ -179,6 +179,19 @@ const NETWORK_ERROR_MARKERS = [
     'update download failed'
 ];
 
+function isVrchatWorldGetTransportFailure(text: string): boolean {
+    const lower = text.toLowerCase();
+    const isWorldGetCommand =
+        lower.includes('command: app__vrchat_world_get') ||
+        lower.includes('tauri command failed: app__vrchat_world_get');
+
+    return (
+        isWorldGetCommand &&
+        lower.includes('error sending request for url') &&
+        /https:\/\/api\.vrchat\.cloud\/api\/1\/worlds\//i.test(text)
+    );
+}
+
 function hasNetworkErrorText(text: string): boolean {
     const lower = text.toLowerCase();
     if (NETWORK_ERROR_MARKERS.some((marker) => lower.includes(marker))) {
@@ -199,9 +212,8 @@ function shouldSkipErrorLog(values: unknown[]): boolean {
         return true;
     }
 
-    return hasNetworkErrorText(
-        values.map((value) => collectText(value)).join('\n')
-    );
+    const text = values.map((value) => collectText(value)).join('\n');
+    return hasNetworkErrorText(text) || isVrchatWorldGetTransportFailure(text);
 }
 
 function formatEntry(source: string, lines: string[]): string {

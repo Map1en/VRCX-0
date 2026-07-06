@@ -158,6 +158,8 @@ export function useSettingsPageState() {
     ] = useState(false);
     const [vrNotificationsDialogOpen, setVrNotificationsDialogOpen] =
         useState(false);
+    const [hmdNotificationsDialogOpen, setHmdNotificationsDialogOpen] =
+        useState(false);
     const [desktopNotificationsDialogOpen, setDesktopNotificationsDialogOpen] =
         useState(false);
     const [webhookNotificationsDialogOpen, setWebhookNotificationsDialogOpen] =
@@ -220,6 +222,7 @@ export function useSettingsPageState() {
 
     const {
         applyPreferenceSnapshotToLocalState,
+        addFeedHiddenUser,
         savePreferenceValue,
         saveBoolPreference,
         saveStringPreference,
@@ -232,7 +235,6 @@ export function useSettingsPageState() {
         refreshSqliteTableSizes,
         refreshConfigTreeData,
         refreshOnlineVisits,
-        promptProxySettings,
         openTablePageSizesDialog,
         openTableLimitsDialog,
         saveTableLimitsDialog,
@@ -253,14 +255,17 @@ export function useSettingsPageState() {
         migrateLegacyVrcxData,
         openAppDataDirSelector,
         resetAppDataDir,
+        removeFeedHiddenUser,
         restartForAppDataDir,
         updateSharedFeedFilter,
         resetSharedFeedFilters,
         saveOverlayActivityFilters,
         saveVrNotificationActivityFilters,
+        saveHmdNotificationActivityFilters,
         saveDesktopNotificationActivityFilters,
         saveWebhookActivityFilters,
         saveWristOverlayEnabled,
+        setProxyEnabledPreference: saveProxyEnabledPreference,
         refreshRuntimeAppSnapshot,
         searchLimitError,
         tableLimitsSaveDisabled,
@@ -376,6 +381,7 @@ export function useSettingsPageState() {
 
     return buildSettingsPageStateSections({
         activeSettingsTab,
+        addFeedHiddenUser,
         addAvatarProvider,
         appDataDirState,
         applyAvatarProviderConfig,
@@ -403,6 +409,7 @@ export function useSettingsPageState() {
         handleGameLogDisabledChange,
         integrationPrefs,
         integrationStatus,
+        hmdNotificationsDialogOpen,
         llmEndpoints,
         locale,
         localFavoriteFriendGroupOptions,
@@ -423,7 +430,6 @@ export function useSettingsPageState() {
         prefs,
         promptAutoClearVrcxCacheFrequency,
         promptAutoLoginDelaySeconds,
-        promptProxySettings,
         purgeAvatarFeedData,
         purgeDialogOpen,
         purgeInProgress,
@@ -434,6 +440,7 @@ export function useSettingsPageState() {
         refreshRuntimeAppSnapshot,
         refreshSqliteTableSizes,
         remoteFavoriteFriendGroupOptions,
+        removeFeedHiddenUser,
         removeAvatarProvider,
         resetAppDataDir,
         resetSharedFeedFilters,
@@ -454,6 +461,7 @@ export function useSettingsPageState() {
         saveNotificationTtsVoice,
         saveOverlayActivityFilters,
         savePreferenceValue,
+        saveHmdNotificationActivityFilters,
         saveStringPreference,
         saveTableLimitsDialog,
         saveTranslationApiConfig,
@@ -475,6 +483,7 @@ export function useSettingsPageState() {
         setCustomFontDraft,
         setDataTableStripedPreference,
         setDesktopNotificationsDialogOpen,
+        setHmdNotificationsDialogOpen,
         setFeedFilterDialogOpen,
         setIntConfigPreference,
         setIntegrationValue,
@@ -483,6 +492,7 @@ export function useSettingsPageState() {
         setNotificationTtsTestVisible,
         setPrefs,
         setPurgeDialogOpen,
+        setProxyEnabledPreference: saveProxyEnabledPreference,
         setPurgePeriod,
         setRecentActionCooldownEnabledPreference,
         setRecentActionCooldownMinutesPreference,

@@ -79,6 +79,7 @@ export function SettingsNotificationsTab({
     onSpeakNotificationTts
 }: SettingsNotificationsTabProps) {
     const { t } = useTranslation();
+
     return (
         <SettingsTabContent value="notifications">
             <SettingsGroup
@@ -92,7 +93,15 @@ export function SettingsNotificationsTab({
                 >
                     <Select
                         value={prefs.notificationLayout}
-                        onValueChange={onNotificationLayoutChange}
+                        items={notificationLayoutOptions.map(
+                            ([value, labelKey]) => ({
+                                value,
+                                label: t(labelKey)
+                            })
+                        )}
+                        onValueChange={(value) =>
+                            onNotificationLayoutChange(value ?? '')
+                        }
                     >
                         <SelectTrigger
                             id="settings-notification-layout"
@@ -184,7 +193,13 @@ export function SettingsNotificationsTab({
                 >
                     <Select
                         value={prefs.desktopToast}
-                        onValueChange={onDesktopToastChange}
+                        items={desktopToastOptions.map(([value, labelKey]) => ({
+                            value,
+                            label: t(labelKey)
+                        }))}
+                        onValueChange={(value) =>
+                            onDesktopToastChange(value ?? '')
+                        }
                     >
                         <SelectTrigger
                             id="settings-desktop-toast"
@@ -255,7 +270,15 @@ export function SettingsNotificationsTab({
                 >
                     <Select
                         value={prefs.notificationTTS}
-                        onValueChange={onNotificationTtsModeChange}
+                        items={notificationTtsOptions.map(
+                            ([value, labelKey]) => ({
+                                value,
+                                label: t(labelKey)
+                            })
+                        )}
+                        onValueChange={(value) =>
+                            onNotificationTtsModeChange(value ?? '')
+                        }
                     >
                         <SelectTrigger
                             id="settings-notification-tts"
@@ -285,11 +308,17 @@ export function SettingsNotificationsTab({
                 >
                     <Select
                         value={prefs.notificationTTSVoice}
+                        items={ttsVoices.map((voice, index) => ({
+                            value: String(index),
+                            label: voice.name
+                        }))}
                         disabled={
                             prefs.notificationTTS === 'Never' ||
                             !ttsVoices.length
                         }
-                        onValueChange={onNotificationTtsVoiceChange}
+                        onValueChange={(value) =>
+                            onNotificationTtsVoiceChange(value ?? '')
+                        }
                     >
                         <SelectTrigger
                             id="settings-notification-tts-voice"
@@ -297,7 +326,11 @@ export function SettingsNotificationsTab({
                         >
                             <SelectValue
                                 placeholder={
-                                    ttsVoices.length ? undefined : 'No voices'
+                                    ttsVoices.length
+                                        ? undefined
+                                        : t(
+                                              'view.settings.notifications.notifications.no_text_to_speech_voices_are_available'
+                                          )
                                 }
                             />
                         </SelectTrigger>

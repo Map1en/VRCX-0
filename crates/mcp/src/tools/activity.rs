@@ -30,7 +30,7 @@ impl VrcxMcpServer {
         &self,
         Parameters(input): Parameters<CopresenceSummaryParams>,
     ) -> Result<CallToolResult, String> {
-        let owner_user_id = self.runtime.current_user_id().unwrap_or_default();
+        let owner_user_id = require_current_user_id(&self.runtime)?;
         social_aggregates_result(social_aggregates::get_copresence_summary(
             self.runtime.db.as_ref(),
             social_aggregates::CopresenceSummaryInput {
@@ -832,6 +832,98 @@ fn summarize_world_visits(rows: Vec<social_aggregates::VisitedWorldRow>) -> Vec<
 #[cfg(test)]
 mod activity_output_tests {
     use super::*;
+    use std::path::PathBuf;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use rmcp::handler::server::wrapper::Parameters;
+    use vrcx_0_application::{
+        HostSessionRuntime, MutualGraphFetchRuntime, OverlayActivityRuntime, PrintCleanupQueue,
+        RealtimeHostRuntime, RealtimeHostRuntimeDeps, RuntimeAuthScope, RuntimeDiagnostics,
+        RuntimeEventBus, RuntimeSnapshot, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    };
+    use vrcx_0_persistence::{
+        config::ConfigRepository, game_log::ensure_game_log_tables, storage::StorageService,
+        DatabaseService,
+    };
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir()
+                .join(format!("vrcx-0-mcp-{name}-{}-{nonce}", std::process::id()));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn test_server(
+        name: &str,
+        auth_scope_user_id: &str,
+    ) -> Result<(TestDir, VrcxMcpServer), Box<dyn std::error::Error>> {
+        let dir = TestDir::new(name);
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+        ensure_game_log_tables(db.as_ref())?;
+        let storage = StorageService::new(&dir.path.join("storage.json"))?;
+        let web = Arc::new(WebClient::new(
+            &storage,
+            db.as_ref(),
+            "wss://pipeline.vrchat.cloud".into(),
+            env!("CARGO_PKG_VERSION"),
+        )?);
+        let auth_scope = RuntimeAuthScope::new();
+        if !auth_scope_user_id.trim().is_empty() {
+            auth_scope.set(auth_scope_user_id, "https://api.vrchat.cloud/api/1");
+        }
+        let event_bus = RuntimeEventBus::new();
+        let sync = RuntimeSyncEngine::new();
+        let tasks = TaskSupervisor::new();
+        let session = HostSessionRuntime::new();
+        let world_cache = Arc::new(WorldCache::new(
+            Arc::clone(&db),
+            512,
+            Duration::from_secs(30 * 60),
+        ));
+        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
+            db: Arc::clone(&db),
+            web: Arc::clone(&web),
+            event_bus,
+            sync: sync.clone(),
+            tasks: tasks.clone(),
+            session,
+            auth_scope: auth_scope.clone(),
+            game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
+            overlay_activity: OverlayActivityRuntime::default(),
+            world_cache,
+            print_cleanup: PrintCleanupQueue::new(),
+            friend_note_change_sink: None,
+        }));
+        let runtime = crate::runtime::McpRuntime {
+            db: Arc::clone(&db),
+            web,
+            diagnostics: RuntimeDiagnostics::new(),
+            sync,
+            realtime_runtime,
+            auth_scope,
+            config: ConfigRepository::new(db),
+            mutual_graph_fetch: MutualGraphFetchRuntime::new(),
+            tasks,
+        };
+        Ok((dir, VrcxMcpServer::new(runtime)))
+    }
 
     fn ms(value: &str) -> i64 {
         DateTime::parse_from_rfc3339(value)
@@ -878,6 +970,28 @@ mod activity_output_tests {
         );
         assert!(!output.summary.is_empty());
         assert!(output.caveats.iter().any(|caveat| caveat.contains("UTC")));
+    }
+
+    #[tokio::test]
+    async fn copresence_summary_requires_auth_scope_owner() {
+        let (_dir, server) =
+            test_server("copresence-empty-owner", "").expect("test server should build");
+
+        let error = server
+            .get_copresence_summary(Parameters(CopresenceSummaryParams {
+                time_window: TimeWindowParams::default(),
+                group_by: CopresenceGroupByParam::Friend,
+                min_minutes: None,
+                limit: Some(5),
+                friends_only: None,
+            }))
+            .await
+            .expect_err("empty auth_scope owner must reject the tool call");
+
+        assert!(
+            error.contains("current user unknown"),
+            "unexpected error: {error}"
+        );
     }
 
     #[test]

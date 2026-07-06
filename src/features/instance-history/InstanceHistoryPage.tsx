@@ -10,7 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { DateTimeRangePicker } from '@/components/date-time-range-picker/DateTimeRangePicker';
+import {
+    DateTimeRangePicker,
+    type DateTimeRangeValue
+} from '@/components/date-time-range-picker/DateTimeRangePicker';
 import {
     createdTime,
     rowLocation,
@@ -47,6 +50,15 @@ import { useInstanceActivityChartLifecycle } from '@/features/instance-history/i
 import { useInstanceActivityData } from '@/features/instance-history/instance-activity/useInstanceActivityData';
 import { useInstanceActivityRuntime } from '@/features/instance-history/instance-activity/useInstanceActivityRuntime';
 import { useInstanceActivitySettings } from '@/features/instance-history/instance-activity/useInstanceActivitySettings';
+import {
+    buildLocalDayInstanceHistoryDateRange,
+    emptyInstanceHistoryDateRange,
+    isEmptyInstanceHistoryDateRange,
+    refreshDefaultSelfInstanceHistoryDateRange,
+    resolveClearedInstanceHistoryDateRange,
+    resolveScopedInstanceHistoryDateRange,
+    type InstanceHistoryDateRangeState
+} from '@/features/instance-history/instanceHistoryDateRange';
 import {
     activityRowKey,
     buildAvailableInstanceHistoryDays,
@@ -148,10 +160,11 @@ export function InstanceHistoryPage({
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
-    const [dateRange, setDateRange] = useState<{
-        from: Date | null;
-        to: Date | null;
-    }>({ from: null, to: null });
+    const [dateRangeState, setDateRangeState] =
+        useState<InstanceHistoryDateRangeState>(() => ({
+            range: emptyInstanceHistoryDateRange(),
+            source: 'none'
+        }));
     const [sortKey, setSortKey] = useState<PreviousInstanceSortKey>('date');
     const [sortDesc, setSortDesc] = useState(true);
     const [pageSize, setPageSize] = useState(25);
@@ -165,6 +178,8 @@ export function InstanceHistoryPage({
     const paramUserId = normalizeUserId(searchParams.get('id'));
     const activeUserId = paramUserId || normalizeUserId(currentUserId);
     const isSelfScope = activeUserId === normalizeUserId(currentUserId);
+    const dateRange = dateRangeState.range;
+    const dateRangeSource = dateRangeState.source;
     const activityRuntime = useInstanceActivityRuntime(activeUserId);
     const activitySettings = useInstanceActivitySettings();
     const selectedDayForData = selectedDay || '';
@@ -264,6 +279,19 @@ export function InstanceHistoryPage({
         () => filterPreviousInstanceRowsForDay(rows, resolvedSelectedDay),
         [resolvedSelectedDay, rows]
     );
+    const historyQueryDateRange = useMemo(
+        () =>
+            isDayMode
+                ? buildLocalDayInstanceHistoryDateRange(resolvedSelectedDay)
+                : dateRange,
+        [dateRange, isDayMode, resolvedSelectedDay]
+    );
+    const isSearchDateRangeEmpty = isEmptyInstanceHistoryDateRange(dateRange);
+    const isHistoryQueryDateRangeEmpty = isEmptyInstanceHistoryDateRange(
+        historyQueryDateRange
+    );
+    const historyDateFrom = historyQueryDateRange.from?.toISOString() || '';
+    const historyDateTo = historyQueryDateRange.to?.toISOString() || '';
     const rawChartRows = useMemo(
         () =>
             buildChartRows(
@@ -363,6 +391,37 @@ export function InstanceHistoryPage({
 
     useEffect(() => {
         if (!activeUserId) {
+            return;
+        }
+        setDateRangeState((currentState) =>
+            resolveScopedInstanceHistoryDateRange({
+                isDayMode,
+                isSelfScope,
+                state: currentState
+            })
+        );
+    }, [activeUserId, isDayMode, isSelfScope]);
+
+    useEffect(() => {
+        if (!activeUserId) {
+            setRows([]);
+            setStatus('idle');
+            setError('');
+            setDetailRow(null);
+            return undefined;
+        }
+        const isSelfDefaultPending =
+            !isDayMode &&
+            isSelfScope &&
+            dateRangeSource === 'none' &&
+            isSearchDateRangeEmpty;
+        const isSelfDefaultClearing =
+            !isDayMode && !isSelfScope && dateRangeSource === 'defaultSelf';
+        if (
+            isSelfDefaultPending ||
+            isSelfDefaultClearing ||
+            (isDayMode && isHistoryQueryDateRangeEmpty)
+        ) {
             setRows([]);
             setStatus('idle');
             setError('');
@@ -376,7 +435,13 @@ export function InstanceHistoryPage({
         setDetailRow(null);
 
         gameLogRepository
-            .getPreviousInstancesByUserId({ id: activeUserId })
+            .getPreviousInstancesByUserId(
+                { id: activeUserId },
+                {
+                    dateFrom: historyDateFrom,
+                    dateTo: historyDateTo
+                }
+            )
             .then((result: unknown) => {
                 if (!active) {
                     return;
@@ -402,7 +467,18 @@ export function InstanceHistoryPage({
         return () => {
             active = false;
         };
-    }, [activeUserId, reloadToken, t]);
+    }, [
+        activeUserId,
+        dateRangeSource,
+        historyDateFrom,
+        historyDateTo,
+        isHistoryQueryDateRangeEmpty,
+        isDayMode,
+        isSelfScope,
+        isSearchDateRangeEmpty,
+        reloadToken,
+        t
+    ]);
 
     const filteredRows = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -462,11 +538,34 @@ export function InstanceHistoryPage({
         if (!activeUserId) {
             return;
         }
+        setDateRangeState((currentState) =>
+            refreshDefaultSelfInstanceHistoryDateRange(currentState)
+        );
         setReloadToken((value) => value + 1);
     }
 
     function clearDateRange() {
-        setDateRange({ from: null, to: null });
+        const nextRange = resolveClearedInstanceHistoryDateRange({
+            isDayMode,
+            isSelfScope
+        });
+        setDateRangeState({
+            range: nextRange,
+            source: isEmptyInstanceHistoryDateRange(nextRange)
+                ? 'none'
+                : 'defaultSelf'
+        });
+    }
+
+    function handleDateRangeChange(nextRange: DateTimeRangeValue) {
+        if (isEmptyInstanceHistoryDateRange(nextRange)) {
+            clearDateRange();
+            return;
+        }
+        setDateRangeState({
+            range: nextRange,
+            source: 'user'
+        });
     }
 
     function handleSearchChange(value: string) {
@@ -522,7 +621,7 @@ export function InstanceHistoryPage({
     const dateRangeControl = (
         <DateTimeRangePicker
             value={dateRange}
-            onChange={setDateRange}
+            onChange={handleDateRangeChange}
             triggerClassName="w-full"
             placeholder={t('view.instance_history.label.date_range')}
             startLabel={t('view.instance_history.label.start')}
@@ -637,18 +736,20 @@ export function InstanceHistoryPage({
                         open={targetPickerOpen}
                         onOpenChange={setTargetPickerOpen}
                     >
-                        <PopoverTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="max-w-xl min-w-64 flex-1 justify-between"
-                            >
-                                <span className="truncate">
-                                    {activeUserLabel}
-                                </span>
-                                <ChevronsUpDownIcon className="text-muted-foreground size-4" />
-                            </Button>
-                        </PopoverTrigger>
+                        <PopoverTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="max-w-xl min-w-64 flex-1 justify-between"
+                                >
+                                    <span className="truncate">
+                                        {activeUserLabel}
+                                    </span>
+                                    <ChevronsUpDownIcon className="text-muted-foreground size-4" />
+                                </Button>
+                            }
+                        />
                         <PopoverContent align="start" className="w-96 p-2">
                             <div className="flex flex-col gap-2">
                                 <Input
@@ -704,11 +805,11 @@ export function InstanceHistoryPage({
                         </Button>
                     ) : null}
                     <ToggleGroup
-                        type="single"
-                        value={mode}
-                        onValueChange={(value: string) => {
-                            if (value) {
-                                changeMode(value);
+                        value={mode ? [mode] : []}
+                        onValueChange={(value) => {
+                            const next = value[0];
+                            if (next) {
+                                changeMode(next);
                             }
                         }}
                         className="shrink-0"

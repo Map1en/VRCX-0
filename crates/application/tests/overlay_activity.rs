@@ -1,8 +1,10 @@
 use serde_json::json;
+use std::sync::{Arc, Mutex};
 use vrcx_0_application::{
     overlay_activity_type_definitions, OverlayActivityCandidate, OverlayActivityCategory,
-    OverlayActivityFavoriteGroupKeys, OverlayActivityFilters, OverlayActivityRule,
-    OverlayActivityRuntime, OverlayActivityScope, OverlayActivitySurface, OverlayFavoriteGroups,
+    OverlayActivityDelivery, OverlayActivityFavoriteGroupKeys, OverlayActivityFilters,
+    OverlayActivityRule, OverlayActivityRuntime, OverlayActivityScope, OverlayActivitySink,
+    OverlayActivitySnapshot, OverlayActivitySurface, OverlayFavoriteGroups,
 };
 
 #[test]
@@ -36,6 +38,101 @@ fn activity_type_definitions_are_exported_from_backend() {
     assert!(definitions
         .iter()
         .all(|definition| definition.key != "ChatBoxMessage"));
+    assert_eq!(
+        definitions
+            .iter()
+            .find(|definition| definition.key == "VideoPlay")
+            .expect("video play definition")
+            .hmd_default_scope,
+        OverlayActivityScope::Off
+    );
+}
+
+#[test]
+fn hmd_defaults_match_interruptive_notification_profile() {
+    let filters = OverlayActivityFilters::default();
+    let expectations = [
+        ("invite", OverlayActivityScope::Friends),
+        ("requestInvite", OverlayActivityScope::Friends),
+        ("inviteResponse", OverlayActivityScope::Friends),
+        ("requestInviteResponse", OverlayActivityScope::Friends),
+        ("friendRequest", OverlayActivityScope::On),
+        ("boop", OverlayActivityScope::Friends),
+        ("group.queueReady", OverlayActivityScope::On),
+        ("instance.closed", OverlayActivityScope::On),
+        ("OnPlayerJoining", OverlayActivityScope::Friends),
+        ("OnPlayerJoined", OverlayActivityScope::Friends),
+        ("OnPlayerLeft", OverlayActivityScope::Friends),
+        ("Online", OverlayActivityScope::AllFavorites),
+        ("Offline", OverlayActivityScope::AllFavorites),
+        ("GPS", OverlayActivityScope::AllFavorites),
+        ("Status", OverlayActivityScope::AllFavorites),
+        ("Friend", OverlayActivityScope::On),
+        ("Unfriend", OverlayActivityScope::Off),
+        ("DisplayName", OverlayActivityScope::Friends),
+        ("TrustLevel", OverlayActivityScope::Friends),
+        ("AvatarChange", OverlayActivityScope::Off),
+        ("Bio", OverlayActivityScope::Off),
+        ("groupChange", OverlayActivityScope::Off),
+        ("group.announcement", OverlayActivityScope::Off),
+        ("group.informative", OverlayActivityScope::Off),
+        ("group.invite", OverlayActivityScope::On),
+        ("group.joinRequest", OverlayActivityScope::Off),
+        ("group.transfer", OverlayActivityScope::Off),
+        ("Event", OverlayActivityScope::Off),
+        ("External", OverlayActivityScope::Off),
+        ("Blocked", OverlayActivityScope::Off),
+        ("Unblocked", OverlayActivityScope::Off),
+        ("Muted", OverlayActivityScope::Off),
+        ("Unmuted", OverlayActivityScope::Off),
+        (
+            "BlockedOnPlayerJoined",
+            OverlayActivityScope::EveryoneInInstance,
+        ),
+        ("BlockedOnPlayerLeft", OverlayActivityScope::Off),
+        ("MutedOnPlayerJoined", OverlayActivityScope::Off),
+        ("MutedOnPlayerLeft", OverlayActivityScope::Off),
+        ("VideoPlay", OverlayActivityScope::Off),
+    ];
+
+    for (activity_type, scope) in expectations {
+        assert_eq!(
+            filters
+                .rule_for(OverlayActivitySurface::Hmd, activity_type)
+                .scope,
+            scope,
+            "{activity_type}"
+        );
+    }
+}
+
+#[test]
+fn hmd_delivery_is_live_only_and_independent_from_wrist_snapshot() {
+    let runtime = OverlayActivityRuntime::default();
+    let sink = RecordingSink::default();
+    let deliveries = sink.deliveries.clone();
+    let snapshots = sink.snapshots.clone();
+    runtime.set_sink(sink);
+    runtime.set_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "fav-a",
+        ["usr_friend"].as_slice(),
+    )]));
+    runtime.set_delivery_armed(true);
+
+    let mut row = candidate("Online", "usr_friend");
+    row.created_at = chrono::Utc::now().to_rfc3339();
+    runtime.ingest_candidate(row);
+
+    let deliveries = deliveries.lock().unwrap();
+    assert_eq!(deliveries.len(), 1);
+    assert!(deliveries[0].hmd);
+    assert!(!deliveries[0].desktop);
+    assert!(!deliveries[0].vr);
+    assert!(!deliveries[0].webhook);
+    assert!(
+        snapshots.lock().unwrap().is_empty(),
+        "hmd-only deliveries must not create wrist snapshot entries"
+    );
 }
 
 #[test]
@@ -456,6 +553,22 @@ fn private_location_aligns_with_original_display() {
 
     assert_eq!(entry.content.body.fallback, "is in Private");
     assert_eq!(entry.content.body.params["location"], json!("Private"));
+}
+
+#[derive(Clone, Default)]
+struct RecordingSink {
+    snapshots: Arc<Mutex<Vec<OverlayActivitySnapshot>>>,
+    deliveries: Arc<Mutex<Vec<OverlayActivityDelivery>>>,
+}
+
+impl OverlayActivitySink for RecordingSink {
+    fn emit_overlay_activity_snapshot(&self, snapshot: OverlayActivitySnapshot) {
+        self.snapshots.lock().unwrap().push(snapshot);
+    }
+
+    fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
+        self.deliveries.lock().unwrap().push(delivery);
+    }
 }
 
 fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {

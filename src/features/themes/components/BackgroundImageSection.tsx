@@ -350,6 +350,18 @@ export function BackgroundImageSection() {
                     <div className="flex min-w-0 flex-wrap gap-2">
                         <Select
                             value={mode === 'custom' ? 'custom' : 'daily'}
+                            items={[
+                                {
+                                    value: 'daily',
+                                    label: t('view.background_image.mode.daily')
+                                },
+                                {
+                                    value: 'custom',
+                                    label: t(
+                                        'view.background_image.mode.custom'
+                                    )
+                                }
+                            ]}
                             disabled={loading}
                             onValueChange={(value) =>
                                 updateMode(value as BackgroundImageMode)
@@ -370,6 +382,12 @@ export function BackgroundImageSection() {
                         {mode === 'daily' ? (
                             <Select
                                 value={providerId}
+                                items={backgroundImageRemoteProviders.map(
+                                    (provider) => ({
+                                        value: provider.id,
+                                        label: provider.name
+                                    })
+                                )}
                                 disabled={loading}
                                 onValueChange={(value) =>
                                     updateProvider(
@@ -465,6 +483,20 @@ export function BackgroundImageSection() {
                                         customSource?.rotationInterval ||
                                         'daily'
                                     }
+                                    items={[
+                                        {
+                                            value: 'daily',
+                                            label: t(
+                                                'view.background_image.rotation.daily'
+                                            )
+                                        },
+                                        {
+                                            value: 'hourly',
+                                            label: t(
+                                                'view.background_image.rotation.hourly'
+                                            )
+                                        }
+                                    ]}
                                     disabled={loading}
                                     onValueChange={(value) =>
                                         updateRotationInterval(

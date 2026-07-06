@@ -13,6 +13,7 @@ pub struct RealtimeFriendOutput {
     pub persistence: RealtimePersistenceBatch,
     pub timer_action: PendingOfflineTimerAction,
     pub profile_refetch_user_ids: Vec<String>,
+    pub friend_note_changed: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

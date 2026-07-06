@@ -11,5 +11,8 @@ pub use device::{DeviceChip, DeviceRole, DeviceStatus};
 pub use feed::{FeedKind, FeedLine, FeedRelation, FeedSeverity};
 pub use footer::OverlayFooter;
 pub use frame::RgbaFrame;
-pub use geometry::{OverlaySize, Rect};
-pub use surface::{OverlaySurfaceId, OverlaySurfaceKind};
+pub use geometry::{
+    grab_follow_transform, ray_quad_intersection, recenter_transform, OverlayQuadSize, OverlaySize,
+    OverlayTransform, Ray3, RayQuadHit, Rect, UvPoint,
+};
+pub use surface::{OverlaySurfaceId, OverlaySurfaceKind, MAIN_SURFACE_ID};

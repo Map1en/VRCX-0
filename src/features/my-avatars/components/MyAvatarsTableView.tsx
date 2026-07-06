@@ -120,87 +120,96 @@ export function MyAvatarsTableView({
                                     <ContextMenu
                                         key={row.original?.id || row.id}
                                     >
-                                        <ContextMenuTrigger asChild>
-                                            <TableRow
-                                                className={[
-                                                    'group h-8 cursor-pointer',
-                                                    row.original?.id ===
-                                                    currentAvatarId
-                                                        ? 'bg-primary/10'
-                                                        : ''
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(' ')}
-                                                tabIndex={0}
-                                                aria-label={t(
-                                                    'view.my_avatars.dynamic.open_value',
-                                                    {
-                                                        value:
-                                                            row.original
-                                                                ?.name ||
-                                                            row.original?.id ||
-                                                            t(
-                                                                'view.my_avatars.label.avatar'
+                                        <ContextMenuTrigger
+                                            render={
+                                                <TableRow
+                                                    className={[
+                                                        'group h-8 cursor-pointer',
+                                                        row.original?.id ===
+                                                        currentAvatarId
+                                                            ? 'bg-primary/10'
+                                                            : ''
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' ')}
+                                                    tabIndex={0}
+                                                    aria-label={t(
+                                                        'view.my_avatars.dynamic.open_value',
+                                                        {
+                                                            value:
+                                                                row.original
+                                                                    ?.name ||
+                                                                row.original
+                                                                    ?.id ||
+                                                                t(
+                                                                    'view.my_avatars.label.avatar'
+                                                                )
+                                                        }
+                                                    )}
+                                                    onKeyDown={(event) => {
+                                                        if (
+                                                            isInteractiveRowEvent(
+                                                                event
                                                             )
-                                                    }
-                                                )}
-                                                onKeyDown={(event) => {
-                                                    if (
-                                                        isInteractiveRowEvent(
-                                                            event
-                                                        )
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    if (
-                                                        event.key !== 'Enter' &&
-                                                        event.key !== ' '
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    event.preventDefault();
-                                                    openAvatarDetails(
-                                                        row.original
-                                                    );
-                                                }}
-                                                onClick={(event) => {
-                                                    if (
-                                                        isInteractiveRowEvent(
-                                                            event
-                                                        )
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    openAvatarDetails(
-                                                        row.original
-                                                    );
-                                                }}
-                                            >
-                                                <DataTableColumnSortableContext
-                                                    table={table}
+                                                        ) {
+                                                            return;
+                                                        }
+                                                        if (
+                                                            event.key !==
+                                                                'Enter' &&
+                                                            event.key !== ' '
+                                                        ) {
+                                                            return;
+                                                        }
+                                                        event.preventDefault();
+                                                        openAvatarDetails(
+                                                            row.original
+                                                        );
+                                                    }}
+                                                    onClick={(event) => {
+                                                        if (
+                                                            isInteractiveRowEvent(
+                                                                event
+                                                            )
+                                                        ) {
+                                                            return;
+                                                        }
+                                                        openAvatarDetails(
+                                                            row.original
+                                                        );
+                                                    }}
                                                 >
-                                                    {row
-                                                        .getVisibleCells()
-                                                        .map((cell) => (
-                                                            <ResizableTableCell
-                                                                key={cell.id}
-                                                                cell={cell}
-                                                                className={[
-                                                                    cell.column
-                                                                        .columnDef
-                                                                        .meta
-                                                                        ?.tableCellClassName,
-                                                                    'px-2 py-0.5'
-                                                                ]
-                                                                    .filter(
-                                                                        Boolean
-                                                                    )
-                                                                    .join(' ')}
-                                                            />
-                                                        ))}
-                                                </DataTableColumnSortableContext>
-                                            </TableRow>
-                                        </ContextMenuTrigger>
+                                                    <DataTableColumnSortableContext
+                                                        table={table}
+                                                    >
+                                                        {row
+                                                            .getVisibleCells()
+                                                            .map((cell) => (
+                                                                <ResizableTableCell
+                                                                    key={
+                                                                        cell.id
+                                                                    }
+                                                                    cell={cell}
+                                                                    className={[
+                                                                        cell
+                                                                            .column
+                                                                            .columnDef
+                                                                            .meta
+                                                                            ?.tableCellClassName,
+                                                                        'px-2 py-0.5'
+                                                                    ]
+                                                                        .filter(
+                                                                            Boolean
+                                                                        )
+                                                                        .join(
+                                                                            ' '
+                                                                        )}
+                                                                />
+                                                            ))}
+                                                    </DataTableColumnSortableContext>
+                                                </TableRow>
+                                            }
+                                        />
                                         <ContextMenuContent className="w-max max-w-[90vw] min-w-52">
                                             <AvatarActionMenuItems
                                                 avatar={row.original}

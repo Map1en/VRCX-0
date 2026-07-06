@@ -36,7 +36,9 @@ export function LoginPageHeader({
                     onValueChange={onLanguageChange}
                 >
                     <SelectTrigger size="sm" className="w-36">
-                        <SelectValue />
+                        <SelectValue>
+                            {getLanguageName(locale || 'en')}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>

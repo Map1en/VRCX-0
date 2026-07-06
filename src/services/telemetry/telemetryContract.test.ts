@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    TELEMETRY_CONFIG_FIELDS,
     TELEMETRY_ROUTE_KEYS,
     TELEMETRY_VIEW_MODE_DIMENSIONS
 } from './telemetryContract';
@@ -13,23 +12,10 @@ describe('telemetry contract', () => {
         expect(TELEMETRY_ROUTE_KEYS).not.toContain('charts_instance');
     });
 
-    it('keeps view mode dimensions and config fields in the shared contract', () => {
+    it('keeps frontend-owned view mode dimensions in the shared contract', () => {
         expect(TELEMETRY_VIEW_MODE_DIMENSIONS).toMatchObject({
             gameLogViewMode: ['sessions', 'table'],
             feedTimeDisplayMode: ['relative', 'exact']
-        });
-        expect(TELEMETRY_CONFIG_FIELDS).toMatchObject({
-            booleanFields: expect.arrayContaining([
-                'backgroundModeEnabled',
-                'mcpServerEnabled',
-                'webhookEnabled'
-            ]),
-            optionalBooleanFields: ['mcpServerEnabled', 'webhookEnabled'],
-            enumFields: expect.arrayContaining([
-                'autoAcceptInviteRequests',
-                'avatarAutoCleanup',
-                'themeMode'
-            ])
         });
     });
 });

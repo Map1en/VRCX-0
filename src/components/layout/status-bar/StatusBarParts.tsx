@@ -89,7 +89,7 @@ export function StatusSegment({
         }
         return (
             <Tooltip>
-                <TooltipTrigger asChild>{segment}</TooltipTrigger>
+                <TooltipTrigger render={segment} />
                 <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
             </Tooltip>
         );
@@ -110,7 +110,7 @@ export function StatusSegment({
     }
     return (
         <Tooltip>
-            <TooltipTrigger asChild>{segment}</TooltipTrigger>
+            <TooltipTrigger render={segment} />
             <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
         </Tooltip>
     );

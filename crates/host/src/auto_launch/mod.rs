@@ -13,6 +13,7 @@ mod picker;
 mod process;
 
 #[cfg(test)]
+#[path = "../../tests/auto_launch/tests.rs"]
 mod tests;
 
 #[cfg(test)]

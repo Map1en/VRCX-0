@@ -6,10 +6,28 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
+use vrcx_0_application::PlayerListSnapshotOutput;
 use vrcx_0_persistence::player_list::{
     InstanceActivityRowOutput, PlayerJoinLeaveOutput, PlayerLocationOutput,
 };
 use vrcx_0_persistence::worlds::WorldSummaryOutput;
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__player_list_current_snapshot(
+    state: State<'_, AppState>,
+    current_user_id: String,
+    current_location: String,
+    current_location_started_at: String,
+) -> Result<PlayerListSnapshotOutput, AppError> {
+    vrcx_0_application::player_list_current_snapshot(
+        state.db.as_ref(),
+        &current_user_id,
+        &current_location,
+        &current_location_started_at,
+    )
+    .map_err(AppError::from)
+}
 
 #[tauri::command]
 #[specta::specta]

@@ -49,27 +49,29 @@ export function DeveloperThemesSection({
                                 : t('view.themes.developer.summary')}
                         </div>
                     </div>
-                    <CollapsibleTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 shrink-0"
-                        >
-                            {t(
-                                devSectionOpen
-                                    ? 'view.themes.developer.hide'
-                                    : 'view.themes.developer.show'
-                            )}
-                            <ChevronDownIcon
-                                data-icon="inline-end"
-                                className={cn(
-                                    'opacity-60 transition-transform',
-                                    devSectionOpen && 'rotate-180'
+                    <CollapsibleTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shrink-0"
+                            >
+                                {t(
+                                    devSectionOpen
+                                        ? 'view.themes.developer.hide'
+                                        : 'view.themes.developer.show'
                                 )}
-                            />
-                        </Button>
-                    </CollapsibleTrigger>
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className={cn(
+                                        'opacity-60 transition-transform',
+                                        devSectionOpen && 'rotate-180'
+                                    )}
+                                />
+                            </Button>
+                        }
+                    />
                 </div>
                 <CollapsibleContent>
                     <div className="flex flex-col gap-3 border-t pt-3">

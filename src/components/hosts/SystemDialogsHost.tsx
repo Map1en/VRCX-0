@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { KeyboardShortcutsDialog } from '@/components/keyboard/KeyboardShortcutsDialog';
+import { ProxySettingsDialog } from '@/components/proxy/ProxySettingsDialog';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
@@ -26,6 +27,9 @@ export function SystemDialogsHost() {
     );
     const keyboardShortcutsOpen = useRuntimeStore(
         (state) => state.systemHosts.keyboardShortcutsOpen
+    );
+    const proxySettingsOpen = useRuntimeStore(
+        (state) => state.systemHosts.proxySettingsOpen
     );
     const changelogTargetVersion = useRuntimeStore(
         (state) => state.changelogTargetVersion
@@ -130,6 +134,12 @@ export function SystemDialogsHost() {
                 open={Boolean(keyboardShortcutsOpen)}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('keyboardShortcutsOpen', open)
+                }
+            />
+            <ProxySettingsDialog
+                open={Boolean(proxySettingsOpen)}
+                onOpenChange={(open: boolean) =>
+                    setSystemHostOpen('proxySettingsOpen', open)
                 }
             />
         </>

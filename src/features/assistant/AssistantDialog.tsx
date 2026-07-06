@@ -281,17 +281,6 @@ export function AssistantDialog() {
                 className="flex h-[84vh] w-[min(1360px,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
                 showCloseButton={false}
                 style={{ fontFamily: 'var(--vrcx-app-font-family, inherit)' }}
-                // FIXME: resize drag misread as outside-click (react-resizable-panels
-                // x Radix); keep open when target is inside. Remove after deps fix.
-                onInteractOutside={(event) => {
-                    const target = event.detail.originalEvent.target;
-                    if (
-                        target instanceof Element &&
-                        target.closest('[data-slot="dialog-content"]')
-                    ) {
-                        event.preventDefault();
-                    }
-                }}
             >
                 <DialogHeader className="border-border/40 flex-row items-center justify-between space-y-0 border-b py-3 pr-3 pl-4">
                     <DialogTitle
@@ -308,25 +297,27 @@ export function AssistantDialog() {
                                 }
                             }}
                         >
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-8 gap-1.5 px-2 text-xs"
-                                >
-                                    <Settings2Icon
-                                        data-icon="inline-start"
-                                        className="size-4"
-                                    />
-                                    <span className="hidden max-w-40 truncate sm:inline">
-                                        {selectedEndpoint?.name ||
-                                            t(
-                                                'assistant.runtime.connection_unset'
-                                            )}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
+                            <PopoverTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 gap-1.5 px-2 text-xs"
+                                    >
+                                        <Settings2Icon
+                                            data-icon="inline-start"
+                                            className="size-4"
+                                        />
+                                        <span className="hidden max-w-40 truncate sm:inline">
+                                            {selectedEndpoint?.name ||
+                                                t(
+                                                    'assistant.runtime.connection_unset'
+                                                )}
+                                        </span>
+                                    </Button>
+                                }
+                            />
                             <PopoverContent align="end" className="w-80">
                                 <PopoverHeader>
                                     <PopoverTitle>
@@ -343,8 +334,16 @@ export function AssistantDialog() {
                                                 runtimeSelection.endpointId ||
                                                 undefined
                                             }
+                                            items={endpoints.map(
+                                                (endpoint) => ({
+                                                    value: endpoint.id,
+                                                    label: endpoint.name
+                                                })
+                                            )}
                                             disabled={!endpoints.length}
-                                            onValueChange={updateEndpoint}
+                                            onValueChange={(value) =>
+                                                updateEndpoint(value ?? '')
+                                            }
                                         >
                                             <SelectTrigger
                                                 id="assistant-runtime-endpoint"
@@ -386,6 +385,12 @@ export function AssistantDialog() {
                                                     runtimeSelection.model ||
                                                     undefined
                                                 }
+                                                items={modelOptions.map(
+                                                    (model) => ({
+                                                        value: model,
+                                                        label: model
+                                                    })
+                                                )}
                                                 onValueChange={(model) =>
                                                     updateRuntimeSelection({
                                                         model
@@ -440,10 +445,20 @@ export function AssistantDialog() {
                                             value={
                                                 runtimeSelection.playbookMode
                                             }
+                                            items={PLAYBOOK_MODES.map(
+                                                (mode) => ({
+                                                    value: mode,
+                                                    label: t(
+                                                        `assistant.settings.playbook_mode_${mode}`
+                                                    )
+                                                })
+                                            )}
                                             onValueChange={(value) =>
                                                 updateRuntimeSelection({
                                                     playbookMode:
-                                                        parsePlaybookMode(value)
+                                                        parsePlaybookMode(
+                                                            value ?? ''
+                                                        )
                                                 })
                                             }
                                         >

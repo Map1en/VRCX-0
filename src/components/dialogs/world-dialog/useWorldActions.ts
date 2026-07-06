@@ -10,8 +10,8 @@ import memoPersistenceRepository from '@/repositories/memoPersistenceRepository'
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 
@@ -47,8 +47,9 @@ export function useWorldActions({
         if (!profileWorldId) {
             return;
         }
-        await copyTextToClipboard(profileWorldId);
-        toast.success(t('message.world.id_copied'));
+        await copyTextToClipboard(profileWorldId, {
+            successMessage: t('message.world.id_copied')
+        });
     }
 
     async function refreshWorldProfile() {

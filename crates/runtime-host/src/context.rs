@@ -303,6 +303,9 @@ fn load_overlay_activity_filters(config: &ConfigRepository, runtime: &OverlayAct
     if let Some(vr) = load_types_key_surface(config, "vrNotificationActivityFilters") {
         filters.vr = vr;
     }
+    if let Some(hmd) = load_types_key_surface(config, "hmdNotificationActivityFilters") {
+        filters.hmd = hmd;
+    }
     if let Some(webhook) = load_types_key_surface(config, "webhookActivityFilters") {
         filters.webhook = webhook;
     }

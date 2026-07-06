@@ -14,7 +14,7 @@ function LocationTooltip({ disabled, content, children }: any) {
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>{children}</TooltipTrigger>
+            <TooltipTrigger render={children} />
             <TooltipContent>{content}</TooltipContent>
         </Tooltip>
     );

@@ -43,7 +43,8 @@ function FavoritesPage({
         setCreatingLocalGroup,
         setExportDialogOpen,
         setNewLocalGroupName,
-        viewData
+        viewData,
+        instanceActionGatesByItemKey
     } = state;
     const handleGroupRailRefresh = useStableEvent(() =>
         actions.refreshFavorites()
@@ -139,6 +140,9 @@ function FavoritesPage({
                             layout={layout}
                             selection={selection}
                             viewData={viewData}
+                            instanceActionGatesByItemKey={
+                                instanceActionGatesByItemKey
+                            }
                         />
                     </ResizablePanel>
                 </ResizablePanelGroup>

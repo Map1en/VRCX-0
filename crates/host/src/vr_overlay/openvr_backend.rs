@@ -10,26 +10,57 @@ use openvr::{
         DeviceProvidesBatteryStatus_Bool, ModelNumber_String, SerialNumber_String,
         TrackingSystemName_String,
     },
-    tracked_device_index, ApplicationType, Context, Overlay, TrackedControllerRole,
-    TrackedDeviceClass, TrackedDeviceIndex, TrackingUniverseOrigin, MAX_TRACKED_DEVICE_COUNT,
+    system::event::Event,
+    tracked_device_index, ApplicationType, Context, ControllerState, Overlay, System,
+    TrackedControllerRole, TrackedDeviceClass, TrackedDeviceIndex, TrackingUniverseOrigin,
+    MAX_TRACKED_DEVICE_COUNT,
 };
-use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
+use vrcx_0_vr_overlay::{
+    grab_follow_transform, ray_quad_intersection, recenter_transform, OverlayQuadSize,
+    OverlaySurfaceId, OverlayTransform, Ray3, RgbaFrame, UvPoint, FRIENDS_PANEL_ID,
+    FRIENDS_PANEL_LASER_LEFT_SURFACE_ID, FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID,
+    FRIENDS_PANEL_SURFACE_ID, LEGACY_DUMMY_PANEL_ID, MAIN_SURFACE_ID,
+};
 
 use super::{
-    actor::OverlayBackend,
+    actor::{OverlayBackend, TickOutcome},
     policy::WristVisibilityPolicy,
     types::{
-        BackendStartError, OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig,
+        BackendStartError, OverlayActivationButton, OverlayHand, OverlayInputEvent,
+        OverlayInputEventSink, OverlayInputKind, OverlayPlacement, OverlaySurfaceConfig,
         VrDeviceSnapshot, VrDeviceStatus,
     },
 };
 
-const VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_secs(2);
+const WRIST_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_secs(2);
+const MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_millis(100);
+const INTERACTIVE_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_millis(16);
+const SURFACE_FADE_DURATION: Duration = Duration::from_millis(240);
+const DEFAULT_PANEL_RECENTER_DISTANCE_METERS: f32 = 1.0;
+const DEFAULT_PANEL_RECENTER_VERTICAL_OFFSET_METERS: f32 = -0.1;
+const TRIGGER_PRESS_THRESHOLD: f32 = 0.6;
+const SCROLL_AXIS_THRESHOLD: f32 = 0.55;
+const GRIP_AXIS_PRESS_THRESHOLD: f32 = 0.6;
+const SCROLL_REPEAT_INTERVAL: Duration = Duration::from_millis(120);
+const HOVER_UV_EPSILON: f32 = 0.01;
+const SUMMON_HOLD_DURATION: Duration = Duration::from_secs(2);
+const PANEL_SUMMON_HAND: OverlayHand = OverlayHand::Right;
+const PANEL_SUMMON_PANEL_ID: &str = FRIENDS_PANEL_ID;
+const POINTER_PITCH_OFFSET_RADIANS: f32 = 35.0_f32.to_radians();
+const POINTER_LASER_START_OFFSET_METERS: f32 = 0.08;
+const POINTER_LASER_MISS_LENGTH_METERS: f32 = 0.35;
+const POINTER_LASER_MIN_LENGTH_METERS: f32 = 0.12;
+const POINTER_LASER_MAX_LENGTH_METERS: f32 = 2.0;
 
 pub struct OpenVrOverlayBackend {
     context: Option<Context>,
     overlay: Option<Overlay>,
+    system: Option<System>,
     surfaces: HashMap<OverlaySurfaceId, OpenVrSurface>,
+    input_events: OverlayInputEventSink,
+    panel_summon_state: PanelSummonGestureState,
+    controller_states: HashMap<OverlayHand, ControllerInputState>,
+    grab_state: Option<GrabState>,
 }
 
 struct OpenVrSurface {
@@ -41,6 +72,43 @@ struct OpenVrSurface {
     active: bool,
     pending_frame: Option<RgbaFrame>,
     last_visible_frame_upload_at: Option<Instant>,
+    current_alpha: f32,
+    target_alpha: f32,
+    fade: Option<SurfaceFade>,
+    hide_after_fade: bool,
+}
+
+#[derive(Clone, Copy)]
+struct SurfaceFade {
+    from: f32,
+    to: f32,
+    started_at: Instant,
+}
+
+#[derive(Clone, Debug, Default)]
+struct PanelSummonGestureState {
+    pressed_since: Option<Instant>,
+    emitted: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+struct ControllerInputState {
+    trigger_pressed: bool,
+    grip_pressed: bool,
+    hovered_target: Option<InteractiveTarget>,
+    hovered_uv: Option<UvPoint>,
+    pressed_target: Option<InteractiveTarget>,
+    last_scroll_at: Option<Instant>,
+}
+
+#[derive(Clone, Debug)]
+struct GrabState {
+    surface_id: OverlaySurfaceId,
+    panel_id: String,
+    hand: OverlayHand,
+    uv: UvPoint,
+    panel_start: OverlayTransform,
+    controller_start: OverlayTransform,
 }
 
 #[derive(Clone)]
@@ -52,12 +120,94 @@ struct SurfaceUpdateCandidate {
     policy: WristVisibilityPolicy,
 }
 
+#[derive(Clone)]
+struct InteractiveSurfaceCandidate {
+    surface_id: OverlaySurfaceId,
+    panel_id: String,
+    quad_size: OverlayQuadSize,
+    transform: OverlayTransform,
+}
+
+#[derive(Clone)]
+struct InteractiveHit {
+    surface_id: OverlaySurfaceId,
+    panel_id: String,
+    uv: UvPoint,
+    distance: f32,
+    transform: OverlayTransform,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct InteractiveTarget {
+    surface_id: OverlaySurfaceId,
+    panel_id: String,
+}
+
+impl InteractiveHit {
+    fn event(&self, hand: OverlayHand, kind: OverlayInputKind) -> OverlayInputEvent {
+        OverlayInputEvent {
+            surface_id: self.surface_id.clone(),
+            panel_id: self.panel_id.clone(),
+            hand,
+            uv: self.uv,
+            kind,
+        }
+    }
+
+    fn target(&self) -> InteractiveTarget {
+        InteractiveTarget {
+            surface_id: self.surface_id.clone(),
+            panel_id: self.panel_id.clone(),
+        }
+    }
+}
+
+impl InteractiveTarget {
+    fn matches_hit(&self, hit: &InteractiveHit) -> bool {
+        self.surface_id == hit.surface_id && self.panel_id == hit.panel_id
+    }
+
+    fn event(&self, hand: OverlayHand, uv: UvPoint, kind: OverlayInputKind) -> OverlayInputEvent {
+        OverlayInputEvent {
+            surface_id: self.surface_id.clone(),
+            panel_id: self.panel_id.clone(),
+            hand,
+            uv,
+            kind,
+        }
+    }
+}
+
+struct ControllerTickInput {
+    hand: OverlayHand,
+    transform: OverlayTransform,
+    state: ControllerState,
+    grip_pressed: bool,
+    hit: Option<InteractiveHit>,
+}
+
+struct PointerLaserState {
+    transform: OverlayTransform,
+    width_meters: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ScrollDelta {
+    delta: Option<f32>,
+    last_scroll_at: Option<Instant>,
+}
+
 impl OpenVrOverlayBackend {
     pub fn new() -> Self {
         Self {
             context: None,
             overlay: None,
+            system: None,
             surfaces: HashMap::new(),
+            input_events: OverlayInputEventSink::default(),
+            panel_summon_state: PanelSummonGestureState::default(),
+            controller_states: HashMap::new(),
+            grab_state: None,
         }
     }
 }
@@ -69,8 +219,12 @@ impl Default for OpenVrOverlayBackend {
 }
 
 impl OverlayBackend for OpenVrOverlayBackend {
+    fn set_input_event_sink(&mut self, sink: OverlayInputEventSink) {
+        self.input_events = sink;
+    }
+
     fn start(&mut self) -> Result<(), BackendStartError> {
-        if self.context.is_some() && self.overlay.is_some() {
+        if self.context.is_some() && self.overlay.is_some() && self.system.is_some() {
             return Ok(());
         }
 
@@ -79,8 +233,12 @@ impl OverlayBackend for OpenVrOverlayBackend {
         let overlay = context
             .overlay()
             .map_err(|error| init_start_error("OpenVR overlay interface failed", error))?;
+        let system = context
+            .system()
+            .map_err(|error| init_start_error("OpenVR system interface failed", error))?;
         self.context = Some(context);
         self.overlay = Some(overlay);
+        self.system = Some(system);
         Ok(())
     }
 
@@ -117,6 +275,10 @@ impl OverlayBackend for OpenVrOverlayBackend {
                 active: true,
                 pending_frame: None,
                 last_visible_frame_upload_at: None,
+                current_alpha: 1.0,
+                target_alpha: 1.0,
+                fade: None,
+                hide_after_fade: false,
             },
         );
         self.apply_config(&config)
@@ -139,7 +301,8 @@ impl OverlayBackend for OpenVrOverlayBackend {
                 let can_upload = surface
                     .last_visible_frame_upload_at
                     .map(|last| {
-                        now.saturating_duration_since(last) >= VISIBLE_FRAME_UPLOAD_INTERVAL
+                        now.saturating_duration_since(last)
+                            >= visible_frame_upload_interval(surface)
                     })
                     .unwrap_or(true);
                 if !can_upload {
@@ -166,11 +329,42 @@ impl OverlayBackend for OpenVrOverlayBackend {
     }
 
     fn show(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        if surface_fades(surface_id) {
+            return self.show_with_fade(surface_id);
+        }
         self.set_visibility(surface_id, true)
     }
 
     fn hide(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        if surface_fades(surface_id) {
+            return self.hide_with_fade(surface_id);
+        }
         self.set_visibility(surface_id, false)
+    }
+
+    fn set_alpha(&mut self, surface_id: &OverlaySurfaceId, alpha: f32) -> Result<(), String> {
+        let alpha = alpha.clamp(0.0, 1.0);
+        let apply_now = {
+            let surface = self.surfaces.get_mut(surface_id).ok_or_else(|| {
+                format!(
+                    "overlay surface '{}' is not registered",
+                    surface_id.as_str()
+                )
+            })?;
+            surface.target_alpha = alpha;
+            match surface.fade.as_mut() {
+                Some(fade) if !surface.hide_after_fade => {
+                    fade.to = alpha;
+                    false
+                }
+                Some(_) => false,
+                None => true,
+            }
+        };
+        if !apply_now {
+            return Ok(());
+        }
+        self.apply_alpha(surface_id, alpha)
     }
 
     fn unregister_surface(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
@@ -187,20 +381,28 @@ impl OverlayBackend for OpenVrOverlayBackend {
 
     fn snapshot_devices(&mut self) -> Result<Vec<VrDeviceSnapshot>, String> {
         self.start().map_err(|error| error.message)?;
-        let context = self
-            .context
+        let system = self
+            .system
             .as_ref()
-            .ok_or_else(|| "OpenVR context is not started".to_string())?;
-        let system = context
-            .system()
-            .map_err(|error| format!("OpenVR system interface failed: {error:?}"))?;
-        Ok(snapshot_openvr_devices(&system))
+            .ok_or_else(|| "OpenVR system interface is not started".to_string())?;
+        Ok(snapshot_openvr_devices(system))
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> TickOutcome {
+        if self.poll_runtime_quit() {
+            self.clear_runtime_handles();
+            return TickOutcome::RuntimeQuit;
+        }
         if let Err(error) = self.update_button_visibility() {
             tracing::warn!(error = %error, "failed to update VR overlay button visibility");
         }
+        if let Err(error) = self.update_interactive_input() {
+            tracing::debug!(error = %error, "failed to update VR overlay input");
+        }
+        if let Err(error) = self.advance_fades() {
+            tracing::warn!(error = %error, "failed to advance VR overlay fade");
+        }
+        TickOutcome::Continue
     }
 
     fn stop(&mut self) {
@@ -208,28 +410,69 @@ impl OverlayBackend for OpenVrOverlayBackend {
         for surface_id in surface_ids {
             let _ = self.set_visibility(&surface_id, false);
         }
-        self.surfaces.clear();
-        self.overlay = None;
-        self.context = None;
+        self.clear_runtime_handles();
+        self.controller_states.clear();
+        self.grab_state = None;
+    }
+}
+
+fn surface_fades(surface_id: &OverlaySurfaceId) -> bool {
+    surface_id.as_str() == MAIN_SURFACE_ID
+}
+
+fn surface_uses_wrist_policy(config: &OverlaySurfaceConfig) -> bool {
+    if config.interactive {
+        return false;
+    }
+    match &config.placement {
+        OverlayPlacement::TrackedDeviceRelative { device_hint } => !device_hint.starts_with("hmd"),
+        OverlayPlacement::Absolute { .. } => false,
+    }
+}
+
+fn visible_frame_upload_interval(surface: &OpenVrSurface) -> Duration {
+    if surface.config.interactive {
+        INTERACTIVE_VISIBLE_FRAME_UPLOAD_INTERVAL
+    } else if surface.config.surface_id.as_str() == MAIN_SURFACE_ID {
+        MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL
+    } else {
+        WRIST_VISIBLE_FRAME_UPLOAD_INTERVAL
     }
 }
 
 impl OpenVrOverlayBackend {
+    fn poll_runtime_quit(&self) -> bool {
+        let Some(system) = &self.system else {
+            return false;
+        };
+        while let Some(info) = system.poll_next_event() {
+            if let Event::Quit(_) = info.event {
+                system.acknowledge_quit_exiting();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn clear_runtime_handles(&mut self) {
+        self.surfaces.clear();
+        self.overlay = None;
+        self.system = None;
+        self.context = None;
+    }
+
     fn update_button_visibility(&mut self) -> Result<(), String> {
         if self.surfaces.is_empty() {
             return Ok(());
         }
-        let context = self
-            .context
+        let system = self
+            .system
             .as_ref()
-            .ok_or_else(|| "OpenVR context is not started".to_string())?;
-        let system = context
-            .system()
-            .map_err(|error| format!("OpenVR system interface failed: {error:?}"))?;
+            .ok_or_else(|| "OpenVR system interface is not started".to_string())?;
         let candidates = self
             .surfaces
             .iter()
-            .filter(|(_, surface)| surface.active)
+            .filter(|(_, surface)| surface.active && surface_uses_wrist_policy(&surface.config))
             .map(|(surface_id, surface)| SurfaceUpdateCandidate {
                 surface_id: surface_id.clone(),
                 handle: surface.handle,
@@ -250,13 +493,13 @@ impl OpenVrOverlayBackend {
             let mut transform_device = candidate.transform_device;
             let mut policy = candidate.policy;
 
-            if let Ok(device) = resolve_device(&system, &candidate.config.placement) {
+            if let Ok(device) = resolve_device(system, &candidate.config.placement) {
                 if transform_device != Some(device) {
                     overlay
                         .set_transform_tracked_device_relative(
                             candidate.handle,
                             device,
-                            &wrist_transform(&candidate.config.placement),
+                            &surface_transform(&candidate.config.placement),
                         )
                         .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
                     tracing::debug!(
@@ -267,7 +510,7 @@ impl OpenVrOverlayBackend {
                     );
                 }
                 transform_device = Some(device);
-                if device_button_pressed(&system, device, candidate.config.activation_button) {
+                if device_button_pressed(system, device, candidate.config.activation_button) {
                     policy.open(now);
                 }
             }
@@ -290,10 +533,10 @@ impl OpenVrOverlayBackend {
     }
 
     fn apply_config(&mut self, config: &OverlaySurfaceConfig) -> Result<(), String> {
-        let context = self
-            .context
+        let system = self
+            .system
             .as_ref()
-            .ok_or_else(|| "OpenVR context is not started".to_string())?;
+            .ok_or_else(|| "OpenVR system interface is not started".to_string())?;
         let handle = self.surface_handle(&config.surface_id)?;
         let overlay = self
             .overlay
@@ -307,10 +550,21 @@ impl OpenVrOverlayBackend {
             .set_texel_aspect(handle, 1.0)
             .map_err(|error| format!("set overlay texel aspect failed: {error:?}"))?;
 
-        let system = context
-            .system()
-            .map_err(|error| format!("OpenVR system interface failed: {error:?}"))?;
-        let transform_device = match resolve_device(&system, &config.placement) {
+        if let OverlayPlacement::Absolute { transform } = config.placement {
+            overlay
+                .set_transform_absolute(
+                    handle,
+                    TrackingUniverseOrigin::Standing,
+                    &overlay_transform_to_matrix(transform),
+                )
+                .map_err(|error| format!("set absolute overlay transform failed: {error:?}"))?;
+            if let Some(surface) = self.surfaces.get_mut(&config.surface_id) {
+                surface.transform_device = None;
+            }
+            return Ok(());
+        }
+
+        let transform_device = match resolve_device(system, &config.placement) {
             Ok(device) => {
                 tracing::debug!(
                     surface_id = config.surface_id.as_str(),
@@ -322,7 +576,7 @@ impl OpenVrOverlayBackend {
                     .set_transform_tracked_device_relative(
                         handle,
                         device,
-                        &wrist_transform(&config.placement),
+                        &surface_transform(&config.placement),
                     )
                     .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
                 Some(device)
@@ -339,6 +593,310 @@ impl OpenVrOverlayBackend {
         };
         if let Some(surface) = self.surfaces.get_mut(&config.surface_id) {
             surface.transform_device = transform_device;
+        }
+        Ok(())
+    }
+
+    fn update_interactive_input(&mut self) -> Result<(), String> {
+        let (has_interactive_surfaces, hmd_transform, inputs) = {
+            let system = self
+                .system
+                .as_ref()
+                .ok_or_else(|| "OpenVR system interface is not started".to_string())?;
+            let poses =
+                system.device_to_absolute_tracking_pose(TrackingUniverseOrigin::Standing, 0.0);
+            let hmd_transform = pose_transform(&poses, tracked_device_index::HMD);
+            update_panel_summon_events(
+                system,
+                &poses,
+                &mut self.panel_summon_state,
+                &self.input_events,
+            );
+
+            let interactive_surfaces = self
+                .surfaces
+                .iter()
+                .filter(|(_, surface)| {
+                    surface.active && surface.visible && surface.config.interactive
+                })
+                .filter_map(|(surface_id, surface)| {
+                    let OverlayPlacement::Absolute { transform } = surface.config.placement else {
+                        return None;
+                    };
+                    Some(InteractiveSurfaceCandidate {
+                        surface_id: surface_id.clone(),
+                        panel_id: panel_id_for_surface(surface_id),
+                        quad_size: overlay_quad_size(&surface.config),
+                        transform,
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            if interactive_surfaces.is_empty() {
+                (false, hmd_transform, Vec::new())
+            } else {
+                (
+                    true,
+                    hmd_transform,
+                    [OverlayHand::Left, OverlayHand::Right]
+                        .into_iter()
+                        .filter_map(|hand| {
+                            let device = controller_device_for_hand(system, hand)?;
+                            let transform = pose_transform(&poses, device)?;
+                            let state = system.controller_state(device)?;
+                            let grip_pressed = grip_pressed(system, device, &state);
+                            let hit = nearest_interactive_hit(transform, &interactive_surfaces);
+                            Some(ControllerTickInput {
+                                hand,
+                                transform,
+                                state,
+                                grip_pressed,
+                                hit,
+                            })
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            }
+        };
+        if let Err(error) =
+            self.update_pointer_laser_surfaces(has_interactive_surfaces, hmd_transform, &inputs)
+        {
+            tracing::debug!(error = %error, "failed to update VR interactive pointer laser");
+        }
+        if !has_interactive_surfaces {
+            self.clear_interactive_pointer_state();
+            return Ok(());
+        }
+
+        for input in inputs {
+            self.update_controller_edge_events(
+                input.hand,
+                input.transform,
+                &input.state,
+                input.grip_pressed,
+                input.hit,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn update_controller_edge_events(
+        &mut self,
+        hand: OverlayHand,
+        controller_transform: OverlayTransform,
+        state: &ControllerState,
+        grip_pressed: bool,
+        hit: Option<InteractiveHit>,
+    ) -> Result<(), String> {
+        let trigger_pressed = trigger_pressed(state);
+        let scroll_value = state.axis[0].y;
+        let previous = self
+            .controller_states
+            .get(&hand)
+            .cloned()
+            .unwrap_or_default();
+        let mut next = previous.clone();
+
+        match &hit {
+            Some(hit) => {
+                if let Some(target) = previous
+                    .hovered_target
+                    .as_ref()
+                    .filter(|target| !target.matches_hit(hit))
+                {
+                    self.input_events.push(target.event(
+                        hand,
+                        pointer_miss_uv(),
+                        OverlayInputKind::Hover,
+                    ));
+                }
+                if should_emit_hover(previous.hovered_target.as_ref(), previous.hovered_uv, hit) {
+                    self.input_events
+                        .push(hit.event(hand, OverlayInputKind::Hover));
+                }
+                next.hovered_target = Some(hit.target());
+                next.hovered_uv = Some(hit.uv);
+            }
+            None => {
+                if let Some(target) = previous.hovered_target.as_ref() {
+                    self.input_events.push(target.event(
+                        hand,
+                        pointer_miss_uv(),
+                        OverlayInputKind::Hover,
+                    ));
+                }
+                next.hovered_target = None;
+                next.hovered_uv = None;
+            }
+        }
+
+        if let Some(hit) = hit.as_ref() {
+            if trigger_pressed && !previous.trigger_pressed {
+                self.input_events
+                    .push(hit.event(hand, OverlayInputKind::ClickDown));
+                next.pressed_target = Some(hit.target());
+            }
+            let scroll_delta =
+                scroll_delta_for_state(scroll_value, previous.last_scroll_at, Instant::now());
+            next.last_scroll_at = scroll_delta.last_scroll_at;
+            if let Some(delta) = scroll_delta.delta {
+                self.input_events
+                    .push(hit.event(hand, OverlayInputKind::Scroll { delta }));
+            }
+            if grip_pressed && !previous.grip_pressed {
+                self.grab_state = Some(GrabState {
+                    surface_id: hit.surface_id.clone(),
+                    panel_id: hit.panel_id.clone(),
+                    hand,
+                    uv: hit.uv,
+                    panel_start: hit.transform,
+                    controller_start: controller_transform,
+                });
+                self.input_events
+                    .push(hit.event(hand, OverlayInputKind::GrabStart));
+            }
+        }
+
+        if !trigger_pressed && previous.trigger_pressed {
+            if let Some(event) =
+                click_up_event_for_release(hand, hit.as_ref(), previous.pressed_target.as_ref())
+            {
+                self.input_events.push(event);
+            }
+            next.pressed_target = None;
+        }
+
+        if let Some(grab) = self.grab_state.clone().filter(|grab| grab.hand == hand) {
+            if grip_pressed {
+                let transform = grab_follow_transform(
+                    grab.panel_start,
+                    grab.controller_start,
+                    controller_transform,
+                );
+                self.apply_absolute_transform(&grab.surface_id, transform)?;
+                self.input_events.push(OverlayInputEvent {
+                    surface_id: grab.surface_id,
+                    panel_id: grab.panel_id,
+                    hand,
+                    uv: grab.uv,
+                    kind: OverlayInputKind::GrabMove { transform },
+                });
+            } else if previous.grip_pressed {
+                let transform = grab_follow_transform(
+                    grab.panel_start,
+                    grab.controller_start,
+                    controller_transform,
+                );
+                self.apply_absolute_transform(&grab.surface_id, transform)?;
+                self.input_events.push(OverlayInputEvent {
+                    surface_id: grab.surface_id,
+                    panel_id: grab.panel_id,
+                    hand,
+                    uv: grab.uv,
+                    kind: OverlayInputKind::GrabEnd { transform },
+                });
+                self.grab_state = None;
+            }
+        }
+
+        next.trigger_pressed = trigger_pressed;
+        next.grip_pressed = grip_pressed;
+        self.controller_states.insert(hand, next);
+        Ok(())
+    }
+
+    fn clear_interactive_pointer_state(&mut self) {
+        for state in self.controller_states.values_mut() {
+            state.hovered_target = None;
+            state.hovered_uv = None;
+            state.pressed_target = None;
+            state.last_scroll_at = None;
+        }
+        self.grab_state = None;
+    }
+
+    fn update_pointer_laser_surfaces(
+        &mut self,
+        has_interactive_surfaces: bool,
+        hmd_transform: Option<OverlayTransform>,
+        inputs: &[ControllerTickInput],
+    ) -> Result<(), String> {
+        for hand in [OverlayHand::Left, OverlayHand::Right] {
+            let surface_id = pointer_laser_surface_id_for_hand(hand);
+            let Some(input) = inputs.iter().find(|input| input.hand == hand) else {
+                self.hide_pointer_laser_surface(&surface_id)?;
+                continue;
+            };
+            if !has_interactive_surfaces {
+                self.hide_pointer_laser_surface(&surface_id)?;
+                continue;
+            }
+            let state = pointer_laser_state(input, hmd_transform);
+            self.apply_pointer_laser_surface(&surface_id, state)?;
+        }
+        Ok(())
+    }
+
+    fn hide_pointer_laser_surface(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        if !self.surfaces.contains_key(surface_id) {
+            return Ok(());
+        }
+        self.set_visibility(surface_id, false)
+    }
+
+    fn apply_pointer_laser_surface(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        state: PointerLaserState,
+    ) -> Result<(), String> {
+        if !self.surfaces.contains_key(surface_id) {
+            return Ok(());
+        }
+        let handle = self.surface_handle(surface_id)?;
+        let overlay = self
+            .overlay
+            .as_mut()
+            .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
+        overlay
+            .set_width(handle, state.width_meters)
+            .map_err(|error| format!("set laser overlay width failed: {error:?}"))?;
+        overlay
+            .set_transform_absolute(
+                handle,
+                TrackingUniverseOrigin::Standing,
+                &overlay_transform_to_matrix(state.transform),
+            )
+            .map_err(|error| format!("set laser overlay transform failed: {error:?}"))?;
+        if let Some(surface) = self.surfaces.get_mut(surface_id) {
+            surface.config.physical_width_meters = state.width_meters;
+            surface.config.placement = OverlayPlacement::Absolute {
+                transform: state.transform,
+            };
+            surface.transform_device = None;
+        }
+        self.set_visibility(surface_id, true)
+    }
+
+    fn apply_absolute_transform(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        transform: OverlayTransform,
+    ) -> Result<(), String> {
+        let handle = self.surface_handle(surface_id)?;
+        let overlay = self
+            .overlay
+            .as_mut()
+            .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
+        overlay
+            .set_transform_absolute(
+                handle,
+                TrackingUniverseOrigin::Standing,
+                &overlay_transform_to_matrix(transform),
+            )
+            .map_err(|error| format!("set absolute overlay transform failed: {error:?}"))?;
+        if let Some(surface) = self.surfaces.get_mut(surface_id) {
+            surface.config.placement = OverlayPlacement::Absolute { transform };
         }
         Ok(())
     }
@@ -393,6 +951,99 @@ impl OpenVrOverlayBackend {
             if let Some(surface) = self.surfaces.get_mut(surface_id) {
                 surface.last_visible_frame_upload_at = None;
             }
+        }
+        Ok(())
+    }
+
+    fn show_with_fade(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        let (already_visible, target_alpha) = {
+            let surface = self.surfaces.get(surface_id).ok_or_else(|| {
+                format!(
+                    "overlay surface '{}' is not registered",
+                    surface_id.as_str()
+                )
+            })?;
+            (
+                surface.visible && !surface.hide_after_fade,
+                surface.target_alpha,
+            )
+        };
+        if already_visible {
+            return Ok(());
+        }
+        self.apply_alpha(surface_id, 0.0)?;
+        self.set_visibility(surface_id, true)?;
+        if let Some(surface) = self.surfaces.get_mut(surface_id) {
+            surface.hide_after_fade = false;
+            surface.fade = Some(SurfaceFade {
+                from: surface.current_alpha,
+                to: target_alpha,
+                started_at: Instant::now(),
+            });
+        }
+        Ok(())
+    }
+
+    fn hide_with_fade(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        let surface = self.surfaces.get_mut(surface_id).ok_or_else(|| {
+            format!(
+                "overlay surface '{}' is not registered",
+                surface_id.as_str()
+            )
+        })?;
+        if !surface.visible || surface.hide_after_fade {
+            return Ok(());
+        }
+        surface.hide_after_fade = true;
+        surface.fade = Some(SurfaceFade {
+            from: surface.current_alpha,
+            to: 0.0,
+            started_at: Instant::now(),
+        });
+        Ok(())
+    }
+
+    fn advance_fades(&mut self) -> Result<(), String> {
+        let now = Instant::now();
+        let mut alpha_updates = Vec::new();
+        let mut hide_updates = Vec::new();
+        for (surface_id, surface) in &mut self.surfaces {
+            let Some(fade) = surface.fade else {
+                continue;
+            };
+            let progress = (now.saturating_duration_since(fade.started_at).as_secs_f32()
+                / SURFACE_FADE_DURATION.as_secs_f32())
+            .clamp(0.0, 1.0);
+            let alpha = fade.from + (fade.to - fade.from) * progress;
+            alpha_updates.push((surface_id.clone(), alpha));
+            if progress >= 1.0 {
+                surface.fade = None;
+                if surface.hide_after_fade {
+                    surface.hide_after_fade = false;
+                    hide_updates.push(surface_id.clone());
+                }
+            }
+        }
+        for (surface_id, alpha) in alpha_updates {
+            self.apply_alpha(&surface_id, alpha)?;
+        }
+        for surface_id in hide_updates {
+            self.set_visibility(&surface_id, false)?;
+        }
+        Ok(())
+    }
+
+    fn apply_alpha(&mut self, surface_id: &OverlaySurfaceId, alpha: f32) -> Result<(), String> {
+        let handle = self.surface_handle(surface_id)?;
+        let overlay = self
+            .overlay
+            .as_mut()
+            .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
+        overlay
+            .set_opacity(handle, alpha)
+            .map_err(|error| format!("set overlay alpha failed: {error:?}"))?;
+        if let Some(surface) = self.surfaces.get_mut(surface_id) {
+            surface.current_alpha = alpha;
         }
         Ok(())
     }
@@ -466,6 +1117,63 @@ fn device_button_pressed(
     state.button_pressed & mask != 0
 }
 
+fn update_panel_summon_events(
+    system: &openvr::System,
+    poses: &openvr::TrackedDevicePoses,
+    state: &mut PanelSummonGestureState,
+    input_events: &OverlayInputEventSink,
+) {
+    let Some(hmd_transform) = pose_transform(poses, tracked_device_index::HMD) else {
+        return;
+    };
+    let now = Instant::now();
+    let pressed = panel_summon_grip_pressed(system);
+    if !update_panel_summon_hold(state, pressed, now) {
+        return;
+    }
+    let transform = recenter_transform(
+        hmd_transform,
+        DEFAULT_PANEL_RECENTER_DISTANCE_METERS,
+        DEFAULT_PANEL_RECENTER_VERTICAL_OFFSET_METERS,
+    );
+    input_events.push(OverlayInputEvent {
+        surface_id: surface_id_for_panel_id(PANEL_SUMMON_PANEL_ID),
+        panel_id: PANEL_SUMMON_PANEL_ID.to_string(),
+        hand: PANEL_SUMMON_HAND,
+        uv: UvPoint::new(0.5, 0.5),
+        kind: OverlayInputKind::Summon { transform },
+    });
+}
+
+fn panel_summon_grip_pressed(system: &openvr::System) -> bool {
+    let Some(device) = controller_device_for_hand(system, PANEL_SUMMON_HAND) else {
+        return false;
+    };
+    let Some(controller_state) = system.controller_state(device) else {
+        return false;
+    };
+    let tracking_system_name = string_property(system, device, TrackingSystemName_String);
+    grip_pressed_for_state(&controller_state, tracking_system_name.as_deref())
+}
+
+fn update_panel_summon_hold(
+    state: &mut PanelSummonGestureState,
+    pressed: bool,
+    now: Instant,
+) -> bool {
+    if !pressed {
+        state.pressed_since = None;
+        state.emitted = false;
+        return false;
+    }
+    let pressed_since = *state.pressed_since.get_or_insert(now);
+    if state.emitted || now.saturating_duration_since(pressed_since) < SUMMON_HOLD_DURATION {
+        return false;
+    }
+    state.emitted = true;
+    true
+}
+
 fn overlay_button_mask(button: OverlayActivationButton, tracking_system_name: Option<&str>) -> u64 {
     let button_id = match button {
         OverlayActivationButton::Grip if is_oculus_tracking_system(tracking_system_name) => {
@@ -493,10 +1201,14 @@ fn resolve_device(
                 "right-hand" => Some(TrackedControllerRole::RightHand),
                 "left-hand" => Some(TrackedControllerRole::LeftHand),
                 "hmd" | "head" => return Ok(tracked_device_index::HMD),
+                value if value.starts_with("hmd:") => return Ok(tracked_device_index::HMD),
                 _ => return Err(format!("unknown tracked device hint '{device_hint}'")),
             };
             resolve_controller_device(system, role.unwrap())
                 .ok_or_else(|| tracked_device_unavailable_error(system, device_hint))
+        }
+        OverlayPlacement::Absolute { .. } => {
+            Err("absolute overlay placement is not tracked-device relative".to_string())
         }
     }
 }
@@ -614,8 +1326,9 @@ fn tracked_device_diagnostics(system: &openvr::System) -> String {
     }
 }
 
-fn wrist_transform(placement: &OverlayPlacement) -> Matrix3x4 {
+fn surface_transform(placement: &OverlayPlacement) -> Matrix3x4 {
     match placement {
+        OverlayPlacement::Absolute { transform } => overlay_transform_to_matrix(*transform),
         OverlayPlacement::TrackedDeviceRelative { device_hint } if device_hint == "left-hand" => {
             Matrix3x4([
                 [0.0, 0.0, -1.0, -0.07],
@@ -630,12 +1343,358 @@ fn wrist_transform(placement: &OverlayPlacement) -> Matrix3x4 {
                 [1.0, 0.0, 0.0, 0.06],
             ])
         }
+        OverlayPlacement::TrackedDeviceRelative { device_hint }
+            if device_hint.starts_with("hmd") =>
+        {
+            hmd_transform(device_hint)
+        }
         OverlayPlacement::TrackedDeviceRelative { .. } => Matrix3x4([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.035],
             [0.0, 0.0, 1.0, 0.055],
         ]),
     }
+}
+
+fn overlay_transform_to_matrix(transform: OverlayTransform) -> Matrix3x4 {
+    Matrix3x4([
+        [
+            transform.rotation[0][0],
+            transform.rotation[0][1],
+            transform.rotation[0][2],
+            transform.translation[0],
+        ],
+        [
+            transform.rotation[1][0],
+            transform.rotation[1][1],
+            transform.rotation[1][2],
+            transform.translation[1],
+        ],
+        [
+            transform.rotation[2][0],
+            transform.rotation[2][1],
+            transform.rotation[2][2],
+            transform.translation[2],
+        ],
+    ])
+}
+
+fn matrix_to_overlay_transform(matrix: &[[f32; 4]; 3]) -> OverlayTransform {
+    OverlayTransform::from_translation_rotation(
+        [matrix[0][3], matrix[1][3], matrix[2][3]],
+        [
+            [matrix[0][0], matrix[0][1], matrix[0][2]],
+            [matrix[1][0], matrix[1][1], matrix[1][2]],
+            [matrix[2][0], matrix[2][1], matrix[2][2]],
+        ],
+    )
+}
+
+fn pose_transform(
+    poses: &openvr::TrackedDevicePoses,
+    device: TrackedDeviceIndex,
+) -> Option<OverlayTransform> {
+    let pose = poses.get(device.0 as usize)?;
+    if !pose.device_is_connected() || !pose.pose_is_valid() {
+        return None;
+    }
+    Some(matrix_to_overlay_transform(
+        pose.device_to_absolute_tracking(),
+    ))
+}
+
+fn controller_device_for_hand(
+    system: &openvr::System,
+    hand: OverlayHand,
+) -> Option<TrackedDeviceIndex> {
+    let role = match hand {
+        OverlayHand::Left => TrackedControllerRole::LeftHand,
+        OverlayHand::Right => TrackedControllerRole::RightHand,
+    };
+    resolve_controller_device(system, role)
+}
+
+fn overlay_quad_size(config: &OverlaySurfaceConfig) -> OverlayQuadSize {
+    let aspect = config.size.height as f32 / config.size.width.max(1) as f32;
+    OverlayQuadSize::new(
+        config.physical_width_meters,
+        config.physical_width_meters * aspect,
+    )
+}
+
+fn nearest_interactive_hit(
+    controller_transform: OverlayTransform,
+    surfaces: &[InteractiveSurfaceCandidate],
+) -> Option<InteractiveHit> {
+    let ray = Ray3::new(
+        controller_transform.translation,
+        aim_direction(controller_transform),
+    );
+    surfaces
+        .iter()
+        .filter_map(|surface| {
+            ray_quad_intersection(ray, surface.transform, surface.quad_size).map(|hit| {
+                InteractiveHit {
+                    surface_id: surface.surface_id.clone(),
+                    panel_id: surface.panel_id.clone(),
+                    uv: hit.uv,
+                    distance: hit.distance,
+                    transform: surface.transform,
+                }
+            })
+        })
+        .min_by(|left, right| left.distance.total_cmp(&right.distance))
+}
+
+fn aim_direction(controller_transform: OverlayTransform) -> [f32; 3] {
+    let forward = controller_transform.forward();
+    let up = controller_transform.up();
+    let cos = POINTER_PITCH_OFFSET_RADIANS.cos();
+    let sin = POINTER_PITCH_OFFSET_RADIANS.sin();
+    [
+        forward[0] * cos + up[0] * sin,
+        forward[1] * cos + up[1] * sin,
+        forward[2] * cos + up[2] * sin,
+    ]
+}
+
+fn pointer_laser_state(
+    input: &ControllerTickInput,
+    hmd_transform: Option<OverlayTransform>,
+) -> PointerLaserState {
+    let width_meters = pointer_laser_width(input.hit.as_ref());
+    PointerLaserState {
+        transform: pointer_laser_transform(input.transform, hmd_transform, width_meters),
+        width_meters,
+    }
+}
+
+fn pointer_laser_width(hit: Option<&InteractiveHit>) -> f32 {
+    hit.map(|hit| hit.distance - POINTER_LASER_START_OFFSET_METERS)
+        .unwrap_or(POINTER_LASER_MISS_LENGTH_METERS)
+        .clamp(
+            POINTER_LASER_MIN_LENGTH_METERS,
+            POINTER_LASER_MAX_LENGTH_METERS,
+        )
+}
+
+fn pointer_laser_transform(
+    controller_transform: OverlayTransform,
+    hmd_transform: Option<OverlayTransform>,
+    width_meters: f32,
+) -> OverlayTransform {
+    let right = normalize_vec3_or(
+        aim_direction(controller_transform),
+        controller_transform.forward(),
+    );
+    let center = vec3_add(
+        controller_transform.translation,
+        vec3_scale(
+            right,
+            POINTER_LASER_START_OFFSET_METERS + width_meters * 0.5,
+        ),
+    );
+    let facing = hmd_transform
+        .map(|hmd| vec3_sub(hmd.translation, center))
+        .unwrap_or_else(|| controller_transform.up());
+    let normal = perpendicular_axis(facing, right, controller_transform.up());
+    let up = normalize_vec3_or(vec3_cross(normal, right), controller_transform.up());
+    let normal = normalize_vec3_or(vec3_cross(right, up), normal);
+    OverlayTransform::from_translation_rotation(
+        center,
+        [
+            [right[0], up[0], normal[0]],
+            [right[1], up[1], normal[1]],
+            [right[2], up[2], normal[2]],
+        ],
+    )
+}
+
+fn pointer_laser_surface_id_for_hand(hand: OverlayHand) -> OverlaySurfaceId {
+    match hand {
+        OverlayHand::Left => OverlaySurfaceId::new(FRIENDS_PANEL_LASER_LEFT_SURFACE_ID),
+        OverlayHand::Right => OverlaySurfaceId::new(FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID),
+    }
+}
+
+fn click_up_event_for_release(
+    hand: OverlayHand,
+    hit: Option<&InteractiveHit>,
+    pressed_target: Option<&InteractiveTarget>,
+) -> Option<OverlayInputEvent> {
+    if let Some(pressed_target) = pressed_target {
+        if let Some(hit) = hit.filter(|hit| pressed_target.matches_hit(hit)) {
+            return Some(hit.event(hand, OverlayInputKind::ClickUp));
+        }
+        return Some(pressed_target.event(hand, pointer_miss_uv(), OverlayInputKind::ClickUp));
+    }
+    hit.map(|hit| hit.event(hand, OverlayInputKind::ClickUp))
+}
+
+fn trigger_pressed(state: &ControllerState) -> bool {
+    state.button_pressed & (1u64 << button_id::STEAM_VR_TRIGGER) != 0
+        || state
+            .axis
+            .get(1)
+            .is_some_and(|axis| axis.x >= TRIGGER_PRESS_THRESHOLD)
+}
+
+fn grip_pressed(
+    system: &openvr::System,
+    device: TrackedDeviceIndex,
+    state: &ControllerState,
+) -> bool {
+    let tracking_system_name = string_property(system, device, TrackingSystemName_String);
+    grip_pressed_for_state(state, tracking_system_name.as_deref())
+}
+
+fn grip_pressed_for_state(state: &ControllerState, tracking_system_name: Option<&str>) -> bool {
+    let remapped_mask = overlay_button_mask(OverlayActivationButton::Grip, tracking_system_name);
+    state.button_pressed & remapped_mask != 0
+        || state.button_pressed & (1u64 << button_id::GRIP) != 0
+        || state.axis.get(2).is_some_and(|axis| {
+            axis.x >= GRIP_AXIS_PRESS_THRESHOLD || axis.y >= GRIP_AXIS_PRESS_THRESHOLD
+        })
+}
+
+fn scroll_delta_for_state(
+    scroll_value: f32,
+    last_scroll_at: Option<Instant>,
+    now: Instant,
+) -> ScrollDelta {
+    if scroll_value.abs() < SCROLL_AXIS_THRESHOLD * 0.5 {
+        return ScrollDelta {
+            delta: None,
+            last_scroll_at: None,
+        };
+    }
+    if scroll_value.abs() < SCROLL_AXIS_THRESHOLD {
+        return ScrollDelta {
+            delta: None,
+            last_scroll_at,
+        };
+    }
+    let should_emit = last_scroll_at
+        .map(|last| now.saturating_duration_since(last) >= SCROLL_REPEAT_INTERVAL)
+        .unwrap_or(true);
+    ScrollDelta {
+        delta: should_emit.then_some(-scroll_value.signum()),
+        last_scroll_at: if should_emit {
+            Some(now)
+        } else {
+            last_scroll_at
+        },
+    }
+}
+
+fn should_emit_hover(
+    previous_target: Option<&InteractiveTarget>,
+    previous_uv: Option<UvPoint>,
+    hit: &InteractiveHit,
+) -> bool {
+    if !previous_target.is_some_and(|target| target.matches_hit(hit)) {
+        return true;
+    }
+    previous_uv
+        .map(|uv| {
+            (uv.x - hit.uv.x).abs() >= HOVER_UV_EPSILON
+                || (uv.y - hit.uv.y).abs() >= HOVER_UV_EPSILON
+        })
+        .unwrap_or(true)
+}
+
+fn pointer_miss_uv() -> UvPoint {
+    UvPoint::new(-1.0, -1.0)
+}
+
+fn perpendicular_axis(candidate: [f32; 3], axis: [f32; 3], fallback: [f32; 3]) -> [f32; 3] {
+    let projected = reject_axis(candidate, axis);
+    if vec3_len(projected) > 0.0001 {
+        return normalize_vec3_or(projected, [0.0, 1.0, 0.0]);
+    }
+    let fallback = reject_axis(fallback, axis);
+    if vec3_len(fallback) > 0.0001 {
+        return normalize_vec3_or(fallback, [0.0, 1.0, 0.0]);
+    }
+    let base = if axis[1].abs() < 0.9 {
+        [0.0, 1.0, 0.0]
+    } else {
+        [1.0, 0.0, 0.0]
+    };
+    normalize_vec3_or(vec3_cross(axis, base), [0.0, 0.0, 1.0])
+}
+
+fn reject_axis(value: [f32; 3], axis: [f32; 3]) -> [f32; 3] {
+    vec3_sub(value, vec3_scale(axis, vec3_dot(value, axis)))
+}
+
+fn vec3_add(left: [f32; 3], right: [f32; 3]) -> [f32; 3] {
+    [left[0] + right[0], left[1] + right[1], left[2] + right[2]]
+}
+
+fn vec3_sub(left: [f32; 3], right: [f32; 3]) -> [f32; 3] {
+    [left[0] - right[0], left[1] - right[1], left[2] - right[2]]
+}
+
+fn vec3_scale(value: [f32; 3], scalar: f32) -> [f32; 3] {
+    [value[0] * scalar, value[1] * scalar, value[2] * scalar]
+}
+
+fn vec3_dot(left: [f32; 3], right: [f32; 3]) -> f32 {
+    left[0] * right[0] + left[1] * right[1] + left[2] * right[2]
+}
+
+fn vec3_cross(left: [f32; 3], right: [f32; 3]) -> [f32; 3] {
+    [
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    ]
+}
+
+fn vec3_len(value: [f32; 3]) -> f32 {
+    vec3_dot(value, value).sqrt()
+}
+
+fn normalize_vec3_or(value: [f32; 3], fallback: [f32; 3]) -> [f32; 3] {
+    let len = vec3_len(value);
+    if len <= 0.0001 {
+        return fallback;
+    }
+    vec3_scale(value, 1.0 / len)
+}
+
+fn surface_id_for_panel_id(panel_id: &str) -> OverlaySurfaceId {
+    if matches!(panel_id, FRIENDS_PANEL_ID | LEGACY_DUMMY_PANEL_ID) {
+        OverlaySurfaceId::new(FRIENDS_PANEL_SURFACE_ID)
+    } else {
+        OverlaySurfaceId::new(format!("interactive-{panel_id}"))
+    }
+}
+
+fn panel_id_for_surface(surface_id: &OverlaySurfaceId) -> String {
+    if surface_id.as_str() == FRIENDS_PANEL_SURFACE_ID {
+        return FRIENDS_PANEL_ID.to_string();
+    }
+    surface_id
+        .as_str()
+        .strip_prefix("interactive-")
+        .unwrap_or_else(|| surface_id.as_str())
+        .to_string()
+}
+
+fn hmd_transform(device_hint: &str) -> Matrix3x4 {
+    let (x, y) = match device_hint {
+        "hmd:top" => (0.0, 0.38),
+        "hmd:left" => (-0.52, -0.12),
+        "hmd:right" => (0.52, -0.12),
+        _ => (0.0, -0.38),
+    };
+    Matrix3x4([
+        [1.0, 0.0, 0.0, x],
+        [0.0, 1.0, 0.0, y],
+        [0.0, 0.0, 1.0, -1.15],
+    ])
 }
 
 fn snapshot_openvr_devices(system: &openvr::System) -> Vec<VrDeviceSnapshot> {
@@ -810,5 +1869,197 @@ mod tests {
             overlay_button_mask(OverlayActivationButton::Menu, Some("lighthouse")),
             1u64 << (button_id::APPLICATION_MENU as u32)
         );
+    }
+
+    #[test]
+    fn click_up_release_without_hit_targets_pressed_panel_with_miss_uv() {
+        let pressed = InteractiveTarget {
+            surface_id: OverlaySurfaceId::new("interactive-dummy"),
+            panel_id: "dummy".to_string(),
+        };
+
+        let event = click_up_event_for_release(OverlayHand::Left, None, Some(&pressed))
+            .expect("click up event");
+
+        assert_eq!(event.surface_id.as_str(), "interactive-dummy");
+        assert_eq!(event.panel_id, "dummy");
+        assert_eq!(event.uv, pointer_miss_uv());
+        assert!(matches!(event.kind, OverlayInputKind::ClickUp));
+    }
+
+    #[test]
+    fn click_up_release_on_pressed_target_uses_current_hit_uv() {
+        let hit = InteractiveHit {
+            surface_id: OverlaySurfaceId::new("interactive-dummy"),
+            panel_id: "dummy".to_string(),
+            uv: UvPoint::new(0.4, 0.6),
+            distance: 1.0,
+            transform: OverlayTransform::identity(),
+        };
+        let pressed = hit.target();
+
+        let event = click_up_event_for_release(OverlayHand::Left, Some(&hit), Some(&pressed))
+            .expect("click up event");
+
+        assert_eq!(event.uv, UvPoint::new(0.4, 0.6));
+        assert!(matches!(event.kind, OverlayInputKind::ClickUp));
+    }
+
+    #[test]
+    fn grip_pressed_uses_oculus_remap_and_grip_axis() {
+        let mut state = controller_state();
+        state.button_pressed = 1u64 << (button_id::A as u32);
+        assert!(grip_pressed_for_state(&state, Some("oculus")));
+
+        let mut axis_state = controller_state();
+        axis_state.axis[2].x = 0.8;
+        assert!(grip_pressed_for_state(&axis_state, Some("lighthouse")));
+    }
+
+    #[test]
+    fn panel_summon_uses_fixed_right_hand_friends_grip_hold() {
+        assert_eq!(PANEL_SUMMON_HAND, OverlayHand::Right);
+        assert_eq!(PANEL_SUMMON_PANEL_ID, FRIENDS_PANEL_ID);
+        assert_eq!(SUMMON_HOLD_DURATION, Duration::from_secs(2));
+    }
+
+    #[test]
+    fn panel_summon_hold_emits_once_and_resets_after_release() {
+        let started = Instant::now();
+        let mut state = PanelSummonGestureState::default();
+
+        assert!(!update_panel_summon_hold(&mut state, false, started));
+        assert!(!update_panel_summon_hold(&mut state, true, started));
+        assert!(!update_panel_summon_hold(
+            &mut state,
+            true,
+            started + SUMMON_HOLD_DURATION - Duration::from_millis(1)
+        ));
+        assert!(update_panel_summon_hold(
+            &mut state,
+            true,
+            started + SUMMON_HOLD_DURATION
+        ));
+        assert!(!update_panel_summon_hold(
+            &mut state,
+            true,
+            started + SUMMON_HOLD_DURATION + Duration::from_secs(1)
+        ));
+
+        assert!(!update_panel_summon_hold(
+            &mut state,
+            false,
+            started + SUMMON_HOLD_DURATION + Duration::from_secs(2)
+        ));
+        let restarted = started + SUMMON_HOLD_DURATION + Duration::from_secs(3);
+        assert!(!update_panel_summon_hold(&mut state, true, restarted));
+        assert!(update_panel_summon_hold(
+            &mut state,
+            true,
+            restarted + SUMMON_HOLD_DURATION
+        ));
+    }
+
+    #[test]
+    fn aim_direction_applies_pitch_offset_to_grip_forward() {
+        let controller = OverlayTransform::identity();
+
+        let aim = aim_direction(controller);
+
+        assert!(aim[1] > 0.5);
+        assert!(aim[2] < -0.7 && aim[2] > -1.0);
+        assert!(aim[0].abs() < 0.001);
+    }
+
+    #[test]
+    fn pointer_laser_width_uses_hit_distance_or_short_miss_length() {
+        let hit = InteractiveHit {
+            surface_id: OverlaySurfaceId::new("interactive-dummy"),
+            panel_id: "dummy".to_string(),
+            uv: UvPoint::new(0.5, 0.5),
+            distance: 1.2,
+            transform: OverlayTransform::identity(),
+        };
+
+        assert!(
+            (pointer_laser_width(Some(&hit)) - (1.2 - POINTER_LASER_START_OFFSET_METERS)).abs()
+                < 0.001
+        );
+        assert!((pointer_laser_width(None) - POINTER_LASER_MISS_LENGTH_METERS).abs() < 0.001);
+    }
+
+    #[test]
+    fn pointer_laser_transform_spans_aim_axis_and_faces_hmd() {
+        let controller = OverlayTransform::identity();
+        let hmd = OverlayTransform::from_translation([0.0, 0.0, 0.5]);
+        let width_meters = 0.5;
+
+        let transform = pointer_laser_transform(controller, Some(hmd), width_meters);
+        let aim = aim_direction(controller);
+        let expected_center = vec3_add(
+            controller.translation,
+            vec3_scale(aim, POINTER_LASER_START_OFFSET_METERS + width_meters * 0.5),
+        );
+
+        assert!((transform.right()[0] - aim[0]).abs() < 0.001);
+        assert!((transform.right()[1] - aim[1]).abs() < 0.001);
+        assert!((transform.right()[2] - aim[2]).abs() < 0.001);
+        assert!((transform.translation[0] - expected_center[0]).abs() < 0.001);
+        assert!((transform.translation[1] - expected_center[1]).abs() < 0.001);
+        assert!((transform.translation[2] - expected_center[2]).abs() < 0.001);
+        assert!(vec3_dot(transform.right(), transform.up()).abs() < 0.001);
+        assert!(
+            vec3_dot(
+                transform.normal(),
+                vec3_sub(hmd.translation, transform.translation)
+            ) > 0.0
+        );
+    }
+
+    #[test]
+    fn scroll_repeat_reemits_after_interval_while_axis_is_held() {
+        let started = Instant::now();
+
+        let first = scroll_delta_for_state(1.0, None, started);
+        assert_eq!(first.delta, Some(-1.0));
+        let second = scroll_delta_for_state(
+            1.0,
+            first.last_scroll_at,
+            started + SCROLL_REPEAT_INTERVAL / 2,
+        );
+        assert_eq!(second.delta, None);
+        let third =
+            scroll_delta_for_state(1.0, first.last_scroll_at, started + SCROLL_REPEAT_INTERVAL);
+        assert_eq!(third.delta, Some(-1.0));
+        let reset = scroll_delta_for_state(0.0, third.last_scroll_at, started);
+        assert_eq!(reset.last_scroll_at, None);
+    }
+
+    #[test]
+    fn hover_emit_requires_target_change_or_meaningful_uv_delta() {
+        let hit = InteractiveHit {
+            surface_id: OverlaySurfaceId::new("interactive-dummy"),
+            panel_id: "dummy".to_string(),
+            uv: UvPoint::new(0.4, 0.6),
+            distance: 1.0,
+            transform: OverlayTransform::identity(),
+        };
+        let target = hit.target();
+
+        assert!(!should_emit_hover(Some(&target), Some(hit.uv), &hit));
+        let moved = InteractiveHit {
+            uv: UvPoint::new(0.5, 0.6),
+            ..hit.clone()
+        };
+        assert!(should_emit_hover(Some(&target), Some(hit.uv), &moved));
+    }
+
+    fn controller_state() -> ControllerState {
+        ControllerState {
+            packet_num: 0,
+            button_pressed: 0,
+            button_touched: 0,
+            axis: [openvr::ControllerAxis { x: 0.0, y: 0.0 }; 5],
+        }
     }
 }

@@ -65,28 +65,30 @@ export function FriendSectionHeader({
             }}
             className={isFirst ? undefined : 'pt-2'}
         >
-            <CollapsibleTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground dark:aria-expanded:hover:bg-muted/50 w-full justify-between aria-expanded:bg-transparent aria-expanded:text-inherit dark:aria-expanded:bg-transparent"
-                >
-                    <span className="min-w-0 flex-1 truncate text-left">
-                        {title}
-                        {count !== null && count !== undefined
-                            ? ` \u2014 ${count}`
-                            : ''}
-                    </span>
-                    <ChevronDownIcon
-                        data-icon="inline-end"
-                        className={cn(
-                            'transition-transform',
-                            !isOpen && '-rotate-90'
-                        )}
-                    />
-                </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground dark:aria-expanded:hover:bg-muted/50 w-full justify-between aria-expanded:bg-transparent aria-expanded:text-inherit dark:aria-expanded:bg-transparent"
+                    >
+                        <span className="min-w-0 flex-1 truncate text-left">
+                            {title}
+                            {count !== null && count !== undefined
+                                ? ` \u2014 ${count}`
+                                : ''}
+                        </span>
+                        <ChevronDownIcon
+                            data-icon="inline-end"
+                            className={cn(
+                                'transition-transform',
+                                !isOpen && '-rotate-90'
+                            )}
+                        />
+                    </Button>
+                }
+            />
         </Collapsible>
     );
 }

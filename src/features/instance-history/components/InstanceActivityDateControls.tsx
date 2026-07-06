@@ -110,19 +110,21 @@ export function InstanceActivityDateControls({
                 </Button>
             </div>
             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-52 justify-start text-left font-normal"
-                        disabled={dataStatus === 'running'}
-                    >
-                        <CalendarDaysIcon data-icon="inline-start" />
-                        {selectedDate
-                            ? formatDateLabel(selectedDate)
-                            : selectedDate}
-                    </Button>
-                </PopoverTrigger>
+                <PopoverTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-52 justify-start text-left font-normal"
+                            disabled={dataStatus === 'running'}
+                        >
+                            <CalendarDaysIcon data-icon="inline-start" />
+                            {selectedDate
+                                ? formatDateLabel(selectedDate)
+                                : selectedDate}
+                        </Button>
+                    }
+                />
                 <PopoverContent align="start" className="w-auto p-0">
                     <Calendar
                         mode="single"

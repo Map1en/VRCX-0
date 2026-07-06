@@ -112,22 +112,24 @@ function FolderTreeNode({ node, selectedFolder, onSelectFolder }: any) {
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
             <div className="flex min-w-0 items-center gap-1">
-                <CollapsibleTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={node.name}
-                    >
-                        <ChevronRightIcon
-                            data-icon="inline-start"
-                            className={cn(
-                                'transition-transform',
-                                open && 'rotate-90'
-                            )}
-                        />
-                    </Button>
-                </CollapsibleTrigger>
+                <CollapsibleTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={node.name}
+                        >
+                            <ChevronRightIcon
+                                data-icon="inline-start"
+                                className={cn(
+                                    'transition-transform',
+                                    open && 'rotate-90'
+                                )}
+                            />
+                        </Button>
+                    }
+                />
                 {row}
             </div>
             <CollapsibleContent>

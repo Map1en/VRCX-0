@@ -154,7 +154,7 @@ impl WorldCache {
         self.working.invalidate_all();
     }
 
-    pub(crate) fn get_name(&self, world_id: &str) -> Option<String> {
+    pub fn get_name(&self, world_id: &str) -> Option<String> {
         let world_id = normalize_id(world_id);
         if world_id.is_empty() {
             return None;

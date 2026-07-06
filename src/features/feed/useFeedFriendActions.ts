@@ -10,10 +10,15 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
+import {
+    addFeedHiddenUserPreference,
+    removeFeedHiddenUserPreference
+} from '@/services/preferencesService';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -50,12 +55,19 @@ export function useFeedFriendActions(): FeedFriendActions {
         (state) => state.gameState.isGameRunning
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const feedHiddenUsers = usePreferencesStore(
+        (state) => state.feedHiddenUsers
+    );
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
     const normalizedCurrentUserId = normalizeId(currentUserId);
     const friendsMap = useMemo(
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]
+    );
+    const hiddenUserIdSet = useMemo(
+        () => new Set(feedHiddenUsers),
+        [feedHiddenUsers]
     );
     const currentInviteLocation = useMemo(
         () =>
@@ -87,6 +99,41 @@ export function useFeedFriendActions(): FeedFriendActions {
         isGameRunning && currentInviteLocation && canInviteFromCurrentLocation
     );
     const canBoopFromFeed = Boolean(currentUserSnapshot?.isBoopingEnabled);
+
+    const isFeedUserHidden = useCallback(
+        (userId: unknown) => hiddenUserIdSet.has(normalizeId(userId)),
+        [hiddenUserIdSet]
+    );
+
+    const addFeedHiddenUser = useCallback(
+        async (userId: unknown) => {
+            try {
+                await addFeedHiddenUserPreference(userId);
+            } catch (error) {
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_setting')
+                );
+            }
+        },
+        [t]
+    );
+
+    const removeFeedHiddenUser = useCallback(
+        async (userId: unknown) => {
+            try {
+                await removeFeedHiddenUserPreference(userId);
+            } catch (error) {
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_setting')
+                );
+            }
+        },
+        [t]
+    );
 
     const canUseFeedFriendLocation = useCallback(
         (location: unknown) => {
@@ -366,8 +413,11 @@ export function useFeedFriendActions(): FeedFriendActions {
             canBoopFromFeed,
             canSendInviteFromFeed,
             canUseFeedFriendLocation,
+            addFeedHiddenUser,
+            isFeedUserHidden,
             launchFeedFriendLocation,
             openFeedNewInstance,
+            removeFeedHiddenUser,
             requestFeedFriendInvite,
             selfInviteFeedFriendLocation,
             sendFeedFriendBoop,
@@ -377,8 +427,11 @@ export function useFeedFriendActions(): FeedFriendActions {
             canBoopFromFeed,
             canSendInviteFromFeed,
             canUseFeedFriendLocation,
+            addFeedHiddenUser,
+            isFeedUserHidden,
             launchFeedFriendLocation,
             openFeedNewInstance,
+            removeFeedHiddenUser,
             requestFeedFriendInvite,
             selfInviteFeedFriendLocation,
             sendFeedFriendBoop,

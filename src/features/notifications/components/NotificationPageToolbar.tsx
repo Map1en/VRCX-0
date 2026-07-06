@@ -57,23 +57,25 @@ export function NotificationPageToolbar({
                 className="h-9 min-w-36 flex-1 sm:max-w-52"
             />
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={refreshLabel}
-                        className="rounded-full"
-                        disabled={loadStatus === 'running'}
-                        onClick={onRefresh}
-                    >
-                        {loadStatus === 'running' ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCcwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={refreshLabel}
+                            className="rounded-full"
+                            disabled={loadStatus === 'running'}
+                            onClick={onRefresh}
+                        >
+                            {loadStatus === 'running' ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCcwIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    }
+                />
                 <TooltipContent>{refreshLabel}</TooltipContent>
             </Tooltip>
             <TableColumnVisibilityMenu table={table} />

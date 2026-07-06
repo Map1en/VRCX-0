@@ -177,42 +177,46 @@ export function UserDialogHeaderMediaBadges({
                             badgeImageUrl
                         }
                     >
-                        <PopoverTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size={badgeImageUrl ? 'icon' : 'sm'}
-                                aria-label={badgeTitle}
-                                title={badgeTitle}
-                                className={
-                                    badgeImageUrl
-                                        ? cn(
-                                              'size-8 rounded-sm p-0',
-                                              !isBadgeVisible && 'opacity-60'
-                                          )
-                                        : cn(
-                                              'h-8 max-w-full rounded-sm px-2 text-xs',
-                                              !isBadgeVisible && 'opacity-60'
-                                          )
-                                }
-                                onClick={(event) => event.stopPropagation()}
-                            >
-                                {badgeImageUrl ? (
-                                    <img
-                                        src={badgeImageUrl}
-                                        alt={badge.badgeName || ''}
-                                        className={cn(
-                                            'size-8 rounded-sm object-cover',
-                                            !isBadgeVisible && 'grayscale'
-                                        )}
-                                    />
-                                ) : (
-                                    <span className="max-w-32 truncate">
-                                        {badgeName || badge.badgeId}
-                                    </span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
+                        <PopoverTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size={badgeImageUrl ? 'icon' : 'sm'}
+                                    aria-label={badgeTitle}
+                                    title={badgeTitle}
+                                    className={
+                                        badgeImageUrl
+                                            ? cn(
+                                                  'size-8 rounded-sm p-0',
+                                                  !isBadgeVisible &&
+                                                      'opacity-60'
+                                              )
+                                            : cn(
+                                                  'h-8 max-w-full rounded-sm px-2 text-xs',
+                                                  !isBadgeVisible &&
+                                                      'opacity-60'
+                                              )
+                                    }
+                                    onClick={(event) => event.stopPropagation()}
+                                >
+                                    {badgeImageUrl ? (
+                                        <img
+                                            src={badgeImageUrl}
+                                            alt={badge.badgeName || ''}
+                                            className={cn(
+                                                'size-8 rounded-sm object-cover',
+                                                !isBadgeVisible && 'grayscale'
+                                            )}
+                                        />
+                                    ) : (
+                                        <span className="max-w-32 truncate">
+                                            {badgeName || badge.badgeId}
+                                        </span>
+                                    )}
+                                </Button>
+                            }
+                        />
                         <PopoverContent
                             side="bottom"
                             className="w-80 gap-0 overflow-hidden p-0"
@@ -287,14 +291,19 @@ export function UserDialogHeaderMediaBadges({
                                     <>
                                         <Separator />
                                         <ToggleGroup
-                                            type="single"
                                             variant="outline"
                                             size="sm"
                                             spacing={1}
-                                            value={visibilityValue}
+                                            value={
+                                                visibilityValue
+                                                    ? [visibilityValue]
+                                                    : []
+                                            }
                                             aria-label={visibilityLabel}
                                             className="grid w-full grid-cols-2"
-                                            onValueChange={(nextValue) => {
+                                            onValueChange={(value) => {
+                                                const nextValue =
+                                                    value[0] ?? '';
                                                 if (!nextValue) {
                                                     return;
                                                 }

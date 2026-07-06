@@ -345,20 +345,33 @@ fn run_database_maintenance_task(
         }
         DatabaseMaintenanceTask::FixBrokenGameLogDisplayNames => {
             for row in db.execute(
-                "SELECT id, display_name FROM gamelog_join_leave WHERE display_name LIKE '% (%'",
+                "SELECT id, created_at, type, display_name FROM gamelog_join_leave WHERE display_name LIKE '% (%' ORDER BY id",
                 &Default::default(),
             )? {
                 let id = row.first().cloned().unwrap_or(Value::Null);
-                let display_name = row.get(1).and_then(Value::as_str).unwrap_or_default();
+                let created_at = row_string(&row, 1);
+                let event_type = row_string(&row, 2);
+                let display_name = row.get(3).and_then(Value::as_str).unwrap_or_default();
                 let new_display_name = display_name
                     .split(" (")
                     .next()
                     .unwrap_or_default()
                     .to_string();
                 db.execute_non_query(
-                    "UPDATE gamelog_join_leave SET display_name = @new_display_name WHERE id = @id",
+                    "UPDATE gamelog_join_leave
+                     SET display_name = @new_display_name
+                     WHERE id = @id
+                       AND NOT EXISTS (
+                           SELECT 1 FROM gamelog_join_leave
+                           WHERE id <> @id
+                             AND created_at = @created_at
+                             AND type = @type
+                             AND display_name = @new_display_name
+                       )",
                     &ParamsBuilder::new()
                         .set("new_display_name", new_display_name)
+                        .set("created_at", created_at)
+                        .set("type", event_type)
                         .set("id", id)
                         .build(),
                 )?;
@@ -676,6 +689,44 @@ mod tests {
         assert_eq!(leave_time(&db, "usr_alice"), 2_400_000);
         assert_eq!(leave_time(&db, "usr_bob"), 0);
         assert_eq!(leave_time(&db, "usr_carol"), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn fix_broken_game_log_display_names_skips_unique_key_collisions() -> Result<(), Error> {
+        let dir = TestDir::new("gamelog-display-name-collision");
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+        ensure_game_log_tables(&db)?;
+
+        insert_join_leave(
+            &db,
+            "2026-07-03T12:00:00.000Z",
+            "OnPlayerJoined",
+            "Alice (usr_a)",
+            "wrld_x:1",
+            "usr_a",
+            0,
+        );
+        insert_join_leave(
+            &db,
+            "2026-07-03T12:00:00.000Z",
+            "OnPlayerJoined",
+            "Alice (usr_b)",
+            "wrld_x:1",
+            "usr_b",
+            0,
+        );
+
+        database_maintenance_run(&db, DatabaseMaintenanceTask::FixBrokenGameLogDisplayNames)?;
+
+        let rows = db.execute(
+            "SELECT display_name FROM gamelog_join_leave ORDER BY id",
+            &Default::default(),
+        )?;
+
+        assert_eq!(rows.len(), 2);
+        assert_eq!(row_string(&rows[0], 0), "Alice");
+        assert_eq!(row_string(&rows[1], 0), "Alice (usr_b)");
         Ok(())
     }
 }

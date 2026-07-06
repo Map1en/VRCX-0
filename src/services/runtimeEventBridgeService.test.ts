@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     subscribe: vi.fn(),
     applyRuntimeGameLogProjection: vi.fn(),
-    ingestRuntimeGameLogEvent: vi.fn(),
-    resetNowPlayingState: vi.fn(),
     recordRuntimeGameClientEvent: vi.fn(),
     handleGameRunningUpdate: vi.fn(),
     isHostCapabilityAvailable: vi.fn(),
@@ -30,9 +28,7 @@ vi.mock('@/platform/tauri/client', () => ({
 }));
 
 vi.mock('./gameLogIngestService', () => ({
-    applyRuntimeGameLogProjection: mocks.applyRuntimeGameLogProjection,
-    ingestRuntimeGameLogEvent: mocks.ingestRuntimeGameLogEvent,
-    resetNowPlayingState: mocks.resetNowPlayingState
+    applyRuntimeGameLogProjection: mocks.applyRuntimeGameLogProjection
 }));
 
 vi.mock('./gameClientLifecycle', () => ({
@@ -44,8 +40,7 @@ vi.mock('./gameStateService', () => ({
 }));
 
 vi.mock('./hostCapabilityService', () => ({
-    isHostCapabilityAvailable: mocks.isHostCapabilityAvailable,
-    refreshHostCapabilities: mocks.refreshHostCapabilities
+    isHostCapabilityAvailable: mocks.isHostCapabilityAvailable
 }));
 
 vi.mock('./ipcEventService', () => ({
@@ -111,7 +106,6 @@ describe('runtimeEventBridgeService', () => {
             ]
         });
 
-        expect(mocks.ingestRuntimeGameLogEvent).not.toHaveBeenCalled();
         expect(mocks.showSQLiteErrorDialog).not.toHaveBeenCalled();
         expect(
             useRuntimeStore.getState().runtimeEvents.gameLogPersistenceFallback
@@ -131,8 +125,6 @@ describe('runtimeEventBridgeService', () => {
             handlers.set(name, handler);
             return Promise.resolve(() => {});
         });
-        mocks.ingestRuntimeGameLogEvent.mockResolvedValue(null);
-
         await bindRuntimeEvents();
 
         const payload: any = {
@@ -146,11 +138,7 @@ describe('runtimeEventBridgeService', () => {
             ]
         };
         handlers.get('addGameLogEvent')?.(payload);
-        await new Promise((resolve: any) => {
-            setTimeout(resolve, 0);
-        });
 
-        expect(mocks.ingestRuntimeGameLogEvent).not.toHaveBeenCalled();
         expect(
             useRuntimeStore.getState().runtimeEvents.addGameLogEvent.count
         ).toBe(1);

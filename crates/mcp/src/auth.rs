@@ -8,13 +8,14 @@ use crate::types::ClientConfigSnippets;
 pub struct McpAuthPolicy {
     pub port: u16,
     pub token: String,
+    pub allow_lan_connections: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum McpAuthError {
-    #[error("MCP requests must use a localhost host header")]
+    #[error("MCP requests used an invalid host header")]
     InvalidHost,
-    #[error("MCP requests must use a localhost origin")]
+    #[error("MCP requests used an invalid origin")]
     InvalidOrigin,
     #[error("MCP requests require an Authorization bearer token")]
     MissingBearerToken,
@@ -34,7 +35,7 @@ pub fn authorize_mcp_request(
     host: Option<&str>,
     origin: Option<&str>,
 ) -> Result<(), McpAuthError> {
-    if !is_allowed_loopback_authority(host, policy.port) {
+    if !is_allowed_authority(host, policy.port, policy.allow_lan_connections) {
         return Err(McpAuthError::InvalidHost);
     }
 
@@ -55,8 +56,17 @@ pub fn authorize_mcp_request(
     }
 }
 
-pub fn client_config_snippets(port: u16, token: &str) -> ClientConfigSnippets {
-    let url = format!("http://127.0.0.1:{port}/mcp");
+pub fn client_config_snippets(
+    port: u16,
+    token: &str,
+    allow_lan_connections: bool,
+) -> ClientConfigSnippets {
+    let host = if allow_lan_connections {
+        "YOUR-LAN-IP"
+    } else {
+        "127.0.0.1"
+    };
+    let url = format!("http://{host}:{port}/mcp");
     let auth_header = format!("Authorization: Bearer {token}");
     // On Windows `npx` is the `npx.cmd` shim; launching it as `command: "npx"` makes the
     // client wrap it in `cmd /C <resolved npx.cmd path>`, whose quote-stripping mangles a
@@ -91,6 +101,27 @@ fn is_allowed_loopback_authority(authority: Option<&str>, port: u16) -> bool {
     )
 }
 
+fn is_allowed_authority(authority: Option<&str>, port: u16, allow_lan_connections: bool) -> bool {
+    if is_allowed_loopback_authority(authority, port) {
+        return true;
+    }
+    let Some(authority) = authority else {
+        return false;
+    };
+    allow_lan_connections && authority_has_expected_port(authority, port)
+}
+
+fn authority_has_expected_port(authority: &str, port: u16) -> bool {
+    if authority.contains('@') {
+        return false;
+    }
+    authority
+        .parse::<http::uri::Authority>()
+        .ok()
+        .and_then(|value| value.port_u16())
+        .is_some_and(|value| value == port)
+}
+
 fn is_allowed_loopback_origin(origin: &str, port: u16) -> bool {
     let origin = origin.to_ascii_lowercase();
     origin == format!("http://127.0.0.1:{port}") || origin == format!("http://localhost:{port}")
@@ -116,6 +147,7 @@ mod tests {
         let policy = McpAuthPolicy {
             port: 8798,
             token: "secret-token".into(),
+            allow_lan_connections: false,
         };
 
         assert_eq!(
@@ -151,8 +183,56 @@ mod tests {
     }
 
     #[test]
+    fn request_auth_allows_lan_authority_only_when_enabled() {
+        let mut policy = McpAuthPolicy {
+            port: 8798,
+            token: "secret-token".into(),
+            allow_lan_connections: false,
+        };
+
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("192.168.1.20:8798"),
+                None,
+            ),
+            Err(McpAuthError::InvalidHost)
+        );
+
+        policy.allow_lan_connections = true;
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("192.168.1.20:8798"),
+                None,
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("desktop.local:8798"),
+                Some("http://evil.test"),
+            ),
+            Err(McpAuthError::InvalidOrigin)
+        );
+        assert_eq!(
+            authorize_mcp_request(
+                &policy,
+                Some("Bearer secret-token"),
+                Some("192.168.1.20:9876"),
+                None,
+            ),
+            Err(McpAuthError::InvalidHost)
+        );
+    }
+
+    #[test]
     fn client_help_snippets_include_real_url_and_token_warning() {
-        let snippets = client_config_snippets(7654, "tok_secret");
+        let snippets = client_config_snippets(7654, "tok_secret", false);
 
         assert!(snippets
             .claude_code_command
@@ -174,5 +254,23 @@ mod tests {
         } else {
             assert!(snippets.mcp_remote_json.contains("\"command\": \"npx\""));
         }
+    }
+
+    #[test]
+    fn client_help_snippets_use_lan_placeholder_when_lan_connections_are_enabled() {
+        let snippets = client_config_snippets(7654, "tok_secret", true);
+
+        assert!(snippets
+            .claude_code_command
+            .contains("http://YOUR-LAN-IP:7654/mcp"));
+        assert!(snippets
+            .generic_json
+            .contains("http://YOUR-LAN-IP:7654/mcp"));
+        assert!(snippets
+            .mcp_remote_json
+            .contains("http://YOUR-LAN-IP:7654/mcp"));
+        assert!(!snippets.claude_code_command.contains("127.0.0.1"));
+        assert!(!snippets.generic_json.contains("127.0.0.1"));
+        assert!(!snippets.mcp_remote_json.contains("127.0.0.1"));
     }
 }

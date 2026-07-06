@@ -228,45 +228,47 @@ export function ManageAvatarTagsDialog({
                                                             color.name);
                                                 return (
                                                     <Tooltip key={color.name}>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                type="button"
-                                                                size="icon-sm"
-                                                                variant="outline"
-                                                                className={
-                                                                    selected
-                                                                        ? 'ring-ring size-6 p-0 ring-2 ring-offset-2'
-                                                                        : 'size-6 p-0'
-                                                                }
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        color.bg.replace(
-                                                                            '/ 0.2)',
-                                                                            '/ 1)'
+                                                        <TooltipTrigger
+                                                            render={
+                                                                <Button
+                                                                    type="button"
+                                                                    size="icon-sm"
+                                                                    variant="outline"
+                                                                    className={
+                                                                        selected
+                                                                            ? 'ring-ring size-6 p-0 ring-2 ring-offset-2'
+                                                                            : 'size-6 p-0'
+                                                                    }
+                                                                    style={{
+                                                                        backgroundColor:
+                                                                            color.bg.replace(
+                                                                                '/ 0.2)',
+                                                                                '/ 1)'
+                                                                            )
+                                                                    }}
+                                                                    aria-label={
+                                                                        color.label
+                                                                    }
+                                                                    aria-pressed={
+                                                                        selected
+                                                                    }
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                    data-selected={
+                                                                        selected
+                                                                            ? 'true'
+                                                                            : undefined
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setTagColor(
+                                                                            entry.tag,
+                                                                            color
                                                                         )
-                                                                }}
-                                                                aria-label={
-                                                                    color.label
-                                                                }
-                                                                aria-pressed={
-                                                                    selected
-                                                                }
-                                                                disabled={
-                                                                    saving
-                                                                }
-                                                                data-selected={
-                                                                    selected
-                                                                        ? 'true'
-                                                                        : undefined
-                                                                }
-                                                                onClick={() =>
-                                                                    setTagColor(
-                                                                        entry.tag,
-                                                                        color
-                                                                    )
-                                                                }
-                                                            />
-                                                        </TooltipTrigger>
+                                                                    }
+                                                                />
+                                                            }
+                                                        />
                                                         <TooltipContent>
                                                             {color.label}
                                                         </TooltipContent>

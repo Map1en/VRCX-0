@@ -171,7 +171,11 @@ function LegacyStatusEditor({
                     <Select
                         value={status}
                         disabled={disabled}
-                        onValueChange={onStatusChange}
+                        onValueChange={(value) => onStatusChange(value ?? '')}
+                        items={statusOptions.map((statusOption) => ({
+                            value: statusOption,
+                            label: userStatusLabel(statusOption, t)
+                        }))}
                     >
                         <SelectTrigger aria-label={label}>
                             <SelectValue />
@@ -361,6 +365,10 @@ export function ContextRulesTab({
                                     selectedRule.priority
                                 )}
                                 disabled={loading}
+                                items={priorityOptions.map((option) => ({
+                                    value: option.value,
+                                    label: t(option.labelKey)
+                                }))}
                                 onValueChange={(value) =>
                                     update(selectedRule.id, (current) => ({
                                         ...current,
@@ -398,10 +406,16 @@ export function ContextRulesTab({
                                 <Select
                                     value={selectedRule.preset || 'alone'}
                                     disabled={loading}
+                                    items={contextPresetOptions.map(
+                                        (preset) => ({
+                                            value: preset.value,
+                                            label: t(preset.labelKey)
+                                        })
+                                    )}
                                     onValueChange={(value) =>
                                         update(selectedRule.id, (current) => ({
                                             ...current,
-                                            preset: value
+                                            preset: value ?? ''
                                         }))
                                     }
                                 >
@@ -648,6 +662,20 @@ export function ContextRulesTab({
                                             : 'alone'
                                     }
                                     disabled={legacyDisabled}
+                                    items={[
+                                        {
+                                            value: 'alone',
+                                            label: t(
+                                                `${I18N_ROOT}.any_player_counts_as_company`
+                                            )
+                                        },
+                                        {
+                                            value: 'noFriends',
+                                            label: t(
+                                                `${I18N_ROOT}.only_friends_count_as_company`
+                                            )
+                                        }
+                                    ]}
                                     onValueChange={(value) => {
                                         onSaveValue(
                                             'autoStateChangeNoFriends',

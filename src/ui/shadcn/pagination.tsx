@@ -51,18 +51,18 @@ function PaginationLink({
 }: PaginationLinkProps) {
     return (
         <Button
-            asChild
+            render={
+                <a
+                    aria-current={isActive ? 'page' : undefined}
+                    data-slot="pagination-link"
+                    data-active={isActive}
+                    {...props}
+                />
+            }
             variant={isActive ? 'outline' : 'ghost'}
             size={size}
             className={cn(className)}
-        >
-            <a
-                aria-current={isActive ? 'page' : undefined}
-                data-slot="pagination-link"
-                data-active={isActive}
-                {...props}
-            />
-        </Button>
+        />
     );
 }
 

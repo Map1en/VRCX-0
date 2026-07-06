@@ -4,6 +4,7 @@ import {
     useMemo,
     useState,
     type KeyboardEvent,
+    type ReactElement,
     type ReactNode,
     type SyntheticEvent
 } from 'react';
@@ -209,7 +210,7 @@ function StaticLocationTooltip({
     }
     return (
         <Tooltip>
-            <TooltipTrigger asChild>{children}</TooltipTrigger>
+            <TooltipTrigger render={children as ReactElement} />
             <TooltipContent>{content}</TooltipContent>
         </Tooltip>
     );

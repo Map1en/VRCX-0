@@ -218,7 +218,13 @@ export function FavoriteImportHost() {
                     <div className="flex flex-wrap items-center gap-2">
                         <Select
                             value={remoteGroupName}
-                            onValueChange={(value) => setRemoteGroupName(value)}
+                            onValueChange={(value) =>
+                                setRemoteGroupName(value ?? '')
+                            }
+                            items={remoteGroups.map((group) => ({
+                                value: group.name,
+                                label: `${group.displayName || group.name} (${group.count}/${group.capacity})`
+                            }))}
                         >
                             <SelectTrigger size="sm" className="min-w-48">
                                 <SelectValue
@@ -247,7 +253,13 @@ export function FavoriteImportHost() {
 
                         <Select
                             value={localGroupName}
-                            onValueChange={(value) => setLocalGroupName(value)}
+                            onValueChange={(value) =>
+                                setLocalGroupName(value ?? '')
+                            }
+                            items={localGroups.map((group) => ({
+                                value: group,
+                                label: group
+                            }))}
                         >
                             <SelectTrigger size="sm" className="min-w-48">
                                 <SelectValue

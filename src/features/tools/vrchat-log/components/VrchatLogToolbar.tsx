@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import { formatDateFilter } from '@/lib/dateTime';
+import type { VrchatLogFileOutput } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -53,8 +54,17 @@ export function VrchatLogToolbar({
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                     <Select
                         value={selectedFileName}
-                        onValueChange={setSelectedFileName}
+                        onValueChange={(value) =>
+                            setSelectedFileName(value ?? '')
+                        }
                         disabled={isFilesLoading || !files.length}
+                        items={files.map((file: VrchatLogFileOutput) => ({
+                            value: file.fileName,
+                            label: fileLabel(
+                                file,
+                                t('view.tools.vrchat_log.latest')
+                            )
+                        }))}
                     >
                         <SelectTrigger className="h-9 max-w-[760px] min-w-[360px] flex-1">
                             <SelectValue
@@ -165,26 +175,29 @@ export function VrchatLogToolbar({
                 </div>
 
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-9 min-w-44 justify-between"
-                        >
-                            <span className="truncate">
-                                {categoryButtonLabel}
-                            </span>
-                            <ChevronRightIcon
-                                data-icon="inline-end"
-                                className="text-muted-foreground rotate-90"
-                            />
-                        </Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9 min-w-44 justify-between"
+                            >
+                                <span className="truncate">
+                                    {categoryButtonLabel}
+                                </span>
+                                <ChevronRightIcon
+                                    data-icon="inline-end"
+                                    className="text-muted-foreground rotate-90"
+                                />
+                            </Button>
+                        }
+                    />
                     <DropdownMenuContent align="end" className="w-72">
                         <DropdownMenuGroup>
                             <DropdownMenuItem
                                 disabled={!selectedCategories.length}
-                                onSelect={(event) => {
+                                closeOnClick={false}
+                                onClick={(event) => {
                                     event.preventDefault();
                                     setSelectedCategories([]);
                                 }}
@@ -202,7 +215,7 @@ export function VrchatLogToolbar({
                                             checked={selectedCategories.includes(
                                                 option
                                             )}
-                                            onSelect={(event) =>
+                                            onClick={(event) =>
                                                 event.preventDefault()
                                             }
                                             onCheckedChange={(checked) =>

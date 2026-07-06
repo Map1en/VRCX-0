@@ -195,6 +195,7 @@ impl RuntimeHostState {
             Arc::clone(&self.background_group_instances_refresh_running);
         let session_slot = Arc::clone(&self.backend_frontend_session);
         let realtime_runtime = Arc::clone(&self.realtime_runtime);
+        let vr_overlay_runtime = Arc::clone(&self.vr_overlay_runtime);
         let runtime_context = Arc::clone(&self.runtime_context);
         let discord_rpc = Arc::clone(&self.discord_rpc);
 
@@ -239,6 +240,7 @@ impl RuntimeHostState {
                         discord_success_info = None;
                         favorite_friend_groups_by_key.clear();
                         runtime_context.overlay_activity.clear_runtime_state();
+                        vr_overlay_runtime.clear_friends_panel_session_state();
                         next_presence = now;
                         next_discord = now;
                         next_current_user = now;
@@ -292,6 +294,7 @@ impl RuntimeHostState {
                         web: &web,
                         session_slot: &session_slot,
                         realtime_runtime: &realtime_runtime,
+                        vr_overlay_runtime: &vr_overlay_runtime,
                         runtime_context: &runtime_context,
                         backend_runtime: &backend_runtime,
                         background_jobs: &background_jobs,

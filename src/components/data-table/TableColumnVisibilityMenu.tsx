@@ -1,7 +1,7 @@
 import type { RowData, Table } from '@tanstack/react-table';
 import type { TFunction } from 'i18next';
 import { Settings2Icon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
@@ -68,16 +68,18 @@ export function TableColumnVisibilityMenu<TData extends RowData>({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={resolvedLabel}
-                >
-                    <Settings2Icon data-icon="icon" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={resolvedLabel}
+                    >
+                        <Settings2Icon data-icon="icon" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent
                 align="end"
                 className="max-h-96 w-72 overflow-y-auto"
@@ -87,7 +89,8 @@ export function TableColumnVisibilityMenu<TData extends RowData>({
                 </DropdownMenuLabel>
                 <DropdownMenuGroup>
                     <DropdownMenuItem
-                        onSelect={(event) => {
+                        closeOnClick={false}
+                        onClick={(event) => {
                             event.preventDefault();
                             resetTableLayout(table, onResetLayout);
                         }}
@@ -96,7 +99,8 @@ export function TableColumnVisibilityMenu<TData extends RowData>({
                     </DropdownMenuItem>
                     {showColumnOrderLock ? (
                         <DropdownMenuItem
-                            onSelect={(event) => {
+                            closeOnClick={false}
+                            onClick={(event) => {
                                 event.preventDefault();
                                 setColumnOrderLocked(table, !columnOrderLocked);
                             }}
@@ -118,7 +122,7 @@ export function TableColumnVisibilityMenu<TData extends RowData>({
                                             checked === true
                                         )
                                     }
-                                    onSelect={(event) => event.preventDefault()}
+                                    onClick={(event) => event.preventDefault()}
                                 >
                                     <span className="min-w-0 flex-1 truncate">
                                         {resolveColumnLabel(column)}
@@ -166,7 +170,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+            <ContextMenuTrigger render={children as ReactElement} />
             <ContextMenuContent className={className}>
                 {columns.length ? (
                     <ContextMenuGroup>
@@ -177,7 +181,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
                                 onCheckedChange={(checked) =>
                                     column.toggleVisibility(checked === true)
                                 }
-                                onSelect={(event) => event.preventDefault()}
+                                onClick={(event) => event.preventDefault()}
                             >
                                 <span className="min-w-0 flex-1 truncate">
                                     {resolveColumnLabel(column)}
@@ -200,7 +204,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
                                         checked === true
                                     )
                                 }
-                                onSelect={(event) => event.preventDefault()}
+                                onClick={(event) => event.preventDefault()}
                             >
                                 {renderColumnLockLabel(columnOrderLocked, t)}
                             </ContextMenuCheckboxItem>
@@ -208,7 +212,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
                         {showReset ? (
                             <ContextMenuItem
                                 inset={showColumnOrderLock}
-                                onSelect={() =>
+                                onClick={() =>
                                     resetTableLayout(table, onResetLayout)
                                 }
                             >

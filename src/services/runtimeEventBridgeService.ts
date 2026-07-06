@@ -31,16 +31,9 @@ import { useSessionStore } from '@/state/sessionStore';
 import { handleRuntimeAuthFailure } from './authSessionRecoveryService';
 import { resumeFrontendSessionFromBackendRuntime } from './backendRuntimeSessionResumeService';
 import { recordRuntimeGameClientEvent } from './gameClientLifecycle';
-import {
-    applyRuntimeGameLogProjection,
-    ingestRuntimeGameLogEvent,
-    resetNowPlayingState
-} from './gameLogIngestService';
+import { applyRuntimeGameLogProjection } from './gameLogIngestService';
 import { handleGameRunningUpdate } from './gameStateService';
-import {
-    isHostCapabilityAvailable,
-    refreshHostCapabilities
-} from './hostCapabilityService';
+import { isHostCapabilityAvailable } from './hostCapabilityService';
 import i18n from './i18nService';
 import { handleIpcEvent } from './ipcEventService';
 import { executeNotificationTts } from './notificationDeliveryService';
@@ -109,16 +102,6 @@ type RuntimeSnapshotPayload =
     | Record<string, unknown>
     | null;
 
-type CapabilityStatus = {
-    available?: unknown;
-};
-
-type HostCapabilitySnapshot = Record<string, unknown> & {
-    platform?: unknown;
-    gameLogWatcher?: CapabilityStatus;
-    vrchatPathDiscovery?: CapabilityStatus;
-};
-
 type RuntimeEventUnsubscribe = () => void;
 
 type RuntimeGroupInstance = Record<string, unknown> & {
@@ -138,7 +121,6 @@ type RuntimeGroupInstancesProjection = {
     groupOrder?: string[];
 };
 
-let gameLogIngestQueue: Promise<unknown> = Promise.resolve();
 let backendRuntimeHydrationPromise: Promise<void> | null = null;
 let pendingBackendRuntimeHydrationSnapshot: RuntimeSnapshotPayload = null;
 let hasPendingBackendRuntimeHydrationSnapshot = false;
@@ -209,10 +191,6 @@ function hydrateBackendRuntimeSnapshot(
     return backendRuntimeHydrationPromise;
 }
 
-function isRuntimePersistedGameLogMirror(payload: unknown): boolean {
-    return isRecord(payload) && payload.runtimePersisted === true;
-}
-
 function publishNowPlayingSharedFeed(payload: Record<string, unknown>): void {
     const videoUrl = normalizeString(payload.videoUrl || payload.url);
     if (!videoUrl) {
@@ -249,55 +227,6 @@ function publishNowPlayingSharedFeed(payload: Record<string, unknown>): void {
             error
         );
     });
-}
-
-async function canIngestGameLogEvent(): Promise<boolean> {
-    if (isHostCapabilityAvailable('gameLogWatcher')) {
-        return true;
-    }
-
-    const capabilities = useRuntimeStore.getState()
-        .hostCapabilities as HostCapabilitySnapshot;
-    if (
-        capabilities?.platform !== 'linux' ||
-        !capabilities?.vrchatPathDiscovery?.available
-    ) {
-        return false;
-    }
-
-    try {
-        const refreshed = await refreshHostCapabilities();
-        return Boolean(refreshed?.gameLogWatcher?.available);
-    } catch (error) {
-        console.warn('Failed to refresh GameLog capability:', error);
-        return false;
-    }
-}
-
-async function ingestAndRecordGameLogEvent(
-    name: RuntimeEventName,
-    payload: unknown
-): Promise<void> {
-    const runtimePersisted = isRuntimePersistedGameLogMirror(payload);
-    if (runtimePersisted) {
-        useRuntimeStore.getState().recordRuntimeEvent(name, payload);
-        return;
-    }
-    if (!runtimePersisted && !(await canIngestGameLogEvent())) {
-        return;
-    }
-
-    try {
-        await ingestRuntimeGameLogEvent(payload);
-        useRuntimeStore.getState().recordRuntimeEvent(name, payload);
-    } catch (error) {
-        await showSQLiteErrorDialog(error);
-        useNotificationStore.getState().pushNotification({
-            level: 'warning',
-            title: 'Game log ingest failed',
-            message: error instanceof Error ? error.message : String(error)
-        });
-    }
 }
 
 function recordGameLogPersistenceTelemetry(
@@ -615,14 +544,6 @@ function handleRuntimeEvent(
 ): void {
     const runtimeStore = useRuntimeStore.getState();
 
-    if (name === 'addGameLogEvent') {
-        gameLogIngestQueue = gameLogIngestQueue.then(
-            () => ingestAndRecordGameLogEvent(name, payload),
-            () => ingestAndRecordGameLogEvent(name, payload)
-        );
-        return;
-    }
-
     if (name === 'gameLogPersistenceFallback') {
         recordGameLogPersistenceTelemetry(name, payload);
         return;
@@ -703,7 +624,7 @@ function handleRuntimeEvent(
             runtimeStore.setNowPlayingState(sidePayload);
             publishNowPlayingSharedFeed(sidePayload);
         } else if (kind === 'nowPlayingReset') {
-            resetNowPlayingState();
+            runtimeStore.resetNowPlayingState();
         } else if (kind === 'screenshotProcessed') {
             runtimeStore.setGameState({
                 lastScreenshotPath: String(sidePayload.path || '')

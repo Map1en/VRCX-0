@@ -116,8 +116,34 @@ pub struct GameLogLocationSnapshot {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogJoinLeaveSnapshot {
+    pub id: i64,
     pub created_at: String,
     pub event_type: String,
     pub display_name: String,
     pub user_id: String,
+    pub time: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SessionLocationSegmentRow {
+    pub id: i64,
+    pub created_at: String,
+    pub location: String,
+    pub world_id: String,
+    pub world_name: String,
+    pub time: i64,
+    pub group_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SessionEventRow {
+    pub row_id: i64,
+    pub event_type: String,
+    pub created_at: String,
+    pub display_name: String,
+    pub user_id: String,
+    pub location: String,
+    pub video_url: Option<String>,
+    pub video_name: Option<String>,
+    pub video_id: Option<String>,
 }

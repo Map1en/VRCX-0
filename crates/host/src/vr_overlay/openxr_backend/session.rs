@@ -82,6 +82,7 @@ struct SurfaceState {
     pending_frame: Option<RgbaFrame>,
     uploaded: bool,
     visible: bool,
+    requested_visible: bool,
 }
 
 struct SessionContext {
@@ -263,8 +264,10 @@ impl SessionContext {
 
         let now = Instant::now();
         for surface in self.surfaces.values_mut() {
-            let present = match surface.attachment {
-                Attachment::Head => true,
+            match surface.attachment {
+                Attachment::Head => {
+                    surface.visible = surface.requested_visible;
+                }
                 Attachment::Hand(hand) => {
                     if self.input.activation_pressed(
                         &self.session,
@@ -273,11 +276,12 @@ impl SessionContext {
                     ) {
                         surface.policy.open(now);
                     }
-                    self.input
-                        .hand_located(hand, &self.local_space, display_time)
+                    let present = self
+                        .input
+                        .hand_located(hand, &self.local_space, display_time);
+                    surface.visible = surface.policy.evaluate(now, present);
                 }
-            };
-            surface.visible = surface.policy.evaluate(now, present);
+            }
             if surface.visible && surface.pending_frame.is_some() {
                 if let Err(error) = upload_surface_frame(&mut self.vk, surface) {
                     tracing::warn!(
@@ -355,11 +359,13 @@ impl SessionContext {
             }
             SessionCommand::Show { surface_id } => {
                 if let Some(surface) = self.surfaces.get_mut(&surface_id) {
+                    surface.requested_visible = true;
                     surface.policy.open(Instant::now());
                 }
             }
             SessionCommand::Hide { surface_id } => {
                 if let Some(surface) = self.surfaces.get_mut(&surface_id) {
+                    surface.requested_visible = false;
                     surface.policy.close();
                     surface.visible = false;
                 }
@@ -436,6 +442,7 @@ impl SessionContext {
                 pending_frame: None,
                 uploaded: false,
                 visible: false,
+                requested_visible: false,
                 config,
             },
         );
@@ -595,8 +602,12 @@ fn parse_attachment(placement: &OverlayPlacement) -> Result<Attachment, String> 
             "left-hand" => Ok(Attachment::Hand(Hand::Left)),
             "right-hand" => Ok(Attachment::Hand(Hand::Right)),
             "hmd" | "head" => Ok(Attachment::Head),
+            value if value.starts_with("hmd:") => Ok(Attachment::Head),
             _ => Err(format!("unknown tracked device hint '{device_hint}'")),
         },
+        OverlayPlacement::Absolute { .. } => {
+            Err("OpenXR overlay backend does not support Absolute placement".to_string())
+        }
     }
 }
 
@@ -616,10 +627,45 @@ fn placement_pose(placement: &OverlayPlacement) -> xr::Posef {
                 [1.0, 0.0, 0.0, 0.06],
             ])
         }
+        OverlayPlacement::TrackedDeviceRelative { device_hint }
+            if device_hint.starts_with("hmd") =>
+        {
+            let (x, y) = match device_hint.as_str() {
+                "hmd:top" => (0.0, 0.38),
+                "hmd:left" => (-0.52, -0.12),
+                "hmd:right" => (0.52, -0.12),
+                _ => (0.0, -0.38),
+            };
+            matrix3x4_to_posef([
+                [1.0, 0.0, 0.0, x],
+                [0.0, 1.0, 0.0, y],
+                [0.0, 0.0, 1.0, -1.15],
+            ])
+        }
         OverlayPlacement::TrackedDeviceRelative { .. } => matrix3x4_to_posef([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.035],
             [0.0, 0.0, 1.0, 0.055],
+        ]),
+        OverlayPlacement::Absolute { transform } => matrix3x4_to_posef([
+            [
+                transform.rotation[0][0],
+                transform.rotation[0][1],
+                transform.rotation[0][2],
+                transform.translation[0],
+            ],
+            [
+                transform.rotation[1][0],
+                transform.rotation[1][1],
+                transform.rotation[1][2],
+                transform.translation[1],
+            ],
+            [
+                transform.rotation[2][0],
+                transform.rotation[2][1],
+                transform.rotation[2][2],
+                transform.translation[2],
+            ],
         ]),
     }
 }

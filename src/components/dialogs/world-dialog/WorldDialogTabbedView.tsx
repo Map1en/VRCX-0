@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openUserDialog } from '@/services/dialogService';
 import {
     recordGameRuntimePresence,
@@ -14,7 +14,6 @@ import {
 } from '@/services/domainIngestionService';
 import {
     convertFileUrlToImageUrl,
-    copyTextToClipboard,
     openExternalLink
 } from '@/services/entityMediaService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
@@ -855,9 +854,12 @@ export function WorldDialogTabbedView({
             ? Math.round((Number(world.favorites) / Number(world.visits)) * 100)
             : 0;
 
-    async function copyWorldText(text: any, label: any) {
-        await copyTextToClipboard(text);
-        toast.success(t('dialog.world.dynamic.value_copied', { value: label }));
+    function copyWorldText(text: string, label: string) {
+        return copyTextToClipboard(text, {
+            successMessage: t('dialog.world.dynamic.value_copied', {
+                value: label
+            })
+        });
     }
 
     const headerModel: any = {

@@ -1,6 +1,7 @@
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
+    normalizeHmdOverlayActivityFilterProfile,
     normalizeOverlayActivityFilterProfile,
     normalizeOverlayActivityFiltersWithDefinitions,
     type OverlayActivityTypeDefinition
@@ -73,6 +74,23 @@ export function setDesktopNotificationActivityFiltersPreference(
         'desktopNotificationActivityFilters',
         value
     );
+}
+
+export async function setHmdNotificationActivityFiltersPreference(
+    value: unknown
+) {
+    const definitions = await loadOverlayActivityTypeDefinitionsForSave();
+    const normalized = definitions.length
+        ? normalizeHmdOverlayActivityFilterProfile(value, definitions)
+        : normalizeHmdOverlayActivityFilterProfile(value);
+    await configRepository.setString(
+        'hmdNotificationActivityFilters',
+        JSON.stringify(normalized)
+    );
+    await commands.appOverlayActivityFiltersReload();
+    patchPreferences({ hmdNotificationActivityFilters: normalized });
+    publishPreferenceChanged('hmdNotificationActivityFilters', normalized);
+    return normalized;
 }
 
 export function setWebhookActivityFiltersPreference(value: unknown) {

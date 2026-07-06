@@ -9,12 +9,6 @@ updates:
       directory: '/' # Location of package manifests
       schedule:
           interval: 'weekly'
-      ignore:
-          # Pinned at 1.5.0 — radix-ui 1.6.0's react-dismissable-layer 1.1.13
-          # closes the parent modal Dialog when a nested Dropdown/Select dismisses.
-          # Tracking: #<radix-issue>
-          - dependency-name: 'radix-ui'
-            versions: ['>=1.6.0']
     - package-ecosystem: 'cargo'
       directory: '/'
       schedule:

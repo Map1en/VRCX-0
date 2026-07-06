@@ -202,11 +202,7 @@ async fn run_realtime_transport_inner(
             return;
         }
 
-        let status = if reconnect_attempt == 0 {
-            "connecting"
-        } else {
-            "reconnecting"
-        };
+        let status = reconnect_status_for_attempt(reconnect_attempt);
         if reconnect_attempt > 0 {
             tracing::warn!(
                 generation,
@@ -259,7 +255,7 @@ async fn run_realtime_transport_inner(
                 return;
             }
             Ok(ConnectionEnd::Closed) => {
-                reconnect_attempt += 1;
+                reconnect_attempt = next_reconnect_attempt(reconnect_attempt);
                 tracing::warn!(
                     generation,
                     reconnect_attempt,
@@ -285,7 +281,7 @@ async fn run_realtime_transport_inner(
                 );
             }
             Err(error) => {
-                reconnect_attempt += 1;
+                reconnect_attempt = next_reconnect_attempt(reconnect_attempt);
                 let status = if error.is_auth_failure() {
                     "authFailure"
                 } else {
@@ -306,14 +302,14 @@ async fn run_realtime_transport_inner(
                         status_code,
                     },
                 );
-                if error.is_auth_failure() {
+                if should_stop_after_connection_error(&error) {
                     return;
                 }
             }
         }
 
         tokio::select! {
-            _ = tokio::time::sleep(RECONNECT_DELAY) => {}
+            _ = tokio::time::sleep(reconnect_delay_for_attempt(reconnect_attempt)) => {}
             changed = cancel_rx.changed() => {
                 if changed.is_err() || is_cancelled(cancel_rx, generation) {
                     emit_status(
@@ -333,6 +329,26 @@ async fn run_realtime_transport_inner(
             }
         }
     }
+}
+
+fn reconnect_status_for_attempt(reconnect_attempt: usize) -> &'static str {
+    if reconnect_attempt == 0 {
+        "connecting"
+    } else {
+        "reconnecting"
+    }
+}
+
+fn next_reconnect_attempt(reconnect_attempt: usize) -> usize {
+    reconnect_attempt.saturating_add(1)
+}
+
+fn reconnect_delay_for_attempt(_reconnect_attempt: usize) -> Duration {
+    RECONNECT_DELAY
+}
+
+fn should_stop_after_connection_error(error: &RealtimeConnectionError) -> bool {
+    error.is_auth_failure()
 }
 
 async fn connect_once(
@@ -556,7 +572,11 @@ fn log_untyped_message_summary(generation: u64, json: &Value) {
 
 #[cfg(test)]
 mod tests {
-    use super::{timeout_error, wait_for_result_or_cancel};
+    use super::{
+        next_reconnect_attempt, reconnect_delay_for_attempt, reconnect_status_for_attempt,
+        should_stop_after_connection_error, timeout_error, wait_for_result_or_cancel,
+        RealtimeConnectionError, RECONNECT_DELAY,
+    };
 
     #[tokio::test]
     async fn connect_wait_returns_stopped_when_cancelled() {
@@ -612,5 +632,32 @@ mod tests {
         .unwrap_err();
 
         assert!(error.to_string().contains("timed out"));
+    }
+
+    #[test]
+    fn reconnect_status_is_connecting_only_for_first_attempt() {
+        assert_eq!(reconnect_status_for_attempt(0), "connecting");
+        assert_eq!(reconnect_status_for_attempt(1), "reconnecting");
+        assert_eq!(reconnect_status_for_attempt(99), "reconnecting");
+    }
+
+    #[test]
+    fn reconnect_backoff_uses_fixed_delay_and_saturating_attempts() {
+        assert_eq!(next_reconnect_attempt(0), 1);
+        assert_eq!(next_reconnect_attempt(usize::MAX), usize::MAX);
+        assert_eq!(reconnect_delay_for_attempt(1), RECONNECT_DELAY);
+        assert_eq!(reconnect_delay_for_attempt(usize::MAX), RECONNECT_DELAY);
+    }
+
+    #[test]
+    fn reconnect_retries_non_auth_errors_but_stops_on_auth_failure() {
+        let transient = RealtimeConnectionError::Other(crate::Error::Custom("closed".into()));
+        assert!(!should_stop_after_connection_error(&transient));
+
+        let auth = RealtimeConnectionError::AuthFailure {
+            reason: "expired".into(),
+            status_code: Some(401),
+        };
+        assert!(should_stop_after_connection_error(&auth));
     }
 }

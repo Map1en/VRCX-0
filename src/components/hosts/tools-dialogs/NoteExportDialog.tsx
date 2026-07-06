@@ -170,19 +170,21 @@ export function NoteExportDialog({ open, onOpenChange }: any) {
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
                 <DialogHeader>
                     <DialogTitle>{t('dialog.note_export.header')}</DialogTitle>
-                    <DialogDescription asChild>
-                        <div className="flex flex-col gap-1">
-                            {Array.from({ length: 8 }, (_, index) => (
-                                <span
-                                    key={`note-export-description-${index + 1}`}
-                                >
-                                    {t(
-                                        `dialog.note_export.description${index + 1}`
-                                    )}
-                                </span>
-                            ))}
-                        </div>
-                    </DialogDescription>
+                    <DialogDescription
+                        render={
+                            <div className="flex flex-col gap-1">
+                                {Array.from({ length: 8 }, (_, index) => (
+                                    <span
+                                        key={`note-export-description-${index + 1}`}
+                                    >
+                                        {t(
+                                            `dialog.note_export.description${index + 1}`
+                                        )}
+                                    </span>
+                                ))}
+                            </div>
+                        }
+                    />
                 </DialogHeader>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button

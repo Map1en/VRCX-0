@@ -331,10 +331,20 @@ fn text_field(value: &Value, key: &str) -> String {
 mod tests {
     use super::{
         clamp_print_limit, favorite_limit_for_print_limit, is_print_created_content_refresh,
-        print_list_items_from_json, select_prints_to_delete, CleanupWarningKind, PrintListItem,
+        print_list_items_from_json, select_prints_to_delete, CleanupWarningKind, PrintCleanupDeps,
+        PrintCleanupQueue, PrintCleanupTrigger, PrintListItem, PRINT_CLEANUP_DEBOUNCE,
+    };
+    use crate::task_supervisor::{
+        RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSupervisor,
     };
     use serde_json::json;
     use std::collections::HashSet;
+    use std::path::PathBuf;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    use std::time::Duration;
     use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 
     fn item(id: &str, created_at: &str) -> PrintListItem {
@@ -467,5 +477,101 @@ mod tests {
                 "actionType": "created"
             }
         }))));
+    }
+
+    #[test]
+    fn cleanup_queue_uses_2500ms_debounce_and_keeps_one_flight_pending() {
+        let supervisor = TaskSupervisor::new();
+        let executor = CountingTaskExecutor::default();
+        let spawned = Arc::clone(&executor.spawned);
+        supervisor.set_executor(executor);
+        let queue = PrintCleanupQueue::new();
+        let _dir = TestDir::new("print-cleanup-queue");
+        let deps = test_deps(&_dir.path);
+        let trigger = PrintCleanupTrigger {
+            user_id: "usr_self".into(),
+            endpoint: "https://api.vrchat.cloud/api/1".into(),
+            reason: "test".into(),
+        };
+
+        assert_eq!(PRINT_CLEANUP_DEBOUNCE, Duration::from_millis(2500));
+        queue.schedule(&supervisor, deps.clone(), trigger.clone());
+        queue.schedule(&supervisor, deps.clone(), trigger.clone());
+        queue.schedule(&supervisor, deps, trigger);
+
+        assert_eq!(spawned.load(Ordering::Acquire), 1);
+    }
+
+    #[derive(Clone, Default)]
+    struct CountingTaskExecutor {
+        spawned: Arc<AtomicUsize>,
+    }
+
+    struct CountingTaskHandle {
+        finished: bool,
+    }
+
+    impl RuntimeTaskExecutor for CountingTaskExecutor {
+        fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
+            self.spawned.fetch_add(1, Ordering::AcqRel);
+            Box::new(CountingTaskHandle { finished: false })
+        }
+    }
+
+    impl RuntimeTaskHandle for CountingTaskHandle {
+        fn abort(&self) {}
+
+        fn is_finished(&self) -> bool {
+            self.finished
+        }
+
+        fn join_or_abort(&mut self, _timeout: Duration) {
+            self.finished = true;
+        }
+    }
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path =
+                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn test_deps(path: &std::path::Path) -> PrintCleanupDeps {
+        let db = Arc::new(
+            vrcx_0_persistence::DatabaseService::new(&path.join("VRCX-0.sqlite3")).unwrap(),
+        );
+        let storage =
+            vrcx_0_persistence::storage::StorageService::new(&path.join("storage.json")).unwrap();
+        let web = Arc::new(
+            crate::WebClient::new(
+                &storage,
+                db.as_ref(),
+                "wss://pipeline.vrchat.cloud".into(),
+                env!("CARGO_PKG_VERSION"),
+            )
+            .unwrap(),
+        );
+        PrintCleanupDeps {
+            db,
+            web,
+            event_bus: crate::event_bus::RuntimeEventBus::new(),
+        }
     }
 }

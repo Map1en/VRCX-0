@@ -68,11 +68,13 @@ export function useFriendLogColumns({
                     const createdAt = row.original?.created_at || '';
                     return (
                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span className="text-sm">
-                                    {formatDateFilter(createdAt, 'short')}
-                                </span>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                                render={
+                                    <span className="text-sm">
+                                        {formatDateFilter(createdAt, 'short')}
+                                    </span>
+                                }
+                            />
                             <TooltipContent>
                                 {formatDateFilter(createdAt, 'long')}
                             </TooltipContent>

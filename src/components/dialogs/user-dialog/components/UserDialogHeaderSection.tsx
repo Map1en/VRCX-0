@@ -404,14 +404,23 @@ export function UserDialogHeaderSection(props: any) {
                             variant="inline"
                         />
                         {onTitleClick ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold break-words whitespace-normal"
-                                onClick={onTitleClick}
-                            >
-                                {profileTitle}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold break-words whitespace-normal"
+                                            onClick={onTitleClick}
+                                        >
+                                            {profileTitle}
+                                        </Button>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {t('common.actions.copy')}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : (
                             <span className="min-w-0 break-words">
                                 {profileTitle}
@@ -419,18 +428,23 @@ export function UserDialogHeaderSection(props: any) {
                         )}
                         {isOwner ? (
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span
-                                        className="owner-badge"
-                                        role="img"
-                                        aria-label={t(
-                                            'dialog.user.badges.developer',
-                                            { defaultValue: 'VRCX-0 Developer' }
-                                        )}
-                                    >
-                                        <GemIcon aria-hidden="true" />
-                                    </span>
-                                </TooltipTrigger>
+                                <TooltipTrigger
+                                    render={
+                                        <span
+                                            className="owner-badge"
+                                            role="img"
+                                            aria-label={t(
+                                                'dialog.user.badges.developer',
+                                                {
+                                                    defaultValue:
+                                                        'VRCX-0 Developer'
+                                                }
+                                            )}
+                                        >
+                                            <GemIcon aria-hidden="true" />
+                                        </span>
+                                    }
+                                />
                                 <TooltipContent>
                                     {t('dialog.user.badges.developer', {
                                         defaultValue: 'VRCX-0 Developer'

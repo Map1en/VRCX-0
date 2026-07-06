@@ -220,17 +220,19 @@ export function GroupModerationLogsTable({
                     </Button>
                     {auditLogTypes.length ? (
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={loading}
-                                >
-                                    <ListFilterIcon data-icon="inline-start" />
-                                    {filterLabel}
-                                </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={loading}
+                                    >
+                                        <ListFilterIcon data-icon="inline-start" />
+                                        {filterLabel}
+                                    </Button>
+                                }
+                            />
                             <DropdownMenuContent className="max-h-80 w-64 overflow-y-auto">
                                 {auditLogTypes.map((eventType) => (
                                     <DropdownMenuCheckboxItem
@@ -238,7 +240,7 @@ export function GroupModerationLogsTable({
                                         checked={selectedEventTypes.includes(
                                             eventType
                                         )}
-                                        onSelect={(event) =>
+                                        onClick={(event) =>
                                             event.preventDefault()
                                         }
                                         onCheckedChange={() =>
@@ -276,7 +278,9 @@ export function GroupModerationLogsTable({
                     <Select
                         value={String(pageSize)}
                         onValueChange={(value) =>
-                            onPageSizeChange(Number.parseInt(value, 10) || 25)
+                            onPageSizeChange(
+                                Number.parseInt(value ?? '', 10) || 25
+                            )
                         }
                     >
                         <SelectTrigger size="sm" className="w-24">

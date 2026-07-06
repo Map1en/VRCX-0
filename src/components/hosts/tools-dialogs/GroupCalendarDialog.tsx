@@ -454,13 +454,12 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                         {t('common.actions.refresh')}
                     </Button>
                     <ToggleGroup
-                        type="single"
                         variant="outline"
                         size="sm"
-                        value={viewMode}
+                        value={viewMode ? [viewMode] : []}
                         onValueChange={(nextValue) => {
-                            if (nextValue) {
-                                setViewMode(nextValue);
+                            if (nextValue[0]) {
+                                setViewMode(nextValue[0]);
                             }
                         }}
                     >

@@ -311,8 +311,12 @@ export function RegistryBackupDialog({ open, onOpenChange }: any) {
                     </FieldGroup>
                     <Select
                         value={selectedKey}
-                        onValueChange={setSelectedKey}
+                        onValueChange={(value) => setSelectedKey(value ?? '')}
                         disabled={loading || backups.length === 0}
+                        items={backups.map((backup) => ({
+                            value: backup.key,
+                            label: formatBackupLabel(backup, t)
+                        }))}
                     >
                         <SelectTrigger>
                             <SelectValue

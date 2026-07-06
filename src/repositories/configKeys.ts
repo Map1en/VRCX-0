@@ -81,6 +81,7 @@ export const ConfigKeys = defineConfigKeys({
     compactTableMode: { type: 'bool', default: false },
     dataTableStriped: { type: 'bool', default: false },
     tableDensity: { type: 'string', default: null },
+    reducedMotionAndBlur: { type: 'bool', default: false },
     tablePageSize: { type: 'int', default: null },
     randomUserColours: { type: 'bool', default: false },
     backgroundImageEnabled: { type: 'bool', default: false },
@@ -148,13 +149,19 @@ export const ConfigKeys = defineConfigKeys({
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
     showPostUpdateChangelogToast: { type: 'bool', default: true },
-    xsNotifications: { type: 'bool', default: true },
-    ovrtHudNotifications: { type: 'bool', default: true },
+    xsNotifications: { type: 'bool', default: false },
+    ovrtHudNotifications: { type: 'bool', default: false },
     ovrtWristNotifications: { type: 'bool', default: false },
     imageNotifications: { type: 'bool', default: true },
     notificationTimeout: { type: 'int', default: 3000 },
     notificationOpacity: { type: 'int', default: 100 },
+    hmdNotificationsEnabled: { type: 'bool', default: false },
+    hmdNotificationStartMode: { type: 'string', default: 'vrchatVrMode' },
+    hmdNotificationTimeout: { type: 'int', default: 5000 },
+    hmdNotificationOpacity: { type: 'int', default: 100 },
+    hmdNotificationPosition: { type: 'string', default: 'bottom' },
     webhookEnabled: { type: 'bool', default: false },
+    webhookAuthEventsEnabled: { type: 'bool', default: true },
     webhookUrl: { type: 'string', default: '' },
     webhookFormat: { type: 'string', default: 'generic' },
     webhookFields: {
@@ -165,8 +172,14 @@ export const ConfigKeys = defineConfigKeys({
     vrNotificationActivityFilters: { type: 'string', default: '' },
     desktopNotificationActivityFilters: { type: 'string', default: '' },
     webhookActivityFilters: { type: 'string', default: '' },
+    hmdNotificationActivityFilters: { type: 'string', default: '' },
 
     // ── Settings - Overlay ───────────────────────────
+    vrOverlayPanelEnabled: { type: 'bool', default: true },
+    vrOverlayPanelAllFriendsIncludesFavorites: {
+        type: 'bool',
+        default: true
+    },
     wristOverlayEnabled: { type: 'bool', default: false },
     wristOverlayStartMode: { type: 'string', default: 'vrchatVrMode' },
     wristOverlayButton: { type: 'string', default: 'grip' },
@@ -292,6 +305,7 @@ export const ConfigKeys = defineConfigKeys({
 
     // ── Dashboard ────────────────────────────────────
     localFavoriteFriendsGroups: { type: 'string', default: null },
+    feedHiddenUsers: { type: 'string', default: null },
 
     // ── Onboarding ───────────────────────────────────
     onboarding_welcome_seen: { type: 'bool', default: false },

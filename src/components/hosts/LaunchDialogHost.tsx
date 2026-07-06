@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog';
 import { cn } from '@/lib/utils';
-import { copyTextToClipboard } from '@/services/entityMediaService';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import {
     attachRunningVrchat,
     launchVrchat,
@@ -253,12 +253,11 @@ export function LaunchDialogHost() {
         if (!value) {
             return;
         }
-        await copyTextToClipboard(value);
-        toast.success(
-            t('host.launch_dialog.dynamic.value_copied', {
+        await copyTextToClipboard(value, {
+            successMessage: t('host.launch_dialog.dynamic.value_copied', {
                 value: label
             })
-        );
+        });
     }
 
     async function runAction(key: any, action: any) {
@@ -463,27 +462,29 @@ export function LaunchDialogHost() {
                                     : primaryLabel}
                             </Button>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        disabled={
-                                            !canUseResolvedInstance ||
-                                            Boolean(busy)
-                                        }
-                                        className="border-primary-foreground/25 rounded-l-none border-l"
-                                        aria-label={'More launch options'}
-                                    >
-                                        <MoreHorizontalIcon data-icon="inline-start" />
-                                    </Button>
-                                </DropdownMenuTrigger>
+                                <DropdownMenuTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            disabled={
+                                                !canUseResolvedInstance ||
+                                                Boolean(busy)
+                                            }
+                                            className="border-primary-foreground/25 rounded-l-none border-l"
+                                            aria-label={'More launch options'}
+                                        >
+                                            <MoreHorizontalIcon data-icon="inline-start" />
+                                        </Button>
+                                    }
+                                />
                                 <DropdownMenuContent
                                     align="end"
                                     className="w-48"
                                 >
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem
-                                            onSelect={() => {
+                                            onClick={() => {
                                                 runAction(
                                                     alternateLaunchKey,
                                                     () =>

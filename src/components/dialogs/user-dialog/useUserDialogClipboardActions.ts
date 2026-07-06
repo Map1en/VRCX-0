@@ -1,15 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { copyTextToClipboard } from '@/services/entityMediaService';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openDiscordProfile as openShellDiscordProfile } from '@/services/shellIntegrationService';
 
 export function useUserDialogClipboardActions() {
     const { t } = useTranslation();
 
-    async function copyUserText(text: any, label: any) {
-        await copyTextToClipboard(text);
-        toast.success(t('dialog.user.dynamic.value_copied', { value: label }));
+    function copyUserText(text: string, label: string) {
+        return copyTextToClipboard(text, {
+            successMessage: t('dialog.user.dynamic.value_copied', {
+                value: label
+            })
+        });
     }
 
     async function openDiscordProfile(discordId: any) {

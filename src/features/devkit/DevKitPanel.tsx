@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
-import { languageCodes } from '@/localization/locales';
+import { getLanguageName, languageCodes } from '@/localization/index';
 import { commands } from '@/platform/tauri/bindings';
 import {
     loadLocalCommunityThemePreview,
@@ -337,8 +337,14 @@ function DevKitPanelInner() {
                                 </div>
                                 <Select
                                     value={i18nTargetLang}
-                                    onValueChange={setI18nTargetLang}
+                                    onValueChange={(value) =>
+                                        setI18nTargetLang(value ?? '')
+                                    }
                                     disabled={i18nWatchEnabled}
+                                    items={languageCodes.map((code) => ({
+                                        value: code,
+                                        label: getLanguageName(code)
+                                    }))}
                                 >
                                     <SelectTrigger className="h-7 text-xs">
                                         <SelectValue />
@@ -350,7 +356,7 @@ function DevKitPanelInner() {
                                                 value={code}
                                                 className="text-xs"
                                             >
-                                                {code}
+                                                {getLanguageName(code)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

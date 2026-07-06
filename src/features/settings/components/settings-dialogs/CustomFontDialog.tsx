@@ -93,8 +93,8 @@ function FontFamilySelector({
                         <Select
                             value={value || ''}
                             disabled={disabled}
-                            onValueChange={(nextValue: string) => {
-                                onChange(nextValue);
+                            onValueChange={(nextValue) => {
+                                onChange(nextValue ?? '');
                             }}
                         >
                             <SelectTrigger
@@ -290,21 +290,25 @@ export function CustomFontDialog({
                         onOpenChange={setAdvancedOpen}
                         className="mt-4"
                     >
-                        <CollapsibleTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="px-0"
-                            >
-                                <ChevronRightIcon
-                                    className={advancedOpen ? 'rotate-90' : ''}
-                                />
-                                {t(
-                                    'view.settings.appearance.appearance.font_family_custom_advanced'
-                                )}
-                            </Button>
-                        </CollapsibleTrigger>
+                        <CollapsibleTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="px-0"
+                                >
+                                    <ChevronRightIcon
+                                        className={
+                                            advancedOpen ? 'rotate-90' : ''
+                                        }
+                                    />
+                                    {t(
+                                        'view.settings.appearance.appearance.font_family_custom_advanced'
+                                    )}
+                                </Button>
+                            }
+                        />
                         <CollapsibleContent className="pt-2">
                             <Field
                                 label={t(

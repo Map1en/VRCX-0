@@ -66,6 +66,14 @@ export type StatusBarRuntimeTransport = {
     websocketConnected?: boolean | null;
 };
 
+export type StatusBarProxyEditorState = {
+    enabled: boolean;
+    open: boolean;
+    saving: boolean;
+    server: string;
+    testing: boolean;
+};
+
 export type StatusBarFooterModel = {
     appStartedAt: number;
     clockPopoverOpen: boolean[];
@@ -83,12 +91,19 @@ export type StatusBarFooterModel = {
     nowPlaying: StatusBarNowPlaying;
     onOpenMediaLink: () => unknown;
     onOpenStatusPage: () => unknown;
-    onPromptProxySettings: () => unknown;
+    onProxyDraftEnabledChange: (enabled: boolean) => unknown;
+    onProxyDraftServerChange: (server: string) => unknown;
+    onProxyEditorOpenChange: (open: boolean) => unknown;
+    onProxySave: () => unknown;
+    onProxySaveAndRestart: () => unknown;
+    onProxyTest: () => unknown;
     onSetClockPopoverValue: (index: number, open: boolean) => unknown;
     onSetZoomLevel: (nextZoom: number) => unknown;
     onStartBackgroundMode: () => unknown;
     onStepZoomLevel: (delta: number) => unknown;
     onUpdateClockTimezone: (index: number, offsetValue: unknown) => unknown;
+    proxyEditor: StatusBarProxyEditorState;
+    proxyEnabled: boolean;
     proxyServer: string;
     runtimeGameState: StatusBarRuntimeGameState;
     runtimeTransport: StatusBarRuntimeTransport;

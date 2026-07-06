@@ -79,6 +79,7 @@ impl RuntimeHostState {
     pub async fn start_backend_runtime(
         &self,
         mode: BackendRuntimeMode,
+        cli_login_prompt: Option<Arc<dyn CliLoginPrompt>>,
     ) -> Result<BackendRuntimeSnapshot> {
         let Some(_start_guard) = BackendStartGuard::try_acquire(&self.backend_starting) else {
             return Ok(self.backend_runtime.snapshot());
@@ -109,7 +110,9 @@ impl RuntimeHostState {
 
         self.backend_runtime.set_authenticating();
         let auth_scope = self.runtime_context.auth_scope.snapshot();
-        let auth_result = if auth_scope.active {
+        let auth_result = if let Some(prompt) = cli_login_prompt {
+            self.authenticate_cli_interactive(prompt).await
+        } else if auth_scope.active {
             current_user_from_cookie(
                 self.web.as_ref(),
                 self.db.as_ref(),
@@ -138,6 +141,13 @@ impl RuntimeHostState {
             }
         };
 
+        self.start_authenticated_runtime_session(session).await
+    }
+
+    pub(super) async fn start_authenticated_runtime_session(
+        &self,
+        session: AuthenticatedRuntimeSession,
+    ) -> Result<BackendRuntimeSnapshot> {
         self.runtime_context
             .auth_scope
             .set(&session.user_id, &session.endpoint);
@@ -162,6 +172,10 @@ impl RuntimeHostState {
             }
         };
         self.set_backend_frontend_session(&session);
+        if let Some(snapshot) = &social_baseline.favorite_groups_snapshot {
+            self.vr_overlay_runtime
+                .update_friends_panel_favorite_groups_from_baseline(snapshot);
+        }
         self.runtime_context
             .overlay_activity
             .set_favorite_groups(OverlayFavoriteGroups::from_map(

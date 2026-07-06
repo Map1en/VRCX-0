@@ -7,7 +7,12 @@ import { mergeRosterFriendFacts } from '@/domain/friends/friendRosterFacts';
 import { useCurrentInstancePresence } from '@/domain/presence/useCurrentInstancePresence';
 import { useKnownUserFacts } from '@/domain/users/useKnownUser';
 import { subscribeRecentActions } from '@/services/recentActionService';
-import { checkCanInvite } from '@/shared/utils/invite';
+import {
+    buildLocalInstanceActionGateMap,
+    checkCanInvite,
+    evaluateLocalInstanceActionGates,
+    type LocalInstanceActionGateTarget
+} from '@/shared/utils/invite';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import type { FavoriteGroup } from '@/state/favoriteStoreTypes';
@@ -27,6 +32,7 @@ import {
     buildSameInstanceGroups,
     normalizeLocationStatus,
     readFriendStatusSource,
+    readFriendRefLocation,
     resolveCurrentInviteLocation,
     sortActiveRows,
     sortRows,
@@ -80,6 +86,26 @@ function rowsByIds(
     friendsById: Record<string, unknown>
 ) {
     return ids.map((id) => friendsById[id]).filter(isSidebarFriendRecord);
+}
+
+function buildInstanceActionGateTarget(
+    friend: SidebarFriendRecord,
+    currentUserId?: string | null
+): LocalInstanceActionGateTarget | null {
+    const friendId = normalizeId(friend?.id);
+    if (!friendId) {
+        return null;
+    }
+    const source = readFriendStatusSource(friend);
+    return {
+        key: friendId,
+        userId: friendId,
+        location: String(readFriendRefLocation(friend) ?? ''),
+        stateBucket: normalizeLocationStatus(
+            source?.stateBucket || source?.state
+        ),
+        isCurrentUser: friendId === normalizeId(currentUserId)
+    };
 }
 
 function useFriendsSidebarRuntimeSnapshot() {
@@ -276,10 +302,6 @@ export function FriendsSidebar({
         }),
         [currentLocation, effectiveCurrentLocationPlayerIds]
     );
-    const friendsMap = useMemo(
-        () => new Map(Object.entries(friendsById || {})),
-        [friendsById]
-    );
     const canInviteFromCurrentLocation = useMemo(
         () =>
             checkCanInvite(currentInviteLocation, {
@@ -321,6 +343,37 @@ export function FriendsSidebar({
     const rows = useMemo(
         () => rowsByIds(orderedFriendIds, friendsById),
         [friendsById, orderedFriendIds]
+    );
+    const instanceActionGateTargets = useMemo(
+        () =>
+            rows
+                .map((friend) =>
+                    buildInstanceActionGateTarget(friend, currentUserId)
+                )
+                .filter(
+                    (target): target is LocalInstanceActionGateTarget =>
+                        target != null
+                ),
+        [currentUserId, rows]
+    );
+    const instanceActionGatesByUserId = useMemo(
+        () =>
+            buildLocalInstanceActionGateMap(
+                evaluateLocalInstanceActionGates({
+                    currentUserId,
+                    currentInviteLocation,
+                    isGameRunning: Boolean(gameState.isGameRunning),
+                    friendUserIds: Object.keys(friendsById || {}),
+                    targets: instanceActionGateTargets
+                }).targets
+            ),
+        [
+            currentInviteLocation,
+            currentUserId,
+            friendsById,
+            gameState.isGameRunning,
+            instanceActionGateTargets
+        ]
     );
     const favoriteIds = useMemo(
         () => buildFavoriteIdSet(favoriteFriendIds, localFriendFavorites),
@@ -773,13 +826,11 @@ export function FriendsSidebar({
         { endpoint: currentEndpoint }
     );
     const runtimeView = {
-        canInviteFromCurrentLocation,
-        currentInviteLocation,
         currentUser,
         currentUserId,
-        friendsMap,
         gameState,
-        onlineIdSet
+        onlineIdSet,
+        instanceActionGatesByUserId
     };
     const appearanceView = {
         ageGatedInstancesVisible,

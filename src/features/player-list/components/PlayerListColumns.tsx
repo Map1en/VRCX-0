@@ -83,16 +83,18 @@ function DisplayNameCell({
             </span>
             {moderationTags.includes('blocked') ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="inline-flex shrink-0">
-                            <Badge
-                                variant="destructive"
-                                className="h-4 px-1.5 text-[10px] leading-none"
-                            >
-                                {t('view.player_list.error.blocked')}
-                            </Badge>
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="inline-flex shrink-0">
+                                <Badge
+                                    variant="destructive"
+                                    className="h-4 px-1.5 text-[10px] leading-none"
+                                >
+                                    {t('view.player_list.error.blocked')}
+                                </Badge>
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.error.blocked')}
                     </TooltipContent>
@@ -100,16 +102,18 @@ function DisplayNameCell({
             ) : null}
             {moderationTags.includes('muted') ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="inline-flex shrink-0">
-                            <Badge
-                                variant="outline"
-                                className="text-muted-foreground h-4 px-1.5 text-[10px] leading-none"
-                            >
-                                {t('view.player_list.label.muted')}
-                            </Badge>
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="inline-flex shrink-0">
+                                <Badge
+                                    variant="outline"
+                                    className="text-muted-foreground h-4 px-1.5 text-[10px] leading-none"
+                                >
+                                    {t('view.player_list.label.muted')}
+                                </Badge>
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.muted')}
                     </TooltipContent>
@@ -139,9 +143,9 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
         <div className="flex items-center justify-center gap-1">
             {row.original.isMaster ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span>{PLAYER_ICON_GLYPHS.master}</span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={<span>{PLAYER_ICON_GLYPHS.master}</span>}
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.instance_master')}
                     </TooltipContent>
@@ -149,9 +153,9 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isModerator ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span>{PLAYER_ICON_GLYPHS.moderator}</span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={<span>{PLAYER_ICON_GLYPHS.moderator}</span>}
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.moderator')}
                     </TooltipContent>
@@ -159,9 +163,9 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isFavorite ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span>{PLAYER_ICON_GLYPHS.favorite}</span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={<span>{PLAYER_ICON_GLYPHS.favorite}</span>}
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.favorite')}
                     </TooltipContent>
@@ -169,9 +173,9 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {!row.original.isFavorite && row.original.isFriend ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span>{PLAYER_ICON_GLYPHS.friend}</span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={<span>{PLAYER_ICON_GLYPHS.friend}</span>}
+                    />
                     <TooltipContent>
                         {t('side_panel.notification_center.tab_friend')}
                     </TooltipContent>
@@ -179,11 +183,13 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isBlocked ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-destructive">
-                            {PLAYER_ICON_GLYPHS.blocked}
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="text-destructive">
+                                {PLAYER_ICON_GLYPHS.blocked}
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.error.blocked')}
                     </TooltipContent>
@@ -191,11 +197,13 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isMuted ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-muted-foreground">
-                            {PLAYER_ICON_GLYPHS.muted}
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="text-muted-foreground">
+                                {PLAYER_ICON_GLYPHS.muted}
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.muted')}
                     </TooltipContent>
@@ -203,11 +211,13 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isAvatarInteractionDisabled ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-muted-foreground">
-                            {PLAYER_ICON_GLYPHS.avatarInteractionDisabled}
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="text-muted-foreground">
+                                {PLAYER_ICON_GLYPHS.avatarInteractionDisabled}
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t(
                             'view.player_list.label.avatar_interaction_disabled'
@@ -217,11 +227,13 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.isChatBoxMuted ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-muted-foreground">
-                            {PLAYER_ICON_GLYPHS.chatboxMuted}
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="text-muted-foreground">
+                                {PLAYER_ICON_GLYPHS.chatboxMuted}
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.chatbox_muted')}
                     </TooltipContent>
@@ -229,13 +241,15 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.timeoutTime ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-destructive">
-                            {PLAYER_ICON_GLYPHS.timeout}
-                            {row.original.timeoutTime}
-                            {t('common.time_units.s')}
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span className="text-destructive">
+                                {PLAYER_ICON_GLYPHS.timeout}
+                                {row.original.timeoutTime}
+                                {t('common.time_units.s')}
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.timeout')}
                     </TooltipContent>
@@ -243,11 +257,13 @@ function PlayerIconCell({ row }: { row: Row<PlayerListRow> }) {
             ) : null}
             {row.original.ageVerified ? (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span>
-                            <IdCardIcon className="x-tag-age-verification size-4" />
-                        </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <span>
+                                <IdCardIcon className="x-tag-age-verification size-4" />
+                            </span>
+                        }
+                    />
                     <TooltipContent>
                         {t('view.player_list.label.age_verified')}
                     </TooltipContent>
@@ -306,11 +322,13 @@ function LanguageCell({ row }: { row: Row<PlayerListRow> }) {
                       }
                       return (
                           <Tooltip key={`${key}:${entry?.value || ''}`}>
-                              <TooltipTrigger asChild>
-                                  <span className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold">
-                                      {code}
-                                  </span>
-                              </TooltipTrigger>
+                              <TooltipTrigger
+                                  render={
+                                      <span className="border-border/70 bg-muted/70 text-muted-foreground inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 font-mono text-[10px] leading-none font-semibold">
+                                          {code}
+                                      </span>
+                                  }
+                              />
                               <TooltipContent>{tooltip}</TooltipContent>
                           </Tooltip>
                       );
@@ -330,28 +348,30 @@ function BioLinksCell({ row }: { row: Row<PlayerListRow> }) {
 
                       return (
                           <Tooltip key={`${linkLabel}:${index}`}>
-                              <TooltipTrigger asChild>
-                                  <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      aria-label={`Open Link: ${linkLabel}`}
-                                      onClick={(event) => {
-                                          event.stopPropagation();
-                                          openExternalLink(link);
-                                      }}
-                                  >
-                                      {faviconUrl ? (
-                                          <img
-                                              src={faviconUrl}
-                                              alt=""
-                                              className="size-4"
-                                          />
-                                      ) : (
-                                          <ExternalLinkIcon data-icon="inline-start" />
-                                      )}
-                                  </Button>
-                              </TooltipTrigger>
+                              <TooltipTrigger
+                                  render={
+                                      <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          aria-label={`Open Link: ${linkLabel}`}
+                                          onClick={(event) => {
+                                              event.stopPropagation();
+                                              openExternalLink(link);
+                                          }}
+                                      >
+                                          {faviconUrl ? (
+                                              <img
+                                                  src={faviconUrl}
+                                                  alt=""
+                                                  className="size-4"
+                                              />
+                                          ) : (
+                                              <ExternalLinkIcon data-icon="inline-start" />
+                                          )}
+                                      </Button>
+                                  }
+                              />
                               <TooltipContent>{linkLabel}</TooltipContent>
                           </Tooltip>
                       );

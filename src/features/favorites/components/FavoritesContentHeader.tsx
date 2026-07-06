@@ -116,17 +116,21 @@ function FavoritesContentHeader({
                             </Button>
                         ) : null}
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={!hasSelection || !hasMoveTargets}
-                                >
-                                    <MoveRightIcon data-icon="inline-start" />
-                                    {t('view.favorite.action.move')}
-                                </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                            !hasSelection || !hasMoveTargets
+                                        }
+                                    >
+                                        <MoveRightIcon data-icon="inline-start" />
+                                        {t('view.favorite.action.move')}
+                                    </Button>
+                                }
+                            />
                             <DropdownMenuContent align="end" className="w-64">
                                 <DropdownMenuLabel>
                                     {t('view.favorite.action.move_to')}
@@ -135,7 +139,7 @@ function FavoritesContentHeader({
                                     {remoteMoveTargets.map((target) => (
                                         <DropdownMenuItem
                                             key={`remote:${target.key}`}
-                                            onSelect={() =>
+                                            onClick={() =>
                                                 onMoveSelection(target)
                                             }
                                         >
@@ -150,7 +154,7 @@ function FavoritesContentHeader({
                                     {localMoveTargets.map((target) => (
                                         <DropdownMenuItem
                                             key={`local:${target.key}`}
-                                            onSelect={() =>
+                                            onClick={() =>
                                                 onMoveSelection(target)
                                             }
                                         >

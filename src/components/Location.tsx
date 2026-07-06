@@ -4,9 +4,9 @@ import { LocationContextMenu } from '@/components/location/LocationContextMenu';
 import { LocationDisplay } from '@/components/location/LocationDisplay';
 import { useLocationPreviousInstancesDialog } from '@/components/location/useLocationPreviousInstancesDialog';
 import { useResolvedLocation } from '@/components/location/useResolvedLocation';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { directAccessParse } from '@/services/directAccessService';
-import { copyTextToClipboard } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { normalizeString } from '@/shared/utils/string';
@@ -137,8 +137,9 @@ export function Location({
         if (!shareUrl) {
             return;
         }
-        copyTextToClipboard(shareUrl);
-        toast.success(t('message.world.url_copied'));
+        void copyTextToClipboard(shareUrl, {
+            successMessage: t('message.world.url_copied')
+        });
     }
 
     function launchCurrentInstance() {

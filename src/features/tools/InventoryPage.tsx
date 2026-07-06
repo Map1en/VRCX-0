@@ -74,16 +74,18 @@ function GridSettingsMenu({ gridDensity, onGridDensityChange }: any) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t('dialog.gallery_icons.grid_settings')}
-                >
-                    <SettingsIcon data-icon="inline-start" />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t('dialog.gallery_icons.grid_settings')}
+                    >
+                        <SettingsIcon data-icon="inline-start" />
+                    </Button>
+                }
+            />
             <DropdownMenuContent className="w-72 p-3" align="end">
                 <FieldGroup>
                     <Field>
@@ -91,14 +93,13 @@ function GridSettingsMenu({ gridDensity, onGridDensityChange }: any) {
                             {t('dialog.gallery_icons.grid_density')}
                         </FieldLabel>
                         <ToggleGroup
-                            type="single"
                             variant="outline"
                             size="sm"
                             spacing={1}
-                            value={gridDensity}
+                            value={gridDensity ? [gridDensity] : []}
                             onValueChange={(nextValue) => {
-                                if (nextValue) {
-                                    onGridDensityChange(nextValue);
+                                if (nextValue[0]) {
+                                    onGridDensityChange(nextValue[0]);
                                 }
                             }}
                             className="grid w-full grid-cols-3"
@@ -436,26 +437,29 @@ export function InventoryPage() {
                             <TabsContent
                                 key={category}
                                 value={category}
-                                className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=inactive]:hidden"
+                                className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
                             >
                                 <div className="flex min-h-0 flex-1 flex-col gap-3">
                                     <MediaLibraryToolbar
                                         leading={
                                             <ToggleGroup
-                                                type="single"
                                                 variant="outline"
                                                 size="sm"
                                                 spacing={1}
-                                                value={categorySubTab}
+                                                value={
+                                                    categorySubTab
+                                                        ? [categorySubTab]
+                                                        : []
+                                                }
                                                 onValueChange={(nextValue) => {
-                                                    if (!nextValue) {
+                                                    if (!nextValue[0]) {
                                                         return;
                                                     }
                                                     inventory.setActiveSubTabs(
                                                         (current: any) => ({
                                                             ...current,
                                                             [category]:
-                                                                nextValue
+                                                                nextValue[0]
                                                         })
                                                     );
                                                 }}
@@ -480,17 +484,19 @@ export function InventoryPage() {
                                             <>
                                                 {showEmojiUploadOptions ? (
                                                     <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                            >
-                                                                <SlidersHorizontalIcon data-icon="inline-start" />
-                                                                {t(
-                                                                    'dialog.gallery_icons.upload_options'
-                                                                )}
-                                                            </Button>
-                                                        </PopoverTrigger>
+                                                        <PopoverTrigger
+                                                            render={
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                >
+                                                                    <SlidersHorizontalIcon data-icon="inline-start" />
+                                                                    {t(
+                                                                        'dialog.gallery_icons.upload_options'
+                                                                    )}
+                                                                </Button>
+                                                            }
+                                                        />
                                                         <PopoverContent
                                                             align="end"
                                                             className="w-80"

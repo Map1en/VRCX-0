@@ -1,5 +1,11 @@
 import { CalendarRangeIcon } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+    type ReactElement,
+    type ReactNode
+} from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import { formatCompactDateTime } from '@/lib/dateTime';
@@ -71,7 +77,7 @@ function TimeSelect({
         <div className="flex items-center gap-1">
             <Select
                 value={hour}
-                onValueChange={(next: string) => onChange(`${next}:${minute}`)}
+                onValueChange={(next) => onChange(`${next ?? ''}:${minute}`)}
             >
                 <SelectTrigger size="sm" className="w-16" aria-label={label}>
                     <SelectValue />
@@ -89,7 +95,7 @@ function TimeSelect({
             <span className="text-muted-foreground">:</span>
             <Select
                 value={minute}
-                onValueChange={(next: string) => onChange(`${hour}:${next}`)}
+                onValueChange={(next) => onChange(`${hour}:${next ?? ''}`)}
             >
                 <SelectTrigger size="sm" className="w-16" aria-label={label}>
                     <SelectValue />
@@ -187,20 +193,25 @@ export function DateTimeRangePicker({
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                {renderTrigger ? (
-                    renderTrigger({ active, label: triggerLabel })
-                ) : (
-                    <Button
-                        type="button"
-                        variant={active ? 'secondary' : 'outline'}
-                        className={triggerClassName}
-                    >
-                        <CalendarRangeIcon data-icon="inline-start" />
-                        <span className="truncate">{triggerLabel}</span>
-                    </Button>
-                )}
-            </PopoverTrigger>
+            <PopoverTrigger
+                render={
+                    renderTrigger ? (
+                        (renderTrigger({
+                            active,
+                            label: triggerLabel
+                        }) as ReactElement)
+                    ) : (
+                        <Button
+                            type="button"
+                            variant={active ? 'secondary' : 'outline'}
+                            className={triggerClassName}
+                        >
+                            <CalendarRangeIcon data-icon="inline-start" />
+                            <span className="truncate">{triggerLabel}</span>
+                        </Button>
+                    )
+                }
+            />
             <PopoverContent align={align} className="w-auto p-0">
                 <Calendar
                     mode="range"

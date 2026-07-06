@@ -55,11 +55,13 @@ function ExpanderCell({ row }: { row: Row<FeedRow> }) {
 function DateCell({ row }: { row: Row<FeedRow> }) {
     return (
         <Tooltip>
-            <TooltipTrigger asChild>
-                <span className="text-muted-foreground text-sm">
-                    {formatTimestamp(row.original.created_at)}
-                </span>
-            </TooltipTrigger>
+            <TooltipTrigger
+                render={
+                    <span className="text-muted-foreground text-sm">
+                        {formatTimestamp(row.original.created_at)}
+                    </span>
+                }
+            />
             <TooltipContent side="right">
                 {formatTimestampLong(row.original.created_at)}
             </TooltipContent>

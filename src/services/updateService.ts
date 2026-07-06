@@ -475,10 +475,18 @@ async function fetchLatestBranchRelease(
 }
 
 async function getUpdaterProxy() {
-    const proxy = await storageRepository
-        .getString('VRCX_ProxyServer', '')
-        .catch(() => '');
-    return String(proxy || '').trim();
+    const [proxyEnabledRaw, proxyRaw] = await Promise.all([
+        storageRepository.getString('VRCX_ProxyEnabled', '').catch(() => ''),
+        storageRepository.getString('VRCX_ProxyServer', '').catch(() => '')
+    ]);
+    const proxy = String(proxyRaw || '').trim();
+    const enabledText = String(proxyEnabledRaw || '')
+        .trim()
+        .toLowerCase();
+    const proxyEnabled = enabledText
+        ? ['true', '1', 'yes', 'on'].includes(enabledText)
+        : proxy !== '';
+    return proxyEnabled ? proxy : '';
 }
 
 function shouldAllowDowngradesForBranch() {

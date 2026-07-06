@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import gameLogRepository from '@/repositories/gameLogRepository';
-import { copyTextToClipboard } from '@/services/entityMediaService';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -82,8 +82,11 @@ export function useGameLogRowActions({
             if (!text) {
                 return;
             }
-            await copyTextToClipboard(text);
-            toast.success(t('view.game_log.success.copied_game_log_detail'));
+            await copyTextToClipboard(text, {
+                successMessage: t(
+                    'view.game_log.success.copied_game_log_detail'
+                )
+            });
         },
         [t]
     );

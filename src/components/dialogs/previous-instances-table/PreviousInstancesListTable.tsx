@@ -164,7 +164,9 @@ export function PreviousInstancesListTable({
                     <Select
                         value={String(pageSize)}
                         onValueChange={(value) =>
-                            onPageSizeChange(Number.parseInt(value, 10) || 10)
+                            onPageSizeChange(
+                                Number.parseInt(value ?? '', 10) || 10
+                            )
                         }
                     >
                         <SelectTrigger size="sm" className="w-24">

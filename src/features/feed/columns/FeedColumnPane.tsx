@@ -348,17 +348,19 @@ export function FeedColumnPane({
                         <GripVerticalIcon data-icon="icon" />
                     </Button>
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-muted-foreground hover:text-foreground"
-                                aria-label={t('accessibility.more')}
-                            >
-                                <MoreHorizontalIcon data-icon="icon" />
-                            </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground hover:text-foreground"
+                                    aria-label={t('accessibility.more')}
+                                >
+                                    <MoreHorizontalIcon data-icon="icon" />
+                                </Button>
+                            }
+                        />
                         <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
                                 <DropdownMenuItem

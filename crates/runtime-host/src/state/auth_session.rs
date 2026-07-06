@@ -13,17 +13,51 @@ impl RuntimeHostState {
             ));
         }
 
+        self.authenticate_non_interactive_saved_user(last_user, None, snapshot)
+            .await
+    }
+
+    pub(super) async fn authenticate_non_interactive_for_saved_user(
+        &self,
+        user_id: &str,
+        endpoint: &str,
+    ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
+        let user_id = user_id.trim();
+        if user_id.is_empty() {
+            return Err(NonInteractiveAuthError::Failed(
+                "No saved account is available for background login recovery.".into(),
+            ));
+        }
+        let snapshot = saved_snapshot(self.runtime_context.config())
+            .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
+        self.authenticate_non_interactive_saved_user(
+            user_id.to_string(),
+            Some(endpoint.to_string()),
+            snapshot,
+        )
+        .await
+    }
+
+    async fn authenticate_non_interactive_saved_user(
+        &self,
+        user_id: String,
+        endpoint_override: Option<String>,
+        snapshot: serde_json::Value,
+    ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
         let raw_saved_credentials = self
             .runtime_context
             .config()
             .get_json(SAVED_CREDENTIALS_KEY, serde_json::json!({}))
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-        let saved_record = raw_saved_credentials.get(&last_user).cloned();
-        let endpoint = saved_record
+        let saved_record = raw_saved_credentials.get(&user_id).cloned();
+        let saved_endpoint = saved_record
             .as_ref()
             .and_then(|record| record.get("loginParams"))
             .and_then(|login_params| string_field(login_params, "endpoint"))
             .unwrap_or_default();
+        let endpoint = endpoint_override
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or(saved_endpoint);
         let websocket = saved_record
             .as_ref()
             .and_then(|record| record.get("loginParams"))
@@ -33,7 +67,7 @@ impl RuntimeHostState {
         match probe_current_user_from_cookie(
             self.web.as_ref(),
             self.db.as_ref(),
-            last_user.clone(),
+            user_id.clone(),
             endpoint.clone(),
             websocket.clone(),
             false,
@@ -68,7 +102,7 @@ impl RuntimeHostState {
                 match probe_current_user_from_cookie(
                     self.web.as_ref(),
                     self.db.as_ref(),
-                    last_user.clone(),
+                    user_id.clone(),
                     endpoint.clone(),
                     websocket.clone(),
                     true,
@@ -111,7 +145,7 @@ impl RuntimeHostState {
             self.web.as_ref(),
             self.db.as_ref(),
             SavedCredentialLoginStartInput {
-                user_id: last_user.clone(),
+                user_id: user_id.clone(),
                 endpoint: endpoint.clone(),
             },
         )
@@ -119,7 +153,7 @@ impl RuntimeHostState {
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
         if response.status == 403 {
             return Err(NonInteractiveAuthError::SessionInvalidated {
-                user_id: last_user.clone(),
+                user_id: user_id.clone(),
                 reason: auth_response_error_message(
                     &response,
                     format!(
@@ -215,6 +249,7 @@ impl RuntimeHostState {
             .unwrap_or_else(|| serde_json::json!({}));
         let friends_by_id_map =
             serde_json::from_value::<HashMap<String, FriendRecord>>(friends_by_id.clone())?;
+        let mut favorite_groups_snapshot = None;
         let favorite_groups = match build_favorites_baseline(
             deps,
             SocialFavoritesBaselineInput {
@@ -226,10 +261,11 @@ impl RuntimeHostState {
         )
         .await
         {
-            Ok(output) => output
-                .snapshot
-                .map(|snapshot| favorite_group_membership_from_snapshot(snapshot.into_value()))
-                .unwrap_or_default(),
+            Ok(output) => output.snapshot.map_or_else(HashMap::new, |snapshot| {
+                let value = snapshot.into_value();
+                favorite_groups_snapshot = Some(value.clone());
+                favorite_group_membership_from_snapshot(value)
+            }),
             Err(error) => {
                 tracing::warn!(
                     error = %error,
@@ -241,6 +277,7 @@ impl RuntimeHostState {
         Ok(BackendSocialBaseline {
             friends_by_id: friends_by_id_map,
             favorite_groups,
+            favorite_groups_snapshot,
         })
     }
 }
@@ -249,6 +286,7 @@ impl RuntimeHostState {
 pub(super) struct BackendSocialBaseline {
     pub(super) friends_by_id: HashMap<String, FriendRecord>,
     pub(super) favorite_groups: HashMap<String, Vec<String>>,
+    pub(super) favorite_groups_snapshot: Option<serde_json::Value>,
 }
 
 pub(super) fn string_field(value: &serde_json::Value, key: &str) -> Option<String> {
@@ -262,4 +300,164 @@ pub(super) fn string_field(value: &serde_json::Value, key: &str) -> Option<Strin
             _ => None,
         })
         .filter(|value| !value.is_empty())
+}
+
+pub struct CliTwoFactorChoice {
+    pub method: String,
+    pub code: String,
+}
+
+pub trait CliLoginPrompt: Send + Sync + 'static {
+    fn prompt_username(&self) -> std::io::Result<String>;
+    fn prompt_password(&self) -> std::io::Result<String>;
+    fn prompt_two_factor(&self, methods: &[String]) -> std::io::Result<CliTwoFactorChoice>;
+}
+
+async fn run_blocking_prompt<T, F>(f: F) -> std::result::Result<T, NonInteractiveAuthError>
+where
+    F: FnOnce() -> std::io::Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    tokio::task::spawn_blocking(f)
+        .await
+        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?
+        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))
+}
+
+impl RuntimeHostState {
+    pub(super) async fn authenticate_cli_interactive(
+        &self,
+        prompt: Arc<dyn CliLoginPrompt>,
+    ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
+        let endpoint = String::new();
+
+        let prompt_username = Arc::clone(&prompt);
+        let username = run_blocking_prompt(move || prompt_username.prompt_username()).await?;
+
+        let prompt_password = Arc::clone(&prompt);
+        let password = run_blocking_prompt(move || prompt_password.prompt_password()).await?;
+
+        let (_, request) = vrcx_0_application::vrchat_api::auth::login_basic_input(
+            endpoint.clone(),
+            username,
+            password,
+            "Username is required.",
+            "Password is required.",
+        )
+        .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+
+        let response = self
+            .web
+            .execute_api(
+                request,
+                vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
+                self.db.as_ref(),
+            )
+            .await
+            .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+
+        let mut current_user_json: serde_json::Value = serde_json::from_str(&response.data)
+            .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+
+        if response.status == 200 && current_user_json.get("requiresTwoFactorAuth").is_some() {
+            let mut methods: Vec<String> = current_user_json["requiresTwoFactorAuth"]
+                .as_array()
+                .map(|values| {
+                    values
+                        .iter()
+                        .filter_map(|value| value.as_str().map(|s| s.to_string()))
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            if methods.is_empty() {
+                return Err(NonInteractiveAuthError::Failed(
+                    "2FA is required but no supported method was returned.".into(),
+                ));
+            }
+
+            methods.sort_by_key(|m| match m.as_str() {
+                "totp" => 0,
+                "emailOtp" => 1,
+                "otp" => 2,
+                _ => 3,
+            });
+
+            let prompt_2fa = Arc::clone(&prompt);
+            let choice =
+                run_blocking_prompt(move || prompt_2fa.prompt_two_factor(&methods)).await?;
+
+            let verify_req = match choice.method.as_str() {
+                "emailOtp" => vrcx_0_application::vrchat_api::auth::email_otp_verify_input(
+                    endpoint.clone(),
+                    choice.code,
+                ),
+                "otp" => vrcx_0_application::vrchat_api::auth::otp_verify_input(
+                    endpoint.clone(),
+                    choice.code,
+                ),
+                _ => vrcx_0_application::vrchat_api::auth::totp_verify_input(
+                    endpoint.clone(),
+                    choice.code,
+                ),
+            };
+
+            let verify_response = self
+                .web
+                .execute_api(
+                    verify_req,
+                    vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
+                    self.db.as_ref(),
+                )
+                .await
+                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+
+            if verify_response.status != 200 {
+                return Err(NonInteractiveAuthError::Failed(format!(
+                    "2FA verification failed with HTTP {}",
+                    verify_response.status
+                )));
+            }
+
+            let user_req =
+                vrcx_0_application::vrchat_api::auth::current_user_get_input(endpoint.clone());
+            let user_response = self
+                .web
+                .execute_api(
+                    user_req,
+                    vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
+                    self.db.as_ref(),
+                )
+                .await
+                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+
+            if user_response.status != 200 {
+                return Err(NonInteractiveAuthError::Failed(format!(
+                    "Failed to fetch user profile after 2FA: HTTP {}",
+                    user_response.status
+                )));
+            }
+
+            current_user_json = serde_json::from_str(&user_response.data)
+                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+        } else if response.status != 200 {
+            let error_msg = auth_response_error_message(
+                &response,
+                format!("Login failed with HTTP {}", response.status),
+            );
+            return Err(NonInteractiveAuthError::Failed(error_msg));
+        }
+
+        let user_id = string_field(&current_user_json, "id").unwrap_or_default();
+        if user_id.is_empty() {
+            return Err(NonInteractiveAuthError::Failed(
+                "The auth request did not return a valid user payload.".into(),
+            ));
+        }
+
+        let session =
+            AuthenticatedRuntimeSession::from_user(current_user_json, endpoint, String::new());
+        self.record_non_interactive_login_success(&session)?;
+        Ok(session)
+    }
 }

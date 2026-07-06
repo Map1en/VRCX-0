@@ -29,26 +29,28 @@ export function FriendListSearchFilterDropdown({ value, onChange }: any) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 w-36 justify-between"
-                >
-                    <span className="truncate">{label}</span>
-                    <ChevronDownIcon
-                        data-icon="inline-end"
-                        className="text-muted-foreground"
-                    />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 w-36 justify-between"
+                    >
+                        <span className="truncate">{label}</span>
+                        <ChevronDownIcon
+                            data-icon="inline-end"
+                            className="text-muted-foreground"
+                        />
+                    </Button>
+                }
+            />
             <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuGroup>
                     {SEARCH_FILTERS.map((filter: any) => (
                         <DropdownMenuCheckboxItem
                             key={filter.id}
                             checked={activeFilters.has(filter.id)}
-                            onSelect={(event) => event.preventDefault()}
+                            onClick={(event) => event.preventDefault()}
                             onCheckedChange={(checked) => {
                                 const next = new Set(activeFilters);
                                 if (checked) {

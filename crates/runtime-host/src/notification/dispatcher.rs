@@ -1,7 +1,5 @@
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-
 use serde_json::{json, Value};
+use std::sync::{Arc, Mutex};
 use vrcx_0_application::{
     HostSessionRuntime, ImageCache, OverlayActivityDelivery, OverlayActivitySink,
     OverlayActivitySnapshot, RuntimeDiagnostics, RuntimeEventBus, TaskSupervisor, WebClient,
@@ -11,18 +9,16 @@ use vrcx_0_core::location::{format_display_location, is_meaningful_world_name, p
 use vrcx_0_host::overlay_notifications::{send_xs_notification, OvrToolkit};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::web_client::WebExecuteRequest;
 
 use super::discord::{build_discord_payload, DiscordDeps};
 use super::image_file::extract_file_id;
 use super::rendered::RenderedNotification;
+use super::webhook::send_json_webhook_with_retry;
 use crate::notification::user_image::UserImageCache;
 use crate::vr_overlay::{OverlayLocale, OverlayLocalizer};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
-const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
 const OVERLAY_NOTIFICATION_APP_TITLE: &str = "VRCX-0";
-const WEBHOOK_RETRY_DELAYS: &[Duration] = &[Duration::from_millis(750), Duration::from_secs(2)];
 const DEFAULT_WEBHOOK_FIELDS: &[&str] = &[
     "version",
     "event",
@@ -61,8 +57,8 @@ impl Default for NotificationDeliveryPreferences {
             desktop_toast: "Never".into(),
             desktop_notification_sound: false,
             notification_tts: "Never".into(),
-            xs_notifications: true,
-            ovrt_hud_notifications: true,
+            xs_notifications: false,
+            ovrt_hud_notifications: false,
             ovrt_wrist_notifications: false,
             image_notifications: true,
             notification_timeout_ms: 3000,
@@ -536,8 +532,8 @@ fn load_preferences(config: &ConfigRepository) -> NotificationDeliveryPreference
         desktop_toast: config_string(config, "desktopToast", "Never"),
         desktop_notification_sound: config_bool(config, "desktopNotificationSound", false),
         notification_tts: config_string(config, "notificationTTS", "Never"),
-        xs_notifications: config_bool_with_legacy(config, "xsNotifications", true),
-        ovrt_hud_notifications: config_bool_with_legacy(config, "ovrtHudNotifications", true),
+        xs_notifications: config_bool_with_legacy(config, "xsNotifications", false),
+        ovrt_hud_notifications: config_bool_with_legacy(config, "ovrtHudNotifications", false),
         ovrt_wrist_notifications: config_bool_with_legacy(config, "ovrtWristNotifications", false),
         image_notifications: config_bool_with_legacy(config, "imageNotifications", true),
         notification_timeout_ms: config_int_with_legacy(config, "notificationTimeout", 3000),
@@ -712,58 +708,15 @@ async fn send_webhook_with_retry(
     } else {
         generic_webhook_payload(delivery, render, &preferences.webhook_fields)
     };
-    let body = match serde_json::to_string(&payload) {
-        Ok(body) => body,
-        Err(error) => {
-            diagnostics.record_command("notificationWebhook", "error", error.to_string());
-            return;
-        }
-    };
-    let mut last_error = String::new();
-    for attempt in 0..=WEBHOOK_RETRY_DELAYS.len() {
-        match send_webhook_once(discord_deps.web, url, &body).await {
-            Ok(status) if (200..=399).contains(&status) => return,
-            Ok(status) => {
-                last_error = format!("HTTP {status}");
-                if !webhook_status_retryable(status) {
-                    break;
-                }
-            }
-            Err(error) => {
-                last_error = error;
-            }
-        }
-        if let Some(delay) = WEBHOOK_RETRY_DELAYS.get(attempt) {
-            tokio::time::sleep(*delay).await;
-        }
-    }
-    diagnostics.record_command(
+    send_json_webhook_with_retry(
+        discord_deps.web,
+        diagnostics,
+        url,
+        payload,
         "notificationWebhook",
-        "error",
-        format!("{}: {last_error}", delivery.entry.activity_type),
-    );
-    tracing::warn!(
-        activity_type = %delivery.entry.activity_type,
-        error = %last_error,
-        "webhook notification delivery failed"
-    );
-}
-
-async fn send_webhook_once(web: &WebClient, url: &str, body: &str) -> Result<i32, String> {
-    let mut request = WebExecuteRequest::new(url.to_string(), "POST".to_string());
-    request
-        .headers
-        .push(("Content-Type".into(), "application/json".into()));
-    request.body = Some(body.to_string());
-    match tokio::time::timeout(WEBHOOK_TIMEOUT, web.execute(request)).await {
-        Ok(Ok((status, _data))) => Ok(status),
-        Ok(Err(error)) => Err(error.to_string()),
-        Err(_) => Err("timeout".into()),
-    }
-}
-
-fn webhook_status_retryable(status: i32) -> bool {
-    matches!(status, 408 | 409 | 425 | 429 | 500..=599 | -1)
+        &delivery.entry.activity_type,
+    )
+    .await;
 }
 
 fn generic_webhook_payload(
@@ -1000,6 +953,7 @@ mod tests {
             },
             desktop: false,
             vr: false,
+            hmd: false,
             webhook: true,
         }
     }

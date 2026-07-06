@@ -202,25 +202,27 @@ export function UserActivityPanel({
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full"
-                                disabled={loading}
-                                aria-label={'Refresh activity data'}
-                                onClick={() => {
-                                    refreshData({ forceRefresh: true });
-                                }}
-                            >
-                                {loading ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : (
-                                    <RefreshCwIcon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="rounded-full"
+                                    disabled={loading}
+                                    aria-label={'Refresh activity data'}
+                                    onClick={() => {
+                                        refreshData({ forceRefresh: true });
+                                    }}
+                                >
+                                    {loading ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <RefreshCwIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            }
+                        />
                         <TooltipContent>
                             {t('dialog.user.activity.refresh_hint')}
                         </TooltipContent>
@@ -240,8 +242,22 @@ export function UserActivityPanel({
                         </span>
                         <Select
                             value={selectedPeriod}
+                            items={[
+                                {
+                                    value: '90',
+                                    label: t('dialog.user.activity.period_90')
+                                },
+                                {
+                                    value: '30',
+                                    label: t('dialog.user.activity.period_30')
+                                },
+                                {
+                                    value: '7',
+                                    label: t('dialog.user.activity.period_7')
+                                }
+                            ]}
                             onValueChange={(value) => {
-                                changePeriod(value);
+                                changePeriod(value ?? '');
                             }}
                             disabled={loading}
                         >

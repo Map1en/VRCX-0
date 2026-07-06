@@ -19,3 +19,5 @@ pub enum OverlaySurfaceKind {
     Wrist,
     Main,
 }
+
+pub const MAIN_SURFACE_ID: &str = "main";
