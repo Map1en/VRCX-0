@@ -60,8 +60,7 @@ where
         let name = name.as_ref();
         if !status.is_game_running && is_vrchat_process_name(name) {
             status.is_game_running = true;
-        }
-        if !status.is_steamvr_running && is_steamvr_process_name(name) {
+        } else if !status.is_steamvr_running && is_steamvr_process_name(name) {
             status.is_steamvr_running = true;
         }
         if status.is_game_running && status.is_steamvr_running {
