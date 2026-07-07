@@ -98,7 +98,7 @@
         "husky": "^9.1.7",
         "lightningcss": "^1.32.0",
         "lint-staged": "^17.0.8",
-        "oxfmt": "^0.57.0",
+        "oxfmt": "^0.58.0",
         "oxlint": "^1.72.0",
         "shadcn": "^4.13.0",
         "tailwindcss": "^4.3.1",
