@@ -30,9 +30,9 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
 import type { UserFact } from '@/domain/users/userFacts';
-import { UserPickerRow } from '@/features/charts/components/MutualFriendsViewParts';
 import { InstanceActivityDateControls } from '@/features/instance-history/components/InstanceActivityDateControls';
 import { InstanceActivitySettingsPopover } from '@/features/instance-history/components/InstanceActivitySettingsPopover';
 import { InstanceHistoryList } from '@/features/instance-history/components/InstanceHistoryList';

@@ -19,7 +19,6 @@ thiserror = { workspace = true }
 vrcx-0-core = { path = "../core" }
 walkdir = { workspace = true }
 webp = "0.3.1"
-specta.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt"] }

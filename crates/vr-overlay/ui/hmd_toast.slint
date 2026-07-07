@@ -1,0 +1,88 @@
+export struct HmdToastItem {
+    actor: string,
+    action: string,
+    context: string,
+    avatar: image,
+    has-avatar: bool,
+    relation-color: color,
+    severity-color: color,
+}
+
+export component HmdToastPanel inherits Window {
+    width: 960px;
+    height: 528px;
+    background: transparent;
+
+    in property <bool> dark-background: true;
+    in property <[HmdToastItem]> toasts: [];
+
+    property <color> card-color: root.dark-background ? #101010eb : #101010b9;
+    property <color> text-color: #eeeeee;
+    property <color> muted-color: #a8a8a8;
+
+    for toast[index] in root.toasts : Rectangle {
+        x: (root.width - 860px) / 2;
+        y: root.height - 28px - 144px - index * 162px;
+        width: 860px;
+        height: 144px;
+        visible: self.y >= 0px;
+        background: root.card-color;
+
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: 8px;
+            height: parent.height;
+            background: toast.severity-color;
+        }
+
+        Rectangle {
+            x: 24px;
+            y: 24px;
+            width: 96px;
+            height: 96px;
+            border-radius: 48px;
+            background: root.muted-color;
+            visible: !toast.has-avatar;
+        }
+
+        Image {
+            x: 24px;
+            y: 24px;
+            width: 96px;
+            height: 96px;
+            source: toast.avatar;
+            visible: toast.has-avatar;
+        }
+
+        Text {
+            x: 142px;
+            y: 22px;
+            width: parent.width - 166px;
+            height: 36px;
+            text: toast.actor;
+            font-size: 30px;
+            color: toast.relation-color;
+        }
+
+        Text {
+            x: 142px;
+            y: 62px;
+            width: parent.width - 166px;
+            height: 29px;
+            text: toast.action;
+            font-size: 23px;
+            color: root.text-color;
+        }
+
+        Text {
+            x: 142px;
+            y: 96px;
+            width: parent.width - 166px;
+            height: 25px;
+            text: toast.context;
+            font-size: 20px;
+            color: root.muted-color;
+        }
+    }
+}

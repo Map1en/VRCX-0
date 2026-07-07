@@ -86,6 +86,18 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
             }
+            .check {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+                font-size: 14px;
+            }
+            .check input {
+                width: 16px;
+                height: 16px;
+                accent-color: var(--accent);
+            }
             .meta {
                 display: grid;
                 gap: 6px;
@@ -166,9 +178,17 @@
                         </button>
                     </div>
                 </div>
+                <div class="group">
+                    <label class="check">
+                        <input id="auto-refresh" type="checkbox" />
+                        Auto refresh
+                    </label>
+                </div>
                 <div class="group meta">
                     <div id="surface-meta"></div>
-                    <div id="hit-meta"></div>
+                    <div id="input-meta"></div>
+                    <div id="stats-meta"></div>
+                    <div id="mode-meta"></div>
                 </div>
             </aside>
             <main>
@@ -184,14 +204,17 @@
             const surfaceSelect = document.getElementById('surface');
             const scenarioSelect = document.getElementById('scenario');
             const frame = document.getElementById('frame');
+            const autoRefresh = document.getElementById('auto-refresh');
             const statusLine = document.getElementById('status');
             const surfaceMeta = document.getElementById('surface-meta');
-            const hitMeta = document.getElementById('hit-meta');
+            const inputMeta = document.getElementById('input-meta');
+            const statsMeta = document.getElementById('stats-meta');
+            const modeMeta = document.getElementById('mode-meta');
             let state = null;
-            let hoverPending = false;
-            let dragScroll = null;
-            let suppressClick = false;
-            let lastHit = null;
+            let moveTimer = null;
+            let pendingMove = null;
+            let currentObjectUrl = null;
+            let autoRefreshTimer = null;
 
             async function api(path, body) {
                 const response = await fetch(path, {
@@ -211,7 +234,7 @@
                 });
                 state = await response.json();
                 renderControls();
-                refreshFrame();
+                await refreshFrame();
             }
 
             function renderControls() {
@@ -229,49 +252,107 @@
                 const friends = state.friends || {};
                 const toast = state.toast || {};
                 surfaceMeta.textContent = `scenario=${state.scenario} rows=${friends.rows ?? '-'} toasts=${toast.toasts ?? '-'}`;
+                modeMeta.textContent = state.debug
+                    ? 'debug build; performance numbers need --release'
+                    : 'release build';
             }
 
-            function refreshFrame() {
-                const nextSrc = `/frame.png?t=${Date.now()}`;
-                const nextFrame = new Image();
-                nextFrame.onload = () => {
-                    frame.src = nextSrc;
+            async function refreshFrame() {
+                const response = await fetch(`/frame.png?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
+                if (!response.ok) {
+                    statusLine.textContent = await response.text();
+                    return;
+                }
+                updateStats(response.headers);
+                const blob = await response.blob();
+                const nextUrl = URL.createObjectURL(blob);
+                frame.onload = () => {
+                    if (currentObjectUrl) {
+                        URL.revokeObjectURL(currentObjectUrl);
+                    }
+                    currentObjectUrl = nextUrl;
                 };
-                nextFrame.src = nextSrc;
+                frame.src = nextUrl;
             }
 
-            function uvFromEvent(event) {
+            function updateStats(headers) {
+                const elapsed = headers.get('X-Render-Elapsed-Us');
+                const dirtyArea = headers.get('X-Dirty-Area');
+                const dirtyRects = headers.get('X-Dirty-Rects');
+                if (elapsed === null) {
+                    statsMeta.textContent = 'stats=-';
+                    return;
+                }
+                statsMeta.textContent = `render=${elapsed}us dirty=${dirtyArea} rects=${dirtyRects}`;
+            }
+
+            function pointFromEvent(event) {
                 const rect = frame.getBoundingClientRect();
+                const width = frame.naturalWidth || rect.width || 1;
+                const height = frame.naturalHeight || rect.height || 1;
                 return {
                     x: Math.max(
                         0,
-                        Math.min(1, (event.clientX - rect.left) / rect.width)
+                        Math.min(
+                            width,
+                            ((event.clientX - rect.left) / rect.width) * width
+                        )
                     ),
                     y: Math.max(
                         0,
-                        Math.min(1, (event.clientY - rect.top) / rect.height)
+                        Math.min(
+                            height,
+                            ((event.clientY - rect.top) / rect.height) * height
+                        )
                     )
                 };
             }
 
-            async function sendInput(action, uv, delta = 0) {
+            async function sendInput(action, point, extra = {}) {
                 if (!state || state.surface !== 'friends') {
                     return;
                 }
                 const response = await api('/api/input', {
                     action,
-                    x: uv.x,
-                    y: uv.y,
-                    delta
+                    x: point.x,
+                    y: point.y,
+                    ...extra
                 });
                 state = response.state;
                 renderControls();
-                const hit = response.result.hit ?? null;
-                hitMeta.textContent = `hit=${hit ?? '-'} cat=${response.result.selectedCategory}`;
-                const shouldRefresh = action !== 'hover' || hit !== lastHit;
-                lastHit = hit;
-                if (shouldRefresh) {
-                    refreshFrame();
+                const result = response.result || {};
+                inputMeta.textContent = `event=${result.event ?? '-'} x=${Math.round(result.x ?? 0)} y=${Math.round(result.y ?? 0)}`;
+                await refreshFrame();
+            }
+
+            function queueMove(event) {
+                pendingMove = pointFromEvent(event);
+                if (moveTimer) {
+                    return;
+                }
+                moveTimer = window.setTimeout(() => {
+                    const point = pendingMove;
+                    pendingMove = null;
+                    moveTimer = null;
+                    sendInput('move', point).catch((error) => {
+                        statusLine.textContent = error.message;
+                    });
+                }, 30);
+            }
+
+            function restartAutoRefresh() {
+                if (autoRefreshTimer) {
+                    window.clearInterval(autoRefreshTimer);
+                    autoRefreshTimer = null;
+                }
+                if (autoRefresh.checked) {
+                    autoRefreshTimer = window.setInterval(() => {
+                        refreshFrame().catch((error) => {
+                            statusLine.textContent = error.message;
+                        });
+                    }, 100);
                 }
             }
 
@@ -280,7 +361,7 @@
                 const scenario = (state.scenarios[surface] || [])[0]?.key || '';
                 state = await api('/api/select', { surface, scenario });
                 renderControls();
-                refreshFrame();
+                await refreshFrame();
             });
 
             scenarioSelect.addEventListener('change', async () => {
@@ -289,7 +370,7 @@
                     scenario: scenarioSelect.value
                 });
                 renderControls();
-                refreshFrame();
+                await refreshFrame();
             });
 
             document
@@ -297,7 +378,7 @@
                 .addEventListener('click', async () => {
                     state = await api('/api/reset');
                     renderControls();
-                    refreshFrame();
+                    await refreshFrame();
                 });
 
             document
@@ -305,7 +386,7 @@
                 .addEventListener('click', async () => {
                     state = await api('/api/spinner');
                     renderControls();
-                    refreshFrame();
+                    await refreshFrame();
                 });
 
             document
@@ -313,7 +394,7 @@
                 .addEventListener('click', async () => {
                     state = await api('/api/toast', { action: 'append' });
                     renderControls();
-                    refreshFrame();
+                    await refreshFrame();
                 });
 
             document
@@ -321,8 +402,10 @@
                 .addEventListener('click', async () => {
                     state = await api('/api/toast', { action: 'clear' });
                     renderControls();
-                    refreshFrame();
+                    await refreshFrame();
                 });
+
+            autoRefresh.addEventListener('change', restartAutoRefresh);
 
             frame.addEventListener('pointerdown', (event) => {
                 if (
@@ -332,71 +415,45 @@
                 ) {
                     return;
                 }
-                dragScroll = {
-                    pointerId: event.pointerId,
-                    lastY: event.clientY,
-                    totalY: 0,
-                    remainderY: 0,
-                    uv: uvFromEvent(event)
-                };
-                suppressClick = false;
                 frame.setPointerCapture(event.pointerId);
                 event.preventDefault();
-            });
-
-            frame.addEventListener('pointermove', (event) => {
-                if (dragScroll && dragScroll.pointerId === event.pointerId) {
-                    event.preventDefault();
-                    const dy = event.clientY - dragScroll.lastY;
-                    dragScroll.lastY = event.clientY;
-                    dragScroll.totalY += Math.abs(dy);
-                    dragScroll.remainderY += dy;
-                    const steps = Math.trunc(dragScroll.remainderY / 24);
-                    if (steps !== 0) {
-                        const delta = -steps;
-                        dragScroll.remainderY -= steps * 24;
-                        suppressClick = dragScroll.totalY > 8;
-                        sendInput('touchScroll', dragScroll.uv, delta).catch(
-                            (error) => {
-                                statusLine.textContent = error.message;
-                            }
-                        );
-                    }
-                    return;
-                }
-                if (hoverPending) {
-                    return;
-                }
-                hoverPending = true;
-                requestAnimationFrame(() => {
-                    hoverPending = false;
-                    sendInput('hover', uvFromEvent(event)).catch((error) => {
-                        statusLine.textContent = error.message;
-                    });
+                sendInput('down', pointFromEvent(event)).catch((error) => {
+                    statusLine.textContent = error.message;
                 });
             });
 
+            frame.addEventListener('pointermove', (event) => {
+                queueMove(event);
+            });
+
             frame.addEventListener('pointerup', (event) => {
-                if (dragScroll && dragScroll.pointerId === event.pointerId) {
-                    frame.releasePointerCapture(event.pointerId);
-                    suppressClick = dragScroll.totalY > 8;
-                    dragScroll = null;
+                if (
+                    event.button !== 0 ||
+                    !state ||
+                    state.surface !== 'friends'
+                ) {
+                    return;
                 }
+                if (frame.hasPointerCapture(event.pointerId)) {
+                    frame.releasePointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+                sendInput('up', pointFromEvent(event)).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
             });
 
             frame.addEventListener('pointercancel', (event) => {
-                if (dragScroll && dragScroll.pointerId === event.pointerId) {
+                if (frame.hasPointerCapture(event.pointerId)) {
                     frame.releasePointerCapture(event.pointerId);
-                    dragScroll = null;
                 }
+                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
             });
 
-            frame.addEventListener('click', (event) => {
-                if (suppressClick) {
-                    suppressClick = false;
-                    return;
-                }
-                sendInput('click', uvFromEvent(event)).catch((error) => {
+            frame.addEventListener('mouseleave', () => {
+                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
                     statusLine.textContent = error.message;
                 });
             });
@@ -405,14 +462,12 @@
                 'wheel',
                 (event) => {
                     event.preventDefault();
-                    const delta = Math.sign(event.deltaY || 0);
-                    if (delta !== 0) {
-                        sendInput('scroll', uvFromEvent(event), delta).catch(
-                            (error) => {
-                                statusLine.textContent = error.message;
-                            }
-                        );
-                    }
+                    sendInput('wheel', pointFromEvent(event), {
+                        delta_x: event.deltaX,
+                        delta_y: event.deltaY
+                    }).catch((error) => {
+                        statusLine.textContent = error.message;
+                    });
                 },
                 { passive: false }
             );

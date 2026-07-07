@@ -2,7 +2,7 @@ import type { EChartsType } from 'echarts/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import { openUserDialog } from '@/services/dialogService';
 import { getResolvedThemeMode } from '@/services/themeService';
 import { useFavoriteStore } from '@/state/favoriteStore';

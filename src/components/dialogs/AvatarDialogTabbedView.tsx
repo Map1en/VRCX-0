@@ -30,8 +30,18 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold';
 
-function firstArray(...values: any[]) {
-    return values.find((value: any) => Array.isArray(value)) || [];
+type AvatarGalleryEntry =
+    | string
+    | {
+          fileUrl?: string;
+          imageUrl?: string;
+          thumbnailImageUrl?: string;
+      };
+
+function firstArray<T>(...values: (T[] | null | undefined)[]): T[];
+function firstArray(...values: unknown[]) {
+    const result = values.find(Array.isArray);
+    return Array.isArray(result) ? result : [];
 }
 
 function normalizeEntityId(value: any) {
@@ -344,7 +354,7 @@ export function AvatarDialogTabbedView({
     const packageUrl = replaceVrcPackageUrl(
         avatar.unityPackageUrl || avatar.unityPackage?.url || ''
     );
-    const galleryImages = firstArray(
+    const galleryImages = firstArray<AvatarGalleryEntry>(
         avatar.galleryImages,
         avatar.galleries,
         avatar.gallery
@@ -352,11 +362,12 @@ export function AvatarDialogTabbedView({
     const listings = firstArray(avatar.publishedListings, avatar.listings);
     const currentGalleryEntry = galleryImages[galleryIndex] || null;
     const currentGalleryRawImage =
-        currentGalleryEntry?.imageUrl ||
-        currentGalleryEntry?.thumbnailImageUrl ||
-        currentGalleryEntry?.fileUrl ||
-        currentGalleryEntry ||
-        '';
+        typeof currentGalleryEntry === 'string'
+            ? currentGalleryEntry
+            : currentGalleryEntry?.imageUrl ||
+              currentGalleryEntry?.thumbnailImageUrl ||
+              currentGalleryEntry?.fileUrl ||
+              '';
     const currentGalleryImage = currentGalleryRawImage
         ? convertFileUrlToImageUrl(currentGalleryRawImage, 1024)
         : '';

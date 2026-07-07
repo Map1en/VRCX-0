@@ -11,8 +11,8 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { formatDateFilter } from '@/lib/dateTime';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';

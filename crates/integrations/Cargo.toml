@@ -2,7 +2,6 @@
 name = "vrcx-0-integrations"
 version = "0.1.0"
 edition = "2021"
-autotests = false
 
 [dependencies]
 futures-util = "0.3"
@@ -14,7 +13,3 @@ specta.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
-
-[[test]]
-name = "telemetry_contract"
-path = "tests/telemetry_contract.rs"

@@ -312,5 +312,4 @@ fn readable_location_part(value: &str) -> &str {
 }
 
 #[cfg(test)]
-#[path = "../tests/location_tests.rs"]
 mod tests;

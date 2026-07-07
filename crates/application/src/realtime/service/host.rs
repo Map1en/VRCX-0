@@ -56,43 +56,26 @@ use crate::RuntimeAuthScope;
 use crate::{Error, Result};
 
 #[cfg(test)]
-#[path = "../../../tests/realtime/service/friend_baseline_tests.rs"]
 mod friend_baseline_tests;
-#[path = "lifecycle_current_user.rs"]
 mod lifecycle_current_user;
-#[path = "lifecycle_enrichment.rs"]
 mod lifecycle_enrichment;
-#[path = "lifecycle_friend_baseline.rs"]
 mod lifecycle_friend_baseline;
-#[path = "lifecycle_friend_messages.rs"]
 mod lifecycle_friend_messages;
-#[path = "lifecycle_friend_profile.rs"]
 mod lifecycle_friend_profile;
-#[path = "lifecycle_invite_automation.rs"]
 mod lifecycle_invite_automation;
-#[path = "lifecycle_output.rs"]
 mod lifecycle_output;
-#[path = "lifecycle_session.rs"]
 mod lifecycle_session;
-#[path = "lifecycle_world_cache.rs"]
 mod lifecycle_world_cache;
-#[path = "message_dispatch.rs"]
 mod message_dispatch;
 #[cfg(test)]
-#[path = "../../../tests/realtime/service/notification_enrichment_tests.rs"]
 mod notification_enrichment_tests;
-#[path = "persistence.rs"]
 mod persistence;
 #[cfg(test)]
-#[path = "../../../tests/realtime/service/session_reconnect_tests.rs"]
 mod session_reconnect_tests;
 #[cfg(test)]
-#[path = "../../../tests/realtime/service/support.rs"]
 mod test_support;
-#[path = "types.rs"]
 mod types;
 #[cfg(test)]
-#[path = "../../../tests/realtime/service/world_cache_tests.rs"]
 mod world_cache_tests;
 
 use lifecycle_world_cache::WorldNameFetchOutcome;

@@ -12,4 +12,4 @@ image.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tiny_http = "0.12"
-vrcx-0-vr-overlay = { path = "../vr-overlay" }
+vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-spike"] }

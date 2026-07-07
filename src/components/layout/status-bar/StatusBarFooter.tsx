@@ -36,127 +36,19 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import {
+    AppUptimeValue,
+    ClockValue,
+    DurationValue,
+    NowPlayingProgress
+} from './StatusBarFooterParts';
 import { StatusDot, StatusSegment } from './StatusBarParts';
 import { resolveProxyIndicatorState } from './statusBarProxy';
 import type {
-    DurationValueProps,
     StatusBarFooterProps,
     StatusBarInstanceQueue,
-    StatusBarMutualGraph,
-    StatusBarNowPlaying
+    StatusBarMutualGraph
 } from './statusBarTypes';
-
-let tickerNowMs = Date.now();
-let tickerTimer: number | null = null;
-const tickerListeners = new Set<(nowMs: number) => void>();
-
-function emitTicker() {
-    tickerNowMs = Date.now();
-    for (const listener of tickerListeners) {
-        listener(tickerNowMs);
-    }
-}
-
-function subscribeStatusTicker(listener: (nowMs: number) => void) {
-    tickerListeners.add(listener);
-    if (tickerTimer === null) {
-        tickerTimer = window.setInterval(emitTicker, 1000);
-    }
-
-    return () => {
-        tickerListeners.delete(listener);
-        if (tickerListeners.size === 0 && tickerTimer !== null) {
-            window.clearInterval(tickerTimer);
-            tickerTimer = null;
-        }
-    };
-}
-
-function useStatusNowMs(active: boolean = true) {
-    const [nowMs, setNowMs] = useState(() => tickerNowMs);
-
-    useEffect(() => {
-        if (!active) {
-            return undefined;
-        }
-        setNowMs(tickerNowMs);
-        return subscribeStatusTicker(setNowMs);
-    }, [active]);
-
-    return nowMs;
-}
-
-function DurationValue({ active, formatter, startAtMs }: DurationValueProps) {
-    const normalizedStartAt = Number(startAtMs);
-    const enabled =
-        Boolean(active) &&
-        Number.isFinite(normalizedStartAt) &&
-        normalizedStartAt > 0;
-    const nowMs = useStatusNowMs(enabled);
-
-    if (!enabled) {
-        return '-';
-    }
-
-    return formatter(nowMs - normalizedStartAt);
-}
-
-function AppUptimeValue({
-    formatter,
-    startedAtMs
-}: {
-    formatter: (ms: number) => string;
-    startedAtMs: number;
-}) {
-    const nowMs = useStatusNowMs(true);
-    return formatter(nowMs - startedAtMs);
-}
-
-function ClockValue({
-    formatter,
-    offset
-}: {
-    formatter: (nowMs: number, offset: unknown) => string;
-    offset: unknown;
-}) {
-    const nowMs = useStatusNowMs(true);
-    return formatter(nowMs, offset);
-}
-
-function NowPlayingProgress({
-    formatter,
-    nowPlaying
-}: {
-    formatter: (ms: unknown) => string;
-    nowPlaying: StatusBarNowPlaying;
-}) {
-    const hasLength = Boolean(nowPlaying.length);
-    const nowMs = useStatusNowMs(hasLength && Boolean(nowPlaying.startedAt));
-    if (!hasLength) {
-        return null;
-    }
-
-    const lengthSeconds = Math.max(0, Number(nowPlaying.length) || 0);
-    const startedAtMs = nowPlaying.startedAt
-        ? Date.parse(nowPlaying.startedAt)
-        : Number.NaN;
-    const elapsedSeconds = Math.min(
-        lengthSeconds,
-        Math.max(
-            0,
-            Number(nowPlaying.position || 0) +
-                (Number.isFinite(startedAtMs)
-                    ? Math.floor((nowMs - startedAtMs) / 1000)
-                    : 0)
-        )
-    );
-
-    return (
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {`${formatter(elapsedSeconds * 1000)} / ${formatter(lengthSeconds * 1000)}`}
-        </span>
-    );
-}
 
 function formatInstanceQueueValue(
     instanceQueue: StatusBarInstanceQueue,

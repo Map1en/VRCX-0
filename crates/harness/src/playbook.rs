@@ -213,11 +213,7 @@ pub(crate) fn classify_keyword(user_text: &str) -> Option<Playbook> {
 /// history and emits no events; any error or no-match returns None so the caller
 /// falls back to the full toolset.
 pub(crate) async fn classify_llm(client: &LlmClient, user_text: &str) -> Option<Playbook> {
-    let messages = vec![
-        ChatMessage::system(classify_prompt()),
-        ChatMessage::system("/no_think"),
-        ChatMessage::user(user_text.to_string()),
-    ];
+    let messages = classify_messages(user_text);
     let turn = match client.stream_chat(&messages, &[], |_| {}).await {
         Ok(turn) => turn,
         Err(error) => {
@@ -242,6 +238,13 @@ Output only the label.\n\nIntents:\n",
         prompt.push('\n');
     }
     prompt
+}
+
+fn classify_messages(user_text: &str) -> Vec<ChatMessage> {
+    vec![
+        ChatMessage::system(classify_prompt()),
+        ChatMessage::user(user_text.to_string()),
+    ]
 }
 
 fn matched_intent(output: &str) -> Option<&'static Intent> {
@@ -362,6 +365,22 @@ mod tests {
                 Some(label)
             );
         }
+    }
+
+    #[test]
+    fn classifier_request_uses_one_leading_system_message_without_no_think() {
+        let messages = classify_messages("什麼時候是拜訪線上好友的最佳時機？");
+
+        let roles: Vec<&str> = messages
+            .iter()
+            .map(|message| message.role.as_str())
+            .collect();
+        assert_eq!(roles, vec!["system", "user"]);
+        assert!(!messages[0]
+            .content
+            .as_deref()
+            .unwrap()
+            .contains("/no_think"));
     }
 
     #[test]

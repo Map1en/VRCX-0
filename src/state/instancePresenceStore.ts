@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import {
     buildInstancePresenceFact,
     instancePresenceKey,
+    sameInstancePresenceFact,
     type InstancePresenceFact,
     type InstancePresenceFactInput
 } from '@/domain/presence/instancePresence';
@@ -39,10 +40,7 @@ export const useInstancePresenceStore = create<InstancePresenceStoreState>(
                     return state;
                 }
                 const existing = state.presenceByKey[key];
-                if (
-                    existing &&
-                    JSON.stringify(existing) === JSON.stringify(fact)
-                ) {
+                if (existing && sameInstancePresenceFact(existing, fact)) {
                     return state;
                 }
                 const endpoint = endpointFromKey(key);

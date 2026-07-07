@@ -709,5 +709,4 @@ fn first_non_empty<'a>(values: impl IntoIterator<Item = &'a str>) -> &'a str {
 }
 
 #[cfg(test)]
-#[path = "../../tests/realtime/write_tests.rs"]
 mod tests;

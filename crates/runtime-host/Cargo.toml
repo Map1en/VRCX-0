@@ -7,6 +7,7 @@ edition = "2021"
 default = []
 steamvr-overlay = ["vrcx-0-host/steamvr-overlay"]
 openxr-overlay = ["vrcx-0-host/openxr-overlay"]
+slint-spike = ["vrcx-0-vr-overlay/slint-spike"]
 test-utils = ["vrcx-0-application/test-utils"]
 
 [dependencies]
@@ -27,6 +28,6 @@ vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-media = { path = "../media" }
 vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-vr-overlay = { path = "../vr-overlay" }
+vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-ui"] }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
 uuid.workspace = true

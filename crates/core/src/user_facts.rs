@@ -497,5 +497,4 @@ pub fn number_value(value: i64) -> Value {
 }
 
 #[cfg(test)]
-#[path = "../tests/user_facts_tests.rs"]
 mod tests;

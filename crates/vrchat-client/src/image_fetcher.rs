@@ -30,7 +30,10 @@ impl ImageFetcher {
         let mut builder = Client::builder()
             .cookie_provider(cookie_jar)
             .user_agent(build_vrcx_user_agent(app_version))
-            .pool_max_idle_per_host(10);
+            .pool_max_idle_per_host(10)
+            .tcp_keepalive(std::time::Duration::from_secs(60))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .read_timeout(std::time::Duration::from_secs(30));
 
         if let Some(proxy) = proxy_url {
             builder = builder.proxy(

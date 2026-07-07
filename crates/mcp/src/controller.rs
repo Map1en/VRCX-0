@@ -244,11 +244,15 @@ impl McpServerController {
     }
 
     async fn stop_locked(&self) -> Result<(), McpError> {
-        let mut handle_slot = self.handle.lock().await;
-        let Some(handle) = handle_slot.take() else {
-            self.active_connections.store(0, Ordering::Relaxed);
-            return Ok(());
+        let handle = {
+            let mut handle_slot = self.handle.lock().await;
+            let Some(handle) = handle_slot.take() else {
+                self.active_connections.store(0, Ordering::Relaxed);
+                return Ok(());
+            };
+            handle
         };
+
         handle.cancel.cancel();
         let mut join = handle.join;
         match tokio::time::timeout(Duration::from_secs(5), &mut join).await {

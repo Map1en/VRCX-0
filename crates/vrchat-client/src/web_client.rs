@@ -225,7 +225,10 @@ impl WebClient {
             .brotli(true)
             .deflate(true)
             .pool_max_idle_per_host(10)
-            .pool_idle_timeout(std::time::Duration::from_secs(300));
+            .pool_idle_timeout(std::time::Duration::from_secs(300))
+            .tcp_keepalive(std::time::Duration::from_secs(60))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .read_timeout(std::time::Duration::from_secs(30));
 
         if let Some(ref url) = proxy_url {
             builder = builder

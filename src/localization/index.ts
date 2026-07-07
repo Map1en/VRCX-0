@@ -13,7 +13,11 @@ import viMessages from './vi.json';
 import zhCnMessages from './zh-CN.json';
 import zhTwMessages from './zh-TW.json';
 
-const localizedStrings: any = {
+type LocalizedStringTable = Record<string, unknown> & {
+    language?: unknown;
+};
+
+const localizedStrings: Record<string, LocalizedStringTable> = {
     cs: csMessages,
     en: enMessages,
     es: esMessages,
@@ -34,18 +38,21 @@ function getAllLocalizedStrings() {
     return { ...localizedStrings };
 }
 
-async function getLocalizedStrings(code: any) {
+async function getLocalizedStrings(code: string) {
     return localizedStrings[code] || localizedStrings.en || {};
 }
 
-function getLanguageName(code: any) {
+function getLanguageName(code: string) {
     return String(localizedStrings[code]?.language ?? code).replace(
         /\s+\([^)]+\)$/,
         ''
     );
 }
 
-function resolveSystemLanguage(systemLanguage: any, codes: any) {
+function resolveSystemLanguage(
+    systemLanguage: string | null | undefined,
+    codes: readonly string[]
+) {
     if (!systemLanguage) return null;
 
     if (codes.includes(systemLanguage)) {
@@ -59,7 +66,7 @@ function resolveSystemLanguage(systemLanguage: any, codes: any) {
         const hasHant = parts.includes('Hant');
         const hasHans = parts.includes('Hans');
         const traditionalRegions = ['TW', 'HK', 'MO'];
-        const hasTraditionalRegion = parts.some((p: any) =>
+        const hasTraditionalRegion = parts.some((p) =>
             traditionalRegions.includes(p)
         );
 
@@ -72,7 +79,7 @@ function resolveSystemLanguage(systemLanguage: any, codes: any) {
         return codes.includes('zh-CN') ? 'zh-CN' : null;
     }
 
-    return codes.find((code: any) => code.split('-')[0] === lang) ?? null;
+    return codes.find((code) => code.split('-')[0] === lang) ?? null;
 }
 
 export * from './locales';

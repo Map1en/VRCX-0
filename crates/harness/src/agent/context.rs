@@ -36,30 +36,43 @@ pub(super) fn build_context(
     ctx: &TurnContext,
     route: Option<playbook::Playbook>,
 ) -> Vec<ChatMessage> {
-    let mut working = vec![
-        ChatMessage::system(SYSTEM_PROMPT),
-        ChatMessage::system(current_time_directive(Local::now().fixed_offset())),
-    ];
-    if let Some(pb) = route {
-        working.push(ChatMessage::system(pb.constraint_prompt()));
-    }
-    if let Some(locale) = ctx
-        .locale
-        .as_deref()
-        .map(str::trim)
-        .filter(|l| !l.is_empty())
-    {
-        working.push(ChatMessage::system(format!(
-            "Write your reply in the language that matches this interface locale code: \
-{locale}. Keep proper nouns (names, world titles) as-is."
-        )));
-    }
     let (history, surfaced) = ctx
         .sessions
         .get(&ctx.session_id)
         .map(|session| (session.messages, session.surfaced_entities))
         .unwrap_or_default();
-    working.extend(assemble_history(&history, &surfaced));
+    build_context_messages(
+        ctx.locale.as_deref(),
+        &history,
+        &surfaced,
+        route,
+        Local::now().fixed_offset(),
+    )
+}
+
+fn build_context_messages(
+    locale: Option<&str>,
+    history: &[Message],
+    surfaced: &[Entity],
+    route: Option<playbook::Playbook>,
+    now_local: DateTime<FixedOffset>,
+) -> Vec<ChatMessage> {
+    let mut system_sections = vec![SYSTEM_PROMPT.to_string(), current_time_directive(now_local)];
+    if let Some(pb) = route {
+        system_sections.push(pb.constraint_prompt().to_string());
+    }
+    if let Some(locale) = locale.map(str::trim).filter(|l| !l.is_empty()) {
+        system_sections.push(format!(
+            "Write your reply in the language that matches this interface locale code: \
+{locale}. Keep proper nouns (names, world titles) as-is."
+        ));
+    }
+    if let Some(note) = known_references_note(surfaced) {
+        system_sections.push(note);
+    }
+
+    let mut working = vec![ChatMessage::system(system_sections.join("\n\n"))];
+    working.extend(assemble_history(history));
     working
 }
 
@@ -85,12 +98,8 @@ fn context_window_start(history: &[Message]) -> usize {
     start
 }
 
-fn assemble_history(history: &[Message], surfaced: &[Entity]) -> Vec<ChatMessage> {
+fn assemble_history(history: &[Message]) -> Vec<ChatMessage> {
     let mut out = Vec::new();
-    if let Some(note) = known_references_note(surfaced) {
-        out.push(ChatMessage::system(note));
-    }
-
     let start = context_window_start(history);
     let window = &history[start..];
     let last_assistant = window
@@ -287,7 +296,7 @@ mod tests {
             message(Role::User, "where did he go?"),
         ];
 
-        let assembled = assemble_history(&history, &[]);
+        let assembled = assemble_history(&history);
 
         assert_eq!(assembled.len(), 5);
         assert_eq!(assembled[0].role, "user");
@@ -306,17 +315,27 @@ mod tests {
     }
 
     #[test]
-    fn assemble_history_adds_known_references_note_before_messages() {
+    fn build_context_uses_one_leading_system_message() {
         let history = vec![message(Role::User, "he常去哪?")];
-        let assembled = assemble_history(&history, &[entity("user", "usr_1", "Alice")]);
+        let assembled = build_context_messages(
+            Some("zh-CN"),
+            &history,
+            &[entity("user", "usr_1", "Alice")],
+            playbook::classify_keyword("best time to play"),
+            DateTime::parse_from_rfc3339("2026-06-28T06:00:00+09:00").unwrap(),
+        );
 
-        assert_eq!(assembled.len(), 2);
-        assert_eq!(assembled[0].role, "system");
+        let roles: Vec<&str> = assembled
+            .iter()
+            .map(|message| message.role.as_str())
+            .collect();
+        assert_eq!(roles, vec!["system", "user"]);
         assert!(assembled[0]
             .content
             .as_deref()
             .unwrap()
             .contains("id=\"usr_1\""));
+        assert!(assembled[0].content.as_deref().unwrap().contains("zh-CN"));
         assert_eq!(assembled[1].role, "user");
         assert_eq!(assembled[1].content.as_deref(), Some("he常去哪?"));
     }
@@ -324,7 +343,7 @@ mod tests {
     #[test]
     fn assemble_history_keeps_single_current_user_without_stub() {
         let history = vec![message(Role::User, "new question")];
-        let assembled = assemble_history(&history, &[]);
+        let assembled = assemble_history(&history);
 
         assert_eq!(assembled.len(), 1);
         assert_eq!(assembled[0].role, "user");

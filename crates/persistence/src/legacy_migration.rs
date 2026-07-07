@@ -128,5 +128,4 @@ fn sync_sidecar(from: PathBuf, to: PathBuf) -> Result<(), Error> {
 }
 
 #[cfg(test)]
-#[path = "../tests/legacy_migration_tests.rs"]
 mod tests;

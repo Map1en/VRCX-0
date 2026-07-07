@@ -5,7 +5,7 @@ import { XIcon } from 'lucide-react';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { preserveAppTitleBarOnOpenChange } from '@/lib/overlay-titlebar';
+import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 

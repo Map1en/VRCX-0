@@ -297,5 +297,4 @@ fn affected_count(count: i64) -> u64 {
 }
 
 #[cfg(test)]
-#[path = "../../tests/game_log/tests.rs"]
 mod tests;

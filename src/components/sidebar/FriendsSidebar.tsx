@@ -3,9 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import { mergeRosterFriendFacts } from '@/domain/friends/friendRosterFacts';
-import { useCurrentInstancePresence } from '@/domain/presence/useCurrentInstancePresence';
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -14,13 +11,8 @@ import {
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import { useFavoriteStore } from '@/state/favoriteStore';
 import type { FavoriteGroup } from '@/state/favoriteStoreTypes';
-import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
-import { usePreferencesStore } from '@/state/preferencesStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
 
 import {
     buildFavoriteCollectionFriendIdSet,
@@ -51,8 +43,10 @@ import {
 import { FriendsSidebarVirtualRow } from './friends-sidebar/FriendsSidebarVirtualRows';
 import { useFriendsSidebarActions } from './friends-sidebar/useFriendsSidebarActions';
 import { useFriendsSidebarPreferences } from './friends-sidebar/useFriendsSidebarPreferences';
-
-const EMPTY_CURRENT_LOCATION_PLAYER_IDS = Object.freeze([]);
+import { useFriendsSidebarDisplayPreferences } from './useFriendsSidebarDisplayPreferences';
+import { useFriendsSidebarFavoriteState } from './useFriendsSidebarFavoriteState';
+import { useFriendsSidebarRosterState } from './useFriendsSidebarRosterState';
+import { useFriendsSidebarRuntimeSnapshot } from './useFriendsSidebarRuntimeSnapshot';
 
 function hasFavoriteGroupKey(
     group: FavoriteGroup
@@ -105,143 +99,6 @@ function buildInstanceActionGateTarget(
             source?.stateBucket || source?.state
         ),
         isCurrentUser: friendId === normalizeId(currentUserId)
-    };
-}
-
-function useFriendsSidebarRuntimeSnapshot() {
-    const themeMode = useShellStore((state) => state.themeMode);
-    const currentUser = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
-    );
-    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
-    const runtimeCurrentLocation = useRuntimeStore(
-        (state) => state.gameState.currentLocation
-    );
-    const runtimeCurrentDestination = useRuntimeStore(
-        (state) => state.gameState.currentDestination
-    );
-    const currentLocationPlayerIds = useRuntimeStore(
-        (state) => state.gameState.currentLocationPlayerIds
-    );
-    const domainCurrentInstancePresence = useCurrentInstancePresence();
-    const isGameRunning = useRuntimeStore(
-        (state) => state.gameState.isGameRunning
-    );
-    const effectiveCurrentLocationPlayerIds =
-        currentLocationPlayerIds && currentLocationPlayerIds.length
-            ? currentLocationPlayerIds
-            : domainCurrentInstancePresence?.userIds ||
-              EMPTY_CURRENT_LOCATION_PLAYER_IDS;
-    const gameState = useMemo(
-        () => ({
-            currentLocation: runtimeCurrentLocation,
-            currentDestination: runtimeCurrentDestination,
-            currentLocationPlayerIds: effectiveCurrentLocationPlayerIds,
-            isGameRunning
-        }),
-        [
-            effectiveCurrentLocationPlayerIds,
-            isGameRunning,
-            runtimeCurrentDestination,
-            runtimeCurrentLocation
-        ]
-    );
-    const currentLocation =
-        runtimeCurrentLocation === 'traveling'
-            ? runtimeCurrentDestination
-            : runtimeCurrentLocation;
-    const isDarkMode =
-        themeMode === 'dark' ||
-        (typeof document !== 'undefined' &&
-            document.documentElement.classList.contains('dark'));
-
-    return {
-        currentEndpoint,
-        currentLocation,
-        currentUser,
-        currentUserId,
-        effectiveCurrentLocationPlayerIds,
-        gameState,
-        isDarkMode
-    };
-}
-
-function useFriendsSidebarRosterState() {
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore(
-        (state) => state.orderedFriendIds
-    );
-    const onlineIds = useFriendRosterStore((state) => state.onlineIds);
-    const activeIds = useFriendRosterStore((state) => state.activeIds);
-    const offlineIds = useFriendRosterStore((state) => state.offlineIds);
-    const loadStatus = useFriendRosterStore((state) => state.loadStatus);
-    const factsById = useKnownUserFacts(orderedFriendIds);
-    const mergedFriendsById = useMemo(
-        () => mergeRosterFriendFacts(friendsById, factsById),
-        [friendsById, factsById]
-    );
-
-    return {
-        activeIds,
-        friendsById: mergedFriendsById,
-        loadStatus,
-        offlineIds,
-        onlineIds,
-        orderedFriendIds
-    };
-}
-
-function useFriendsSidebarFavoriteState() {
-    const favoriteFriendIds = useFavoriteStore(
-        (state) => state.favoriteFriendIds
-    );
-    const favoriteFriendGroups = useFavoriteStore(
-        (state) => state.favoriteFriendGroups
-    );
-    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
-        (state) => state.groupedFavoriteFriendIdsByGroupKey
-    );
-    const localFriendFavorites = useFavoriteStore(
-        (state) => state.localFriendFavorites
-    );
-    const localFriendFavoriteGroups = useFavoriteStore(
-        (state) => state.localFriendFavoriteGroups
-    );
-
-    return {
-        favoriteFriendGroups,
-        favoriteFriendIds,
-        groupedFavoriteFriendIdsByGroupKey,
-        localFriendFavoriteGroups,
-        localFriendFavorites
-    };
-}
-
-function useFriendsSidebarDisplayPreferences() {
-    const randomUserColours = usePreferencesStore(
-        (state) => state.randomUserColours
-    );
-    const trustColor = usePreferencesStore((state) => state.trustColor);
-    const preferencesHydrated = usePreferencesStore(
-        (state) => state.preferencesHydrated
-    );
-    const ageGatedInstancesVisiblePreference = usePreferencesStore(
-        (state) => state.isAgeGatedInstancesVisible
-    );
-    const showInstanceIdInLocation = usePreferencesStore(
-        (state) => state.showInstanceIdInLocation
-    );
-    const ageGatedInstancesVisible =
-        preferencesHydrated && ageGatedInstancesVisiblePreference;
-
-    return {
-        ageGatedInstancesVisible,
-        randomUserColours,
-        showInstanceIdInLocation,
-        trustColor
     };
 }
 

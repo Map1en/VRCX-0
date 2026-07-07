@@ -122,7 +122,7 @@ function resolveLocationMetadataModel({
     };
 }
 
-function buildLocationActionTarget(location: string, worldName: any = '') {
+function buildLocationActionTarget(location: string, worldName: string = '') {
     const parsed = parseLocation(location);
     const shortName = parsed.shortName || '';
     const isRealLocation = Boolean(

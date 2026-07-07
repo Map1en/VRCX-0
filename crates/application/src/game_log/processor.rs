@@ -551,5 +551,4 @@ fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: GameLogSideEff
 }
 
 #[cfg(test)]
-#[path = "../../tests/game_log/processor_tests.rs"]
 mod tests;

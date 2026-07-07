@@ -1,4 +1,3 @@
-import { recordUserProfile } from '@/domain/users/userFactAccess';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -7,6 +6,7 @@ import {
     setCachedQueryData
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import { recordUserProfile } from '@/services/userFactAccessService';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
 import {
     computeTrustLevel,

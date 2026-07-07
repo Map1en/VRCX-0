@@ -46,6 +46,12 @@ regex = "1"
 rusqlite = "0.40"
 serde = "1"
 serde_json = "1"
+slint = { version = "~1.17", default-features = false, features = [
+    "compat-1-2",
+    "renderer-software",
+    "std"
+] }
+slint-build = "~1.17"
 specta = { version = "=2.0.0-rc.22", features = [
     "derive",
     "serde_json",

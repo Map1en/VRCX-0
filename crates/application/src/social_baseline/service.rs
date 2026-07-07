@@ -149,11 +149,8 @@ fn stale_friend_output(user_id: String, detail: String) -> SocialFriendRosterBas
     }
 }
 
-#[path = "favorites.rs"]
 mod favorites;
-#[path = "friends/mod.rs"]
 mod friends;
-#[path = "remote.rs"]
 mod remote;
 
 pub use favorites::build_favorites_baseline;

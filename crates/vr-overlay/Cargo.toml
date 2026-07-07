@@ -2,10 +2,20 @@
 name = "vrcx-0-vr-overlay"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
+
+[features]
+default = []
+slint-ui = ["dep:slint"]
+slint-spike = ["slint-ui"]
 
 [dependencies]
 cosmic-text = "0.19.0"
 serde = { workspace = true, features = ["derive"] }
+slint = { workspace = true, optional = true }
 specta.workspace = true
 thiserror = { workspace = true }
 tiny-skia = "0.12.0"
+
+[build-dependencies]
+slint-build.workspace = true

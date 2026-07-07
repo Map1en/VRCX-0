@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 
-import { recordUserProfile } from '@/domain/users/userFactAccess';
 import i18n from '@/services/i18nService';
+import { recordUserProfile } from '@/services/userFactAccessService';
 import {
     useDialogStore,
     type ActiveDialog,

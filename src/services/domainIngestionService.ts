@@ -1,8 +1,8 @@
-import { ingestUserFactEntries } from '@/domain/users/userFactAccess';
 import type {
     UserFactMergeOptions,
     UserFactSource
 } from '@/domain/users/userFacts';
+import { ingestUserFactEntries } from '@/services/userFactAccessService';
 import { parseLocation } from '@/shared/utils/location';
 import { useInstancePresenceStore } from '@/state/instancePresenceStore';
 import { useLocationHintStore } from '@/state/locationHintStore';

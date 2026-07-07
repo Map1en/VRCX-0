@@ -11,16 +11,13 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
-import {
-    useKnownUserFact,
-    useKnownUserFacts
-} from '@/domain/users/useKnownUser';
 import { openGameLogUser } from '@/features/game-log/gameLogUserLookup';
 import {
     formatClock,
     formatDateFilterOrFallback,
     timeToText
 } from '@/lib/dateTime';
+import { useKnownUserFact, useKnownUserFacts } from '@/lib/useKnownUser';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';

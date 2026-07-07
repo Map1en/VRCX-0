@@ -1,8 +1,14 @@
+#[cfg(all(test, feature = "slint-spike"))]
+use std::cell::Cell;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
+#[cfg(feature = "slint-spike")]
+use std::sync::OnceLock;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Condvar, Mutex,
 };
+use std::thread::{self, ThreadId};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Local, Timelike};
@@ -34,14 +40,16 @@ use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::favorites::favorite_list;
 use vrcx_0_persistence::memos::{memo_list_user_notes, memo_list_users};
 use vrcx_0_vr_overlay::{
-    build_friends_panel_scene, build_main_scene, build_wrist_scene, new_shared_overlay_font_system,
-    AvatarBitmap, FavoriteFriendsPanelModel, FriendPanelAction, FriendPanelCategory,
-    FriendPanelRow, FriendPanelRowActions, FriendPanelRowPrimaryAction, FriendPanelStatusTone,
-    MainSurfaceModel, OverlayRenderer, OverlaySize, OverlaySurfaceId, OverlayTransform, RgbaFrame,
-    TextMeasurer, TinySkiaRenderer, FRIENDS_PANEL_ID, FRIENDS_PANEL_LASER_LEFT_SURFACE_ID,
+    build_friends_panel_scene, AvatarBitmap, FavoriteFriendsPanelModel, FriendPanelAction,
+    FriendPanelCategory, FriendPanelRow, FriendPanelRowActions, FriendPanelRowPrimaryAction,
+    FriendPanelStatusTone, MainSurfaceModel, OverlayRenderer, OverlaySize, OverlaySurfaceId,
+    OverlayTransform, RgbaFrame, SlintHmdRenderer, SlintWristRenderer, TinySkiaRenderer,
+    WristSurfaceModel, FRIENDS_PANEL_ID, FRIENDS_PANEL_LASER_LEFT_SURFACE_ID,
     FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID, FRIENDS_PANEL_SURFACE_ID, LEGACY_DUMMY_PANEL_ID,
     MAIN_SURFACE_ID,
 };
+#[cfg(feature = "slint-spike")]
+use vrcx_0_vr_overlay::{SlintPanelHost, SlintPanelPointerEvent, UvPoint};
 
 use crate::notification::user_image::UserImageCache;
 use crate::RuntimeHostContext;
@@ -62,6 +70,21 @@ trait VrOverlayFrameProducer: Send {
 
 type VrOverlayFrameProducerFactory = Box<dyn Fn() -> Box<dyn VrOverlayFrameProducer> + Send + Sync>;
 type FriendsPanelSnapshotProvider = Arc<dyn Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync>;
+
+thread_local! {
+    static SLINT_WRIST_RENDERER: RefCell<Option<SlintWristRenderer>> = const { RefCell::new(None) };
+    static SLINT_HMD_RENDERER: RefCell<Option<SlintHmdRenderer>> = const { RefCell::new(None) };
+}
+
+#[cfg(feature = "slint-spike")]
+thread_local! {
+    static SLINT_SPIKE_HOST: RefCell<Option<SlintPanelHost>> = const { RefCell::new(None) };
+}
+
+#[cfg(all(test, feature = "slint-spike"))]
+thread_local! {
+    static SLINT_SPIKE_TEST_ENABLED: Cell<bool> = const { Cell::new(false) };
+}
 
 pub const VR_OVERLAY_ENABLED_CONFIG_KEY: &str = "wristOverlayEnabled";
 pub const VR_OVERLAY_BACKEND_CONFIG_KEY: &str = "wristOverlayBackend";
@@ -88,6 +111,12 @@ const DATE_TIME_HOUR12_CONFIG_KEY: &str = "dtHour12";
 const WRIST_DEVICE_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
 const WRIST_FRAME_REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 const FRIENDS_PANEL_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(100);
+#[cfg(feature = "slint-spike")]
+const SLINT_SPIKE_ENV_KEY: &str = "VRCX0_SLINT_SPIKE";
+#[cfg(feature = "slint-spike")]
+const MAX_SLINT_SPIKE_INPUT_EVENTS: usize = 512;
+#[cfg(feature = "slint-spike")]
+const SLINT_SPIKE_SCROLL_ROW_PIXELS: f32 = 106.0;
 const FRIENDS_PANEL_SPINNER_PHASE_STEP: f32 = 0.1;
 const FRIENDS_PANEL_ACTION_ARM_TIMEOUT: Duration = Duration::from_secs(3);
 const FRIENDS_PANEL_LASER_SIZE: OverlaySize = OverlaySize::new(256, 6);
@@ -365,6 +394,9 @@ pub struct VrOverlayRuntime {
     vr_mode: AtomicBool,
     steamvr_running: AtomicBool,
     refresh_loop_started: AtomicBool,
+    wrist_frame_release_requested: AtomicBool,
+    hmd_frame_release_requested: AtomicBool,
+    device_refresh_requested: AtomicBool,
     interactive_degraded_logged: AtomicBool,
     backend_available: bool,
     context: Option<Arc<RuntimeHostContext>>,
@@ -377,6 +409,8 @@ pub struct VrOverlayRuntime {
     friends_panel_note_memo_cache: Mutex<FriendsPanelNoteMemoCache>,
     friends_panel_model_dirty: Arc<AtomicBool>,
     friends_panel_frame_dirty: Arc<AtomicBool>,
+    #[cfg(feature = "slint-spike")]
+    slint_spike_input_events: Mutex<VecDeque<OverlayInputEvent>>,
     refresh_wake: Arc<RefreshWake>,
     devices: Mutex<Vec<VrDeviceSnapshot>>,
     hmd_toasts: Mutex<VecDeque<HmdToastState>>,
@@ -386,9 +420,9 @@ pub struct VrOverlayRuntime {
     manager: Mutex<VrOverlayManager<HostVrOverlayService>>,
     running_mirror: AtomicBool,
     active_backend_mirror: Mutex<Option<&'static str>>,
+    refresh_thread_id: Mutex<Option<ThreadId>>,
     frame_producer_factory: VrOverlayFrameProducerFactory,
     frame_producer: Mutex<Option<Box<dyn VrOverlayFrameProducer>>>,
-    main_frame_renderer: Mutex<Option<RuntimeMainFrameRenderer>>,
     friends_panel_renderer: Mutex<TinySkiaRenderer>,
 }
 
@@ -477,12 +511,16 @@ impl VrOverlayRuntime {
             vr_mode: AtomicBool::new(false),
             steamvr_running: AtomicBool::new(false),
             refresh_loop_started: AtomicBool::new(false),
+            wrist_frame_release_requested: AtomicBool::new(false),
+            hmd_frame_release_requested: AtomicBool::new(false),
+            device_refresh_requested: AtomicBool::new(false),
             interactive_degraded_logged: AtomicBool::new(false),
             backend_available,
             context,
             manager: Mutex::new(VrOverlayManager::new(service)),
             running_mirror: AtomicBool::new(false),
             active_backend_mirror: Mutex::new(None),
+            refresh_thread_id: Mutex::new(None),
             config: Mutex::new(config),
             friends_panel_snapshot_provider: Mutex::new(None),
             friends_panel_favorite_groups: Mutex::new(FavoriteFriendGroupsSnapshot::default()),
@@ -492,6 +530,8 @@ impl VrOverlayRuntime {
             friends_panel_note_memo_cache: Mutex::new(FriendsPanelNoteMemoCache::default()),
             friends_panel_model_dirty: Arc::new(AtomicBool::new(false)),
             friends_panel_frame_dirty: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "slint-spike")]
+            slint_spike_input_events: Mutex::new(VecDeque::new()),
             refresh_wake: Arc::new(RefreshWake::new()),
             devices: Mutex::new(Vec::new()),
             hmd_toasts: Mutex::new(VecDeque::new()),
@@ -500,7 +540,6 @@ impl VrOverlayRuntime {
             user_image_cache: Arc::new(UserImageCache::new()),
             frame_producer_factory,
             frame_producer: Mutex::new(None),
-            main_frame_renderer: Mutex::new(None),
             friends_panel_renderer: Mutex::new(TinySkiaRenderer::new()),
         }
     }
@@ -522,6 +561,7 @@ impl VrOverlayRuntime {
         }
         let runtime = Arc::clone(self);
         tasks.spawn_cancellable_thread("vr-overlay-refresh", move |stop_token| {
+            runtime.set_refresh_thread_id(thread::current().id());
             let mut next_device_refresh = Instant::now();
             let mut refresh_wake_sequence = 0;
             while !stop_token.is_stop_requested() {
@@ -531,16 +571,19 @@ impl VrOverlayRuntime {
                 if stop_token.is_stop_requested() {
                     break;
                 }
+                runtime.consume_slint_renderer_release_requests();
                 if !runtime.has_active_surface() {
                     continue;
                 }
                 let now = Instant::now();
-                let refresh_devices = now >= next_device_refresh;
+                let refresh_devices =
+                    now >= next_device_refresh || runtime.consume_device_refresh_request();
                 runtime.reconcile_current_with_device_refresh(refresh_devices);
                 if refresh_devices {
                     next_device_refresh = now + WRIST_DEVICE_REFRESH_INTERVAL;
                 }
             }
+            runtime.clear_refresh_thread_id();
         });
 
         let input_runtime = Arc::clone(self);
@@ -550,6 +593,30 @@ impl VrOverlayRuntime {
                 input_runtime.drain_overlay_input_events();
             }
         });
+    }
+
+    fn set_refresh_thread_id(&self, thread_id: ThreadId) {
+        if let Ok(mut current) = self.refresh_thread_id.lock() {
+            *current = Some(thread_id);
+        }
+    }
+
+    fn clear_refresh_thread_id(&self) {
+        if let Ok(mut current) = self.refresh_thread_id.lock() {
+            *current = None;
+        }
+    }
+
+    fn is_refresh_thread(&self) -> bool {
+        self.refresh_thread_id
+            .lock()
+            .ok()
+            .and_then(|current| *current)
+            .is_some_and(|thread_id| thread_id == thread::current().id())
+    }
+
+    fn should_defer_slint_render_to_refresh_thread(&self) -> bool {
+        self.context.is_some() && !self.is_refresh_thread()
     }
 
     pub(crate) fn set_friends_panel_snapshot_provider<F>(&self, provider: F)
@@ -1000,6 +1067,10 @@ impl VrOverlayRuntime {
     }
 
     fn friends_panel_animation_refresh_active(&self) -> bool {
+        #[cfg(feature = "slint-spike")]
+        if self.slint_spike_animation_refresh_active() {
+            return true;
+        }
         self.interactive_panel
             .lock()
             .map(|panel| {
@@ -1008,6 +1079,17 @@ impl VrOverlayRuntime {
                         || panel.armed_action_expires_at.is_some())
             })
             .unwrap_or(false)
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn slint_spike_animation_refresh_active(&self) -> bool {
+        slint_spike_enabled()
+            && self
+                .interactive_panel
+                .lock()
+                .map(|panel| panel.visible)
+                .unwrap_or(false)
+            && slint_spike_host_has_active_animations()
     }
 
     pub fn snapshot(&self) -> VrOverlayRuntimeSnapshot {
@@ -1126,6 +1208,7 @@ impl VrOverlayRuntime {
         if let Ok(mut queue) = self.hmd_toasts.lock() {
             queue.clear();
         }
+        self.release_hmd_renderer();
     }
 
     fn push_hmd_frame(
@@ -1184,11 +1267,7 @@ impl VrOverlayRuntime {
         locale: OverlayLocale,
     ) -> Result<RgbaFrame, String> {
         let model = build_main_surface_model(MainOverlayFrameInput { toasts, locale });
-        self.main_frame_renderer
-            .lock()
-            .map_err(|_| "HMD frame renderer lock poisoned".to_string())?
-            .get_or_insert_with(RuntimeMainFrameRenderer::new)
-            .render(&model)
+        render_slint_hmd_frame(&model)
     }
 
     fn spawn_avatar_fetch(self: &Arc<Self>, entry: &OverlayActivityEntry) {
@@ -1272,6 +1351,9 @@ impl VrOverlayRuntime {
     }
 
     fn reconcile_current_with_device_refresh(&self, refresh_devices: bool) {
+        if self.is_refresh_thread() {
+            self.consume_slint_renderer_release_requests();
+        }
         let changed_config = self.changed_runtime_config();
         if let Ok(mut manager) = self.manager.lock() {
             let mut config = self.current_runtime_config();
@@ -1332,17 +1414,25 @@ impl VrOverlayRuntime {
                     tracing::warn!(error = %error, "failed to set VR overlay interaction mode");
                 }
                 if active_surfaces.wrist {
-                    self.refresh_devices_if_needed(
-                        &mut manager,
-                        refresh_devices,
-                        config.render.show_devices,
-                    );
-                    self.push_wrist_frame(&mut manager, config);
+                    if self.should_defer_slint_render_to_refresh_thread() {
+                        self.defer_refresh_to_refresh_thread(refresh_devices);
+                    } else {
+                        self.refresh_devices_if_needed(
+                            &mut manager,
+                            refresh_devices,
+                            config.render.show_devices,
+                        );
+                        self.push_wrist_frame(&mut manager, config);
+                    }
                 } else {
                     self.release_frame_producer();
                 }
                 if active_surfaces.hmd {
-                    self.push_hmd_frame(&mut manager, config, Instant::now());
+                    if self.should_defer_slint_render_to_refresh_thread() {
+                        self.refresh_wake.notify();
+                    } else {
+                        self.push_hmd_frame(&mut manager, config, Instant::now());
+                    }
                 } else {
                     self.clear_hmd_toasts();
                 }
@@ -1352,6 +1442,17 @@ impl VrOverlayRuntime {
             }
             self.refresh_manager_mirror(&manager);
         }
+    }
+
+    fn defer_refresh_to_refresh_thread(&self, refresh_devices: bool) {
+        if refresh_devices {
+            self.device_refresh_requested.store(true, Ordering::Release);
+        }
+        self.refresh_wake.notify();
+    }
+
+    fn consume_device_refresh_request(&self) -> bool {
+        self.device_refresh_requested.swap(false, Ordering::AcqRel)
     }
 
     fn drain_overlay_input_events(&self) {
@@ -1538,9 +1639,61 @@ impl VrOverlayRuntime {
     }
 
     fn release_frame_producer(&self) {
+        if self.defer_slint_renderer_release(&self.wrist_frame_release_requested) {
+            if let Ok(mut devices) = self.devices.lock() {
+                devices.clear();
+            }
+            self.refresh_wake.notify();
+            return;
+        }
+        self.release_frame_producer_on_current_thread();
+    }
+
+    fn consume_slint_renderer_release_requests(&self) {
+        self.consume_slint_renderer_release_request(&self.wrist_frame_release_requested, || {
+            self.release_frame_producer_on_current_thread();
+        });
+        self.consume_slint_renderer_release_request(&self.hmd_frame_release_requested, || {
+            self.release_hmd_renderer_on_current_thread();
+        });
+    }
+
+    fn defer_slint_renderer_release(&self, request: &AtomicBool) -> bool {
+        if self.should_defer_slint_render_to_refresh_thread() {
+            request.store(true, Ordering::Release);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn consume_slint_renderer_release_request(&self, request: &AtomicBool, release: impl FnOnce()) {
+        if request.swap(false, Ordering::AcqRel) {
+            release();
+        }
+    }
+
+    fn release_hmd_renderer(&self) {
+        if self.defer_slint_renderer_release(&self.hmd_frame_release_requested) {
+            self.refresh_wake.notify();
+            return;
+        }
+        self.release_hmd_renderer_on_current_thread();
+    }
+
+    fn release_hmd_renderer_on_current_thread(&self) {
+        self.hmd_frame_release_requested
+            .store(false, Ordering::Release);
+        clear_slint_hmd_renderer();
+    }
+
+    fn release_frame_producer_on_current_thread(&self) {
+        self.wrist_frame_release_requested
+            .store(false, Ordering::Release);
         if let Ok(mut producer) = self.frame_producer.lock() {
             producer.take();
         }
+        clear_slint_wrist_renderer();
         if let Ok(mut devices) = self.devices.lock() {
             devices.clear();
         }
@@ -1558,7 +1711,52 @@ impl VrOverlayRuntime {
         panel.model.armed_action_region_id = None;
         panel.model.row_scroll_drag = None;
         panel.armed_action_expires_at = None;
+        #[cfg(feature = "slint-spike")]
+        self.clear_slint_spike_input_events();
         was_visible
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn enqueue_slint_spike_friends_panel_input(
+        &self,
+        event: OverlayInputEvent,
+    ) -> OverlayInputProcessOutcome {
+        {
+            let Ok(mut panel) = self.interactive_panel.lock() else {
+                return OverlayInputProcessOutcome::default();
+            };
+            if !panel.visible {
+                return OverlayInputProcessOutcome::default();
+            }
+            panel.focused = !slint_spike_pointer_missed(event.uv);
+        }
+        if let Ok(mut events) = self.slint_spike_input_events.lock() {
+            if events.len() >= MAX_SLINT_SPIKE_INPUT_EVENTS {
+                events.pop_front();
+            }
+            events.push_back(event);
+        }
+        self.friends_panel_frame_dirty
+            .store(true, Ordering::Release);
+        OverlayInputProcessOutcome {
+            surface_config_changed: false,
+            frame_changed: true,
+        }
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn drain_slint_spike_input_events(&self) -> Vec<OverlayInputEvent> {
+        self.slint_spike_input_events
+            .lock()
+            .map(|mut events| events.drain(..).collect())
+            .unwrap_or_default()
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn clear_slint_spike_input_events(&self) {
+        if let Ok(mut events) = self.slint_spike_input_events.lock() {
+            events.clear();
+        }
     }
 
     fn process_overlay_input_events(
@@ -1583,6 +1781,10 @@ impl VrOverlayRuntime {
                 surface_config_changed: self.close_friends_panel(),
                 frame_changed: false,
             };
+        }
+        #[cfg(feature = "slint-spike")]
+        if slint_spike_enabled() && slint_spike_consumes_input(&event.kind) {
+            return self.enqueue_slint_spike_friends_panel_input(event);
         }
         let next_model_for_summon = if matches!(&event.kind, OverlayInputKind::Summon { .. }) {
             let opening = self
@@ -1618,6 +1820,8 @@ impl VrOverlayRuntime {
                         panel.model.armed_action_region_id = None;
                         panel.model.row_scroll_drag = None;
                         panel.armed_action_expires_at = None;
+                        #[cfg(feature = "slint-spike")]
+                        self.clear_slint_spike_input_events();
                     } else {
                         panel.visible = true;
                         panel.focused = true;
@@ -1782,6 +1986,11 @@ impl VrOverlayRuntime {
             self.rebuild_visible_friends_panel_model();
         }
         let frame_dirty = self.friends_panel_frame_dirty.swap(false, Ordering::AcqRel);
+        #[cfg(feature = "slint-spike")]
+        if slint_spike_enabled() {
+            self.push_slint_spike_friends_panel_frame(manager);
+            return;
+        }
         let model = {
             let Ok(mut panel) = self.interactive_panel.lock() else {
                 return;
@@ -1823,6 +2032,53 @@ impl VrOverlayRuntime {
         }
         if let Err(error) = manager.show_surface(&surface_id) {
             tracing::warn!(error = %error, "failed to show VR friends panel surface");
+        }
+        self.push_friends_panel_laser_frames(manager);
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn push_slint_spike_friends_panel_frame(
+        &self,
+        manager: &mut VrOverlayManager<HostVrOverlayService>,
+    ) {
+        let (visible, size) = {
+            let Ok(panel) = self.interactive_panel.lock() else {
+                return;
+            };
+            (panel.visible, panel.model.size)
+        };
+        if !visible {
+            return;
+        }
+        let events = self.drain_slint_spike_input_events();
+        let result = with_slint_spike_host(size, |host| {
+            for event in events {
+                host.dispatch(slint_spike_pointer_event(event, size))?;
+            }
+            host.render_if_needed()
+        })
+        .and_then(|frame| frame);
+        let frame = match result {
+            Ok(Some(frame)) => frame,
+            Ok(None) => return,
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to render VR Slint spike panel frame");
+                return;
+            }
+        };
+        tracing::debug!(
+            elapsed_us = frame.stats.elapsed.as_micros(),
+            dirty_area = frame.stats.dirty_area,
+            dirty_rects = frame.stats.dirty_rects,
+            "rendered VR Slint spike panel frame"
+        );
+        let surface_id = OverlaySurfaceId::new(FRIENDS_PANEL_SURFACE_ID);
+        if let Err(error) = manager.update_surface_frame(&surface_id, frame.frame) {
+            tracing::warn!(error = %error, "failed to update VR Slint spike panel frame");
+            return;
+        }
+        if let Err(error) = manager.show_surface(&surface_id) {
+            tracing::warn!(error = %error, "failed to show VR Slint spike panel surface");
         }
         self.push_friends_panel_laser_frames(manager);
     }
@@ -2198,18 +2454,11 @@ impl GameLogEventSink for VrOverlayRuntime {
 
 struct RuntimeWristFrameProducer {
     context: Arc<RuntimeHostContext>,
-    text: TextMeasurer,
-    renderer: TinySkiaRenderer,
 }
 
 impl RuntimeWristFrameProducer {
     fn new(context: Arc<RuntimeHostContext>) -> Self {
-        let font_system = new_shared_overlay_font_system();
-        Self {
-            context,
-            text: TextMeasurer::with_font_system(Arc::clone(&font_system)),
-            renderer: TinySkiaRenderer::with_font_system(font_system),
-        }
+        Self { context }
     }
 }
 
@@ -2217,10 +2466,38 @@ impl VrOverlayFrameProducer for RuntimeWristFrameProducer {
     fn next_frame(&mut self, input: VrOverlayFrameInput) -> Result<RgbaFrame, String> {
         let frame_input = build_wrist_frame_input(&self.context, input.config, input.devices);
         let model = build_wrist_surface_model(frame_input);
-        self.renderer
-            .render(&build_wrist_scene(&model, &mut self.text))
-            .map_err(|error| error.to_string())
+        render_slint_wrist_frame(&model)
     }
+}
+
+fn render_slint_wrist_frame(model: &WristSurfaceModel) -> Result<RgbaFrame, String> {
+    SLINT_WRIST_RENDERER.with(|renderer| {
+        renderer
+            .borrow_mut()
+            .get_or_insert_with(SlintWristRenderer::new)
+            .render(model)
+    })
+}
+
+fn clear_slint_wrist_renderer() {
+    SLINT_WRIST_RENDERER.with(|renderer| {
+        renderer.borrow_mut().take();
+    });
+}
+
+fn render_slint_hmd_frame(model: &MainSurfaceModel) -> Result<RgbaFrame, String> {
+    SLINT_HMD_RENDERER.with(|renderer| {
+        renderer
+            .borrow_mut()
+            .get_or_insert_with(SlintHmdRenderer::new)
+            .render(model)
+    })
+}
+
+fn clear_slint_hmd_renderer() {
+    SLINT_HMD_RENDERER.with(|renderer| {
+        renderer.borrow_mut().take();
+    });
 }
 
 #[derive(Default)]
@@ -2229,27 +2506,6 @@ struct StaticWristFrameProducer;
 impl VrOverlayFrameProducer for StaticWristFrameProducer {
     fn next_frame(&mut self, _input: VrOverlayFrameInput) -> Result<RgbaFrame, String> {
         Ok(RgbaFrame::new(OverlaySize::new(16, 8), vec![0; 16 * 8 * 4]))
-    }
-}
-
-struct RuntimeMainFrameRenderer {
-    text: TextMeasurer,
-    renderer: TinySkiaRenderer,
-}
-
-impl RuntimeMainFrameRenderer {
-    fn new() -> Self {
-        let font_system = new_shared_overlay_font_system();
-        Self {
-            text: TextMeasurer::with_font_system(Arc::clone(&font_system)),
-            renderer: TinySkiaRenderer::with_font_system(font_system),
-        }
-    }
-
-    fn render(&mut self, model: &MainSurfaceModel) -> Result<RgbaFrame, String> {
-        self.renderer
-            .render(&build_main_scene(model, &mut self.text))
-            .map_err(|error| error.to_string())
     }
 }
 
@@ -2443,6 +2699,100 @@ fn start_mode_allows(start_mode: WristOverlayStartMode, game_running: bool, vr_m
         WristOverlayStartMode::SteamVr => true,
         WristOverlayStartMode::VrchatVrMode => game_running && vr_mode,
     }
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_enabled() -> bool {
+    #[cfg(test)]
+    if SLINT_SPIKE_TEST_ENABLED.with(|enabled| enabled.get()) {
+        return true;
+    }
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::env::var(SLINT_SPIKE_ENV_KEY)
+            .map(|value| {
+                let value = value.trim();
+                !(value.is_empty()
+                    || value == "0"
+                    || value.eq_ignore_ascii_case("false")
+                    || value.eq_ignore_ascii_case("off"))
+            })
+            .unwrap_or(false)
+    })
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_consumes_input(kind: &OverlayInputKind) -> bool {
+    matches!(
+        kind,
+        OverlayInputKind::Hover
+            | OverlayInputKind::ClickDown
+            | OverlayInputKind::ClickUp
+            | OverlayInputKind::Scroll { .. }
+    )
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_pointer_missed(uv: UvPoint) -> bool {
+    !uv.x.is_finite() || !uv.y.is_finite() || uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_pointer_position(uv: UvPoint, size: OverlaySize) -> (f32, f32) {
+    (uv.x * size.width as f32, uv.y * size.height as f32)
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_pointer_event(
+    event: OverlayInputEvent,
+    size: OverlaySize,
+) -> SlintPanelPointerEvent {
+    if slint_spike_pointer_missed(event.uv) {
+        return SlintPanelPointerEvent::Exited;
+    }
+    let (x, y) = slint_spike_pointer_position(event.uv, size);
+    match event.kind {
+        OverlayInputKind::Hover => SlintPanelPointerEvent::Moved { x, y },
+        OverlayInputKind::ClickDown => SlintPanelPointerEvent::Pressed { x, y },
+        OverlayInputKind::ClickUp => SlintPanelPointerEvent::Released { x, y },
+        OverlayInputKind::Scroll { delta } => SlintPanelPointerEvent::Scrolled {
+            x,
+            y,
+            delta_x: 0.0,
+            delta_y: -delta * SLINT_SPIKE_SCROLL_ROW_PIXELS,
+        },
+        _ => SlintPanelPointerEvent::Exited,
+    }
+}
+
+#[cfg(feature = "slint-spike")]
+fn with_slint_spike_host<T>(
+    size: OverlaySize,
+    callback: impl FnOnce(&mut SlintPanelHost) -> T,
+) -> Result<T, String> {
+    SLINT_SPIKE_HOST.with(|slot| {
+        let mut host = slot.borrow_mut();
+        let needs_new = host
+            .as_ref()
+            .map(|current| current.size() != size)
+            .unwrap_or(true);
+        if needs_new {
+            *host = Some(SlintPanelHost::new(size)?);
+        }
+        let Some(host) = host.as_mut() else {
+            return Err("Slint spike host is unavailable".to_string());
+        };
+        Ok(callback(host))
+    })
+}
+
+#[cfg(feature = "slint-spike")]
+fn slint_spike_host_has_active_animations() -> bool {
+    SLINT_SPIKE_HOST.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .is_some_and(SlintPanelHost::has_active_animations)
+    })
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -3834,6 +4184,28 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "slint-spike")]
+    struct SlintSpikeTestGate {
+        previous: bool,
+    }
+
+    #[cfg(feature = "slint-spike")]
+    impl Drop for SlintSpikeTestGate {
+        fn drop(&mut self) {
+            SLINT_SPIKE_TEST_ENABLED.with(|enabled| enabled.set(self.previous));
+        }
+    }
+
+    #[cfg(feature = "slint-spike")]
+    fn enable_slint_spike_for_test() -> SlintSpikeTestGate {
+        let previous = SLINT_SPIKE_TEST_ENABLED.with(|enabled| {
+            let previous = enabled.get();
+            enabled.set(true);
+            previous
+        });
+        SlintSpikeTestGate { previous }
+    }
+
     fn set_friends_panel_favorite(runtime: &VrOverlayRuntime, user_id: &str) {
         runtime.update_friends_panel_favorite_groups_from_baseline(&serde_json::json!({
             "favoriteFriendGroups": [
@@ -3893,6 +4265,63 @@ mod tests {
 
         assert_eq!(base.surface_config_key(), hour12.surface_config_key());
         assert!(!base.should_clear_device_snapshot_for(hour12));
+    }
+
+    #[cfg(feature = "slint-spike")]
+    #[test]
+    fn slint_spike_translates_overlay_input_to_pointer_events() {
+        let size = OverlaySize::new(1080, 720);
+        let moved = slint_spike_pointer_event(
+            friends_panel_input(OverlayInputKind::Hover, UvPoint::new(0.25, 0.5)),
+            size,
+        );
+        assert_eq!(moved, SlintPanelPointerEvent::Moved { x: 270.0, y: 360.0 });
+
+        let scrolled = slint_spike_pointer_event(
+            friends_panel_input(
+                OverlayInputKind::Scroll { delta: 2.0 },
+                UvPoint::new(0.5, 0.5),
+            ),
+            size,
+        );
+        assert_eq!(
+            scrolled,
+            SlintPanelPointerEvent::Scrolled {
+                x: 540.0,
+                y: 360.0,
+                delta_x: 0.0,
+                delta_y: -212.0,
+            }
+        );
+
+        let exited = slint_spike_pointer_event(
+            friends_panel_input(OverlayInputKind::Hover, UvPoint::new(-1.0, -1.0)),
+            size,
+        );
+        assert_eq!(exited, SlintPanelPointerEvent::Exited);
+    }
+
+    #[cfg(feature = "slint-spike")]
+    #[test]
+    fn slint_spike_animation_refresh_requires_active_host_animation() {
+        let _gate = enable_slint_spike_for_test();
+        SLINT_SPIKE_HOST.with(|slot| {
+            slot.borrow_mut().take();
+        });
+        let runtime = VrOverlayRuntime::new_for_test();
+        runtime.interactive_panel.lock().unwrap().visible = true;
+
+        assert!(!runtime.slint_spike_animation_refresh_active());
+
+        with_slint_spike_host(OverlaySize::new(1080, 720), |host| {
+            host.set_animation_enabled(false);
+        })
+        .unwrap();
+
+        assert!(!runtime.slint_spike_animation_refresh_active());
+        SLINT_SPIKE_HOST.with(|slot| {
+            slot.borrow_mut().take();
+        });
     }
 
     #[test]
@@ -4234,6 +4663,21 @@ mod tests {
             runtime.refresh_interval(),
             FRIENDS_PANEL_ANIMATION_REFRESH_INTERVAL
         );
+
+        runtime.apply_friends_panel_input(friends_panel_summon_input(OverlayTransform::identity()));
+
+        assert_eq!(runtime.refresh_interval(), WRIST_FRAME_REFRESH_INTERVAL);
+    }
+
+    #[cfg(feature = "slint-spike")]
+    #[test]
+    fn slint_spike_visible_panel_without_active_animation_uses_normal_refresh_interval() {
+        let _gate = enable_slint_spike_for_test();
+        let runtime = VrOverlayRuntime::new_for_test();
+
+        runtime.apply_friends_panel_input(friends_panel_summon_input(OverlayTransform::identity()));
+
+        assert_eq!(runtime.refresh_interval(), WRIST_FRAME_REFRESH_INTERVAL);
     }
 
     #[test]
@@ -4659,6 +5103,21 @@ mod tests {
 
         assert!(runtime.refresh_wake.sequence() > before);
         assert!(runtime.friends_panel_frame_dirty.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn deferred_forced_device_refresh_is_consumed_once() {
+        let runtime = VrOverlayRuntime::new_for_test();
+        assert!(!runtime.consume_device_refresh_request());
+
+        let before_forced = runtime.refresh_wake.sequence();
+        runtime.defer_refresh_to_refresh_thread(true);
+        assert!(runtime.refresh_wake.sequence() > before_forced);
+        assert!(runtime.consume_device_refresh_request());
+        assert!(!runtime.consume_device_refresh_request());
+
+        runtime.defer_refresh_to_refresh_thread(false);
+        assert!(!runtime.consume_device_refresh_request());
     }
 
     #[test]

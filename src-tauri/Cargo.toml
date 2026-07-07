@@ -17,14 +17,6 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { workspace = true }
-reqwest = { workspace = true, features = [
-    "cookies",
-    "gzip",
-    "brotli",
-    "deflate",
-    "multipart",
-    "socks"
-] }
 tokio = { workspace = true, features = [
     "sync",
     "macros",
@@ -37,7 +29,6 @@ rustls = { version = "0.23", default-features = false, features = [
     "aws_lc_rs",
     "std"
 ] }
-base64 = { workspace = true }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"

@@ -1,20 +1,61 @@
 mod mock;
 mod render;
 
-use std::{env, io::Cursor};
+use std::{
+    env, fs,
+    io::Cursor,
+    path::{Path, PathBuf},
+};
 
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::json;
 use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
 use vrcx_0_vr_overlay::{
-    FavoriteFriendsPanelModel, FriendPanelAction, MainSurfaceModel, UvPoint, WristSurfaceModel,
+    FavoriteFriendsPanelModel, MainSurfaceModel, SlintPanelPointerEvent, SlintPanelRenderStats,
+    WristSurfaceModel,
 };
 
-use crate::render::DevtoolRenderer;
+use crate::render::{DevtoolRenderer, RenderedPng};
 
 const INDEX_HTML: &str = include_str!("../web/index.html");
+const DEFAULT_DUMP_DIR: &str = "target/overlay-devtool";
 
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    match parse_mode(env::args().skip(1))
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidInput, error))?
+    {
+        DevtoolMode::Server => run_server(),
+        DevtoolMode::Dump { out_dir } => run_dump(&out_dir),
+    }
+}
+
+enum DevtoolMode {
+    Server,
+    Dump { out_dir: PathBuf },
+}
+
+fn parse_mode(args: impl IntoIterator<Item = String>) -> Result<DevtoolMode, String> {
+    let mut args = args.into_iter();
+    let Some(first) = args.next() else {
+        return Ok(DevtoolMode::Server);
+    };
+    match first.as_str() {
+        "--dump" => {
+            let out_dir = args
+                .next()
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from(DEFAULT_DUMP_DIR));
+            if let Some(extra) = args.next() {
+                return Err(format!("unexpected argument: {extra}"));
+            }
+            Ok(DevtoolMode::Dump { out_dir })
+        }
+        "--help" | "-h" => Err("usage: vrcx-0-overlay-devtool [--dump [out_dir]]".to_string()),
+        other => Err(format!("unknown argument: {other}")),
+    }
+}
+
+fn run_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let port = env::var("VRCX_OVERLAY_DEVTOOL_PORT")
         .ok()
         .and_then(|value| value.parse::<u16>().ok())
@@ -31,6 +72,60 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
     }
     Ok(())
+}
+
+fn run_dump(out_dir: &Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fs::create_dir_all(out_dir)?;
+    let mut app = AppState::new();
+    let mut renderer = DevtoolRenderer::new();
+    let mut written = Vec::new();
+
+    app.select(SurfaceKind::Wrist, mock::wrist::default_scenario_key());
+    written.push(write_dump_png(
+        out_dir,
+        "wrist.png",
+        render_current_png(&app, &mut renderer)?.bytes,
+    )?);
+
+    app.select(SurfaceKind::Wrist, "i18n");
+    written.push(write_dump_png(
+        out_dir,
+        "wrist-i18n.png",
+        render_current_png(&app, &mut renderer)?.bytes,
+    )?);
+
+    app.select(SurfaceKind::Toast, mock::toast::default_scenario_key());
+    written.push(write_dump_png(
+        out_dir,
+        "hmd.png",
+        render_current_png(&app, &mut renderer)?.bytes,
+    )?);
+
+    app.select(SurfaceKind::Toast, "i18n");
+    written.push(write_dump_png(
+        out_dir,
+        "hmd-i18n.png",
+        render_current_png(&app, &mut renderer)?.bytes,
+    )?);
+
+    app.select(SurfaceKind::Friends, mock::friends::default_scenario_key());
+    renderer.reset_panel();
+    written.push(write_dump_png(
+        out_dir,
+        "panel.png",
+        render_current_png(&app, &mut renderer)?.bytes,
+    )?);
+
+    for path in written {
+        println!("{}", path.display());
+    }
+    Ok(())
+}
+
+fn write_dump_png(out_dir: &Path, name: &str, png: Vec<u8>) -> Result<PathBuf, std::io::Error> {
+    let path = out_dir.join(name);
+    fs::write(&path, png)?;
+    Ok(path)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -118,38 +213,6 @@ impl AppState {
         }
     }
 
-    fn apply_friends_input(&mut self, input: InputRequest) -> serde_json::Value {
-        let uv = UvPoint::new(input.x, input.y);
-        let previous_category = self.friends.selected_category_key.clone();
-        let hit = match input.action.as_str() {
-            "hover" => self.friends.apply_uv_action(uv, FriendPanelAction::Hover),
-            "click" => {
-                self.friends
-                    .apply_uv_action(uv, FriendPanelAction::ClickDown);
-                self.friends.apply_uv_action(uv, FriendPanelAction::ClickUp)
-            }
-            "scroll" | "touchScroll" => self.friends.apply_uv_action(
-                uv,
-                FriendPanelAction::Scroll {
-                    delta: input.delta.unwrap_or_default(),
-                },
-            ),
-            _ => None,
-        };
-        if previous_category != self.friends.selected_category_key {
-            self.friends.rows = mock::friends::rows_for_category(
-                &self.friends_scenario,
-                &self.friends.selected_category_key,
-            );
-        }
-        json!({
-            "hit": hit,
-            "selectedCategory": self.friends.selected_category_key,
-            "categoryScrollOffset": self.friends.category_scroll_offset,
-            "rowScrollOffset": self.friends.row_scroll_offset
-        })
-    }
-
     fn apply_toast_action(&mut self, action: &str) {
         match action {
             "append" => {
@@ -179,6 +242,8 @@ impl AppState {
         json!({
             "surface": self.surface.as_str(),
             "scenario": self.current_scenario(),
+            "renderer": "slint",
+            "debug": cfg!(debug_assertions),
             "scenarios": {
                 "friends": scenario_json(mock::friends::scenario_infos()),
                 "toast": scenario_json(mock::toast::scenario_infos()),
@@ -203,13 +268,19 @@ struct SelectRequest {
     scenario: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct InputRequest {
     action: String,
+    #[serde(default)]
     x: f32,
+    #[serde(default)]
     y: f32,
     #[serde(default)]
     delta: Option<f32>,
+    #[serde(default)]
+    delta_x: Option<f32>,
+    #[serde(default)]
+    delta_y: Option<f32>,
 }
 
 #[derive(Deserialize)]
@@ -229,21 +300,36 @@ fn handle_request(
         }
         (&Method::Get, "/api/state") => json_response(200, app.state_json()),
         (&Method::Get, "/frame.png") => match render_current_png(app, renderer) {
-            Ok(png) => bytes_response(200, "image/png", png)
-                .with_header(header("Cache-Control", "no-store, max-age=0")),
+            Ok(rendered) => png_response(rendered),
             Err(error) => json_response(500, json!({ "error": error })),
         },
         (&Method::Post, "/api/select") => json_post::<SelectRequest, _>(request, |input| {
             if let Some(surface) = SurfaceKind::parse(&input.surface) {
                 app.select(surface, &input.scenario);
+                if surface == SurfaceKind::Friends {
+                    renderer.reset_panel();
+                }
                 json_response(200, app.state_json())
             } else {
                 json_response(400, json!({ "error": "unknown surface" }))
             }
         }),
         (&Method::Post, "/api/input") => json_post::<InputRequest, _>(request, |input| {
-            let result = app.apply_friends_input(input);
-            json_response(200, json!({ "state": app.state_json(), "result": result }))
+            if app.surface != SurfaceKind::Friends {
+                return json_response(
+                    409,
+                    json!({
+                        "error": "input is only available for friends surface",
+                        "state": app.state_json()
+                    }),
+                );
+            }
+            match dispatch_panel_input(renderer, &input) {
+                Ok(result) => {
+                    json_response(200, json!({ "state": app.state_json(), "result": result }))
+                }
+                Err(error) => json_response(400, json!({ "error": error })),
+            }
         }),
         (&Method::Post, "/api/toast") => json_post::<ToastRequest, _>(request, |input| {
             app.apply_toast_action(&input.action);
@@ -255,13 +341,69 @@ fn handle_request(
         }
         (&Method::Post, "/api/reset") => {
             app.reset_current();
+            if app.surface == SurfaceKind::Friends {
+                renderer.reset_panel();
+            }
             json_response(200, app.state_json())
         }
         _ => json_response(404, json!({ "error": "not found" })),
     }
 }
 
-fn render_current_png(app: &AppState, renderer: &mut DevtoolRenderer) -> Result<Vec<u8>, String> {
+fn dispatch_panel_input(
+    renderer: &mut DevtoolRenderer,
+    input: &InputRequest,
+) -> Result<serde_json::Value, String> {
+    let event = slint_panel_event_from_input(input)?;
+    renderer.dispatch_panel_input(event)?;
+    Ok(json!({
+        "event": slint_event_name(event),
+        "x": input.x,
+        "y": input.y,
+        "deltaX": input.delta_x.unwrap_or_default(),
+        "deltaY": input.delta_y.or(input.delta).unwrap_or_default()
+    }))
+}
+
+fn slint_panel_event_from_input(input: &InputRequest) -> Result<SlintPanelPointerEvent, String> {
+    match input.action.as_str() {
+        "move" | "hover" | "mousemove" => Ok(SlintPanelPointerEvent::Moved {
+            x: input.x,
+            y: input.y,
+        }),
+        "down" | "press" | "mousedown" | "pointerdown" => Ok(SlintPanelPointerEvent::Pressed {
+            x: input.x,
+            y: input.y,
+        }),
+        "up" | "release" | "mouseup" | "pointerup" => Ok(SlintPanelPointerEvent::Released {
+            x: input.x,
+            y: input.y,
+        }),
+        "scroll" | "wheel" | "touchScroll" => Ok(SlintPanelPointerEvent::Scrolled {
+            x: input.x,
+            y: input.y,
+            delta_x: input.delta_x.unwrap_or_default(),
+            delta_y: input.delta_y.or(input.delta).unwrap_or_default(),
+        }),
+        "exit" | "leave" | "mouseleave" => Ok(SlintPanelPointerEvent::Exited),
+        other => Err(format!("unknown input action: {other}")),
+    }
+}
+
+fn slint_event_name(event: SlintPanelPointerEvent) -> &'static str {
+    match event {
+        SlintPanelPointerEvent::Moved { .. } => "moved",
+        SlintPanelPointerEvent::Pressed { .. } => "pressed",
+        SlintPanelPointerEvent::Released { .. } => "released",
+        SlintPanelPointerEvent::Scrolled { .. } => "scrolled",
+        SlintPanelPointerEvent::Exited => "exited",
+    }
+}
+
+fn render_current_png(
+    app: &AppState,
+    renderer: &mut DevtoolRenderer,
+) -> Result<RenderedPng, String> {
     match app.surface {
         SurfaceKind::Friends => renderer.friends_png(&app.friends),
         SurfaceKind::Toast => renderer.main_png(&app.toast),
@@ -307,6 +449,28 @@ fn json_response(status: u16, value: serde_json::Value) -> Response<Cursor<Vec<u
     bytes_response(status, "application/json; charset=utf-8", body)
 }
 
+fn png_response(rendered: RenderedPng) -> Response<Cursor<Vec<u8>>> {
+    let mut response = bytes_response(200, "image/png", rendered.bytes)
+        .with_header(header("Cache-Control", "no-store, max-age=0"));
+    if let Some(stats) = rendered.stats {
+        response = add_render_stats_headers(response, stats);
+    }
+    response
+}
+
+fn add_render_stats_headers(
+    response: Response<Cursor<Vec<u8>>>,
+    stats: SlintPanelRenderStats,
+) -> Response<Cursor<Vec<u8>>> {
+    response
+        .with_header(header(
+            "X-Render-Elapsed-Us",
+            &stats.elapsed.as_micros().to_string(),
+        ))
+        .with_header(header("X-Dirty-Area", &stats.dirty_area.to_string()))
+        .with_header(header("X-Dirty-Rects", &stats.dirty_rects.to_string()))
+}
+
 fn bytes_response(status: u16, content_type: &str, body: Vec<u8>) -> Response<Cursor<Vec<u8>>> {
     Response::from_data(body)
         .with_status_code(StatusCode(status))
@@ -332,30 +496,63 @@ mod tests {
                 SurfaceKind::Wrist => mock::wrist::default_scenario_key(),
             };
             app.select(surface, scenario);
-            let png = render_current_png(&app, &mut renderer).expect("render PNG");
+            let png = render_current_png(&app, &mut renderer)
+                .expect("render PNG")
+                .bytes;
             assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
         }
     }
 
     #[test]
-    fn friends_input_can_switch_mock_category_rows() {
-        let mut app = AppState::new();
-        let all_rows = app.friends.rows.len();
-        let uv = vrcx_0_vr_overlay::build_friends_panel_scene(&app.friends)
-            .hit_regions
-            .iter()
-            .find(|region| region.id == "cat:group:remote:Travelers")
-            .map(|region| region.rect.center_uv(app.friends.size))
-            .expect("travelers category region");
-        app.apply_friends_input(InputRequest {
-            action: "click".to_string(),
-            x: uv.x,
-            y: uv.y,
+    fn slint_panel_input_mapping_preserves_pointer_coordinates() {
+        let input = InputRequest {
+            action: "move".to_string(),
+            x: 321.5,
+            y: 123.25,
             delta: None,
-        });
+            delta_x: None,
+            delta_y: None,
+        };
 
-        assert_ne!(app.friends.selected_category_key, "all");
-        assert_ne!(app.friends.rows.len(), all_rows);
+        assert_eq!(
+            slint_panel_event_from_input(&input).unwrap(),
+            SlintPanelPointerEvent::Moved {
+                x: 321.5,
+                y: 123.25
+            }
+        );
+    }
+
+    #[test]
+    fn slint_panel_input_mapping_passes_raw_scroll_delta() {
+        let input = InputRequest {
+            action: "wheel".to_string(),
+            x: 20.0,
+            y: 30.0,
+            delta: None,
+            delta_x: Some(-12.0),
+            delta_y: Some(144.0),
+        };
+
+        assert_eq!(
+            slint_panel_event_from_input(&input).unwrap(),
+            SlintPanelPointerEvent::Scrolled {
+                x: 20.0,
+                y: 30.0,
+                delta_x: -12.0,
+                delta_y: 144.0
+            }
+        );
+    }
+
+    #[test]
+    fn friends_mock_category_rows_are_still_available_for_future_panel_model() {
+        let all_rows = mock::friends::rows_for_category("many", "all");
+        let travelers = mock::friends::rows_for_category("many", "group:remote:Travelers");
+
+        assert!(!travelers.is_empty());
+        assert!(travelers.len() < all_rows.len());
+        assert!(travelers.iter().all(|row| row.is_traveling));
     }
 
     #[test]
@@ -373,21 +570,6 @@ mod tests {
             .count();
         assert_eq!(mock_group_count, 42);
         assert!(app.friends.max_category_scroll_offset() > 0);
-
-        let uv = vrcx_0_vr_overlay::build_friends_panel_scene(&app.friends)
-            .hit_regions
-            .iter()
-            .find(|region| region.id == "category-list")
-            .map(|region| region.rect.center_uv(app.friends.size))
-            .expect("category list region");
-        app.apply_friends_input(InputRequest {
-            action: "touchScroll".to_string(),
-            x: uv.x,
-            y: uv.y,
-            delta: Some(3.0),
-        });
-
-        assert!(app.friends.category_scroll_offset > 0);
     }
 
     #[test]

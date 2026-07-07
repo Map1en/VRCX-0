@@ -1159,6 +1159,9 @@ impl OpenVrOverlayBackend {
         handle: OverlayHandle,
         frame: &RgbaFrame,
     ) -> Result<(), String> {
+        #[cfg(not(windows))]
+        let _ = surface_id;
+
         #[cfg(windows)]
         {
             self.ensure_gpu_presenter();

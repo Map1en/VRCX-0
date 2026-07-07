@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import {
     openAvatarDialog,
     openGroupDialog,

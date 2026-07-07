@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';

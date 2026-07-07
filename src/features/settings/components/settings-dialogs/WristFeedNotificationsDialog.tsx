@@ -2,7 +2,7 @@ import { ChevronDownIcon, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { buildFeedFavoriteGroupOptions } from '@/features/feed/feedColumnScope';
+import { buildFeedFavoriteGroupOptions } from '@/domain/feed/feedFavoriteGroups';
 import { commands } from '@/platform/tauri/bindings';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,

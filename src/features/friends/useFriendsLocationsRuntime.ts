@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useCurrentInstancePresence } from '@/domain/presence/useCurrentInstancePresence';
+import { useCurrentInstancePresence } from '@/lib/useCurrentInstancePresence';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 const EMPTY_CURRENT_LOCATION_PLAYER_IDS = Object.freeze([]);

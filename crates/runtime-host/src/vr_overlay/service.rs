@@ -748,5 +748,4 @@ fn openxr_runtime_supported() -> bool {
 }
 
 #[cfg(test)]
-#[path = "../../tests/vr_overlay/service_tests.rs"]
 mod tests;

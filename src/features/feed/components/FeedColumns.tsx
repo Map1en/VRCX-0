@@ -3,7 +3,7 @@ import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';

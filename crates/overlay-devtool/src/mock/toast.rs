@@ -24,6 +24,10 @@ const SCENARIOS: &[ScenarioInfo] = &[
         key: "light",
         label: "Light background",
     },
+    ScenarioInfo {
+        key: "i18n",
+        label: "CJK and emoji",
+    },
 ];
 
 pub fn scenario_infos() -> &'static [ScenarioInfo] {
@@ -109,6 +113,56 @@ fn toasts_for_scenario(scenario: &str) -> Vec<ToastCard> {
                 Some("Private"),
                 FeedSeverity::Important,
                 5,
+            ),
+        ],
+        "i18n" => vec![
+            card(
+                "简体中文好友",
+                FeedRelation::Favorite,
+                "加入了你的实例 🎧",
+                Some("测试世界"),
+                FeedSeverity::Normal,
+                1,
+            ),
+            card(
+                "繁體中文好友",
+                FeedRelation::Friend,
+                "傳送了邀請",
+                Some("朋友+ 實例"),
+                FeedSeverity::Important,
+                2,
+            ),
+            card(
+                "日本語ユーザー",
+                FeedRelation::Friend,
+                "オンラインになりました",
+                Some("東京ナイト"),
+                FeedSeverity::Normal,
+                3,
+            ),
+            card(
+                "한국어 친구",
+                FeedRelation::Friend,
+                "인스턴스에 참가했습니다",
+                Some("서울 테스트 월드"),
+                FeedSeverity::Normal,
+                4,
+            ),
+            card(
+                "Русский друг",
+                FeedRelation::Friend,
+                "отправил приглашение",
+                Some("Длинное название мира"),
+                FeedSeverity::Important,
+                5,
+            ),
+            card(
+                "صديق عربي",
+                FeedRelation::None,
+                "أرسل طلب دعوة",
+                Some("اختبار طويل للنص"),
+                FeedSeverity::Warning,
+                0,
             ),
         ],
         _ => vec![

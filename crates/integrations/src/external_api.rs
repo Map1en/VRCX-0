@@ -472,5 +472,4 @@ fn value_as_query_strings(value: &Value, skip_empty_string: bool) -> Vec<String>
 }
 
 #[cfg(test)]
-#[path = "../tests/external_api_tests.rs"]
 mod tests;

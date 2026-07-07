@@ -16,7 +16,6 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import { vrchatGroupUrl } from '@/shared/constants/vrchatWebUrls';
-import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
     EntityDialogScaffold,
@@ -31,9 +30,13 @@ import {
 import { GroupDialogHeaderSection } from './GroupDialogHeaderSection';
 import { GroupDialogTabPanels } from './GroupDialogTabPanels';
 import {
+    extractGroupEventRows,
     firstArray,
+    followingEventIds,
     hasGroupModerationPermission,
-    hasGroupPermission
+    hasGroupPermission,
+    normalizeGroupEvent,
+    resolveGroupDialogTab
 } from './groupDialogUtils';
 import { shouldShowGroupBadgeValue } from './GroupDialogViewParts';
 import { GroupModerationToolsDialog } from './GroupModerationToolsDialog';
@@ -41,59 +44,8 @@ import { GroupPostEditorDialog } from './GroupPostEditorDialog';
 import { useGroupDialogLanguageRows } from './useGroupDialogLanguageRows';
 import { useGroupDialogPosts } from './useGroupDialogPosts';
 import { useGroupDialogTabbedRuntimeState } from './useGroupDialogTabbedRuntimeState';
+
 let lastGroupDialogTab = 'overview';
-
-function resolveGroupDialogTab(
-    tabs: any,
-    preferred: any,
-    fallback: any = 'overview'
-) {
-    return tabs.some((tab: any) => tab.value === preferred)
-        ? preferred
-        : fallback;
-}
-
-function extractGroupEventRows(value: any) {
-    if (Array.isArray(value)) {
-        return value;
-    }
-    if (Array.isArray(value?.results)) {
-        return value.results;
-    }
-    if (Array.isArray(value?.json?.results)) {
-        return value.json.results;
-    }
-    return [];
-}
-
-function followingEventIds(value: any) {
-    return new Set(
-        extractGroupEventRows(value).map(getEventId).filter(Boolean)
-    );
-}
-
-function normalizeGroupEvent(
-    event: any,
-    fallbackGroupId: any = '',
-    { followingIds = null, isFollowing = null }: any = {}
-) {
-    const eventId = getEventId(event);
-    const resolvedFollowing =
-        isFollowing ??
-        (followingIds?.has(eventId) ? true : event?.userInterest?.isFollowing);
-
-    return {
-        ...event,
-        groupId: event?.groupId || fallbackGroupId,
-        ownerId: event?.ownerId || event?.groupId || fallbackGroupId,
-        userInterest: {
-            ...(event?.userInterest || {}),
-            isFollowing: Boolean(resolvedFollowing)
-        },
-        title: replaceBioSymbols(event?.title || ''),
-        description: replaceBioSymbols(event?.description || '')
-    };
-}
 
 export function GroupDialogTabbedView({
     groupControls,

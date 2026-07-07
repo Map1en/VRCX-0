@@ -156,5 +156,4 @@ fn parse_bool_config(value: &str) -> Option<bool> {
 }
 
 #[cfg(test)]
-#[path = "../../tests/config/tests.rs"]
 mod tests;

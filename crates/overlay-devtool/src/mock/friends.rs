@@ -37,6 +37,10 @@ const SCENARIOS: &[ScenarioInfo] = &[
         key: "long",
         label: "Long text",
     },
+    ScenarioInfo {
+        key: "i18n",
+        label: "CJK and emoji",
+    },
 ];
 
 pub fn scenario_infos() -> &'static [ScenarioInfo] {
@@ -143,6 +147,7 @@ fn scenario_rows(scenario: &str) -> Vec<FriendPanelRow> {
         "traveling" => traveling_rows(),
         "notes" => note_rows(),
         "long" => long_text_rows(),
+        "i18n" => i18n_rows(),
         "manyGroups" => many_groups_rows(),
         "sameInstance" => same_instance_rows(),
         _ => many_rows(),
@@ -390,6 +395,59 @@ fn long_text_rows() -> Vec<FriendPanelRow> {
             "Private",
             5,
         )),
+    ]
+}
+
+fn i18n_rows() -> Vec<FriendPanelRow> {
+    vec![
+        row(RowSpec::new(
+            "usr_i18n_0",
+            "简体中文好友 🎧",
+            FriendPanelStatusTone::Active,
+            "测试世界",
+            0,
+        )
+        .note("VRChat 资料备注：喜欢跳舞和拍照")
+        .memo("本地备注：周末活动认识")),
+        row(RowSpec::new(
+            "usr_i18n_1",
+            "繁體中文好友",
+            FriendPanelStatusTone::Online,
+            "朋友+ 實例",
+            1,
+        )
+        .memo("本地備註保持可讀")),
+        row(RowSpec::new(
+            "usr_i18n_2",
+            "日本語ユーザー",
+            FriendPanelStatusTone::AskMe,
+            "東京ナイト",
+            2,
+        )
+        .traveling()),
+        row(RowSpec::new(
+            "usr_i18n_3",
+            "한국어 친구",
+            FriendPanelStatusTone::Busy,
+            "서울 테스트 월드",
+            3,
+        )
+        .note("프로필 메모가 긴 행에서도 잘립니다")),
+        row(RowSpec::new(
+            "usr_i18n_4",
+            "Русский друг",
+            FriendPanelStatusTone::Online,
+            "Длинное название мира",
+            4,
+        )),
+        row(RowSpec::new(
+            "usr_i18n_5",
+            "صديق عربي",
+            FriendPanelStatusTone::Active,
+            "اختبار طويل للنص",
+            5,
+        )
+        .memo("ملاحظة محلية طويلة")),
     ]
 }
 

@@ -1,0 +1,245 @@
+import { ListView } from "std-widgets.slint";
+export { HmdToastPanel } from "overlay.slint";
+export { WristPanel } from "overlay.slint";
+
+export component SpikePanel inherits Window {
+    width: 1080px;
+    height: 720px;
+    background: transparent;
+
+    in property <image> avatar-image;
+    in property <bool> animate-spinner: true;
+    in property <bool> probe-enabled: false;
+    in property <color> probe-color: transparent;
+    in property <[{ name: string, detail: string, accent: color }]> rows: [
+        { name: "简体中文 Favorite 好友在线", detail: "上海 · 私密实例 · emoji 😀✨", accent: #22c55e },
+        { name: "繁體中文 好友正在旅行", detail: "台北 · group+ · 前往新世界", accent: #2dd4bf },
+        { name: "日本語 フレンド一覧", detail: "Tokyo · Friend+ · 長いワールド名の確認", accent: #facc15 },
+        { name: "한국어 친구 패널", detail: "Seoul · Invite+ · 메모와 노트", accent: #38bdf8 },
+        { name: "Русский список друзей", detail: "Moscow · Friends · длинное имя мира", accent: #a78bfa },
+        { name: "العربية لوحة الأصدقاء", detail: "Dubai · Private · اختبار الخط", accent: #fb7185 },
+        { name: "English hover target", detail: "San Francisco · Public · row highlight", accent: #22d3ee },
+        { name: "Emoji stress row 🧪🎮💬", detail: "Avatar + detail + popup validation", accent: #fb923c },
+        { name: "LongLatinNameWithoutSpacesForClipTesting", detail: "The row should not overflow the panel", accent: #84cc16 },
+        { name: "Deutsch Freundesliste", detail: "Berlin · Friends+ · Statuszeile", accent: #f97316 },
+        { name: "Français panneau amis", detail: "Paris · Groupe · note locale", accent: #e879f9 },
+        { name: "Español panel de amigos", detail: "Madrid · En viaje · destino", accent: #06b6d4 },
+        { name: "Português painel de amigos", detail: "Lisboa · Online · mundo favorito", accent: #10b981 },
+        { name: "Italiano pannello amici", detail: "Roma · Attivo · azioni", accent: #f59e0b },
+        { name: "Nederlands vriendenpaneel", detail: "Amsterdam · scroll test", accent: #60a5fa },
+        { name: "Polski panel znajomych", detail: "Warszawa · hover diff", accent: #f43f5e },
+        { name: "ไทย รายชื่อเพื่อน", detail: "Bangkok · font fallback", accent: #14b8a6 },
+        { name: "हिन्दी मित्र पैनल", detail: "Delhi · glyph fallback", accent: #8b5cf6 },
+        { name: "עברית לוח חברים", detail: "Tel Aviv · bidi sample", accent: #ec4899 },
+        { name: "Tiếng Việt bảng bạn bè", detail: "Hanoi · dấu tiếng Việt", accent: #3b82f6 },
+        { name: "Türkçe arkadaş paneli", detail: "Istanbul · kaydırma", accent: #ef4444 },
+        { name: "Svenska vänpanel", detail: "Stockholm · popup", accent: #22c55e },
+        { name: "Norsk vennepanel", detail: "Oslo · pointer", accent: #06b6d4 },
+        { name: "Dansk vennepanel", detail: "Copenhagen · dirty region", accent: #facc15 },
+    ];
+
+    property <int> selected-row: -1;
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        background: #080d14f0;
+    }
+
+    Rectangle {
+        x: 32px;
+        y: 32px;
+        width: parent.width - 64px;
+        height: parent.height - 64px;
+        background: #101822f8;
+        border-color: #334155;
+        border-width: 2px;
+        border-radius: 18px;
+    }
+
+    Text {
+        x: 54px;
+        y: 30px;
+        text: "Slint Overlay Spike";
+        font-size: 32px;
+        color: #f8fafc;
+    }
+
+    Text {
+        x: 54px;
+        y: 72px;
+        text: "CJK / popup / hover / scroll / alpha";
+        font-size: 20px;
+        color: #2dd4bf;
+    }
+
+    Rectangle {
+        x: 54px;
+        y: 154px;
+        width: 230px;
+        height: 406px;
+        background: #182330f8;
+        border-color: #334155;
+        border-width: 2px;
+
+        for label[index] in [ "All 24", "Online 8", "Traveling 3", "Local 5", "Remote 7", "CJK", "Emoji" ] : Rectangle {
+            x: 0px;
+            y: index * 58px;
+            width: parent.width;
+            height: 58px;
+            background: index == 0 ? #25636eff : #182330f8;
+            border-color: #334155;
+            border-width: 1px;
+
+            Text {
+                x: 16px;
+                y: 14px;
+                text: label;
+                font-size: 19px;
+                color: index == 0 ? #f8fafc : #94a3b8;
+            }
+        }
+    }
+
+    ListView {
+        x: 302px;
+        y: 154px;
+        width: 724px;
+        height: 530px;
+        viewport-width: 724px;
+
+        for row[index] in root.rows : Rectangle {
+            width: 706px;
+            height: 106px;
+            background: touch.pressed ? #127a96ff : touch.has-hover ? #263548f8 : Math.mod(index, 2) == 0 ? #182330f8 : #151f2bf8;
+
+            Rectangle {
+                x: 18px;
+                y: 17px;
+                width: 72px;
+                height: 72px;
+                border-radius: 36px;
+                background: #334155;
+            }
+
+            Image {
+                x: 18px;
+                y: 17px;
+                width: 72px;
+                height: 72px;
+                source: root.avatar-image;
+            }
+
+            Rectangle {
+                x: 76px;
+                y: 76px;
+                width: 16px;
+                height: 16px;
+                border-radius: 8px;
+                background: row.accent;
+            }
+
+            Text {
+                x: 112px;
+                y: 13px;
+                width: 470px;
+                height: 32px;
+                text: row.name;
+                font-size: 26px;
+                color: #facc15;
+            }
+
+            Text {
+                x: 112px;
+                y: 46px;
+                width: 520px;
+                height: 28px;
+                text: row.detail;
+                font-size: 20px;
+                color: #f8fafc;
+            }
+
+            Text {
+                x: 112px;
+                y: 74px;
+                width: 520px;
+                height: 22px;
+                text: "Note: local memo / action arm placeholder";
+                font-size: 16px;
+                color: #94a3b8;
+            }
+
+            Rectangle {
+                x: root.animate-spinner ? 650px + sin(animation-tick() / 1s * 360deg) * 12px : 650px;
+                y: root.animate-spinner ? 40px + cos(animation-tick() / 1s * 360deg) * 12px : 40px;
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
+                background: #2dd4bf;
+            }
+
+            touch := TouchArea {
+                width: parent.width;
+                height: parent.height;
+                clicked => {
+                    root.selected-row = index;
+                    details.show();
+                }
+            }
+        }
+    }
+
+    details := PopupWindow {
+        x: 620px;
+        y: 118px;
+        width: 380px;
+        height: 230px;
+
+        Rectangle {
+            width: parent.width;
+            height: parent.height;
+            background: #101822ff;
+            border-color: #2dd4bf;
+            border-width: 2px;
+            border-radius: 12px;
+        }
+
+        Text {
+            x: 24px;
+            y: 22px;
+            width: parent.width - 48px;
+            text: root.selected-row >= 0 ? root.rows[root.selected-row].name : "No row";
+            font-size: 25px;
+            color: #f8fafc;
+        }
+
+        Text {
+            x: 24px;
+            y: 70px;
+            width: parent.width - 48px;
+            text: root.selected-row >= 0 ? root.rows[root.selected-row].detail : "";
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        Text {
+            x: 24px;
+            y: 128px;
+            width: parent.width - 48px;
+            text: "PopupWindow click path is active.";
+            font-size: 18px;
+            color: #2dd4bf;
+        }
+    }
+
+    Rectangle {
+        visible: root.probe-enabled;
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        background: root.probe-color;
+    }
+}

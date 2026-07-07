@@ -1,11 +1,11 @@
+import defaultGameLogRepository from '@/repositories/gameLogRepository';
+import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import {
     getKnownUserFact,
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile
-} from '@/domain/users/userFactAccess';
-import defaultGameLogRepository from '@/repositories/gameLogRepository';
-import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
+} from '@/services/userFactAccessService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useUserFactsStore } from '@/state/userFactsStore';

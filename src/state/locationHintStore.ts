@@ -53,6 +53,22 @@ function hintKey(endpoint: unknown, location: unknown): string {
     return key ? `${text(endpoint) || 'default'}::${key}` : '';
 }
 
+function sameHintIgnoringUpdatedAt(a: LocationHint, b: LocationHint): boolean {
+    return (
+        a.endpoint === b.endpoint &&
+        a.locationKey === b.locationKey &&
+        a.location === b.location &&
+        a.worldId === b.worldId &&
+        a.groupId === b.groupId &&
+        a.worldName === b.worldName &&
+        a.groupName === b.groupName &&
+        a.instanceName === b.instanceName &&
+        a.region === b.region &&
+        a.isClosed === b.isClosed &&
+        a.ageGate === b.ageGate
+    );
+}
+
 export const useLocationHintStore = create<LocationHintStoreState>((set) => ({
     ...initialState,
     upsertLocationHint(input) {
@@ -78,11 +94,7 @@ export const useLocationHintStore = create<LocationHintStoreState>((set) => ({
                 ageGate: Boolean(input.ageGate || existing?.ageGate),
                 updatedAt: new Date().toISOString()
             };
-            if (
-                existing &&
-                JSON.stringify({ ...existing, updatedAt: '' }) ===
-                    JSON.stringify({ ...next, updatedAt: '' })
-            ) {
+            if (existing && sameHintIgnoringUpdatedAt(existing, next)) {
                 return state;
             }
             return {

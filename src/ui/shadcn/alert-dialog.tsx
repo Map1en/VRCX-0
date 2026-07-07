@@ -1,7 +1,7 @@
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
 import * as React from 'react';
 
-import { preserveAppTitleBarOnOpenChange } from '@/lib/overlay-titlebar';
+import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 

@@ -9,8 +9,8 @@ import {
     mergeInstanceUsers,
     normalizeInstanceUsers
 } from '@/domain/instances/instanceRoster';
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { timeToText } from '@/lib/dateTime';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusLabel } from '@/shared/utils/userStatus';

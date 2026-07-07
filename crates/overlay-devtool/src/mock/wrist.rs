@@ -23,6 +23,10 @@ const SCENARIOS: &[ScenarioInfo] = &[
         key: "light",
         label: "Light background",
     },
+    ScenarioInfo {
+        key: "i18n",
+        label: "CJK and emoji",
+    },
 ];
 
 pub fn scenario_infos() -> &'static [ScenarioInfo] {
@@ -36,7 +40,7 @@ pub fn default_scenario_key() -> &'static str {
 pub fn build(scenario: &str) -> WristSurfaceModel {
     let scenario = normalize_scenario(scenario);
     WristSurfaceModel {
-        size: if scenario == "dense" {
+        size: if matches!(scenario, "dense" | "i18n") {
             OverlaySize::new(640, 640)
         } else {
             OverlaySize::new(512, 512)
@@ -46,9 +50,21 @@ pub fn build(scenario: &str) -> WristSurfaceModel {
         devices: devices_for_scenario(scenario),
         feed_rows: feed_for_scenario(scenario),
         footer: OverlayFooter {
-            left: "Overlay devtool".to_string(),
-            center: "Mock session 00:42".to_string(),
-            right: "No VR".to_string(),
+            left: if scenario == "i18n" {
+                "叠加层工具".to_string()
+            } else {
+                "Overlay devtool".to_string()
+            },
+            center: if scenario == "i18n" {
+                "東京テスト 00:42".to_string()
+            } else {
+                "Mock session 00:42".to_string()
+            },
+            right: if scenario == "i18n" {
+                "VRなし".to_string()
+            } else {
+                "No VR".to_string()
+            },
         },
         accent: accent(),
         captured_at_ms: 1_735_689_600_000,
@@ -114,6 +130,58 @@ fn devices_for_scenario(scenario: &str) -> Vec<DeviceChip> {
 }
 
 fn feed_for_scenario(scenario: &str) -> Vec<FeedLine> {
+    if scenario == "i18n" {
+        return vec![
+            line(
+                "12:30",
+                FeedKind::Friend,
+                "简体中文好友",
+                "简体中文好友 加入了 测试世界 🎧",
+                FeedRelation::Favorite,
+                FeedSeverity::Normal,
+            ),
+            line(
+                "12:31",
+                FeedKind::Invite,
+                "繁體中文好友",
+                "繁體中文好友 傳送了邀請",
+                FeedRelation::Friend,
+                FeedSeverity::Important,
+            ),
+            line(
+                "12:32",
+                FeedKind::Instance,
+                "日本語ユーザー",
+                "日本語ユーザー が 東京ナイト に移動しました",
+                FeedRelation::Friend,
+                FeedSeverity::Normal,
+            ),
+            line(
+                "12:33",
+                FeedKind::System,
+                "한국어 친구",
+                "한국어 친구 온라인 상태",
+                FeedRelation::Friend,
+                FeedSeverity::Normal,
+            ),
+            line(
+                "12:34",
+                FeedKind::Profile,
+                "Русский друг",
+                "Русский друг отправил запрос",
+                FeedRelation::Friend,
+                FeedSeverity::Important,
+            ),
+            line(
+                "12:35",
+                FeedKind::Media,
+                "صديق عربي",
+                "صديق عربي يشاهد فيديو طويل العنوان",
+                FeedRelation::None,
+                FeedSeverity::Warning,
+            ),
+        ];
+    }
     let mut rows = vec![
         line(
             "12:30",

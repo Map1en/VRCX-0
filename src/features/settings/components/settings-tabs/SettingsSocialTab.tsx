@@ -8,9 +8,9 @@ import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
 import type { UserFact } from '@/domain/users/userFacts';
-import { UserPickerRow } from '@/features/charts/components/MutualFriendsViewParts';
 import { userImage } from '@/services/entityMediaService';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { useRuntimeStore } from '@/state/runtimeStore';

@@ -377,11 +377,71 @@ function buildInstanceRosterModel({
     };
 }
 
+function sameUnknownLeaf(a: unknown, b: unknown): boolean {
+    return a === b || JSON.stringify(a) === JSON.stringify(b);
+}
+
+function sameInstancePlayerFact(
+    a: InstancePlayerFact,
+    b: InstancePlayerFact
+): boolean {
+    return (
+        a.id === b.id &&
+        a.userId === b.userId &&
+        a.displayName === b.displayName &&
+        sameUnknownLeaf(a.joinedAt, b.joinedAt) &&
+        sameUnknownLeaf(a.locationAt, b.locationAt)
+    );
+}
+
+function sameInstancePresenceFact(
+    a: InstancePresenceFact,
+    b: InstancePresenceFact
+): boolean {
+    if (
+        a.receivedAt !== b.receivedAt ||
+        a.endpoint !== b.endpoint ||
+        a.location !== b.location ||
+        a.locationKey !== b.locationKey ||
+        a.worldId !== b.worldId ||
+        a.instanceId !== b.instanceId ||
+        a.ownerUserId !== b.ownerUserId ||
+        a.ownerGroupId !== b.ownerGroupId ||
+        a.worldName !== b.worldName ||
+        a.groupName !== b.groupName ||
+        a.instanceName !== b.instanceName ||
+        a.source !== b.source ||
+        a.userIds.length !== b.userIds.length
+    ) {
+        return false;
+    }
+    for (let index = 0; index < a.userIds.length; index++) {
+        if (a.userIds[index] !== b.userIds[index]) {
+            return false;
+        }
+    }
+    const aPlayerIds = Object.keys(a.playersById);
+    if (aPlayerIds.length !== Object.keys(b.playersById).length) {
+        return false;
+    }
+    for (const playerId of aPlayerIds) {
+        const bPlayer = b.playersById[playerId];
+        if (
+            !bPlayer ||
+            !sameInstancePlayerFact(a.playersById[playerId], bPlayer)
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export {
     buildInstancePresenceFact,
     buildInstanceRosterModel,
     instanceLocationKey,
-    instancePresenceKey
+    instancePresenceKey,
+    sameInstancePresenceFact
 };
 export type {
     InstancePlayerFact,

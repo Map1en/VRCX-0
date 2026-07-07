@@ -1,11 +1,15 @@
+import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import { formatDateFilter } from '@/lib/dateTime';
 import {
     convertFileUrlToImageUrl,
     userImage
 } from '@/services/entityMediaService';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
-export function firstArray(...values: any[]) {
-    return values.find((value: any) => Array.isArray(value)) || [];
+export function firstArray<T>(...values: (T[] | null | undefined)[]): T[];
+export function firstArray(...values: unknown[]) {
+    const result = values.find(Array.isArray);
+    return Array.isArray(result) ? result : [];
 }
 
 export function firstText(...values: any[]) {
@@ -185,4 +189,56 @@ export function hasGroupModerationPermission(group: any) {
     return Object.values(GROUP_MODERATION_TAB_PERMISSIONS).some((permissions) =>
         permissions.some((permission) => hasGroupPermission(group, permission))
     );
+}
+
+export function resolveGroupDialogTab(
+    tabs: any,
+    preferred: any,
+    fallback: any = 'overview'
+) {
+    return tabs.some((tab: any) => tab.value === preferred)
+        ? preferred
+        : fallback;
+}
+
+export function extractGroupEventRows(value: any) {
+    if (Array.isArray(value)) {
+        return value;
+    }
+    if (Array.isArray(value?.results)) {
+        return value.results;
+    }
+    if (Array.isArray(value?.json?.results)) {
+        return value.json.results;
+    }
+    return [];
+}
+
+export function followingEventIds(value: any) {
+    return new Set(
+        extractGroupEventRows(value).map(getEventId).filter(Boolean)
+    );
+}
+
+export function normalizeGroupEvent(
+    event: any,
+    fallbackGroupId: any = '',
+    { followingIds = null, isFollowing = null }: any = {}
+) {
+    const eventId = getEventId(event);
+    const resolvedFollowing =
+        isFollowing ??
+        (followingIds?.has(eventId) ? true : event?.userInterest?.isFollowing);
+
+    return {
+        ...event,
+        groupId: event?.groupId || fallbackGroupId,
+        ownerId: event?.ownerId || event?.groupId || fallbackGroupId,
+        userInterest: {
+            ...(event?.userInterest || {}),
+            isFollowing: Boolean(resolvedFollowing)
+        },
+        title: replaceBioSymbols(event?.title || ''),
+        description: replaceBioSymbols(event?.description || '')
+    };
 }

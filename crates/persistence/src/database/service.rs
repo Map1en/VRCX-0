@@ -569,6 +569,7 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
          PRAGMA optimize=0x10002;",
     )
     .map_err(|e| Error::Database(e.to_string()))?;
+    conn.set_prepared_statement_cache_capacity(64);
     Ok(())
 }
 
@@ -578,6 +579,7 @@ fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
          PRAGMA query_only=ON;",
     )
     .map_err(|e| Error::Database(e.to_string()))?;
+    conn.set_prepared_statement_cache_capacity(64);
     Ok(())
 }
 
@@ -629,7 +631,7 @@ fn execute_on_connection(
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<Vec<Vec<serde_json::Value>>, Error> {
     let mut stmt = conn
-        .prepare(sql)
+        .prepare_cached(sql)
         .map_err(|e| Error::Database(e.to_string()))?;
 
     let param_names = statement_param_names(&stmt);
@@ -667,7 +669,7 @@ fn execute_non_query_on_connection(
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<i64, Error> {
     let mut stmt = conn
-        .prepare(sql)
+        .prepare_cached(sql)
         .map_err(|e| Error::Database(e.to_string()))?;
 
     let param_names = statement_param_names(&stmt);

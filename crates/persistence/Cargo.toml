@@ -2,7 +2,6 @@
 name = "vrcx-0-persistence"
 version = "0.1.0"
 edition = "2021"
-autotests = false
 
 [dependencies]
 chrono = { workspace = true }
@@ -17,11 +16,3 @@ specta.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
 vrcx-0-core = { path = "../core" }
-
-[[test]]
-name = "activity_view"
-path = "tests/activity_view.rs"
-
-[[test]]
-name = "favorites_move"
-path = "tests/favorites_move.rs"
