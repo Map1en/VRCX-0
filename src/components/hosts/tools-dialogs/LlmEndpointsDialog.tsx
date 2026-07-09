@@ -468,7 +468,9 @@ export function LlmEndpointsDialog({
                                 onChange={(event) =>
                                     setDraft((current) => ({
                                         ...current,
-                                        name: event.target.value
+                                        name: event.target.value,
+                                        providerId:
+                                            CUSTOM_LLM_ENDPOINT_PROVIDER_ID
                                     }))
                                 }
                             />
