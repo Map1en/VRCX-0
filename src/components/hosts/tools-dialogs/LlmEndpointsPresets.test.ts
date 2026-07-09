@@ -29,6 +29,16 @@ describe('LLM endpoint provider presets', () => {
         expect(findLlmEndpointProviderId('https://api.deepseek.com/')).toBe(
             'deepseek'
         );
+        expect(
+            findLlmEndpointProviderId(
+                'https://generativelanguage.googleapis.com/v1beta/openai/'
+            )
+        ).toBe('gemini');
+        expect(
+            findLlmEndpointProviderId(
+                'https://api.hunyuan.cloud.tencent.com/v1/chat/completions'
+            )
+        ).toBe('tencent-hunyuan');
         expect(findLlmEndpointProviderId('https://example.test/v1')).toBe(
             CUSTOM_LLM_ENDPOINT_PROVIDER_ID
         );
@@ -44,6 +54,18 @@ describe('LLM endpoint provider presets', () => {
             clearKey: true,
             modelsText:
                 'llama-3.3-70b-versatile\nllama-3.1-8b-instant\nopenai/gpt-oss-120b'
+        });
+    });
+
+    it('applies additional common provider presets', () => {
+        expect(applyLlmEndpointProviderPreset(draft(), 'kimi')).toEqual({
+            id: 'ep_1',
+            providerId: 'kimi',
+            name: 'Kimi',
+            baseUrl: 'https://api.moonshot.ai/v1',
+            apiKey: 'sk-existing',
+            clearKey: true,
+            modelsText: 'kimi-k2.7-code\nkimi-k2.6'
         });
     });
 

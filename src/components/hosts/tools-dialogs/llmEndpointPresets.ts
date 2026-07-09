@@ -4,8 +4,19 @@ export const DEFAULT_LLM_ENDPOINT_PROVIDER_ID = 'openai';
 export type LlmEndpointProviderId =
     | 'openai'
     | 'openrouter'
+    | 'gemini'
+    | 'xai'
     | 'groq'
+    | 'mistral'
+    | 'together'
+    | 'perplexity'
+    | 'cerebras'
     | 'deepseek'
+    | 'dashscope'
+    | 'kimi'
+    | 'zhipu'
+    | 'siliconflow'
+    | 'tencent-hunyuan'
     | typeof CUSTOM_LLM_ENDPOINT_PROVIDER_ID;
 
 export type LlmEndpointProviderPreset = {
@@ -39,6 +50,18 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         models: ['~openai/gpt-latest']
     },
     {
+        id: 'gemini',
+        name: 'Google Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-2.5-flash']
+    },
+    {
+        id: 'xai',
+        name: 'xAI',
+        baseUrl: 'https://api.x.ai/v1',
+        models: ['grok-4.5', 'grok-4']
+    },
+    {
         id: 'groq',
         name: 'Groq',
         baseUrl: 'https://api.groq.com/openai/v1',
@@ -49,10 +72,76 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         ]
     },
     {
+        id: 'mistral',
+        name: 'Mistral AI',
+        baseUrl: 'https://api.mistral.ai/v1',
+        models: [
+            'mistral-large-latest',
+            'mistral-small-latest',
+            'codestral-latest'
+        ]
+    },
+    {
+        id: 'together',
+        name: 'Together AI',
+        baseUrl: 'https://api.together.xyz/v1',
+        models: [
+            'MiniMaxAI/MiniMax-M3',
+            'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
+            'openai/gpt-oss-20b'
+        ]
+    },
+    {
+        id: 'perplexity',
+        name: 'Perplexity',
+        baseUrl: 'https://api.perplexity.ai',
+        models: ['sonar-pro', 'sonar']
+    },
+    {
+        id: 'cerebras',
+        name: 'Cerebras',
+        baseUrl: 'https://api.cerebras.ai/v1',
+        models: ['gpt-oss-120b', 'zai-glm-4.7']
+    },
+    {
         id: 'deepseek',
         name: 'DeepSeek',
         baseUrl: 'https://api.deepseek.com',
         models: ['deepseek-v4-flash', 'deepseek-v4-pro']
+    },
+    {
+        id: 'dashscope',
+        name: 'Alibaba Cloud Model Studio',
+        baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        models: ['qwen-plus', 'qwen-max', 'qwen-turbo']
+    },
+    {
+        id: 'kimi',
+        name: 'Kimi',
+        baseUrl: 'https://api.moonshot.ai/v1',
+        models: ['kimi-k2.7-code', 'kimi-k2.6']
+    },
+    {
+        id: 'zhipu',
+        name: 'Zhipu AI',
+        baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+        models: ['glm-5.2', 'glm-4.5', 'glm-4.5-air']
+    },
+    {
+        id: 'siliconflow',
+        name: 'SiliconFlow',
+        baseUrl: 'https://api.siliconflow.cn/v1',
+        models: [
+            'Pro/zai-org/GLM-4.7',
+            'deepseek-ai/DeepSeek-V3.2',
+            'Qwen/Qwen3-32B'
+        ]
+    },
+    {
+        id: 'tencent-hunyuan',
+        name: 'Tencent Hunyuan',
+        baseUrl: 'https://api.hunyuan.cloud.tencent.com/v1',
+        models: ['hunyuan-turbos-latest', 'hunyuan-large', 'hunyuan-lite']
     }
 ];
 
