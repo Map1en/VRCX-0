@@ -407,18 +407,18 @@ export function LlmEndpointsDialog({
                             <Select
                                 value={draft.providerId}
                                 items={[
-                                    ...LLM_ENDPOINT_PROVIDER_PRESETS.map(
-                                        (preset) => ({
-                                            value: preset.id,
-                                            label: preset.name
-                                        })
-                                    ),
                                     {
                                         value: CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
                                         label: t(
                                             'view.tools.llm_endpoints.provider_custom'
                                         )
-                                    }
+                                    },
+                                    ...LLM_ENDPOINT_PROVIDER_PRESETS.map(
+                                        (preset) => ({
+                                            value: preset.id,
+                                            label: preset.name
+                                        })
+                                    )
                                 ]}
                                 onValueChange={updateDraftProvider}
                             >
@@ -430,6 +430,15 @@ export function LlmEndpointsDialog({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
+                                        <SelectItem
+                                            value={
+                                                CUSTOM_LLM_ENDPOINT_PROVIDER_ID
+                                            }
+                                        >
+                                            {t(
+                                                'view.tools.llm_endpoints.provider_custom'
+                                            )}
+                                        </SelectItem>
                                         {LLM_ENDPOINT_PROVIDER_PRESETS.map(
                                             (preset) => (
                                                 <SelectItem
@@ -440,15 +449,6 @@ export function LlmEndpointsDialog({
                                                 </SelectItem>
                                             )
                                         )}
-                                        <SelectItem
-                                            value={
-                                                CUSTOM_LLM_ENDPOINT_PROVIDER_ID
-                                            }
-                                        >
-                                            {t(
-                                                'view.tools.llm_endpoints.provider_custom'
-                                            )}
-                                        </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>

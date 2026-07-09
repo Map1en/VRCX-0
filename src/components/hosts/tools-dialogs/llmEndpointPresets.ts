@@ -5,13 +5,13 @@ export type LlmEndpointProviderId =
     | 'openai'
     | 'openrouter'
     | 'gemini'
+    | 'deepseek'
     | 'xai'
     | 'groq'
     | 'mistral'
     | 'together'
     | 'perplexity'
     | 'cerebras'
-    | 'deepseek'
     | 'dashscope'
     | 'kimi'
     | 'zhipu'
@@ -54,6 +54,12 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         name: 'Google Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-2.5-flash']
+    },
+    {
+        id: 'deepseek',
+        name: 'DeepSeek',
+        baseUrl: 'https://api.deepseek.com',
+        models: ['deepseek-v4-flash', 'deepseek-v4-pro']
     },
     {
         id: 'xai',
@@ -102,12 +108,6 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         name: 'Cerebras',
         baseUrl: 'https://api.cerebras.ai/v1',
         models: ['gpt-oss-120b', 'zai-glm-4.7']
-    },
-    {
-        id: 'deepseek',
-        name: 'DeepSeek',
-        baseUrl: 'https://api.deepseek.com',
-        models: ['deepseek-v4-flash', 'deepseek-v4-pro']
     },
     {
         id: 'dashscope',
