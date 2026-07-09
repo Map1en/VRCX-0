@@ -52,8 +52,7 @@ describe('LLM endpoint provider presets', () => {
             baseUrl: 'https://api.groq.com/openai/v1',
             apiKey: 'sk-existing',
             clearKey: true,
-            modelsText:
-                'llama-3.3-70b-versatile\nllama-3.1-8b-instant\nopenai/gpt-oss-120b'
+            modelsText: ''
         });
     });
 
@@ -65,7 +64,7 @@ describe('LLM endpoint provider presets', () => {
             baseUrl: 'https://api.moonshot.ai/v1',
             apiKey: 'sk-existing',
             clearKey: true,
-            modelsText: 'kimi-k2.7-code\nkimi-k2.6'
+            modelsText: ''
         });
     });
 
