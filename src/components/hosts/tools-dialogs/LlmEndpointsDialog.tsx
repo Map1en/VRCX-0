@@ -416,7 +416,9 @@ export function LlmEndpointsDialog({
                                     ...LLM_ENDPOINT_PROVIDER_PRESETS.map(
                                         (preset) => ({
                                             value: preset.id,
-                                            label: preset.name
+                                            label: t(preset.labelKey, {
+                                                defaultValue: preset.name
+                                            })
                                         })
                                     )
                                 ]}
@@ -445,7 +447,10 @@ export function LlmEndpointsDialog({
                                                     key={preset.id}
                                                     value={preset.id}
                                                 >
-                                                    {preset.name}
+                                                    {t(preset.labelKey, {
+                                                        defaultValue:
+                                                            preset.name
+                                                    })}
                                                 </SelectItem>
                                             )
                                         )}

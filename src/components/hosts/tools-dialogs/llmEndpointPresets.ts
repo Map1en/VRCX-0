@@ -22,6 +22,7 @@ export type LlmEndpointProviderId =
 export type LlmEndpointProviderPreset = {
     id: Exclude<LlmEndpointProviderId, typeof CUSTOM_LLM_ENDPOINT_PROVIDER_ID>;
     name: string;
+    labelKey: string;
     baseUrl: string;
     models: string[];
 };
@@ -40,36 +41,42 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
     {
         id: 'openai',
         name: 'OpenAI',
+        labelKey: 'view.tools.llm_endpoints.providers.openai',
         baseUrl: 'https://api.openai.com/v1',
         models: ['gpt-5.4-mini', 'gpt-5.4', 'gpt-5.5']
     },
     {
         id: 'openrouter',
         name: 'OpenRouter',
+        labelKey: 'view.tools.llm_endpoints.providers.openrouter',
         baseUrl: 'https://openrouter.ai/api/v1',
         models: ['~openai/gpt-latest']
     },
     {
         id: 'gemini',
         name: 'Google Gemini',
+        labelKey: 'view.tools.llm_endpoints.providers.gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-2.5-flash']
     },
     {
         id: 'deepseek',
         name: 'DeepSeek',
+        labelKey: 'view.tools.llm_endpoints.providers.deepseek',
         baseUrl: 'https://api.deepseek.com',
         models: ['deepseek-v4-flash', 'deepseek-v4-pro']
     },
     {
         id: 'xai',
         name: 'xAI',
+        labelKey: 'view.tools.llm_endpoints.providers.xai',
         baseUrl: 'https://api.x.ai/v1',
         models: ['grok-4.5', 'grok-4']
     },
     {
         id: 'groq',
         name: 'Groq',
+        labelKey: 'view.tools.llm_endpoints.providers.groq',
         baseUrl: 'https://api.groq.com/openai/v1',
         models: [
             'llama-3.3-70b-versatile',
@@ -80,6 +87,7 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
     {
         id: 'mistral',
         name: 'Mistral AI',
+        labelKey: 'view.tools.llm_endpoints.providers.mistral',
         baseUrl: 'https://api.mistral.ai/v1',
         models: [
             'mistral-large-latest',
@@ -90,6 +98,7 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
     {
         id: 'together',
         name: 'Together AI',
+        labelKey: 'view.tools.llm_endpoints.providers.together',
         baseUrl: 'https://api.together.xyz/v1',
         models: [
             'MiniMaxAI/MiniMax-M3',
@@ -100,36 +109,42 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
     {
         id: 'perplexity',
         name: 'Perplexity',
+        labelKey: 'view.tools.llm_endpoints.providers.perplexity',
         baseUrl: 'https://api.perplexity.ai',
         models: ['sonar-pro', 'sonar']
     },
     {
         id: 'cerebras',
         name: 'Cerebras',
+        labelKey: 'view.tools.llm_endpoints.providers.cerebras',
         baseUrl: 'https://api.cerebras.ai/v1',
         models: ['gpt-oss-120b', 'zai-glm-4.7']
     },
     {
         id: 'dashscope',
         name: 'Alibaba Cloud Model Studio',
+        labelKey: 'view.tools.llm_endpoints.providers.dashscope',
         baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         models: ['qwen-plus', 'qwen-max', 'qwen-turbo']
     },
     {
         id: 'kimi',
         name: 'Kimi',
+        labelKey: 'view.tools.llm_endpoints.providers.kimi',
         baseUrl: 'https://api.moonshot.ai/v1',
         models: ['kimi-k2.7-code', 'kimi-k2.6']
     },
     {
         id: 'zhipu',
         name: 'Zhipu AI',
+        labelKey: 'view.tools.llm_endpoints.providers.zhipu',
         baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
         models: ['glm-5.2', 'glm-4.5', 'glm-4.5-air']
     },
     {
         id: 'siliconflow',
         name: 'SiliconFlow',
+        labelKey: 'view.tools.llm_endpoints.providers.siliconflow',
         baseUrl: 'https://api.siliconflow.cn/v1',
         models: [
             'Pro/zai-org/GLM-4.7',
@@ -140,6 +155,7 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
     {
         id: 'tencent-hunyuan',
         name: 'Tencent Hunyuan',
+        labelKey: 'view.tools.llm_endpoints.providers.tencent-hunyuan',
         baseUrl: 'https://api.hunyuan.cloud.tencent.com/v1',
         models: ['hunyuan-turbos-latest', 'hunyuan-large', 'hunyuan-lite']
     }
