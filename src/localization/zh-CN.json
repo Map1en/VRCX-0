@@ -1580,6 +1580,8 @@
                 "model_count": "{count} 个模型",
                 "add": "添加端点",
                 "empty_description": "添加一个 OpenAI 兼容端点，供 Social AI 和 OpenAI 兼容翻译使用。",
+                "provider": "供应商",
+                "provider_custom": "自定义",
                 "name": "名称",
                 "base_url": "Base URL",
                 "models": "模型",

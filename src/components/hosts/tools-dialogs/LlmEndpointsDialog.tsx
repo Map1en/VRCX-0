@@ -26,6 +26,14 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Label } from '@/ui/shadcn/label';
 import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -35,27 +43,22 @@ import {
 } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-type EndpointDraft = {
-    id: string | null;
-    name: string;
-    baseUrl: string;
-    apiKey: string;
-    clearKey: boolean;
-    modelsText: string;
-};
+import {
+    CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
+    LLM_ENDPOINT_PROVIDER_PRESETS,
+    applyLlmEndpointProviderPreset,
+    createEmptyLlmEndpointDraft,
+    findLlmEndpointProviderId,
+    isLlmEndpointProviderId,
+    type LlmEndpointProviderDraft
+} from './llmEndpointPresets';
 
-const emptyDraft: EndpointDraft = {
-    id: null,
-    name: '',
-    baseUrl: 'https://api.openai.com/v1',
-    apiKey: '',
-    clearKey: false,
-    modelsText: ''
-};
+type EndpointDraft = LlmEndpointProviderDraft;
 
 function draftFromEndpoint(endpoint: LlmEndpointDto): EndpointDraft {
     return {
         id: endpoint.id,
+        providerId: findLlmEndpointProviderId(endpoint.baseUrl),
         name: endpoint.name,
         baseUrl: endpoint.baseUrl,
         apiKey: '',
@@ -104,7 +107,9 @@ export function LlmEndpointsDialog({
     );
     const detectModels = useLlmEndpointsStore((state) => state.detectModels);
     const [view, setView] = useState<'list' | 'edit'>('list');
-    const [draft, setDraft] = useState<EndpointDraft>(emptyDraft);
+    const [draft, setDraft] = useState<EndpointDraft>(
+        createEmptyLlmEndpointDraft
+    );
     const modelCount = useMemo(
         () =>
             endpoints.reduce(
@@ -129,13 +134,20 @@ export function LlmEndpointsDialog({
     }, [open, load, t]);
 
     function openAddView() {
-        setDraft(emptyDraft);
+        setDraft(createEmptyLlmEndpointDraft());
         setView('edit');
     }
 
     function openEditView(endpoint: LlmEndpointDto) {
         setDraft(draftFromEndpoint(endpoint));
         setView('edit');
+    }
+
+    function updateDraftProvider(value: string | null) {
+        if (!isLlmEndpointProviderId(value)) {
+            return;
+        }
+        setDraft((current) => applyLlmEndpointProviderPreset(current, value));
     }
 
     async function saveDraft() {
@@ -389,6 +401,59 @@ export function LlmEndpointsDialog({
                 ) : (
                     <div className="grid gap-4">
                         <div className="grid gap-2">
+                            <Label htmlFor="llm-endpoint-dialog-provider">
+                                {t('view.tools.llm_endpoints.provider')}
+                            </Label>
+                            <Select
+                                value={draft.providerId}
+                                items={[
+                                    ...LLM_ENDPOINT_PROVIDER_PRESETS.map(
+                                        (preset) => ({
+                                            value: preset.id,
+                                            label: preset.name
+                                        })
+                                    ),
+                                    {
+                                        value: CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
+                                        label: t(
+                                            'view.tools.llm_endpoints.provider_custom'
+                                        )
+                                    }
+                                ]}
+                                onValueChange={updateDraftProvider}
+                            >
+                                <SelectTrigger
+                                    id="llm-endpoint-dialog-provider"
+                                    className="w-full"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {LLM_ENDPOINT_PROVIDER_PRESETS.map(
+                                            (preset) => (
+                                                <SelectItem
+                                                    key={preset.id}
+                                                    value={preset.id}
+                                                >
+                                                    {preset.name}
+                                                </SelectItem>
+                                            )
+                                        )}
+                                        <SelectItem
+                                            value={
+                                                CUSTOM_LLM_ENDPOINT_PROVIDER_ID
+                                            }
+                                        >
+                                            {t(
+                                                'view.tools.llm_endpoints.provider_custom'
+                                            )}
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="llm-endpoint-dialog-name">
                                 {t('view.tools.llm_endpoints.name')}
                             </Label>
@@ -414,7 +479,10 @@ export function LlmEndpointsDialog({
                                 onChange={(event) =>
                                     setDraft((current) => ({
                                         ...current,
-                                        baseUrl: event.target.value
+                                        baseUrl: event.target.value,
+                                        providerId: findLlmEndpointProviderId(
+                                            event.target.value
+                                        )
                                     }))
                                 }
                             />

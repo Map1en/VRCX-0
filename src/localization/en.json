@@ -1580,6 +1580,8 @@
                 "model_count": "{count} models",
                 "add": "Add endpoint",
                 "empty_description": "Add an OpenAI-compatible endpoint for Social AI and OpenAI-compatible translation.",
+                "provider": "Provider",
+                "provider_custom": "Custom",
                 "name": "Name",
                 "base_url": "Base URL",
                 "models": "Models",
