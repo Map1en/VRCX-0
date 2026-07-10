@@ -50,6 +50,7 @@ import {
     createEmptyLlmEndpointDraft,
     findLlmEndpointProviderId,
     isLlmEndpointProviderId,
+    shouldUseSavedLlmEndpointForDetect,
     type LlmEndpointProviderDraft
 } from './llmEndpointPresets';
 
@@ -58,6 +59,7 @@ type EndpointDraft = LlmEndpointProviderDraft;
 function draftFromEndpoint(endpoint: LlmEndpointDto): EndpointDraft {
     return {
         id: endpoint.id,
+        savedBaseUrl: endpoint.baseUrl,
         providerId: findLlmEndpointProviderId(endpoint.baseUrl),
         name: endpoint.name,
         baseUrl: endpoint.baseUrl,
@@ -177,11 +179,12 @@ export function LlmEndpointsDialog({
 
     async function detectForDraft() {
         try {
+            const useSavedEndpoint = shouldUseSavedLlmEndpointForDetect(draft);
             const models = await detectModels({
-                id: draft.id,
-                baseUrl: draft.baseUrl.trim() || null,
-                apiKey: draft.apiKey.trim() || null,
-                persist: true
+                id: useSavedEndpoint ? draft.id : null,
+                baseUrl: useSavedEndpoint ? null : draft.baseUrl.trim() || null,
+                apiKey: useSavedEndpoint ? null : draft.apiKey.trim() || null,
+                persist: useSavedEndpoint
             });
             setDraft((current) => ({
                 ...current,

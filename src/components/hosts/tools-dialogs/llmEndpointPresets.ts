@@ -28,6 +28,7 @@ export type LlmEndpointProviderPreset = {
 
 export type LlmEndpointProviderDraft = {
     id: string | null;
+    savedBaseUrl: string | null;
     providerId: LlmEndpointProviderId;
     name: string;
     baseUrl: string;
@@ -190,10 +191,26 @@ export function applyLlmEndpointProviderPreset(
     };
 }
 
+export function shouldUseSavedLlmEndpointForDetect(
+    draft: LlmEndpointProviderDraft
+): boolean {
+    if (!draft.id || !draft.savedBaseUrl || draft.apiKey.trim()) {
+        return false;
+    }
+    if (draft.clearKey) {
+        return false;
+    }
+    return (
+        normalizeLlmEndpointPresetBaseUrl(draft.baseUrl) ===
+        normalizeLlmEndpointPresetBaseUrl(draft.savedBaseUrl)
+    );
+}
+
 export function createEmptyLlmEndpointDraft(): LlmEndpointProviderDraft {
     return applyLlmEndpointProviderPreset(
         {
             id: null,
+            savedBaseUrl: null,
             providerId: DEFAULT_LLM_ENDPOINT_PROVIDER_ID,
             name: '',
             baseUrl: '',

@@ -4,12 +4,14 @@ import {
     CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
     applyLlmEndpointProviderPreset,
     findLlmEndpointProviderId,
+    shouldUseSavedLlmEndpointForDetect,
     type LlmEndpointProviderDraft
 } from './llmEndpointPresets';
 
 function draft(): LlmEndpointProviderDraft {
     return {
         id: 'ep_1',
+        savedBaseUrl: 'https://example.test/v1',
         providerId: CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
         name: 'Manual',
         baseUrl: 'https://example.test/v1',
@@ -47,6 +49,7 @@ describe('LLM endpoint provider presets', () => {
     it('applies a preset while preserving endpoint identity and key state', () => {
         expect(applyLlmEndpointProviderPreset(draft(), 'groq')).toEqual({
             id: 'ep_1',
+            savedBaseUrl: 'https://example.test/v1',
             providerId: 'groq',
             name: 'Groq',
             baseUrl: 'https://api.groq.com/openai/v1',
@@ -59,6 +62,7 @@ describe('LLM endpoint provider presets', () => {
     it('applies additional common provider presets', () => {
         expect(applyLlmEndpointProviderPreset(draft(), 'kimi')).toEqual({
             id: 'ep_1',
+            savedBaseUrl: 'https://example.test/v1',
             providerId: 'kimi',
             name: 'Kimi',
             baseUrl: 'https://api.moonshot.ai/v1',
@@ -75,5 +79,46 @@ describe('LLM endpoint provider presets', () => {
                 CUSTOM_LLM_ENDPOINT_PROVIDER_ID
             )
         ).toEqual(draft());
+    });
+
+    it('uses a saved endpoint for detect only when draft connection state is unchanged', () => {
+        const unchangedDraft = {
+            ...draft(),
+            apiKey: '',
+            clearKey: false
+        };
+
+        expect(shouldUseSavedLlmEndpointForDetect(unchangedDraft)).toBe(true);
+        expect(
+            shouldUseSavedLlmEndpointForDetect({
+                ...unchangedDraft,
+                baseUrl: 'https://example.test/v1/'
+            })
+        ).toBe(true);
+        expect(
+            shouldUseSavedLlmEndpointForDetect({
+                ...unchangedDraft,
+                baseUrl: 'https://api.deepseek.com'
+            })
+        ).toBe(false);
+        expect(
+            shouldUseSavedLlmEndpointForDetect({
+                ...unchangedDraft,
+                apiKey: 'sk-new'
+            })
+        ).toBe(false);
+        expect(
+            shouldUseSavedLlmEndpointForDetect({
+                ...unchangedDraft,
+                clearKey: true
+            })
+        ).toBe(false);
+        expect(
+            shouldUseSavedLlmEndpointForDetect({
+                ...unchangedDraft,
+                id: null,
+                savedBaseUrl: null
+            })
+        ).toBe(false);
     });
 });
