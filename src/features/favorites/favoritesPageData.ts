@@ -470,6 +470,10 @@ export function buildFavoriteRemoteItemsByGroup({
             authorName ||
             defaultFavoriteDetailSubtitle(kind, isUnavailable, translate);
 
+        const imageUrl = (displayDetail?.thumbnailImageUrl ||
+            displayDetail?.imageUrl ||
+            '') as string;
+
         itemsByGroup[groupKey].push({
             key: `remote:${groupKey}:${favoriteId}`,
             kind,
@@ -486,11 +490,8 @@ export function buildFavoriteRemoteItemsByGroup({
             authorName,
             description: textValue(displayDetail?.description),
             seedData: displayDetail || null,
-            imageUrl: shrinkImage(
-                displayDetail?.thumbnailImageUrl ||
-                    displayDetail?.imageUrl ||
-                    ''
-            ),
+            imageSmallUrl: shrinkImage(imageUrl),
+            imageUrl,
             isPrivate,
             isUnavailable,
             tags: stringArray(displayDetail?.tags),

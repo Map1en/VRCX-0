@@ -25,6 +25,7 @@ export type FavoriteItem = {
     authorName?: string;
     description?: string;
     detailText?: string;
+    imageSmallUrl?: string;
     imageUrl?: string;
     seedData?: unknown;
     isUnavailable?: boolean;
