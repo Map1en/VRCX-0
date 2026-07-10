@@ -60,7 +60,7 @@ function draftFromEndpoint(endpoint: LlmEndpointDto): EndpointDraft {
     return {
         id: endpoint.id,
         savedBaseUrl: endpoint.baseUrl,
-        providerId: findLlmEndpointProviderId(endpoint.baseUrl),
+        providerId: findLlmEndpointProviderId(endpoint.baseUrl, endpoint.name),
         name: endpoint.name,
         baseUrl: endpoint.baseUrl,
         apiKey: '',
@@ -472,8 +472,10 @@ export function LlmEndpointsDialog({
                                     setDraft((current) => ({
                                         ...current,
                                         name: event.target.value,
-                                        providerId:
-                                            CUSTOM_LLM_ENDPOINT_PROVIDER_ID
+                                        providerId: findLlmEndpointProviderId(
+                                            current.baseUrl,
+                                            event.target.value
+                                        )
                                     }))
                                 }
                             />
@@ -491,7 +493,8 @@ export function LlmEndpointsDialog({
                                         ...current,
                                         baseUrl: event.target.value,
                                         providerId: findLlmEndpointProviderId(
-                                            event.target.value
+                                            event.target.value,
+                                            current.name
                                         )
                                     }))
                                 }

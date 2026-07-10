@@ -1588,16 +1588,7 @@
                     "gemini": "Google Gemini",
                     "deepseek": "DeepSeek",
                     "xai": "xAI",
-                    "groq": "Groq",
-                    "mistral": "Mistral AI",
-                    "together": "Together AI",
-                    "perplexity": "Perplexity",
-                    "cerebras": "Cerebras",
-                    "dashscope": "Alibaba Cloud Model Studio",
-                    "kimi": "Kimi",
-                    "zhipu": "Zhipu AI",
-                    "siliconflow": "SiliconFlow",
-                    "tencent-hunyuan": "Tencent Hunyuan"
+                    "dashscope": "Alibaba Cloud Model Studio"
                 },
                 "name": "Name",
                 "base_url": "Base URL",

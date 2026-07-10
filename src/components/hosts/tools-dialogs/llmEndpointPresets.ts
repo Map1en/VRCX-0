@@ -7,16 +7,7 @@ export type LlmEndpointProviderId =
     | 'gemini'
     | 'deepseek'
     | 'xai'
-    | 'groq'
-    | 'mistral'
-    | 'together'
-    | 'perplexity'
-    | 'cerebras'
     | 'dashscope'
-    | 'kimi'
-    | 'zhipu'
-    | 'siliconflow'
-    | 'tencent-hunyuan'
     | typeof CUSTOM_LLM_ENDPOINT_PROVIDER_ID;
 
 export type LlmEndpointProviderPreset = {
@@ -69,64 +60,10 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         baseUrl: 'https://api.x.ai/v1'
     },
     {
-        id: 'groq',
-        name: 'Groq',
-        labelKey: 'view.tools.llm_endpoints.providers.groq',
-        baseUrl: 'https://api.groq.com/openai/v1'
-    },
-    {
-        id: 'mistral',
-        name: 'Mistral AI',
-        labelKey: 'view.tools.llm_endpoints.providers.mistral',
-        baseUrl: 'https://api.mistral.ai/v1'
-    },
-    {
-        id: 'together',
-        name: 'Together AI',
-        labelKey: 'view.tools.llm_endpoints.providers.together',
-        baseUrl: 'https://api.together.xyz/v1'
-    },
-    {
-        id: 'perplexity',
-        name: 'Perplexity',
-        labelKey: 'view.tools.llm_endpoints.providers.perplexity',
-        baseUrl: 'https://api.perplexity.ai'
-    },
-    {
-        id: 'cerebras',
-        name: 'Cerebras',
-        labelKey: 'view.tools.llm_endpoints.providers.cerebras',
-        baseUrl: 'https://api.cerebras.ai/v1'
-    },
-    {
         id: 'dashscope',
         name: 'Alibaba Cloud Model Studio',
         labelKey: 'view.tools.llm_endpoints.providers.dashscope',
         baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
-    },
-    {
-        id: 'kimi',
-        name: 'Kimi',
-        labelKey: 'view.tools.llm_endpoints.providers.kimi',
-        baseUrl: 'https://api.moonshot.ai/v1'
-    },
-    {
-        id: 'zhipu',
-        name: 'Zhipu AI',
-        labelKey: 'view.tools.llm_endpoints.providers.zhipu',
-        baseUrl: 'https://open.bigmodel.cn/api/paas/v4'
-    },
-    {
-        id: 'siliconflow',
-        name: 'SiliconFlow',
-        labelKey: 'view.tools.llm_endpoints.providers.siliconflow',
-        baseUrl: 'https://api.siliconflow.cn/v1'
-    },
-    {
-        id: 'tencent-hunyuan',
-        name: 'Tencent Hunyuan',
-        labelKey: 'view.tools.llm_endpoints.providers.tencent-hunyuan',
-        baseUrl: 'https://api.hunyuan.cloud.tencent.com/v1'
     }
 ];
 
@@ -148,14 +85,17 @@ export function normalizeLlmEndpointPresetBaseUrl(raw: string): string {
 }
 
 export function findLlmEndpointProviderId(
-    baseUrl: string
+    baseUrl: string,
+    name: string
 ): LlmEndpointProviderId {
     const normalizedBaseUrl = normalizeLlmEndpointPresetBaseUrl(baseUrl);
+    const normalizedName = name.trim();
     return (
         LLM_ENDPOINT_PROVIDER_PRESETS.find(
             (preset) =>
+                preset.name === normalizedName &&
                 normalizeLlmEndpointPresetBaseUrl(preset.baseUrl) ===
-                normalizedBaseUrl
+                    normalizedBaseUrl
         )?.id ?? CUSTOM_LLM_ENDPOINT_PROVIDER_ID
     );
 }

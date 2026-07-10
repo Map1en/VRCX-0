@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
+    LLM_ENDPOINT_PROVIDER_PRESETS,
     applyLlmEndpointProviderPreset,
     findLlmEndpointProviderId,
     shouldUseSavedLlmEndpointForDetect,
@@ -22,37 +23,65 @@ function draft(): LlmEndpointProviderDraft {
 }
 
 describe('LLM endpoint provider presets', () => {
-    it('matches providers by normalized base URL', () => {
+    it('exposes only the selected common providers in the agreed order', () => {
+        expect(
+            LLM_ENDPOINT_PROVIDER_PRESETS.map((preset) => preset.id)
+        ).toEqual([
+            'openai',
+            'openrouter',
+            'gemini',
+            'deepseek',
+            'xai',
+            'dashscope'
+        ]);
+    });
+
+    it('matches providers by normalized base URL and preset name', () => {
         expect(
             findLlmEndpointProviderId(
-                ' https://api.openai.com/v1/chat/completions/ '
+                ' https://api.openai.com/v1/chat/completions/ ',
+                'OpenAI'
             )
         ).toBe('openai');
-        expect(findLlmEndpointProviderId('https://api.deepseek.com/')).toBe(
-            'deepseek'
-        );
+        expect(
+            findLlmEndpointProviderId('https://api.deepseek.com/', 'DeepSeek')
+        ).toBe('deepseek');
         expect(
             findLlmEndpointProviderId(
-                'https://generativelanguage.googleapis.com/v1beta/openai/'
+                'https://generativelanguage.googleapis.com/v1beta/openai/',
+                'Google Gemini'
             )
         ).toBe('gemini');
         expect(
             findLlmEndpointProviderId(
-                'https://api.hunyuan.cloud.tencent.com/v1/chat/completions'
+                'https://api.openai.com/v1',
+                'Renamed OpenAI'
             )
-        ).toBe('tencent-hunyuan');
-        expect(findLlmEndpointProviderId('https://example.test/v1')).toBe(
-            CUSTOM_LLM_ENDPOINT_PROVIDER_ID
-        );
+        ).toBe(CUSTOM_LLM_ENDPOINT_PROVIDER_ID);
+        expect(
+            findLlmEndpointProviderId('https://example.test/v1', 'Manual')
+        ).toBe(CUSTOM_LLM_ENDPOINT_PROVIDER_ID);
+        expect(
+            findLlmEndpointProviderId('https://api.openai.com/v1', ' OpenAI ')
+        ).toBe('openai');
+        expect(
+            findLlmEndpointProviderId(
+                'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'Alibaba Cloud Model Studio'
+            )
+        ).toBe('dashscope');
+        expect(
+            findLlmEndpointProviderId('https://api.openai.com/v1', 'openai')
+        ).toBe(CUSTOM_LLM_ENDPOINT_PROVIDER_ID);
     });
 
     it('applies a preset while preserving endpoint identity and key state', () => {
-        expect(applyLlmEndpointProviderPreset(draft(), 'groq')).toEqual({
+        expect(applyLlmEndpointProviderPreset(draft(), 'xai')).toEqual({
             id: 'ep_1',
             savedBaseUrl: 'https://example.test/v1',
-            providerId: 'groq',
-            name: 'Groq',
-            baseUrl: 'https://api.groq.com/openai/v1',
+            providerId: 'xai',
+            name: 'xAI',
+            baseUrl: 'https://api.x.ai/v1',
             apiKey: 'sk-existing',
             clearKey: true,
             modelsText: ''
@@ -60,12 +89,12 @@ describe('LLM endpoint provider presets', () => {
     });
 
     it('applies additional common provider presets', () => {
-        expect(applyLlmEndpointProviderPreset(draft(), 'kimi')).toEqual({
+        expect(applyLlmEndpointProviderPreset(draft(), 'dashscope')).toEqual({
             id: 'ep_1',
             savedBaseUrl: 'https://example.test/v1',
-            providerId: 'kimi',
-            name: 'Kimi',
-            baseUrl: 'https://api.moonshot.ai/v1',
+            providerId: 'dashscope',
+            name: 'Alibaba Cloud Model Studio',
+            baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             apiKey: 'sk-existing',
             clearKey: true,
             modelsText: ''
