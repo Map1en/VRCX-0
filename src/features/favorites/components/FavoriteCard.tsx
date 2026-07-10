@@ -480,10 +480,10 @@ const FavoriteCard = memo(function FavoriteCard({
                         aspectRatio: String(densityConfig.imageAspectRatio)
                     }}
                 >
-                    {(item.imageUrl || item.imageUrl) && !item.isUnavailable ? (
+                    {item.imageUrl && !item.isUnavailable ? (
                         <img
                             src={
-                                densityConfig.value == 'compact'
+                                densityConfig.value === 'compact'
                                     ? item.imageSmallUrl || item.imageUrl
                                     : item.imageUrl
                             }

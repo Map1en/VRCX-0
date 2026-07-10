@@ -5,6 +5,7 @@ import { hasDisplayableEntityDetail } from './favoriteEntityDetails';
 import {
     favoriteGroupType,
     normalizeFavoriteEntityId as normalizeEntityId,
+    resolveFavoriteImage,
     shrinkFavoriteImage as shrinkImage,
     sortFavoriteItems as sortItems
 } from './favoritesItems';
@@ -76,6 +77,15 @@ function firstDisplayableDetail(candidates: unknown[]) {
     return candidates.find((candidate) =>
         hasDisplayableEntityDetail(candidate)
     ) as FavoriteEntityDetail | undefined;
+}
+
+function favoriteImagePair(detail: FavoriteEntityDetail | null | undefined) {
+    const largeImageUrl = resolveFavoriteImage(detail?.imageUrl);
+    const thumbnailImageUrl = resolveFavoriteImage(detail?.thumbnailImageUrl);
+    return {
+        imageUrl: largeImageUrl || thumbnailImageUrl,
+        imageSmallUrl: shrinkImage(thumbnailImageUrl || largeImageUrl)
+    };
 }
 
 function buildRemoteFavoriteGroups(
@@ -470,9 +480,7 @@ export function buildFavoriteRemoteItemsByGroup({
             authorName ||
             defaultFavoriteDetailSubtitle(kind, isUnavailable, translate);
 
-        const imageUrl = (displayDetail?.thumbnailImageUrl ||
-            displayDetail?.imageUrl ||
-            '') as string;
+        const imagePair = favoriteImagePair(displayDetail);
 
         itemsByGroup[groupKey].push({
             key: `remote:${groupKey}:${favoriteId}`,
@@ -490,8 +498,7 @@ export function buildFavoriteRemoteItemsByGroup({
             authorName,
             description: textValue(displayDetail?.description),
             seedData: displayDetail || null,
-            imageSmallUrl: shrinkImage(imageUrl),
-            imageUrl,
+            ...imagePair,
             isPrivate,
             isUnavailable,
             tags: stringArray(displayDetail?.tags),
@@ -578,6 +585,7 @@ export function buildFavoriteLocalItemsByGroup({
                 id: normalizedId
             };
             const playerCount = Number(detail.occupants) || 0;
+            const imagePair = favoriteImagePair(detail);
             return {
                 key: `local:${group.key}:${normalizedId}`,
                 kind,
@@ -592,9 +600,7 @@ export function buildFavoriteLocalItemsByGroup({
                 authorName: textValue(detail.authorName),
                 description: textValue(detail.description),
                 seedData: detail || null,
-                imageUrl: shrinkImage(
-                    detail.thumbnailImageUrl || detail.imageUrl || ''
-                ),
+                ...imagePair,
                 isPrivate: textValue(detail.releaseStatus) === 'private',
                 isUnavailable: false,
                 tags: stringArray(detail.tags),
@@ -626,6 +632,7 @@ export function buildFavoriteAvatarHistoryItems({
 
     return avatarHistory.map((detail, index) => {
         const normalizedId = normalizeEntityId(detail?.id);
+        const imagePair = favoriteImagePair(detail);
         return {
             key: `history:local-history:${normalizedId || index}`,
             kind: 'avatar',
@@ -640,9 +647,7 @@ export function buildFavoriteAvatarHistoryItems({
             authorName: textValue(detail?.authorName),
             description: textValue(detail?.description),
             seedData: detail || null,
-            imageUrl: shrinkImage(
-                detail?.thumbnailImageUrl || detail?.imageUrl || ''
-            ),
+            ...imagePair,
             isPrivate: textValue(detail?.releaseStatus) === 'private',
             isUnavailable: false,
             tags: stringArray(detail?.tags),
