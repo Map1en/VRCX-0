@@ -1587,8 +1587,7 @@
                     "openrouter": "OpenRouter",
                     "gemini": "Google Gemini",
                     "deepseek": "DeepSeek",
-                    "xai": "xAI",
-                    "dashscope": "阿里云百炼"
+                    "xai": "xAI"
                 },
                 "name": "名称",
                 "base_url": "Base URL",

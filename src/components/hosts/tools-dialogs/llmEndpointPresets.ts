@@ -7,7 +7,6 @@ export type LlmEndpointProviderId =
     | 'gemini'
     | 'deepseek'
     | 'xai'
-    | 'dashscope'
     | typeof CUSTOM_LLM_ENDPOINT_PROVIDER_ID;
 
 export type LlmEndpointProviderPreset = {
@@ -58,12 +57,6 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         name: 'xAI',
         labelKey: 'view.tools.llm_endpoints.providers.xai',
         baseUrl: 'https://api.x.ai/v1'
-    },
-    {
-        id: 'dashscope',
-        name: 'Alibaba Cloud Model Studio',
-        labelKey: 'view.tools.llm_endpoints.providers.dashscope',
-        baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
     }
 ];
 

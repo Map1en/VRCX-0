@@ -26,14 +26,7 @@ describe('LLM endpoint provider presets', () => {
     it('exposes only the selected common providers in the agreed order', () => {
         expect(
             LLM_ENDPOINT_PROVIDER_PRESETS.map((preset) => preset.id)
-        ).toEqual([
-            'openai',
-            'openrouter',
-            'gemini',
-            'deepseek',
-            'xai',
-            'dashscope'
-        ]);
+        ).toEqual(['openai', 'openrouter', 'gemini', 'deepseek', 'xai']);
     });
 
     it('matches providers by normalized base URL and preset name', () => {
@@ -65,12 +58,6 @@ describe('LLM endpoint provider presets', () => {
             findLlmEndpointProviderId('https://api.openai.com/v1', ' OpenAI ')
         ).toBe('openai');
         expect(
-            findLlmEndpointProviderId(
-                'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                'Alibaba Cloud Model Studio'
-            )
-        ).toBe('dashscope');
-        expect(
             findLlmEndpointProviderId('https://api.openai.com/v1', 'openai')
         ).toBe(CUSTOM_LLM_ENDPOINT_PROVIDER_ID);
     });
@@ -89,12 +76,12 @@ describe('LLM endpoint provider presets', () => {
     });
 
     it('applies additional common provider presets', () => {
-        expect(applyLlmEndpointProviderPreset(draft(), 'dashscope')).toEqual({
+        expect(applyLlmEndpointProviderPreset(draft(), 'openrouter')).toEqual({
             id: 'ep_1',
             savedBaseUrl: 'https://example.test/v1',
-            providerId: 'dashscope',
-            name: 'Alibaba Cloud Model Studio',
-            baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            providerId: 'openrouter',
+            name: 'OpenRouter',
+            baseUrl: 'https://openrouter.ai/api/v1',
             apiKey: 'sk-existing',
             clearKey: true,
             modelsText: ''

@@ -1587,8 +1587,7 @@
                     "openrouter": "OpenRouter",
                     "gemini": "Google Gemini",
                     "deepseek": "DeepSeek",
-                    "xai": "xAI",
-                    "dashscope": "Alibaba Cloud Model Studio"
+                    "xai": "xAI"
                 },
                 "name": "Name",
                 "base_url": "Base URL",
