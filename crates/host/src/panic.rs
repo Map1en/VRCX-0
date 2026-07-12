@@ -31,13 +31,32 @@ pub struct PanicSnapshot {
 }
 
 impl PanicSnapshot {
-    fn new(app_version: String, date: DateTime<Utc>, info: &PanicHookInfo, ip: *const ()) -> Self {
+    fn new(
+        app_version: String,
+        date: DateTime<Utc>,
+        info: &PanicHookInfo,
+        ip: *const std::ffi::c_void,
+    ) -> Self {
         let mut frames = Vec::new();
         backtrace::trace(|frame| {
-            frames.push(BacktraceFrame::from(frame.clone()));
+            let mut bt_frame = BacktraceFrame::from(frame.clone());
+            bt_frame.resolve();
+            frames.push(bt_frame);
 
+            #[cfg(target_vendor = "apple")]
+            let symbol_addr = {
+                // FIXME: https://github.com/rust-lang/rust/issues/74771
+                unsafe extern "C" {
+                    pub fn _Unwind_FindEnclosingFunction(
+                        pc: *mut std::ffi::c_void,
+                    ) -> *mut std::ffi::c_void;
+                }
+                unsafe { _Unwind_FindEnclosingFunction(frame.ip()) }
+            };
+            #[cfg(not(target_vendor = "apple"))]
+            let symbol_addr = frame.symbol_address();
             // clear inner frames, and start with call site.
-            if std::ptr::eq(frame.symbol_address(), ip as _) {
+            if std::ptr::eq(symbol_addr, ip) {
                 frames.clear();
             }
 
@@ -122,12 +141,20 @@ pub fn take_last(app_data_dir: &Path) -> Option<PanicSnapshot> {
     None
 }
 
+#[inline(never)]
 fn write_panic_info(
     panic_dir: &Path,
     panic_info: &PanicHookInfo,
     app_version: &str,
 ) -> Result<PathBuf, Error> {
     let now = Utc::now();
+
+    let snapshot = PanicSnapshot::new(
+        app_version.to_string(),
+        now,
+        panic_info,
+        write_panic_info as _,
+    );
 
     let panic_info_path = dated_snapshot_path(panic_dir, now);
 
@@ -137,12 +164,7 @@ fn write_panic_info(
         .create(true)
         .open(&panic_info_path)?;
 
-    file.write_all(&serde_json::to_vec(&PanicSnapshot::new(
-        app_version.to_string(),
-        now,
-        panic_info,
-        write_panic_info as _,
-    ))?)?;
+    file.write_all(&serde_json::to_vec(&snapshot)?)?;
     drop(file);
 
     let tmp_path = panic_dir.join("latest.tmp");

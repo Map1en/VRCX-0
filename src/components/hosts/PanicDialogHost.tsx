@@ -28,10 +28,9 @@ export function PanicDialogHost() {
         let active = true;
         commands
             .appTakePanicSnapshot()
-            .then((snap) => {
-                if (active && snap) {
-                    console.log({ snap });
-                    setSnapshot(snap);
+            .then((snapshot) => {
+                if (active && snapshot) {
+                    setSnapshot(snapshot);
                 }
             })
             .catch((err) => {
