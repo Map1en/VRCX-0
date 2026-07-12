@@ -9,9 +9,9 @@ use crate::state::AppState;
 #[cfg(not(feature = "devkit"))]
 macro_rules! devkit_feature {
     ($_:expr) => {
-        return Err(AppError::Custom(
+        Err(AppError::Custom(
             "Devkit tools are unavailable in this build.".into(),
-        ));
+        ))
     };
 }
 
