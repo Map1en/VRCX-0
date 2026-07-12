@@ -91,15 +91,13 @@ describe('vrcNotificationStore', () => {
             seen: true
         });
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
-        expect(notificationRepositoryMock.markSeen).toHaveBeenCalledWith({
-            userId: 'usr_me',
-            id: 'notif_system',
-            version: 2,
-            endpoint: 'https://api.example.test/api/1'
-        });
+        expect(notificationRepositoryMock.markSeen).not.toHaveBeenCalled();
         expect(
             notificationRepositoryMock.markSeenLocalBulk
-        ).not.toHaveBeenCalled();
+        ).toHaveBeenCalledWith({
+            userId: 'usr_me',
+            ids: ['notif_system']
+        });
     });
 
     it('marks non-system v2 notifications read after mark-all-seen', async () => {
@@ -140,10 +138,56 @@ describe('vrcNotificationStore', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('keeps notifications unread and throws when the server call fails', async () => {
+    it('marks system notifications locally and activity notifications remotely in one batch', async () => {
         const systemNotification = {
+            id: 'notif_group_announcement',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        const activityNotification = {
+            id: 'notif_activity',
+            type: 'inviteResponse',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([
+            { ...systemNotification, seen: true },
+            { ...activityNotification, seen: true }
+        ]);
+
+        useVrcNotificationStore
+            .getState()
+            .upsertNotification(systemNotification);
+        useVrcNotificationStore
+            .getState()
+            .upsertNotification(activityNotification);
+
+        await useVrcNotificationStore.getState().markAllSeen();
+
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
+        expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
+        expect(
+            notificationRepositoryMock.markSeenLocalBulk
+        ).toHaveBeenCalledWith({
+            userId: 'usr_me',
+            ids: ['notif_group_announcement']
+        });
+        expect(notificationRepositoryMock.markSeen).toHaveBeenCalledTimes(1);
+        expect(notificationRepositoryMock.markSeen).toHaveBeenCalledWith({
+            userId: 'usr_me',
+            id: 'notif_activity',
+            version: 2,
+            endpoint: 'https://api.example.test/api/1'
+        });
+    });
+
+    it('keeps notifications unread and throws when the server call fails', async () => {
+        const activityNotification = {
             id: 'notif_failing',
-            type: 'event.announcement',
+            type: 'inviteResponse',
             version: 2,
             seen: false,
             created_at: new Date().toISOString()
@@ -152,12 +196,12 @@ describe('vrcNotificationStore', () => {
             Object.assign(new Error('Too many requests'), { status: 429 })
         );
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            systemNotification
+            activityNotification
         ]);
 
         useVrcNotificationStore
             .getState()
-            .upsertNotification(systemNotification);
+            .upsertNotification(activityNotification);
 
         await expect(
             useVrcNotificationStore.getState().markAllSeen()

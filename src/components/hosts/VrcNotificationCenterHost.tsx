@@ -7,6 +7,7 @@ import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
 import { BoopReplyDialog } from '@/features/notifications/components/NotificationViewParts';
 import { NotificationDrawerList } from '@/features/notifications/drawer/NotificationDrawerList';
 import { shouldOpenBoopReplyDialog } from '@/features/notifications/notificationResponseModel';
+import { useNotificationTypeLabel } from '@/features/notifications/useNotificationTypeLabel';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import notificationPersistenceRepository, {
     type NotificationResponse,
@@ -57,6 +58,7 @@ type InviteResponseSlotPayload = {
 
 export function VrcNotificationCenterHost() {
     const { t } = useTranslation();
+    const notificationTypeLabel = useNotificationTypeLabel();
     const confirm = useModalStore((state) => state.confirm);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
@@ -236,7 +238,7 @@ export function VrcNotificationCenterHost() {
                 ),
                 description: t(
                     'host.vrc_notification_center.dynamic.decline_the_value_notification',
-                    { value: notification.type || 'notification' }
+                    { value: notificationTypeLabel(notification.type) }
                 ),
                 confirmText: t('host.vrc_notification_center.modal.decline'),
                 destructive: true
@@ -409,7 +411,7 @@ export function VrcNotificationCenterHost() {
                 ),
                 description: t(
                     'host.vrc_notification_center.modal.delete_the_local_value_log_entry',
-                    { value: notification.type || 'notification' }
+                    { value: notificationTypeLabel(notification.type) }
                 ),
                 confirmText: t('common.actions.delete'),
                 destructive: true

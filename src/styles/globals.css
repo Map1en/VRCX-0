@@ -389,15 +389,15 @@
     }
 
     .accessible-status-indicators i.x-user-status.joinme {
-        mask-image: url('/images/masks/joinme.svg');
+        mask-image: url('../assets/masks/joinme.svg');
     }
 
     .accessible-status-indicators i.x-user-status.askme {
-        mask-image: url('/images/masks/askme.svg');
+        mask-image: url('../assets/masks/askme.svg');
     }
 
     .accessible-status-indicators i.x-user-status.busy {
-        mask-image: url('/images/masks/busy.svg');
+        mask-image: url('../assets/masks/busy.svg');
     }
 
     .is-compact-table [data-slot='table'] {

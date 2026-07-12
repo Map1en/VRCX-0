@@ -88,6 +88,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::deep_link::app__drain_pending_deep_links,
             commands::application::share_collection::app__share_collection_create,
             commands::application::share_collection::app__share_collection_open_manage,
+            commands::application::share_collection::app__share_collection_preview,
+            commands::application::share_collection::app__share_collection_import,
             commands::application::telemetry::app__telemetry_record_event,
             commands::application::proxy::app__proxy_settings_test,
             commands::application::mcp_server::app__mcp_server_status,

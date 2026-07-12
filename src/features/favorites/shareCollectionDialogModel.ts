@@ -1,6 +1,6 @@
 import type { FavoriteItem } from './favoritesTypes';
 
-export const SHARE_COLLECTION_CLIENT_WORLD_CAP = 5000;
+export const SHARE_COLLECTION_CLIENT_WORLD_CAP = 1000;
 
 type ShareCollectionWorldCandidate = Pick<FavoriteItem, 'id'>;
 

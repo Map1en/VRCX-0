@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold';
 import {
@@ -19,6 +21,10 @@ import type {
     FavoriteItem,
     FavoriteKind
 } from './favoritesTypes';
+import {
+    buildShareCollectionWorldIds,
+    SHARE_COLLECTION_CLIENT_WORLD_CAP
+} from './shareCollectionDialogModel';
 import { useFavoritesPageController } from './useFavoritesPageController';
 
 function useStableEvent(handler: any) {
@@ -35,6 +41,7 @@ function FavoritesPage({
     kind: FavoriteKind;
     embedded?: boolean;
 }) {
+    const { t } = useTranslation();
     const state = useFavoritesPageController({ kind });
     const [shareCollectionGroup, setShareCollectionGroup] =
         useState<FavoriteGroup | null>(null);
@@ -79,6 +86,25 @@ function FavoritesPage({
         viewData.localItemsByGroup,
         viewData.remoteItemsByGroup
     ]);
+    const handleShareCollectionGroup = useStableEvent(
+        (group: FavoriteGroup) => {
+            const itemsByGroup =
+                group.source === 'remote'
+                    ? viewData.remoteItemsByGroup
+                    : viewData.localItemsByGroup;
+            const groupItems = itemsByGroup[group.key] || [];
+            const { totalWorldIds } = buildShareCollectionWorldIds(groupItems);
+            if (totalWorldIds > SHARE_COLLECTION_CLIENT_WORLD_CAP) {
+                toast.error(
+                    t('view.favorite.share_collection.toast.too_many', {
+                        cap: SHARE_COLLECTION_CLIENT_WORLD_CAP
+                    })
+                );
+                return;
+            }
+            setShareCollectionGroup(group);
+        }
+    );
 
     return (
         <PageScaffold
@@ -154,7 +180,7 @@ function FavoritesPage({
                             onNewGroupNameChange={setNewLocalGroupName}
                             onShareCollectionGroup={
                                 kind === 'world'
-                                    ? setShareCollectionGroup
+                                    ? handleShareCollectionGroup
                                     : undefined
                             }
                             setCreatingLocalGroup={setCreatingLocalGroup}

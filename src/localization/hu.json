@@ -2,14 +2,29 @@
     "language": "Magyar (hu)",
     "deep_link": {
         "import_collection": {
-            "title": "Gyűjtemény importálása",
-            "description": "Gyűjteményazonosító: {collectionId}"
+            "confirm": {
+                "title": "Importálod a világgyűjteményt?",
+                "description": "„{title}” · szerző: {author} · {count} világ",
+                "worlds_preview": "Tartalmazza: {names}",
+                "confirm": "Importálás a VRCX-0-ba",
+                "cancel": "Mégse"
+            },
+            "toast": {
+                "preview_failed": "Nem sikerült betölteni a megosztott gyűjteményt",
+                "empty": "Ebben a megosztott gyűjteményben nincs importálható világ",
+                "import_success": "{count} világ importálva ide: „{title}”",
+                "import_failed": "Nem sikerült importálni a megosztott gyűjteményt"
+            },
+            "unknown_author": "Ismeretlen szerző"
         }
     },
     "common": {
         "actions": {
             "configure": "Beállítás",
             "reset": "Visszaállítás"
+        },
+        "label": {
+            "authenticated_and_prepared_the_session": "Bejelentkezve"
         }
     },
     "nav_tooltip": {
@@ -56,10 +71,41 @@
             "context": {
                 "hide_user": "Elrejtés a Feedből",
                 "unhide_user": "Megjelenítés a Feedben"
+            },
+            "error": {
+                "feed_query_failed": "Nem sikerült betölteni a hírfolyamot"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "A kedvencek még betöltés alatt állnak"
             }
         },
         "game_log": {
-            "filter_placeholder": "Szűrés"
+            "filter_placeholder": "Szűrés",
+            "label": {
+                "game_log_row": "játéknapló-bejegyzés",
+                "game_log_rows": "játéknapló-bejegyzések"
+            },
+            "success": {
+                "game_log_row_deleted": "Játéknapló-bejegyzés törölve"
+            },
+            "action": {
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "A helyi VRChat-tevékenység megtekintéséhez engedélyezd a játéknaplót a Beállításokban"
+            },
+            "loading": {
+                "loading_the_game_log_snapshot": "Játéknapló betöltése"
+            },
+            "empty": {
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "A játéknapló megtekintéséhez jelentkezz be."
+            },
+            "description": {
+                "favorites_are_still_hydrating": "A kedvencek még betöltés alatt állnak."
+            },
+            "toast": {
+                "failed_to_delete_game_log_row": "Nem sikerült törölni a játéknapló-bejegyzést"
+            },
+            "modal": {
+                "delete_game_log_row": "Törlöd a játéknapló-bejegyzést?"
+            }
         },
         "search": {
             "search_placeholder": "Keresés",
@@ -115,7 +161,7 @@
                     "copy_edit_url": "Szerkesztési link másolása",
                     "open_manage": "Megosztásaim kezelése",
                     "open_editor": "Szerkesztő megnyitása",
-                    "forget": "Bejegyzés eltávolítása"
+                    "forget": "Mentett megosztás eltávolítása"
                 },
                 "label": {
                     "title": "Cím",
@@ -138,19 +184,38 @@
                     "open_manage_failed": "A megosztott gyűjtemények kezelője nem nyitható meg",
                     "load_failed": "A megosztott gyűjtemények betöltése sikertelen",
                     "open_failed": "A szerkesztő megnyitása sikertelen",
-                    "forget_success": "Bejegyzés eltávolítva",
-                    "forget_failed": "A bejegyzés eltávolítása sikertelen",
-                    "no_worlds": "Ebben a csoportban nincs megosztható világazonosító"
+                    "forget_success": "Mentett megosztás eltávolítva",
+                    "forget_failed": "Nem sikerült eltávolítani a mentett megosztást",
+                    "no_worlds": "Ebben a csoportban nincs megosztható világazonosító",
+                    "too_many": "Egyszerre legfeljebb {cap} világot oszthatsz meg. Előbb bontsd szét ezt a csoportot.",
+                    "skipped": "Megosztva. {count} világ kihagyva (nincs szinkronizálva vagy nem nyilvános)."
                 }
+            },
+            "label": {
+                "the_favorites_baseline_did_not_finish_loading": "A kedvencek betöltése nem fejeződött be"
+            },
+            "loading": {
+                "loading_favorites_baseline": "Kedvencek betöltése"
             }
         },
         "friend_log": {
             "filter_placeholder": "Szűrés",
-            "search_placeholder": "Keresés"
+            "search_placeholder": "Keresés",
+            "loading": {
+                "loading_the_friend_history_snapshot": "Barátelőzmények betöltése"
+            }
         },
         "notification": {
             "filter_placeholder": "Szűrés",
-            "refresh_tooltip": "Frissítés"
+            "refresh_tooltip": "Frissítés",
+            "description": {
+                "this_notification_does_not_expose_a_navigable_sender": "Ehhez az értesítéshez nem tartozik megnyitható profil"
+            },
+            "success": {
+                "invite_response_sent": "Válasz elküldve",
+                "notification_response_sent": "Kész",
+                "notification_log_entry_deleted": "Értesítés eltávolítva az előzményekből"
+            }
         },
         "friend_list": {
             "bulk_unfriend": "Tömeges barát-eltávolítás mód",
@@ -161,6 +226,15 @@
             "filter_placeholder": "Szűrés",
             "error": {
                 "failed_to_load_friend_details": "Nem sikerült betölteni a barátok részletes adatait"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "A kedvencek még betöltés alatt állnak"
+            },
+            "success": {
+                "roster_bootstrap_did_not_complete": "Nem sikerült betölteni a barátaidat"
+            },
+            "loading": {
+                "loading_the_friend_roster_snapshot": "Barátok betöltése"
             }
         },
         "tools": {
@@ -498,6 +572,81 @@
             "contributors_error": "A közreműködők listáját nem sikerült betölteni.",
             "thanks": "Minden fordítás, teszt, hibajelentés és ötlet a közösségtől érkezik. Köszönjük.",
             "license_line": "Szabad és nyílt forráskódú, GPL-3.0 licenc alatt"
+        },
+        "my_avatars": {
+            "success": {
+                "avatar_request_did_not_complete": "Nem sikerült betölteni az avatarjaidat. Próbáld újra."
+            }
+        },
+        "moderation": {
+            "loading": {
+                "loading_the_moderation_snapshot": "Moderálási előzmények betöltése"
+            },
+            "error": {
+                "moderation_snapshot_failed_to_load": "Nem sikerült betölteni a moderálási előzményeket"
+            }
+        },
+        "charts": {
+            "mutual_friend": {
+                "actions": {
+                    "start_fetch": "Lekérés indítása"
+                }
+            },
+            "loading": {
+                "loading_mutual_graph_snapshot": "Közös barátok betöltése"
+            },
+            "description": {
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Még nincsenek adatok a közös barátokról. A betöltéshez válaszd a Lekérés indítása lehetőséget."
+            }
+        },
+        "dashboard": {
+            "label": {
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Jelentkezz be, hogy lásd a hírfolyam tevékenységét ezen az irányítópulton",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Jelentkezz be, hogy lásd a játéknapló tevékenységét ezen az irányítópulton"
+            },
+            "empty": {
+                "that_dashboard_no_longer_exists_in_the_stored_config": "Ez az irányítópult már nem létezik"
+            },
+            "description": {
+                "matches_the_stored_feed_widget_config": "A hírfolyam mentett modulbeállításait használja"
+            },
+            "success": {
+                "panel_not_selected": "Válassz egy panelt"
+            },
+            "modal": {
+                "this_removes_the_dashboard_definition_from_the_s": "Ez az irányítópult el lesz távolítva a mentett navigációdból"
+            }
+        },
+        "player_list": {
+            "empty": {
+                "no_user_id_was_found_for_this_player_row": "Nem található ennek a játékosnak a profilja",
+                "no_players_reconstructed_for_this_instance_yet": "Még nem találhatók jelenlegi játékosok",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "A jelenlegi játékosok megtekintéséhez engedélyezd a játéknaplót a Beállításokban.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Maradj a példányban, amíg a VRCX-0 játékosaktivitást nem észlel. A lista automatikusan frissül.",
+                "current_players_follow_live_instance_locations": "A jelenlegi játékosok akkor jelennek meg, amikor a VRCX-0 észleli a következő helyszínedet."
+            }
+        },
+        "auth": {
+            "auto_login": {
+                "skipped_before_request": "Az automatikus bejelentkezés még az indulás előtt megszakadt"
+            },
+            "toast": {
+                "failed_to_load_saved_auth_snapshot": "Nem sikerült betölteni a mentett fiókjaidat"
+            },
+            "dynamic": {
+                "authenticated_and_prepared_the_session_for_value": "Bejelentkezve: {value}"
+            }
+        },
+        "notifications": {
+            "toast": {
+                "invite_response_photo_sent": "Fényképes válasz elküldve",
+                "invite_response_sent": "Válasz elküldve",
+                "failed_to_send_notification_response": "Nem sikerült végrehajtani a műveletet"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Eltávolítod az értesítést?",
+                "delete_the_local_value_log_entry": "Eltávolítod az előzményekből ezt az értesítést: {value}?"
+            }
         }
     },
     "dialog": {
@@ -629,6 +778,9 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "action": {
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Barát eltávolítva. Frissíts a legújabb állapot megtekintéséhez."
             }
         },
         "world": {
@@ -691,6 +843,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Világ részleteinek betöltése"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_world_snapshot": "Nem sikerült frissíteni a világ részleteit"
+            },
+            "description": {
+                "world_snapshot_unavailable_description": "Nem sikerült betölteni a világ részleteit"
             }
         },
         "avatar": {
@@ -733,6 +894,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Avatar részleteinek betöltése"
+            },
+            "description": {
+                "avatar_snapshot_unavailable_description": "Nem sikerült betölteni az avatar részleteit"
+            },
+            "toast": {
+                "avatar_deleted_but_current_user_snapshot_refresh": "Avatar törölve, de az avatarlistádat nem sikerült frissíteni"
             }
         },
         "group": {
@@ -797,6 +967,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Csoport részleteinek betöltése"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_group_snapshot": "Nem sikerült frissíteni a csoport részleteit"
+            },
+            "description": {
+                "group_snapshot_unavailable_description": "Nem sikerült betölteni a csoport részleteit"
             }
         },
         "favorite": {
@@ -982,7 +1161,16 @@
         "previous_instances": {
             "header": "Instance History",
             "info": "Instance Details",
-            "search_placeholder": "Search instance history"
+            "search_placeholder": "Search instance history",
+            "description": {
+                "select_an_instance_row_to_view_its_details": "Válassz egy látogatást a részletek megtekintéséhez"
+            },
+            "error": {
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Ez a látogatás nem törölhető"
+            },
+            "success": {
+                "instance_record_deleted": "Látogatás eltávolítva a példányelőzményekből"
+            }
         },
         "group_member_moderation": {
             "filter_type": "Szűrő típusa",
@@ -1303,5 +1491,27 @@
         "proxy_enabled_direct": "Proxy enabled, connecting directly",
         "proxy_enabled_server": "Proxy enabled: {proxy}",
         "proxy_network_issue": "Proxy enabled, network request failed"
+    },
+    "host": {
+        "launch_dialog": {
+            "toast": {
+                "failed_to_resolve_launch_details": "Nem sikerült előkészíteni a VRChat indítását"
+            }
+        },
+        "vrc_notification_center": {
+            "toast": {
+                "failed_to_send_notification_response": "Nem sikerült végrehajtani a műveletet"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Eltávolítod az értesítést?",
+                "delete_the_local_value_log_entry": "Eltávolítod az előzményekből ezt az értesítést: {value}?"
+            }
+        },
+        "tools_dialogs": {
+            "toast": {
+                "failed_to_load_memo_export_rows": "Nem sikerült előkészíteni a helyi jegyzeteket exportálásra",
+                "failed_to_update_group_event_follow_state": "Nem sikerült frissíteni ezt az eseményt"
+            }
+        }
     }
 }

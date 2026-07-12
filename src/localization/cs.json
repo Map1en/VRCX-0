@@ -47,8 +47,20 @@
     },
     "deep_link": {
         "import_collection": {
-            "title": "Importovat kolekci",
-            "description": "ID kolekce: {collectionId}"
+            "confirm": {
+                "title": "Importovat kolekci světů?",
+                "description": "„{title}“ od {author} · {count} světů",
+                "worlds_preview": "Obsahuje: {names}",
+                "confirm": "Importovat do VRCX-0",
+                "cancel": "Zrušit"
+            },
+            "toast": {
+                "preview_failed": "Sdílenou kolekci se nepodařilo načíst",
+                "empty": "Tato sdílená kolekce neobsahuje žádné světy k importu",
+                "import_success": "Bylo importováno {count} světů do „{title}“",
+                "import_failed": "Sdílenou kolekci se nepodařilo importovat"
+            },
+            "unknown_author": "Neznámý autor"
         }
     },
     "language": "Čeština (cs)",
@@ -104,7 +116,7 @@
             "database_initialization_is_still_pending": "Inicializace databáze stále probíhá"
         },
         "label": {
-            "authenticated_and_prepared_the_session": "Ověřeno a relace připravena",
+            "authenticated_and_prepared_the_session": "Přihlášeno",
             "auto_login": "Automatické přihlášení",
             "vrchat_launched": "VRChat spuštěn"
         },
@@ -616,7 +628,7 @@
                 "cannot_invite_from_the_current_instance_type": "Z tohoto typu instance nelze pozvat",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Pozvání nelze odeslat: momentálně nejste v instanci, do které lze pozvat",
                 "cannot_request_invite_friend_is_not_online": "Žádost o pozvání nelze odeslat: přítel není online",
-                "feed_query_failed": "Dotaz na Zdroj se nezdařil"
+                "feed_query_failed": "Nepodařilo se načíst zdroj"
             },
             "label": {
                 "previous_avatar": "Předchozí avatar",
@@ -716,21 +728,21 @@
                 "game_log_is_disabled": "Záznam hry je vypnutý",
                 "showing": "Zobrazeno",
                 "of": "z",
-                "game_log_row": "řádek záznamu hry",
-                "game_log_rows": "řádků záznamu hry"
+                "game_log_row": "položka záznamu hry",
+                "game_log_rows": "položky záznamu hry"
             },
             "success": {
-                "game_log_row_deleted": "Řádek záznamu hry odstraněn",
+                "game_log_row_deleted": "Položka záznamu hry byla odstraněna",
                 "copied_game_log_detail": "Detail záznamu hry zkopírován"
             },
             "action": {
                 "open_link": "Otevřít odkaz",
                 "copy_detail": "Kopírovat detail",
                 "show_instance_history": "Zobrazit historii instancí",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Pro načtení lokální aktivity VRChatu nejprve povolte v nastavení sběr záznamu hry"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Chcete-li zobrazit místní aktivitu ve VRChatu, povolte v nastavení záznam hry"
             },
             "loading": {
-                "loading_the_game_log_snapshot": "Načítání snímku záznamu hry"
+                "loading_the_game_log_snapshot": "Načítání záznamu hry"
             },
             "error": {
                 "game_log_failed_to_load": "Záznam hry se nepodařilo načíst"
@@ -738,7 +750,7 @@
             "empty": {
                 "no_game_log_sessions_match_the_current_filters": "Žádné relace záznamu hry neodpovídají aktuálním filtrům",
                 "no_game_log_rows_match_the_current_filters": "Žádné řádky záznamu hry neodpovídají aktuálním filtrům",
-                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Pro snímek záznamu hry není k dispozici žádný přihlášený uživatel."
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Přihlaste se a zobrazte záznam hry."
             },
             "description": {
                 "favorites_are_still_hydrating": "Oblíbené se ještě načítají.",
@@ -747,11 +759,11 @@
             },
             "toast": {
                 "failed_to_look_up_value": "Nepodařilo se dohledat {value}",
-                "failed_to_delete_game_log_row": "Nepodařilo se odstranit řádek záznamu hry",
+                "failed_to_delete_game_log_row": "Položku záznamu hry se nepodařilo odstranit",
                 "failed_to_load_instance_history": "Nepodařilo se načíst historii instancí"
             },
             "modal": {
-                "delete_game_log_row": "Odstranit řádek záznamu hry?"
+                "delete_game_log_row": "Odstranit položku záznamu hry?"
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "Pro {value} nebylo nalezeno žádné ID uživatele"
@@ -803,7 +815,7 @@
                 "avatar_styles_updated": "Styly avataru aktualizovány",
                 "avatar_selected": "Avatar vybrán",
                 "avatar_image_updated": "Obrázek avataru aktualizován",
-                "avatar_request_did_not_complete": "Požadavek na avatar se nedokončil"
+                "avatar_request_did_not_complete": "Nepodařilo se načíst vaše avatary. Zkuste to znovu."
             },
             "label": {
                 "primary_style": "Primární styl",
@@ -967,7 +979,7 @@
                 "favorite_group_renamed": "Skupina oblíbených přejmenována",
                 "group_visibility_changed": "Viditelnost skupiny změněna",
                 "local_favorite_group_renamed": "Lokální skupina oblíbených přejmenována",
-                "the_favorites_baseline_did_not_finish_loading": "Načítání základních oblíbených se nedokončilo",
+                "the_favorites_baseline_did_not_finish_loading": "Oblíbené položky se nenačetly celé",
                 "try_a_different_search_term": "Zkuste jiný hledaný výraz"
             },
             "success": {
@@ -1010,7 +1022,7 @@
                 "favorites_failed_to_load": "Oblíbené se nepodařilo načíst"
             },
             "loading": {
-                "loading_favorites_baseline": "Načítání základních oblíbených",
+                "loading_favorites_baseline": "Načítání oblíbených položek",
                 "loading_remote_avatar_details": "Načítání vzdálených podrobností avatara",
                 "loading_remote_world_details": "Načítání vzdálených podrobností světa"
             },
@@ -1025,7 +1037,7 @@
                     "copy_edit_url": "Kopírovat odkaz pro úpravy",
                     "open_manage": "Spravovat moje sdílení",
                     "open_editor": "Otevřít editor",
-                    "forget": "Odebrat záznam"
+                    "forget": "Odebrat uložené sdílení"
                 },
                 "label": {
                     "title": "Název",
@@ -1048,9 +1060,11 @@
                     "open_manage_failed": "Správce sdílených sbírek se nepodařilo otevřít",
                     "load_failed": "Sdílené sbírky se nepodařilo načíst",
                     "open_failed": "Editor se nepodařilo otevřít",
-                    "forget_success": "Záznam odebrán",
-                    "forget_failed": "Záznam se nepodařilo odebrat",
-                    "no_worlds": "Tato skupina nemá žádné ID světů ke sdílení"
+                    "forget_success": "Uložené sdílení bylo odebráno",
+                    "forget_failed": "Uložené sdílení se nepodařilo odebrat",
+                    "no_worlds": "Tato skupina nemá žádné ID světů ke sdílení",
+                    "too_many": "Najednou můžeš sdílet nejvýše {cap} světů. Nejdřív tuto skupinu rozděl.",
+                    "skipped": "Sdíleno. Přeskočeno {count} světů (nesynchronizované nebo neveřejné)."
                 }
             }
         },
@@ -1094,10 +1108,10 @@
                 "unmuteChat": "Zrušit ztlumení chatu"
             },
             "loading": {
-                "loading_the_moderation_snapshot": "Načítání moderace"
+                "loading_the_moderation_snapshot": "Načítání historie moderace"
             },
             "error": {
-                "moderation_snapshot_failed_to_load": "Data moderace se nepodařilo načíst"
+                "moderation_snapshot_failed_to_load": "Nepodařilo se načíst historii moderace"
             },
             "label": {
                 "showing": "Zobrazeno",
@@ -1176,7 +1190,7 @@
                 }
             },
             "description": {
-                "this_notification_does_not_expose_a_navigable_sender": "Toto oznámení neobsahuje odesílatele, na kterého lze přejít"
+                "this_notification_does_not_expose_a_navigable_sender": "Toto oznámení neobsahuje profil, který lze otevřít"
             },
             "action": {
                 "mark_seen": "Označit jako přečtené",
@@ -1188,10 +1202,10 @@
             "success": {
                 "friend_request_accepted": "Žádost o přátelství přijata",
                 "notification_declined": "Oznámení odmítnuto",
-                "invite_response_sent": "Odpověď na pozvánku odeslána",
+                "invite_response_sent": "Odpověď odeslána",
                 "boop_sent": "Boop odeslán",
-                "notification_response_sent": "Odpověď na oznámení odeslána",
-                "notification_log_entry_deleted": "Záznam oznámení smazán"
+                "notification_response_sent": "Hotovo",
+                "notification_log_entry_deleted": "Oznámení bylo odstraněno z historie"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Nelze pozvat: aktuální lokace ve VRChat není k dispozici",
@@ -1243,7 +1257,7 @@
             },
             "success": {
                 "friend_detail_loading_cancelled": "Načítání podrobností o příteli zrušeno",
-                "roster_bootstrap_did_not_complete": "Počáteční načtení seznamu přátel se nedokončilo",
+                "roster_bootstrap_did_not_complete": "Nepodařilo se načíst přátele",
                 "vrchat_launch_request_sent": "Otevřeno ve VRChat",
                 "invite_request_sent": "Žádost o pozvánku odeslána",
                 "boop_sent": "Boop odeslán"
@@ -1321,7 +1335,7 @@
             "loading": {
                 "loading_instance_activity": "Načítání aktivity instance",
                 "loading_graph": "Načítání grafu...",
-                "loading_mutual_graph_snapshot": "Načítání uloženého stavu grafu společných přátel"
+                "loading_mutual_graph_snapshot": "Načítání společných přátel"
             },
             "empty": {
                 "no_instance_activity_on_this_day": "Tento den nemá žádnou aktivitu instancí",
@@ -1347,7 +1361,7 @@
                 "mutual_friends_graph_refreshed": "Graf společných přátel byl obnoven"
             },
             "description": {
-                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Lokální uložený stav společných přátel je prázdný. Použijte Zahájit načítání pro vytvoření mezipaměti grafu"
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Zatím nejsou k dispozici žádná data o společných přátelích. Načtěte je výběrem možnosti Zahájit načítání."
             },
             "toast": {
                 "failed_to_fetch_mutual_friends_graph": "Nepodařilo se načíst graf společných přátel",
@@ -2339,11 +2353,11 @@
                 "favorites": "Oblíbené",
                 "notifications": "Upozornění",
                 "panel_not_configured": "Panel není nastaven",
-                "sign_in_before_the_dashboard_can_query_feed_rows": "Před načtením řádků zdroje se přihlaste",
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Přihlaste se a zobrazte aktivitu zdroje na tomto dashboardu",
                 "recent_rows": "nedávné řádky",
                 "type_column_enabled": "Sloupec typu zapnut",
                 "favorite": "Oblíbené",
-                "sign_in_before_the_dashboard_can_query_game_log_rows": "Před načtením řádků záznamu hry se přihlaste",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Přihlaste se a zobrazte aktivitu záznamu hry na tomto dashboardu",
                 "detail_expanded": "Detail rozbalen",
                 "instance_widget_idle": "Widget instance je nečinný",
                 "all": "Vše",
@@ -2371,7 +2385,7 @@
             "empty": {
                 "no_feed_rows": "Žádné řádky zdroje",
                 "no_game_log_rows": "Žádné řádky záznamu hry",
-                "that_dashboard_no_longer_exists_in_the_stored_config": "Tento dashboard už v uložené konfiguraci neexistuje",
+                "that_dashboard_no_longer_exists_in_the_stored_config": "Tento dashboard už neexistuje",
                 "no_dashboard_definitions_are_stored_yet": "Zatím nejsou uloženy žádné definice dashboardu"
             },
             "action": {
@@ -2385,11 +2399,11 @@
                 "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Před obnovením seznamu hráčů aktuální instance spusťte VRChat"
             },
             "description": {
-                "matches_the_stored_feed_widget_config": "Odpovídá uložené konfiguraci widgetu zdroje",
+                "matches_the_stored_feed_widget_config": "Používá uložená nastavení widgetu zdroje",
                 "expands_the_compact_game_log_description": "Rozbalí zkrácený popis záznamu hry"
             },
             "success": {
-                "panel_not_selected": "Panel není vybrán",
+                "panel_not_selected": "Vyberte panel",
                 "dashboard_saved": "Dashboard uložen"
             },
             "toast": {
@@ -2401,7 +2415,7 @@
             },
             "modal": {
                 "delete_dashboard": "Odstranit dashboard?",
-                "this_removes_the_dashboard_definition_from_the_s": "Tímto se odstraní definice dashboardu z uložené konfigurace navigace"
+                "this_removes_the_dashboard_definition_from_the_s": "Tento dashboard bude odstraněn z uložené navigace"
             },
             "dynamic": {
                 "widget_value": "Widget · {value}",
@@ -2415,14 +2429,14 @@
                 "created": "Vytvořeno"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "Pro tento řádek hráče nebylo nalezeno žádné uživatelské ID",
+                "no_user_id_was_found_for_this_player_row": "Profil tohoto hráče se nepodařilo najít",
                 "currently_traveling_between_instances": "Právě probíhá přesun mezi instancemi",
                 "no_current_instance_detected": "Nebyla zjištěna žádná aktuální instance",
-                "no_players_reconstructed_for_this_instance_yet": "Pro tuto instanci zatím nebyli obnoveni žádní hráči",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Před obnovením aktuálních hráčů povolte v nastavení zpracování záznamu hry.",
+                "no_players_reconstructed_for_this_instance_yet": "Zatím nebyli nalezeni žádní aktuální hráči",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Chcete-li zobrazit aktuální hráče, povolte v nastavení záznam hry.",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Než tato stránka dokáže obnovit aktuální instanci, spusťte VRChat a nechte VRCX-0 přijímat události ze záznamu hry.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Zůstaňte v instanci, dokud se nezaznamenají místní události připojení/odchodu, tabulka se pak vyplní automaticky.",
-                "current_players_follow_live_instance_locations": "Aktuální hráči se řídí živými lokacemi instance. Znovu se naplní po další události o lokaci.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Zůstaňte v instanci, dokud VRCX-0 nezaznamená aktivitu hráčů. Seznam se aktualizuje automaticky.",
+                "current_players_follow_live_instance_locations": "Aktuální hráči se zobrazí, až VRCX-0 zjistí vaši další lokaci.",
                 "local_join_leave_history_has_no_current_players": "Místní historie připojení/odchodů zatím neobsahuje žádné aktuální hráče pro aktivní lokaci."
             },
             "label": {
@@ -2453,7 +2467,7 @@
                 "restoring_session_for": "Obnovuje se existující relace prohlížeče pro {name}",
                 "logged_in_as": "Automaticky přihlášen jako {name}",
                 "restored_session_for": "Automaticky obnovena předchozí relace prohlížeče pro {name}",
-                "skipped_before_request": "Automatické přihlášení bylo přeskočeno před zahájením ověřovacího požadavku",
+                "skipped_before_request": "Automatické přihlášení bylo zrušeno ještě před zahájením",
                 "throttled": "Automatické přihlášení bylo vypnuto po opakovaných selháních v poslední hodině.",
                 "expired": "Předchozí relace prohlížeče vypršela a nebyl k dispozici žádný uložený náhradní účet.",
                 "failed_manual": "Automatické přihlášení selhalo. Ruční přihlášení je stále dostupné níže",
@@ -2465,7 +2479,7 @@
                 "skipped_saved_account_edited": "Automatické přihlášení bylo přeskočeno, protože se upravuje uložený účet"
             },
             "toast": {
-                "failed_to_load_saved_auth_snapshot": "Nepodařilo se načíst uložený stav přihlášení",
+                "failed_to_load_saved_auth_snapshot": "Nepodařilo se načíst uložené účty",
                 "automatic_login_failed_unexpectedly": "Automatické přihlášení neočekávaně selhalo",
                 "failed_to_change_language": "Nepodařilo se změnit jazyk",
                 "failed_to_load_proxy_settings": "Nepodařilo se načíst nastavení proxy",
@@ -2475,7 +2489,7 @@
                 "failed_to_restore_the_saved_account": "Nepodařilo se obnovit uložený účet"
             },
             "dynamic": {
-                "authenticated_and_prepared_the_session_for_value": "Ověřeno a relace připravena pro {value}"
+                "authenticated_and_prepared_the_session_for_value": "Přihlášeno jako {value}"
             }
         },
         "favorites": {
@@ -2585,13 +2599,13 @@
                 "failed_to_accept_friend_request": "Nepodařilo se přijmout žádost o přátelství",
                 "failed_to_decline_notification": "Nepodařilo se odmítnout upozornění",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
-                "invite_response_photo_sent": "Fotografie s odpovědí na pozvánku odeslána",
-                "invite_response_sent": "Odpověď na pozvánku odeslána",
-                "failed_to_send_notification_response": "Nepodařilo se odeslat odpověď na upozornění"
+                "invite_response_photo_sent": "Odpověď s fotografií odeslána",
+                "invite_response_sent": "Odpověď odeslána",
+                "failed_to_send_notification_response": "Akci se nepodařilo dokončit"
             },
             "modal": {
-                "delete_notification_log_entry": "Odstranit záznam upozornění",
-                "delete_the_local_value_log_entry": "Odstranit místní záznam {value}?",
+                "delete_notification_log_entry": "Odstranit oznámení?",
+                "delete_the_local_value_log_entry": "Odstranit toto oznámení typu {value} z historie?",
                 "accept_friend_request": "Přijmout žádost o přátelství",
                 "decline_notification": "Odmítnout upozornění",
                 "decline": "Odmítnout",
@@ -3050,7 +3064,7 @@
                 "search_worlds": "Hledat světy",
                 "search_favorite_worlds": "Hledat oblíbené světy",
                 "search_avatars": "Hledat avatary",
-                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Žádost o odebrání z přátel byla odeslána, ale aktivní relace se změnila dříve, než se aktualizoval lokální stav"
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Odebráno z přátel. Obnovte stránku, abyste viděli aktuální stav."
             },
             "loading": {
                 "loading_activity": "Načítání aktivity...",
@@ -3312,7 +3326,7 @@
             },
             "loading": {
                 "loading_world_profile": "Načítání profilu světa",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Získávání aktuálního snímku světa VRChat pro tento dialog"
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Načítání podrobností světa"
             },
             "error": {
                 "world_profile_unavailable": "Profil světa není dostupný",
@@ -3322,7 +3336,7 @@
                 "cannot_self_invite_location_is_not_a_concrete_instance": "Nelze pozvat sebe: momentálně nejste v instanci, do které lze zvát",
                 "cannot_open_in_vrchat_location_is_not_a_concrete_instance": "Nelze otevřít ve VRChat: momentálně nejste v instanci, do které lze zvát",
                 "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Nepodařilo se otevřít instanci ve VRChat, přechází se na pozvání sebe",
-                "failed_to_refresh_the_remote_world_snapshot": "Nepodařilo se obnovit vzdálený snímek světa",
+                "failed_to_refresh_the_remote_world_snapshot": "Nepodařilo se obnovit podrobnosti světa",
                 "failed_to_load_the_world_profile": "Nepodařilo se načíst profil světa",
                 "world_not_found_description": "Svět {worldId} nebyl nalezen",
                 "selected_image_is_too_large": "Vybraný obrázek je příliš velký",
@@ -3346,7 +3360,7 @@
             },
             "description": {
                 "edit_world_details": "Upravit podrobnosti světa",
-                "world_snapshot_unavailable_description": "VRCX-0 se nepodařilo získat snímek světa pro tento dialog"
+                "world_snapshot_unavailable_description": "Nepodařilo se načíst podrobnosti světa"
             },
             "empty": {
                 "no_world_id_was_provided_for_this_dialog": "Pro tento dialog nebylo zadáno žádné ID světa",
@@ -3460,7 +3474,7 @@
             },
             "loading": {
                 "loading_avatar_profile": "Načítání profilu avatara",
-                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Získávání aktuálního snímku avatara VRChat pro tento dialog"
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Načítání podrobností avatara"
             },
             "error": {
                 "avatar_profile_unavailable": "Profil avatara není dostupný",
@@ -3495,7 +3509,7 @@
             },
             "description": {
                 "edit_avatar_details_description": "Upravte název, popis, styly a štítky autora avatara.",
-                "avatar_snapshot_unavailable_description": "VRCX-0 se nepodařilo získat snímek avatara pro tento dialog"
+                "avatar_snapshot_unavailable_description": "Nepodařilo se načíst podrobnosti avatara"
             },
             "toast": {
                 "failed_to_refresh_avatar": "Nepodařilo se obnovit avatara",
@@ -3525,7 +3539,7 @@
                 "failed_to_delete_impostor": "Nepodařilo se odstranit impostora",
                 "impostor_queued_for_regeneration": "Impostor zařazen do fronty na regeneraci",
                 "failed_to_regenerate_impostor": "Nepodařilo se vygenerovat impostora znovu",
-                "avatar_deleted_but_current_user_snapshot_refresh": "Avatar odstraněn, ale obnovení snímku aktuálního uživatele se nezdařilo"
+                "avatar_deleted_but_current_user_snapshot_refresh": "Avatar byl odstraněn, ale seznam avatarů se nepodařilo obnovit"
             },
             "modal": {
                 "select_fallback_avatar": "Vybrat záložního avatara?",
@@ -3635,12 +3649,12 @@
             },
             "loading": {
                 "loading_group_profile": "Načítání profilu skupiny",
-                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Načítání aktuálního snímku skupiny VRChat pro toto dialogové okno",
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Načítání podrobností skupiny",
                 "loading": "Načítání..."
             },
             "error": {
                 "group_profile_unavailable": "Profil skupiny není dostupný",
-                "failed_to_refresh_the_remote_group_snapshot": "Nepodařilo se obnovit vzdálený snímek skupiny",
+                "failed_to_refresh_the_remote_group_snapshot": "Nepodařilo se obnovit podrobnosti skupiny",
                 "failed_to_load_the_group_profile": "Nepodařilo se načíst profil skupiny",
                 "title_and_text_are_required": "Název a text jsou povinné",
                 "failed_to_load_details": "Nepodařilo se načíst podrobnosti"
@@ -3652,7 +3666,7 @@
                 "no_gallery_images": "Žádné obrázky v galerii"
             },
             "description": {
-                "group_snapshot_unavailable_description": "VRCX-0 se nepodařilo získat snímek skupiny pro toto dialogové okno"
+                "group_snapshot_unavailable_description": "Nepodařilo se načíst podrobnosti skupiny"
             },
             "label": {
                 "group_left": "Skupina opuštěna",
@@ -4241,7 +4255,7 @@
                 "no_instance_records": "Žádné záznamy instancí"
             },
             "description": {
-                "select_an_instance_row_to_view_its_details": "Zobrazíte podrobnosti výběrem řádku instance",
+                "select_an_instance_row_to_view_its_details": "Vyberte návštěvu a zobrazte její podrobnosti",
                 "instance_details": "Podrobnosti instance",
                 "open_instance_details": "Otevřít podrobnosti instance",
                 "details": "Podrobnosti"
@@ -4251,7 +4265,7 @@
             },
             "error": {
                 "failed_to_load_instance_details": "Nepodařilo se načíst podrobnosti instance.",
-                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Tento řádek instance uživatele nelze smazat bez ID událostí"
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Tuto návštěvu nelze odstranit"
             },
             "label": {
                 "players_count": "{count} hráčů",
@@ -4265,7 +4279,7 @@
                 "sort_ascending": "Seřadit vzestupně"
             },
             "success": {
-                "instance_record_deleted": "Záznam instance smazán"
+                "instance_record_deleted": "Návštěva byla odstraněna z historie instancí"
             }
         },
         "group_member_moderation": {
@@ -5055,7 +5069,7 @@
     "host": {
         "launch_dialog": {
             "toast": {
-                "failed_to_resolve_launch_details": "Nepodařilo se zjistit podrobnosti spuštění",
+                "failed_to_resolve_launch_details": "Nepodařilo se připravit VRChat ke spuštění",
                 "launch_action_failed": "Akce spuštění selhala"
             },
             "modal": {
@@ -5088,7 +5102,7 @@
                 "failed_to_accept_friend_request": "Nepodařilo se přijmout žádost o přátelství",
                 "failed_to_decline_notification": "Nepodařilo se odmítnout oznámení",
                 "failed_to_send_invite": "Nepodařilo se odeslat pozvánku",
-                "failed_to_send_notification_response": "Nepodařilo se odeslat odpověď na oznámení",
+                "failed_to_send_notification_response": "Akci se nepodařilo dokončit",
                 "failed_to_delete_notification": "Nepodařilo se odstranit oznámení",
                 "failed_to_refresh_notifications": "Nepodařilo se obnovit oznámení"
             },
@@ -5097,8 +5111,8 @@
                 "decline_notification": "Odmítnout oznámení",
                 "decline": "Odmítnout",
                 "send_invite": "Odeslat pozvánku",
-                "delete_notification_log_entry": "Odstranit záznam oznámení",
-                "delete_the_local_value_log_entry": "Odstranit místní záznam {value}?"
+                "delete_notification_log_entry": "Odstranit oznámení?",
+                "delete_the_local_value_log_entry": "Odstranit toto oznámení typu {value} z historie?"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Přijmout žádost o přátelství od uživatele {value}?",
@@ -5110,9 +5124,9 @@
             "toast": {
                 "failed_to_export_friends_list": "Nepodařilo se exportovat seznam přátel",
                 "failed_to_export_avatar_list": "Nepodařilo se exportovat seznam avatarů",
-                "failed_to_load_memo_export_rows": "Nepodařilo se načíst řádky exportu místních poznámek",
+                "failed_to_load_memo_export_rows": "Místní poznámky se nepodařilo připravit k exportu",
                 "failed_to_load_group_events": "Nepodařilo se načíst události skupiny",
-                "failed_to_update_group_event_follow_state": "Nepodařilo se aktualizovat stav sledování události skupiny",
+                "failed_to_update_group_event_follow_state": "Událost se nepodařilo aktualizovat",
                 "failed_to_download_ics_file": "Nepodařilo se stáhnout soubor .ics",
                 "failed_to_save_ics_file": "Nepodařilo se uložit soubor .ics",
                 "failed_to_copy_event_link": "Nepodařilo se zkopírovat odkaz na událost"

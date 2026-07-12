@@ -13,6 +13,7 @@ mod game_client;
 mod game_log;
 pub mod groups;
 mod image_cache;
+mod import_collection;
 mod instance_launch;
 mod interruptible_sleep;
 mod local_favorites;
@@ -116,6 +117,10 @@ pub use groups::{
     VrchatGroupUserInput,
 };
 pub use image_cache::{save_ugc_image_to_file, ImageCache};
+pub use import_collection::{
+    import_shared_collection, preview_shared_collection, ImportCollectionDeps, ImportPreview,
+    ImportPreviewWorld, ImportResult,
+};
 pub use instance_launch::{
     evaluate_instance_action_gates, join_instance_launch, InstanceActionGateTarget,
     InstanceActionGates, InstanceActionGatesBatchInput, InstanceActionGatesBatchOutput,

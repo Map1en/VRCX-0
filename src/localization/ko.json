@@ -47,8 +47,20 @@
     },
     "deep_link": {
         "import_collection": {
-            "title": "컬렉션 가져오기",
-            "description": "컬렉션 ID: {collectionId}"
+            "confirm": {
+                "title": "월드 컬렉션을 가져올까요?",
+                "description": "'{title}' · 작성자 {author} · 월드 {count}개",
+                "worlds_preview": "포함된 월드: {names}",
+                "confirm": "VRCX-0으로 가져오기",
+                "cancel": "취소"
+            },
+            "toast": {
+                "preview_failed": "공유 컬렉션을 불러오지 못했습니다.",
+                "empty": "이 공유 컬렉션에는 가져올 수 있는 월드가 없습니다.",
+                "import_success": "{count}개의 월드를 '{title}'에 가져왔습니다.",
+                "import_failed": "공유 컬렉션을 가져오지 못했습니다."
+            },
+            "unknown_author": "알 수 없는 작성자"
         }
     },
     "language": "한국어 (ko)",
@@ -104,7 +116,7 @@
             "database_initialization_is_still_pending": "데이터베이스 초기화가 아직 보류 중입니다."
         },
         "label": {
-            "authenticated_and_prepared_the_session": "세션 인증 및 준비",
+            "authenticated_and_prepared_the_session": "로그인 완료",
             "auto_login": "자동 로그인",
             "vrchat_launched": "VRChat 실행됨"
         },
@@ -607,7 +619,7 @@
                 "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "초대할 수 없습니다. 현재 위치는 구체적인 인스턴스가 아닙니다.",
                 "cannot_request_invite_friend_is_not_online": "초대를 요청할 수 없습니다. 친구가 온라인 상태가 아닙니다.",
-                "feed_query_failed": "피드 쿼리 실패",
+                "feed_query_failed": "피드를 불러오지 못했습니다.",
                 "unable_to_open_this_instance_in_vrchat": "VRChat에서 이 인스턴스를 열 수 없습니다.",
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
@@ -709,21 +721,21 @@
                 "game_log_is_disabled": "게임 로그가 비활성화되었습니다.",
                 "showing": "표시",
                 "of": "의",
-                "game_log_row": "게임 로그 행",
-                "game_log_rows": "게임 로그 행"
+                "game_log_row": "게임 로그 항목",
+                "game_log_rows": "게임 로그 항목"
             },
             "success": {
-                "game_log_row_deleted": "게임 로그 행이 삭제되었습니다.",
+                "game_log_row_deleted": "게임 로그 항목을 삭제했습니다.",
                 "copied_game_log_detail": "복사된 게임 로그 세부정보"
             },
             "action": {
                 "open_link": "링크 열기",
                 "copy_detail": "세부정보 복사",
                 "show_instance_history": "인스턴스 기록 표시",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "이 페이지가 로컬 VRChat 활동을 로드하기 전에 설정에서 게임 로그 수집을 활성화하세요."
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "로컬 VRChat 활동을 보려면 설정에서 게임 로그를 활성화하세요."
             },
             "loading": {
-                "loading_the_game_log_snapshot": "게임 로그 스냅샷 로드 중"
+                "loading_the_game_log_snapshot": "게임 로그 불러오는 중"
             },
             "error": {
                 "game_log_failed_to_load": "게임 로그를 로드하지 못했습니다."
@@ -731,7 +743,7 @@
             "empty": {
                 "no_game_log_sessions_match_the_current_filters": "현재 필터와 일치하는 게임 로그 세션이 없습니다.",
                 "no_game_log_rows_match_the_current_filters": "현재 필터와 일치하는 게임 로그 행이 없습니다.",
-                "no_authenticated_user_is_available_for_the_game_log_snapshot": "게임 로그 스냅샷에는 인증된 사용자가 없습니다."
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "게임 로그를 보려면 로그인하세요."
             },
             "description": {
                 "favorites_are_still_hydrating": "즐겨찾기를 아직 불러오는 중입니다.",
@@ -739,12 +751,12 @@
                 "broaden_the_filters_or_search_query_to_see_more_results": "더 많은 결과를 보려면 필터나 검색어를 확장하세요."
             },
             "toast": {
-                "failed_to_delete_game_log_row": "게임 로그 행을 삭제하지 못했습니다.",
+                "failed_to_delete_game_log_row": "게임 로그 항목을 삭제하지 못했습니다.",
                 "failed_to_load_instance_history": "인스턴스 기록을 로드하지 못했습니다.",
                 "failed_to_look_up_value": "{value}을(를) 조회하지 못했습니다."
             },
             "modal": {
-                "delete_game_log_row": "게임 로그 행을 삭제하시겠습니까?"
+                "delete_game_log_row": "게임 로그 항목을 삭제할까요?"
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "{value}에 대한 사용자 ID를 찾을 수 없습니다."
@@ -774,7 +786,7 @@
                 "avatar_styles_updated": "아바타 스타일이 업데이트되었습니다.",
                 "avatar_selected": "아바타가 선택됨",
                 "avatar_image_updated": "아바타 이미지가 업데이트되었습니다.",
-                "avatar_request_did_not_complete": "아바타 요청이 완료되지 않았습니다."
+                "avatar_request_did_not_complete": "아바타를 불러오지 못했습니다. 다시 시도하세요."
             },
             "label": {
                 "primary_style": "기본 스타일",
@@ -932,7 +944,7 @@
                 "favorite_group_renamed": "즐겨찾는 그룹 이름이 변경되었습니다.",
                 "group_visibility_changed": "그룹 공개 상태가 변경됨",
                 "local_favorite_group_renamed": "로컬 즐겨찾는 그룹 이름이 변경됨",
-                "the_favorites_baseline_did_not_finish_loading": "즐겨찾기 기준선 로드가 완료되지 않았습니다.",
+                "the_favorites_baseline_did_not_finish_loading": "즐겨찾기를 모두 불러오지 못했습니다.",
                 "try_a_different_search_term": "다른 검색어를 사용해 보세요.",
                 "vrchat_favorites": "VRChat 즐겨찾기",
                 "review_the_csv_content_before_copying_it_to_the_clipboard": "클립보드에 복사하기 전에 CSV 콘텐츠를 검토하세요.",
@@ -979,7 +991,7 @@
                 "cannot_invite_no_current_vrchat_location_is_available": "초대할 수 없습니다. 현재 VRChat 위치를 사용할 수 없습니다."
             },
             "loading": {
-                "loading_favorites_baseline": "즐겨찾기 기준 로드 중",
+                "loading_favorites_baseline": "즐겨찾기 불러오는 중",
                 "loading_remote_avatar_details": "원격 아바타 세부정보 로드 중",
                 "loading_remote_world_details": "원격 세계 세부 정보 로드 중"
             },
@@ -994,7 +1006,7 @@
                     "copy_edit_url": "편집 링크 복사",
                     "open_manage": "내 공유 관리",
                     "open_editor": "편집기 열기",
-                    "forget": "기록 제거"
+                    "forget": "저장된 공유 삭제"
                 },
                 "label": {
                     "title": "제목",
@@ -1017,9 +1029,11 @@
                     "open_manage_failed": "공유 컬렉션 관리자를 열지 못했습니다.",
                     "load_failed": "공유 컬렉션을 로드하지 못했습니다.",
                     "open_failed": "편집기를 열지 못했습니다.",
-                    "forget_success": "기록을 제거했습니다.",
-                    "forget_failed": "기록을 제거하지 못했습니다.",
-                    "no_worlds": "이 그룹에는 공유할 월드 ID가 없습니다."
+                    "forget_success": "저장된 공유를 삭제했습니다.",
+                    "forget_failed": "저장된 공유를 삭제하지 못했습니다.",
+                    "no_worlds": "이 그룹에는 공유할 월드 ID가 없습니다.",
+                    "too_many": "한 번에 최대 {cap}개의 월드를 공유할 수 있습니다. 그룹을 먼저 나눠 주세요.",
+                    "skipped": "공유했습니다. {count}개의 월드를 건너뛰었습니다(미동기화 또는 비공개)."
                 }
             }
         },
@@ -1035,7 +1049,7 @@
                 "TrustLevel": "신뢰 수준"
             },
             "loading": {
-                "loading_the_friend_history_snapshot": "친구 기록 스냅샷 로드 중"
+                "loading_the_friend_history_snapshot": "친구 기록 불러오는 중"
             },
             "error": {
                 "friend_history_failed_to_load": "친구 기록을 로드하지 못했습니다."
@@ -1063,10 +1077,10 @@
                 "unmuteChat": "채팅 음소거 해제"
             },
             "loading": {
-                "loading_the_moderation_snapshot": "조정 스냅샷 로드 중"
+                "loading_the_moderation_snapshot": "모더레이션 기록 불러오는 중"
             },
             "error": {
-                "moderation_snapshot_failed_to_load": "검토 스냅샷을 로드하지 못했습니다."
+                "moderation_snapshot_failed_to_load": "모더레이션 기록을 불러오지 못했습니다."
             },
             "label": {
                 "showing": "표시",
@@ -1145,7 +1159,7 @@
                 }
             },
             "description": {
-                "this_notification_does_not_expose_a_navigable_sender": "이 알림은 탐색 가능한 발신자를 노출하지 않습니다."
+                "this_notification_does_not_expose_a_navigable_sender": "이 알림에서 확인할 수 있는 프로필이 없습니다."
             },
             "action": {
                 "mark_seen": "읽음 표시",
@@ -1157,10 +1171,10 @@
             "success": {
                 "friend_request_accepted": "친구 요청이 수락되었습니다.",
                 "notification_declined": "알림이 거부됨",
-                "invite_response_sent": "초대 응답이 전송되었습니다.",
+                "invite_response_sent": "답장을 보냈습니다.",
                 "boop_sent": "부프 보냈어",
-                "notification_response_sent": "알림 응답이 전송되었습니다.",
-                "notification_log_entry_deleted": "알림 로그 항목이 삭제되었습니다."
+                "notification_response_sent": "완료했습니다.",
+                "notification_log_entry_deleted": "알림을 기록에서 삭제했습니다."
             },
             "error": {
                 "cannot_invite_from_the_current_instance_type": "현재 인스턴스 유형에서는 초대할 수 없습니다.",
@@ -1212,7 +1226,7 @@
             },
             "success": {
                 "friend_detail_loading_cancelled": "친구 세부정보 로드가 취소되었습니다.",
-                "roster_bootstrap_did_not_complete": "명단 부트스트랩이 완료되지 않았습니다.",
+                "roster_bootstrap_did_not_complete": "친구를 불러오지 못했습니다.",
                 "invite_request_sent": "초대 요청이 전송되었습니다.",
                 "boop_sent": "부프 보냈어",
                 "vrchat_launch_request_sent": "VRChat에서 열었습니다."
@@ -1222,7 +1236,7 @@
                 "no_friends_match_the_current_filters": "현재 필터와 일치하는 친구가 없습니다."
             },
             "loading": {
-                "loading_the_friend_roster_snapshot": "친구 명단 스냅샷 로드 중",
+                "loading_the_friend_roster_snapshot": "친구 불러오는 중",
                 "loading_friend_details": "친구 세부정보 로드 중",
                 "loading_mutual_friends_progress": "함께 아는 친구 로드 중 {current} / {total}"
             },
@@ -1290,7 +1304,7 @@
             "loading": {
                 "loading_instance_activity": "인스턴스 활동 로드 중",
                 "loading_graph": "그래프 로드 중...",
-                "loading_mutual_graph_snapshot": "상호 그래프 스냅샷 로드 중"
+                "loading_mutual_graph_snapshot": "공통 친구 불러오는 중"
             },
             "empty": {
                 "no_instance_activity_on_this_day": "이 날에는 인스턴스 활동이 없습니다.",
@@ -1316,7 +1330,7 @@
                 "mutual_friends_graph_refreshed": "함께 아는 친구 그래프가 새로 고쳐졌습니다."
             },
             "description": {
-                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "로컬 친구 스냅샷이 비어 있습니다. Start fetch를 사용하여 그래프 캐시 구축"
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "공통 친구 정보가 아직 없습니다. '가져오기 시작'을 선택해 불러오세요."
             },
             "toast": {
                 "failed_to_fetch_mutual_friends_graph": "함께 아는 친구 그래프를 가져오지 못했습니다.",
@@ -2282,11 +2296,11 @@
                 "favorites": "즐겨찾기",
                 "notifications": "알림",
                 "panel_not_configured": "패널이 구성되지 않았습니다.",
-                "sign_in_before_the_dashboard_can_query_feed_rows": "대시보드에서 피드 행을 쿼리하기 전에 로그인하세요.",
+                "sign_in_before_the_dashboard_can_query_feed_rows": "이 대시보드에서 피드 활동을 보려면 로그인하세요.",
                 "recent_rows": "최근 행",
                 "type_column_enabled": "유형 열이 활성화되었습니다.",
                 "favorite": "즐겨찾기",
-                "sign_in_before_the_dashboard_can_query_game_log_rows": "대시보드가 게임 로그 행을 쿼리하기 전에 로그인하세요.",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "이 대시보드에서 게임 로그 활동을 보려면 로그인하세요.",
                 "detail_expanded": "세부정보 확장됨",
                 "instance_widget_idle": "인스턴스 위젯이 유휴 상태입니다.",
                 "all": "모두",
@@ -2314,7 +2328,7 @@
             "empty": {
                 "no_feed_rows": "피드 행 없음",
                 "no_game_log_rows": "게임 로그 행 없음",
-                "that_dashboard_no_longer_exists_in_the_stored_config": "해당 대시보드는 저장된 구성에 더 이상 존재하지 않습니다.",
+                "that_dashboard_no_longer_exists_in_the_stored_config": "이 대시보드는 더 이상 존재하지 않습니다.",
                 "no_dashboard_definitions_are_stored_yet": "아직 저장된 대시보드 정의가 없습니다."
             },
             "action": {
@@ -2328,11 +2342,11 @@
                 "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "대시보드가 현재 인스턴스 명단을 재구축하기 전에 VRChat을(를) 시작하세요"
             },
             "description": {
-                "matches_the_stored_feed_widget_config": "저장된 피드 위젯 구성과 일치합니다.",
+                "matches_the_stored_feed_widget_config": "저장된 피드 위젯 설정을 사용합니다.",
                 "expands_the_compact_game_log_description": "간략한 게임 로그 설명 확장"
             },
             "success": {
-                "panel_not_selected": "패널이 선택되지 않았습니다.",
+                "panel_not_selected": "패널을 선택하세요.",
                 "dashboard_saved": "대시보드가 저장되었습니다"
             },
             "toast": {
@@ -2344,7 +2358,7 @@
             },
             "modal": {
                 "delete_dashboard": "대시보드를 삭제하시겠습니까?",
-                "this_removes_the_dashboard_definition_from_the_s": "이렇게 하면 저장된 탐색 구성에서 대시보드 정의가 제거됩니다."
+                "this_removes_the_dashboard_definition_from_the_s": "이 대시보드가 저장된 탐색 메뉴에서 삭제됩니다."
             },
             "dynamic": {
                 "widget_value": "위젯 · {value}",
@@ -2358,13 +2372,13 @@
                 "created": "생성됨"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "이 플레이어 행에 대한 사용자 ID를 찾을 수 없습니다.",
+                "no_user_id_was_found_for_this_player_row": "이 플레이어의 프로필을 찾지 못했습니다.",
                 "currently_traveling_between_instances": "현재 인스턴스 간 이동 중",
                 "no_current_instance_detected": "현재 인스턴스가 감지되지 않았습니다.",
-                "no_players_reconstructed_for_this_instance_yet": "이 인스턴스에 대해 재구성된 플레이어가 아직 없습니다.",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "현재 플레이어를 재구성하기 전에 설정에서 게임 로그 수집을 활성화하세요.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "로컬 참여/탈퇴 이벤트가 기록될 때까지 인스턴스에 머무르면 이 테이블이 자동으로 채워집니다.",
-                "current_players_follow_live_instance_locations": "현재 플레이어는 라이브 인스턴스 위치를 따릅니다. 다음 위치 이벤트가 발생한 후에 다시 채워집니다.",
+                "no_players_reconstructed_for_this_instance_yet": "현재 플레이어를 아직 찾지 못했습니다.",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "현재 플레이어를 보려면 설정에서 게임 로그를 활성화하세요.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "VRCX-0이 플레이어 활동을 감지할 때까지 인스턴스에 머무르세요. 이 목록은 자동으로 업데이트됩니다.",
+                "current_players_follow_live_instance_locations": "VRCX-0이 다음 위치를 감지하면 현재 플레이어가 표시됩니다.",
                 "local_join_leave_history_has_no_current_players": "로컬 가입/탈퇴 기록에는 아직 활성 위치에 대한 현재 플레이어가 없습니다.",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "이 페이지가 현재 인스턴스를 다시 빌드하기 전에 VRChat을 시작하고 VRCX-0이 게임 로그 이벤트를 수신하도록 하세요."
             },
@@ -2390,7 +2404,7 @@
         "auth": {
             "auto_login": {
                 "skipped": "자동 로그인을 건너뛰었습니다.",
-                "skipped_before_request": "인증 요청이 시작되기 전에 자동 로그인을 건너뛰었습니다.",
+                "skipped_before_request": "자동 로그인이 시작되기 전에 취소되었습니다.",
                 "throttled": "지난 한 시간 동안 반복된 실패로 인해 자동 로그인이 비활성화되었습니다.",
                 "expired": "이전 브라우저 세션이 만료되었으며 저장된 계정 대체를 사용할 수 없습니다.",
                 "failed_manual": "자동 로그인에 실패했습니다. 아래에서는 여전히 수동 로그인이 가능합니다.",
@@ -2408,7 +2422,7 @@
                 "restored_session_for": "{name}에 대한 이전 브라우저 세션을 자동으로 복원했습니다."
             },
             "toast": {
-                "failed_to_load_saved_auth_snapshot": "저장된 인증 스냅샷을 로드하지 못했습니다.",
+                "failed_to_load_saved_auth_snapshot": "저장된 계정을 불러오지 못했습니다.",
                 "automatic_login_failed_unexpectedly": "예기치 않게 자동 로그인에 실패했습니다.",
                 "failed_to_change_language": "언어를 변경하지 못했습니다.",
                 "failed_to_load_proxy_settings": "프록시 설정을 로드하지 못했습니다.",
@@ -2418,7 +2432,7 @@
                 "failed_to_restore_the_saved_account": "저장된 계정을 복원하지 못했습니다."
             },
             "dynamic": {
-                "authenticated_and_prepared_the_session_for_value": "{value}에 대한 세션을 인증하고 준비했습니다."
+                "authenticated_and_prepared_the_session_for_value": "{value}(으)로 로그인했습니다."
             }
         },
         "favorites": {
@@ -2528,17 +2542,17 @@
                 "failed_to_accept_friend_request": "친구 요청을 수락하지 못했습니다.",
                 "failed_to_decline_notification": "알림을 거부하지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
-                "invite_response_photo_sent": "초대 응답 사진이 전송되었습니다.",
-                "invite_response_sent": "초대 응답이 전송되었습니다.",
-                "failed_to_send_notification_response": "알림 응답을 보내지 못했습니다."
+                "invite_response_photo_sent": "사진으로 답장했습니다.",
+                "invite_response_sent": "답장을 보냈습니다.",
+                "failed_to_send_notification_response": "작업을 완료하지 못했습니다."
             },
             "modal": {
-                "delete_notification_log_entry": "알림 로그 항목 삭제",
+                "delete_notification_log_entry": "알림을 삭제할까요?",
                 "accept_friend_request": "친구 요청 수락",
                 "decline_notification": "알림 거부",
                 "decline": "거절",
                 "send_invite": "초대장 보내기",
-                "delete_the_local_value_log_entry": "로컬 {value} 로그 항목을 삭제하시겠습니까?"
+                "delete_the_local_value_log_entry": "이 {value} 알림을 기록에서 삭제할까요?"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "{value}의 친구 요청을 수락하시겠습니까?",
@@ -2989,7 +3003,7 @@
                 "search_worlds": "세계 검색",
                 "search_favorite_worlds": "좋아하는 세계 검색",
                 "search_avatars": "아바타 검색",
-                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "친구 해제 요청이 전송되었지만 로컬 상태가 업데이트되기 전에 활성 세션이 변경되었습니다."
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "친구 관계를 해제했습니다. 최신 상태를 보려면 새로고침하세요."
             },
             "loading": {
                 "loading_activity": "활동 로드 중...",
@@ -3251,13 +3265,13 @@
             },
             "loading": {
                 "loading_world_profile": "세계 프로필 로드 중",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "이 대화상자에 대한 현재 VRChat 월드 스냅샷을 가져오는 중입니다."
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "월드 정보 불러오는 중"
             },
             "error": {
                 "world_profile_unavailable": "월드 프로필을 사용할 수 없습니다.",
                 "world_cache_location_unavailable": "월드 캐시 위치를 사용할 수 없습니다.",
                 "cannot_self_invite_location_is_not_a_concrete_instance": "직접 초대할 수 없습니다. 위치가 구체적인 인스턴스가 아닙니다.",
-                "failed_to_refresh_the_remote_world_snapshot": "원격 세계 스냅샷을 새로 고치지 못했습니다.",
+                "failed_to_refresh_the_remote_world_snapshot": "월드 정보를 새로고침하지 못했습니다.",
                 "failed_to_load_the_world_profile": "월드 프로필을 로드하지 못했습니다.",
                 "selected_image_is_too_large": "선택한 이미지가 너무 큽니다.",
                 "selected_file_is_not_an_image": "선택한 파일은 이미지가 아닙니다",
@@ -3285,7 +3299,7 @@
             },
             "description": {
                 "edit_world_details": "세계 세부정보 편집",
-                "world_snapshot_unavailable_description": "VRCX-0은(는) 이 대화 상자에 대한 월드 스냅샷을 확인할 수 없습니다."
+                "world_snapshot_unavailable_description": "월드 정보를 불러오지 못했습니다."
             },
             "empty": {
                 "no_world_id_was_provided_for_this_dialog": "이 대화 상자에는 세계 ID가 제공되지 않았습니다.",
@@ -3399,7 +3413,7 @@
             },
             "loading": {
                 "loading_avatar_profile": "아바타 프로필 로드 중",
-                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "이 대화상자에 대한 현재 VRChat 아바타 스냅샷을 가져오는 중입니다."
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "아바타 정보 불러오는 중"
             },
             "error": {
                 "avatar_profile_unavailable": "아바타 프로필을 사용할 수 없습니다.",
@@ -3434,7 +3448,7 @@
             },
             "description": {
                 "edit_avatar_details_description": "아바타 이름, 설명, 스타일, 작성자 태그를 편집합니다.",
-                "avatar_snapshot_unavailable_description": "VRCX-0은(는) 이 대화 상자에 대한 아바타 스냅샷을 확인할 수 없습니다."
+                "avatar_snapshot_unavailable_description": "아바타 정보를 불러오지 못했습니다."
             },
             "toast": {
                 "failed_to_refresh_avatar": "아바타를 새로 고치지 못했습니다.",
@@ -3463,7 +3477,7 @@
                 "failed_to_delete_impostor": "임포스터를 삭제하지 못했습니다.",
                 "impostor_queued_for_regeneration": "재생성 대기 중인 임포스터",
                 "failed_to_regenerate_impostor": "임포스터를 재생성하지 못했습니다.",
-                "avatar_deleted_but_current_user_snapshot_refresh": "아바타가 삭제되었지만 현재 사용자 스냅샷 새로 고침에 실패했습니다.",
+                "avatar_deleted_but_current_user_snapshot_refresh": "아바타를 삭제했지만 아바타 목록을 새로고침하지 못했습니다.",
                 "value_avatar_state_refresh_failed": "{value} 아바타 상태 새로 고침 실패"
             },
             "modal": {
@@ -3575,11 +3589,11 @@
             "loading": {
                 "loading_group_profile": "그룹 프로필 로드 중",
                 "loading": "로드 중...",
-                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "이 대화상자에 대한 현재 VRChat 그룹 스냅샷을 가져오는 중입니다."
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "그룹 정보 불러오는 중"
             },
             "error": {
                 "group_profile_unavailable": "그룹 프로필을 사용할 수 없습니다.",
-                "failed_to_refresh_the_remote_group_snapshot": "원격 그룹 스냅샷을 새로 고치지 못했습니다.",
+                "failed_to_refresh_the_remote_group_snapshot": "그룹 정보를 새로고침하지 못했습니다.",
                 "failed_to_load_the_group_profile": "그룹 프로필을 로드하지 못했습니다.",
                 "title_and_text_are_required": "제목과 텍스트가 필요합니다",
                 "failed_to_load_details": "세부 정보를 불러오지 못했습니다"
@@ -3652,7 +3666,7 @@
                 "enter_the_vrchat_user_id_to_invite": "초대하려면 VRChat 사용자 ID를 입력하세요."
             },
             "description": {
-                "group_snapshot_unavailable_description": "VRCX-0은(는) 이 대화 상자에 대한 그룹 스냅샷을 확인할 수 없습니다."
+                "group_snapshot_unavailable_description": "그룹 정보를 불러오지 못했습니다."
             },
             "dynamic": {
                 "leave_value": "{value}을(를) 떠나시겠습니까?",
@@ -4180,7 +4194,7 @@
                 "no_instance_records": "인스턴스 기록 없음"
             },
             "description": {
-                "select_an_instance_row_to_view_its_details": "세부정보를 보려면 인스턴스 행을 선택하세요.",
+                "select_an_instance_row_to_view_its_details": "자세히 볼 방문 기록을 선택하세요.",
                 "instance_details": "인스턴스 세부정보",
                 "open_instance_details": "인스턴스 세부정보 열기",
                 "details": "세부정보"
@@ -4190,7 +4204,7 @@
             },
             "error": {
                 "failed_to_load_instance_details": "인스턴스 세부정보를 로드하지 못했습니다.",
-                "this_user_instance_row_cannot_be_deleted_without_event_ids": "이 사용자 인스턴스 행은 이벤트 ID 없이 삭제할 수 없습니다."
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "이 방문 기록은 삭제할 수 없습니다."
             },
             "label": {
                 "recorded_instance_visits": "기록된 인스턴스 방문",
@@ -4201,7 +4215,7 @@
                 "recorded_instance_visits_count": "{count} 기록된 인스턴스 방문."
             },
             "success": {
-                "instance_record_deleted": "인스턴스 기록이 삭제되었습니다."
+                "instance_record_deleted": "인스턴스 방문 기록을 삭제했습니다."
             }
         },
         "group_member_moderation": {
@@ -4981,7 +4995,7 @@
     "host": {
         "launch_dialog": {
             "toast": {
-                "failed_to_resolve_launch_details": "실행 세부정보를 확인하지 못했습니다.",
+                "failed_to_resolve_launch_details": "VRChat 실행을 준비하지 못했습니다.",
                 "launch_action_failed": "실행 작업 실패"
             },
             "modal": {
@@ -5014,7 +5028,7 @@
                 "failed_to_accept_friend_request": "친구 요청을 수락하지 못했습니다.",
                 "failed_to_decline_notification": "알림을 거부하지 못했습니다.",
                 "failed_to_send_invite": "초대장을 보내지 못했습니다.",
-                "failed_to_send_notification_response": "알림 응답을 보내지 못했습니다.",
+                "failed_to_send_notification_response": "작업을 완료하지 못했습니다.",
                 "failed_to_delete_notification": "알림을 삭제하지 못했습니다.",
                 "failed_to_refresh_notifications": "알림을 새로고침하지 못했습니다."
             },
@@ -5023,8 +5037,8 @@
                 "decline_notification": "알림 거부",
                 "decline": "거절",
                 "send_invite": "초대장 보내기",
-                "delete_notification_log_entry": "알림 로그 항목 삭제",
-                "delete_the_local_value_log_entry": "로컬 {value} 로그 항목을 삭제하시겠습니까?"
+                "delete_notification_log_entry": "알림을 삭제할까요?",
+                "delete_the_local_value_log_entry": "이 {value} 알림을 기록에서 삭제할까요?"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "{value}의 친구 요청을 수락하시겠습니까?",
@@ -5036,9 +5050,9 @@
             "toast": {
                 "failed_to_export_friends_list": "친구 목록을 내보내지 못했습니다.",
                 "failed_to_export_avatar_list": "아바타 목록을 내보내지 못했습니다.",
-                "failed_to_load_memo_export_rows": "로컬 메모 내보내기 행을 로드하지 못했습니다.",
+                "failed_to_load_memo_export_rows": "로컬 메모 내보내기를 준비하지 못했습니다.",
                 "failed_to_load_group_events": "그룹 이벤트를 로드하지 못했습니다.",
-                "failed_to_update_group_event_follow_state": "그룹 이벤트 팔로우 상태를 업데이트하지 못했습니다.",
+                "failed_to_update_group_event_follow_state": "이 이벤트를 업데이트하지 못했습니다.",
                 "failed_to_download_ics_file": ".ics 파일을 다운로드하지 못했습니다.",
                 "failed_to_save_ics_file": ".ics 파일을 저장하지 못했습니다.",
                 "failed_to_copy_event_link": "이벤트 링크를 복사하지 못했습니다."

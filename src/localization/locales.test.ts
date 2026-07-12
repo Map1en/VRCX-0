@@ -175,8 +175,16 @@ describe('settings locale coverage', () => {
 
 describe('deep link locale coverage', () => {
     const requiredDeepLinkKeys = [
-        'deep_link.import_collection.title',
-        'deep_link.import_collection.description'
+        'deep_link.import_collection.confirm.title',
+        'deep_link.import_collection.confirm.description',
+        'deep_link.import_collection.confirm.worlds_preview',
+        'deep_link.import_collection.confirm.confirm',
+        'deep_link.import_collection.confirm.cancel',
+        'deep_link.import_collection.toast.preview_failed',
+        'deep_link.import_collection.toast.empty',
+        'deep_link.import_collection.toast.import_success',
+        'deep_link.import_collection.toast.import_failed',
+        'deep_link.import_collection.unknown_author'
     ];
 
     it('keeps deep link labels in every locale source file', () => {

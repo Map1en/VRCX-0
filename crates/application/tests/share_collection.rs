@@ -113,6 +113,7 @@ fn prepare_payload_derives_owner_key_and_keeps_only_public_worlds_in_input_order
         ShareCollectionDeps {
             db: &db,
             current_user_id: "usr_current",
+            current_user_display_name: " Scenic Curator ",
         },
         ShareCollectionCreateInput {
             title: " Scenic picks ".to_string(),
@@ -137,6 +138,7 @@ fn prepare_payload_derives_owner_key_and_keeps_only_public_worlds_in_input_order
     assert_eq!(prepared.payload.title, "Scenic picks");
     assert!(prepared.payload.listed);
     assert_eq!(prepared.payload.access, "open");
+    assert_eq!(prepared.payload.author_name, "Scenic Curator");
     assert!(prepared.payload.updated_at > 0);
     assert_eq!(prepared.payload.worlds.len(), 2);
     assert_eq!(
@@ -176,6 +178,7 @@ fn prepare_payload_requires_current_user_id_for_owner_key_derivation() {
         ShareCollectionDeps {
             db: &db,
             current_user_id: " ",
+            current_user_display_name: "",
         },
         ShareCollectionCreateInput {
             title: "Worlds".to_string(),
@@ -205,6 +208,7 @@ fn prepare_payload_limits_large_groups_to_the_share_cap() {
         ShareCollectionDeps {
             db: &db,
             current_user_id: "usr_current",
+            current_user_display_name: "Current User",
         },
         ShareCollectionCreateInput {
             title: "Large group".to_string(),

@@ -2,14 +2,29 @@
     "language": "ภาษาไทย (th)",
     "deep_link": {
         "import_collection": {
-            "title": "นำเข้าคอลเลกชัน",
-            "description": "ID คอลเลกชัน: {collectionId}"
+            "confirm": {
+                "title": "นำเข้าคอลเลกชันโลกนี้หรือไม่?",
+                "description": "\"{title}\" โดย {author} · {count} โลก",
+                "worlds_preview": "ประกอบด้วย: {names}",
+                "confirm": "นำเข้าสู่ VRCX-0",
+                "cancel": "ยกเลิก"
+            },
+            "toast": {
+                "preview_failed": "โหลดคอลเลกชันที่แชร์ไม่สำเร็จ",
+                "empty": "คอลเลกชันที่แชร์นี้ไม่มีโลกที่นำเข้าได้",
+                "import_success": "นำเข้า {count} โลกไปยัง \"{title}\" แล้ว",
+                "import_failed": "นำเข้าคอลเลกชันที่แชร์ไม่สำเร็จ"
+            },
+            "unknown_author": "ไม่ทราบผู้สร้าง"
         }
     },
     "common": {
         "actions": {
             "configure": "กำหนดค่า",
             "reset": "รีเซ็ต"
+        },
+        "label": {
+            "authenticated_and_prepared_the_session": "เข้าสู่ระบบแล้ว"
         }
     },
     "nav_tooltip": {
@@ -66,6 +81,12 @@
             "context": {
                 "hide_user": "ซ่อนจาก Feed",
                 "unhide_user": "เลิกซ่อนจาก Feed"
+            },
+            "error": {
+                "feed_query_failed": "ไม่สามารถโหลดฟีดได้"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "กำลังโหลดรายการโปรด"
             }
         },
         "game_log": {
@@ -80,6 +101,31 @@
                 "External": "ภายนอก",
                 "StringLoad": "โหลดสตริง",
                 "ImageLoad": "โหลดรูปภาพ"
+            },
+            "label": {
+                "game_log_row": "รายการในบันทึกเกม",
+                "game_log_rows": "รายการในบันทึกเกม"
+            },
+            "success": {
+                "game_log_row_deleted": "ลบรายการในบันทึกเกมแล้ว"
+            },
+            "action": {
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "เปิดใช้บันทึกเกมในการตั้งค่าเพื่อดูกิจกรรม VRChat ในเครื่อง"
+            },
+            "loading": {
+                "loading_the_game_log_snapshot": "กำลังโหลดบันทึกเกม"
+            },
+            "empty": {
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "เข้าสู่ระบบเพื่อดูบันทึกเกม"
+            },
+            "description": {
+                "favorites_are_still_hydrating": "กำลังโหลดรายการโปรด"
+            },
+            "toast": {
+                "failed_to_delete_game_log_row": "ไม่สามารถลบรายการในบันทึกเกมได้"
+            },
+            "modal": {
+                "delete_game_log_row": "ลบรายการในบันทึกเกมหรือไม่?"
             }
         },
         "search": {
@@ -139,7 +185,7 @@
                     "copy_edit_url": "คัดลอกลิงก์แก้ไข",
                     "open_manage": "จัดการรายการแชร์ของฉัน",
                     "open_editor": "เปิดตัวแก้ไข",
-                    "forget": "ลบรายการบันทึก"
+                    "forget": "ลบการแชร์ที่บันทึกไว้"
                 },
                 "label": {
                     "title": "ชื่อเรื่อง",
@@ -162,10 +208,18 @@
                     "open_manage_failed": "เปิดหน้าจัดการคอลเลกชันที่แชร์ไม่สำเร็จ",
                     "load_failed": "โหลดคอลเลกชันที่แชร์ไม่สำเร็จ",
                     "open_failed": "เปิดตัวแก้ไขไม่สำเร็จ",
-                    "forget_success": "ลบรายการบันทึกแล้ว",
-                    "forget_failed": "ลบรายการบันทึกไม่สำเร็จ",
-                    "no_worlds": "กลุ่มนี้ไม่มี ID โลกให้แชร์"
+                    "forget_success": "ลบการแชร์ที่บันทึกไว้แล้ว",
+                    "forget_failed": "ไม่สามารถลบการแชร์ที่บันทึกไว้ได้",
+                    "no_worlds": "กลุ่มนี้ไม่มี ID โลกให้แชร์",
+                    "too_many": "แชร์ได้สูงสุด {cap} โลกต่อครั้ง กรุณาแยกกลุ่มนี้ก่อน",
+                    "skipped": "แชร์แล้ว ข้าม {count} โลก (ยังไม่ซิงก์หรือไม่เป็นสาธารณะ)"
                 }
+            },
+            "label": {
+                "the_favorites_baseline_did_not_finish_loading": "โหลดรายการโปรดไม่เสร็จสมบูรณ์"
+            },
+            "loading": {
+                "loading_favorites_baseline": "กำลังโหลดรายการโปรด"
             }
         },
         "friend_log": {
@@ -178,6 +232,9 @@
                 "CancelFriendRequest": "ยกเลิกคำขอเป็นเพื่อน",
                 "DisplayName": "ชื่อที่แสดง",
                 "TrustLevel": "ระดับความเชื่อใจ"
+            },
+            "loading": {
+                "loading_the_friend_history_snapshot": "กำลังโหลดประวัติเพื่อน"
             }
         },
         "moderation": {
@@ -190,6 +247,12 @@
                 "interactOff": "ปิดการโต้ตอบ",
                 "muteChat": "ปิดเสียงแชท",
                 "unmuteChat": "เปิดเสียงแชท"
+            },
+            "loading": {
+                "loading_the_moderation_snapshot": "กำลังโหลดประวัติการดูแล"
+            },
+            "error": {
+                "moderation_snapshot_failed_to_load": "ไม่สามารถโหลดประวัติการดูแลได้"
             }
         },
         "notification": {
@@ -227,6 +290,14 @@
                 "badge": {
                     "earned": "ได้รับเหรียญตรา"
                 }
+            },
+            "description": {
+                "this_notification_does_not_expose_a_navigable_sender": "การแจ้งเตือนนี้ไม่มีโปรไฟล์ที่เปิดดูได้"
+            },
+            "success": {
+                "invite_response_sent": "ตอบกลับแล้ว",
+                "notification_response_sent": "เสร็จแล้ว",
+                "notification_log_entry_deleted": "นำการแจ้งเตือนออกจากประวัติแล้ว"
             }
         },
         "friend_list": {
@@ -238,6 +309,15 @@
             "filter_placeholder": "ตัวกรอง",
             "error": {
                 "failed_to_load_friend_details": "ไม่สามารถโหลดรายละเอียดของเพื่อนได้"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "กำลังโหลดรายการโปรด"
+            },
+            "success": {
+                "roster_bootstrap_did_not_complete": "ไม่สามารถโหลดเพื่อนของคุณได้"
+            },
+            "loading": {
+                "loading_the_friend_roster_snapshot": "กำลังโหลดเพื่อน"
             }
         },
         "charts": {
@@ -252,6 +332,17 @@
                     "show_no_friend_instance": "แสดงอินสแตนซ์ที่ไม่มีเพื่อน",
                     "show_detail": "แสดงรายละเอียด"
                 }
+            },
+            "mutual_friend": {
+                "actions": {
+                    "start_fetch": "เริ่มดึงข้อมูล"
+                }
+            },
+            "loading": {
+                "loading_mutual_graph_snapshot": "กำลังโหลดเพื่อนที่มีร่วมกัน"
+            },
+            "description": {
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "ยังไม่มีข้อมูลเพื่อนที่มีร่วมกัน เลือก “เริ่มดึงข้อมูล” เพื่อโหลดข้อมูล"
             }
         },
         "tools": {
@@ -630,6 +721,60 @@
             "contributors_error": "โหลดรายชื่อผู้มีส่วนร่วมไม่สำเร็จ",
             "thanks": "ทุกงานแปล การทดสอบ รายงานบั๊ก และไอเดีย ล้วนมาจากคอมมูนิตี้ ขอบคุณทุกคน",
             "license_line": "ซอฟต์แวร์เสรีและโอเพนซอร์สภายใต้ GPL-3.0"
+        },
+        "my_avatars": {
+            "success": {
+                "avatar_request_did_not_complete": "ไม่สามารถโหลดอวาตาร์ของคุณได้ โปรดลองอีกครั้ง"
+            }
+        },
+        "dashboard": {
+            "label": {
+                "sign_in_before_the_dashboard_can_query_feed_rows": "เข้าสู่ระบบเพื่อดูกิจกรรมในฟีดบนแดชบอร์ดนี้",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "เข้าสู่ระบบเพื่อดูกิจกรรมในบันทึกเกมบนแดชบอร์ดนี้"
+            },
+            "empty": {
+                "that_dashboard_no_longer_exists_in_the_stored_config": "แดชบอร์ดนี้ไม่มีอยู่แล้ว"
+            },
+            "description": {
+                "matches_the_stored_feed_widget_config": "ใช้การตั้งค่าวิดเจ็ตฟีดที่บันทึกไว้"
+            },
+            "success": {
+                "panel_not_selected": "เลือกแผง"
+            },
+            "modal": {
+                "this_removes_the_dashboard_definition_from_the_s": "แดชบอร์ดนี้จะถูกนำออกจากเมนูนำทางที่บันทึกไว้"
+            }
+        },
+        "player_list": {
+            "empty": {
+                "no_user_id_was_found_for_this_player_row": "ไม่พบโปรไฟล์ของผู้เล่นนี้",
+                "no_players_reconstructed_for_this_instance_yet": "ยังไม่พบผู้เล่นปัจจุบัน",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "เปิดใช้บันทึกเกมในการตั้งค่าเพื่อดูผู้เล่นปัจจุบัน",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "อยู่ในอินสแตนซ์จนกว่า VRCX-0 จะตรวจพบกิจกรรมของผู้เล่น รายการนี้จะอัปเดตโดยอัตโนมัติ",
+                "current_players_follow_live_instance_locations": "ผู้เล่นปัจจุบันจะปรากฏเมื่อ VRCX-0 ตรวจพบการย้ายไปอินสแตนซ์ถัดไป"
+            }
+        },
+        "auth": {
+            "auto_login": {
+                "skipped_before_request": "ยกเลิกการเข้าสู่ระบบอัตโนมัติก่อนเริ่มต้น"
+            },
+            "toast": {
+                "failed_to_load_saved_auth_snapshot": "ไม่สามารถโหลดบัญชีที่บันทึกไว้ได้"
+            },
+            "dynamic": {
+                "authenticated_and_prepared_the_session_for_value": "เข้าสู่ระบบด้วยบัญชี {value} แล้ว"
+            }
+        },
+        "notifications": {
+            "toast": {
+                "invite_response_photo_sent": "ตอบกลับพร้อมรูปภาพแล้ว",
+                "invite_response_sent": "ตอบกลับแล้ว",
+                "failed_to_send_notification_response": "ดำเนินการไม่สำเร็จ"
+            },
+            "modal": {
+                "delete_notification_log_entry": "นำการแจ้งเตือนออกหรือไม่?",
+                "delete_the_local_value_log_entry": "นำการแจ้งเตือน {value} นี้ออกจากประวัติหรือไม่?"
+            }
         }
     },
     "dialog": {
@@ -774,6 +919,9 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "action": {
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "เลิกเป็นเพื่อนแล้ว รีเฟรชเพื่อดูสถานะล่าสุด"
             }
         },
         "world": {
@@ -842,6 +990,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "กำลังโหลดรายละเอียดเวิลด์"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_world_snapshot": "ไม่สามารถรีเฟรชรายละเอียดเวิลด์ได้"
+            },
+            "description": {
+                "world_snapshot_unavailable_description": "ไม่สามารถโหลดรายละเอียดเวิลด์ได้"
             }
         },
         "avatar": {
@@ -886,6 +1043,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "กำลังโหลดรายละเอียดอวาตาร์"
+            },
+            "description": {
+                "avatar_snapshot_unavailable_description": "ไม่สามารถโหลดรายละเอียดอวาตาร์ได้"
+            },
+            "toast": {
+                "avatar_deleted_but_current_user_snapshot_refresh": "ลบอวาตาร์แล้ว แต่ไม่สามารถรีเฟรชรายการอวาตาร์ของคุณได้"
             }
         },
         "group": {
@@ -951,6 +1117,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "กำลังโหลดรายละเอียดกลุ่ม"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_group_snapshot": "ไม่สามารถรีเฟรชรายละเอียดกลุ่มได้"
+            },
+            "description": {
+                "group_snapshot_unavailable_description": "ไม่สามารถโหลดรายละเอียดกลุ่มได้"
             }
         },
         "favorite": {
@@ -1153,7 +1328,16 @@
         "previous_instances": {
             "header": "Instance History",
             "info": "Instance Details",
-            "search_placeholder": "Search instance history"
+            "search_placeholder": "Search instance history",
+            "description": {
+                "select_an_instance_row_to_view_its_details": "เลือกประวัติการเข้าอินสแตนซ์เพื่อดูรายละเอียด"
+            },
+            "error": {
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "ไม่สามารถลบประวัติการเข้าอินสแตนซ์นี้ได้"
+            },
+            "success": {
+                "instance_record_deleted": "ลบประวัติการเข้าอินสแตนซ์แล้ว"
+            }
         },
         "group_member_moderation": {
             "filter_type": "ประเภทตัวกรอง",
@@ -1496,5 +1680,27 @@
         "proxy_enabled_direct": "Proxy enabled, connecting directly",
         "proxy_enabled_server": "Proxy enabled: {proxy}",
         "proxy_network_issue": "Proxy enabled, network request failed"
+    },
+    "host": {
+        "launch_dialog": {
+            "toast": {
+                "failed_to_resolve_launch_details": "ไม่สามารถเตรียมเปิด VRChat ได้"
+            }
+        },
+        "vrc_notification_center": {
+            "toast": {
+                "failed_to_send_notification_response": "ดำเนินการไม่สำเร็จ"
+            },
+            "modal": {
+                "delete_notification_log_entry": "นำการแจ้งเตือนออกหรือไม่?",
+                "delete_the_local_value_log_entry": "นำการแจ้งเตือน {value} นี้ออกจากประวัติหรือไม่?"
+            }
+        },
+        "tools_dialogs": {
+            "toast": {
+                "failed_to_load_memo_export_rows": "ไม่สามารถเตรียมโน้ตในเครื่องเพื่อส่งออกได้",
+                "failed_to_update_group_event_follow_state": "ไม่สามารถอัปเดตกิจกรรมนี้ได้"
+            }
+        }
     }
 }

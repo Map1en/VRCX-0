@@ -52,7 +52,6 @@ jobs:
                     - label: Linux Packages
                       os: ubuntu-24.04
                       rust_target: ''
-                      build_command: npm run tauri:build -- --config src-tauri/tauri.linux.conf.json --bundles appimage,deb,rpm
                       artifact_name: linux-packages
                       artifact_path: |
                           target/release/bundle/appimage/*.AppImage
@@ -68,6 +67,7 @@ jobs:
                       dmg_asset_arch: macos_aarch64
                       updater_target: macos-aarch64-stable
                       updater_asset_name: update_macos_aarch64.app.tar.gz
+                      webkit_build_target: safari18.2
                       build_command: npm run tauri:build -- --target aarch64-apple-darwin --bundles app,dmg
                       artifact_name: macos-aarch64-dmg
                       artifact_path: |
@@ -80,6 +80,7 @@ jobs:
                       dmg_asset_arch: macos_x86_64
                       updater_target: macos-x86_64-stable
                       updater_asset_name: update_macos_x86_64.app.tar.gz
+                      webkit_build_target: safari18.2
                       build_command: npm run tauri:build -- --target x86_64-apple-darwin --bundles app,dmg
                       artifact_name: macos-x86_64-dmg
                       artifact_path: |
@@ -151,7 +152,20 @@ jobs:
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY_PASSWORD }}
                   TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-              run: ${{ matrix.build_command }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: ${{ matrix.webkit_build_target }}
+              run: |
+                  if [[ "$RUNNER_OS" == "Linux" ]]; then
+                      VRCX_0_WEBKIT_BUILD_TARGET=safari17 \
+                          npm run tauri:build -- \
+                          --config src-tauri/tauri.linux.conf.json \
+                          --bundles appimage
+                      VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
+                          npm run tauri:build -- \
+                          --config src-tauri/tauri.linux.conf.json \
+                          --bundles deb,rpm
+                  else
+                      ${{ matrix.build_command }}
+                  fi
 
             - name: Prepare Linux release and updater assets
               if: runner.os == 'Linux'

@@ -2,14 +2,29 @@
     "language": "Polski (pl)",
     "deep_link": {
         "import_collection": {
-            "title": "Importuj kolekcję",
-            "description": "ID kolekcji: {collectionId}"
+            "confirm": {
+                "title": "Zaimportować kolekcję światów?",
+                "description": "„{title}” od {author} · {count} światów",
+                "worlds_preview": "Zawiera: {names}",
+                "confirm": "Importuj do VRCX-0",
+                "cancel": "Anuluj"
+            },
+            "toast": {
+                "preview_failed": "Nie udało się wczytać udostępnionej kolekcji",
+                "empty": "Ta udostępniona kolekcja nie zawiera światów do zaimportowania",
+                "import_success": "Zaimportowano {count} światów do „{title}”",
+                "import_failed": "Nie udało się zaimportować udostępnionej kolekcji"
+            },
+            "unknown_author": "Nieznany autor"
         }
     },
     "common": {
         "actions": {
             "configure": "Konfiguruj",
             "reset": "Resetuj"
+        },
+        "label": {
+            "authenticated_and_prepared_the_session": "Zalogowano"
         }
     },
     "nav_tooltip": {
@@ -85,6 +100,12 @@
             "context": {
                 "hide_user": "Ukryj z Feed",
                 "unhide_user": "Pokaż w Feed"
+            },
+            "error": {
+                "feed_query_failed": "Nie udało się wczytać aktywności"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "Ulubione nadal się wczytują"
             }
         },
         "friends_locations": {
@@ -102,6 +123,31 @@
                 "External": "Zewnętrzne",
                 "StringLoad": "Załadowano string",
                 "ImageLoad": "Załadowano obraz"
+            },
+            "label": {
+                "game_log_row": "wpis dziennika gry",
+                "game_log_rows": "wpisy dziennika gry"
+            },
+            "success": {
+                "game_log_row_deleted": "Usunięto wpis dziennika gry"
+            },
+            "action": {
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Włącz dziennik gry w Ustawieniach, aby zobaczyć lokalną aktywność w VRChat"
+            },
+            "loading": {
+                "loading_the_game_log_snapshot": "Wczytywanie dziennika gry"
+            },
+            "empty": {
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Zaloguj się, aby zobaczyć dziennik gry."
+            },
+            "description": {
+                "favorites_are_still_hydrating": "Ulubione nadal się wczytują."
+            },
+            "toast": {
+                "failed_to_delete_game_log_row": "Nie udało się usunąć wpisu dziennika gry"
+            },
+            "modal": {
+                "delete_game_log_row": "Usunąć wpis dziennika gry?"
             }
         },
         "search": {
@@ -165,7 +211,7 @@
                     "copy_edit_url": "Kopiuj link do edycji",
                     "open_manage": "Zarządzaj moimi udostępnieniami",
                     "open_editor": "Otwórz edytor",
-                    "forget": "Usuń rekord"
+                    "forget": "Usuń zapisane udostępnienie"
                 },
                 "label": {
                     "title": "Tytuł",
@@ -188,10 +234,18 @@
                     "open_manage_failed": "Nie udało się otworzyć menedżera udostępnionych kolekcji",
                     "load_failed": "Nie udało się wczytać udostępnionych kolekcji",
                     "open_failed": "Nie udało się otworzyć edytora",
-                    "forget_success": "Rekord usunięty",
-                    "forget_failed": "Nie udało się usunąć rekordu",
-                    "no_worlds": "Ta grupa nie ma ID światów do udostępnienia"
+                    "forget_success": "Usunięto zapisane udostępnienie",
+                    "forget_failed": "Nie udało się usunąć zapisanego udostępnienia",
+                    "no_worlds": "Ta grupa nie ma ID światów do udostępnienia",
+                    "too_many": "Możesz udostępnić maksymalnie {cap} światów naraz. Najpierw podziel tę grupę.",
+                    "skipped": "Udostępniono. Pominięto {count} światów (niezsynchronizowane lub niepubliczne)."
                 }
+            },
+            "label": {
+                "the_favorites_baseline_did_not_finish_loading": "Nie udało się wczytać wszystkich ulubionych"
+            },
+            "loading": {
+                "loading_favorites_baseline": "Wczytywanie ulubionych"
             }
         },
         "friend_log": {
@@ -204,6 +258,9 @@
                 "CancelFriendRequest": "Anulowanie zaproszenia do znajomych",
                 "DisplayName": "Wyświetlana nazwa",
                 "TrustLevel": "Poziom zaufania"
+            },
+            "loading": {
+                "loading_the_friend_history_snapshot": "Wczytywanie historii znajomych"
             }
         },
         "moderation": {
@@ -216,6 +273,12 @@
                 "interactOff": "Wyłącz interakcje",
                 "muteChat": "Wycisz czat",
                 "unmuteChat": "Odcisz czat"
+            },
+            "loading": {
+                "loading_the_moderation_snapshot": "Wczytywanie historii moderacji"
+            },
+            "error": {
+                "moderation_snapshot_failed_to_load": "Nie udało się wczytać historii moderacji"
             }
         },
         "notification": {
@@ -256,6 +319,14 @@
                 "badge": {
                     "earned": "Zdobyta odznaka"
                 }
+            },
+            "description": {
+                "this_notification_does_not_expose_a_navigable_sender": "To powiadomienie nie zawiera profilu, który można otworzyć"
+            },
+            "success": {
+                "invite_response_sent": "Odpowiedź wysłana",
+                "notification_response_sent": "Gotowe",
+                "notification_log_entry_deleted": "Usunięto powiadomienie z historii"
             }
         },
         "friend_list": {
@@ -268,6 +339,15 @@
             "load_mutual_friends": "Załaduj wspólnych znajomych",
             "error": {
                 "failed_to_load_friend_details": "Nie udało się wczytać szczegółów znajomych"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "Ulubione nadal się wczytują"
+            },
+            "success": {
+                "roster_bootstrap_did_not_complete": "Nie udało się wczytać znajomych"
+            },
+            "loading": {
+                "loading_the_friend_roster_snapshot": "Wczytywanie znajomych"
             }
         },
         "charts": {
@@ -294,6 +374,12 @@
                 "prompt": {
                     "message": "Nie znaleziono zapamiętanych wspólnych znajomych. Rozpocząć pobieranie teraz? Może to zająć chwilę, powiadomimy cię o ukończeniu"
                 }
+            },
+            "loading": {
+                "loading_mutual_graph_snapshot": "Wczytywanie wspólnych znajomych"
+            },
+            "description": {
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Nie ma jeszcze danych o wspólnych znajomych. Wybierz Rozpocznij pobieranie, aby je wczytać."
             }
         },
         "tools": {
@@ -725,6 +811,60 @@
             "contributors_error": "Nie udało się wczytać listy współtwórców.",
             "thanks": "Każde tłumaczenie, test, zgłoszenie błędu i pomysł pochodzi od społeczności. Dziękujemy.",
             "license_line": "Wolne i otwarte oprogramowanie na licencji GPL-3.0"
+        },
+        "my_avatars": {
+            "success": {
+                "avatar_request_did_not_complete": "Nie udało się wczytać Twoich awatarów. Spróbuj ponownie."
+            }
+        },
+        "dashboard": {
+            "label": {
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Zaloguj się, aby zobaczyć aktywność na tym pulpicie",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Zaloguj się, aby zobaczyć aktywność z dziennika gry na tym pulpicie"
+            },
+            "empty": {
+                "that_dashboard_no_longer_exists_in_the_stored_config": "Ten pulpit już nie istnieje"
+            },
+            "description": {
+                "matches_the_stored_feed_widget_config": "Używa zapisanych ustawień widżetu aktywności"
+            },
+            "success": {
+                "panel_not_selected": "Wybierz panel"
+            },
+            "modal": {
+                "this_removes_the_dashboard_definition_from_the_s": "Ten pulpit zostanie usunięty z zapisanej nawigacji"
+            }
+        },
+        "player_list": {
+            "empty": {
+                "no_user_id_was_found_for_this_player_row": "Nie udało się znaleźć profilu tego gracza",
+                "no_players_reconstructed_for_this_instance_yet": "Nie znaleziono jeszcze obecnych graczy",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Włącz dziennik gry w Ustawieniach, aby zobaczyć obecnych graczy.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Pozostań w instancji, aż VRCX-0 wykryje aktywność graczy. Lista zaktualizuje się automatycznie.",
+                "current_players_follow_live_instance_locations": "Obecni gracze pojawią się, gdy VRCX-0 wykryje Twoją następną lokalizację."
+            }
+        },
+        "auth": {
+            "auto_login": {
+                "skipped_before_request": "Automatyczne logowanie anulowano przed rozpoczęciem"
+            },
+            "toast": {
+                "failed_to_load_saved_auth_snapshot": "Nie udało się wczytać zapisanych kont"
+            },
+            "dynamic": {
+                "authenticated_and_prepared_the_session_for_value": "Zalogowano jako {value}"
+            }
+        },
+        "notifications": {
+            "toast": {
+                "invite_response_photo_sent": "Wysłano odpowiedź ze zdjęciem",
+                "invite_response_sent": "Odpowiedź wysłana",
+                "failed_to_send_notification_response": "Nie udało się wykonać tej czynności"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Usunąć powiadomienie?",
+                "delete_the_local_value_log_entry": "Usunąć powiadomienie „{value}” z historii?"
+            }
         }
     },
     "dialog": {
@@ -879,6 +1019,9 @@
                     "last_active": "Ostatnia aktywność",
                     "friend_order": "Kolejność znajomych"
                 }
+            },
+            "action": {
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Usunięto znajomego. Odśwież, aby zobaczyć aktualny stan."
             }
         },
         "world": {
@@ -948,6 +1091,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Wczytywanie szczegółów świata"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_world_snapshot": "Nie udało się odświeżyć szczegółów świata"
+            },
+            "description": {
+                "world_snapshot_unavailable_description": "Nie udało się wczytać szczegółów świata"
             }
         },
         "avatar": {
@@ -992,6 +1144,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Wczytywanie szczegółów awatara"
+            },
+            "description": {
+                "avatar_snapshot_unavailable_description": "Nie udało się wczytać szczegółów awatara"
+            },
+            "toast": {
+                "avatar_deleted_but_current_user_snapshot_refresh": "Usunięto awatar, ale nie udało się odświeżyć listy awatarów"
             }
         },
         "group": {
@@ -1059,6 +1220,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Wczytywanie szczegółów grupy"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_group_snapshot": "Nie udało się odświeżyć szczegółów grupy"
+            },
+            "description": {
+                "group_snapshot_unavailable_description": "Nie udało się wczytać szczegółów grupy"
             }
         },
         "favorite": {
@@ -1306,7 +1476,16 @@
         "previous_instances": {
             "header": "Instance History",
             "info": "Instance Details",
-            "search_placeholder": "Search instance history"
+            "search_placeholder": "Search instance history",
+            "description": {
+                "select_an_instance_row_to_view_its_details": "Wybierz wizytę, aby zobaczyć jej szczegóły"
+            },
+            "error": {
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Nie można usunąć tej wizyty"
+            },
+            "success": {
+                "instance_record_deleted": "Usunięto wizytę z historii instancji"
+            }
         },
         "group_member_moderation": {
             "filter_type": "Typ filtru",
@@ -1665,5 +1844,27 @@
         "proxy_enabled_direct": "Proxy enabled, connecting directly",
         "proxy_enabled_server": "Proxy enabled: {proxy}",
         "proxy_network_issue": "Proxy enabled, network request failed"
+    },
+    "host": {
+        "launch_dialog": {
+            "toast": {
+                "failed_to_resolve_launch_details": "Nie udało się przygotować uruchomienia VRChat"
+            }
+        },
+        "vrc_notification_center": {
+            "toast": {
+                "failed_to_send_notification_response": "Nie udało się wykonać tej czynności"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Usunąć powiadomienie?",
+                "delete_the_local_value_log_entry": "Usunąć powiadomienie „{value}” z historii?"
+            }
+        },
+        "tools_dialogs": {
+            "toast": {
+                "failed_to_load_memo_export_rows": "Nie udało się przygotować lokalnych notatek do eksportu",
+                "failed_to_update_group_event_follow_state": "Nie udało się zaktualizować tego wydarzenia"
+            }
+        }
     }
 }

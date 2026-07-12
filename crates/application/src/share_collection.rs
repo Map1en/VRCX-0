@@ -19,7 +19,7 @@ use crate::Error;
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub const SHARE_COLLECTION_MAX_WORLDS: usize = 5_000;
+pub const SHARE_COLLECTION_MAX_WORLDS: usize = 1_000;
 const SHARE_COLLECTION_WORLD_BATCH_SIZE: usize = 500;
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -34,6 +34,7 @@ pub struct ShareCollectionCreateInput {
 pub struct ShareCollectionDeps<'a> {
     pub db: &'a DatabaseService,
     pub current_user_id: &'a str,
+    pub current_user_display_name: &'a str,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,6 +49,7 @@ pub struct ShareCollectionCreateResult {
     pub id: String,
     pub url: String,
     pub edit_url: String,
+    pub world_count: i64,
 }
 
 pub fn prepare_share_collection_payload(
@@ -56,6 +58,7 @@ pub fn prepare_share_collection_payload(
 ) -> Result<PreparedShareCollection, Error> {
     let title = normalize_title(&input.title)?;
     let owner_key = derive_share_collection_owner_key(deps.current_user_id)?;
+    let author_name = deps.current_user_display_name.trim().to_string();
     let normalized_world_ids = normalize_world_ids(&input.world_ids);
     let truncated = normalized_world_ids.len() > SHARE_COLLECTION_MAX_WORLDS;
     let capped_world_ids = normalized_world_ids
@@ -109,6 +112,7 @@ pub fn prepare_share_collection_payload(
             title,
             listed: input.listed,
             access: "open".into(),
+            author_name,
             updated_at: Utc::now().timestamp(),
             worlds,
         },
@@ -121,13 +125,19 @@ pub async fn share_collection_create(
     input: ShareCollectionCreateInput,
 ) -> Result<ShareCollectionCreateResult, Error> {
     let prepared = prepare_share_collection_payload(deps, input)?;
+    let world_count = prepared.payload.worlds.len() as i64;
     let response = create_world_collection(&prepared.payload)
         .await
         .map_err(|error| Error::Custom(error.to_string()))?;
     let id = response.id;
     let url = format!("{WORLD_COLLECTIONS_SITE_ORIGIN}/c/{id}");
     let edit_url = format!("{WORLD_COLLECTIONS_SITE_ORIGIN}/edit/{id}");
-    Ok(ShareCollectionCreateResult { id, url, edit_url })
+    Ok(ShareCollectionCreateResult {
+        id,
+        url,
+        edit_url,
+        world_count,
+    })
 }
 
 fn payload_world_from_row(

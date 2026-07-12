@@ -195,6 +195,7 @@ jobs:
               env:
                   VRCX_0_BUILD_LABEL: devkit
                   VRCX_0_BUILD_BADGE: Dev Kit ${{ needs.prepare.outputs.timestamp }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: safari17
               run: |
                   npm run tauri:build:devkit -- \
                       --config "${{ steps.config.outputs.config }}" \
@@ -205,6 +206,7 @@ jobs:
               env:
                   VRCX_0_BUILD_LABEL: devkit
                   VRCX_0_BUILD_BADGE: Dev Kit ${{ needs.prepare.outputs.timestamp }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: safari18.2
               run: |
                   npm run tauri:build:devkit -- \
                       --target "${{ matrix.rust_target }}" \

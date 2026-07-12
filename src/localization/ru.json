@@ -47,8 +47,20 @@
     },
     "deep_link": {
         "import_collection": {
-            "title": "Импортировать коллекцию",
-            "description": "ID коллекции: {collectionId}"
+            "confirm": {
+                "title": "Импортировать коллекцию миров?",
+                "description": "«{title}» · автор {author} · миров: {count}",
+                "worlds_preview": "Содержит: {names}",
+                "confirm": "Импортировать в VRCX-0",
+                "cancel": "Отмена"
+            },
+            "toast": {
+                "preview_failed": "Не удалось загрузить общую коллекцию",
+                "empty": "В этой общей коллекции нет миров для импорта",
+                "import_success": "Импортировано {count} миров в «{title}»",
+                "import_failed": "Не удалось импортировать общую коллекцию"
+            },
+            "unknown_author": "Неизвестный автор"
         }
     },
     "language": "Русский (ru)",
@@ -104,7 +116,7 @@
             "database_initialization_is_still_pending": "Инициализация базы данных ещё не завершена"
         },
         "label": {
-            "authenticated_and_prepared_the_session": "Сессия аутентифицирована и подготовлена",
+            "authenticated_and_prepared_the_session": "Выполнен вход",
             "auto_login": "Автологин",
             "vrchat_launched": "VRChat запущено"
         },
@@ -616,12 +628,12 @@
                 "cannot_invite_from_the_current_instance_type": "Невозможно пригласить из текущего типа",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Невозможно пригласить: вы сейчас не в инстансе, куда можно пригласить.",
                 "cannot_request_invite_friend_is_not_online": "Невозможно запросить приглашение: друг не в сети",
-                "feed_query_failed": "Ошибка запроса ленты"
+                "feed_query_failed": "Не удалось загрузить ленту"
             },
             "label": {
                 "previous_avatar": "Предыдущий аватар",
                 "rows": "ряды",
-                "favorites_are_still_hydrating": "Список избранного ещё загружается",
+                "favorites_are_still_hydrating": "Избранное всё ещё загружается",
                 "favorites_only": "Только избранное"
             },
             "success": {
@@ -716,21 +728,21 @@
                 "game_log_is_disabled": "Журнал игры отключен",
                 "showing": "Показать",
                 "of": "В тыс.",
-                "game_log_row": "Строка журнала игры",
-                "game_log_rows": "log ряды игровых log"
+                "game_log_row": "запись игрового журнала",
+                "game_log_rows": "записи игрового журнала"
             },
             "success": {
-                "game_log_row_deleted": "Строка журнала игры удалена",
+                "game_log_row_deleted": "Запись игрового журнала удалена",
                 "copied_game_log_detail": "Подробности записи игрового журнала скопированы"
             },
             "action": {
                 "open_link": "Открыть ссылку",
                 "copy_detail": "Копировать",
                 "show_instance_history": "Показать историю случая",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Включите сбор игрового журнала в настройках, чтобы эта страница могла загружать локальную активность VRChat"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Включите игровой журнал в настройках, чтобы видеть локальную активность VRChat"
             },
             "loading": {
-                "loading_the_game_log_snapshot": "Загрузка снимка журнала игры"
+                "loading_the_game_log_snapshot": "Загрузка игрового журнала"
             },
             "error": {
                 "game_log_failed_to_load": "Не удалось загрузить журнал игры"
@@ -738,20 +750,20 @@
             "empty": {
                 "no_game_log_sessions_match_the_current_filters": "Отсутствуют записи в журналах игр, которые совпадают с текущими фильтрами",
                 "no_game_log_rows_match_the_current_filters": "Нет строк журнала игры, которые совпадают с текущими фильтрами",
-                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Нет авторизованного пользователя для снимка игрового журнала."
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Войдите, чтобы просмотреть игровой журнал."
             },
             "description": {
-                "favorites_are_still_hydrating": "Избранное все еще гидрируют.",
+                "favorites_are_still_hydrating": "Избранное всё ещё загружается.",
                 "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "Расширьте фильтры или поисковый запрос, чтобы увидеть более свежие сеансы.",
                 "broaden_the_filters_or_search_query_to_see_more_results": "Расширить фильтры или поисковый запрос, чтобы увидеть больше результатов."
             },
             "toast": {
                 "failed_to_look_up_value": "Не удалось найти {value}",
-                "failed_to_delete_game_log_row": "Не удалось удалить строку журнала игры",
+                "failed_to_delete_game_log_row": "Не удалось удалить запись игрового журнала",
                 "failed_to_load_instance_history": "Не удалось загрузить историю инстанса"
             },
             "modal": {
-                "delete_game_log_row": "Удалить строку журнала игр?"
+                "delete_game_log_row": "Удалить запись игрового журнала?"
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "Идентификатор пользователя не найден для {value}"
@@ -803,7 +815,7 @@
                 "avatar_styles_updated": "Обновленные стили аватара",
                 "avatar_selected": "Выбран Аватар",
                 "avatar_image_updated": "Изображение аватара обновлено",
-                "avatar_request_did_not_complete": "Запрос на аватар не был завершён"
+                "avatar_request_did_not_complete": "Не удалось загрузить ваши аватары. Повторите попытку."
             },
             "label": {
                 "primary_style": "Первичный стиль",
@@ -967,7 +979,7 @@
                 "favorite_group_renamed": "Избранная группа",
                 "group_visibility_changed": "Изменение видимости группы",
                 "local_favorite_group_renamed": "Местная избранная группа",
-                "the_favorites_baseline_did_not_finish_loading": "Излюбленные исходные данные не закончили погрузку",
+                "the_favorites_baseline_did_not_finish_loading": "Избранное загрузилось не полностью",
                 "try_a_different_search_term": "Попробуйте другой термин поиска"
             },
             "success": {
@@ -1010,7 +1022,7 @@
                 "favorites_failed_to_load": "Избранное не загрузились"
             },
             "loading": {
-                "loading_favorites_baseline": "Загрузка исходного состояния избранного",
+                "loading_favorites_baseline": "Загрузка избранного",
                 "loading_remote_avatar_details": "Загрузка удаленных деталей аватара",
                 "loading_remote_world_details": "Загрузка данных из далёкого мира"
             },
@@ -1025,7 +1037,7 @@
                     "copy_edit_url": "Скопировать ссылку для редактирования",
                     "open_manage": "Управлять моими публикациями",
                     "open_editor": "Открыть редактор",
-                    "forget": "Удалить запись"
+                    "forget": "Удалить сохранённую публикацию"
                 },
                 "label": {
                     "title": "Название",
@@ -1048,9 +1060,11 @@
                     "open_manage_failed": "Не удалось открыть управление опубликованными коллекциями",
                     "load_failed": "Не удалось загрузить опубликованные коллекции",
                     "open_failed": "Не удалось открыть редактор",
-                    "forget_success": "Запись удалена",
-                    "forget_failed": "Не удалось удалить запись",
-                    "no_worlds": "В этой группе нет ID миров для публикации"
+                    "forget_success": "Сохранённая публикация удалена",
+                    "forget_failed": "Не удалось удалить сохранённую публикацию",
+                    "no_worlds": "В этой группе нет ID миров для публикации",
+                    "too_many": "За один раз можно поделиться не более чем {cap} мирами. Сначала разделите эту группу.",
+                    "skipped": "Опубликовано. Пропущено {count} миров (не синхронизированы или не публичные)."
                 }
             }
         },
@@ -1066,7 +1080,7 @@
                 "TrustLevel": "Уровнь доверия"
             },
             "loading": {
-                "loading_the_friend_history_snapshot": "Загрузка снимка истории друзей"
+                "loading_the_friend_history_snapshot": "Загрузка истории друзей"
             },
             "error": {
                 "friend_history_failed_to_load": "История друзей не загружена"
@@ -1094,10 +1108,10 @@
                 "unmuteChat": "Включить Чатбокс"
             },
             "loading": {
-                "loading_the_moderation_snapshot": "Загрузка снимка модерации"
+                "loading_the_moderation_snapshot": "Загрузка истории модерации"
             },
             "error": {
-                "moderation_snapshot_failed_to_load": "Не удалось загрузить снимок модерации"
+                "moderation_snapshot_failed_to_load": "Не удалось загрузить историю модерации"
             },
             "label": {
                 "showing": "Показать",
@@ -1176,7 +1190,7 @@
                 }
             },
             "description": {
-                "this_notification_does_not_expose_a_navigable_sender": "У этого уведомления нет отправителя, к которому можно перейти"
+                "this_notification_does_not_expose_a_navigable_sender": "В этом уведомлении нет профиля, который можно открыть"
             },
             "action": {
                 "mark_seen": "Марк видел",
@@ -1188,10 +1202,10 @@
             "success": {
                 "friend_request_accepted": "Запрос друга принят",
                 "notification_declined": "Отказ в уведомлении",
-                "invite_response_sent": "Ответ на приглашение отправлен",
+                "invite_response_sent": "Ответ отправлен",
                 "boop_sent": "Буп отправлен",
-                "notification_response_sent": "Направленный ответ на уведомление",
-                "notification_log_entry_deleted": "Опущена запись в журнале уведомления"
+                "notification_response_sent": "Готово",
+                "notification_log_entry_deleted": "Уведомление удалено из истории"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Невозможно пригласить: нет доступного текущего местоположения VRChat",
@@ -1235,7 +1249,7 @@
                 "friend": "Друг",
                 "friends": "друзья",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Попробуйте выключить избранные или расширить поиск",
-                "favorites_are_still_hydrating": "Список избранного ещё загружается",
+                "favorites_are_still_hydrating": "Избранное всё ещё загружается",
                 "try_a_different_segment_or_broaden_the_search_query": "Попробовать другой сегмент или расширить запрос поиска",
                 "the_current_search_filters_excluded_every_friend_in_the_roster": "Нынешние фильтры поиска исключили всех друзей из списка",
                 "world": "Мир",
@@ -1243,7 +1257,7 @@
             },
             "success": {
                 "friend_detail_loading_cancelled": "Загрузка отменена",
-                "roster_bootstrap_did_not_complete": "Бюстгальтер реестра не был заполнен",
+                "roster_bootstrap_did_not_complete": "Не удалось загрузить список друзей",
                 "vrchat_launch_request_sent": "Открыто VRChat",
                 "invite_request_sent": "Направлено приглашение",
                 "boop_sent": "Буп отправлен"
@@ -1253,7 +1267,7 @@
                 "no_friends_match_the_current_filters": "Друзья не совпадают с нынешними фильтрами."
             },
             "loading": {
-                "loading_the_friend_roster_snapshot": "Загрузка снимка списка друзей",
+                "loading_the_friend_roster_snapshot": "Загрузка друзей",
                 "loading_friend_details": "Загрузка сведений о друзьях",
                 "loading_mutual_friends_progress": "Загрузка общих друзей {current} / {total}"
             },
@@ -1321,7 +1335,7 @@
             "loading": {
                 "loading_instance_activity": "Деятельность, связанная с загрузкой груза",
                 "loading_graph": "Загрузка графика...",
-                "loading_mutual_graph_snapshot": "Загрузка снимка общего графика"
+                "loading_mutual_graph_snapshot": "Загрузка общих друзей"
             },
             "empty": {
                 "no_instance_activity_on_this_day": "В этот день никаких дел не было.",
@@ -1347,7 +1361,7 @@
                 "mutual_friends_graph_refreshed": "Граф общих друзей обновлен"
             },
             "description": {
-                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Локальный снимок общих друзей пуст. Нажмите «Начать загрузку», чтобы построить кэш графа."
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Данных об общих друзьях пока нет. Нажмите «Запуск», чтобы загрузить их."
             },
             "toast": {
                 "failed_to_fetch_mutual_friends_graph": "Не удалось найти график взаимных друзей",
@@ -2339,11 +2353,11 @@
                 "favorites": "Избранное",
                 "notifications": "Уведомления",
                 "panel_not_configured": "Панель не настроена",
-                "sign_in_before_the_dashboard_can_query_feed_rows": "Войдите в систему, прежде чем панель сможет запросить записи ленты",
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Войдите, чтобы видеть активность ленты на этой панели управления",
                 "recent_rows": "последние строки",
                 "type_column_enabled": "Включена колонка типа",
                 "favorite": "Избранное",
-                "sign_in_before_the_dashboard_can_query_game_log_rows": "Подпишитесь до того, как приборная панель сможет задать запрос в графах игровых диалогов",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Войдите, чтобы видеть активность игрового журнала на этой панели управления",
                 "detail_expanded": "Подробность расширена",
                 "instance_widget_idle": "Виджет инстанса неактивен",
                 "all": "Все",
@@ -2371,7 +2385,7 @@
             "empty": {
                 "no_feed_rows": "Нет рядов передач",
                 "no_game_log_rows": "Нет строк игровых логов",
-                "that_dashboard_no_longer_exists_in_the_stored_config": "Эта приборная панель больше не существует в хранимой конфеге.",
+                "that_dashboard_no_longer_exists_in_the_stored_config": "Эта панель управления больше не существует",
                 "no_dashboard_definitions_are_stored_yet": "Определения приборной панели еще не сохранены"
             },
             "action": {
@@ -2385,11 +2399,11 @@
                 "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Запуск VRChat до того, как приборная панель сможет восстановить нынешний реестр дел"
             },
             "description": {
-                "matches_the_stored_feed_widget_config": "Соответствует сохранённой конфигурации виджета ленты",
+                "matches_the_stored_feed_widget_config": "Использует сохранённые настройки виджета ленты",
                 "expands_the_compact_game_log_description": "Расширяет описание компактного игры-лога"
             },
             "success": {
-                "panel_not_selected": "Группа не выбрана",
+                "panel_not_selected": "Выберите панель",
                 "dashboard_saved": "Сохранённая доска"
             },
             "toast": {
@@ -2401,7 +2415,7 @@
             },
             "modal": {
                 "delete_dashboard": "Удалить приборную панель?",
-                "this_removes_the_dashboard_definition_from_the_s": "Это удалит определение панели из сохранённой конфигурации навигации"
+                "this_removes_the_dashboard_definition_from_the_s": "Эта панель управления будет удалена из меню навигации"
             },
             "dynamic": {
                 "widget_value": "Виджет {value}",
@@ -2415,14 +2429,14 @@
                 "created": "Создана"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "Идентификатор пользователя не был найден для этой строки игрока",
+                "no_user_id_was_found_for_this_player_row": "Не удалось найти профиль этого игрока",
                 "currently_traveling_between_instances": "Сейчас выполняется переход между инстансами",
                 "no_current_instance_detected": "Текущий инстанс не обнаружен",
-                "no_players_reconstructed_for_this_instance_yet": "Для этого инстанса пока не восстановлено ни одного игрока.",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Включите сбор игрового журнала в настройках, чтобы можно было восстановить текущих игроков.",
+                "no_players_reconstructed_for_this_instance_yet": "Текущие игроки пока не найдены",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Включите игровой журнал в настройках, чтобы видеть текущих игроков.",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Запустите VRChat и позвольте VRCX-0 получать события игрового журнала, прежде чем эта страница сможет восстановить текущий инстанс.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Оставайтесь в инстансе, пока локально не будут записаны события входа/выхода; после этого таблица заполнится автоматически.",
-                "current_players_follow_live_instance_locations": "Список текущих игроков отслеживает актуальное местоположение инстанса и обновится после следующего события о смене локации.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Оставайтесь в инстансе, пока VRCX-0 не обнаружит активность игроков. Список обновится автоматически.",
+                "current_players_follow_live_instance_locations": "Текущие игроки появятся, когда VRCX-0 определит вашу следующую локацию.",
                 "local_join_leave_history_has_no_current_players": "В локальной истории входов/выходов пока нет текущих игроков для активной локации."
             },
             "label": {
@@ -2453,7 +2467,7 @@
                 "restoring_session_for": "Восстановление существующего сеанса браузера для {name}",
                 "logged_in_as": "Выполнен автоматический вход как {name}",
                 "restored_session_for": "Автоматически восстановлена предыдущая сессия браузера для {name}",
-                "skipped_before_request": "Автоматический вход пропущен до начала запроса авторизации",
+                "skipped_before_request": "Автоматический вход отменён до начала",
                 "throttled": "Автоматический вход отключен после повторных ошибок за последний час.",
                 "expired": "Срок действия предыдущей сессии браузера истёк, а резервный сохранённый аккаунт недоступен.",
                 "failed_manual": "Ошибка автоматического входа. Ручной вход всё ещё доступен ниже.",
@@ -2465,7 +2479,7 @@
                 "skipped_saved_account_edited": "Автоматический вход пропущен, потому что сохраненный аккаунт редактируется"
             },
             "toast": {
-                "failed_to_load_saved_auth_snapshot": "Не удалось загрузить сохраненный снимок авторизации",
+                "failed_to_load_saved_auth_snapshot": "Не удалось загрузить сохранённые учётные записи",
                 "automatic_login_failed_unexpectedly": "Автоматический вход неожиданно завершился ошибкой",
                 "failed_to_change_language": "Не удалось изменить язык",
                 "failed_to_load_proxy_settings": "Не удалось загрузить настройки прокси",
@@ -2475,7 +2489,7 @@
                 "failed_to_restore_the_saved_account": "Не удалось восстановить сохраненный аккаунт"
             },
             "dynamic": {
-                "authenticated_and_prepared_the_session_for_value": "Сессия для {value} аутентифицирована и подготовлена"
+                "authenticated_and_prepared_the_session_for_value": "Вы вошли как {value}"
             }
         },
         "favorites": {
@@ -2585,13 +2599,13 @@
                 "failed_to_accept_friend_request": "Не удалось принять заявку в друзья",
                 "failed_to_decline_notification": "Не удалось отклонить уведомление",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
-                "invite_response_photo_sent": "Фотоответ на приглашение отправлен",
-                "invite_response_sent": "Ответ на приглашение отправлен",
-                "failed_to_send_notification_response": "Не удалось направить ответ на уведомление"
+                "invite_response_photo_sent": "Ответ с фотографией отправлен",
+                "invite_response_sent": "Ответ отправлен",
+                "failed_to_send_notification_response": "Не удалось выполнить это действие"
             },
             "modal": {
-                "delete_notification_log_entry": "Удалить запись из журнала уведомлений",
-                "delete_the_local_value_log_entry": "Удалить локальную запись журнала «{value}»?",
+                "delete_notification_log_entry": "Удалить уведомление?",
+                "delete_the_local_value_log_entry": "Удалить уведомление «{value}» из истории?",
                 "accept_friend_request": "Примите просьбу друга",
                 "decline_notification": "Отклонить уведомление",
                 "decline": "Отклонить",
@@ -3050,7 +3064,7 @@
                 "search_worlds": "Поиски миров",
                 "search_favorite_worlds": "Поиск избранных миров",
                 "search_avatars": "Поиск аватаров",
-                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Запрос на удаление из друзей отправлен, но активная сессия изменилась до обновления локального состояния"
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Пользователь удалён из друзей. Обновите данные, чтобы увидеть актуальный статус."
             },
             "loading": {
                 "loading_activity": "Загрузка...",
@@ -3312,7 +3326,7 @@
             },
             "loading": {
                 "loading_world_profile": "Загрузка мирового профиля",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Получение текущего снимка мира VRChat для этого диалога"
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Загрузка сведений о мире"
             },
             "error": {
                 "world_profile_unavailable": "Мировой профиль отсутствует",
@@ -3322,7 +3336,7 @@
                 "cannot_self_invite_location_is_not_a_concrete_instance": "Не удаётся отправить самоприглашение: местоположение не является конкретным инстансом.",
                 "cannot_open_in_vrchat_location_is_not_a_concrete_instance": "Невозможно открыть в VRChat: местоположение не является конкретным инстансом",
                 "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Не удалось открыть инстанс в VRChat, отправляется самоприглашение",
-                "failed_to_refresh_the_remote_world_snapshot": "Не удалось обновить удалённый снимок мира",
+                "failed_to_refresh_the_remote_world_snapshot": "Не удалось обновить сведения о мире",
                 "failed_to_load_the_world_profile": "Не удалось загрузить мировой профиль",
                 "world_not_found_description": "Мир {worldId} не найден",
                 "selected_image_is_too_large": "Выбранное изображение слишком большое",
@@ -3346,7 +3360,7 @@
             },
             "description": {
                 "edit_world_details": "Редактировать сведения о мире",
-                "world_snapshot_unavailable_description": "VRCX-0 не смог получить снимок мира для этого диалога"
+                "world_snapshot_unavailable_description": "Не удалось загрузить сведения о мире"
             },
             "empty": {
                 "no_world_id_was_provided_for_this_dialog": "Для этого диалога не указан ID мира",
@@ -3460,7 +3474,7 @@
             },
             "loading": {
                 "loading_avatar_profile": "Загрузка профиля аватара",
-                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Получение текущего снимка аватара VRChat для этого диалога"
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Загрузка сведений об аватаре"
             },
             "error": {
                 "avatar_profile_unavailable": "Профиль аватара недоступен",
@@ -3495,7 +3509,7 @@
             },
             "description": {
                 "edit_avatar_details_description": "Редактировать имя, описание, стили и авторские теги.",
-                "avatar_snapshot_unavailable_description": "VRCX-0 не смог получить снимок аватара для этого диалога"
+                "avatar_snapshot_unavailable_description": "Не удалось загрузить сведения об аватаре"
             },
             "toast": {
                 "failed_to_refresh_avatar": "Не удалось обновить аватар",
@@ -3525,7 +3539,7 @@
                 "failed_to_delete_impostor": "Не удалось удалить импостора",
                 "impostor_queued_for_regeneration": "Импостор поставлен в очередь на регенерацию",
                 "failed_to_regenerate_impostor": "Не удалось перегенерировать импостора",
-                "avatar_deleted_but_current_user_snapshot_refresh": "Аватар удален, но текущий снимок пользователя не удалось обновить"
+                "avatar_deleted_but_current_user_snapshot_refresh": "Аватар удалён, но не удалось обновить список аватаров"
             },
             "modal": {
                 "select_fallback_avatar": "Выбрать запасной аватар?",
@@ -3635,12 +3649,12 @@
             },
             "loading": {
                 "loading_group_profile": "Загрузка профиля группы",
-                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Получение текущего снимка группы VRChat для этого диалога",
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Загрузка сведений о группе",
                 "loading": "Загрузка..."
             },
             "error": {
                 "group_profile_unavailable": "Групповой профиль недоступен",
-                "failed_to_refresh_the_remote_group_snapshot": "Не удалось обновить удаленный снимок группы",
+                "failed_to_refresh_the_remote_group_snapshot": "Не удалось обновить сведения о группе",
                 "failed_to_load_the_group_profile": "Не удалось загрузить профиль группы",
                 "title_and_text_are_required": "Требуется название и текст",
                 "failed_to_load_details": "Не удалось загрузить детали"
@@ -3652,7 +3666,7 @@
                 "no_gallery_images": "Нет изображений галереи"
             },
             "description": {
-                "group_snapshot_unavailable_description": "VRCX-0 не смог получить снимок группы для этого диалога"
+                "group_snapshot_unavailable_description": "Не удалось загрузить сведения о группе"
             },
             "label": {
                 "group_left": "Группа лева",
@@ -4241,7 +4255,7 @@
                 "no_instance_records": "Нет записей об инстансах"
             },
             "description": {
-                "select_an_instance_row_to_view_its_details": "Выберите строку инстанса для просмотра сведений",
+                "select_an_instance_row_to_view_its_details": "Выберите посещение, чтобы просмотреть сведения",
                 "instance_details": "Сведения об инстансе",
                 "open_instance_details": "Подробности открытых дел",
                 "details": "Подробности"
@@ -4251,7 +4265,7 @@
             },
             "error": {
                 "failed_to_load_instance_details": "Не удалось загрузить сведения об инстансе.",
-                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Эта строка инстанса пользователя не может быть удалена без ID событий"
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Это посещение нельзя удалить"
             },
             "label": {
                 "players_count": "{count} игроки",
@@ -4265,7 +4279,7 @@
                 "sort_ascending": "По возрастанию"
             },
             "success": {
-                "instance_record_deleted": "Опущена запись случая"
+                "instance_record_deleted": "Посещение удалено из истории инстансов"
             }
         },
         "group_member_moderation": {
@@ -5055,7 +5069,7 @@
     "host": {
         "launch_dialog": {
             "toast": {
-                "failed_to_resolve_launch_details": "Не удалось определить детали запуска",
+                "failed_to_resolve_launch_details": "Не удалось подготовить запуск VRChat",
                 "launch_action_failed": "Ошибка запуска"
             },
             "modal": {
@@ -5088,7 +5102,7 @@
                 "failed_to_accept_friend_request": "Не удалось принять заявку в друзья",
                 "failed_to_decline_notification": "Не удалось отклонить уведомление",
                 "failed_to_send_invite": "Не удалось отправить приглашение",
-                "failed_to_send_notification_response": "Не удалось направить ответ на уведомление",
+                "failed_to_send_notification_response": "Не удалось выполнить это действие",
                 "failed_to_delete_notification": "Не удалось удалить уведомление",
                 "failed_to_refresh_notifications": "Не удалось обновить уведомления"
             },
@@ -5097,8 +5111,8 @@
                 "decline_notification": "Отклонить уведомление",
                 "decline": "Отклонить",
                 "send_invite": "Отправить приглашение",
-                "delete_notification_log_entry": "Удалить запись из журнала уведомлений",
-                "delete_the_local_value_log_entry": "Удалить локальную запись журнала «{value}»?"
+                "delete_notification_log_entry": "Удалить уведомление?",
+                "delete_the_local_value_log_entry": "Удалить уведомление «{value}» из истории?"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Принять запрос в друзья от {value}?",
@@ -5110,9 +5124,9 @@
             "toast": {
                 "failed_to_export_friends_list": "Не удалось экспортировать список друзей",
                 "failed_to_export_avatar_list": "Не удалось экспортировать список аватаров",
-                "failed_to_load_memo_export_rows": "Не удалось загрузить строки экспорта локальных заметок",
+                "failed_to_load_memo_export_rows": "Не удалось подготовить локальные заметки к экспорту",
                 "failed_to_load_group_events": "Не удалось загрузить события группы",
-                "failed_to_update_group_event_follow_state": "Не удалось обновить статус подписки на событие группы",
+                "failed_to_update_group_event_follow_state": "Не удалось обновить это событие",
                 "failed_to_download_ics_file": "Не удалось загрузить файл .ics",
                 "failed_to_save_ics_file": "Не удалось сохранить файл .ics",
                 "failed_to_copy_event_link": "Не удалось скопировать ссылку на события"

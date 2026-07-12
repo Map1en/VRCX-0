@@ -47,8 +47,20 @@
     },
     "deep_link": {
         "import_collection": {
-            "title": "Import collection",
-            "description": "Collection ID: {collectionId}"
+            "confirm": {
+                "title": "Import world collection?",
+                "description": "\"{title}\" by {author} · {count} worlds",
+                "worlds_preview": "Includes: {names}",
+                "confirm": "Import to VRCX-0",
+                "cancel": "Cancel"
+            },
+            "toast": {
+                "preview_failed": "Failed to load shared collection",
+                "empty": "This shared collection has no importable worlds",
+                "import_success": "Imported {count} worlds into \"{title}\"",
+                "import_failed": "Failed to import shared collection"
+            },
+            "unknown_author": "Unknown author"
         }
     },
     "language": "English (en)",
@@ -104,7 +116,7 @@
             "database_initialization_is_still_pending": "Database initialization is still pending"
         },
         "label": {
-            "authenticated_and_prepared_the_session": "Authenticated and prepared the session",
+            "authenticated_and_prepared_the_session": "Signed in",
             "auto_login": "Auto-login",
             "vrchat_launched": "VRChat launched"
         },
@@ -616,12 +628,12 @@
                 "cannot_invite_from_the_current_instance_type": "Cannot invite from the current instance type",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Cannot invite: you're not currently in a joinable instance",
                 "cannot_request_invite_friend_is_not_online": "Cannot request invite: friend is not online",
-                "feed_query_failed": "Feed query failed"
+                "feed_query_failed": "Couldn't load the feed"
             },
             "label": {
                 "previous_avatar": "Previous avatar",
                 "rows": "rows",
-                "favorites_are_still_hydrating": "Favorites are still hydrating",
+                "favorites_are_still_hydrating": "Favorites are still loading",
                 "favorites_only": "Favorites only"
             },
             "success": {
@@ -716,21 +728,21 @@
                 "game_log_is_disabled": "Game log is disabled",
                 "showing": "Showing",
                 "of": "of",
-                "game_log_row": "game log row",
-                "game_log_rows": "game log rows"
+                "game_log_row": "game log entry",
+                "game_log_rows": "game log entries"
             },
             "success": {
-                "game_log_row_deleted": "Game log row deleted",
+                "game_log_row_deleted": "Game log entry deleted",
                 "copied_game_log_detail": "Copied game log detail"
             },
             "action": {
                 "open_link": "Open link",
                 "copy_detail": "Copy detail",
                 "show_instance_history": "Show instance history",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Enable game log ingestion in settings before this page can load local VRChat activity"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Enable game log in Settings to view your local VRChat activity"
             },
             "loading": {
-                "loading_the_game_log_snapshot": "Loading the game log snapshot"
+                "loading_the_game_log_snapshot": "Loading game log"
             },
             "error": {
                 "game_log_failed_to_load": "Game log failed to load"
@@ -738,20 +750,20 @@
             "empty": {
                 "no_game_log_sessions_match_the_current_filters": "No game log sessions match the current filters",
                 "no_game_log_rows_match_the_current_filters": "No game log rows match the current filters",
-                "no_authenticated_user_is_available_for_the_game_log_snapshot": "No authenticated user is available for the game log snapshot."
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Sign in to view the game log."
             },
             "description": {
-                "favorites_are_still_hydrating": "Favorites are still hydrating.",
+                "favorites_are_still_hydrating": "Favorites are still loading.",
                 "broaden_the_filters_or_search_query_to_see_more_recent_sessions": "Broaden the filters or search query to see more recent sessions.",
                 "broaden_the_filters_or_search_query_to_see_more_results": "Broaden the filters or search query to see more results."
             },
             "toast": {
                 "failed_to_look_up_value": "Failed to look up {value}",
-                "failed_to_delete_game_log_row": "Failed to delete game log row",
+                "failed_to_delete_game_log_row": "Couldn't delete the game log entry",
                 "failed_to_load_instance_history": "Failed to load instance history"
             },
             "modal": {
-                "delete_game_log_row": "Delete game log row?"
+                "delete_game_log_row": "Delete game log entry?"
             },
             "dynamic": {
                 "no_user_id_was_found_for_value": "No user id was found for {value}"
@@ -803,7 +815,7 @@
                 "avatar_styles_updated": "Avatar styles updated",
                 "avatar_selected": "Avatar selected",
                 "avatar_image_updated": "Avatar image updated",
-                "avatar_request_did_not_complete": "The avatar request did not complete"
+                "avatar_request_did_not_complete": "Couldn't load your avatars. Try again."
             },
             "label": {
                 "primary_style": "Primary style",
@@ -965,7 +977,7 @@
                 "favorite_group_renamed": "Favorite group renamed",
                 "group_visibility_changed": "Group visibility changed",
                 "local_favorite_group_renamed": "Local favorite group renamed",
-                "the_favorites_baseline_did_not_finish_loading": "The favorites baseline did not finish loading",
+                "the_favorites_baseline_did_not_finish_loading": "Favorites didn't finish loading",
                 "try_a_different_search_term": "Try a different search term"
             },
             "success": {
@@ -1008,7 +1020,7 @@
                 "favorites_failed_to_load": "Favorites failed to load"
             },
             "loading": {
-                "loading_favorites_baseline": "Loading favorites baseline",
+                "loading_favorites_baseline": "Loading favorites",
                 "loading_remote_avatar_details": "Loading remote avatar details",
                 "loading_remote_world_details": "Loading remote world details"
             },
@@ -1023,7 +1035,7 @@
                     "copy_edit_url": "Copy edit link",
                     "open_manage": "Manage my shares",
                     "open_editor": "Open editor",
-                    "forget": "Remove record"
+                    "forget": "Remove saved share"
                 },
                 "label": {
                     "title": "Title",
@@ -1046,9 +1058,11 @@
                     "open_manage_failed": "Failed to open shared collection manager",
                     "load_failed": "Failed to load shared collections",
                     "open_failed": "Failed to open editor",
-                    "forget_success": "Record removed",
-                    "forget_failed": "Failed to remove record",
-                    "no_worlds": "This group has no world IDs to share"
+                    "forget_success": "Saved share removed",
+                    "forget_failed": "Couldn't remove saved share",
+                    "no_worlds": "This group has no world IDs to share",
+                    "too_many": "You can share up to {cap} worlds at once. Please split this group first.",
+                    "skipped": "Shared. Skipped {count} worlds (not synced or not public)."
                 }
             }
         },
@@ -1064,7 +1078,7 @@
                 "TrustLevel": "Trust level"
             },
             "loading": {
-                "loading_the_friend_history_snapshot": "Loading the friend history snapshot"
+                "loading_the_friend_history_snapshot": "Loading friend history"
             },
             "error": {
                 "friend_history_failed_to_load": "Friend history failed to load"
@@ -1092,10 +1106,10 @@
                 "unmuteChat": "Unmute chat"
             },
             "loading": {
-                "loading_the_moderation_snapshot": "Loading the moderation snapshot"
+                "loading_the_moderation_snapshot": "Loading moderation history"
             },
             "error": {
-                "moderation_snapshot_failed_to_load": "Moderation snapshot failed to load"
+                "moderation_snapshot_failed_to_load": "Couldn't load moderation history"
             },
             "label": {
                 "showing": "Showing",
@@ -1174,7 +1188,7 @@
                 }
             },
             "description": {
-                "this_notification_does_not_expose_a_navigable_sender": "This notification does not expose a navigable sender"
+                "this_notification_does_not_expose_a_navigable_sender": "This notification doesn't include a profile you can open"
             },
             "action": {
                 "mark_seen": "Mark seen",
@@ -1186,10 +1200,10 @@
             "success": {
                 "friend_request_accepted": "Friend request accepted",
                 "notification_declined": "Notification declined",
-                "invite_response_sent": "Invite response sent",
+                "invite_response_sent": "Reply sent",
                 "boop_sent": "Boop sent",
-                "notification_response_sent": "Notification response sent",
-                "notification_log_entry_deleted": "Notification log entry deleted"
+                "notification_response_sent": "Done",
+                "notification_log_entry_deleted": "Notification removed from history"
             },
             "error": {
                 "cannot_invite_no_current_vrchat_location_is_available": "Cannot invite: no current VRChat location is available",
@@ -1233,7 +1247,7 @@
                 "friend": "friend",
                 "friends": "friends",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Try turning off favorites-only or broadening the search query",
-                "favorites_are_still_hydrating": "Favorites are still hydrating",
+                "favorites_are_still_hydrating": "Favorites are still loading",
                 "try_a_different_segment_or_broaden_the_search_query": "Try a different segment or broaden the search query",
                 "the_current_search_filters_excluded_every_friend_in_the_roster": "The current search filters excluded every friend in the roster",
                 "world": "World",
@@ -1241,7 +1255,7 @@
             },
             "success": {
                 "friend_detail_loading_cancelled": "Friend detail loading cancelled",
-                "roster_bootstrap_did_not_complete": "The roster bootstrap did not complete",
+                "roster_bootstrap_did_not_complete": "Couldn't load your friends",
                 "vrchat_launch_request_sent": "Opened in VRChat",
                 "invite_request_sent": "Invite request sent",
                 "boop_sent": "Boop sent"
@@ -1251,7 +1265,7 @@
                 "no_friends_match_the_current_filters": "No friends match the current filters"
             },
             "loading": {
-                "loading_the_friend_roster_snapshot": "Loading the friend roster snapshot",
+                "loading_the_friend_roster_snapshot": "Loading friends",
                 "loading_friend_details": "Loading friend details",
                 "loading_mutual_friends_progress": "Loading mutual friends {current} / {total}"
             },
@@ -1319,7 +1333,7 @@
             "loading": {
                 "loading_instance_activity": "Loading instance activity",
                 "loading_graph": "Loading graph...",
-                "loading_mutual_graph_snapshot": "Loading mutual graph snapshot"
+                "loading_mutual_graph_snapshot": "Loading mutual friends"
             },
             "empty": {
                 "no_instance_activity_on_this_day": "No instance activity on this day",
@@ -1345,7 +1359,7 @@
                 "mutual_friends_graph_refreshed": "Mutual-friends graph refreshed"
             },
             "description": {
-                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "The local mutual-friends snapshot is empty. Use Start fetch to build the graph cache"
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "No mutual-friends data yet. Select Start Fetch to load it."
             },
             "toast": {
                 "failed_to_fetch_mutual_friends_graph": "Failed to fetch mutual-friends graph",
@@ -2337,11 +2351,11 @@
                 "favorites": "Favorites",
                 "notifications": "Notifications",
                 "panel_not_configured": "Panel not configured",
-                "sign_in_before_the_dashboard_can_query_feed_rows": "Sign in before the dashboard can query feed rows",
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Sign in to view feed activity on this dashboard",
                 "recent_rows": "recent rows",
                 "type_column_enabled": "Type column enabled",
                 "favorite": "Favorite",
-                "sign_in_before_the_dashboard_can_query_game_log_rows": "Sign in before the dashboard can query game-log rows",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Sign in to view game-log activity on this dashboard",
                 "detail_expanded": "Detail expanded",
                 "instance_widget_idle": "Instance widget idle",
                 "all": "All",
@@ -2369,7 +2383,7 @@
             "empty": {
                 "no_feed_rows": "No feed rows",
                 "no_game_log_rows": "No game-log rows",
-                "that_dashboard_no_longer_exists_in_the_stored_config": "That dashboard no longer exists in the stored config",
+                "that_dashboard_no_longer_exists_in_the_stored_config": "This dashboard no longer exists",
                 "no_dashboard_definitions_are_stored_yet": "No dashboard definitions are stored yet"
             },
             "action": {
@@ -2383,11 +2397,11 @@
                 "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Start VRChat before the dashboard can rebuild the current instance roster"
             },
             "description": {
-                "matches_the_stored_feed_widget_config": "Matches the stored feed widget config",
+                "matches_the_stored_feed_widget_config": "Uses the saved Feed widget settings",
                 "expands_the_compact_game_log_description": "Expands the compact game-log description"
             },
             "success": {
-                "panel_not_selected": "Panel not selected",
+                "panel_not_selected": "Choose a panel",
                 "dashboard_saved": "Dashboard saved"
             },
             "toast": {
@@ -2399,7 +2413,7 @@
             },
             "modal": {
                 "delete_dashboard": "Delete dashboard?",
-                "this_removes_the_dashboard_definition_from_the_s": "This removes the dashboard definition from the stored navigation config"
+                "this_removes_the_dashboard_definition_from_the_s": "This dashboard will be removed from the navigation menu"
             },
             "dynamic": {
                 "widget_value": "Widget · {value}",
@@ -2413,14 +2427,14 @@
                 "created": "Created"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "No user ID was found for this player row",
+                "no_user_id_was_found_for_this_player_row": "Couldn't find this player's profile",
                 "currently_traveling_between_instances": "Currently traveling between instances",
                 "no_current_instance_detected": "No current instance detected",
-                "no_players_reconstructed_for_this_instance_yet": "No players reconstructed for this instance yet",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Enable game log ingestion in settings before current players can be reconstructed.",
+                "no_players_reconstructed_for_this_instance_yet": "No current players found yet",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Enable game log in Settings to see current players.",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Start VRChat and let VRCX-0 receive game-log events before this page can rebuild the current instance.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Stay in the instance until local join/leave events are recorded, then this table will populate automatically.",
-                "current_players_follow_live_instance_locations": "Current players follow live instance locations. They will repopulate after the next location event lands.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Stay in the instance until VRCX-0 detects player activity. This list will update automatically.",
+                "current_players_follow_live_instance_locations": "Current players will appear after VRCX-0 detects your next location.",
                 "local_join_leave_history_has_no_current_players": "The local join/leave history does not have any current players for the active location yet."
             },
             "label": {
@@ -2451,7 +2465,7 @@
                 "restoring_session_for": "Restoring an existing browser session for {name}",
                 "logged_in_as": "Automatically logged in as {name}",
                 "restored_session_for": "Automatically restored the previous browser session for {name}",
-                "skipped_before_request": "Automatic login was skipped before the auth request started",
+                "skipped_before_request": "Automatic login was canceled before it began",
                 "throttled": "Automatic login was disabled after repeated failures in the last hour.",
                 "expired": "The previous browser session expired and no saved account fallback was available.",
                 "failed_manual": "Automatic login failed. Manual sign-in is still available below",
@@ -2463,7 +2477,7 @@
                 "skipped_saved_account_edited": "Automatic login was skipped because a saved account is being edited"
             },
             "toast": {
-                "failed_to_load_saved_auth_snapshot": "Failed to load saved auth snapshot",
+                "failed_to_load_saved_auth_snapshot": "Couldn't load your saved accounts",
                 "automatic_login_failed_unexpectedly": "Automatic login failed unexpectedly",
                 "failed_to_change_language": "Failed to change language",
                 "failed_to_load_proxy_settings": "Failed to load proxy settings",
@@ -2473,7 +2487,7 @@
                 "failed_to_restore_the_saved_account": "Failed to restore the saved account"
             },
             "dynamic": {
-                "authenticated_and_prepared_the_session_for_value": "Authenticated and prepared the session for {value}"
+                "authenticated_and_prepared_the_session_for_value": "Signed in as {value}"
             }
         },
         "favorites": {
@@ -2583,13 +2597,13 @@
                 "failed_to_accept_friend_request": "Failed to accept friend request",
                 "failed_to_decline_notification": "Failed to decline notification",
                 "failed_to_send_invite": "Failed to send invite",
-                "invite_response_photo_sent": "Invite response photo sent",
-                "invite_response_sent": "Invite response sent",
-                "failed_to_send_notification_response": "Failed to send notification response"
+                "invite_response_photo_sent": "Photo reply sent",
+                "invite_response_sent": "Reply sent",
+                "failed_to_send_notification_response": "Couldn't complete that action"
             },
             "modal": {
-                "delete_notification_log_entry": "Delete notification log entry",
-                "delete_the_local_value_log_entry": "Delete the local {value} log entry?",
+                "delete_notification_log_entry": "Remove notification?",
+                "delete_the_local_value_log_entry": "Remove this {value} notification from history?",
                 "accept_friend_request": "Accept friend request",
                 "decline_notification": "Decline notification",
                 "decline": "Decline",
@@ -3063,7 +3077,7 @@
                 "search_worlds": "Search worlds",
                 "search_favorite_worlds": "Search favorite worlds",
                 "search_avatars": "Search avatars",
-                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Unfriend request sent, but the active session changed before local state was updated"
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Friend removed. Refresh to see the latest status."
             },
             "loading": {
                 "loading_activity": "Loading activity...",
@@ -3325,7 +3339,7 @@
             },
             "loading": {
                 "loading_world_profile": "Loading world profile",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Fetching the current VRChat world snapshot for this dialog"
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Loading world details"
             },
             "error": {
                 "world_profile_unavailable": "World profile unavailable",
@@ -3335,7 +3349,7 @@
                 "cannot_self_invite_location_is_not_a_concrete_instance": "Cannot self invite: you're not currently in a joinable instance",
                 "cannot_open_in_vrchat_location_is_not_a_concrete_instance": "Cannot open in VRChat: you're not currently in a joinable instance",
                 "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Failed to open instance in VRChat, falling back to self invite",
-                "failed_to_refresh_the_remote_world_snapshot": "Failed to refresh the remote world snapshot",
+                "failed_to_refresh_the_remote_world_snapshot": "Couldn't refresh world details",
                 "failed_to_load_the_world_profile": "Failed to load the world profile",
                 "world_not_found_description": "World {worldId} was not found",
                 "selected_image_is_too_large": "Selected image is too large",
@@ -3359,7 +3373,7 @@
             },
             "description": {
                 "edit_world_details": "Edit world details",
-                "world_snapshot_unavailable_description": "VRCX-0 could not resolve a world snapshot for this dialog"
+                "world_snapshot_unavailable_description": "Couldn't load world details"
             },
             "empty": {
                 "no_world_id_was_provided_for_this_dialog": "No world ID was provided for this dialog",
@@ -3473,7 +3487,7 @@
             },
             "loading": {
                 "loading_avatar_profile": "Loading avatar profile",
-                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Fetching the current VRChat avatar snapshot for this dialog"
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Loading avatar details"
             },
             "error": {
                 "avatar_profile_unavailable": "Avatar profile unavailable",
@@ -3508,7 +3522,7 @@
             },
             "description": {
                 "edit_avatar_details_description": "Edit the avatar name, description, styles, and author tags.",
-                "avatar_snapshot_unavailable_description": "VRCX-0 could not resolve an avatar snapshot for this dialog"
+                "avatar_snapshot_unavailable_description": "Couldn't load avatar details"
             },
             "toast": {
                 "failed_to_refresh_avatar": "Failed to refresh avatar",
@@ -3538,7 +3552,7 @@
                 "failed_to_delete_impostor": "Failed to delete impostor",
                 "impostor_queued_for_regeneration": "Impostor queued for regeneration",
                 "failed_to_regenerate_impostor": "Failed to regenerate impostor",
-                "avatar_deleted_but_current_user_snapshot_refresh": "Avatar deleted, but current user snapshot refresh failed"
+                "avatar_deleted_but_current_user_snapshot_refresh": "Avatar deleted, but your avatar list couldn't be refreshed"
             },
             "modal": {
                 "select_fallback_avatar": "Select fallback avatar?",
@@ -3648,12 +3662,12 @@
             },
             "loading": {
                 "loading_group_profile": "Loading group profile",
-                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Fetching the current VRChat group snapshot for this dialog",
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Loading group details",
                 "loading": "Loading..."
             },
             "error": {
                 "group_profile_unavailable": "Group profile unavailable",
-                "failed_to_refresh_the_remote_group_snapshot": "Failed to refresh the remote group snapshot",
+                "failed_to_refresh_the_remote_group_snapshot": "Couldn't refresh group details",
                 "failed_to_load_the_group_profile": "Failed to load the group profile",
                 "title_and_text_are_required": "Title and text are required",
                 "failed_to_load_details": "Failed to load details"
@@ -3665,7 +3679,7 @@
                 "no_gallery_images": "No gallery images"
             },
             "description": {
-                "group_snapshot_unavailable_description": "VRCX-0 could not resolve a group snapshot for this dialog"
+                "group_snapshot_unavailable_description": "Couldn't load group details"
             },
             "label": {
                 "group_left": "Group left",
@@ -4254,7 +4268,7 @@
                 "no_instance_records": "No instance records"
             },
             "description": {
-                "select_an_instance_row_to_view_its_details": "Select an instance row to view its details",
+                "select_an_instance_row_to_view_its_details": "Select a visit to view its details",
                 "instance_details": "Instance details",
                 "open_instance_details": "Open instance details",
                 "details": "Details"
@@ -4264,7 +4278,7 @@
             },
             "error": {
                 "failed_to_load_instance_details": "Failed to load instance details.",
-                "this_user_instance_row_cannot_be_deleted_without_event_ids": "This user instance row cannot be deleted without event ids"
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "This visit can't be deleted"
             },
             "label": {
                 "players_count": "{count} players",
@@ -4278,7 +4292,7 @@
                 "sort_ascending": "Sort ascending"
             },
             "success": {
-                "instance_record_deleted": "Instance record deleted"
+                "instance_record_deleted": "Visit removed from instance history"
             }
         },
         "group_member_moderation": {
@@ -5072,7 +5086,7 @@
     "host": {
         "launch_dialog": {
             "toast": {
-                "failed_to_resolve_launch_details": "Failed to resolve launch details",
+                "failed_to_resolve_launch_details": "Couldn't prepare VRChat to launch",
                 "launch_action_failed": "Launch action failed"
             },
             "modal": {
@@ -5105,7 +5119,7 @@
                 "failed_to_accept_friend_request": "Failed to accept friend request",
                 "failed_to_decline_notification": "Failed to decline notification",
                 "failed_to_send_invite": "Failed to send invite",
-                "failed_to_send_notification_response": "Failed to send notification response",
+                "failed_to_send_notification_response": "Couldn't complete that action",
                 "failed_to_delete_notification": "Failed to delete notification",
                 "failed_to_refresh_notifications": "Failed to refresh notifications"
             },
@@ -5114,8 +5128,8 @@
                 "decline_notification": "Decline notification",
                 "decline": "Decline",
                 "send_invite": "Send invite",
-                "delete_notification_log_entry": "Delete notification log entry",
-                "delete_the_local_value_log_entry": "Delete the local {value} log entry?"
+                "delete_notification_log_entry": "Remove notification?",
+                "delete_the_local_value_log_entry": "Remove this {value} notification from history?"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Accept the friend request from {value}?",
@@ -5127,9 +5141,9 @@
             "toast": {
                 "failed_to_export_friends_list": "Failed to export friends list",
                 "failed_to_export_avatar_list": "Failed to export avatar list",
-                "failed_to_load_memo_export_rows": "Failed to load local note export rows",
+                "failed_to_load_memo_export_rows": "Couldn't prepare local notes for export",
                 "failed_to_load_group_events": "Failed to load group events",
-                "failed_to_update_group_event_follow_state": "Failed to update group event follow state",
+                "failed_to_update_group_event_follow_state": "Couldn't update this event",
                 "failed_to_download_ics_file": "Failed to download .ics file",
                 "failed_to_save_ics_file": "Failed to save .ics file",
                 "failed_to_copy_event_link": "Failed to copy event link"

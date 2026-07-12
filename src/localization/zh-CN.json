@@ -47,8 +47,20 @@
     },
     "deep_link": {
         "import_collection": {
-            "title": "导入收藏集合",
-            "description": "集合 ID：{collectionId}"
+            "confirm": {
+                "title": "导入世界合集？",
+                "description": "「{title}」· 作者 {author} · 共 {count} 个世界",
+                "worlds_preview": "包含：{names}",
+                "confirm": "导入到 VRCX-0",
+                "cancel": "取消"
+            },
+            "toast": {
+                "preview_failed": "加载共享合集失败",
+                "empty": "此共享合集没有可导入的世界",
+                "import_success": "已将 {count} 个世界导入到「{title}」",
+                "import_failed": "导入共享合集失败"
+            },
+            "unknown_author": "未知作者"
         }
     },
     "language": "中文（简体） (zh-CN)",
@@ -1048,7 +1060,9 @@
                     "open_failed": "打开编辑器失败",
                     "forget_success": "记录已移除",
                     "forget_failed": "移除记录失败",
-                    "no_worlds": "此分组没有可分享的世界 ID"
+                    "no_worlds": "此分组没有可分享的世界 ID",
+                    "too_many": "单次分享最多 {cap} 个世界,请先拆分该分组。",
+                    "skipped": "已分享,跳过 {count} 个世界(未同步或非公开)。"
                 }
             }
         },

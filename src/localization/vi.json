@@ -2,14 +2,29 @@
     "language": "Tiếng Việt (vi)",
     "deep_link": {
         "import_collection": {
-            "title": "Nhập bộ sưu tập",
-            "description": "ID bộ sưu tập: {collectionId}"
+            "confirm": {
+                "title": "Nhập bộ sưu tập thế giới này?",
+                "description": "\"{title}\" bởi {author} · {count} thế giới",
+                "worlds_preview": "Bao gồm: {names}",
+                "confirm": "Nhập vào VRCX-0",
+                "cancel": "Hủy"
+            },
+            "toast": {
+                "preview_failed": "Không tải được bộ sưu tập được chia sẻ",
+                "empty": "Bộ sưu tập được chia sẻ này không có thế giới nào để nhập",
+                "import_success": "Đã nhập {count} thế giới vào \"{title}\"",
+                "import_failed": "Không nhập được bộ sưu tập được chia sẻ"
+            },
+            "unknown_author": "Không rõ tác giả"
         }
     },
     "common": {
         "actions": {
             "configure": "Cấu hình",
             "reset": "Đặt lại"
+        },
+        "label": {
+            "authenticated_and_prepared_the_session": "Đã đăng nhập"
         }
     },
     "nav_tooltip": {
@@ -56,10 +71,41 @@
             "context": {
                 "hide_user": "Ẩn khỏi Feed",
                 "unhide_user": "Bỏ ẩn khỏi Feed"
+            },
+            "error": {
+                "feed_query_failed": "Không thể tải bảng tin"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "Vẫn đang tải mục yêu thích"
             }
         },
         "game_log": {
-            "filter_placeholder": "Lọc"
+            "filter_placeholder": "Lọc",
+            "label": {
+                "game_log_row": "mục nhật ký trò chơi",
+                "game_log_rows": "các mục nhật ký trò chơi"
+            },
+            "success": {
+                "game_log_row_deleted": "Đã xóa mục nhật ký trò chơi"
+            },
+            "action": {
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Bật nhật ký trò chơi trong Cài đặt để xem hoạt động VRChat trên máy"
+            },
+            "loading": {
+                "loading_the_game_log_snapshot": "Đang tải nhật ký trò chơi"
+            },
+            "empty": {
+                "no_authenticated_user_is_available_for_the_game_log_snapshot": "Đăng nhập để xem nhật ký trò chơi"
+            },
+            "description": {
+                "favorites_are_still_hydrating": "Vẫn đang tải mục yêu thích."
+            },
+            "toast": {
+                "failed_to_delete_game_log_row": "Không thể xóa mục nhật ký trò chơi"
+            },
+            "modal": {
+                "delete_game_log_row": "Xóa mục nhật ký trò chơi?"
+            }
         },
         "search": {
             "search_placeholder": "Tìm kiếm",
@@ -115,7 +161,7 @@
                     "copy_edit_url": "Sao chép liên kết chỉnh sửa",
                     "open_manage": "Quản lý mục đã chia sẻ",
                     "open_editor": "Mở trình chỉnh sửa",
-                    "forget": "Xóa bản ghi"
+                    "forget": "Xóa mục chia sẻ đã lưu"
                 },
                 "label": {
                     "title": "Tiêu đề",
@@ -138,19 +184,38 @@
                     "open_manage_failed": "Không mở được trang quản lý bộ sưu tập đã chia sẻ",
                     "load_failed": "Không tải được bộ sưu tập đã chia sẻ",
                     "open_failed": "Không mở được trình chỉnh sửa",
-                    "forget_success": "Đã xóa bản ghi",
-                    "forget_failed": "Không xóa được bản ghi",
-                    "no_worlds": "Nhóm này không có ID thế giới nào để chia sẻ"
+                    "forget_success": "Đã xóa mục chia sẻ đã lưu",
+                    "forget_failed": "Không thể xóa mục chia sẻ đã lưu",
+                    "no_worlds": "Nhóm này không có ID thế giới nào để chia sẻ",
+                    "too_many": "Bạn chỉ có thể chia sẻ tối đa {cap} thế giới mỗi lần. Vui lòng tách nhóm này trước.",
+                    "skipped": "Đã chia sẻ. Bỏ qua {count} thế giới (chưa đồng bộ hoặc không công khai)."
                 }
+            },
+            "label": {
+                "the_favorites_baseline_did_not_finish_loading": "Chưa tải xong mục yêu thích"
+            },
+            "loading": {
+                "loading_favorites_baseline": "Đang tải mục yêu thích"
             }
         },
         "friend_log": {
             "filter_placeholder": "Lọc",
-            "search_placeholder": "Tìm kiếm"
+            "search_placeholder": "Tìm kiếm",
+            "loading": {
+                "loading_the_friend_history_snapshot": "Đang tải lịch sử bạn bè"
+            }
         },
         "notification": {
             "filter_placeholder": "Lọc",
-            "refresh_tooltip": "Làm mới"
+            "refresh_tooltip": "Làm mới",
+            "description": {
+                "this_notification_does_not_expose_a_navigable_sender": "Thông báo này không có hồ sơ để mở"
+            },
+            "success": {
+                "invite_response_sent": "Đã trả lời",
+                "notification_response_sent": "Đã xong",
+                "notification_log_entry_deleted": "Đã xóa thông báo khỏi lịch sử"
+            }
         },
         "friend_list": {
             "bulk_unfriend": "Chế độ xóa bạn bè hàng loạt",
@@ -161,6 +226,15 @@
             "filter_placeholder": "Lọc",
             "error": {
                 "failed_to_load_friend_details": "Không thể tải thông tin chi tiết của bạn bè"
+            },
+            "label": {
+                "favorites_are_still_hydrating": "Vẫn đang tải mục yêu thích"
+            },
+            "success": {
+                "roster_bootstrap_did_not_complete": "Không thể tải danh sách bạn bè"
+            },
+            "loading": {
+                "loading_the_friend_roster_snapshot": "Đang tải bạn bè"
             }
         },
         "tools": {
@@ -498,6 +572,81 @@
             "contributors_error": "Không tải được danh sách người đóng góp.",
             "thanks": "Mỗi bản dịch, lần kiểm thử, báo lỗi và ý tưởng đều đến từ cộng đồng. Cảm ơn các bạn.",
             "license_line": "Miễn phí và mã nguồn mở theo GPL-3.0"
+        },
+        "my_avatars": {
+            "success": {
+                "avatar_request_did_not_complete": "Không thể tải avatar của bạn. Hãy thử lại."
+            }
+        },
+        "moderation": {
+            "loading": {
+                "loading_the_moderation_snapshot": "Đang tải lịch sử kiểm duyệt"
+            },
+            "error": {
+                "moderation_snapshot_failed_to_load": "Không thể tải lịch sử kiểm duyệt"
+            }
+        },
+        "charts": {
+            "mutual_friend": {
+                "actions": {
+                    "start_fetch": "Bắt đầu tải"
+                }
+            },
+            "loading": {
+                "loading_mutual_graph_snapshot": "Đang tải bạn chung"
+            },
+            "description": {
+                "the_local_mutual_friends_snapshot_is_empty_use_start_fetch_to_build_the_graph_cache": "Chưa có dữ liệu bạn chung. Chọn “Bắt đầu tải” để tải dữ liệu."
+            }
+        },
+        "dashboard": {
+            "label": {
+                "sign_in_before_the_dashboard_can_query_feed_rows": "Đăng nhập để xem hoạt động bảng tin trên bảng điều khiển này",
+                "sign_in_before_the_dashboard_can_query_game_log_rows": "Đăng nhập để xem hoạt động nhật ký trò chơi trên bảng điều khiển này"
+            },
+            "empty": {
+                "that_dashboard_no_longer_exists_in_the_stored_config": "Bảng điều khiển này không còn tồn tại"
+            },
+            "description": {
+                "matches_the_stored_feed_widget_config": "Sử dụng cài đặt tiện ích Bảng tin đã lưu"
+            },
+            "success": {
+                "panel_not_selected": "Chọn một bảng"
+            },
+            "modal": {
+                "this_removes_the_dashboard_definition_from_the_s": "Bảng điều khiển này sẽ bị xóa khỏi mục điều hướng đã lưu"
+            }
+        },
+        "player_list": {
+            "empty": {
+                "no_user_id_was_found_for_this_player_row": "Không tìm thấy hồ sơ của người chơi này",
+                "no_players_reconstructed_for_this_instance_yet": "Chưa tìm thấy người chơi hiện tại",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Bật nhật ký trò chơi trong Cài đặt để xem người chơi hiện tại.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Hãy ở lại phòng cho đến khi VRCX-0 phát hiện hoạt động của người chơi. Danh sách này sẽ tự động cập nhật.",
+                "current_players_follow_live_instance_locations": "Người chơi hiện tại sẽ xuất hiện khi VRCX-0 phát hiện bạn chuyển sang phòng tiếp theo."
+            }
+        },
+        "auth": {
+            "auto_login": {
+                "skipped_before_request": "Đã hủy đăng nhập tự động trước khi bắt đầu"
+            },
+            "toast": {
+                "failed_to_load_saved_auth_snapshot": "Không thể tải các tài khoản đã lưu"
+            },
+            "dynamic": {
+                "authenticated_and_prepared_the_session_for_value": "Đã đăng nhập vào tài khoản {value}"
+            }
+        },
+        "notifications": {
+            "toast": {
+                "invite_response_photo_sent": "Đã trả lời kèm ảnh",
+                "invite_response_sent": "Đã trả lời",
+                "failed_to_send_notification_response": "Không thể hoàn tất thao tác này"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Xóa thông báo?",
+                "delete_the_local_value_log_entry": "Xóa thông báo {value} này khỏi lịch sử?"
+            }
         }
     },
     "dialog": {
@@ -629,6 +778,9 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "action": {
+                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "Đã hủy kết bạn. Hãy làm mới để xem trạng thái mới nhất."
             }
         },
         "world": {
@@ -691,6 +843,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Đang tải chi tiết thế giới"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_world_snapshot": "Không thể làm mới chi tiết thế giới"
+            },
+            "description": {
+                "world_snapshot_unavailable_description": "Không thể tải chi tiết thế giới"
             }
         },
         "avatar": {
@@ -733,6 +894,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_avatar_snapshot_for_this_dialog": "Đang tải chi tiết avatar"
+            },
+            "description": {
+                "avatar_snapshot_unavailable_description": "Không thể tải chi tiết avatar"
+            },
+            "toast": {
+                "avatar_deleted_but_current_user_snapshot_refresh": "Đã xóa avatar nhưng không thể làm mới danh sách avatar của bạn"
             }
         },
         "group": {
@@ -797,6 +967,15 @@
             },
             "json": {
                 "header": "JSON"
+            },
+            "loading": {
+                "fetching_the_current_vrchat_group_snapshot_for_this_dialog": "Đang tải chi tiết nhóm"
+            },
+            "error": {
+                "failed_to_refresh_the_remote_group_snapshot": "Không thể làm mới chi tiết nhóm"
+            },
+            "description": {
+                "group_snapshot_unavailable_description": "Không thể tải chi tiết nhóm"
             }
         },
         "favorite": {
@@ -982,7 +1161,16 @@
         "previous_instances": {
             "header": "Instance History",
             "info": "Instance Details",
-            "search_placeholder": "Search instance history"
+            "search_placeholder": "Search instance history",
+            "description": {
+                "select_an_instance_row_to_view_its_details": "Chọn một lượt ghé thăm để xem chi tiết"
+            },
+            "error": {
+                "this_user_instance_row_cannot_be_deleted_without_event_ids": "Không thể xóa lượt ghé thăm này"
+            },
+            "success": {
+                "instance_record_deleted": "Đã xóa lượt ghé thăm khỏi lịch sử phòng"
+            }
         },
         "group_member_moderation": {
             "filter_type": "Filter Type",
@@ -1303,5 +1491,27 @@
         "proxy_enabled_direct": "Proxy enabled, connecting directly",
         "proxy_enabled_server": "Proxy enabled: {proxy}",
         "proxy_network_issue": "Proxy enabled, network request failed"
+    },
+    "host": {
+        "launch_dialog": {
+            "toast": {
+                "failed_to_resolve_launch_details": "Không thể chuẩn bị khởi chạy VRChat"
+            }
+        },
+        "vrc_notification_center": {
+            "toast": {
+                "failed_to_send_notification_response": "Không thể hoàn tất thao tác này"
+            },
+            "modal": {
+                "delete_notification_log_entry": "Xóa thông báo?",
+                "delete_the_local_value_log_entry": "Xóa thông báo {value} này khỏi lịch sử?"
+            }
+        },
+        "tools_dialogs": {
+            "toast": {
+                "failed_to_load_memo_export_rows": "Không thể chuẩn bị xuất ghi chú trên máy",
+                "failed_to_update_group_event_follow_state": "Không thể cập nhật sự kiện này"
+            }
+        }
     }
 }

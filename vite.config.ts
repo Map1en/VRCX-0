@@ -1,4 +1,3 @@
-// @ts-nocheck
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -6,63 +5,49 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import browserslist from 'browserslist';
 import { browserslistToTargets } from 'lightningcss';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
-function getAssetLanguage(assetId) {
-    if (!assetId) return null;
-
-    const language = {
-        jp: 'ja',
-        sc: 'zh-CN',
-        tc: 'zh-TW',
-        kr: 'ko'
-    }[assetId.split('noto-sans-')[1]?.split('-')[0]];
-
-    return language || null;
-}
-
-function getManualChunk(moduleId) {
-    const basename = moduleId.split('/').pop();
-    const language = getAssetLanguage(basename);
-    if (!language) return;
-
-    return `i18n/${language}`;
-}
-
-const defaultAssetName = '[name][extname]';
 const webview2BuildTarget = {
     vite: 'edge140',
     browserslist: 'Edge 140'
 };
-const webkitBuildTarget = {
+const webkitLegacyBuildTarget = {
     vite: 'safari17',
     browserslist: 'Safari 17.0'
 };
+const webkitModernBuildTarget = {
+    vite: 'safari18.2',
+    browserslist: 'Safari 18.2'
+};
 
 function getPlatformBuildTarget() {
+    const webkitBuildTargetOverride =
+        process.env['VRCX_0_WEBKIT_BUILD_TARGET']?.trim();
+
+    if (webkitBuildTargetOverride === 'safari17') {
+        return webkitLegacyBuildTarget;
+    }
+    if (webkitBuildTargetOverride === 'safari18.2') {
+        return webkitModernBuildTarget;
+    }
+    if (webkitBuildTargetOverride) {
+        throw new Error(
+            `Unsupported VRCX_0_WEBKIT_BUILD_TARGET: ${webkitBuildTargetOverride}`
+        );
+    }
+
     switch (process.platform) {
         case 'darwin':
+            return webkitModernBuildTarget;
         case 'linux':
-            return webkitBuildTarget;
+            return webkitLegacyBuildTarget;
         case 'win32':
         default:
             return webview2BuildTarget;
     }
 }
 
-function isFont(name) {
-    return /\.(woff2?|ttf|otf|eot)$/.test(name);
-}
-
-function getAssetFilename({ name }) {
-    const language = getAssetLanguage(name);
-    if (!language) return `assets/${defaultAssetName}`;
-
-    if (isFont(name)) return 'assets/fonts/[name][extname]';
-    return 'assets/i18n/[name][extname]';
-}
-
-function createReactDevtoolsStandalonePlugin(enabled) {
+function createReactDevtoolsStandalonePlugin(enabled: boolean): Plugin {
     return {
         name: 'vrcx-0-react-devtools-standalone',
         transformIndexHtml() {
@@ -109,17 +94,10 @@ export default defineConfig(({ mode }) => {
         css: {
             transformer: 'lightningcss',
             lightningcss: {
-                drafts: {
-                    customMedia: true
-                },
-                errorRecovery: true,
                 targets: browserslistToTargets(
                     browserslist(buildTarget.browserslist)
                 )
             }
-        },
-        optimizeDeps: {
-            entries: []
         },
         define: {
             VERSION: JSON.stringify(version),
@@ -142,21 +120,13 @@ export default defineConfig(({ mode }) => {
             license: {
                 fileName: 'licenses/frontend-licenses.json'
             },
-            emptyOutDir: true,
-            copyPublicDir: true,
+            copyPublicDir: false,
             reportCompressedSize: false,
-            chunkSizeWarningLimit: 5000,
-            sourcemap: false,
-            assetsInlineLimit(filePath) {
-                if (isFont(filePath)) return 0;
-                if (filePath.endsWith('.json')) return 0;
-                return 40960;
-            },
+            chunkSizeWarningLimit: 3000,
+            assetsInlineLimit: 0,
             rolldownOptions: {
-                preserveEntrySignatures: false,
                 output: {
-                    assetFileNames: getAssetFilename,
-                    manualChunks: getManualChunk
+                    assetFileNames: 'assets/[name][extname]'
                 }
             }
         }

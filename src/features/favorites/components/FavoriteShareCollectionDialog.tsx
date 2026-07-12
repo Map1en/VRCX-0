@@ -137,9 +137,18 @@ export function FavoriteShareCollectionDialog({
                     worldIds: shareWorlds.worldIds
                 });
             setResult(nextResult);
-            toast.success(
-                t('view.favorite.share_collection.toast.create_success')
-            );
+            const skipped = shareWorlds.worldIds.length - nextResult.worldCount;
+            if (skipped > 0) {
+                toast.warning(
+                    t('view.favorite.share_collection.toast.skipped', {
+                        count: skipped
+                    })
+                );
+            } else {
+                toast.success(
+                    t('view.favorite.share_collection.toast.create_success')
+                );
+            }
         } catch (error) {
             toast.error(
                 errorMessage(

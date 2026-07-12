@@ -6,8 +6,12 @@ const mocks = vi.hoisted(() => ({
             () => Promise<import('@/platform/tauri/bindings').DeepLinkAction[]>
         >(),
     eventHandler: null as ((payload: unknown) => void) | null,
-    openAlert: vi.fn(),
+    confirm: vi.fn(),
     openWorldDialog: vi.fn(),
+    previewSharedCollection: vi.fn(),
+    importSharedCollection: vi.fn(),
+    toastSuccess: vi.fn(),
+    toastError: vi.fn(),
     unsubscribe: vi.fn(),
     subscribe:
         vi.fn<
@@ -32,6 +36,13 @@ vi.mock('@/platform/tauri/client', () => ({
     }
 }));
 
+vi.mock('@/repositories/shareCollectionRepository', () => ({
+    default: {
+        previewSharedCollection: mocks.previewSharedCollection,
+        importSharedCollection: mocks.importSharedCollection
+    }
+}));
+
 vi.mock('@/services/dialogService', () => ({
     openWorldDialog: mocks.openWorldDialog
 }));
@@ -39,15 +50,22 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/state/modalStore', () => ({
     useModalStore: {
         getState: () => ({
-            openAlert: mocks.openAlert
+            confirm: mocks.confirm
         })
+    }
+}));
+
+vi.mock('sonner', () => ({
+    toast: {
+        success: mocks.toastSuccess,
+        error: mocks.toastError
     }
 }));
 
 vi.mock('./i18nService', () => ({
     default: {
         t: (key: string, params?: Record<string, unknown>) =>
-            params?.collectionId ? `${key}:${params.collectionId}` : key
+            params ? `${key}:${JSON.stringify(params)}` : key
     }
 }));
 
@@ -85,34 +103,79 @@ describe('deepLinkService', () => {
         mocks.appDrainPendingDeepLinks.mockResolvedValueOnce([
             { type: 'importCollection', collectionId: 'AbC123z' }
         ]);
+        mocks.previewSharedCollection.mockResolvedValueOnce({
+            title: 'Scenic picks',
+            authorName: 'Someone',
+            worldCount: 2,
+            worlds: [
+                { worldId: 'wrld_a', name: 'A', imageUrl: '' },
+                { worldId: 'wrld_b', name: 'B', imageUrl: '' }
+            ]
+        });
+        mocks.confirm.mockResolvedValueOnce({ ok: false, reason: 'cancel' });
 
         mocks.eventHandler?.({});
 
         await vi.waitFor(() => {
-            expect(mocks.openAlert).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    description:
-                        'deep_link.import_collection.description:AbC123z'
-                })
+            expect(mocks.previewSharedCollection).toHaveBeenCalledWith(
+                'AbC123z'
             );
         });
+        await vi.waitFor(() => {
+            expect(mocks.confirm).toHaveBeenCalled();
+        });
+        expect(mocks.importSharedCollection).not.toHaveBeenCalled();
     });
 
-    it('opens worlds and collection placeholders from actions', () => {
-        handleDeepLinkAction({ type: 'openWorld', worldId: WORLD_ID });
+    it('imports the collection after confirmation and shows a success toast', () => {
+        mocks.previewSharedCollection.mockResolvedValueOnce({
+            title: 'Scenic picks',
+            authorName: 'Someone',
+            worldCount: 1,
+            worlds: [{ worldId: 'wrld_a', name: 'A', imageUrl: '' }]
+        });
+        mocks.confirm.mockResolvedValueOnce({ ok: true, reason: 'ok' });
+        mocks.importSharedCollection.mockResolvedValueOnce({
+            groupKey: 'Scenic picks',
+            importedCount: 1
+        });
+
         handleDeepLinkAction({
             type: 'importCollection',
             collectionId: 'Z9xY12'
         });
 
+        return vi.waitFor(() => {
+            expect(mocks.importSharedCollection).toHaveBeenCalledWith('Z9xY12');
+            expect(mocks.toastSuccess).toHaveBeenCalled();
+        });
+    });
+
+    it('opens worlds from actions', () => {
+        handleDeepLinkAction({ type: 'openWorld', worldId: WORLD_ID });
+
         expect(mocks.openWorldDialog).toHaveBeenCalledWith({
             worldId: WORLD_ID
         });
-        expect(mocks.openAlert).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'deep_link.import_collection.title'
-            })
-        );
+    });
+
+    it('shows a toast when a shared collection has no importable worlds', () => {
+        mocks.previewSharedCollection.mockResolvedValueOnce({
+            title: 'Empty',
+            authorName: '',
+            worldCount: 0,
+            worlds: []
+        });
+
+        handleDeepLinkAction({
+            type: 'importCollection',
+            collectionId: 'EmptyId'
+        });
+
+        return vi.waitFor(() => {
+            expect(mocks.toastError).toHaveBeenCalled();
+            expect(mocks.confirm).not.toHaveBeenCalled();
+        });
     });
 
     it('ignores malformed action payloads defensively', async () => {
@@ -128,6 +191,6 @@ describe('deepLinkService', () => {
         await drainPendingDeepLinks();
 
         expect(mocks.openWorldDialog).not.toHaveBeenCalled();
-        expect(mocks.openAlert).not.toHaveBeenCalled();
+        expect(mocks.previewSharedCollection).not.toHaveBeenCalled();
     });
 });

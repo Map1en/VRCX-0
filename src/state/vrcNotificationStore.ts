@@ -8,6 +8,7 @@ import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
+import { getNotificationLifecycleBucket } from '@/shared/utils/notificationLifecycle';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -154,6 +155,15 @@ function shouldBulkMarkSeen(notification?: NotificationRow | null): boolean {
     const version = Number(notification?.version ?? 1);
     const type = String(notification?.type || '');
     return !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type));
+}
+
+function shouldMarkSeenRemotely(
+    notification?: NotificationRow | null
+): boolean {
+    return (
+        shouldBulkMarkSeen(notification) &&
+        getNotificationLifecycleBucket(notification?.type) !== 'system'
+    );
 }
 
 const MARK_SEEN_MAX_RETRIES = 3;
@@ -449,6 +459,15 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             }
 
             const markableRows = unseenRows.filter(shouldBulkMarkSeen);
+            const remoteRows = markableRows.filter(shouldMarkSeenRemotely);
+            const localOnlyV2Ids = markableRows
+                .filter(
+                    (notification) =>
+                        Number(notification.version) === 2 &&
+                        !shouldMarkSeenRemotely(notification)
+                )
+                .map((notification) => notification.id)
+                .filter(isNonEmptyString);
             const ids = markableRows
                 .map((notification) => notification.id)
                 .filter(isNonEmptyString);
@@ -461,7 +480,13 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             get().markNotificationsSeen(ids);
             let failedCount = 0;
             try {
-                for (const notification of markableRows) {
+                if (localOnlyV2Ids.length) {
+                    await notificationPersistenceRepository.markSeenLocalBulk({
+                        userId: auth.currentUserId,
+                        ids: localOnlyV2Ids
+                    });
+                }
+                for (const notification of remoteRows) {
                     try {
                         await markSeenWithBackoff({
                             userId: auth.currentUserId,
