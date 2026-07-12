@@ -20,6 +20,7 @@ import { Switch } from '@/ui/shadcn/switch';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { SettingsAdvancedDataCards } from './SettingsAdvancedDataCards';
+import { SettingsCloudBackup } from './SettingsCloudBackup';
 
 type AppDataDirState = {
     cliOverride?: boolean;
@@ -275,6 +276,7 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                     </div>
                 </Field>
             </SettingsGroup>
+            <SettingsCloudBackup />
             <SettingsGroup title={t('view.settings.general.logging.header')}>
                 <Field
                     label={t(

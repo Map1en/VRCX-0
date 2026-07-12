@@ -36,6 +36,9 @@ export const commands = {
     async sqliteGetFailedUpgrade(): Promise<DatabaseUpgradeStatus | null> {
         return await TAURI_INVOKE('sqlite__get_failed_upgrade');
     },
+    async sqliteSchemaInfo(): Promise<DatabaseSchemaInfo> {
+        return await TAURI_INVOKE('sqlite__schema_info');
+    },
     async webClearCookies(): Promise<null> {
         return await TAURI_INVOKE('web__clear_cookies');
     },
@@ -454,6 +457,54 @@ export const commands = {
         return await TAURI_INVOKE('app__registry_backup_maintenance_run', {
             reason
         });
+    },
+    async appCloudBackupSettingsGet(): Promise<CloudBackupSettings> {
+        return await TAURI_INVOKE('app__cloud_backup_settings_get');
+    },
+    async appCloudBackupSettingsSave(
+        input: CloudBackupSettingsInput
+    ): Promise<CloudBackupSettings> {
+        return await TAURI_INVOKE('app__cloud_backup_settings_save', { input });
+    },
+    async appCloudBackupCredentialClear(): Promise<CloudBackupSettings> {
+        return await TAURI_INVOKE('app__cloud_backup_credential_clear');
+    },
+    async appCloudBackupConnectionTest(): Promise<null> {
+        return await TAURI_INVOKE('app__cloud_backup_connection_test');
+    },
+    async appCloudBackupRemoteStatus(): Promise<RemoteBackupStatus> {
+        return await TAURI_INVOKE('app__cloud_backup_remote_status');
+    },
+    async appCloudBackupUpload(
+        input: CloudBackupUploadInput
+    ): Promise<BackupSummary> {
+        return await TAURI_INVOKE('app__cloud_backup_upload', { input });
+    },
+    async appCloudBackupRestoreProbe(): Promise<CloudBackupRestoreProbe> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_probe');
+    },
+    async appCloudBackupRestorePrepare(
+        input: CloudBackupRestorePrepareInput
+    ): Promise<RestorePreview> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_prepare', {
+            input
+        });
+    },
+    async appCloudBackupRestoreCommit(restoreId: string): Promise<null> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_commit', {
+            restoreId
+        });
+    },
+    async appCloudBackupRestoreDiscard(restoreId: string): Promise<boolean> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_discard', {
+            restoreId
+        });
+    },
+    async appCloudBackupRestoreFinalize(): Promise<boolean> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_finalize');
+    },
+    async appCloudBackupRestoreRollback(): Promise<boolean> {
+        return await TAURI_INVOKE('app__cloud_backup_restore_rollback');
     },
     async appConfigSetValues(entries: ConfigWriteEntry[]): Promise<null> {
         return await TAURI_INVOKE('app__config_set_values', { entries });
@@ -3045,6 +3096,15 @@ export type BackgroundImageFilesResolveInput = {
     paths: string[] | null;
     folderPath: string | null;
 };
+export type BackupSummary = {
+    createdAt: string;
+    appVersion: string;
+    databaseSchemaVersion: number;
+    encrypted: boolean;
+    archiveSize: number;
+    databaseSize: number;
+    configSize: number;
+};
 export type BrokenGameLogDisplayNameOutput = {
     id: JsonValue;
     displayName: JsonValue;
@@ -3087,6 +3147,34 @@ export type ClientErrorLogEntry = {
     source: string;
     message: string;
 };
+export type CloudBackupPasswordUpdate =
+    | { action: 'keep' }
+    | { action: 'set'; password: string };
+export type CloudBackupProgress = { phase: string };
+export type CloudBackupRestorePrepareInput = {
+    backupPassphrase: string | null;
+};
+export type CloudBackupRestoreProbe = {
+    encrypted: boolean;
+    remote: RemoteBackupStatus;
+};
+export type CloudBackupSettings = {
+    serverUrl: string;
+    remoteDirectory: string;
+    username: string;
+    credential: CredentialState;
+    pendingRestorePhase: string | null;
+};
+export type CloudBackupSettingsInput = {
+    serverUrl: string;
+    remoteDirectory: string;
+    username: string;
+    passwordUpdate: CloudBackupPasswordUpdate;
+};
+export type CloudBackupUploadInput = {
+    backupPassphrase: string | null;
+    confirmUnencrypted: boolean;
+};
 export type CommunityThemeDebugLocalThemeOutput = {
     folderPath: string;
     cssPath: string;
@@ -3099,6 +3187,15 @@ export type CommunityThemeDebugLocalThemeOutput = {
 };
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
+export type CredentialState = {
+    available: boolean;
+    stored: boolean;
+    sessionOnly: boolean;
+};
+export type DatabaseSchemaInfo = {
+    currentVersion: number;
+    legacyVersion: number;
+};
 export type DatabaseUpgradeStatus = {
     fromVersion: number;
     toVersion: number;
@@ -3999,6 +4096,11 @@ export type RegistryBackupSnapshot = {
     date: string;
     data: JsonValue;
 };
+export type RemoteBackupStatus = {
+    exists: boolean;
+    contentLength: number | null;
+    lastModified: string | null;
+};
 export type RemoteModerationRow = {
     id: string;
     type: string;
@@ -4007,6 +4109,16 @@ export type RemoteModerationRow = {
     targetUserId: string;
     targetDisplayName: string;
     created: string;
+};
+export type RestorePreview = {
+    restoreId: string;
+    createdAt: string;
+    appVersion: string;
+    databaseSchemaVersion: number;
+    encrypted: boolean;
+    archiveSize: number;
+    databaseSize: number;
+    configSize: number;
 };
 export type Role = 'user' | 'assistant';
 export type RuntimeAppSnapshot = {

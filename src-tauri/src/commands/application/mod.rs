@@ -1,6 +1,7 @@
 pub mod assistant;
 pub mod auth_scope;
 pub mod background_mode;
+pub mod cloud_backup;
 pub mod deep_link;
 pub mod favorite_transfer;
 pub mod group_quick_moderation;

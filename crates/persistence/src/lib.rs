@@ -34,7 +34,10 @@ pub mod maintenance {
     };
 }
 
-pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus};
+pub use database::{
+    optimize_database, read_database_schema_version_file, verify_database_file, DatabaseService,
+    DatabaseUpgradeStatus, LEGACY_SCHEMA_VERSION, VRCX0_SCHEMA_VERSION,
+};
 pub use error::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

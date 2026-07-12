@@ -63,6 +63,11 @@ impl StorageService {
         self.data.read().unwrap().clone()
     }
 
+    pub fn snapshot_json(&self) -> Result<String, Error> {
+        let data = self.data.read().unwrap();
+        Ok(serde_json::to_string_pretty(&*data)?)
+    }
+
     pub fn save(&self) -> Result<(), Error> {
         let data = self.data.read().unwrap();
         let json = serde_json::to_string_pretty(&*data)?;

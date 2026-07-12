@@ -27,6 +27,6 @@ pub use log_watcher::{
 pub use process_monitor::HostGameProcessMonitorActions;
 pub use registry_backup::HostRegistryBackupActions;
 pub use state::{
-    BackendRuntimeFrontendSessionSnapshot, CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions,
-    RuntimeHostState,
+    BackendRuntimeFrontendSessionSnapshot, CliLoginPrompt, CliTwoFactorChoice,
+    CloudBackupProgressReporter, RuntimeHostOptions, RuntimeHostState,
 };

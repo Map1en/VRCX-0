@@ -7,15 +7,18 @@ edition = "2021"
 test-utils = []
 
 [dependencies]
+age.workspace = true
 chrono = { workspace = true }
 base64 = { workspace = true }
 futures-util = "0.3"
+fs2.workspace = true
 hmac = "0.12"
 moka = { version = "0.12", features = ["future", "sync"] }
 percent-encoding = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-sha2 = "0.10"
+sha2.workspace = true
+tar.workspace = true
 thiserror = { workspace = true }
 tokio = { workspace = true, features = [
     "rt",
@@ -27,7 +30,9 @@ tokio = { workspace = true, features = [
 ] }
 tracing = { workspace = true }
 url = { workspace = true }
+uuid.workspace = true
 walkdir = { workspace = true }
+zstd.workspace = true
 vrcx-0-core = { path = "../core" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-media = { path = "../media" }
@@ -38,3 +43,9 @@ specta.workspace = true
 [dev-dependencies]
 image = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem"
+] }

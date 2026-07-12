@@ -67,6 +67,7 @@ mod background;
 mod background_auth;
 mod background_ticks;
 mod capabilities;
+mod cloud_backup;
 mod frontend_session;
 mod profile_lock;
 mod runtime_host_state;
@@ -86,6 +87,7 @@ use background_ticks::{
     run_background_presence_tick, run_background_print_cleanup,
     run_background_social_baseline_refresh, BackgroundTickContext,
 };
+pub use cloud_backup::CloudBackupProgressReporter;
 use frontend_session::{
     favorite_group_membership_from_snapshot,
     replace_backend_frontend_session_user_if_session_matches, session_slot_matches,

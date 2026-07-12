@@ -1,10 +1,10 @@
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
-    BackendRuntimeTelemetry, FriendProjection, GameLogProjection, HostSessionProjection,
-    OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent, RealtimeCurrentUserProjection,
-    RealtimeEntryCorrection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeWsStatusPayload,
+    BackendRuntimeTelemetry, CloudBackupProgress, FriendProjection, GameLogProjection,
+    HostSessionProjection, OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent,
+    RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeInstanceClosedProjection,
+    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeWsStatusPayload,
 };
 use vrcx_0_harness::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
@@ -25,6 +25,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<AssistantDoneEvent>()
         .typ::<AssistantErrorEvent>()
         .typ::<BackendRuntimeTelemetry>()
+        .typ::<CloudBackupProgress>()
         .typ::<crate::deep_link::DeepLinkAction>()
         .typ::<FriendProjection>()
         .typ::<GameLogProjection>()
@@ -50,6 +51,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::database::sqlite__commit_upgrade,
             commands::database::sqlite__fail_upgrade,
             commands::database::sqlite__get_failed_upgrade,
+            commands::database::sqlite__schema_info,
             commands::web::web__clear_cookies,
             commands::web::web__clear_auth_cookies,
             commands::host::error_log::app__append_error_log,
@@ -127,6 +129,18 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::registry_backup::app__registry_backup_export_json,
             commands::application::registry_backup::app__registry_backup_import_json,
             commands::application::registry_backup::app__registry_backup_maintenance_run,
+            commands::application::cloud_backup::app__cloud_backup_settings_get,
+            commands::application::cloud_backup::app__cloud_backup_settings_save,
+            commands::application::cloud_backup::app__cloud_backup_credential_clear,
+            commands::application::cloud_backup::app__cloud_backup_connection_test,
+            commands::application::cloud_backup::app__cloud_backup_remote_status,
+            commands::application::cloud_backup::app__cloud_backup_upload,
+            commands::application::cloud_backup::app__cloud_backup_restore_probe,
+            commands::application::cloud_backup::app__cloud_backup_restore_prepare,
+            commands::application::cloud_backup::app__cloud_backup_restore_commit,
+            commands::application::cloud_backup::app__cloud_backup_restore_discard,
+            commands::application::cloud_backup::app__cloud_backup_restore_finalize,
+            commands::application::cloud_backup::app__cloud_backup_restore_rollback,
             commands::local::config::app__config_set_values,
             commands::local::config::app__config_list_values,
             commands::local::config::app__config_remove_value,

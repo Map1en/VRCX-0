@@ -35,17 +35,23 @@ default-members = [
 resolver = "2"
 
 [workspace.dependencies]
+age = "0.11"
 base64 = "0.22"
 chrono = "0.4"
+digest_auth = "0.3"
 dirs = "6"
+fs2 = "0.4"
 image = "0.25"
 iana-time-zone = "0.1"
+keyring = "4.1"
 percent-encoding = "2"
+quick-xml = "0.38"
 reqwest = "0.13"
 regex = "1"
 rusqlite = "0.40"
 serde = "1"
 serde_json = "1"
+sha2 = "0.10"
 slint = { version = "~1.17", default-features = false, features = [
     "compat-1-2",
     "renderer-software",
@@ -65,6 +71,8 @@ tracing = "0.1"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
+tar = "0.4"
+zstd = "0.13"
 
 [profile.dev]
 incremental = true

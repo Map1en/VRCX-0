@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     toastWarning: vi.fn(),
+    sqliteSchemaInfo: vi.fn(),
     sqliteGetFailedUpgrade: vi.fn(),
     sqliteBeginUpgrade: vi.fn(),
     sqliteCommitUpgrade: vi.fn(),
     sqliteFailUpgrade: vi.fn(),
+    appCloudBackupRestoreFinalize: vi.fn(),
+    appCloudBackupRestoreRollback: vi.fn(),
     appGetLegacyVrcxMigrationStatus: vi.fn(),
     appCheckLegacyVrcxAvailable: vi.fn(),
     appRequestLegacyMigration: vi.fn(),
@@ -40,10 +43,13 @@ vi.mock('sonner', () => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
+        sqliteSchemaInfo: mocks.sqliteSchemaInfo,
         sqliteGetFailedUpgrade: mocks.sqliteGetFailedUpgrade,
         sqliteBeginUpgrade: mocks.sqliteBeginUpgrade,
         sqliteCommitUpgrade: mocks.sqliteCommitUpgrade,
         sqliteFailUpgrade: mocks.sqliteFailUpgrade,
+        appCloudBackupRestoreFinalize: mocks.appCloudBackupRestoreFinalize,
+        appCloudBackupRestoreRollback: mocks.appCloudBackupRestoreRollback,
         appGetLegacyVrcxMigrationStatus: mocks.appGetLegacyVrcxMigrationStatus,
         appCheckLegacyVrcxAvailable: mocks.appCheckLegacyVrcxAvailable,
         appRequestLegacyMigration: mocks.appRequestLegacyMigration
@@ -116,9 +122,15 @@ describe('databaseUpgradeService', () => {
         });
 
         mocks.sqliteGetFailedUpgrade.mockResolvedValue(null);
+        mocks.sqliteSchemaInfo.mockResolvedValue({
+            currentVersion: 18,
+            legacyVersion: 16
+        });
         mocks.sqliteBeginUpgrade.mockResolvedValue(undefined);
         mocks.sqliteCommitUpgrade.mockResolvedValue(undefined);
         mocks.sqliteFailUpgrade.mockResolvedValue(undefined);
+        mocks.appCloudBackupRestoreFinalize.mockResolvedValue(false);
+        mocks.appCloudBackupRestoreRollback.mockResolvedValue(false);
         mocks.appGetLegacyVrcxMigrationStatus.mockResolvedValue(
             unavailableLegacyStatus()
         );
@@ -214,6 +226,7 @@ describe('databaseUpgradeService', () => {
         expect(useSessionStore.getState().databaseReady).toBe(true);
         expect(mocks.sqliteBeginUpgrade).not.toHaveBeenCalled();
         expect(mocks.repairZeroCopresenceDurations).toHaveBeenCalledTimes(1);
+        expect(mocks.appCloudBackupRestoreFinalize).toHaveBeenCalledTimes(1);
         expect(mocks.configSetString).toHaveBeenCalledWith(
             'copresenceDurationRepairV1Done',
             '1'
@@ -287,6 +300,23 @@ describe('databaseUpgradeService', () => {
                 dismissible: false
             })
         );
+        expect(useSessionStore.getState().databaseReady).toBe(false);
+    });
+
+    it('requests an automatic rollback when a restored database migration fails', async () => {
+        mocks.configGetInt.mockResolvedValueOnce(16);
+        mocks.addV17PerformanceIndexes.mockRejectedValueOnce(
+            new Error('restored upgrade failed')
+        );
+        mocks.appCloudBackupRestoreRollback.mockResolvedValueOnce(true);
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(false);
+
+        expect(mocks.appCloudBackupRestoreRollback).toHaveBeenCalledTimes(1);
+        expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+            phase: 'restarting'
+        });
+        expect(mocks.showSQLiteErrorDialog).not.toHaveBeenCalled();
         expect(useSessionStore.getState().databaseReady).toBe(false);
     });
 

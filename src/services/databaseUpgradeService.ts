@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 
 import {
     commands,
+    type DatabaseSchemaInfo,
     type DatabaseUpgradeStatus,
     type LegacyVrcxMigrationStatus
 } from '@/platform/tauri/bindings';
@@ -14,8 +15,6 @@ import { useSessionStore } from '@/state/sessionStore';
 
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 
-const LEGACY_SCHEMA_VERSION = 16;
-const DATABASE_VERSION = 18;
 const COPRESENCE_DURATION_REPAIR_KEY = 'copresenceDurationRepairV1Done';
 const VRCX0_SCHEMA_VERSION_KEY = 'VRCX_0_databaseVersion';
 
@@ -50,14 +49,40 @@ function failedUpgradeDescription(
     );
 }
 
+async function rollbackCloudRestoreAfterDatabaseFailure(): Promise<boolean> {
+    try {
+        const requested = await commands.appCloudBackupRestoreRollback();
+        if (!requested) {
+            return false;
+        }
+        setUpgradeState({
+            open: true,
+            phase: 'restarting',
+            detail: i18n.t(
+                'service.database_upgrade_service.action.rolling_back_cloud_restore'
+            ),
+            legacyMigrationAvailable: false
+        });
+        useSessionStore.getState().setSessionState({ databaseReady: false });
+        return true;
+    } catch (error) {
+        console.warn('Automatic cloud restore rollback request failed:', error);
+        return false;
+    }
+}
+
 async function blockOnFailedUpgrade(
-    failedUpgrade: DatabaseUpgradeStatus | null | undefined
+    failedUpgrade: DatabaseUpgradeStatus | null | undefined,
+    databaseVersion: number
 ): Promise<boolean> {
+    if (await rollbackCloudRestoreAfterDatabaseFailure()) {
+        return false;
+    }
     setUpgradeState({
         open: false,
         phase: 'error',
         fromVersion: failedUpgrade?.fromVersion ?? 0,
-        toVersion: failedUpgrade?.toVersion ?? DATABASE_VERSION,
+        toVersion: failedUpgrade?.toVersion ?? databaseVersion,
         detail: failedUpgradeDescription(failedUpgrade),
         legacyMigrationAvailable: false
     });
@@ -87,14 +112,16 @@ async function runCopresenceDurationRepairOnce(): Promise<void> {
     }
 }
 
-async function writeUpgradeDatabaseVersion(): Promise<void> {
+async function writeUpgradeDatabaseVersion(
+    databaseVersion: number
+): Promise<void> {
     await configRepository.setString(
         VRCX0_SCHEMA_VERSION_KEY,
-        String(DATABASE_VERSION)
+        String(databaseVersion)
     );
     await configRepository.setString(
         'databaseVersion',
-        String(DATABASE_VERSION)
+        String(databaseVersion)
     );
 }
 
@@ -112,13 +139,55 @@ async function runLegacyDatabaseMaintenance(): Promise<void> {
     await databaseMaintenanceRepository.vacuum();
 }
 
-async function runFullDatabaseUpgrade(): Promise<boolean> {
+async function finalizeCloudRestore(): Promise<void> {
+    try {
+        await commands.appCloudBackupRestoreFinalize();
+    } catch (error) {
+        console.warn('Cloud restore cleanup failed:', error);
+    }
+}
+
+async function rejectFutureSchema(
+    currentVersion: number,
+    databaseVersion: number
+): Promise<boolean> {
+    const description = i18n.t(
+        'service.database_upgrade_service.error.future_schema',
+        {
+            current: currentVersion,
+            supported: databaseVersion
+        }
+    );
+    setUpgradeState({
+        open: false,
+        phase: 'error',
+        fromVersion: currentVersion,
+        toVersion: databaseVersion,
+        detail: description,
+        legacyMigrationAvailable: false
+    });
+    await useModalStore.getState().alert({
+        title: i18n.t('message.database.upgrade_failed_title'),
+        description,
+        dismissible: false
+    });
+    useSessionStore.getState().setSessionState({ databaseReady: false });
+    return false;
+}
+
+async function runFullDatabaseUpgrade(
+    providedSchemaInfo?: DatabaseSchemaInfo
+): Promise<boolean> {
     let upgradeStarted = false;
     let upgradeCommitted = false;
     try {
+        const schemaInfo =
+            providedSchemaInfo ?? (await commands.sqliteSchemaInfo());
+        const databaseVersion = schemaInfo.currentVersion;
+        const legacySchemaVersion = schemaInfo.legacyVersion;
         const failedUpgrade = await commands.sqliteGetFailedUpgrade();
         if (failedUpgrade) {
-            return blockOnFailedUpgrade(failedUpgrade);
+            return blockOnFailedUpgrade(failedUpgrade, databaseVersion);
         }
 
         const currentVersion = await configRepository.getInt(
@@ -126,18 +195,23 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
             0
         );
 
-        if (currentVersion >= DATABASE_VERSION) {
+        if (currentVersion > databaseVersion) {
+            return rejectFutureSchema(currentVersion, databaseVersion);
+        }
+
+        if (currentVersion === databaseVersion) {
             setUpgradeState({
                 open: false,
                 phase: 'completed',
                 fromVersion: currentVersion,
-                toVersion: DATABASE_VERSION,
+                toVersion: databaseVersion,
                 detail: i18n.t(
                     'service.database_upgrade_service.label.database_schema_is_current'
                 ),
                 legacyMigrationAvailable: false
             });
             await runCopresenceDurationRepairOnce();
+            await finalizeCloudRestore();
             useSessionStore.getState().setSessionState({ databaseReady: true });
             return true;
         }
@@ -146,25 +220,25 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
             open: currentVersion > 0,
             phase: 'running',
             fromVersion: currentVersion,
-            toVersion: DATABASE_VERSION,
+            toVersion: databaseVersion,
             detail: i18n.t(
                 'service.database_upgrade_service.dynamic.updating_database_from_value_to_value',
-                { value: currentVersion, value2: DATABASE_VERSION }
+                { value: currentVersion, value2: databaseVersion }
             ),
             legacyMigrationAvailable: false
         });
 
-        await commands.sqliteBeginUpgrade(currentVersion, DATABASE_VERSION);
+        await commands.sqliteBeginUpgrade(currentVersion, databaseVersion);
         upgradeStarted = true;
 
-        if (currentVersion < LEGACY_SCHEMA_VERSION) {
+        if (currentVersion < legacySchemaVersion) {
             await runLegacyDatabaseMaintenance();
         }
-        if (currentVersion < DATABASE_VERSION) {
+        if (currentVersion < databaseVersion) {
             await databaseMaintenanceRepository.addV17PerformanceIndexes();
         }
         await databaseMaintenanceRepository.optimize();
-        await writeUpgradeDatabaseVersion();
+        await writeUpgradeDatabaseVersion(databaseVersion);
         await commands.sqliteCommitUpgrade();
         upgradeCommitted = true;
         await configRepository.reload();
@@ -173,12 +247,13 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
             open: false,
             phase: 'completed',
             fromVersion: currentVersion,
-            toVersion: DATABASE_VERSION,
+            toVersion: databaseVersion,
             detail: i18n.t(
                 'service.database_upgrade_service.success.database_update_complete'
             )
         });
         await runCopresenceDurationRepairOnce();
+        await finalizeCloudRestore();
         useSessionStore.getState().setSessionState({ databaseReady: true });
         return true;
     } catch (error) {
@@ -195,6 +270,9 @@ async function runFullDatabaseUpgrade(): Promise<boolean> {
                     failError
                 );
             }
+        }
+        if (await rollbackCloudRestoreAfterDatabaseFailure()) {
+            return false;
         }
         await showSQLiteErrorDialog(error);
 
@@ -246,9 +324,10 @@ async function getLegacyMigrationStatus(): Promise<LegacyVrcxMigrationStatus> {
 }
 
 export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
+    const schemaInfo = await commands.sqliteSchemaInfo();
     const failedUpgrade = await commands.sqliteGetFailedUpgrade();
     if (failedUpgrade) {
-        return blockOnFailedUpgrade(failedUpgrade);
+        return blockOnFailedUpgrade(failedUpgrade, schemaInfo.currentVersion);
     }
 
     const legacyMigrationStatus = await getLegacyMigrationStatus();
@@ -270,7 +349,7 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
         toast.warning(legacyMigrationStatus.reason);
     }
 
-    return runFullDatabaseUpgrade();
+    return runFullDatabaseUpgrade(schemaInfo);
 }
 
 export async function confirmLegacyDatabaseMigration(): Promise<void> {

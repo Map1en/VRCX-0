@@ -4,6 +4,7 @@ mod auth_scope;
 mod backend_runtime;
 mod background;
 mod background_capabilities;
+mod cloud_backup;
 mod config;
 mod diagnostics;
 mod error;
@@ -75,6 +76,17 @@ pub use background_capabilities::{
     BackgroundDiscordPresenceState, BackgroundGroupInstancesRefresh,
     BackgroundPresenceAutomationResult, BackgroundPresenceAutomationState, BackgroundPresenceFacts,
     BackgroundPresenceFactsInput, PresencePlayer,
+};
+pub use cloud_backup::{
+    apply_pending_cloud_restore, commit_prepared_restore, create_backup_archive,
+    create_backup_archive_with_progress, detect_backup_encryption, discard_prepared_cloud_restore,
+    ensure_cloud_backup_disk_space, finalize_pending_cloud_restore, pending_restore_phase,
+    prepare_restore_archive, request_pending_cloud_restore_rollback,
+    rollback_pending_cloud_restore, BackupSummary, CloudBackupPasswordUpdate, CloudBackupProgress,
+    CloudBackupRestorePrepareInput, CloudBackupRestoreProbe, CloudBackupSettings,
+    CloudBackupSettingsInput, CloudBackupUploadInput, CreatedBackupArchive, CredentialState,
+    DatabaseSchemaInfo, RemoteBackupStatus, RestorePreview, CLOUD_BACKUP_DEFAULT_DIRECTORY,
+    CLOUD_BACKUP_FILE_NAME, CLOUD_BACKUP_PROGRESS_EVENT, MAX_BACKUP_ARCHIVE_BYTES,
 };
 pub use config::validate_config_writes;
 pub use diagnostics::{RuntimeDiagnostics, RuntimeDiagnosticsSnapshot};

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fs;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
+use super::schema::{VRCX0_SCHEMA_VERSION, VRCX0_SCHEMA_VERSION_KEY};
 use super::sidecar::remove_sidecars;
 use super::value::{json_to_sql, sqlite_value_to_json};
 
@@ -62,6 +63,7 @@ pub(crate) struct DatabaseWriteTransaction<'conn> {
 
 impl DatabaseService {
     pub fn new(db_path: &Path) -> Result<Self, Error> {
+        ensure_supported_schema_file(db_path)?;
         let main = open_main_database(db_path)?;
         let upgrade_dir = db_path
             .parent()
@@ -77,6 +79,42 @@ impl DatabaseService {
 
     pub fn db_path(&self) -> &Path {
         &self.db_path
+    }
+
+    /// Creates a consistent snapshot of the live main database using SQLite's
+    /// online backup API. The destination is replaced if it already exists.
+    pub fn backup_to(&self, destination: &Path) -> Result<(), Error> {
+        if destination == self.db_path {
+            return Err(Error::InvalidData(
+                "Database backup destination must differ from the live database.".into(),
+            ));
+        }
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if destination.exists() {
+            fs::remove_file(destination)?;
+        }
+        remove_sidecars(destination)?;
+
+        let inner = self
+            .inner
+            .read()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let DatabaseMode::Main(main) = &*inner else {
+            return Err(Error::Database(
+                "Database backup is unavailable while an upgrade is active.".into(),
+            ));
+        };
+        let writer = main
+            .writer
+            .lock()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        writer
+            .backup(MAIN_DB, destination, None)
+            .map_err(|error| Error::Database(error.to_string()))?;
+        File::options().write(true).open(destination)?.sync_all()?;
+        Ok(())
     }
 
     pub(crate) fn execute(
@@ -459,6 +497,83 @@ impl DatabaseService {
     }
 }
 
+fn ensure_supported_schema_file(path: &Path) -> Result<(), Error> {
+    if !path.exists() || fs::metadata(path)?.len() == 0 {
+        return Ok(());
+    }
+    let connection = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|error| Error::Database(error.to_string()))?;
+    let schema_version = read_database_schema_version_connection(&connection)?;
+    if schema_version > VRCX0_SCHEMA_VERSION {
+        return Err(Error::InvalidData(format!(
+            "database.future_schema: Database schema {schema_version} is newer than supported schema {VRCX0_SCHEMA_VERSION}."
+        )));
+    }
+    Ok(())
+}
+
+pub fn read_database_schema_version_file(path: &Path) -> Result<i64, Error> {
+    let connection = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|error| Error::Database(error.to_string()))?;
+    read_database_schema_version_connection(&connection)
+}
+
+fn read_database_schema_version_connection(connection: &Connection) -> Result<i64, Error> {
+    let configs_exists: Option<i64> = connection
+        .query_row(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'configs' LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| Error::Database(error.to_string()))?;
+    if configs_exists.is_none() {
+        return Ok(0);
+    }
+    let value: Option<String> = connection
+        .query_row(
+            "SELECT value FROM configs WHERE key = ?1 LIMIT 1",
+            [format!(
+                "config:{}",
+                VRCX0_SCHEMA_VERSION_KEY.to_ascii_lowercase()
+            )],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| Error::Database(error.to_string()))?;
+    match value {
+        None => Ok(0),
+        Some(value) => {
+            let version = value.trim().parse::<i64>().map_err(|error| {
+                Error::InvalidData(format!(
+                    "Database schema version is not a valid integer: {error}"
+                ))
+            })?;
+            if version < 0 {
+                return Err(Error::InvalidData(
+                    "Database schema version cannot be negative.".into(),
+                ));
+            }
+            Ok(version)
+        }
+    }
+}
+
+pub fn verify_database_file(path: &Path) -> Result<i64, Error> {
+    let connection = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|error| Error::Database(error.to_string()))?;
+    let integrity: String = connection
+        .query_row("PRAGMA integrity_check(1)", [], |row| row.get(0))
+        .map_err(|error| Error::Database(error.to_string()))?;
+    if integrity != "ok" {
+        return Err(Error::InvalidData(format!(
+            "Database integrity check failed: {integrity}"
+        )));
+    }
+    drop(connection);
+    read_database_schema_version_file(path)
+}
+
 pub fn optimize_database(db: &DatabaseService) -> Result<(), Error> {
     db.execute_non_query("PRAGMA optimize", &Default::default())?;
     Ok(())
@@ -537,6 +652,12 @@ impl MainDatabase {
 
 fn open_main_database(db_path: &Path) -> Result<MainDatabase, Error> {
     let writer = open_configured_connection(db_path)?;
+    let schema_version = read_database_schema_version_connection(&writer)?;
+    if schema_version > VRCX0_SCHEMA_VERSION {
+        return Err(Error::InvalidData(format!(
+            "database.future_schema: Database schema {schema_version} is newer than supported schema {VRCX0_SCHEMA_VERSION}."
+        )));
+    }
     let mut readers = Vec::with_capacity(READ_CONNECTION_COUNT);
     for _ in 0..READ_CONNECTION_COUNT {
         readers.push(Mutex::new(open_read_connection(db_path)?));
@@ -711,6 +832,7 @@ fn statement_param_values(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
 
     struct TestDir {
         path: PathBuf,
@@ -807,6 +929,63 @@ mod tests {
         assert!(result.is_err());
         let rows = db.execute("SELECT COUNT(*) FROM transaction_items", &empty)?;
         assert_eq!(rows[0][0], serde_json::json!(0));
+        Ok(())
+    }
+
+    #[test]
+    fn online_backup_remains_valid_during_writes() -> Result<(), Error> {
+        let dir = TestDir::new("sqlite-online-backup");
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+        db.execute_non_query(
+            "CREATE TABLE backup_items (id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+            &HashMap::new(),
+        )?;
+        let writer_db = Arc::clone(&db);
+        let writer = std::thread::spawn(move || {
+            for id in 0..100 {
+                let mut args = HashMap::new();
+                args.insert("@id".to_string(), serde_json::json!(id));
+                args.insert(
+                    "@value".to_string(),
+                    serde_json::json!(format!("value-{id}")),
+                );
+                writer_db
+                    .execute_non_query(
+                        "INSERT INTO backup_items (id, value) VALUES (@id, @value)",
+                        &args,
+                    )
+                    .unwrap();
+            }
+        });
+
+        let snapshot = dir.path.join("snapshot.sqlite3");
+        db.backup_to(&snapshot)?;
+        writer.join().unwrap();
+        let snapshot_db = DatabaseService::new(&snapshot)?;
+        let rows = snapshot_db.execute("SELECT COUNT(*) FROM backup_items", &HashMap::new())?;
+        let count = rows[0][0].as_i64().unwrap();
+        assert!((0..=100).contains(&count));
+        assert_eq!(verify_database_file(&snapshot)?, 0);
+        Ok(())
+    }
+
+    #[test]
+    fn refuses_to_open_a_future_schema_database() -> Result<(), Error> {
+        let dir = TestDir::new("sqlite-future-schema");
+        let path = dir.path.join("VRCX-0.sqlite3");
+        let db = DatabaseService::new(&path)?;
+        crate::config::set_string(
+            &db,
+            VRCX0_SCHEMA_VERSION_KEY,
+            &(VRCX0_SCHEMA_VERSION + 1).to_string(),
+        )?;
+        drop(db);
+
+        let error = match DatabaseService::new(&path) {
+            Ok(_) => panic!("future schema database should have been rejected"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("database.future_schema"));
         Ok(())
     }
 }

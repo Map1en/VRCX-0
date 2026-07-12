@@ -4,7 +4,14 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_application::DatabaseSchemaInfo;
 use vrcx_0_persistence::DatabaseUpgradeStatus;
+
+#[tauri::command]
+#[specta::specta]
+pub fn sqlite__schema_info() -> DatabaseSchemaInfo {
+    DatabaseSchemaInfo::default()
+}
 
 #[tauri::command]
 #[specta::specta]

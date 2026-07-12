@@ -304,16 +304,17 @@ pub(crate) fn add_legacy_indexes(db: &DatabaseService) -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) const VRCX0_SCHEMA_VERSION: i64 = 18;
+pub const VRCX0_SCHEMA_VERSION: i64 = 18;
+pub const LEGACY_SCHEMA_VERSION: i64 = 16;
 
-const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
+pub(crate) const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
 const UPSTREAM_DATABASE_VERSION_KEY: &str = "databaseVersion";
 
 fn parse_version(value: &str) -> i64 {
     value.trim().parse::<i64>().unwrap_or(0)
 }
 
-pub(crate) fn read_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
+pub fn read_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
     Ok(parse_version(&crate::config::get_string(
         db,
         VRCX0_SCHEMA_VERSION_KEY,

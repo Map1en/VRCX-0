@@ -4,12 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+digest_auth.workspace = true
 futures-util = "0.3"
+quick-xml.workspace = true
 regex.workspace = true
 reqwest = { workspace = true, features = ["json", "stream"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt", "time"] }
+tokio-util = { workspace = true, features = ["io"] }
 tracing = { workspace = true }
 url = { workspace = true }

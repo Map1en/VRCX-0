@@ -3,6 +3,7 @@ pub mod asset_bundle_cache;
 pub mod auto_launch;
 pub mod calendar;
 pub mod clipboard;
+pub mod credential_store;
 pub mod discord_rpc;
 pub mod error;
 pub mod error_log;

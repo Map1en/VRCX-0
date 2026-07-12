@@ -31,6 +31,7 @@ pub struct BackendRuntimeFrontendSessionSnapshot {
 
 pub struct RuntimeHostState {
     pub app_data_dir: AppDataDirResolution,
+    pub app_version: String,
     pub paths: AppPaths,
     pub storage: StorageService,
     pub db: Arc<DatabaseService>,
@@ -61,6 +62,8 @@ pub struct RuntimeHostState {
     pub(super) background_capabilities_running: Arc<AtomicBool>,
     pub(super) background_group_instances_refresh_running: Arc<AtomicBool>,
     pub(super) registry_backup_lock: Arc<Mutex<()>>,
+    pub(super) cloud_backup_operation_lock: Arc<tokio::sync::Mutex<()>>,
+    pub(super) cloud_backup_session_password: Arc<Mutex<Option<(String, String)>>>,
     pub(super) backend_frontend_session: Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
     pub(super) _profile_lock: ProfileLock,
 }
@@ -105,6 +108,11 @@ impl RuntimeHostState {
 
         let profile_lock = ProfileLock::acquire(&paths.app_data)?;
 
+        super::cloud_backup::cleanup_stale_cloud_backup_work(&paths.app_data);
+        vrcx_0_application::apply_pending_cloud_restore(&paths.app_data)?;
+        let cloud_restore_active =
+            vrcx_0_application::pending_restore_phase(&paths.app_data)?.is_some();
+
         let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
         consume_pending_legacy_migration(&migration_paths)?;
 
@@ -115,9 +123,28 @@ impl RuntimeHostState {
             );
         let legacy_vrcx_available = legacy_vrcx_migration_status.available;
 
-        let storage = StorageService::new(&paths.config_file)?;
-
-        let db = Arc::new(DatabaseService::new(&paths.db_file)?);
+        let storage = match StorageService::new(&paths.config_file) {
+            Ok(storage) => storage,
+            Err(error) if cloud_restore_active => {
+                vrcx_0_application::rollback_pending_cloud_restore(&paths.app_data)?;
+                tracing::error!(error = %error, "restored config could not be opened; the previous profile was restored");
+                StorageService::new(&paths.config_file)?
+            }
+            Err(error) => return Err(error.into()),
+        };
+        let mut storage = Some(storage);
+        let db = match DatabaseService::new(&paths.db_file) {
+            Ok(db) => Arc::new(db),
+            Err(error) if cloud_restore_active => {
+                drop(storage.take());
+                vrcx_0_application::rollback_pending_cloud_restore(&paths.app_data)?;
+                tracing::error!(error = %error, "restored database could not be opened; the previous profile was restored");
+                storage = Some(StorageService::new(&paths.config_file)?);
+                Arc::new(DatabaseService::new(&paths.db_file)?)
+            }
+            Err(error) => return Err(error.into()),
+        };
+        let storage = storage.expect("storage is initialized before runtime services");
         let discord_rpc = Arc::new(DiscordRpc::new());
         let process_monitor = ProcessMonitor::new();
         let web_user_agent_version = web_ua_app_version(&app_version, is_headless);
@@ -219,6 +246,7 @@ impl RuntimeHostState {
 
         Ok(Self {
             app_data_dir,
+            app_version,
             paths,
             storage,
             db,
@@ -248,6 +276,8 @@ impl RuntimeHostState {
             background_capabilities_running: Arc::new(AtomicBool::new(false)),
             background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
             registry_backup_lock: Arc::new(Mutex::new(())),
+            cloud_backup_operation_lock: Arc::new(tokio::sync::Mutex::new(())),
+            cloud_backup_session_password: Arc::new(Mutex::new(None)),
             backend_frontend_session: Arc::new(Mutex::new(None)),
             _profile_lock: profile_lock,
         })
