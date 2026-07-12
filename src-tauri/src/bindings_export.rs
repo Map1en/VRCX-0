@@ -452,6 +452,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::shell::app__save_vrc_reg_json_file,
             commands::host::theme_debug::app__community_theme_debug_load_local_theme,
             commands::host::devkit::app__devkit_read_file,
+            commands::host::devkit::app__devkit_panic,
             commands::host::window::app__focus_window,
             commands::host::window::app__flash_window,
             commands::host::window::app__change_theme,
