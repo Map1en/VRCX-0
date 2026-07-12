@@ -13,6 +13,7 @@ use vrcx_0_application::{
 use vrcx_0_host::{
     error_log::drain_client_error_log,
     host_capabilities::{current_arch, current_platform},
+    panic::PanicSnapshot,
     system_theme::current_system_theme_category,
 };
 use vrcx_0_integrations::telemetry::{
@@ -47,6 +48,7 @@ pub struct TelemetryRuntimeDeps {
     pub backend_runtime: BackendRuntime,
     pub app_version: String,
     pub app_data: PathBuf,
+    pub last_panic_snapshot: Option<PanicSnapshot>,
 }
 
 struct TelemetryRuntimeInner {
@@ -73,6 +75,7 @@ struct TelemetryState {
     last_heartbeat_at: Option<Instant>,
     last_vrchat_check_at: Option<Instant>,
     last_vrchat_running: Option<bool>,
+    last_panic_snapshot: Option<PanicSnapshot>,
     pending_error_cursor: Option<String>,
     acc: TelemetryAccumulator,
 }
@@ -95,7 +98,10 @@ impl TelemetryRuntime {
                 client: TelemetryClient::new(resolve_endpoint()),
                 app_version: normalize_app_version(&deps.app_version),
                 app_data: deps.app_data,
-                state: Mutex::new(TelemetryState::default()),
+                state: Mutex::new(TelemetryState {
+                    last_panic_snapshot: deps.last_panic_snapshot,
+                    ..Default::default()
+                }),
                 running: AtomicBool::new(false),
                 shutdown_flushed: AtomicBool::new(false),
             }),
@@ -347,6 +353,7 @@ impl TelemetryRuntime {
             return;
         }
         self.drain_rust_errors();
+        self.take_and_record_rust_error();
         let context = self.context(session, None);
         self.post_debug("/api/v1/telemetry/session/heartbeat", &context, "heartbeat")
             .await;
@@ -490,6 +497,21 @@ impl TelemetryRuntime {
             state.acc.seed_view_mode(dimension, value);
         }
         state.view_modes_seeded = true;
+    }
+
+    fn take_and_record_rust_error(&self) {
+        if let Ok(mut state) = self.inner.state.lock() {
+            let snapshot = match state.last_panic_snapshot.take() {
+                Some(snapshot) => snapshot,
+                None => return,
+            };
+            let data = serde_json::to_string(&snapshot).unwrap();
+            state.acc.record_rust_error(
+                snapshot.location().unwrap_or("unknown"),
+                snapshot.app_version(),
+                &data,
+            );
+        }
     }
 
     fn drain_rust_errors(&self) {

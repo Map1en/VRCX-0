@@ -1,4 +1,5 @@
 use super::*;
+use vrcx_0_host::panic::PanicSnapshot;
 
 pub struct RuntimeHostOptions {
     pub realtime_origin: String,
@@ -55,6 +56,7 @@ pub struct RuntimeHostState {
     pub legacy_vrcx_source: Option<LegacyVrcxSource>,
     pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
     pub launched_from_autostart: bool,
+    pub last_panic_snapshot: Option<PanicSnapshot>,
     pub(super) backend_starting: AtomicBool,
     pub(super) background_auth_recovery_running: Arc<AtomicBool>,
     pub(super) registry_backup_maintenance_running: Arc<AtomicBool>,
@@ -140,6 +142,7 @@ impl RuntimeHostState {
             runtime_context.config(),
         )?;
         let backend_runtime = BackendRuntime::new();
+        let last_panic_snapshot = vrcx_0_host::panic::take_last(&paths.app_data);
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: runtime_context.config.clone(),
             session: runtime_context.session.clone(),
@@ -147,6 +150,7 @@ impl RuntimeHostState {
             backend_runtime: backend_runtime.clone(),
             app_version: app_version.clone(),
             app_data: paths.app_data.clone(),
+            last_panic_snapshot: last_panic_snapshot.clone(),
         });
         let game_log_runtime = Arc::new(GameLogHostRuntime::new(
             Arc::clone(&runtime_context),
@@ -242,6 +246,7 @@ impl RuntimeHostState {
             legacy_vrcx_source,
             legacy_vrcx_migration_status,
             launched_from_autostart,
+            last_panic_snapshot,
             backend_starting: AtomicBool::new(false),
             background_auth_recovery_running: Arc::new(AtomicBool::new(false)),
             registry_backup_maintenance_running: Arc::new(AtomicBool::new(false)),
