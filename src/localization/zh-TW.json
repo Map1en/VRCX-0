@@ -2782,7 +2782,7 @@
             "title": "VRCX-0 意外關閉",
             "info_instructions": "上一個 VRCX-0 執行個體已崩潰。若要回報此問題，您可以在 GitHub 上建立 Issue。\n\n請附上下方資訊和崩潰快照。",
             "info_notice": "請不要只提供此畫面的螢幕截圖，否則我們將無法協助您。",
-            "general_info": "一般資訊",
+            "related_info": "資訊",
             "os_version": "作業系統版本",
             "vrcx_version": "VRCX-0 版本",
             "message": "原因",

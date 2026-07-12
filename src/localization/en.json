@@ -2782,7 +2782,7 @@
             "title": "VRCX-0 closed unexpectedly",
             "info_instructions": "Previous VRCX-0 instance crashed. To report this problem, you can open an issue on GitHub. \n\nPlease attach the information below and panic snapshot.",
             "info_notice": "Please do not simply provide a screenshot of this screen; we will not be able to assist you.",
-            "general_info": "General Information",
+            "related_info": "Related Information",
             "os_version": "OS Version",
             "vrcx_version": "VRCX-0 Version",
             "message": "Reason",

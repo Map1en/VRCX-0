@@ -81,7 +81,7 @@ export function PanicDialogHost() {
 
                     <div className="bg-muted/40 space-y-2 rounded-lg border p-4">
                         <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                            {t('dialog.panic.general_info')}
+                            {t('dialog.panic.related_info')}
                         </div>
                         <div className="grid grid-cols-3 items-center gap-2">
                             <span className="text-muted-foreground font-medium">

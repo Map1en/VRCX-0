@@ -2778,7 +2778,7 @@
             "title": "VRCX-0 が予期せず終了しました",
             "info_instructions": "前回の VRCX-0 インスタンスがクラッシュしました。この問題を報告するには、GitHub で issue を作成してください。\n\n以下の情報とパニック スナップショットを添付してください。",
             "info_notice": "この画面のスクリーンショットをそのまま提供するだけでは、対応できません。",
-            "general_info": "一般情報",
+            "related_info": "情報",
             "os_version": "OS バージョン",
             "vrcx_version": "VRCX-0 バージョン",
             "message": "原因",
