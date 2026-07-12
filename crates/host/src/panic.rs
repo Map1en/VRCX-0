@@ -157,8 +157,5 @@ pub fn panic_dir(app_data_dir: &Path) -> PathBuf {
 }
 
 pub fn dated_snapshot_path(panic_dir: &Path, datetime: DateTime<Utc>) -> PathBuf {
-    panic_dir.join(format!(
-        "{}.json",
-        datetime.format("%Y-%m-%d_%H-%M-%S%.3f").to_string()
-    ))
+    panic_dir.join(format!("{}.json", datetime.format("%Y-%m-%d_%H-%M-%S%.3f")))
 }
