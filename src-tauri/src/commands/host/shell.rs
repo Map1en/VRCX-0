@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
-
-use serde::Deserialize;
 use tauri::{AppHandle, State};
 
 use crate::error::AppError;
@@ -167,6 +167,18 @@ pub fn app__open_vrc_screenshots_folder() -> Result<bool, AppError> {
 pub fn app__open_crash_vrc_crash_dumps() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(shell_actions::open_crash_dumps_folder()?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__show_dated_panic_snapshot(
+    state: State<'_, AppState>,
+    datetime: DateTime<Utc>,
+) -> Result<(), AppError> {
+    Ok(shell_actions::show_dated_panic_snapshot(
+        &state.app_data_dir.current_dir,
+        datetime,
+    )?)
 }
 
 #[tauri::command]

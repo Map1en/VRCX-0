@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use std::sync::atomic::{AtomicBool, Ordering};
-
-use tauri::{AppHandle, State};
-use tauri_plugin_autostart::ManagerExt as _;
-
+use crate::app::APP_VERSION;
 use crate::error::AppError;
 use crate::state::AppState;
+use std::fmt::Write;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::{AppHandle, State};
+use tauri_plugin_autostart::ManagerExt as _;
 
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
@@ -226,6 +226,70 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 pub fn app__exit_application(app_handle: AppHandle) -> Result<(), AppError> {
     request_application_exit(&app_handle);
     Ok(())
+}
+
+#[derive(serde::Serialize, specta::Type, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FrontendPanicSnapshot {
+    pub app_version: String,
+    pub date: String,
+    pub message: Option<String>,
+    pub location: Option<String>,
+    pub backtrace: Option<String>,
+    pub backtrace_raw: String,
+    pub os_version: String,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__take_panic_snapshot(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Option<FrontendPanicSnapshot>, AppError> {
+    drop(app_handle);
+
+    Ok(match &state.last_panic_snapshot {
+        Some(ref snapshot) => {
+            let os_version = format!(
+                "{} {}",
+                sysinfo::System::name().unwrap_or(String::from("Unknown")),
+                sysinfo::System::os_version().unwrap_or(String::from("(unknown version)")),
+            );
+            let date_str = snapshot.date().to_rfc3339();
+
+            let backtrace_raw = snapshot.backtrace().frames().iter().enumerate().fold(
+                String::new(),
+                |mut acc, (idx, frame)| {
+                    write!(acc, "{idx}: ").unwrap();
+                    write!(acc, "0x{:x} ", frame.ip() as usize).unwrap();
+                    if let Some(base_address) = frame.module_base_address() {
+                        write!(acc, "(module {:x}) ", base_address as usize).unwrap();
+                    } else {
+                        write!(acc, "(module <unknown>) ").unwrap();
+                    }
+                    writeln!(acc, "(symbol {:x})", frame.symbol_address() as usize).unwrap();
+                    acc
+                },
+            );
+            let backtrace = match snapshot.maybe_resolve_backtrace(APP_VERSION) {
+                vrcx_0_host::panic::MaybeResolvedBacktrace::Resolved(bt) => {
+                    Some(format!("{:?}", bt))
+                }
+                vrcx_0_host::panic::MaybeResolvedBacktrace::NotAvailable => None,
+            };
+
+            Some(FrontendPanicSnapshot {
+                app_version: snapshot.app_version().to_string(),
+                date: date_str,
+                message: snapshot.message().map(String::from),
+                location: snapshot.location().map(String::from),
+                backtrace,
+                backtrace_raw,
+                os_version,
+            })
+        }
+        None => None,
+    })
 }
 
 #[tauri::command]

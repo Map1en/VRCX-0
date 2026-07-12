@@ -51,6 +51,7 @@ vrcx-0-mcp = { path = "../crates/mcp" }
 vrcx-0-harness = { path = "../crates/harness" }
 vrcx-0-runtime-host = { path = "../crates/runtime-host" }
 vrcx-0-vrchat-client = { path = "../crates/vrchat-client" }
+sysinfo = { workspace = true }
 specta-typescript = "0.0.9"
 specta = { workspace = true }
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }

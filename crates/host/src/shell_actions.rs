@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use base64::{engine::general_purpose::STANDARD as B64, Engine};
-
 use crate::error::Error;
 use crate::vrchat_paths;
+use base64::{engine::general_purpose::STANDARD as B64, Engine};
+use chrono::{DateTime, Utc};
 
 pub fn open_link(url: &str) -> Result<(), Error> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -67,6 +67,14 @@ pub fn open_existing_folder(path: &Path) -> Result<bool, Error> {
     open::that(path.to_string_lossy().as_ref())
         .map_err(|e| Error::Custom(format!("open folder: {e}")))?;
     Ok(true)
+}
+
+pub fn show_dated_panic_snapshot(app_data_dir: &Path, date: DateTime<Utc>) -> Result<(), Error> {
+    let panic_dir = crate::panic::panic_dir(app_data_dir);
+    let path = crate::panic::dated_snapshot_path(&panic_dir, date);
+
+    showfile::show_path_in_file_manager(&path);
+    Ok(())
 }
 
 pub fn open_vrc_app_data_folder() -> Result<bool, Error> {

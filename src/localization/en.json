@@ -2764,6 +2764,21 @@
         }
     },
     "dialog": {
+        "panic": {
+            "title": "VRCX-0 closed unexpectedly",
+            "info_instructions": "Previous VRCX-0 instance crashed. To report this problem, you can open an issue on GitHub. \n\nPlease attach the information below and panic snapshot.",
+            "info_notice": "Please do not simply provide a screenshot of this screen; we will not be able to assist you.",
+            "general_info": "General Information",
+            "os_version": "OS Version",
+            "vrcx_version": "VRCX-0 Version",
+            "message": "Reason",
+            "location": "Location",
+            "backtrace": "Backtrace",
+            "backtrace_raw": "Raw Backtrace",
+            "show_snapshot": "Show Panic Snapshot",
+            "open_github_issue": "GitHub Issue",
+            "show_raw_backtrace": "Show Raw Backtrace"
+        },
         "alertdialog": {
             "ok": "OK",
             "cancel": "Cancel",

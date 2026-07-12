@@ -6,12 +6,14 @@ use std::time::{Duration, Instant};
 
 use crate::adapters::ipc::{IpcEventSink, IpcServer};
 use crate::adapters::log_watcher::LogWatcherCompatBridge;
+use crate::app::APP_VERSION;
 use crate::deep_link::PendingDeepLinks;
 use crate::error::AppError;
 use serde::Serialize;
 use tauri_plugin_updater::Update;
 use vrcx_0_harness::AssistantController;
 use vrcx_0_host::app_paths::AppDataDirResolution;
+use vrcx_0_host::panic::PanicSnapshot;
 use vrcx_0_mcp::{McpRuntime, McpServerController};
 use vrcx_0_runtime_host::{RuntimeHostOptions, RuntimeHostState};
 
@@ -29,6 +31,7 @@ pub struct AppState {
     pub(crate) background_delay_generation: AtomicU64,
     main_window_rebuild_in_progress: AtomicBool,
     auth_failure_notification: Mutex<Option<AuthFailureNotificationRecord>>,
+    pub last_panic_snapshot: Option<PanicSnapshot>,
 }
 
 pub struct PendingTauriUpdate {
@@ -87,13 +90,14 @@ impl AppState {
             realtime_origin: realtime_origin(),
             launched_from_autostart,
             app_data_dir,
-            app_version: env!("CARGO_PKG_VERSION").into(),
+            app_version: APP_VERSION.into(),
             is_headless: false,
         })?;
         let mcp_controller = McpServerController::new(McpRuntime::from_host(&runtime));
         let ipc_sink: Arc<dyn IpcEventSink> = runtime.game_client_runtime.clone();
         let ipc = IpcServer::new(Some(ipc_sink));
         let log_watcher_compat_bridge = LogWatcherCompatBridge::new();
+        let last_panic_snapshot = vrcx_0_host::panic::take_last(&runtime.app_data_dir.current_dir);
 
         Ok(Self {
             runtime,
@@ -107,6 +111,7 @@ impl AppState {
             background_delay_generation: AtomicU64::new(0),
             main_window_rebuild_in_progress: AtomicBool::new(false),
             auth_failure_notification: Mutex::new(None),
+            last_panic_snapshot,
         })
     }
 

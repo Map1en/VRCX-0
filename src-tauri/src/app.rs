@@ -15,6 +15,8 @@ use vrcx_0_application::{
 };
 use vrcx_0_persistence::config::{self as config_store, ConfigWriteEntry};
 
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 fn stop_background_mode_and_show_window(app: &tauri::AppHandle, state: &AppState) {
     if let Err(error) = bootstrap::restore_foreground_window_from_background_mode(app, state) {
         tracing::warn!(

@@ -52,6 +52,7 @@ slint = { version = "~1.17", default-features = false, features = [
     "std"
 ] }
 slint-build = "~1.17"
+sysinfo = "0.39"
 specta = { version = "=2.0.0-rc.22", features = [
     "derive",
     "serde_json",
