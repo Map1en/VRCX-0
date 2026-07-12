@@ -2337,6 +2337,9 @@ export const commands = {
     async appDevkitReadFile(filePath: string): Promise<string> {
         return await TAURI_INVOKE('app__devkit_read_file', { filePath });
     },
+    async appDevkitPanic(message: string | null): Promise<null> {
+        return await TAURI_INVOKE('app__devkit_panic', { message });
+    },
     async appFocusWindow(): Promise<null> {
         return await TAURI_INVOKE('app__focus_window');
     },
