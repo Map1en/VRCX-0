@@ -9,6 +9,7 @@ pub mod llm_endpoint;
 pub mod mcp_server;
 pub mod moderation_sync;
 pub mod overlay_activity;
+pub mod profile_backup;
 pub mod proxy;
 pub mod realtime;
 pub mod registry_backup;

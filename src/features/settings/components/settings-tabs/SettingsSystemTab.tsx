@@ -7,6 +7,7 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
+import { ProfileBackupSettingsGroup } from './ProfileBackupSettingsGroup';
 
 type SettingsSystemTabProps = {
     autoBackgroundDownloadUpdates?: boolean;
@@ -269,6 +270,7 @@ export function SettingsSystemTab({
                     </div>
                 </Field>
             </SettingsGroup>
+            <ProfileBackupSettingsGroup />
         </SettingsTabContent>
     );
 }

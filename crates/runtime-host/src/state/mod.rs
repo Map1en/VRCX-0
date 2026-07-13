@@ -40,6 +40,7 @@ use vrcx_0_application::{
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
     RuntimeBackgroundJobs, RuntimeEventSink, SavedCredentialLoginStartInput, SessionHostRuntime,
     SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFriendRosterBaselineInput, WebClient,
+    PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;

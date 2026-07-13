@@ -6,7 +6,7 @@ use vrcx_0_integrations::external_api;
 use vrcx_0_persistence::config::{get_json, resolve_config_key, set_json, ConfigWriteEntry};
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result};
+use crate::{Error, Result, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY};
 
 pub fn read_config_string_array(db: &DatabaseService, key: &str) -> Result<Vec<String>> {
     let parsed = get_json(db, key, Value::Null)?;
@@ -49,6 +49,9 @@ pub fn validate_config_writes(entries: &[ConfigWriteEntry]) -> Result<()> {
 fn validate_config_write(key: &str, value: &str) -> Result<()> {
     match resolve_config_key(key).as_str() {
         "config:vrcx_usergeneratedcontentpath" => validate_ugc_path(value),
+        key if key == resolve_config_key(PROFILE_BACKUP_DIRECTORY_CONFIG_KEY) => {
+            validate_optional_directory_path(value, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY)
+        }
         "config:vrcx_translationapiendpoint" => validate_optional_provider_url(
             value,
             "translationAPIEndpoint must be an HTTP or HTTPS endpoint.",
@@ -63,20 +66,24 @@ fn validate_config_write(key: &str, value: &str) -> Result<()> {
 }
 
 fn validate_ugc_path(value: &str) -> Result<()> {
+    validate_optional_directory_path(value, "userGeneratedContentPath")
+}
+
+fn validate_optional_directory_path(value: &str, setting_name: &str) -> Result<()> {
     let value = value.trim();
     if value.is_empty() {
         return Ok(());
     }
     let path = PathBuf::from(value);
     if !path.is_absolute() {
-        return Err(Error::Custom(
-            "userGeneratedContentPath must be an absolute folder path.".into(),
-        ));
+        return Err(Error::Custom(format!(
+            "{setting_name} must be an absolute folder path."
+        )));
     }
     if path.exists() && !path.is_dir() {
-        return Err(Error::Custom(
-            "userGeneratedContentPath must point to a folder.".into(),
-        ));
+        return Err(Error::Custom(format!(
+            "{setting_name} must point to a folder."
+        )));
     }
     Ok(())
 }
@@ -157,5 +164,20 @@ mod tests {
         assert!(
             validate_config_writes(&[entry("userGeneratedContentPath", "relative/path")]).is_err()
         );
+    }
+
+    #[test]
+    fn validates_profile_backup_directory_paths() {
+        assert!(validate_config_writes(&[entry(PROFILE_BACKUP_DIRECTORY_CONFIG_KEY, "")]).is_ok());
+        assert!(validate_config_writes(&[entry(
+            PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
+            &std::env::temp_dir().to_string_lossy()
+        )])
+        .is_ok());
+        assert!(validate_config_writes(&[entry(
+            PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
+            "relative/backup"
+        )])
+        .is_err());
     }
 }

@@ -2,9 +2,9 @@ use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
     BackendRuntimeTelemetry, FriendProjection, GameLogProjection, HostSessionProjection,
-    OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent, RealtimeCurrentUserProjection,
-    RealtimeEntryCorrection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeWsStatusPayload,
+    OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent, ProfileBackupJobStatus,
+    RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeInstanceClosedProjection,
+    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeWsStatusPayload,
 };
 use vrcx_0_harness::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
@@ -33,6 +33,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<OverlayActivitySnapshot>()
         .typ::<ParsedLocation>()
         .typ::<PrintAutoCleanupEvent>()
+        .typ::<ProfileBackupJobStatus>()
         .typ::<RealtimeCurrentUserProjection>()
         .typ::<RealtimeEntryCorrection>()
         .typ::<RealtimeInstanceClosedProjection>()
@@ -92,6 +93,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::share_collection::app__share_collection_import,
             commands::application::telemetry::app__telemetry_record_event,
             commands::application::proxy::app__proxy_settings_test,
+            commands::application::profile_backup::app__profile_backup_job_status_get,
+            commands::application::profile_backup::app__profile_backup_job_cancel,
+            commands::application::profile_backup::app__profile_backup_manual_start,
             commands::application::mcp_server::app__mcp_server_status,
             commands::application::mcp_server::app__mcp_server_set_enabled,
             commands::application::mcp_server::app__mcp_server_set_allow_vrchat_writes,

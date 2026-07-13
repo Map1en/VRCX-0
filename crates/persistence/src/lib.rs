@@ -34,7 +34,9 @@ pub mod maintenance {
     };
 }
 
-pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus};
+pub use database::{
+    optimize_database, DatabaseBackupProgress, DatabaseService, DatabaseUpgradeStatus,
+};
 pub use error::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

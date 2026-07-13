@@ -135,10 +135,7 @@ impl RuntimeHostState {
             Arc::clone(&web),
             Arc::clone(&image_cache),
         ));
-        register_persisted_user_generated_content_path_grant(
-            &host_file_access,
-            runtime_context.config(),
-        )?;
+        register_persisted_file_access_grants(&host_file_access, runtime_context.config())?;
         let backend_runtime = BackendRuntime::new();
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: runtime_context.config.clone(),
@@ -258,14 +255,19 @@ impl RuntimeHostState {
     }
 }
 
-fn register_persisted_user_generated_content_path_grant(
+fn register_persisted_file_access_grants(
     host_file_access: &HostFileAccess,
     config: &vrcx_0_persistence::config::ConfigRepository,
 ) -> Result<()> {
-    let ugc_path = config.get_string(USER_GENERATED_CONTENT_PATH_CONFIG_KEY, "")?;
-    let ugc_path = ugc_path.trim();
-    if !ugc_path.is_empty() {
-        host_file_access.register_path(ugc_path);
+    for config_key in [
+        USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
+        PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
+    ] {
+        let path = config.get_string(config_key, "")?;
+        let path = path.trim();
+        if !path.is_empty() {
+            host_file_access.register_path(path);
+        }
     }
     Ok(())
 }
@@ -273,7 +275,7 @@ fn register_persisted_user_generated_content_path_grant(
 #[cfg(test)]
 mod persisted_file_access_tests {
     use super::{
-        register_persisted_user_generated_content_path_grant,
+        register_persisted_file_access_grants, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
         USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
     };
     use crate::{HostFileAccess, Result};
@@ -328,10 +330,36 @@ mod persisted_file_access_tests {
             .ensure_write_allowed(&ugc_path, &app_paths)
             .is_err());
 
-        register_persisted_user_generated_content_path_grant(&host_file_access, &config)?;
+        register_persisted_file_access_grants(&host_file_access, &config)?;
 
         host_file_access.ensure_read_allowed(&ugc_path, &app_paths)?;
         host_file_access.ensure_write_allowed(ugc_path.join("Prints"), &app_paths)?;
+        Ok(())
+    }
+
+    #[test]
+    fn restores_persisted_profile_backup_directory_grant() -> Result<()> {
+        let dir = TestDir::new("persisted-profile-backup-grant");
+        let app_data = dir.path.join("app-data");
+        let backup_path = dir.path.join("backups");
+        std::fs::create_dir_all(&app_data)?;
+        std::fs::create_dir_all(&backup_path)?;
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+        let config = ConfigRepository::new(db);
+        config.set_string(
+            PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
+            &backup_path.to_string_lossy(),
+        )?;
+
+        let host_file_access = HostFileAccess::new();
+        let app_paths = AppPaths::from_app_data(app_data);
+        assert!(host_file_access
+            .ensure_write_allowed(&backup_path, &app_paths)
+            .is_err());
+
+        register_persisted_file_access_grants(&host_file_access, &config)?;
+
+        host_file_access.ensure_write_allowed(&backup_path, &app_paths)?;
         Ok(())
     }
 }

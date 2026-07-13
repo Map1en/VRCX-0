@@ -14,6 +14,7 @@ use vrcx_0_application::OverlayActivitySnapshot;
 use vrcx_0_application::OverlayActivitySurface;
 use vrcx_0_application::OverlayActivitySurfaceFilters;
 use vrcx_0_application::PrintCleanupQueue;
+use vrcx_0_application::ProfileBackupRuntime;
 use vrcx_0_application::RuntimeAuthScope;
 use vrcx_0_application::RuntimeBackgroundJobs;
 use vrcx_0_application::RuntimeDiagnostics;
@@ -86,6 +87,7 @@ pub struct RuntimeHostContext {
     pub session: HostSessionRuntime,
     pub auth_scope: RuntimeAuthScope,
     pub print_cleanup: PrintCleanupQueue,
+    pub profile_backup: ProfileBackupRuntime,
     pub mutual_graph_fetch: MutualGraphFetchRuntime,
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,
@@ -105,6 +107,7 @@ impl RuntimeHostContext {
     ) -> Self {
         let config = ConfigRepository::new(Arc::clone(&db));
         let event_bus = RuntimeEventBus::new();
+        let profile_backup = ProfileBackupRuntime::new(event_bus.clone());
         let overlay_activity = OverlayActivityRuntime::new();
         let diagnostics = RuntimeDiagnostics::new();
         let tasks = TaskSupervisor::new();
@@ -150,6 +153,7 @@ impl RuntimeHostContext {
             session,
             auth_scope: RuntimeAuthScope::new(),
             print_cleanup: PrintCleanupQueue::new(),
+            profile_backup,
             mutual_graph_fetch: MutualGraphFetchRuntime::new(),
             overlay_activity,
             world_cache,

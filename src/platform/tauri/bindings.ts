@@ -284,6 +284,21 @@ export const commands = {
     ): Promise<ProxySettingsTestResult> {
         return await TAURI_INVOKE('app__proxy_settings_test', { input });
     },
+    async appProfileBackupJobStatusGet(): Promise<ProfileBackupJobStatus> {
+        return await TAURI_INVOKE('app__profile_backup_job_status_get');
+    },
+    async appProfileBackupJobCancel(
+        jobId: number
+    ): Promise<ProfileBackupJobStatus> {
+        return await TAURI_INVOKE('app__profile_backup_job_cancel', { jobId });
+    },
+    async appProfileBackupManualStart(
+        targetDirectory: string
+    ): Promise<ProfileBackupJobStatus> {
+        return await TAURI_INVOKE('app__profile_backup_manual_start', {
+            targetDirectory
+        });
+    },
     async appMcpServerStatus(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_status');
     },
@@ -3895,6 +3910,55 @@ export type PrintFavoriteState = {
     maxFavorites: number;
     warning: CleanupWarning | null;
 };
+export type ProfileBackupEntryManifest = {
+    fileName: string;
+    size: number;
+    sha256: string;
+};
+export type ProfileBackupJobState =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
+export type ProfileBackupJobStatus = {
+    jobId: number;
+    state: ProfileBackupJobState;
+    kind: ProfileBackupKind | null;
+    progress: ProfileBackupProgress | null;
+    cancelRequested: boolean;
+    startedAt: string | null;
+    updatedAt: string | null;
+    finishedAt: string | null;
+    result: ProfileBackupResult | null;
+    lastError: string | null;
+};
+export type ProfileBackupKind = 'manual' | 'automatic';
+export type ProfileBackupManifest = {
+    formatVersion: number;
+    createdAt: string;
+    appVersion: string;
+    backupKind: ProfileBackupKind;
+    databaseSchemaVersion: number;
+    database: ProfileBackupEntryManifest;
+    config: ProfileBackupEntryManifest;
+};
+export type ProfileBackupProgress = {
+    stage: ProfileBackupStage;
+    completed: number;
+    total: number;
+};
+export type ProfileBackupResult = {
+    path: string;
+    manifest: ProfileBackupManifest;
+};
+export type ProfileBackupStage =
+    | 'databaseSnapshot'
+    | 'hashing'
+    | 'packaging'
+    | 'validating'
+    | 'publishing';
 export type ProxySettingsTestInput = { proxy?: string };
 export type ProxySettingsTestResult = {
     normalizedProxy: string | null;

@@ -5,9 +5,11 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex, RwLock,
 };
+use std::time::Duration;
 
 use chrono::Utc;
 use rusqlite::{
+    backup::StepResult,
     types::{ToSql, Value as SqlValue},
     Connection, OpenFlags, OptionalExtension, Statement, MAIN_DB,
 };
@@ -19,6 +21,15 @@ use super::sidecar::remove_sidecars;
 use super::value::{json_to_sql, sqlite_value_to_json};
 
 const READ_CONNECTION_COUNT: usize = 2;
+const ONLINE_BACKUP_TARGET_BYTES_PER_STEP: usize = 4 * 1024 * 1024;
+const ONLINE_BACKUP_PAUSE: Duration = Duration::from_millis(25);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DatabaseBackupProgress {
+    pub copied_pages: i32,
+    pub remaining_pages: i32,
+    pub total_pages: i32,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -77,6 +88,63 @@ impl DatabaseService {
 
     pub fn db_path(&self) -> &Path {
         &self.db_path
+    }
+
+    /// Creates a consistent snapshot using SQLite's incremental Online Backup API.
+    ///
+    /// The source is opened through a dedicated read-only connection so pauses
+    /// between steps do not retain this service's writer mutex. Returning
+    /// `false` from `on_progress` cancels the operation.
+    pub fn backup_online(
+        &self,
+        destination_path: &Path,
+        mut on_progress: impl FnMut(DatabaseBackupProgress) -> bool,
+    ) -> Result<(), Error> {
+        let source = open_read_connection(&self.db_path)?;
+        let page_size: i64 = source
+            .query_row("PRAGMA page_size", [], |row| row.get(0))
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let pages_per_step = pages_per_backup_step(page_size);
+        let mut destination = Connection::open(destination_path)
+            .map_err(|error| Error::Database(error.to_string()))?;
+
+        {
+            let backup = rusqlite::backup::Backup::new(&source, &mut destination)
+                .map_err(|error| Error::Database(error.to_string()))?;
+            loop {
+                let step_result = backup
+                    .step(pages_per_step)
+                    .map_err(|error| Error::Database(error.to_string()))?;
+                let progress = backup.progress();
+                let progress = DatabaseBackupProgress {
+                    copied_pages: progress.pagecount.saturating_sub(progress.remaining),
+                    remaining_pages: progress.remaining,
+                    total_pages: progress.pagecount,
+                };
+                if !on_progress(progress) {
+                    return Err(Error::Custom("Database backup was cancelled.".into()));
+                }
+                if step_result == StepResult::Done {
+                    break;
+                }
+                std::thread::sleep(ONLINE_BACKUP_PAUSE);
+            }
+        }
+
+        destination
+            .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            .map_err(|error| Error::Database(error.to_string()))?;
+        drop(destination);
+        std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(destination_path)?
+            .sync_all()?;
+        Ok(())
+    }
+
+    pub fn vrcx0_schema_version(&self) -> Result<i64, Error> {
+        super::schema::read_vrcx0_schema_version(self)
     }
 
     pub(crate) fn execute(
@@ -457,6 +525,13 @@ impl DatabaseService {
         }
         Ok(())
     }
+}
+
+fn pages_per_backup_step(page_size: i64) -> i32 {
+    let page_size = usize::try_from(page_size).unwrap_or(4096).max(1);
+    ONLINE_BACKUP_TARGET_BYTES_PER_STEP
+        .div_ceil(page_size)
+        .clamp(1, i32::MAX as usize) as i32
 }
 
 pub fn optimize_database(db: &DatabaseService) -> Result<(), Error> {

@@ -8603,6 +8603,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "specta",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -8613,6 +8614,7 @@ dependencies = [
  "vrcx-0-persistence",
  "vrcx-0-vrchat-client",
  "walkdir",
+ "zip",
 ]
 
 [[package]]
@@ -10177,6 +10179,7 @@ checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
 dependencies = [
  "arbitrary",
  "crc32fast",
+ "flate2",
  "indexmap 2.14.0",
  "memchr",
 ]
