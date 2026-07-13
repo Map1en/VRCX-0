@@ -1,7 +1,6 @@
 use backtrace::{Backtrace, BacktraceFrame};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::ffi::OsString;
 use std::io::Write;
 use std::panic::PanicHookInfo;
 use std::path::{Path, PathBuf};
@@ -162,6 +161,6 @@ pub fn panic_dir(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join(PANIC_DIR)
 }
 
-pub fn dated_snapshot_name(datetime: DateTime<Utc>) -> OsString {
-    format!("{}.json", datetime.format("%Y-%m-%d_%H-%M-%S%.3f")).into()
+pub fn dated_snapshot_name(datetime: DateTime<Utc>) -> String {
+    format!("{}.json", datetime.format("%Y-%m-%d_%H-%M-%S%.3f"))
 }
