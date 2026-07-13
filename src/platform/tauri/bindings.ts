@@ -2262,16 +2262,14 @@ export const commands = {
     async appOpenUgcPhotosFolder(ugcPath: string | null): Promise<boolean> {
         return await TAURI_INVOKE('app__open_ugc_photos_folder', { ugcPath });
     },
+    async appOpenCrashesFolder(): Promise<boolean> {
+        return await TAURI_INVOKE('app__open_crashes_folder');
+    },
     async appOpenVrcScreenshotsFolder(): Promise<boolean> {
         return await TAURI_INVOKE('app__open_vrc_screenshots_folder');
     },
     async appOpenCrashVrcCrashDumps(): Promise<boolean> {
         return await TAURI_INVOKE('app__open_crash_vrc_crash_dumps');
-    },
-    async appShowDatedPanicSnapshot(datetime: string): Promise<null> {
-        return await TAURI_INVOKE('app__show_dated_panic_snapshot', {
-            datetime
-        });
     },
     async appOpenFolderAndSelectItem(
         path: string,
@@ -2369,9 +2367,6 @@ export const commands = {
     },
     async appExitApplication(): Promise<null> {
         return await TAURI_INVOKE('app__exit_application');
-    },
-    async appTakePanicSnapshot(): Promise<FrontendPanicSnapshot | null> {
-        return await TAURI_INVOKE('app__take_panic_snapshot');
     },
     async appCheckTauriUpdate(
         manifestUrl: string,
@@ -3386,15 +3381,6 @@ export type FriendRecord = Partial<{
     currentAvatarThumbnailImageUrl?: string;
     currentAvatarAuthorId?: string;
     currentAvatarName?: string;
-};
-export type FrontendPanicSnapshot = {
-    appVersion: string;
-    date: string;
-    message: string | null;
-    location: string | null;
-    backtrace: string | null;
-    backtraceRaw: string;
-    osVersion: string;
 };
 export type GameLogProjection = {
     currentLocation: string;

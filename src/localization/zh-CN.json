@@ -2778,21 +2778,6 @@
         }
     },
     "dialog": {
-        "panic": {
-            "title": "VRCX-0 意外关闭",
-            "info_instructions": "VRCX-0 应用意外崩溃了。要报告此问题，你可以在 GitHub 上创建 Issue。\n\n在反馈时，请附上下方给出的信息和崩溃快照。",
-            "info_notice": "请不要只提供此屏幕的屏幕截图，否则我们将无法协助你解决问题。",
-            "related_info": "信息",
-            "os_version": "操作系统版本",
-            "vrcx_version": "VRCX-0 版本",
-            "message": "原因",
-            "location": "发生位置",
-            "backtrace": "堆栈追踪",
-            "backtrace_raw": "原始堆栈追踪",
-            "show_snapshot": "显示崩溃快照",
-            "open_github_issue": "GitHub Issue",
-            "show_raw_backtrace": "显示原始堆栈追踪"
-        },
         "alertdialog": {
             "ok": "确定",
             "cancel": "取消",

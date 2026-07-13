@@ -9,7 +9,6 @@ import { FriendProfileLoadHost } from './FriendProfileLoadHost';
 import { LaunchDialogHost } from './LaunchDialogHost';
 import { ModalHost } from './ModalHost';
 import { NotificationHost } from './NotificationHost';
-import { PanicDialogHost } from './PanicDialogHost';
 import { PostUpdateChangelogToastHost } from './PostUpdateChangelogToastHost';
 import { SystemDialogsHost } from './SystemDialogsHost';
 import { ToolsDialogsHost } from './ToolsDialogsHost';
@@ -30,7 +29,6 @@ export function GlobalHosts() {
             <PostUpdateChangelogToastHost />
             <LaunchDialogHost />
             <SystemDialogsHost />
-            <PanicDialogHost />
             <ToolsDialogsHost />
             <AssistantDialog />
         </>

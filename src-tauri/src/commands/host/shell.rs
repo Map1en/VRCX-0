@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::{
     fs,
@@ -171,13 +170,9 @@ pub fn app__open_crash_vrc_crash_dumps() -> Result<bool, AppError> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__show_dated_panic_snapshot(
-    state: State<'_, AppState>,
-    datetime: DateTime<Utc>,
-) -> Result<(), AppError> {
-    Ok(shell_actions::show_dated_panic_snapshot(
+pub fn app__open_crashes_folder(state: State<'_, AppState>) -> Result<bool, AppError> {
+    Ok(shell_actions::show_crashes_folder(
         &state.app_data_dir.current_dir,
-        datetime,
     )?)
 }
 

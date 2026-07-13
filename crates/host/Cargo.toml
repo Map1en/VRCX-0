@@ -17,7 +17,6 @@ futures-util = "0.3"
 fontdb = "0.23"
 hex = "0.4"
 open = "5"
-showfile = { version = "0.1", features = ["gio"], default-features = false }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = "0.11"

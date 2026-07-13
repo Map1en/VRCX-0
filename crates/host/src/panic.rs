@@ -1,17 +1,10 @@
 use backtrace::{Backtrace, BacktraceFrame};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::ffi::OsString;
 use std::io::Write;
 use std::panic::PanicHookInfo;
 use std::path::{Path, PathBuf};
-
-#[derive(thiserror::Error, Debug)]
-enum Error {
-    #[error("io error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("serde error: {0}")]
-    SerdeJson(#[from] serde_json::Error),
-}
 
 pub const LATEST_PANIC_NAME: &str = "latest.json";
 pub const PANIC_DIR: &str = "crashes";
@@ -108,26 +101,33 @@ impl PanicSnapshot {
     }
 }
 
+#[inline(never)]
 pub fn handle(app_data_dir: &Path, panic_info: &PanicHookInfo, app_version: &str) {
     let panic_dir = panic_dir(app_data_dir);
+
     if std::fs::create_dir_all(&panic_dir).is_ok() {
-        match write_panic_info(&panic_dir, panic_info, app_version) {
+        let snapshot =
+            PanicSnapshot::new(app_version.to_string(), Utc::now(), panic_info, handle as _);
+
+        let snapshot_str = serde_json::to_string(&snapshot).unwrap();
+
+        crate::error_log::append_error_log_with_version(
+            app_data_dir,
+            "rust:panic",
+            &snapshot_str,
+            app_version,
+        );
+
+        match write_panic_snapshot(&panic_dir, snapshot.date, snapshot_str.as_bytes()) {
             Ok(path) => {
                 eprintln!("panic info saved to {}", path.display());
             }
             Err(err) => {
-                eprintln!("failed to save crash info: {}", err);
+                eprintln!("failed to save panic info: {}", err);
                 std::process::abort();
             }
         }
     }
-
-    crate::error_log::append_error_log_with_version(
-        app_data_dir,
-        "rust:panic",
-        &panic_info.to_string(),
-        app_version,
-    );
 }
 
 pub fn take_last(app_data_dir: &Path) -> Option<PanicSnapshot> {
@@ -141,43 +141,27 @@ pub fn take_last(app_data_dir: &Path) -> Option<PanicSnapshot> {
     None
 }
 
-#[inline(never)]
-fn write_panic_info(
+fn write_panic_snapshot(
     panic_dir: &Path,
-    panic_info: &PanicHookInfo,
-    app_version: &str,
-) -> Result<PathBuf, Error> {
-    let now = Utc::now();
+    date: DateTime<Utc>,
+    snapshot_bin: &[u8],
+) -> Result<PathBuf, std::io::Error> {
+    let snapshot_path = panic_dir.join(dated_snapshot_name(date));
 
-    let snapshot = PanicSnapshot::new(
-        app_version.to_string(),
-        now,
-        panic_info,
-        write_panic_info as _,
-    );
-
-    let panic_info_path = dated_snapshot_path(panic_dir, now);
-
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(&panic_info_path)?;
-
-    file.write_all(&serde_json::to_vec(&snapshot)?)?;
-    drop(file);
+    std::fs::write(&snapshot_path, snapshot_bin)?;
 
     let tmp_path = panic_dir.join("latest.tmp");
-    std::fs::hard_link(&panic_info_path, &tmp_path)?;
+
+    std::fs::hard_link(&snapshot_path, &tmp_path)?;
     std::fs::rename(&tmp_path, panic_dir.join(LATEST_PANIC_NAME))?;
 
-    Ok(panic_info_path)
+    Ok(snapshot_path)
 }
 
 pub fn panic_dir(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join(PANIC_DIR)
 }
 
-pub fn dated_snapshot_path(panic_dir: &Path, datetime: DateTime<Utc>) -> PathBuf {
-    panic_dir.join(format!("{}.json", datetime.format("%Y-%m-%d_%H-%M-%S%.3f")))
+pub fn dated_snapshot_name(datetime: DateTime<Utc>) -> OsString {
+    format!("{}.json", datetime.format("%Y-%m-%d_%H-%M-%S%.3f")).into()
 }
