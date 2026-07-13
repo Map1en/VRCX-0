@@ -1,15 +1,17 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::app::APP_VERSION;
-use crate::deep_link::{parse_deep_link, DEEP_LINK_ARRIVED_EVENT};
-use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
+
+use crate::app::APP_VERSION;
+
+use crate::deep_link::{parse_deep_link, DEEP_LINK_ARRIVED_EVENT};
+use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
 
 use super::adapters::{start_host_services, start_mcp_server_if_enabled, TauriDesktopNotifier};
 use super::autostart::{apply_autostart_window_state_if_needed, sync_autostart_from_db};
