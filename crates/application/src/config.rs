@@ -6,7 +6,13 @@ use vrcx_0_integrations::external_api;
 use vrcx_0_persistence::config::{get_json, resolve_config_key, set_json, ConfigWriteEntry};
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY};
+use crate::{
+    Error, Result, PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
+    PROFILE_BACKUP_DIRECTORY_CONFIG_KEY, PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY,
+    PROFILE_BACKUP_INTERVAL_DAYS_MAX, PROFILE_BACKUP_INTERVAL_DAYS_MIN,
+    PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY, PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
+    PROFILE_BACKUP_RETENTION_COUNT_MAX, PROFILE_BACKUP_RETENTION_COUNT_MIN,
+};
 
 pub fn read_config_string_array(db: &DatabaseService, key: &str) -> Result<Vec<String>> {
     let parsed = get_json(db, key, Value::Null)?;
@@ -52,6 +58,28 @@ fn validate_config_write(key: &str, value: &str) -> Result<()> {
         key if key == resolve_config_key(PROFILE_BACKUP_DIRECTORY_CONFIG_KEY) => {
             validate_optional_directory_path(value, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY)
         }
+        key if key == resolve_config_key(PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY) => {
+            validate_bool(value, PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY)
+        }
+        key if key == resolve_config_key(PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY) => {
+            validate_bounded_integer(
+                value,
+                PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY,
+                u64::from(PROFILE_BACKUP_INTERVAL_DAYS_MIN),
+                u64::from(PROFILE_BACKUP_INTERVAL_DAYS_MAX),
+            )
+        }
+        key if key == resolve_config_key(PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY) => {
+            validate_bounded_integer(
+                value,
+                PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
+                PROFILE_BACKUP_RETENTION_COUNT_MIN as u64,
+                PROFILE_BACKUP_RETENTION_COUNT_MAX as u64,
+            )
+        }
+        key if key == resolve_config_key(PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY) => {
+            validate_optional_timestamp(value, PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY)
+        }
         "config:vrcx_translationapiendpoint" => validate_optional_provider_url(
             value,
             "translationAPIEndpoint must be an HTTP or HTTPS endpoint.",
@@ -63,6 +91,38 @@ fn validate_config_write(key: &str, value: &str) -> Result<()> {
         "config:vrcx_avatarremotedatabaseproviderlist" => validate_provider_list(value),
         _ => Ok(()),
     }
+}
+
+fn validate_bool(value: &str, setting_name: &str) -> Result<()> {
+    if matches!(value.trim(), "true" | "false") {
+        return Ok(());
+    }
+    Err(Error::Custom(format!(
+        "{setting_name} must be true or false."
+    )))
+}
+
+fn validate_bounded_integer(value: &str, setting_name: &str, min: u64, max: u64) -> Result<()> {
+    if value
+        .trim()
+        .parse::<u64>()
+        .is_ok_and(|value| (min..=max).contains(&value))
+    {
+        return Ok(());
+    }
+    Err(Error::Custom(format!(
+        "{setting_name} must be an integer from {min} to {max}."
+    )))
+}
+
+fn validate_optional_timestamp(value: &str, setting_name: &str) -> Result<()> {
+    let value = value.trim();
+    if value.is_empty() || value.parse::<chrono::DateTime<chrono::Utc>>().is_ok() {
+        return Ok(());
+    }
+    Err(Error::Custom(format!(
+        "{setting_name} must be an RFC 3339 timestamp."
+    )))
 }
 
 fn validate_ugc_path(value: &str) -> Result<()> {
@@ -177,6 +237,33 @@ mod tests {
         assert!(validate_config_writes(&[entry(
             PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
             "relative/backup"
+        )])
+        .is_err());
+    }
+
+    #[test]
+    fn validates_automatic_profile_backup_settings() {
+        assert!(validate_config_writes(&[
+            entry(PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY, "true"),
+            entry(PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY, "7"),
+            entry(PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY, "3"),
+            entry(
+                PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY,
+                "2026-07-13T15:30:00Z"
+            ),
+        ])
+        .is_ok());
+        assert!(
+            validate_config_writes(&[entry(PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY, "31")])
+                .is_err()
+        );
+        assert!(
+            validate_config_writes(&[entry(PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY, "0")])
+                .is_err()
+        );
+        assert!(validate_config_writes(&[entry(
+            PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
+            "sometimes"
         )])
         .is_err());
     }

@@ -10,6 +10,9 @@ import { IDLE_PROFILE_BACKUP_JOB_STATUS } from '@/services/profileBackupService'
 const mocks = vi.hoisted(() => ({
     cancelBackup: vi.fn(),
     chooseDirectory: vi.fn(),
+    setAutomaticEnabled: vi.fn(),
+    setAutomaticIntervalDays: vi.fn(),
+    setAutomaticRetentionCount: vi.fn(),
     startManualBackup: vi.fn(),
     useProfileBackupSettings: vi.fn()
 }));
@@ -30,6 +33,27 @@ const labels: Record<string, string> = {
     'view.settings.general.profile_backup.manual': 'Manual Backup',
     'view.settings.general.profile_backup.manual_description':
         'Runs in the background',
+    'view.settings.general.profile_backup.automatic_enabled':
+        'Automatic Backup',
+    'view.settings.general.profile_backup.automatic_enabled_description':
+        'Runs on a schedule',
+    'view.settings.general.profile_backup.automatic_interval':
+        'Backup Interval',
+    'view.settings.general.profile_backup.automatic_interval_description':
+        'Every 1 to 30 days',
+    'view.settings.general.profile_backup.automatic_interval_unit': 'days',
+    'view.settings.general.profile_backup.automatic_retention':
+        'Automatic Backups to Keep',
+    'view.settings.general.profile_backup.automatic_retention_description':
+        'Keeps automatic backups only',
+    'view.settings.general.profile_backup.automatic_retention_unit': 'files',
+    'view.settings.general.profile_backup.last_automatic':
+        'Last Automatic Backup',
+    'view.settings.general.profile_backup.last_automatic_description':
+        'Last successful completion',
+    'view.settings.general.profile_backup.last_automatic_never': 'Never',
+    'view.settings.general.profile_backup.kind_manual': 'Manual',
+    'view.settings.general.profile_backup.kind_automatic': 'Automatic',
     'view.settings.general.profile_backup.backup_now': 'Back Up Now',
     'view.settings.general.profile_backup.cancel': 'Cancel',
     'view.settings.general.profile_backup.status_idle': 'Ready',
@@ -72,12 +96,21 @@ function mockModel(
     overrides: Record<string, unknown> = {}
 ): Record<string, unknown> {
     return {
+        automatic: {
+            enabled: false,
+            intervalDays: 7,
+            retentionCount: 3,
+            lastAutomaticAt: ''
+        },
         cancelBackup: mocks.cancelBackup,
         chooseDirectory: mocks.chooseDirectory,
         directory: 'D:\\Backups',
         error: null,
         loading: false,
         pendingAction: null,
+        setAutomaticEnabled: mocks.setAutomaticEnabled,
+        setAutomaticIntervalDays: mocks.setAutomaticIntervalDays,
+        setAutomaticRetentionCount: mocks.setAutomaticRetentionCount,
         startManualBackup: mocks.startManualBackup,
         status: status(),
         ...overrides
@@ -105,9 +138,13 @@ describe('ProfileBackupSettingsGroup', () => {
             screen.getByRole('button', { name: 'Choose Folder…' })
         );
         await user.click(screen.getByRole('button', { name: 'Back Up Now' }));
+        await user.click(
+            screen.getByRole('switch', { name: 'Automatic Backup' })
+        );
 
         expect(mocks.chooseDirectory).toHaveBeenCalledOnce();
         expect(mocks.startManualBackup).toHaveBeenCalledOnce();
+        expect(mocks.setAutomaticEnabled).toHaveBeenCalledWith(true);
     });
 
     it('shows progress and cancellation while a backup is running', async () => {
@@ -155,5 +192,45 @@ describe('ProfileBackupSettingsGroup', () => {
                 }) as HTMLButtonElement
             ).disabled
         ).toBe(true);
+    });
+
+    it('edits automatic backup settings and shows the automatic job kind', async () => {
+        const user = userEvent.setup();
+        mocks.useProfileBackupSettings.mockReturnValue(
+            mockModel({
+                automatic: {
+                    enabled: true,
+                    intervalDays: 7,
+                    retentionCount: 3,
+                    lastAutomaticAt: '2026-07-13T13:00:00Z'
+                },
+                status: status({
+                    jobId: 3,
+                    state: 'running',
+                    kind: 'automatic'
+                })
+            })
+        );
+        render(<ProfileBackupSettingsGroup />);
+
+        expect(screen.getByText('Automatic · Preparing backup')).toBeTruthy();
+        expect(screen.getByTitle('2026-07-13T13:00:00Z')).toBeTruthy();
+
+        const interval = screen.getByRole('spinbutton', {
+            name: 'Backup Interval'
+        });
+        await user.clear(interval);
+        await user.type(interval, '14');
+        await user.tab();
+
+        const retention = screen.getByRole('spinbutton', {
+            name: 'Automatic Backups to Keep'
+        });
+        await user.clear(retention);
+        await user.type(retention, '5');
+        await user.tab();
+
+        expect(mocks.setAutomaticIntervalDays).toHaveBeenCalledWith(14);
+        expect(mocks.setAutomaticRetentionCount).toHaveBeenCalledWith(5);
     });
 });

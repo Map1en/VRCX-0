@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
@@ -7,12 +7,13 @@ use std::sync::{
 
 use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use crate::{
-    create_profile_backup, Error, ProfileBackupArtifact, ProfileBackupControl, ProfileBackupKind,
-    ProfileBackupManifest, ProfileBackupProgress, ProfileBackupRequest, ProfileBackupStage, Result,
-    RuntimeEventBus, TaskStopToken, TaskSupervisor,
+    create_profile_backup, prune_automatic_profile_backups, Error, ProfileBackupArtifact,
+    ProfileBackupControl, ProfileBackupKind, ProfileBackupManifest, ProfileBackupProgress,
+    ProfileBackupRequest, ProfileBackupStage, Result, RuntimeEventBus, TaskStopToken,
+    TaskSupervisor, PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY,
 };
 
 pub const PROFILE_BACKUP_JOB_STATUS_EVENT: &str = "profileBackupJobStatus";
@@ -66,11 +67,28 @@ struct ProfileBackupRuntimeInner {
 
 struct ProfileBackupJob {
     job_id: u64,
+    kind: ProfileBackupKind,
     target_directory: PathBuf,
     database: Arc<DatabaseService>,
     config: HashMap<String, String>,
     app_version: String,
     cancel_flag: Arc<AtomicBool>,
+    automatic: Option<AutomaticProfileBackupJob>,
+}
+
+struct AutomaticProfileBackupJob {
+    config_repository: ConfigRepository,
+    retention_count: usize,
+}
+
+pub struct AutomaticProfileBackupRequest {
+    pub target_directory: PathBuf,
+    pub database: Arc<DatabaseService>,
+    pub config: HashMap<String, String>,
+    pub app_version: String,
+    pub config_repository: ConfigRepository,
+    pub retention_count: usize,
+    pub tasks: TaskSupervisor,
 }
 
 impl ProfileBackupRuntime {
@@ -102,13 +120,56 @@ impl ProfileBackupRuntime {
         app_version: String,
         tasks: TaskSupervisor,
     ) -> Result<ProfileBackupJobStatus> {
+        self.start_job(
+            ProfileBackupKind::Manual,
+            target_directory,
+            database,
+            config,
+            app_version,
+            None,
+            "profile-backup-manual",
+            tasks,
+        )
+    }
+
+    pub fn start_automatic(
+        &self,
+        request: AutomaticProfileBackupRequest,
+    ) -> Result<ProfileBackupJobStatus> {
+        self.start_job(
+            ProfileBackupKind::Automatic,
+            request.target_directory,
+            request.database,
+            request.config,
+            request.app_version,
+            Some(AutomaticProfileBackupJob {
+                config_repository: request.config_repository,
+                retention_count: request.retention_count,
+            }),
+            "profile-backup-automatic",
+            request.tasks,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn start_job(
+        &self,
+        kind: ProfileBackupKind,
+        target_directory: PathBuf,
+        database: Arc<DatabaseService>,
+        config: HashMap<String, String>,
+        app_version: String,
+        automatic: Option<AutomaticProfileBackupJob>,
+        task_name: &'static str,
+        tasks: TaskSupervisor,
+    ) -> Result<ProfileBackupJobStatus> {
         let job_id = self.next_job_id.fetch_add(1, Ordering::AcqRel);
         let cancel_flag = Arc::new(AtomicBool::new(false));
         let now = now_iso();
         let status = ProfileBackupJobStatus {
             job_id,
             state: ProfileBackupJobState::Running,
-            kind: Some(ProfileBackupKind::Manual),
+            kind: Some(kind),
             progress: None,
             cancel_requested: false,
             started_at: Some(now.clone()),
@@ -133,15 +194,17 @@ impl ProfileBackupRuntime {
         self.emit_status(status.clone());
 
         let runtime = self.clone();
-        tasks.spawn_cancellable_thread("profile-backup-manual", move |stop_token| {
-            runtime.run_manual_job(
+        tasks.spawn_cancellable_thread(task_name, move |stop_token| {
+            runtime.run_job(
                 ProfileBackupJob {
                     job_id,
+                    kind,
                     target_directory,
                     database,
                     config,
                     app_version,
                     cancel_flag,
+                    automatic,
                 },
                 stop_token,
             );
@@ -173,7 +236,7 @@ impl ProfileBackupRuntime {
         Ok(status)
     }
 
-    fn run_manual_job(&self, job: ProfileBackupJob, stop_token: TaskStopToken) {
+    fn run_job(&self, job: ProfileBackupJob, stop_token: TaskStopToken) {
         if job.cancel_flag.load(Ordering::Acquire) || stop_token.is_stop_requested() {
             self.finish_cancelled(job.job_id);
             return;
@@ -186,7 +249,7 @@ impl ProfileBackupRuntime {
                 target_directory: &job.target_directory,
                 created_at: Utc::now(),
                 app_version: &job.app_version,
-                kind: ProfileBackupKind::Manual,
+                kind: job.kind,
             },
             |progress| {
                 if job.cancel_flag.load(Ordering::Acquire) || stop_token.is_stop_requested() {
@@ -198,7 +261,13 @@ impl ProfileBackupRuntime {
         );
 
         match result {
-            Ok(artifact) => self.finish_completed(job.job_id, artifact),
+            Ok(artifact) => {
+                let warning = job
+                    .automatic
+                    .as_ref()
+                    .and_then(|automatic| complete_automatic_backup(&artifact, automatic));
+                self.finish_completed(job.job_id, artifact, warning);
+            }
             Err(_) if job.cancel_flag.load(Ordering::Acquire) || stop_token.is_stop_requested() => {
                 self.finish_cancelled(job.job_id)
             }
@@ -237,12 +306,22 @@ impl ProfileBackupRuntime {
         }
     }
 
-    fn finish_completed(&self, job_id: u64, artifact: ProfileBackupArtifact) {
+    fn finish_completed(
+        &self,
+        job_id: u64,
+        artifact: ProfileBackupArtifact,
+        warning: Option<String>,
+    ) {
         let result = ProfileBackupResult {
             path: artifact.path.to_string_lossy().into_owned(),
             manifest: artifact.manifest,
         };
-        self.finish(job_id, ProfileBackupJobState::Completed, Some(result), None);
+        self.finish(
+            job_id,
+            ProfileBackupJobState::Completed,
+            Some(result),
+            warning,
+        );
     }
 
     fn finish_cancelled(&self, job_id: u64) {
@@ -287,6 +366,31 @@ impl ProfileBackupRuntime {
     fn emit_status(&self, status: ProfileBackupJobStatus) {
         self.event_bus.emit(PROFILE_BACKUP_JOB_STATUS_EVENT, status);
     }
+}
+
+fn complete_automatic_backup(
+    artifact: &ProfileBackupArtifact,
+    automatic: &AutomaticProfileBackupJob,
+) -> Option<String> {
+    let mut errors = Vec::new();
+    if let Err(error) = automatic.config_repository.set_string(
+        PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY,
+        &artifact.manifest.created_at,
+    ) {
+        errors.push(format!(
+            "Automatic backup was created, but its completion time could not be saved: {error}"
+        ));
+    }
+    match prune_automatic_profile_backups(
+        artifact.path.parent().unwrap_or_else(|| Path::new(".")),
+        automatic.retention_count,
+    ) {
+        Ok(retention) => errors.extend(retention.errors),
+        Err(error) => errors.push(format!(
+            "Automatic backup was created, but retention cleanup failed: {error}"
+        )),
+    }
+    (!errors.is_empty()).then(|| errors.join("; "))
 }
 
 impl Default for ProfileBackupRuntime {
@@ -502,13 +606,16 @@ mod tests {
             )
             .unwrap();
 
-        let second = runtime.start_manual(
-            backup_dir,
-            database(&dir.path.join("other.sqlite3"), false),
-            HashMap::new(),
-            "2.12.1".into(),
+        let other_database = database(&dir.path.join("other.sqlite3"), false);
+        let second = runtime.start_automatic(AutomaticProfileBackupRequest {
+            target_directory: backup_dir,
+            database: Arc::clone(&other_database),
+            config: HashMap::new(),
+            app_version: "2.12.1".into(),
+            config_repository: ConfigRepository::new(other_database),
+            retention_count: 3,
             tasks,
-        );
+        });
         assert!(second.is_err());
         wait_for_terminal(&runtime);
     }
@@ -554,6 +661,49 @@ mod tests {
         assert_eq!(finished.state, ProfileBackupJobState::Failed);
         assert!(finished.last_error.is_some());
         assert!(finished.result.is_none());
+    }
+
+    #[test]
+    fn automatic_job_records_kind_and_success_time() {
+        let dir = TestDir::new("automatic");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let db = database(&dir.path.join("VRCX-0.sqlite3"), false);
+        let config_repository = ConfigRepository::new(Arc::clone(&db));
+        let runtime = ProfileBackupRuntime::default();
+
+        runtime
+            .start_automatic(AutomaticProfileBackupRequest {
+                target_directory: backup_dir,
+                database: db,
+                config: HashMap::new(),
+                app_version: "2.12.1".into(),
+                config_repository: config_repository.clone(),
+                retention_count: 3,
+                tasks: TaskSupervisor::new(),
+            })
+            .unwrap();
+
+        let finished = wait_for_terminal(&runtime);
+        assert_eq!(finished.state, ProfileBackupJobState::Completed);
+        assert_eq!(finished.kind, Some(ProfileBackupKind::Automatic));
+        assert_eq!(
+            finished
+                .result
+                .as_ref()
+                .map(|result| result.manifest.backup_kind),
+            Some(ProfileBackupKind::Automatic)
+        );
+        assert_eq!(
+            config_repository
+                .get_string(PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY, "")
+                .unwrap(),
+            finished
+                .result
+                .as_ref()
+                .map(|result| result.manifest.created_at.clone())
+                .unwrap()
+        );
     }
 
     #[test]

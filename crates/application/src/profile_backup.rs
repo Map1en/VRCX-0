@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
@@ -87,6 +87,12 @@ pub struct ProfileBackupRequest<'a> {
 pub struct ProfileBackupArtifact {
     pub path: PathBuf,
     pub manifest: ProfileBackupManifest,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ProfileBackupRetentionResult {
+    pub removed_count: usize,
+    pub errors: Vec<String>,
 }
 
 pub fn create_profile_backup(
@@ -185,12 +191,89 @@ pub fn validate_profile_backup(path: &Path) -> Result<ProfileBackupManifest> {
     validate_profile_backup_with_progress(path, &mut |_| ProfileBackupControl::Continue)
 }
 
+pub fn prune_automatic_profile_backups(
+    target_directory: &Path,
+    retention_count: usize,
+) -> Result<ProfileBackupRetentionResult> {
+    ensure_target_directory(target_directory)?;
+    let mut automatic_backups = Vec::new();
+    let mut result = ProfileBackupRetentionResult::default();
+
+    for entry in fs::read_dir(target_directory)? {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                result.errors.push(error.to_string());
+                continue;
+            }
+        };
+        let path = entry.path();
+        if !path.is_file() || !has_profile_backup_extension(&path) {
+            continue;
+        }
+        let manifest = match read_profile_backup_manifest(&path) {
+            Ok(manifest) if manifest.backup_kind == ProfileBackupKind::Automatic => manifest,
+            Ok(_) => continue,
+            Err(error) => {
+                tracing::warn!(path = %path.display(), "ignoring unreadable backup during automatic retention: {error}");
+                continue;
+            }
+        };
+        let Ok(created_at) = DateTime::parse_from_rfc3339(&manifest.created_at) else {
+            tracing::warn!(path = %path.display(), "ignoring backup with invalid creation time during automatic retention");
+            continue;
+        };
+        automatic_backups.push((created_at.with_timezone(&Utc), path));
+    }
+
+    automatic_backups
+        .sort_by(|left, right| right.0.cmp(&left.0).then_with(|| right.1.cmp(&left.1)));
+    for (_, path) in automatic_backups.into_iter().skip(retention_count) {
+        match fs::remove_file(&path) {
+            Ok(()) => result.removed_count += 1,
+            Err(error) => result
+                .errors
+                .push(format!("Failed to remove '{}': {error}", path.display())),
+        }
+    }
+
+    Ok(result)
+}
+
 fn validate_profile_backup_with_progress(
     path: &Path,
     on_progress: &mut impl FnMut(ProfileBackupProgress) -> ProfileBackupControl,
 ) -> Result<ProfileBackupManifest> {
     let file = File::open(path)?;
     let mut archive = ZipArchive::new(file).map_err(zip_error)?;
+    let manifest = read_manifest_from_archive(&mut archive)?;
+
+    let total = manifest.database.size.saturating_add(manifest.config.size);
+    let mut completed = 0_u64;
+    validate_archive_entry(
+        &mut archive,
+        &manifest.database,
+        total,
+        &mut completed,
+        on_progress,
+    )?;
+    validate_archive_entry(
+        &mut archive,
+        &manifest.config,
+        total,
+        &mut completed,
+        on_progress,
+    )?;
+    Ok(manifest)
+}
+
+fn read_profile_backup_manifest(path: &Path) -> Result<ProfileBackupManifest> {
+    let file = File::open(path)?;
+    let mut archive = ZipArchive::new(file).map_err(zip_error)?;
+    read_manifest_from_archive(&mut archive)
+}
+
+fn read_manifest_from_archive(archive: &mut ZipArchive<File>) -> Result<ProfileBackupManifest> {
     let expected_names = [
         PROFILE_MANIFEST_FILE,
         PROFILE_DATABASE_FILE,
@@ -227,23 +310,6 @@ fn validate_profile_backup_with_progress(
         serde_json::from_slice::<ProfileBackupManifest>(&bytes)?
     };
     validate_manifest_contract(&manifest)?;
-
-    let total = manifest.database.size.saturating_add(manifest.config.size);
-    let mut completed = 0_u64;
-    validate_archive_entry(
-        &mut archive,
-        &manifest.database,
-        total,
-        &mut completed,
-        on_progress,
-    )?;
-    validate_archive_entry(
-        &mut archive,
-        &manifest.config,
-        total,
-        &mut completed,
-        on_progress,
-    )?;
     Ok(manifest)
 }
 
@@ -444,6 +510,12 @@ fn ensure_target_directory(path: &Path) -> Result<()> {
         )));
     }
     Ok(())
+}
+
+fn has_profile_backup_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case(PROFILE_BACKUP_EXTENSION))
 }
 
 fn ensure_continue(
@@ -656,5 +728,52 @@ mod tests {
             .is_err()
         );
         assert_eq!(std::fs::read(existing).unwrap(), b"keep-me");
+    }
+
+    #[test]
+    fn automatic_retention_removes_only_the_oldest_automatic_backups() {
+        let dir = TestDir::new("automatic-retention");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
+        let config = HashMap::new();
+        let created_at = [
+            "2026-07-10T15:30:00Z",
+            "2026-07-11T15:30:00Z",
+            "2026-07-12T15:30:00Z",
+        ];
+        let mut automatic_paths = Vec::new();
+        for created_at in created_at {
+            let mut backup_request = request(&db, &config, &backup_dir);
+            backup_request.created_at = DateTime::parse_from_rfc3339(created_at)
+                .unwrap()
+                .with_timezone(&Utc);
+            backup_request.kind = ProfileBackupKind::Automatic;
+            automatic_paths.push(
+                create_profile_backup(backup_request, |_| ProfileBackupControl::Continue)
+                    .unwrap()
+                    .path,
+            );
+        }
+
+        let mut manual_request = request(&db, &config, &backup_dir);
+        manual_request.created_at = DateTime::parse_from_rfc3339("2026-07-09T15:30:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let manual_path = create_profile_backup(manual_request, |_| ProfileBackupControl::Continue)
+            .unwrap()
+            .path;
+        let unreadable_path = backup_dir.join("unreadable.vrcx0backup");
+        std::fs::write(&unreadable_path, b"not-a-backup").unwrap();
+
+        let retention = prune_automatic_profile_backups(&backup_dir, 2).unwrap();
+
+        assert_eq!(retention.removed_count, 1);
+        assert!(retention.errors.is_empty());
+        assert!(!automatic_paths[0].exists());
+        assert!(automatic_paths[1].exists());
+        assert!(automatic_paths[2].exists());
+        assert!(manual_path.exists());
+        assert!(unreadable_path.exists());
     }
 }

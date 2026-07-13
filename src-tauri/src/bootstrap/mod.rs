@@ -2,6 +2,7 @@ mod adapters;
 mod autostart;
 mod background_delay;
 mod notification;
+mod profile_backup;
 mod protocol;
 mod setup;
 mod shared;

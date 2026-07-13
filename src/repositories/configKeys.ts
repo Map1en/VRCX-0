@@ -59,6 +59,10 @@ export const ConfigKeys = defineConfigKeys({
     backgroundModeDelayEnabled: { type: 'bool', default: false },
     backgroundModeDelayMinutes: { type: 'int', default: 60 },
     profileBackupDirectory: { type: 'string', default: '' },
+    profileBackupAutomaticEnabled: { type: 'bool', default: false },
+    profileBackupIntervalDays: { type: 'int', default: 7 },
+    profileBackupRetentionCount: { type: 'int', default: 3 },
+    profileBackupLastAutomaticAt: { type: 'string', default: '' },
     weekStartsOn: { type: 'int', default: null },
 
     // ── Settings - Appearance ────────────────────────

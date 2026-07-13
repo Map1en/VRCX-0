@@ -8,7 +8,34 @@ import type {
 import configRepository from '@/repositories/configRepository';
 
 export const PROFILE_BACKUP_DIRECTORY_CONFIG_KEY = 'profileBackupDirectory';
+export const PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY =
+    'profileBackupAutomaticEnabled';
+export const PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY =
+    'profileBackupIntervalDays';
+export const PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY =
+    'profileBackupRetentionCount';
+export const PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY =
+    'profileBackupLastAutomaticAt';
 export const PROFILE_BACKUP_JOB_STATUS_EVENT = 'profileBackupJobStatus';
+
+export const PROFILE_BACKUP_INTERVAL_DAYS_DEFAULT = 7;
+export const PROFILE_BACKUP_INTERVAL_DAYS_MIN = 1;
+export const PROFILE_BACKUP_INTERVAL_DAYS_MAX = 30;
+export const PROFILE_BACKUP_RETENTION_COUNT_DEFAULT = 3;
+export const PROFILE_BACKUP_RETENTION_COUNT_MIN = 1;
+export const PROFILE_BACKUP_RETENTION_COUNT_MAX = 10;
+
+export type AutomaticProfileBackupSettings = {
+    enabled: boolean;
+    intervalDays: number;
+    retentionCount: number;
+    lastAutomaticAt: string;
+};
+
+export type ProfileBackupSettings = {
+    directory: string;
+    automatic: AutomaticProfileBackupSettings;
+};
 
 export const PROFILE_BACKUP_STAGES: readonly ProfileBackupStage[] = [
     'databaseSnapshot',
@@ -129,6 +156,95 @@ export async function getProfileBackupDirectory(): Promise<string> {
     ).trim();
 }
 
+export async function getProfileBackupSettings(): Promise<ProfileBackupSettings> {
+    await configRepository.reload();
+    const [directory, automatic] = await Promise.all([
+        getProfileBackupDirectory(),
+        getAutomaticProfileBackupSettings()
+    ]);
+    return { directory, automatic };
+}
+
+export async function getAutomaticProfileBackupSettings(): Promise<AutomaticProfileBackupSettings> {
+    const [enabled, intervalDays, retentionCount, lastAutomaticAt] =
+        await Promise.all([
+            configRepository.getBool(
+                PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
+                false
+            ),
+            configRepository.getInt(
+                PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY,
+                PROFILE_BACKUP_INTERVAL_DAYS_DEFAULT
+            ),
+            configRepository.getInt(
+                PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
+                PROFILE_BACKUP_RETENTION_COUNT_DEFAULT
+            ),
+            configRepository.getString(
+                PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY,
+                ''
+            )
+        ]);
+
+    return {
+        enabled,
+        intervalDays: normalizeBoundedInteger(
+            intervalDays,
+            PROFILE_BACKUP_INTERVAL_DAYS_MIN,
+            PROFILE_BACKUP_INTERVAL_DAYS_MAX,
+            PROFILE_BACKUP_INTERVAL_DAYS_DEFAULT
+        ),
+        retentionCount: normalizeBoundedInteger(
+            retentionCount,
+            PROFILE_BACKUP_RETENTION_COUNT_MIN,
+            PROFILE_BACKUP_RETENTION_COUNT_MAX,
+            PROFILE_BACKUP_RETENTION_COUNT_DEFAULT
+        ),
+        lastAutomaticAt: lastAutomaticAt.trim()
+    };
+}
+
+export async function setAutomaticProfileBackupEnabled(
+    enabled: boolean
+): Promise<void> {
+    await configRepository.setBool(
+        PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
+        enabled
+    );
+}
+
+export async function setAutomaticProfileBackupIntervalDays(
+    intervalDays: number
+): Promise<number> {
+    const normalized = requireBoundedInteger(
+        intervalDays,
+        PROFILE_BACKUP_INTERVAL_DAYS_MIN,
+        PROFILE_BACKUP_INTERVAL_DAYS_MAX,
+        'Automatic backup interval'
+    );
+    await configRepository.setInt(
+        PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY,
+        normalized
+    );
+    return normalized;
+}
+
+export async function setAutomaticProfileBackupRetentionCount(
+    retentionCount: number
+): Promise<number> {
+    const normalized = requireBoundedInteger(
+        retentionCount,
+        PROFILE_BACKUP_RETENTION_COUNT_MIN,
+        PROFILE_BACKUP_RETENTION_COUNT_MAX,
+        'Automatic backup retention count'
+    );
+    await configRepository.setInt(
+        PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
+        normalized
+    );
+    return normalized;
+}
+
 export async function chooseProfileBackupDirectory(
     currentDirectory: string
 ): Promise<string | null> {
@@ -165,4 +281,27 @@ export async function cancelProfileBackupJob(
     jobId: number
 ): Promise<ProfileBackupJobStatus> {
     return commands.appProfileBackupJobCancel(jobId);
+}
+
+function normalizeBoundedInteger(
+    value: number,
+    min: number,
+    max: number,
+    defaultValue: number
+): number {
+    return Number.isInteger(value) && value >= min && value <= max
+        ? value
+        : defaultValue;
+}
+
+function requireBoundedInteger(
+    value: number,
+    min: number,
+    max: number,
+    label: string
+): number {
+    if (!Number.isInteger(value) || value < min || value > max) {
+        throw new Error(`${label} must be an integer from ${min} to ${max}.`);
+    }
+    return value;
 }

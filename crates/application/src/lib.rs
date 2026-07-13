@@ -27,6 +27,7 @@ mod prints;
 mod process_monitor;
 mod profile_backup;
 mod profile_backup_job;
+mod profile_backup_schedule;
 mod proxy;
 mod realtime;
 mod registry_backup;
@@ -174,14 +175,23 @@ pub use process_monitor::{
     ProcessMonitor,
 };
 pub use profile_backup::{
-    create_profile_backup, validate_profile_backup, ProfileBackupArtifact, ProfileBackupControl,
-    ProfileBackupEntryManifest, ProfileBackupKind, ProfileBackupManifest, ProfileBackupProgress,
-    ProfileBackupRequest, ProfileBackupStage, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
+    create_profile_backup, prune_automatic_profile_backups, validate_profile_backup,
+    ProfileBackupArtifact, ProfileBackupControl, ProfileBackupEntryManifest, ProfileBackupKind,
+    ProfileBackupManifest, ProfileBackupProgress, ProfileBackupRequest,
+    ProfileBackupRetentionResult, ProfileBackupStage, PROFILE_BACKUP_DIRECTORY_CONFIG_KEY,
     PROFILE_BACKUP_EXTENSION,
 };
 pub use profile_backup_job::{
-    ProfileBackupJobState, ProfileBackupJobStatus, ProfileBackupResult, ProfileBackupRuntime,
-    PROFILE_BACKUP_JOB_STATUS_EVENT,
+    AutomaticProfileBackupRequest, ProfileBackupJobState, ProfileBackupJobStatus,
+    ProfileBackupResult, ProfileBackupRuntime, PROFILE_BACKUP_JOB_STATUS_EVENT,
+};
+pub use profile_backup_schedule::{
+    AutomaticProfileBackupPolicy, PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
+    PROFILE_BACKUP_INTERVAL_DAYS_CONFIG_KEY, PROFILE_BACKUP_INTERVAL_DAYS_DEFAULT,
+    PROFILE_BACKUP_INTERVAL_DAYS_MAX, PROFILE_BACKUP_INTERVAL_DAYS_MIN,
+    PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY, PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
+    PROFILE_BACKUP_RETENTION_COUNT_DEFAULT, PROFILE_BACKUP_RETENTION_COUNT_MAX,
+    PROFILE_BACKUP_RETENTION_COUNT_MIN,
 };
 pub use proxy::{test_proxy_connectivity, ProxySettingsTestResult};
 pub use realtime::{

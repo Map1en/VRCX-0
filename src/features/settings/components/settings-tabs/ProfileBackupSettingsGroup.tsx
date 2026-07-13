@@ -13,14 +13,20 @@ import type {
 } from '@/platform/tauri/bindings';
 import {
     isProfileBackupJobActive,
+    PROFILE_BACKUP_INTERVAL_DAYS_MAX,
+    PROFILE_BACKUP_INTERVAL_DAYS_MIN,
+    PROFILE_BACKUP_RETENTION_COUNT_MAX,
+    PROFILE_BACKUP_RETENTION_COUNT_MIN,
     profileBackupOverallPercent,
     profileBackupPhasePercent
 } from '@/services/profileBackupService';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
+import { Input } from '@/ui/shadcn/input';
 import { Progress } from '@/ui/shadcn/progress';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Switch } from '@/ui/shadcn/switch';
 
 import { useProfileBackupSettings } from '../../useProfileBackupSettings';
 import { Field, SettingsGroup } from '../SettingsField';
@@ -46,21 +52,33 @@ const STAGE_LABEL_KEYS: Record<ProfileBackupStage, string> = {
 export function ProfileBackupSettingsGroup() {
     const { t } = useTranslation();
     const {
+        automatic,
         cancelBackup,
         chooseDirectory,
         directory,
         error,
         loading,
         pendingAction,
+        setAutomaticEnabled,
+        setAutomaticIntervalDays,
+        setAutomaticRetentionCount,
         startManualBackup,
         status
     } = useProfileBackupSettings();
     const active = isProfileBackupJobActive(status);
     const phasePercent = profileBackupPhasePercent(status.progress);
     const overallPercent = profileBackupOverallPercent(status.progress);
-    const statusLabel = status.progress
+    const kindLabel = status.kind
+        ? t(
+              status.kind === 'automatic'
+                  ? 'view.settings.general.profile_backup.kind_automatic'
+                  : 'view.settings.general.profile_backup.kind_manual'
+          )
+        : '';
+    const stateLabel = status.progress
         ? `${t(STAGE_LABEL_KEYS[status.progress.stage])} · ${phasePercent}%`
         : t(STATUS_LABEL_KEYS[status.state]);
+    const statusLabel = kindLabel ? `${kindLabel} · ${stateLabel}` : stateLabel;
     const visibleError = error ?? status.lastError;
     const failedMessage = userFacingErrorMessage(
         visibleError,
@@ -203,6 +221,146 @@ export function ProfileBackupSettingsGroup() {
                         </p>
                     ) : null}
                 </div>
+            </Field>
+            <Field
+                label={t(
+                    'view.settings.general.profile_backup.automatic_enabled'
+                )}
+                description={t(
+                    'view.settings.general.profile_backup.automatic_enabled_description'
+                )}
+                disabled={loading}
+            >
+                <Switch
+                    checked={automatic.enabled}
+                    aria-label={t(
+                        'view.settings.general.profile_backup.automatic_enabled'
+                    )}
+                    disabled={
+                        loading ||
+                        pendingAction !== null ||
+                        (!directory && !automatic.enabled)
+                    }
+                    onCheckedChange={(checked) =>
+                        void setAutomaticEnabled(Boolean(checked))
+                    }
+                />
+            </Field>
+            <Field
+                label={t(
+                    'view.settings.general.profile_backup.automatic_interval'
+                )}
+                description={t(
+                    'view.settings.general.profile_backup.automatic_interval_description'
+                )}
+                disabled={loading || !automatic.enabled}
+            >
+                <div className="flex items-center gap-2">
+                    <Input
+                        key={`interval-${automatic.intervalDays}`}
+                        type="number"
+                        min={PROFILE_BACKUP_INTERVAL_DAYS_MIN}
+                        max={PROFILE_BACKUP_INTERVAL_DAYS_MAX}
+                        defaultValue={automatic.intervalDays}
+                        disabled={
+                            loading ||
+                            !automatic.enabled ||
+                            pendingAction !== null
+                        }
+                        className="w-20"
+                        aria-label={t(
+                            'view.settings.general.profile_backup.automatic_interval'
+                        )}
+                        onBlur={(event) => {
+                            const value = Number(event.currentTarget.value);
+                            if (
+                                Number.isInteger(value) &&
+                                value >= PROFILE_BACKUP_INTERVAL_DAYS_MIN &&
+                                value <= PROFILE_BACKUP_INTERVAL_DAYS_MAX
+                            ) {
+                                void setAutomaticIntervalDays(value);
+                            } else {
+                                event.currentTarget.value = String(
+                                    automatic.intervalDays
+                                );
+                            }
+                        }}
+                    />
+                    <span className="text-muted-foreground text-sm">
+                        {t(
+                            'view.settings.general.profile_backup.automatic_interval_unit'
+                        )}
+                    </span>
+                </div>
+            </Field>
+            <Field
+                label={t(
+                    'view.settings.general.profile_backup.automatic_retention'
+                )}
+                description={t(
+                    'view.settings.general.profile_backup.automatic_retention_description'
+                )}
+                disabled={loading || !automatic.enabled}
+            >
+                <div className="flex items-center gap-2">
+                    <Input
+                        key={`retention-${automatic.retentionCount}`}
+                        type="number"
+                        min={PROFILE_BACKUP_RETENTION_COUNT_MIN}
+                        max={PROFILE_BACKUP_RETENTION_COUNT_MAX}
+                        defaultValue={automatic.retentionCount}
+                        disabled={
+                            loading ||
+                            !automatic.enabled ||
+                            pendingAction !== null
+                        }
+                        className="w-20"
+                        aria-label={t(
+                            'view.settings.general.profile_backup.automatic_retention'
+                        )}
+                        onBlur={(event) => {
+                            const value = Number(event.currentTarget.value);
+                            if (
+                                Number.isInteger(value) &&
+                                value >= PROFILE_BACKUP_RETENTION_COUNT_MIN &&
+                                value <= PROFILE_BACKUP_RETENTION_COUNT_MAX
+                            ) {
+                                void setAutomaticRetentionCount(value);
+                            } else {
+                                event.currentTarget.value = String(
+                                    automatic.retentionCount
+                                );
+                            }
+                        }}
+                    />
+                    <span className="text-muted-foreground text-sm">
+                        {t(
+                            'view.settings.general.profile_backup.automatic_retention_unit'
+                        )}
+                    </span>
+                </div>
+            </Field>
+            <Field
+                label={t('view.settings.general.profile_backup.last_automatic')}
+                description={t(
+                    'view.settings.general.profile_backup.last_automatic_description'
+                )}
+            >
+                {automatic.lastAutomaticAt ? (
+                    <time
+                        className="text-muted-foreground text-sm"
+                        dateTime={automatic.lastAutomaticAt}
+                        title={automatic.lastAutomaticAt}
+                    >
+                        {new Date(automatic.lastAutomaticAt).toLocaleString()}
+                    </time>
+                ) : (
+                    <span className="text-muted-foreground text-sm">
+                        {t(
+                            'view.settings.general.profile_backup.last_automatic_never'
+                        )}
+                    </span>
+                )}
             </Field>
         </SettingsGroup>
     );
