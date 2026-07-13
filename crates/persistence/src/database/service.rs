@@ -527,6 +527,43 @@ impl DatabaseService {
     }
 }
 
+pub fn current_vrcx0_schema_version() -> i64 {
+    super::schema::VRCX0_SCHEMA_VERSION
+}
+
+pub fn validate_database_file(db_path: &Path) -> Result<i64, Error> {
+    let connection = open_read_connection(db_path)?;
+    let mut statement = connection
+        .prepare("PRAGMA quick_check")
+        .map_err(|error| Error::Database(error.to_string()))?;
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|error| Error::Database(error.to_string()))?;
+    let mut quick_check = Vec::new();
+    for row in rows {
+        quick_check.push(row.map_err(|error| Error::Database(error.to_string()))?);
+    }
+    if quick_check.as_slice() != ["ok"] {
+        return Err(Error::InvalidData(format!(
+            "SQLite quick_check failed: {}",
+            quick_check.join("; ")
+        )));
+    }
+
+    let config_key = crate::config::resolve_config_key(super::schema::VRCX0_SCHEMA_VERSION_KEY);
+    let schema_version = connection
+        .query_row(
+            "SELECT value FROM configs WHERE key = ?1 LIMIT 1",
+            [&config_key],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| Error::Database(error.to_string()))?
+        .and_then(|value| value.trim().parse::<i64>().ok())
+        .unwrap_or(0);
+    Ok(schema_version)
+}
+
 fn pages_per_backup_step(page_size: i64) -> i32 {
     let page_size = usize::try_from(page_size).unwrap_or(4096).max(1);
     ONLINE_BACKUP_TARGET_BYTES_PER_STEP

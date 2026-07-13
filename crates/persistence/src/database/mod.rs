@@ -6,5 +6,9 @@ mod value;
 
 pub(crate) use service::DatabaseWriteTransaction;
 pub use service::{
-    optimize_database, DatabaseBackupProgress, DatabaseService, DatabaseUpgradeStatus,
+    current_vrcx0_schema_version, optimize_database, validate_database_file,
+    DatabaseBackupProgress, DatabaseService, DatabaseUpgradeStatus,
+};
+pub use sidecar::{
+    remove_sidecars as remove_database_sidecars, sidecar_paths as database_sidecar_paths,
 };

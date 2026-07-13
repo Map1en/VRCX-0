@@ -68,6 +68,15 @@ fn run_scheduler_tick(
     let background_jobs = &state.runtime_context.background_jobs;
     let backup_status = state.runtime_context.profile_backup.status();
 
+    if !vrcx_0_application::automatic_profile_backups_allowed(&state.paths.app_data) {
+        background_jobs.mark_scheduled(
+            AUTOMATIC_PROFILE_BACKUP_JOB,
+            "Automatic profile backup is paused while profile restore is pending confirmation.",
+            CHECK_INTERVAL.as_secs(),
+        );
+        return;
+    }
+
     if let Some(active_job_id) = scheduler.active_job_id {
         if backup_status.job_id == active_job_id {
             match backup_status.state {

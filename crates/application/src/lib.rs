@@ -28,6 +28,7 @@ mod process_monitor;
 mod profile_backup;
 mod profile_backup_job;
 mod profile_backup_schedule;
+mod profile_restore;
 mod proxy;
 mod realtime;
 mod registry_backup;
@@ -192,6 +193,13 @@ pub use profile_backup_schedule::{
     PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY, PROFILE_BACKUP_RETENTION_COUNT_CONFIG_KEY,
     PROFILE_BACKUP_RETENTION_COUNT_DEFAULT, PROFILE_BACKUP_RETENTION_COUNT_MAX,
     PROFILE_BACKUP_RETENTION_COUNT_MIN,
+};
+pub use profile_restore::{
+    acknowledge_profile_restore_result, automatic_profile_backups_allowed, confirm_profile_restore,
+    consume_pending_profile_restore, prepare_profile_restore,
+    profile_restore_blocks_legacy_migration, profile_restore_state, request_profile_rollback,
+    ProfileRestoreRequestResult, ProfileRestoreStartupOutcome, ProfileRestoreState,
+    ProfileRestoreStatus,
 };
 pub use proxy::{test_proxy_connectivity, ProxySettingsTestResult};
 pub use realtime::{

@@ -35,7 +35,9 @@ pub mod maintenance {
 }
 
 pub use database::{
-    optimize_database, DatabaseBackupProgress, DatabaseService, DatabaseUpgradeStatus,
+    current_vrcx0_schema_version, database_sidecar_paths, optimize_database,
+    remove_database_sidecars, validate_database_file, DatabaseBackupProgress, DatabaseService,
+    DatabaseUpgradeStatus,
 };
 pub use error::Error;
 

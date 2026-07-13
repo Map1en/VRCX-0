@@ -10,6 +10,7 @@ import { LaunchDialogHost } from './LaunchDialogHost';
 import { ModalHost } from './ModalHost';
 import { NotificationHost } from './NotificationHost';
 import { PostUpdateChangelogToastHost } from './PostUpdateChangelogToastHost';
+import { ProfileRestoreNoticeHost } from './ProfileRestoreNoticeHost';
 import { SystemDialogsHost } from './SystemDialogsHost';
 import { ToolsDialogsHost } from './ToolsDialogsHost';
 import { VrcNotificationCenterHost } from './VrcNotificationCenterHost';
@@ -27,6 +28,7 @@ export function GlobalHosts() {
             <NotificationHost />
             <VrcNotificationCenterHost />
             <PostUpdateChangelogToastHost />
+            <ProfileRestoreNoticeHost />
             <LaunchDialogHost />
             <SystemDialogsHost />
             <ToolsDialogsHost />

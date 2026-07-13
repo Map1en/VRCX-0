@@ -3,6 +3,7 @@ use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
     BackendRuntimeTelemetry, FriendProjection, GameLogProjection, HostSessionProjection,
     OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent, ProfileBackupJobStatus,
+    ProfileRestoreRequestResult, ProfileRestoreState, ProfileRestoreStatus,
     RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeInstanceClosedProjection,
     RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeWsStatusPayload,
 };
@@ -34,6 +35,9 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<ParsedLocation>()
         .typ::<PrintAutoCleanupEvent>()
         .typ::<ProfileBackupJobStatus>()
+        .typ::<ProfileRestoreRequestResult>()
+        .typ::<ProfileRestoreState>()
+        .typ::<ProfileRestoreStatus>()
         .typ::<RealtimeCurrentUserProjection>()
         .typ::<RealtimeEntryCorrection>()
         .typ::<RealtimeInstanceClosedProjection>()
@@ -96,6 +100,11 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::profile_backup::app__profile_backup_job_status_get,
             commands::application::profile_backup::app__profile_backup_job_cancel,
             commands::application::profile_backup::app__profile_backup_manual_start,
+            commands::application::profile_restore::app__profile_restore_request,
+            commands::application::profile_restore::app__profile_restore_state_get,
+            commands::application::profile_restore::app__profile_restore_confirm,
+            commands::application::profile_restore::app__profile_restore_rollback_request,
+            commands::application::profile_restore::app__profile_restore_result_acknowledge,
             commands::application::mcp_server::app__mcp_server_status,
             commands::application::mcp_server::app__mcp_server_set_enabled,
             commands::application::mcp_server::app__mcp_server_set_allow_vrchat_writes,

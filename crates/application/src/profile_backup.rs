@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
@@ -16,8 +16,8 @@ use crate::{Error, Result};
 pub const PROFILE_BACKUP_EXTENSION: &str = "vrcx0backup";
 pub const PROFILE_BACKUP_DIRECTORY_CONFIG_KEY: &str = "profileBackupDirectory";
 const PROFILE_BACKUP_FORMAT_VERSION: u32 = 1;
-const PROFILE_DATABASE_FILE: &str = "VRCX-0.sqlite3";
-const PROFILE_CONFIG_FILE: &str = "VRCX-0.json";
+pub(crate) const PROFILE_DATABASE_FILE: &str = "VRCX-0.sqlite3";
+pub(crate) const PROFILE_CONFIG_FILE: &str = "VRCX-0.json";
 const PROFILE_MANIFEST_FILE: &str = "manifest.json";
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const DEFLATE_COMPRESSION_LEVEL: i64 = 1;
@@ -189,6 +189,19 @@ pub fn create_profile_backup(
 
 pub fn validate_profile_backup(path: &Path) -> Result<ProfileBackupManifest> {
     validate_profile_backup_with_progress(path, &mut |_| ProfileBackupControl::Continue)
+}
+
+pub(crate) fn extract_validated_profile_backup(
+    archive_path: &Path,
+    database_path: &Path,
+    config_path: &Path,
+) -> Result<ProfileBackupManifest> {
+    let file = File::open(archive_path)?;
+    let mut archive = ZipArchive::new(file).map_err(zip_error)?;
+    let manifest = read_manifest_from_archive(&mut archive)?;
+    extract_validated_archive_entry(&mut archive, &manifest.database, database_path)?;
+    extract_validated_archive_entry(&mut archive, &manifest.config, config_path)?;
+    Ok(manifest)
 }
 
 pub fn prune_automatic_profile_backups(
@@ -404,6 +417,44 @@ fn validate_archive_entry(
     Ok(())
 }
 
+fn extract_validated_archive_entry(
+    archive: &mut ZipArchive<File>,
+    expected: &ProfileBackupEntryManifest,
+    destination: &Path,
+) -> Result<()> {
+    let mut entry = archive.by_name(&expected.file_name).map_err(zip_error)?;
+    if entry.size() != expected.size {
+        return Err(Error::Custom(format!(
+            "Backup entry size does not match manifest: {}",
+            expected.file_name
+        )));
+    }
+    let mut output = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(destination)?;
+    let mut hasher = Sha256::new();
+    let mut copied = 0_u64;
+    let mut buffer = vec![0_u8; COPY_BUFFER_BYTES];
+    loop {
+        let read = entry.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        output.write_all(&buffer[..read])?;
+        hasher.update(&buffer[..read]);
+        copied = copied.saturating_add(read as u64);
+    }
+    output.sync_all()?;
+    if copied != expected.size || hex_digest(hasher.finalize()) != expected.sha256 {
+        return Err(Error::Custom(format!(
+            "Backup entry hash does not match manifest: {}",
+            expected.file_name
+        )));
+    }
+    Ok(())
+}
+
 fn hash_file_entry(
     path: &Path,
     file_name: &str,
@@ -607,6 +658,47 @@ mod tests {
         }
     }
 
+    fn read_test_archive(path: &Path) -> Vec<(String, Vec<u8>)> {
+        let mut archive = ZipArchive::new(File::open(path).unwrap()).unwrap();
+        (0..archive.len())
+            .map(|index| {
+                let mut entry = archive.by_index(index).unwrap();
+                let name = entry.name().to_string();
+                let mut bytes = Vec::new();
+                entry.read_to_end(&mut bytes).unwrap();
+                (name, bytes)
+            })
+            .collect()
+    }
+
+    fn write_test_archive(
+        path: &Path,
+        entries: &[(String, Vec<u8>)],
+        compression: CompressionMethod,
+    ) {
+        let mut archive = ZipWriter::new(File::create(path).unwrap());
+        let options = SimpleFileOptions::default().compression_method(compression);
+        for (name, bytes) in entries {
+            archive.start_file(name, options).unwrap();
+            archive.write_all(bytes).unwrap();
+        }
+        archive.finish().unwrap();
+    }
+
+    fn replace_zip_entry_name(path: &Path, from: &str, to: &str) {
+        assert_eq!(from.len(), to.len());
+        let mut bytes = fs::read(path).unwrap();
+        let mut replacements = 0;
+        for offset in 0..=bytes.len() - from.len() {
+            if &bytes[offset..offset + from.len()] == from.as_bytes() {
+                bytes[offset..offset + to.len()].copy_from_slice(to.as_bytes());
+                replacements += 1;
+            }
+        }
+        assert_eq!(replacements, 2);
+        fs::write(path, bytes).unwrap();
+    }
+
     #[test]
     fn creates_valid_deflated_profile_backup_with_exact_entries() {
         let dir = TestDir::new("format");
@@ -650,6 +742,93 @@ mod tests {
                 PROFILE_CONFIG_FILE
             ]
         );
+    }
+
+    #[test]
+    fn rejects_noncanonical_zip_entry_sets_and_compression() {
+        let dir = TestDir::new("invalid-entries");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
+        let artifact = create_profile_backup(request(&db, &HashMap::new(), &backup_dir), |_| {
+            ProfileBackupControl::Continue
+        })
+        .unwrap();
+        let entries = read_test_archive(&artifact.path);
+
+        let mut extra = entries.clone();
+        extra.push(("extra.txt".into(), b"extra".to_vec()));
+        let missing = entries
+            .iter()
+            .filter(|(name, _)| name != PROFILE_CONFIG_FILE)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        for (name, invalid_entries, compression) in [
+            ("extra", extra, CompressionMethod::Deflated),
+            ("missing", missing, CompressionMethod::Deflated),
+            ("stored", entries.clone(), CompressionMethod::Stored),
+        ] {
+            let path = backup_dir.join(format!("{name}.vrcx0backup"));
+            write_test_archive(&path, &invalid_entries, compression);
+            assert!(validate_profile_backup(&path).is_err(), "{name}");
+        }
+
+        let placeholder_name = "original.json";
+        let mut duplicate = entries;
+        duplicate
+            .iter_mut()
+            .find(|(name, _)| name == PROFILE_CONFIG_FILE)
+            .unwrap()
+            .0 = placeholder_name.into();
+        let duplicate_path = backup_dir.join("duplicate.vrcx0backup");
+        write_test_archive(&duplicate_path, &duplicate, CompressionMethod::Deflated);
+        replace_zip_entry_name(&duplicate_path, placeholder_name, PROFILE_MANIFEST_FILE);
+        assert!(validate_profile_backup(&duplicate_path).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_format_version_and_entry_hash() {
+        let dir = TestDir::new("invalid-manifest");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
+        let artifact = create_profile_backup(request(&db, &HashMap::new(), &backup_dir), |_| {
+            ProfileBackupControl::Continue
+        })
+        .unwrap();
+        let entries = read_test_archive(&artifact.path);
+
+        let mut unsupported_format = entries.clone();
+        let manifest_entry = unsupported_format
+            .iter_mut()
+            .find(|(name, _)| name == PROFILE_MANIFEST_FILE)
+            .unwrap();
+        let mut manifest: ProfileBackupManifest =
+            serde_json::from_slice(&manifest_entry.1).unwrap();
+        manifest.format_version += 1;
+        manifest_entry.1 = serde_json::to_vec(&manifest).unwrap();
+        let unsupported_path = backup_dir.join("unsupported-format.vrcx0backup");
+        write_test_archive(
+            &unsupported_path,
+            &unsupported_format,
+            CompressionMethod::Deflated,
+        );
+        assert!(validate_profile_backup(&unsupported_path).is_err());
+
+        let mut invalid_hash = entries;
+        let config_entry = invalid_hash
+            .iter_mut()
+            .find(|(name, _)| name == PROFILE_CONFIG_FILE)
+            .unwrap();
+        config_entry.1.push(b' ');
+        let invalid_hash_path = backup_dir.join("invalid-hash.vrcx0backup");
+        write_test_archive(
+            &invalid_hash_path,
+            &invalid_hash,
+            CompressionMethod::Deflated,
+        );
+        assert!(validate_profile_backup(&invalid_hash_path).is_err());
     }
 
     #[test]

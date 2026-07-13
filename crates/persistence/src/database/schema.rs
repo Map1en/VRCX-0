@@ -306,7 +306,7 @@ pub(crate) fn add_legacy_indexes(db: &DatabaseService) -> Result<(), Error> {
 
 pub(crate) const VRCX0_SCHEMA_VERSION: i64 = 18;
 
-const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
+pub(super) const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
 const UPSTREAM_DATABASE_VERSION_KEY: &str = "databaseVersion";
 
 fn parse_version(value: &str) -> i64 {

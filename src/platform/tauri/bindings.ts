@@ -299,6 +299,25 @@ export const commands = {
             targetDirectory
         });
     },
+    async appProfileRestoreRequest(
+        archivePath: string
+    ): Promise<ProfileRestoreRequestResult> {
+        return await TAURI_INVOKE('app__profile_restore_request', {
+            archivePath
+        });
+    },
+    async appProfileRestoreStateGet(): Promise<ProfileRestoreState> {
+        return await TAURI_INVOKE('app__profile_restore_state_get');
+    },
+    async appProfileRestoreConfirm(): Promise<ProfileRestoreState> {
+        return await TAURI_INVOKE('app__profile_restore_confirm');
+    },
+    async appProfileRestoreRollbackRequest(): Promise<ProfileRestoreRequestResult> {
+        return await TAURI_INVOKE('app__profile_restore_rollback_request');
+    },
+    async appProfileRestoreResultAcknowledge(): Promise<ProfileRestoreState> {
+        return await TAURI_INVOKE('app__profile_restore_result_acknowledge');
+    },
     async appMcpServerStatus(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_status');
     },
@@ -3959,6 +3978,30 @@ export type ProfileBackupStage =
     | 'packaging'
     | 'validating'
     | 'publishing';
+export type ProfileRestoreRequestResult = {
+    state: ProfileRestoreState;
+    restartRequested: boolean;
+};
+export type ProfileRestoreState = {
+    status: ProfileRestoreStatus;
+    updatedAt: string | null;
+    backupCreatedAt: string | null;
+    backupAppVersion: string | null;
+    backupDatabaseSchemaVersion: number | null;
+    message: string | null;
+    requiresRestart: boolean;
+    canConfirm: boolean;
+    canRollback: boolean;
+    canAcknowledge: boolean;
+};
+export type ProfileRestoreStatus =
+    | 'idle'
+    | 'pendingRestore'
+    | 'restoredAwaitingConfirmation'
+    | 'pendingRollback'
+    | 'restoreFailedRolledBack'
+    | 'rollbackCompleted'
+    | 'blocked';
 export type ProxySettingsTestInput = { proxy?: string };
 export type ProxySettingsTestResult = {
     normalizedProxy: string | null;

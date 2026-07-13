@@ -1,11 +1,15 @@
 import {
     ArchiveIcon,
+    ArchiveRestoreIcon,
+    CheckCircle2Icon,
     FolderOpenIcon,
+    RotateCcwIcon,
     TriangleAlertIcon,
     XIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { useProfileRestore } from '@/features/profile-restore/useProfileRestore';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type {
     ProfileBackupJobState,
@@ -49,8 +53,24 @@ const STAGE_LABEL_KEYS: Record<ProfileBackupStage, string> = {
     publishing: 'view.settings.general.profile_backup.stage_publishing'
 };
 
+const RESTORE_STATUS_LABEL_KEYS = {
+    idle: 'view.settings.general.profile_backup.restore_status_idle',
+    pendingRestore:
+        'view.settings.general.profile_backup.restore_status_pending_restore',
+    restoredAwaitingConfirmation:
+        'view.settings.general.profile_backup.restore_status_awaiting_confirmation',
+    pendingRollback:
+        'view.settings.general.profile_backup.restore_status_pending_rollback',
+    restoreFailedRolledBack:
+        'view.settings.general.profile_backup.restore_status_failed_rolled_back',
+    rollbackCompleted:
+        'view.settings.general.profile_backup.restore_status_rollback_completed',
+    blocked: 'view.settings.general.profile_backup.restore_status_blocked'
+} as const;
+
 export function ProfileBackupSettingsGroup() {
     const { t } = useTranslation();
+    const profileRestore = useProfileRestore();
     const {
         automatic,
         cancelBackup,
@@ -101,6 +121,145 @@ export function ProfileBackupSettingsGroup() {
                     )}
                 </AlertDescription>
             </Alert>
+            <Field
+                label={t('view.settings.general.profile_backup.restore')}
+                description={t(
+                    'view.settings.general.profile_backup.restore_description'
+                )}
+                disabled={!profileRestore.loaded}
+                controlClassName="min-w-0"
+            >
+                <div className="flex min-w-0 flex-1 flex-col items-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        {profileRestore.state.status !== 'idle' ? (
+                            <Badge
+                                variant={
+                                    profileRestore.state.status === 'blocked' ||
+                                    profileRestore.state.status ===
+                                        'restoreFailedRolledBack'
+                                        ? 'destructive'
+                                        : 'outline'
+                                }
+                            >
+                                {t(
+                                    RESTORE_STATUS_LABEL_KEYS[
+                                        profileRestore.state.status
+                                    ]
+                                )}
+                            </Badge>
+                        ) : null}
+                        {profileRestore.state.status === 'idle' ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={
+                                    !profileRestore.loaded ||
+                                    profileRestore.busy !== null ||
+                                    active
+                                }
+                                onClick={() =>
+                                    void profileRestore.startRestore()
+                                }
+                            >
+                                {profileRestore.busy === 'restore' ? (
+                                    <Spinner />
+                                ) : (
+                                    <ArchiveRestoreIcon data-icon="inline-start" />
+                                )}
+                                {t(
+                                    'view.settings.general.profile_backup.restore_choose'
+                                )}
+                            </Button>
+                        ) : null}
+                        {profileRestore.state.canRollback ? (
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                disabled={profileRestore.busy !== null}
+                                onClick={() => void profileRestore.rollback()}
+                            >
+                                {profileRestore.busy === 'rollback' ? (
+                                    <Spinner />
+                                ) : (
+                                    <RotateCcwIcon data-icon="inline-start" />
+                                )}
+                                {t(
+                                    'view.settings.general.profile_backup.rollback_now'
+                                )}
+                            </Button>
+                        ) : null}
+                        {profileRestore.state.canConfirm ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                disabled={profileRestore.busy !== null}
+                                onClick={() =>
+                                    void profileRestore.confirmCurrentProfile()
+                                }
+                            >
+                                {profileRestore.busy === 'confirm' ? (
+                                    <Spinner />
+                                ) : (
+                                    <CheckCircle2Icon data-icon="inline-start" />
+                                )}
+                                {t(
+                                    'view.settings.general.profile_backup.confirm_restored_profile'
+                                )}
+                            </Button>
+                        ) : null}
+                        {profileRestore.state.canAcknowledge ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                disabled={profileRestore.busy !== null}
+                                onClick={() =>
+                                    void profileRestore.acknowledge()
+                                }
+                            >
+                                {profileRestore.busy === 'acknowledge' ? (
+                                    <Spinner />
+                                ) : null}
+                                {t('common.actions.confirm')}
+                            </Button>
+                        ) : null}
+                    </div>
+                    {profileRestore.state.backupCreatedAt ? (
+                        <span className="text-muted-foreground text-right text-xs">
+                            {t(
+                                'view.settings.general.profile_backup.restore_backup_details',
+                                {
+                                    time: new Date(
+                                        profileRestore.state.backupCreatedAt
+                                    ).toLocaleString(),
+                                    schema:
+                                        profileRestore.state
+                                            .backupDatabaseSchemaVersion ?? 0
+                                }
+                            )}
+                        </span>
+                    ) : null}
+                    {profileRestore.state.message ? (
+                        <p className="text-muted-foreground max-w-xl text-right text-xs">
+                            {profileRestore.state.message}
+                        </p>
+                    ) : null}
+                    {profileRestore.error ? (
+                        <p
+                            className="text-destructive max-w-xl text-right text-xs"
+                            role="alert"
+                        >
+                            {userFacingErrorMessage(
+                                profileRestore.error,
+                                t(
+                                    'view.settings.general.profile_backup.restore_failed'
+                                )
+                            )}
+                        </p>
+                    ) : null}
+                </div>
+            </Field>
             <Field
                 label={t('view.settings.general.profile_backup.directory')}
                 description={t(

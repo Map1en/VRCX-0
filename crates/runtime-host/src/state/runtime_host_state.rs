@@ -105,8 +105,22 @@ impl RuntimeHostState {
 
         let profile_lock = ProfileLock::acquire(&paths.app_data)?;
 
-        let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
-        consume_pending_legacy_migration(&migration_paths)?;
+        let restore_blocks_legacy_migration =
+            vrcx_0_application::profile_restore_blocks_legacy_migration(&paths.app_data);
+        let restore_outcome = vrcx_0_application::consume_pending_profile_restore(&paths.app_data)?;
+        if restore_outcome != vrcx_0_application::ProfileRestoreStartupOutcome::None {
+            tracing::info!(
+                ?restore_outcome,
+                "processed pending profile restore transaction"
+            );
+        }
+
+        if !restore_blocks_legacy_migration {
+            let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
+            consume_pending_legacy_migration(&migration_paths)?;
+        } else {
+            tracing::info!("skipped legacy migration while profile restore state is active");
+        }
 
         let (legacy_vrcx_source, legacy_vrcx_migration_status) =
             vrcx_0_persistence::legacy_vrcx::discover_legacy_vrcx_migration(

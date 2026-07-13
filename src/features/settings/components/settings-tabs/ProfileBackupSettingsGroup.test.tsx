@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProfileBackupJobStatus } from '@/platform/tauri/bindings';
 import { IDLE_PROFILE_BACKUP_JOB_STATUS } from '@/services/profileBackupService';
@@ -14,7 +14,12 @@ const mocks = vi.hoisted(() => ({
     setAutomaticIntervalDays: vi.fn(),
     setAutomaticRetentionCount: vi.fn(),
     startManualBackup: vi.fn(),
-    useProfileBackupSettings: vi.fn()
+    useProfileBackupSettings: vi.fn(),
+    acknowledgeRestore: vi.fn(),
+    confirmCurrentProfile: vi.fn(),
+    rollbackRestore: vi.fn(),
+    startRestore: vi.fn(),
+    useProfileRestore: vi.fn()
 }));
 
 const labels: Record<string, string> = {
@@ -67,7 +72,17 @@ const labels: Record<string, string> = {
     'view.settings.general.profile_backup.stage_packaging': 'Packaging',
     'view.settings.general.profile_backup.stage_validating': 'Validating',
     'view.settings.general.profile_backup.stage_publishing': 'Publishing',
-    'view.settings.general.profile_backup.action_failed': 'Backup failed'
+    'view.settings.general.profile_backup.action_failed': 'Backup failed',
+    'view.settings.general.profile_backup.restore': 'Restore from Backup',
+    'view.settings.general.profile_backup.restore_description':
+        'Validate and restore an archive',
+    'view.settings.general.profile_backup.restore_choose': 'Choose Backup…',
+    'view.settings.general.profile_backup.restore_status_awaiting_confirmation':
+        'Confirm restored profile',
+    'view.settings.general.profile_backup.confirm_restored_profile':
+        'Current Data Is Correct',
+    'view.settings.general.profile_backup.rollback_now': 'Roll Back Now',
+    'view.settings.general.profile_backup.restore_failed': 'Restore failed'
 };
 
 vi.mock('react-i18next', async (importOriginal) => ({
@@ -79,6 +94,10 @@ vi.mock('react-i18next', async (importOriginal) => ({
 
 vi.mock('../../useProfileBackupSettings', () => ({
     useProfileBackupSettings: mocks.useProfileBackupSettings
+}));
+
+vi.mock('../../../profile-restore/useProfileRestore', () => ({
+    useProfileRestore: mocks.useProfileRestore
 }));
 
 import { ProfileBackupSettingsGroup } from './ProfileBackupSettingsGroup';
@@ -117,10 +136,40 @@ function mockModel(
     };
 }
 
+function mockRestoreModel(overrides: Record<string, unknown> = {}) {
+    return {
+        acknowledge: mocks.acknowledgeRestore,
+        busy: null,
+        confirmCurrentProfile: mocks.confirmCurrentProfile,
+        error: null,
+        loaded: true,
+        refresh: vi.fn(),
+        rollback: mocks.rollbackRestore,
+        startRestore: mocks.startRestore,
+        state: {
+            status: 'idle',
+            updatedAt: null,
+            backupCreatedAt: null,
+            backupAppVersion: null,
+            backupDatabaseSchemaVersion: null,
+            message: null,
+            requiresRestart: false,
+            canConfirm: false,
+            canRollback: false,
+            canAcknowledge: false
+        },
+        ...overrides
+    };
+}
+
 describe('ProfileBackupSettingsGroup', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+    });
+
+    beforeEach(() => {
+        mocks.useProfileRestore.mockReturnValue(mockRestoreModel());
     });
 
     it('shows the security warning and runs directory/manual actions', async () => {
@@ -232,5 +281,35 @@ describe('ProfileBackupSettingsGroup', () => {
 
         expect(mocks.setAutomaticIntervalDays).toHaveBeenCalledWith(14);
         expect(mocks.setAutomaticRetentionCount).toHaveBeenCalledWith(5);
+    });
+
+    it('starts restore selection and exposes confirmation and rollback actions', async () => {
+        const user = userEvent.setup();
+        mocks.useProfileBackupSettings.mockReturnValue(mockModel());
+        const { rerender } = render(<ProfileBackupSettingsGroup />);
+
+        await user.click(
+            screen.getByRole('button', { name: 'Choose Backup…' })
+        );
+        expect(mocks.startRestore).toHaveBeenCalledOnce();
+
+        mocks.useProfileRestore.mockReturnValue(
+            mockRestoreModel({
+                state: {
+                    ...mockRestoreModel().state,
+                    status: 'restoredAwaitingConfirmation',
+                    canConfirm: true,
+                    canRollback: true
+                }
+            })
+        );
+        rerender(<ProfileBackupSettingsGroup />);
+
+        await user.click(
+            screen.getByRole('button', { name: 'Current Data Is Correct' })
+        );
+        await user.click(screen.getByRole('button', { name: 'Roll Back Now' }));
+        expect(mocks.confirmCurrentProfile).toHaveBeenCalledOnce();
+        expect(mocks.rollbackRestore).toHaveBeenCalledOnce();
     });
 });
