@@ -203,6 +203,7 @@ describe('ProfileBackupSettingsGroup', () => {
                 status: status({
                     jobId: 2,
                     state: 'running',
+                    cancelAllowed: true,
                     progress: {
                         stage: 'hashing',
                         completed: 1,
@@ -225,6 +226,30 @@ describe('ProfileBackupSettingsGroup', () => {
 
         await user.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(mocks.cancelBackup).toHaveBeenCalledOnce();
+    });
+
+    it('disables cancellation after publishing has started', async () => {
+        const user = userEvent.setup();
+        mocks.useProfileBackupSettings.mockReturnValue(
+            mockModel({
+                status: status({
+                    jobId: 3,
+                    state: 'running',
+                    cancelAllowed: false,
+                    progress: {
+                        stage: 'publishing',
+                        completed: 0,
+                        total: 1
+                    }
+                })
+            })
+        );
+        render(<ProfileBackupSettingsGroup />);
+
+        const cancel = screen.getByRole('button', { name: 'Cancel' });
+        expect((cancel as HTMLButtonElement).disabled).toBe(true);
+        await user.click(cancel);
+        expect(mocks.cancelBackup).not.toHaveBeenCalled();
     });
 
     it('requires a selected directory before starting', () => {

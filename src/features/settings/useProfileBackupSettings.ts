@@ -172,6 +172,7 @@ export function useProfileBackupSettings() {
         if (
             pendingAction !== null ||
             current.state !== 'running' ||
+            !current.cancelAllowed ||
             current.jobId <= 0
         ) {
             return false;

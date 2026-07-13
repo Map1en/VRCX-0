@@ -65,12 +65,14 @@ export const IDLE_PROFILE_BACKUP_JOB_STATUS: ProfileBackupJobStatus = {
     state: 'idle',
     kind: null,
     progress: null,
+    cancelAllowed: false,
     cancelRequested: false,
     startedAt: null,
     updatedAt: null,
     finishedAt: null,
     result: null,
-    lastError: null
+    lastError: null,
+    automaticCompletionIssue: null
 };
 
 export function isProfileBackupJobActive(

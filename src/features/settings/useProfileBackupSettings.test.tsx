@@ -224,4 +224,29 @@ describe('useProfileBackupSettings', () => {
         expect(mocks.setAutomaticProfileBackupEnabled).not.toHaveBeenCalled();
         expect(result.current.error).toBeInstanceOf(Error);
     });
+
+    it('does not send cancellation after the publish commit point', async () => {
+        mocks.getProfileBackupJobStatus.mockResolvedValue(
+            status({
+                jobId: 8,
+                state: 'running',
+                cancelAllowed: false,
+                progress: {
+                    stage: 'publishing',
+                    completed: 0,
+                    total: 1
+                }
+            })
+        );
+        const { result } = renderHook(() => useProfileBackupSettings());
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        let cancelled = true;
+        await act(async () => {
+            cancelled = await result.current.cancelBackup();
+        });
+
+        expect(cancelled).toBe(false);
+        expect(mocks.cancelProfileBackupJob).not.toHaveBeenCalled();
+    });
 });

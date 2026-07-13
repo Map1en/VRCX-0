@@ -98,6 +98,7 @@ pub struct ProfileBackupRetentionResult {
 pub fn create_profile_backup(
     request: ProfileBackupRequest<'_>,
     mut on_progress: impl FnMut(ProfileBackupProgress) -> ProfileBackupControl,
+    mut before_publish: impl FnMut() -> ProfileBackupControl,
 ) -> Result<ProfileBackupArtifact> {
     ensure_target_directory(request.target_directory)?;
     let final_path = request
@@ -157,14 +158,14 @@ pub fn create_profile_backup(
     archive_temp.as_file().sync_all()?;
 
     validate_profile_backup_with_progress(archive_temp.path(), &mut on_progress)?;
-    ensure_continue(
-        &mut on_progress,
-        ProfileBackupProgress {
-            stage: ProfileBackupStage::Publishing,
-            completed: 0,
-            total: 1,
-        },
-    )?;
+    if before_publish() == ProfileBackupControl::Cancel {
+        return Err(Error::Custom(CANCELLED_MESSAGE.into()));
+    }
+    let _ = on_progress(ProfileBackupProgress {
+        stage: ProfileBackupStage::Publishing,
+        completed: 0,
+        total: 1,
+    });
     match archive_temp.persist_noclobber(&final_path) {
         Ok(file) => {
             file.sync_all()?;
@@ -711,9 +712,11 @@ mod tests {
             ("secret".into(), "cookie-value".into()),
         ]);
 
-        let artifact = create_profile_backup(request(&db, &config, &backup_dir), |_| {
-            ProfileBackupControl::Continue
-        })
+        let artifact = create_profile_backup(
+            request(&db, &config, &backup_dir),
+            |_| ProfileBackupControl::Continue,
+            || ProfileBackupControl::Continue,
+        )
         .unwrap();
 
         assert_eq!(
@@ -750,9 +753,11 @@ mod tests {
         let backup_dir = dir.path.join("backups");
         std::fs::create_dir(&backup_dir).unwrap();
         let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
-        let artifact = create_profile_backup(request(&db, &HashMap::new(), &backup_dir), |_| {
-            ProfileBackupControl::Continue
-        })
+        let artifact = create_profile_backup(
+            request(&db, &HashMap::new(), &backup_dir),
+            |_| ProfileBackupControl::Continue,
+            || ProfileBackupControl::Continue,
+        )
         .unwrap();
         let entries = read_test_archive(&artifact.path);
 
@@ -793,9 +798,11 @@ mod tests {
         let backup_dir = dir.path.join("backups");
         std::fs::create_dir(&backup_dir).unwrap();
         let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
-        let artifact = create_profile_backup(request(&db, &HashMap::new(), &backup_dir), |_| {
-            ProfileBackupControl::Continue
-        })
+        let artifact = create_profile_backup(
+            request(&db, &HashMap::new(), &backup_dir),
+            |_| ProfileBackupControl::Continue,
+            || ProfileBackupControl::Continue,
+        )
         .unwrap();
         let entries = read_test_archive(&artifact.path);
 
@@ -878,13 +885,34 @@ mod tests {
         let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
         let config = HashMap::new();
 
-        let result = create_profile_backup(request(&db, &config, &backup_dir), |progress| {
-            if progress.stage == ProfileBackupStage::Packaging {
-                ProfileBackupControl::Cancel
-            } else {
-                ProfileBackupControl::Continue
-            }
-        });
+        let result = create_profile_backup(
+            request(&db, &config, &backup_dir),
+            |progress| {
+                if progress.stage == ProfileBackupStage::Packaging {
+                    ProfileBackupControl::Cancel
+                } else {
+                    ProfileBackupControl::Continue
+                }
+            },
+            || ProfileBackupControl::Continue,
+        );
+
+        assert!(result.is_err());
+        assert!(std::fs::read_dir(&backup_dir).unwrap().next().is_none());
+    }
+
+    #[test]
+    fn cancellation_at_publish_gate_does_not_create_final_file() {
+        let dir = TestDir::new("cancel-before-publish");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
+
+        let result = create_profile_backup(
+            request(&db, &HashMap::new(), &backup_dir),
+            |_| ProfileBackupControl::Continue,
+            || ProfileBackupControl::Cancel,
+        );
 
         assert!(result.is_err());
         assert!(std::fs::read_dir(&backup_dir).unwrap().next().is_none());
@@ -900,12 +928,12 @@ mod tests {
         let db = test_database(&dir.path.join(PROFILE_DATABASE_FILE));
         let config = HashMap::new();
 
-        assert!(
-            create_profile_backup(request(&db, &config, &backup_dir), |_| {
-                ProfileBackupControl::Continue
-            })
-            .is_err()
-        );
+        assert!(create_profile_backup(
+            request(&db, &config, &backup_dir),
+            |_| { ProfileBackupControl::Continue },
+            || ProfileBackupControl::Continue
+        )
+        .is_err());
         assert_eq!(std::fs::read(existing).unwrap(), b"keep-me");
     }
 
@@ -929,9 +957,13 @@ mod tests {
                 .with_timezone(&Utc);
             backup_request.kind = ProfileBackupKind::Automatic;
             automatic_paths.push(
-                create_profile_backup(backup_request, |_| ProfileBackupControl::Continue)
-                    .unwrap()
-                    .path,
+                create_profile_backup(
+                    backup_request,
+                    |_| ProfileBackupControl::Continue,
+                    || ProfileBackupControl::Continue,
+                )
+                .unwrap()
+                .path,
             );
         }
 
@@ -939,9 +971,13 @@ mod tests {
         manual_request.created_at = DateTime::parse_from_rfc3339("2026-07-09T15:30:00Z")
             .unwrap()
             .with_timezone(&Utc);
-        let manual_path = create_profile_backup(manual_request, |_| ProfileBackupControl::Continue)
-            .unwrap()
-            .path;
+        let manual_path = create_profile_backup(
+            manual_request,
+            |_| ProfileBackupControl::Continue,
+            || ProfileBackupControl::Continue,
+        )
+        .unwrap()
+        .path;
         let unreadable_path = backup_dir.join("unreadable.vrcx0backup");
         std::fs::write(&unreadable_path, b"not-a-backup").unwrap();
 

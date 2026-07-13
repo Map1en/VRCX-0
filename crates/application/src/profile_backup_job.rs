@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{
@@ -29,6 +30,14 @@ pub enum ProfileBackupJobState {
     Cancelled,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AutomaticProfileBackupCompletionIssue {
+    LastSuccessPersistenceFailed,
+    RetentionCleanupFailed,
+    LastSuccessPersistenceAndRetentionCleanupFailed,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileBackupResult {
@@ -43,12 +52,14 @@ pub struct ProfileBackupJobStatus {
     pub state: ProfileBackupJobState,
     pub kind: Option<ProfileBackupKind>,
     pub progress: Option<ProfileBackupProgress>,
+    pub cancel_allowed: bool,
     pub cancel_requested: bool,
     pub started_at: Option<String>,
     pub updated_at: Option<String>,
     pub finished_at: Option<String>,
     pub result: Option<ProfileBackupResult>,
     pub last_error: Option<String>,
+    pub automatic_completion_issue: Option<AutomaticProfileBackupCompletionIssue>,
 }
 
 #[derive(Clone)]
@@ -79,6 +90,11 @@ struct ProfileBackupJob {
 struct AutomaticProfileBackupJob {
     config_repository: ConfigRepository,
     retention_count: usize,
+}
+
+struct AutomaticProfileBackupCompletion {
+    issue: Option<AutomaticProfileBackupCompletionIssue>,
+    warning: Option<String>,
 }
 
 pub struct AutomaticProfileBackupRequest {
@@ -171,12 +187,14 @@ impl ProfileBackupRuntime {
             state: ProfileBackupJobState::Running,
             kind: Some(kind),
             progress: None,
+            cancel_allowed: true,
             cancel_requested: false,
             started_at: Some(now.clone()),
             updated_at: Some(now),
             finished_at: None,
             result: None,
             last_error: None,
+            automatic_completion_issue: None,
         };
 
         {
@@ -224,10 +242,14 @@ impl ProfileBackupRuntime {
                     "Profile backup job {job_id} is not active."
                 )));
             }
+            if !inner.status.cancel_allowed {
+                return Ok(inner.status.clone());
+            }
             if let Some(cancel_flag) = &inner.cancel_flag {
                 cancel_flag.store(true, Ordering::Release);
             }
             inner.status.state = ProfileBackupJobState::Cancelling;
+            inner.status.cancel_allowed = false;
             inner.status.cancel_requested = true;
             inner.status.updated_at = Some(now_iso());
             inner.status.clone()
@@ -242,6 +264,7 @@ impl ProfileBackupRuntime {
             return;
         }
 
+        let publish_started = Cell::new(false);
         let result = create_profile_backup(
             ProfileBackupRequest {
                 database: job.database.as_ref(),
@@ -258,21 +281,73 @@ impl ProfileBackupRuntime {
                 self.update_progress(job.job_id, progress);
                 ProfileBackupControl::Continue
             },
+            || {
+                let control = self.begin_publish(
+                    job.job_id,
+                    &job.cancel_flag,
+                    stop_token.is_stop_requested(),
+                );
+                if control == ProfileBackupControl::Continue {
+                    publish_started.set(true);
+                }
+                control
+            },
         );
 
         match result {
             Ok(artifact) => {
-                let warning = job
+                let completion = job
                     .automatic
                     .as_ref()
-                    .and_then(|automatic| complete_automatic_backup(&artifact, automatic));
-                self.finish_completed(job.job_id, artifact, warning);
+                    .map(|automatic| complete_automatic_backup(&artifact, automatic))
+                    .unwrap_or(AutomaticProfileBackupCompletion {
+                        issue: None,
+                        warning: None,
+                    });
+                self.finish_completed(job.job_id, artifact, completion);
             }
-            Err(_) if job.cancel_flag.load(Ordering::Acquire) || stop_token.is_stop_requested() => {
+            Err(_)
+                if !publish_started.get()
+                    && (job.cancel_flag.load(Ordering::Acquire)
+                        || stop_token.is_stop_requested()) =>
+            {
                 self.finish_cancelled(job.job_id)
             }
             Err(error) => self.finish_failed(job.job_id, error),
         }
+    }
+
+    fn begin_publish(
+        &self,
+        job_id: u64,
+        cancel_flag: &AtomicBool,
+        stop_requested: bool,
+    ) -> ProfileBackupControl {
+        let status = {
+            let Ok(mut inner) = self.inner.lock() else {
+                return ProfileBackupControl::Cancel;
+            };
+            if inner.status.job_id != job_id
+                || inner.status.state != ProfileBackupJobState::Running
+                || !inner.status.cancel_allowed
+                || cancel_flag.load(Ordering::Acquire)
+                || stop_requested
+            {
+                return ProfileBackupControl::Cancel;
+            }
+            inner.status.cancel_allowed = false;
+            inner.status.progress = Some(ProfileBackupProgress {
+                stage: ProfileBackupStage::Publishing,
+                completed: 0,
+                total: 1,
+            });
+            inner.status.updated_at = Some(now_iso());
+            inner.last_emitted_stage = Some(ProfileBackupStage::Publishing);
+            inner.last_emitted_percent = Some(0);
+            inner.status.clone()
+        };
+        self.emit_status(status);
+        ProfileBackupControl::Continue
     }
 
     fn update_progress(&self, job_id: u64, progress: ProfileBackupProgress) {
@@ -310,7 +385,7 @@ impl ProfileBackupRuntime {
         &self,
         job_id: u64,
         artifact: ProfileBackupArtifact,
-        warning: Option<String>,
+        completion: AutomaticProfileBackupCompletion,
     ) {
         let result = ProfileBackupResult {
             path: artifact.path.to_string_lossy().into_owned(),
@@ -320,12 +395,13 @@ impl ProfileBackupRuntime {
             job_id,
             ProfileBackupJobState::Completed,
             Some(result),
-            warning,
+            completion.warning,
+            completion.issue,
         );
     }
 
     fn finish_cancelled(&self, job_id: u64) {
-        self.finish(job_id, ProfileBackupJobState::Cancelled, None, None);
+        self.finish(job_id, ProfileBackupJobState::Cancelled, None, None, None);
     }
 
     fn finish_failed(&self, job_id: u64, error: Error) {
@@ -334,6 +410,7 @@ impl ProfileBackupRuntime {
             ProfileBackupJobState::Failed,
             None,
             Some(error.to_string()),
+            None,
         );
     }
 
@@ -343,6 +420,7 @@ impl ProfileBackupRuntime {
         state: ProfileBackupJobState,
         result: Option<ProfileBackupResult>,
         last_error: Option<String>,
+        automatic_completion_issue: Option<AutomaticProfileBackupCompletionIssue>,
     ) {
         let status = {
             let Ok(mut inner) = self.inner.lock() else {
@@ -353,10 +431,12 @@ impl ProfileBackupRuntime {
             }
             let now = now_iso();
             inner.status.state = state;
+            inner.status.cancel_allowed = false;
             inner.status.updated_at = Some(now.clone());
             inner.status.finished_at = Some(now);
             inner.status.result = result;
             inner.status.last_error = last_error;
+            inner.status.automatic_completion_issue = automatic_completion_issue;
             inner.cancel_flag = None;
             inner.status.clone()
         };
@@ -371,26 +451,54 @@ impl ProfileBackupRuntime {
 fn complete_automatic_backup(
     artifact: &ProfileBackupArtifact,
     automatic: &AutomaticProfileBackupJob,
-) -> Option<String> {
+) -> AutomaticProfileBackupCompletion {
     let mut errors = Vec::new();
-    if let Err(error) = automatic.config_repository.set_string(
+    let persistence_failed = if let Err(error) = automatic.config_repository.set_string(
         PROFILE_BACKUP_LAST_AUTOMATIC_AT_CONFIG_KEY,
         &artifact.manifest.created_at,
     ) {
         errors.push(format!(
             "Automatic backup was created, but its completion time could not be saved: {error}"
         ));
-    }
-    match prune_automatic_profile_backups(
+        true
+    } else {
+        false
+    };
+    let retention_failed = match prune_automatic_profile_backups(
         artifact.path.parent().unwrap_or_else(|| Path::new(".")),
         automatic.retention_count,
     ) {
-        Ok(retention) => errors.extend(retention.errors),
-        Err(error) => errors.push(format!(
-            "Automatic backup was created, but retention cleanup failed: {error}"
-        )),
+        Ok(retention) => {
+            let failed = !retention.errors.is_empty();
+            errors.extend(retention.errors);
+            failed
+        }
+        Err(error) => {
+            errors.push(format!(
+                "Automatic backup was created, but retention cleanup failed: {error}"
+            ));
+            true
+        }
+    };
+    let issue = automatic_completion_issue(persistence_failed, retention_failed);
+    AutomaticProfileBackupCompletion {
+        issue,
+        warning: (!errors.is_empty()).then(|| errors.join("; ")),
     }
-    (!errors.is_empty()).then(|| errors.join("; "))
+}
+
+fn automatic_completion_issue(
+    persistence_failed: bool,
+    retention_failed: bool,
+) -> Option<AutomaticProfileBackupCompletionIssue> {
+    match (persistence_failed, retention_failed) {
+        (true, true) => Some(
+            AutomaticProfileBackupCompletionIssue::LastSuccessPersistenceAndRetentionCleanupFailed,
+        ),
+        (true, false) => Some(AutomaticProfileBackupCompletionIssue::LastSuccessPersistenceFailed),
+        (false, true) => Some(AutomaticProfileBackupCompletionIssue::RetentionCleanupFailed),
+        (false, false) => None,
+    }
 }
 
 impl Default for ProfileBackupRuntime {
@@ -405,12 +513,14 @@ fn idle_status() -> ProfileBackupJobStatus {
         state: ProfileBackupJobState::Idle,
         kind: None,
         progress: None,
+        cancel_allowed: false,
         cancel_requested: false,
         started_at: None,
         updated_at: None,
         finished_at: None,
         result: None,
         last_error: None,
+        automatic_completion_issue: None,
     }
 }
 
@@ -487,7 +597,36 @@ fn lock_error(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::Value;
+    use std::sync::mpsc::{self, Receiver, Sender};
     use std::time::{Duration, Instant};
+
+    struct BlockingPublishSink {
+        publishing: Sender<()>,
+        release: Mutex<Receiver<()>>,
+    }
+
+    impl crate::RuntimeEventSink for BlockingPublishSink {
+        fn emit(&self, event: &str, payload: Value) {
+            if event == PROFILE_BACKUP_JOB_STATUS_EVENT
+                && payload.get("state").and_then(Value::as_str) == Some("running")
+                && payload.get("cancelAllowed").and_then(Value::as_bool) == Some(false)
+                && payload
+                    .get("progress")
+                    .and_then(|progress| progress.get("stage"))
+                    .and_then(Value::as_str)
+                    == Some("publishing")
+                && payload
+                    .get("progress")
+                    .and_then(|progress| progress.get("completed"))
+                    .and_then(Value::as_u64)
+                    == Some(0)
+            {
+                self.publishing.send(()).unwrap();
+                self.release.lock().unwrap().recv().unwrap();
+            }
+        }
+    }
 
     struct TestDir {
         path: PathBuf,
@@ -539,6 +678,104 @@ mod tests {
             assert!(Instant::now() < deadline, "profile backup job timed out");
             std::thread::sleep(Duration::from_millis(10));
         }
+    }
+
+    fn prepare_running_job(runtime: &ProfileBackupRuntime, job_id: u64) -> Arc<AtomicBool> {
+        let cancel_flag = Arc::new(AtomicBool::new(false));
+        let mut inner = runtime.inner.lock().unwrap();
+        inner.status = idle_status();
+        inner.status.job_id = job_id;
+        inner.status.state = ProfileBackupJobState::Running;
+        inner.status.kind = Some(ProfileBackupKind::Manual);
+        inner.status.cancel_allowed = true;
+        inner.cancel_flag = Some(Arc::clone(&cancel_flag));
+        cancel_flag
+    }
+
+    #[test]
+    fn cancellation_wins_publish_gate_when_it_acquires_runtime_lock_first() {
+        let runtime = ProfileBackupRuntime::default();
+        let cancel_flag = prepare_running_job(&runtime, 41);
+
+        let cancelling = runtime.cancel(41).unwrap();
+        let publish = runtime.begin_publish(41, &cancel_flag, false);
+
+        assert_eq!(cancelling.state, ProfileBackupJobState::Cancelling);
+        assert!(!cancelling.cancel_allowed);
+        assert_eq!(publish, ProfileBackupControl::Cancel);
+    }
+
+    #[test]
+    fn publish_gate_makes_later_cancellation_a_no_op() {
+        let runtime = ProfileBackupRuntime::default();
+        let cancel_flag = prepare_running_job(&runtime, 42);
+
+        let publish = runtime.begin_publish(42, &cancel_flag, false);
+        let after_cancel = runtime.cancel(42).unwrap();
+
+        assert_eq!(publish, ProfileBackupControl::Continue);
+        assert_eq!(after_cancel.state, ProfileBackupJobState::Running);
+        assert!(!after_cancel.cancel_allowed);
+        assert!(!after_cancel.cancel_requested);
+        assert!(!cancel_flag.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn cancellation_after_publish_gate_completes_with_final_file() {
+        let dir = TestDir::new("publish-then-cancel");
+        let backup_dir = dir.path.join("backups");
+        std::fs::create_dir(&backup_dir).unwrap();
+        let (publishing_sender, publishing_receiver) = mpsc::channel();
+        let (release_sender, release_receiver) = mpsc::channel();
+        let event_bus = RuntimeEventBus::new();
+        event_bus.set_sink(BlockingPublishSink {
+            publishing: publishing_sender,
+            release: Mutex::new(release_receiver),
+        });
+        let runtime = ProfileBackupRuntime::new(event_bus);
+        let started = runtime
+            .start_manual(
+                backup_dir,
+                database(&dir.path.join("VRCX-0.sqlite3"), false),
+                HashMap::new(),
+                "2.12.1".into(),
+                TaskSupervisor::new(),
+            )
+            .unwrap();
+        publishing_receiver
+            .recv_timeout(Duration::from_secs(10))
+            .unwrap();
+
+        let after_cancel = runtime.cancel(started.job_id).unwrap();
+        assert_eq!(after_cancel.state, ProfileBackupJobState::Running);
+        assert!(!after_cancel.cancel_allowed);
+        release_sender.send(()).unwrap();
+
+        let finished = wait_for_terminal(&runtime);
+        assert_eq!(finished.state, ProfileBackupJobState::Completed);
+        assert!(finished
+            .result
+            .as_ref()
+            .is_some_and(|result| PathBuf::from(&result.path).is_file()));
+    }
+
+    #[test]
+    fn automatic_completion_issues_preserve_failure_category() {
+        assert_eq!(
+            automatic_completion_issue(true, false),
+            Some(AutomaticProfileBackupCompletionIssue::LastSuccessPersistenceFailed)
+        );
+        assert_eq!(
+            automatic_completion_issue(false, true),
+            Some(AutomaticProfileBackupCompletionIssue::RetentionCleanupFailed)
+        );
+        assert_eq!(
+            automatic_completion_issue(true, true),
+            Some(
+                AutomaticProfileBackupCompletionIssue::LastSuccessPersistenceAndRetentionCleanupFailed
+            )
+        );
+        assert_eq!(automatic_completion_issue(false, false), None);
     }
 
     #[test]

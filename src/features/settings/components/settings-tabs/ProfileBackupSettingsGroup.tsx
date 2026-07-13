@@ -322,6 +322,7 @@ export function ProfileBackupSettingsGroup() {
                                 size="sm"
                                 disabled={
                                     status.state === 'cancelling' ||
+                                    !status.cancelAllowed ||
                                     pendingAction !== null
                                 }
                                 onClick={() => void cancelBackup()}

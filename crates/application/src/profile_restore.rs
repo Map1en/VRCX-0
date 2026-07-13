@@ -1042,6 +1042,7 @@ mod tests {
                 kind: ProfileBackupKind::Manual,
             },
             |_| crate::ProfileBackupControl::Continue,
+            || crate::ProfileBackupControl::Continue,
         )
         .unwrap()
         .path

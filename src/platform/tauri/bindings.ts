@@ -2992,6 +2992,10 @@ export type AssistantTurnEntitiesEvent = {
     entities: Entity[];
 };
 export type AuthorDetail = { id?: string; displayName?: string | null };
+export type AutomaticProfileBackupCompletionIssue =
+    | 'lastSuccessPersistenceFailed'
+    | 'retentionCleanupFailed'
+    | 'lastSuccessPersistenceAndRetentionCleanupFailed';
 export type AvatarCacheOutput = {
     id: string;
     authorId: string;
@@ -3946,12 +3950,14 @@ export type ProfileBackupJobStatus = {
     state: ProfileBackupJobState;
     kind: ProfileBackupKind | null;
     progress: ProfileBackupProgress | null;
+    cancelAllowed: boolean;
     cancelRequested: boolean;
     startedAt: string | null;
     updatedAt: string | null;
     finishedAt: string | null;
     result: ProfileBackupResult | null;
     lastError: string | null;
+    automaticCompletionIssue: AutomaticProfileBackupCompletionIssue | null;
 };
 export type ProfileBackupKind = 'manual' | 'automatic';
 export type ProfileBackupManifest = {

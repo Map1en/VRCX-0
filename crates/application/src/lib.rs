@@ -183,8 +183,9 @@ pub use profile_backup::{
     PROFILE_BACKUP_EXTENSION,
 };
 pub use profile_backup_job::{
-    AutomaticProfileBackupRequest, ProfileBackupJobState, ProfileBackupJobStatus,
-    ProfileBackupResult, ProfileBackupRuntime, PROFILE_BACKUP_JOB_STATUS_EVENT,
+    AutomaticProfileBackupCompletionIssue, AutomaticProfileBackupRequest, ProfileBackupJobState,
+    ProfileBackupJobStatus, ProfileBackupResult, ProfileBackupRuntime,
+    PROFILE_BACKUP_JOB_STATUS_EVENT,
 };
 pub use profile_backup_schedule::{
     AutomaticProfileBackupPolicy, PROFILE_BACKUP_AUTOMATIC_ENABLED_CONFIG_KEY,
