@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 
-use crate::error::AppError;
-use crate::state::AppState;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
+
+use crate::error::AppError;
+use crate::state::AppState;
 
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");

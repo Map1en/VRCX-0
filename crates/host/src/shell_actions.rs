@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use base64::{engine::general_purpose::STANDARD as B64, Engine};
+
 use crate::error::Error;
 use crate::vrchat_paths;
-use base64::{engine::general_purpose::STANDARD as B64, Engine};
-use chrono::{DateTime, Utc};
 
 pub fn open_link(url: &str) -> Result<(), Error> {
     if !url.starts_with("http://") && !url.starts_with("https://") {

@@ -1,7 +1,6 @@
 use backtrace::{Backtrace, BacktraceFrame};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 use std::panic::PanicHookInfo;
 use std::path::{Path, PathBuf};
 

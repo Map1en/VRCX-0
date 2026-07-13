@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 
-use serde::Deserialize;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+use serde::Deserialize;
 use tauri::{AppHandle, State};
 
 use crate::error::AppError;
