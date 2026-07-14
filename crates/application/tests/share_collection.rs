@@ -97,6 +97,10 @@ fn owner_hint_is_deterministic_and_isolated_across_users() {
     let other_owner_hint = share_collection_owner_hint("usr_other");
 
     assert_eq!(owner_hint, same_owner_hint);
+    assert_eq!(
+        owner_hint,
+        "9f0303d3a2beb3c3de1040d0a8cff3eb6a702bb90f58c5d30572a3bee171aaf9"
+    );
     assert_ne!(owner_hint, other_owner_hint);
     assert!(is_lowercase_hex_sha256(&owner_hint));
     assert!(is_lowercase_hex_sha256(&other_owner_hint));

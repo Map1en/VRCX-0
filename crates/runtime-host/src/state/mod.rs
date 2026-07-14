@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::Write as _;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(target_os = "windows")]
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex, MutexGuard,

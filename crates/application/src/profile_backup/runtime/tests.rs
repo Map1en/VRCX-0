@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local, TimeZone, Utc};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::profile_backup::{DATABASE_FILE_NAME, RESTORE_JOURNAL_FILE_NAME};
 use vrcx_0_persistence::storage::StorageService;
@@ -93,9 +93,10 @@ fn due_when_missing_expired_or_clock_moved_backwards() {
 
 #[test]
 fn backup_names_keep_manual_files_out_of_auto_rotation_pattern() {
-    let now = DateTime::parse_from_rfc3339("2026-07-14T07:30:00+09:00")
-        .unwrap()
-        .with_timezone(&Local);
+    let now = Local
+        .with_ymd_and_hms(2026, 7, 14, 7, 30, 0)
+        .single()
+        .unwrap();
     assert_eq!(
         backup_file_name(ProfileBackupKind::Manual, now),
         "VRCX-0-backup-20260714-073000.vrcx0backup"
