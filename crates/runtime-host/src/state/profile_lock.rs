@@ -103,6 +103,8 @@ fn open_profile_lock_file_with_retry(
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
 
     struct TestDir {
