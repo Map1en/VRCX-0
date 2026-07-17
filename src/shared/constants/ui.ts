@@ -3,112 +3,112 @@ import { toolNavDefinitions } from './tools';
 const navDefinitions = [
     {
         key: 'feed',
-        icon: 'Feed',
+        icon: 'lucide:Rss',
         tooltip: 'nav_tooltip.feed',
         labelKey: 'nav_tooltip.feed',
         routeName: 'feed'
     },
     {
         key: 'friends-locations',
-        icon: 'Location',
+        icon: 'lucide:MapPin',
         tooltip: 'nav_tooltip.friends_locations',
         labelKey: 'nav_tooltip.friends_locations',
         routeName: 'friends-locations'
     },
     {
         key: 'game-log',
-        icon: 'GameLog',
+        icon: 'lucide:History',
         tooltip: 'nav_tooltip.game_log',
         labelKey: 'nav_tooltip.game_log',
         routeName: 'game-log'
     },
     {
         key: 'instance-history',
-        icon: 'InstanceHistory',
+        icon: 'lucide:TextSearch',
         tooltip: 'nav_tooltip.instance_history',
         labelKey: 'nav_tooltip.instance_history',
         routeName: 'instance-history'
     },
     {
         key: 'player-list',
-        icon: 'Players',
+        icon: 'lucide:UsersRound',
         tooltip: 'nav_tooltip.player_list',
         labelKey: 'nav_tooltip.player_list',
         routeName: 'player-list'
     },
     {
         key: 'search',
-        icon: 'Search',
+        icon: 'lucide:Search',
         tooltip: 'nav_tooltip.search',
         labelKey: 'nav_tooltip.search',
         routeName: 'search'
     },
     {
         key: 'favorite-friends',
-        icon: 'FavoriteFriends',
+        icon: 'lucide:UserStar',
         tooltip: 'nav_tooltip.favorite_friends',
         labelKey: 'nav_tooltip.favorite_friends',
         routeName: 'favorite-friends'
     },
     {
         key: 'favorite-worlds',
-        icon: 'FavoriteWorlds',
+        icon: 'lucide:MapPinned',
         tooltip: 'nav_tooltip.favorite_worlds',
         labelKey: 'nav_tooltip.favorite_worlds',
         routeName: 'favorite-worlds'
     },
     {
         key: 'favorite-avatars',
-        icon: 'FavoriteAvatars',
+        icon: 'lucide:PersonStanding',
         tooltip: 'nav_tooltip.favorite_avatars',
         labelKey: 'nav_tooltip.favorite_avatars',
         routeName: 'favorite-avatars'
     },
     {
         key: 'friend-log',
-        icon: 'FriendLog',
+        icon: 'lucide:Contact',
         tooltip: 'nav_tooltip.friend_log',
         labelKey: 'nav_tooltip.friend_log',
         routeName: 'friend-log'
     },
     {
         key: 'friend-list',
-        icon: 'FriendList',
+        icon: 'lucide:BookOpen',
         tooltip: 'nav_tooltip.friend_list',
         labelKey: 'nav_tooltip.friend_list',
         routeName: 'friend-list'
     },
     {
         key: 'moderation',
-        icon: 'Moderation',
+        icon: 'lucide:ShieldUser',
         tooltip: 'nav_tooltip.moderation',
         labelKey: 'nav_tooltip.moderation',
         routeName: 'moderation'
     },
     {
         key: 'notification',
-        icon: 'Notification',
+        icon: 'lucide:Bell',
         tooltip: 'nav_tooltip.notification',
         labelKey: 'nav_tooltip.notification',
         routeName: 'notification'
     },
     {
         key: 'my-avatars',
-        icon: 'MyAvatars',
+        icon: 'lucide:PersonStanding',
         tooltip: 'nav_tooltip.my_avatars',
         labelKey: 'nav_tooltip.my_avatars',
         routeName: 'my-avatars'
     },
     {
         key: 'charts-mutual',
-        icon: 'ChartsMutual',
+        icon: 'lucide:Users',
         tooltip: 'view.charts.mutual_friend.tab_label',
         labelKey: 'view.charts.mutual_friend.tab_label',
         routeName: 'charts-mutual'
     },
     {
         key: 'tools',
-        icon: 'Tools',
+        icon: 'lucide:Wrench',
         tooltip: 'nav_tooltip.tools',
         labelKey: 'nav_tooltip.tools',
         routeName: 'tools'
