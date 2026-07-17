@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
-import { cn } from '@/lib/utils';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
@@ -16,6 +15,7 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { FeedDateRange, FeedRow } from '../feedTypes';
@@ -39,7 +39,7 @@ type FeedFilterButtonsProps = {
     activeFilters: FeedFilterType[];
     feedFilterTypes: readonly FeedFilterType[];
     onClearFeedFilters(): void;
-    onToggleFeedFilter(filter: FeedFilterType): void;
+    onSelectedTypesChange(filter: FeedFilterType[]): void;
 };
 
 type FeedSearchInputProps = FeedDateFilterControlProps & {
@@ -62,7 +62,7 @@ type FeedToolbarProps = {
         onSearchDraftChange(value: string): void;
         onSearchEnter(value: string): void;
         onToggleFavoritesOnly(): void;
-        onToggleFeedFilter(filter: FeedFilterType): void;
+        setActiveSelectedTypes(types: FeedFilterType[]): void;
     };
     filterModel: {
         activeFilterCount: number;
@@ -171,44 +171,46 @@ function FeedFilterButtons({
     activeFilters,
     feedFilterTypes,
     onClearFeedFilters,
-    onToggleFeedFilter
+    onSelectedTypesChange
 }: FeedFilterButtonsProps) {
     const { t } = useTranslation();
 
     return (
-        <div className="border-border/50 bg-muted/30 flex min-w-0 flex-[0_1_auto] flex-nowrap items-center gap-0.5 overflow-x-auto rounded-lg border p-0.5">
+        <div
+            className={
+                'border-border/50 bg-muted/50 flex min-w-0 flex-wrap items-center gap-1 rounded-lg'
+            }
+        >
             <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className={cn(
-                    'shrink-0 rounded-md px-3 font-normal',
-                    activeFilters.length === 0 &&
-                        'bg-background text-foreground hover:bg-background shadow-xs'
-                )}
+                size="lg"
+                variant={activeFilters.length === 0 ? 'secondary' : 'ghost'}
                 onClick={onClearFeedFilters}
             >
                 {t('view.search.avatar.all')}
             </Button>
-            {feedFilterTypes.map((filter) => {
-                const active = activeFilters.includes(filter);
-                return (
-                    <Button
-                        key={filter}
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                            'shrink-0 rounded-md px-3 font-normal',
-                            active &&
-                                'bg-background text-foreground hover:bg-background shadow-xs'
-                        )}
-                        onClick={() => onToggleFeedFilter(filter)}
-                    >
-                        {t(`view.feed.filters.${filter}`)}
-                    </Button>
-                );
-            })}
+            <ToggleGroup
+                multiple
+                variant="default"
+                size="lg"
+                spacing={1}
+                value={[...activeFilters]}
+                onValueChange={(nextTypes_) => {
+                    const nextTypes = nextTypes_ as FeedFilterType[];
+                    onSelectedTypesChange(
+                        nextTypes.length === feedFilterTypes.length
+                            ? []
+                            : nextTypes
+                    );
+                }}
+                className="flex min-w-0 flex-wrap"
+            >
+                {feedFilterTypes.map((type) => (
+                    <ToggleGroupItem key={type} value={type}>
+                        {t(`view.feed.filters.${type}`)}
+                    </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
         </div>
     );
 }
@@ -235,7 +237,7 @@ function FeedSearchInput({
     const { t } = useTranslation();
 
     return (
-        <InputGroup className="h-9 min-w-0 flex-[1_1_0]">
+        <InputGroup className="h-9 min-w-0 flex-1">
             <InputGroupInput
                 value={searchDraft}
                 onChange={(event) => onSearchDraftChange(event.target.value)}
@@ -310,7 +312,7 @@ export function FeedToolbar({
         onSearchDraftChange,
         onSearchEnter,
         onToggleFavoritesOnly,
-        onToggleFeedFilter
+        setActiveSelectedTypes
     } = filterCommands;
     const favoritesOnlyLabel = t('view.feed.favorites_only_tooltip');
 
@@ -328,7 +330,7 @@ export function FeedToolbar({
                                     variant={
                                         favoritesOnly ? 'secondary' : 'ghost'
                                     }
-                                    size="icon-sm"
+                                    size="icon-lg"
                                     aria-label={favoritesOnlyLabel}
                                     onClick={onToggleFavoritesOnly}
                                 >
@@ -344,7 +346,7 @@ export function FeedToolbar({
                     activeFilters={activeFilters}
                     feedFilterTypes={feedFilterTypes}
                     onClearFeedFilters={onClearFeedFilters}
-                    onToggleFeedFilter={onToggleFeedFilter}
+                    onSelectedTypesChange={setActiveSelectedTypes}
                 />
 
                 <FeedSearchInput

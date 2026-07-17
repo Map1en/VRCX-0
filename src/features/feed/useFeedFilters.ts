@@ -46,17 +46,6 @@ export function useFeedFilters() {
         );
     }, []);
 
-    const toggleFeedFilter = useCallback((filter: FeedFilterType) => {
-        setActiveFilters((current) => {
-            const nextFilters = current.includes(filter)
-                ? current.filter((entry) => entry !== filter)
-                : [...current, filter];
-            return nextFilters.length === FEED_FILTER_TYPES.length
-                ? []
-                : nextFilters;
-        });
-    }, []);
-
     const commitSearch = useCallback(
         (nextValue: string = searchDraft) => {
             setSearchQuery(nextValue);
@@ -137,6 +126,6 @@ export function useFeedFilters() {
         setFavoritesOnly,
         setFeedFilters,
         setSearchDraft,
-        toggleFeedFilter
+        setActiveFilters
     };
 }

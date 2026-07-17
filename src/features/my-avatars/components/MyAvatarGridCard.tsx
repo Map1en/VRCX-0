@@ -12,6 +12,7 @@ import {
 import type { CSSProperties, ElementType, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import * as Icon from '@/components/Icon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
@@ -131,7 +132,7 @@ export function AvatarActionMenuItems({
             <Separator />
             <Group>
                 <Item disabled={disabled} {...actionItemProps(releaseAction)}>
-                    <PersonStandingIcon />
+                    <Icon.Avatar />
                     {avatar?.releaseStatus === 'public'
                         ? t('dialog.avatar.actions.make_private')
                         : t('dialog.avatar.actions.make_public')}

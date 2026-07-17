@@ -16,6 +16,7 @@ import {
     DateTimeRangePicker,
     type DateTimeRangeValue
 } from '@/components/date-time-range-picker/DateTimeRangePicker';
+import { PageToolbarRow } from '@/components/layout/PageScaffold';
 import { formatCompactDateTime } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -50,8 +51,7 @@ function GameLogViewModeToggle({
 
     return (
         <ToggleGroup
-            variant="outline"
-            size="sm"
+            size="lg"
             value={viewMode ? [viewMode] : []}
             onValueChange={(nextValue) => {
                 const next = nextValue[0];
@@ -104,8 +104,8 @@ function GameLogFavoritesToggle({
                 render={
                     <Button
                         type="button"
-                        variant={favoritesOnly ? 'secondary' : 'outline'}
-                        size="icon-sm"
+                        variant={favoritesOnly ? 'secondary' : 'ghost'}
+                        size="icon-lg"
                         aria-label={label}
                         onClick={onToggle}
                     >
@@ -173,7 +173,7 @@ function GameLogSearchInput({
 }) {
     const { t } = useTranslation();
     return (
-        <InputGroup className="order-last w-full min-w-0 sm:order-none sm:ml-auto sm:w-60 sm:shrink-0">
+        <InputGroup className="order-last h-9 min-w-0 flex-1 sm:order-none">
             <InputGroupAddon>
                 <SearchIcon />
             </InputGroupAddon>
@@ -229,8 +229,8 @@ function GameLogToolbarControls({
                     render={
                         <Button
                             type="button"
-                            variant="outline"
-                            size="icon-sm"
+                            variant="ghost"
+                            size="icon-lg"
                             aria-label={t('common.actions.refresh')}
                             disabled={!canRefresh || loadStatus === 'running'}
                             onClick={onRefresh}
@@ -246,7 +246,11 @@ function GameLogToolbarControls({
                 <TooltipContent>{t('common.actions.refresh')}</TooltipContent>
             </Tooltip>
             {showColumnVisibilityMenu ? (
-                <TableColumnVisibilityMenu table={table} />
+                <TableColumnVisibilityMenu
+                    table={table}
+                    size="icon-lg"
+                    variant="ghost"
+                />
             ) : null}
         </div>
     );
@@ -301,7 +305,7 @@ export function GameLogToolbar({
 
     return (
         <div className="overflow-hidden pb-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <PageToolbarRow>
                 <div className="flex shrink-0 items-center gap-2">
                     <GameLogViewModeToggle
                         viewMode={viewMode}
@@ -325,7 +329,6 @@ export function GameLogToolbar({
                         types={availableFilterTypes}
                         selectedTypes={queryFilterTypes}
                         onSelectedTypesChange={setActiveSelectedTypes}
-                        className="flex min-w-0 flex-wrap items-center gap-1"
                     />
                 )}
                 <GameLogSearchInput
@@ -350,7 +353,7 @@ export function GameLogToolbar({
                     showColumnVisibilityMenu={isTableView}
                     table={table}
                 />
-            </div>
+            </PageToolbarRow>
         </div>
     );
 }

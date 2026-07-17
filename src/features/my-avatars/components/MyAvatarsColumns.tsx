@@ -1,9 +1,10 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { CheckIcon, PersonStandingIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import * as Icon from '@/components/Icon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -90,7 +91,7 @@ export function useMyAvatarsColumns({
                                 className="h-6 w-10 rounded-sm object-cover"
                                 loading="lazy"
                                 fallback={
-                                    <PersonStandingIcon data-icon="inline-start" />
+                                    <Icon.Avatar data-icon="inline-start" />
                                 }
                             />
                         </Button>
@@ -101,7 +102,7 @@ export function useMyAvatarsColumns({
                             className="text-muted-foreground h-6 w-10 p-0"
                             onClick={() => openAvatarDetails(row.original)}
                         >
-                            <PersonStandingIcon data-icon="inline-start" />
+                            <Icon.Avatar data-icon="inline-start" />
                         </Button>
                     )
             },

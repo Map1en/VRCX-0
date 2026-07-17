@@ -1,40 +1,38 @@
-import {
-    FileTextIcon,
-    LogInIcon,
-    LogOutIcon,
-    MapPinIcon,
-    PencilLineIcon,
-    PersonStandingIcon
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-import { cn } from '@/lib/utils';
+import * as Icon from '@/components/Icon';
 
 import { normalizeFeedId } from '../feedRows';
 
-const TYPE_ICONS: Record<string, { Icon: LucideIcon; className: string }> = {
-    GPS: { Icon: MapPinIcon, className: 'text-sky-500' },
-    Online: { Icon: LogInIcon, className: 'text-[var(--status-online)]' },
-    Offline: { Icon: LogOutIcon, className: 'text-slate-400' },
+const TYPE_ICONS = {
+    GPS: { Component: Icon.Location, className: 'text-sky-500' },
+    Online: { Component: Icon.LogIn, className: 'text-[var(--status-online)]' },
+    Offline: { Component: Icon.LogOut, className: 'text-slate-400' },
     Status: {
-        Icon: PencilLineIcon,
-        className: 'text-muted-foreground/70'
+        Component: Icon.Status,
+        className: 'text-muted-foreground opacity-70'
     },
-    Avatar: { Icon: PersonStandingIcon, className: 'text-muted-foreground/70' },
-    Bio: { Icon: FileTextIcon, className: 'text-muted-foreground/70' }
-};
+    Avatar: {
+        Component: Icon.Avatar,
+        className: 'text-muted-foreground opacity-70'
+    },
+    Bio: { Component: Icon.Doc, className: 'text-muted-foreground opacity-70' }
+} as const;
 
 function FeedTypeIndicator({ label, type }: { label: string; type: unknown }) {
-    const meta = TYPE_ICONS[normalizeFeedId(type)];
+    const normalizedId = normalizeFeedId(type);
+    const meta =
+        normalizedId in TYPE_ICONS
+            ? TYPE_ICONS[normalizedId as keyof typeof TYPE_ICONS]
+            : null;
     return (
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-            {meta ? (
-                <meta.Icon
-                    aria-hidden="true"
-                    className={cn('size-3.5 shrink-0', meta.className)}
-                />
-            ) : null}
-            <span className="text-foreground/80 truncate text-sm font-normal">
+        <span className="flex min-w-0 items-center gap-1.5">
+            {meta ? <meta.Component className={meta.className} /> : null}
+            <span
+                className="text-foreground/80 text-sm font-normal"
+                style={{
+                    textBoxTrim: 'trim-both',
+                    textBoxEdge: 'cap alphabetic'
+                }}
+            >
                 {label}
             </span>
         </span>
