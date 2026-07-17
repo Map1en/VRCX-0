@@ -9,6 +9,7 @@ use crate::realtime::{
     RealtimeNotificationUpsert,
 };
 use crate::GameLogSideEffect;
+use vrcx_0_i18n::{OverlayMessage, OverlayMessageKey};
 use vrcx_0_persistence::game_log::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogWriteBatch,
 };
@@ -37,6 +38,27 @@ impl TestOverlayActivitySink {
     fn take_deliveries(&self) -> Vec<OverlayActivityDelivery> {
         std::mem::take(&mut *self.deliveries.lock().unwrap())
     }
+}
+
+#[test]
+fn activity_text_serializes_as_the_typed_tagged_contract() {
+    assert_eq!(
+        serde_json::to_value(OverlayActivityText::message(
+            OverlayMessage::notifications_gps("Test World")
+        ))
+        .expect("serialize message text"),
+        json!({
+            "kind": "message",
+            "value": {
+                "key": "notifications.gps",
+                "params": { "location": "Test World" }
+            }
+        })
+    );
+    assert_eq!(
+        serde_json::to_value(OverlayActivityText::default()).expect("serialize default text"),
+        json!({ "kind": "literal", "value": "" })
+    );
 }
 
 fn recent_candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
@@ -76,6 +98,83 @@ fn friend_projection_feed_entries_are_ingested_with_canonical_activity_types() {
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].activity_type, "AvatarChange");
     assert_eq!(entries[0].actor_user_id, "usr_avatar");
+}
+
+#[test]
+fn trust_level_friend_projection_preserves_new_level_in_overlay_content() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": {
+            "types": {
+                "TrustLevel": {
+                    "scope": "friends",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    })));
+    runtime.set_friend_user_ids(["usr_friend"]);
+    runtime.ingest_friend_projection(&FriendProjection {
+        feed_entries: vec![json!({
+            "type": "TrustLevel",
+            "created_at": "2026-05-31T00:01:00.000Z",
+            "userId": "usr_friend",
+            "displayName": "Friend",
+            "trustLevel": "Trusted User",
+            "previousTrustLevel": "Known User",
+            "friendNumber": 7
+        })],
+        ..FriendProjection::default()
+    });
+
+    let entries = runtime.snapshot().entries;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].activity_type, "TrustLevel");
+    assert_eq!(
+        entries[0]
+            .content
+            .body
+            .as_message()
+            .expect("typed trust level message")
+            .params()["trustLevel"],
+        "Trusted User"
+    );
+    assert_eq!(
+        entries[0].content.body.source_text(),
+        "Trust level is now Trusted User"
+    );
+}
+
+#[test]
+fn player_joining_friend_feed_matches_everyone_in_instance_scope() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": {
+            "types": {
+                "OnPlayerJoining": {
+                    "scope": "everyoneInInstance",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    })));
+    let projection = FriendProjection {
+        feed_entries: vec![json!({
+            "type": "OnPlayerJoining",
+            "created_at": "2026-07-13T10:00:00Z",
+            "userId": "usr_joining",
+            "displayName": "Joining User",
+            "location": "traveling",
+            "travelingToLocation": "wrld_current:456"
+        })],
+        ..FriendProjection::default()
+    };
+
+    runtime.ingest_friend_projection(&projection);
+
+    let entries = runtime.snapshot().entries;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].activity_type, "OnPlayerJoining");
 }
 
 #[test]
@@ -226,12 +325,17 @@ fn notification_projection_keeps_unresolved_direct_actor_with_user_id_title() {
 
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].actor_user_id, "usr_sender");
-    assert!(entries[0].content.title.key.is_empty());
-    assert_eq!(entries[0].content.title.fallback, "usr_sender");
+    assert_eq!(
+        entries[0].content.title,
+        OverlayActivityText::literal("usr_sender")
+    );
     let deliveries = sink.take_deliveries();
     assert_eq!(deliveries.len(), 1);
     assert!(deliveries[0].webhook);
-    assert_eq!(deliveries[0].entry.content.title.fallback, "usr_sender");
+    assert_eq!(
+        deliveries[0].entry.content.title.source_text(),
+        "usr_sender"
+    );
 }
 
 #[test]
@@ -430,10 +534,15 @@ fn queue_projection_only_ingests_ready_events() {
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].activity_type, "group.queueReady");
     assert_eq!(
-        entries[0].content.title.key,
-        "notifications.group_queue_ready_title"
+        entries[0]
+            .content
+            .title
+            .as_message()
+            .expect("typed queue-ready title")
+            .key(),
+        OverlayMessageKey::NotificationsGroupQueueReadyTitle
     );
-    assert_eq!(entries[0].content.summary, "Group queue ready");
+    assert_eq!(entries[0].content.summary, "Instance Queue Ready");
 }
 
 #[test]
@@ -556,7 +665,7 @@ fn game_log_event_and_external_batches_ingest_system_activity() {
             .collect::<Vec<_>>(),
         vec!["Event", "External"]
     );
-    assert_eq!(entries[0].content.body.fallback, "Something happened");
+    assert_eq!(entries[0].content.body.source_text(), "Something happened");
     assert_eq!(entries[1].actor_display_name, "External User");
 }
 
@@ -722,6 +831,134 @@ fn delivery_fires_for_desktop_only_without_wrist_entry() {
 }
 
 #[test]
+fn current_instance_gps_is_hidden_from_vr_and_hmd_but_kept_on_wrist() {
+    let runtime = OverlayActivityRuntime::with_filters(current_instance_gps_filters(
+        "friends",
+        "friends",
+        "selectedFavorites",
+    ));
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    configure_current_instance_friend(&runtime);
+    runtime.set_delivery_armed(true);
+
+    runtime.ingest_candidate(current_instance_join_candidate());
+    let joined = sink.take_deliveries();
+    assert_eq!(joined.len(), 1);
+    assert!(joined[0].vr);
+    assert!(joined[0].hmd);
+
+    runtime.ingest_candidate(current_instance_gps_candidate("wrld_current:123"));
+
+    let entries = runtime.snapshot().entries;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].activity_type, "GPS");
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(gps[0].desktop);
+    assert!(!gps[0].vr);
+    assert!(!gps[0].hmd);
+    assert!(gps[0].webhook);
+    assert!(gps[0].tts);
+}
+
+#[test]
+fn current_instance_gps_is_hidden_only_on_surfaces_that_delivered_joined() {
+    let runtime =
+        OverlayActivityRuntime::with_filters(current_instance_gps_filters("friends", "off", "off"));
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    configure_current_instance_friend(&runtime);
+    runtime.set_delivery_armed(true);
+
+    runtime.ingest_candidate(current_instance_join_candidate());
+    let joined = sink.take_deliveries();
+    assert_eq!(joined.len(), 1);
+    assert!(joined[0].vr);
+    assert!(!joined[0].hmd);
+
+    runtime.ingest_candidate(current_instance_gps_candidate("wrld_current:123"));
+
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(!gps[0].vr);
+    assert!(gps[0].hmd);
+}
+
+#[test]
+fn current_instance_gps_is_kept_when_joined_was_not_live() {
+    let runtime = OverlayActivityRuntime::with_filters(current_instance_gps_filters(
+        "friends", "friends", "off",
+    ));
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    configure_current_instance_friend(&runtime);
+
+    runtime.ingest_candidate(current_instance_join_candidate());
+    assert!(sink.take_deliveries().is_empty());
+    runtime.set_delivery_armed(true);
+    runtime.ingest_candidate(current_instance_gps_candidate("wrld_current:123"));
+
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(gps[0].vr);
+    assert!(gps[0].hmd);
+}
+
+#[test]
+fn current_instance_gps_coverage_is_cleared_when_player_leaves() {
+    let runtime = OverlayActivityRuntime::with_filters(current_instance_gps_filters(
+        "friends", "friends", "off",
+    ));
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    configure_current_instance_friend(&runtime);
+    runtime.set_delivery_armed(true);
+
+    runtime.ingest_candidate(current_instance_join_candidate());
+    assert_eq!(sink.take_deliveries().len(), 1);
+    runtime.set_current_instance_presence("wrld_current:123", std::iter::empty::<&str>());
+    runtime.set_current_instance_presence("wrld_current:123", ["usr_selected"]);
+    runtime.ingest_candidate(current_instance_gps_candidate("wrld_current:123"));
+
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(gps[0].vr);
+    assert!(gps[0].hmd);
+}
+
+#[test]
+fn gps_for_another_instance_clears_current_instance_joined_coverage() {
+    let runtime = OverlayActivityRuntime::with_filters(current_instance_gps_filters(
+        "friends", "friends", "off",
+    ));
+    let sink = TestOverlayActivitySink::default();
+    runtime.set_sink(sink.clone());
+    configure_current_instance_friend(&runtime);
+    runtime.set_delivery_armed(true);
+
+    runtime.ingest_candidate(current_instance_join_candidate());
+    assert_eq!(sink.take_deliveries().len(), 1);
+    let mut away = current_instance_gps_candidate("wrld_other:456");
+    away.source_id = "gps-away".into();
+    runtime.ingest_candidate(away);
+
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(gps[0].vr);
+    assert!(gps[0].hmd);
+
+    let mut returning = current_instance_gps_candidate("wrld_current:123");
+    returning.source_id = "gps-returning".into();
+    runtime.ingest_candidate(returning);
+
+    let gps = sink.take_deliveries();
+    assert_eq!(gps.len(), 1);
+    assert!(gps[0].vr);
+    assert!(gps[0].hmd);
+}
+
+#[test]
 fn delivery_fires_for_webhook_only_without_wrist_entry() {
     let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
         "version": 1,
@@ -769,6 +1006,69 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         current_instance: false,
         payload: json!({}),
     }
+}
+
+fn current_instance_gps_filters(
+    vr_joined_scope: &str,
+    hmd_joined_scope: &str,
+    wrist_gps_scope: &str,
+) -> OverlayActivityFilters {
+    OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "GPS": { "scope": wrist_gps_scope, "favoriteGroupKeys": ["fav-selected"] }
+        } },
+        "desktop": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "GPS": { "scope": "friends", "favoriteGroupKeys": "all" }
+        } },
+        "vr": { "types": {
+            "OnPlayerJoined": { "scope": vr_joined_scope, "favoriteGroupKeys": "all" },
+            "GPS": { "scope": "selectedFavorites", "favoriteGroupKeys": ["fav-selected"] }
+        } },
+        "hmd": { "types": {
+            "OnPlayerJoined": { "scope": hmd_joined_scope, "favoriteGroupKeys": "all" },
+            "GPS": { "scope": "selectedFavorites", "favoriteGroupKeys": ["fav-selected"] }
+        } },
+        "webhook": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "GPS": { "scope": "friends", "favoriteGroupKeys": "all" }
+        } },
+        "tts": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "GPS": { "scope": "friends", "favoriteGroupKeys": "all" }
+        } }
+    }))
+}
+
+fn configure_current_instance_friend(runtime: &OverlayActivityRuntime) {
+    runtime.set_friend_user_ids(["usr_selected"]);
+    runtime.set_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "fav-selected",
+        ["usr_selected"].as_slice(),
+    )]));
+    runtime.set_current_instance_presence("wrld_current:123", ["usr_selected"]);
+}
+
+fn current_instance_join_candidate() -> OverlayActivityCandidate {
+    let mut row = recent_candidate("OnPlayerJoined", "usr_selected");
+    row.current_instance = true;
+    row.payload = json!({
+        "location": "wrld_current:123",
+        "worldId": "wrld_current"
+    });
+    row
+}
+
+fn current_instance_gps_candidate(location: &str) -> OverlayActivityCandidate {
+    let mut row = recent_candidate("GPS", "usr_selected");
+    row.payload = json!({
+        "type": "GPS",
+        "userId": "usr_selected",
+        "location": location
+    });
+    row
 }
 
 fn webhook_only_invite_runtime() -> (OverlayActivityRuntime, TestOverlayActivitySink) {

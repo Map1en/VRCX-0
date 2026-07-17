@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     appFocusWindow: vi.fn(),
     appGetVrchatRegistryKey: vi.fn(),
     appIsSteamvrRunning: vi.fn(),
+    appRuntimeDiscordReconcileRequest: vi.fn(),
     appSetVrchatRegistryKey: vi.fn(),
     appStartGame: vi.fn(),
     appStartGameFromPath: vi.fn(),
@@ -15,8 +16,6 @@ const mocks = vi.hoisted(() => ({
     addGamelogEventToDatabase: vi.fn(),
     startCurrentAvatarWearTimer: vi.fn(),
     stopCurrentAvatarWearTimer: vi.fn(),
-    queueDiscordPresenceGameStopCloseAttempts: vi.fn(),
-    refreshDiscordPresence: vi.fn(),
     isRuntimeGameClientLifecycleActive: vi.fn(),
     resetRuntimeCrashRelaunchDecision: vi.fn(),
     shouldSkipFrontendCrashRelaunch: vi.fn(),
@@ -34,6 +33,8 @@ vi.mock('@/platform/tauri/bindings', () => ({
         appFocusWindow: mocks.appFocusWindow,
         appGetVrchatRegistryKey: mocks.appGetVrchatRegistryKey,
         appIsSteamvrRunning: mocks.appIsSteamvrRunning,
+        appRuntimeDiscordReconcileRequest:
+            mocks.appRuntimeDiscordReconcileRequest,
         appSetVrchatRegistryKey: mocks.appSetVrchatRegistryKey,
         appStartGame: mocks.appStartGame,
         appStartGameFromPath: mocks.appStartGameFromPath,
@@ -58,12 +59,6 @@ vi.mock('@/repositories/gameLogRepository', () => ({
 vi.mock('@/services/avatarWearTimeService', () => ({
     startCurrentAvatarWearTimer: mocks.startCurrentAvatarWearTimer,
     stopCurrentAvatarWearTimer: mocks.stopCurrentAvatarWearTimer
-}));
-
-vi.mock('@/services/discordPresenceService', () => ({
-    queueDiscordPresenceGameStopCloseAttempts:
-        mocks.queueDiscordPresenceGameStopCloseAttempts,
-    refreshDiscordPresence: mocks.refreshDiscordPresence
 }));
 
 vi.mock('@/services/gameClientLifecycle', () => ({
@@ -124,7 +119,7 @@ describe('gameStateService lifecycle transitions', () => {
         );
         mocks.setString.mockResolvedValue(undefined);
         mocks.stopCurrentAvatarWearTimer.mockResolvedValue(undefined);
-        mocks.refreshDiscordPresence.mockResolvedValue(undefined);
+        mocks.appRuntimeDiscordReconcileRequest.mockResolvedValue(1);
         mocks.isRuntimeGameClientLifecycleActive.mockReturnValue(false);
         mocks.shouldSkipFrontendCrashRelaunch.mockReturnValue(false);
         mocks.waitForRuntimeCrashRelaunchDecision.mockResolvedValue(undefined);
@@ -173,9 +168,9 @@ describe('gameStateService lifecycle transitions', () => {
             1
         );
         expect(mocks.startCurrentAvatarWearTimer).toHaveBeenCalledTimes(1);
-        expect(mocks.refreshDiscordPresence).toHaveBeenCalledWith({
-            force: true
-        });
+        expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
+            1
+        );
         expect(useNotificationStore.getState().items).toEqual([]);
     });
 
@@ -208,10 +203,6 @@ describe('gameStateService lifecycle transitions', () => {
             queueSize: 5,
             label: 'Queue'
         });
-        useRuntimeStore.getState().setTransportState({
-            ipcAnnounced: true
-        });
-
         await handleGameRunningUpdate({
             isGameRunning: false,
             isSteamVRRunning: false,
@@ -229,7 +220,6 @@ describe('gameStateService lifecycle transitions', () => {
             lastGameLogType: 'game-stopped'
         });
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(false);
-        expect(useRuntimeStore.getState().transport.ipcAnnounced).toBe(false);
         expect(
             useRuntimeStore.getState().auth.currentUserSnapshot
         ).toMatchObject({
@@ -244,9 +234,9 @@ describe('gameStateService lifecycle transitions', () => {
         expect(mocks.resetGameLogSessionState).toHaveBeenCalledWith(
             '2026-06-08T10:00:00.000Z'
         );
-        expect(
-            mocks.queueDiscordPresenceGameStopCloseAttempts
-        ).toHaveBeenCalledTimes(1);
+        expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
+            1
+        );
         expect(mocks.stopCurrentAvatarWearTimer).toHaveBeenCalledWith({
             fallbackStartedAt: Date.parse('2026-06-08T09:00:00.000Z'),
             now: Date.parse('2026-06-08T10:00:00.000Z')

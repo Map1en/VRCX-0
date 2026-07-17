@@ -1,4 +1,20 @@
 import { normalizeUserId } from './userProfileFields';
+export type UserDialogStats = {
+    timeSpent: number;
+    lastSeen: string;
+    friendedAt: string;
+    joinCount: number;
+    previousDisplayNames: Array<{
+        displayName: string;
+        updated_at?: string;
+    }>;
+};
+
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
 
 export const DEFAULT_USER_STATS = Object.freeze({
     timeSpent: 0,
@@ -9,10 +25,10 @@ export const DEFAULT_USER_STATS = Object.freeze({
 });
 
 const userDialogCacheLimit = 128;
-const cachedUserStatsByTarget = new Map();
-const cachedPreviousInstancesByTarget = new Map();
+const cachedUserStatsByTarget = new Map<string, UserDialogStats>();
+const cachedPreviousInstancesByTarget = new Map<string, unknown[]>();
 
-export function dialogTargetKey(endpoint: any, userId: any) {
+export function dialogTargetKey(endpoint: unknown, userId: unknown) {
     const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {
         return '';
@@ -20,20 +36,29 @@ export function dialogTargetKey(endpoint: any, userId: any) {
     return `${normalizeUserId(endpoint)}:${normalizedUserId}`;
 }
 
-function cloneUserStats(stats: any = DEFAULT_USER_STATS) {
-    const previousDisplayNames = Array.isArray(stats?.previousDisplayNames)
-        ? stats.previousDisplayNames.map((entry: any) => ({ ...entry }))
+function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
+    const stats = record(source);
+    const previousDisplayNames = Array.isArray(stats.previousDisplayNames)
+        ? stats.previousDisplayNames.map((entry) => {
+              const row = record(entry);
+              return {
+                  displayName: normalizeUserId(row.displayName),
+                  ...(typeof row.updated_at === 'string'
+                      ? { updated_at: row.updated_at }
+                      : {})
+              };
+          })
         : [];
     return {
         timeSpent: Number(stats?.timeSpent) || 0,
-        lastSeen: stats?.lastSeen || '',
-        friendedAt: stats?.friendedAt || '',
+        lastSeen: normalizeUserId(stats.lastSeen),
+        friendedAt: normalizeUserId(stats.friendedAt),
         joinCount: Number(stats?.joinCount) || 0,
         previousDisplayNames
     };
 }
 
-function setCappedCacheEntry(cache: any, key: any, value: any) {
+function setCappedCacheEntry<T>(cache: Map<string, T>, key: string, value: T) {
     if (!key) {
         return;
     }
@@ -43,35 +68,40 @@ function setCappedCacheEntry(cache: any, key: any, value: any) {
     cache.set(key, value);
     while (cache.size > userDialogCacheLimit) {
         const oldestKey = cache.keys().next().value;
-        cache.delete(oldestKey);
+        if (oldestKey !== undefined) {
+            cache.delete(oldestKey);
+        }
     }
 }
 
-function refreshCacheEntry(cache: any, key: any) {
+function refreshCacheEntry<T>(cache: Map<string, T>, key: string) {
     if (!key || !cache.has(key)) {
         return null;
     }
     const value = cache.get(key);
+    if (value === undefined) {
+        return null;
+    }
     cache.delete(key);
     cache.set(key, value);
     return value;
 }
 
-export function readCachedUserStats(key: any) {
+export function readCachedUserStats(key: string) {
     const value = refreshCacheEntry(cachedUserStatsByTarget, key);
     return value ? cloneUserStats(value) : cloneUserStats();
 }
 
-export function cacheUserStats(key: any, stats: any) {
+export function cacheUserStats(key: string, stats: unknown) {
     setCappedCacheEntry(cachedUserStatsByTarget, key, cloneUserStats(stats));
 }
 
-export function readCachedPreviousInstances(key: any) {
+export function readCachedPreviousInstances(key: string) {
     const value = refreshCacheEntry(cachedPreviousInstancesByTarget, key);
     return value ? [...value] : [];
 }
 
-export function cachePreviousInstances(key: any, rows: any) {
+export function cachePreviousInstances(key: string, rows: unknown) {
     setCappedCacheEntry(
         cachedPreviousInstancesByTarget,
         key,

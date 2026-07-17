@@ -1,23 +1,24 @@
-import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';
-import { useFriendRosterStore } from '@/state/friendRosterStore';
+import { commands } from '@/platform/tauri/bindings';
+import { signalFriendLogChanged } from '@/services/friendLogMutationService';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
 
 type FriendLike = {
     id?: unknown;
+    displayName?: unknown;
 };
-type AuthTarget = {
+type DeleteFriendOptions = {
     currentUserId?: unknown;
     endpoint?: string;
-};
-type DeleteFriendOptions = AuthTarget & {
     friend?: FriendLike | null;
     userId?: unknown;
 };
 type DeleteFriendResult = {
     stale: boolean;
     userId: string;
+    localError?: string;
 };
+
+const STALE_AUTH_SCOPE_ERROR_TEXT = 'stale for the current auth scope';
 
 function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
@@ -25,11 +26,10 @@ function normalizeUserId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-function isCurrentAuthTarget({ currentUserId, endpoint }: AuthTarget): boolean {
-    const auth = useRuntimeStore.getState().auth;
+function isStaleAuthScopeError(error: unknown): boolean {
     return (
-        auth.currentUserId === currentUserId &&
-        auth.currentUserEndpoint === endpoint
+        error instanceof Error &&
+        error.message.includes(STALE_AUTH_SCOPE_ERROR_TEXT)
     );
 }
 
@@ -39,8 +39,7 @@ function removeFromArray(values: unknown, userId: string): string[] {
         : [];
 }
 
-function applyLocalFriendDelete(userId: string): void {
-    useFriendRosterStore.getState().removeFriend(userId);
+function patchCurrentUserSnapshotFriendArrays(userId: string): void {
     const runtimeStore = useRuntimeStore.getState();
     const snapshot = runtimeStore.auth.currentUserSnapshot;
     if (snapshot && typeof snapshot === 'object') {
@@ -53,17 +52,6 @@ function applyLocalFriendDelete(userId: string): void {
                 offlineFriends: removeFromArray(snapshot.offlineFriends, userId)
             }
         });
-    }
-    useShellStore.getState().notifyMenu('friend-log');
-}
-
-async function refreshRustFriendSnapshotAfterLocalMutation() {
-    try {
-        const { refreshFriendAndFavoriteSnapshots } =
-            await import('./backgroundMaintenanceService');
-        await refreshFriendAndFavoriteSnapshots({ syncRealtime: false });
-    } catch (error) {
-        console.warn('Realtime friend snapshot refresh failed:', error);
     }
 }
 
@@ -78,31 +66,33 @@ async function deleteFriend({
         throw new Error('deleteFriend requires a friend user id.');
     }
 
-    await vrchatFriendRepository.deleteFriend({
-        userId: normalizedUserId,
-        endpoint
-    });
+    try {
+        const outcome = await commands.appSocialUnfriend({
+            ownerUserId: normalizeUserId(currentUserId),
+            endpoint,
+            targetUserId: normalizedUserId,
+            targetDisplayName: normalizeUserId(friend?.displayName)
+        });
+        patchCurrentUserSnapshotFriendArrays(normalizedUserId);
+        signalFriendLogChanged();
 
-    if (!isCurrentAuthTarget({ currentUserId, endpoint })) {
         return {
-            stale: true,
-            userId: normalizedUserId
+            stale: false,
+            userId: normalizedUserId,
+            localError:
+                outcome.status === 'remoteOkLocalFailed'
+                    ? (outcome.localError ?? undefined)
+                    : undefined
         };
+    } catch (error) {
+        if (isStaleAuthScopeError(error)) {
+            return {
+                stale: true,
+                userId: normalizedUserId
+            };
+        }
+        throw error;
     }
-
-    const { recordFriendLogUnfriendByUserId } =
-        await import('./friendBootstrapService');
-    await recordFriendLogUnfriendByUserId({
-        currentUserId,
-        targetUserId: normalizedUserId
-    });
-    applyLocalFriendDelete(normalizedUserId);
-    await refreshRustFriendSnapshotAfterLocalMutation();
-
-    return {
-        stale: false,
-        userId: normalizedUserId
-    };
 }
 
 const friendRelationshipService = Object.freeze({

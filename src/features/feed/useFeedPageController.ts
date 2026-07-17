@@ -8,7 +8,7 @@ import {
 import { useEffect } from 'react';
 
 import { useFeedColumns } from './components/FeedColumns';
-import { getFeedRowId } from './feedRows';
+import { canExpandFeedRow, getFeedRowId } from './feedRows';
 import { resolveFeedPageSize as resolvePageSize } from './feedTableState';
 import { useFeedFilters } from './useFeedFilters';
 import { useFeedFriendActions } from './useFeedFriendActions';
@@ -89,7 +89,7 @@ export function useFeedPageController() {
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getRowId: (row) => getFeedRowId(row),
-        getRowCanExpand: () => true,
+        getRowCanExpand: (row) => canExpandFeedRow(row.original),
         meta: {
             columnOrderLocked: tableModel.columnOrderLocked,
             setColumnOrderLocked: tableModel.setColumnOrderLocked

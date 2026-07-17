@@ -15,8 +15,6 @@ pub enum TelemetryClientEvent {
         dimension: String,
         value: String,
     },
-    AssistantOpen,
-    AssistantApiKeyConfigured,
     AssistantToolError {
         source: Option<String>,
         summary: Option<String>,

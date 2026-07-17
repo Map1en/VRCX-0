@@ -7,12 +7,13 @@ use crate::log_watcher::LogWatcher;
 use vrcx_0_application::Error as RuntimeError;
 use vrcx_0_application::Result as RuntimeResult;
 use vrcx_0_application::{
-    GameClientActions, GameClientCacheActions, GameClientLocationSource, GameClientRuntime,
-    GameClientRuntimeDeps, GameClientWindowActions,
+    GameClientActions, GameClientCacheActions, GameClientDebugLoggingActions,
+    GameClientLocationSource, GameClientRuntime, GameClientRuntimeDeps, GameClientWindowActions,
 };
 use vrcx_0_application::{GameProcessEvent, GameProcessEventSink};
 use vrcx_0_core::log_watcher::LogLocationSnapshot;
 use vrcx_0_host::app_paths::AppPaths;
+use vrcx_0_host::vrchat_registry;
 use vrcx_0_host::{asset_bundle_cache, game_launch, process_status};
 
 fn host_error(error: vrcx_0_host::Error) -> RuntimeError {
@@ -26,6 +27,29 @@ fn host_error(error: vrcx_0_host::Error) -> RuntimeError {
 struct SystemGameClientActions {
     file_access: HostFileAccess,
     app_paths: AppPaths,
+}
+
+#[derive(Default)]
+struct SystemGameClientDebugLoggingActions;
+
+impl GameClientDebugLoggingActions for SystemGameClientDebugLoggingActions {
+    fn read_debug_logging_enabled(&self) -> RuntimeResult<Option<bool>> {
+        let value = vrchat_registry::get_registry_key("LOGGING_ENABLED").map_err(host_error)?;
+        if value.is_null() || value.as_str().is_some_and(str::is_empty) {
+            return Ok(None);
+        }
+        let enabled = value.as_f64() == Some(1.0)
+            || value
+                .as_str()
+                .and_then(|value| value.trim().parse::<i32>().ok())
+                == Some(1);
+        Ok(Some(enabled))
+    }
+
+    fn enable_debug_logging(&self) -> RuntimeResult<bool> {
+        vrchat_registry::set_registry_key("LOGGING_ENABLED", &serde_json::json!(1), 4)
+            .map_err(host_error)
+    }
 }
 
 impl GameClientActions for SystemGameClientActions {
@@ -121,25 +145,22 @@ impl GameClientHostRuntime {
             window_actions: Arc::new(RuntimeGameClientWindowActions {
                 host: context.host.clone(),
             }),
+            debug_logging_actions: Arc::new(SystemGameClientDebugLoggingActions),
         });
 
         Self { inner }
     }
 
-    pub fn set_runtime_state(&self, session_active: bool, current_location: &str) {
-        self.inner
-            .set_runtime_state(session_active, current_location);
+    pub fn set_runtime_state(&self, current_location: &str) {
+        self.inner.set_runtime_state(current_location);
     }
 
     pub fn stop(&self) {
         self.inner.stop();
     }
 
-    pub fn on_ipc_packet(
-        &self,
-        packet: &str,
-    ) -> RuntimeResult<vrcx_0_core::ipc::IpcEventDisposition> {
-        self.inner.on_ipc_packet(packet)
+    pub fn debug_logging_outcome(&self) -> Option<vrcx_0_application::DebugLoggingOutcome> {
+        self.inner.debug_logging_outcome()
     }
 
     #[cfg(feature = "test-utils")]

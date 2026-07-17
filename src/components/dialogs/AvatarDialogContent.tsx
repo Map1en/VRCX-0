@@ -1,9 +1,14 @@
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
+import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+import type {
+    AvatarDialogInput,
+    AvatarReleaseStatus
+} from './avatar-dialog/avatarDialogTypes';
 import { useAvatarDialogState } from './avatar-dialog/useAvatarDialogState';
 import { AvatarDialogTabbedView } from './AvatarDialogTabbedView';
 import {
@@ -11,7 +16,17 @@ import {
     AvatarDetailsDialog
 } from './AvatarOwnerEditDialogs';
 
-function AvatarDialogEmptyState({ title, description, loading = false }: any) {
+type AvatarDialogEmptyStateProps = {
+    title: string;
+    description: string;
+    loading?: boolean;
+};
+
+function AvatarDialogEmptyState({
+    title,
+    description,
+    loading = false
+}: AvatarDialogEmptyStateProps) {
     return (
         <AppEmptyState
             className="min-h-56"
@@ -22,8 +37,11 @@ function AvatarDialogEmptyState({ title, description, loading = false }: any) {
     );
 }
 
-export function AvatarDialogContent({ avatarId, seedData = null }: any) {
-    const dialogState: any = useAvatarDialogState({ avatarId, seedData });
+export function AvatarDialogContent({
+    avatarId,
+    seedData = null
+}: AvatarDialogInput) {
+    const dialogState = useAvatarDialogState({ avatarId, seedData });
 
     if (dialogState.status !== 'ready') {
         return <AvatarDialogEmptyState {...dialogState.emptyState} />;
@@ -62,16 +80,13 @@ export function AvatarDialogContent({ avatarId, seedData = null }: any) {
                     onSelectFallback: () => {
                         avatarActions.selectFallbackAvatar();
                     },
-                    onReleaseStatus: (nextStatus: any) => {
+                    onReleaseStatus: (nextStatus: AvatarReleaseStatus) => {
                         avatarActions.updateReleaseStatus(nextStatus);
                     },
-                    onAvatarBlock: (enabled: any) => {
+                    onAvatarBlock: (enabled: boolean) => {
                         avatarActions.setAvatarBlock(enabled);
                     },
-                    onEditMemo: () => {
-                        avatarActions.editMemo();
-                    },
-                    onSaveMemo: (nextMemo: any) =>
+                    onSaveMemo: (nextMemo: string) =>
                         avatarActions.saveMemo(nextMemo),
                     onOpenCache: () => {
                         avatarActions.openAvatarCacheFolder();
@@ -109,10 +124,10 @@ export function AvatarDialogContent({ avatarId, seedData = null }: any) {
                 avatar={avatar}
                 currentUserId={currentUserId}
                 endpoint={currentEndpoint}
-                onOpenChange={(open: any) =>
+                onOpenChange={(open: boolean) =>
                     setOwnerEditor(open ? 'content-tags' : null)
                 }
-                onSavedCurrentAvatar={(nextAvatar: any) =>
+                onSavedCurrentAvatar={(nextAvatar: AvatarProfileRecord) =>
                     applyCurrentAvatarUpdate(nextAvatar)
                 }
             />
@@ -144,13 +159,13 @@ export function AvatarDialogContent({ avatarId, seedData = null }: any) {
                 file={imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
                 title={labels.cropTitle}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         setImageCropRequest(null);
                         refs.imageUploadAvatarRef.current = null;
                     }
                 }}
-                onConfirm={(blob: any) =>
+                onConfirm={(blob: Blob) =>
                     avatarActions.confirmAvatarImageUpload(blob)
                 }
             />

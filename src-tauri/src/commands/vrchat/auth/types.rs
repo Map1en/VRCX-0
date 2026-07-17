@@ -10,26 +10,6 @@ pub struct VrchatAuthEndpointInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct VrchatAuthLoginBasicInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
-    pub(crate) username: String,
-    #[serde(default)]
-    pub(crate) password: String,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatAuthCodeInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
-    pub(crate) code: String,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
 pub struct VrchatAuthFileAnalysisInput {
     #[serde(default)]
     pub(crate) endpoint: String,
@@ -49,25 +29,48 @@ pub struct VrchatAuthSavedCredentialDeleteInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatAuthSavedCredentialLoginStartInput {
-    #[serde(default)]
-    pub(crate) user_id: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
+#[serde(tag = "mode", rename_all = "camelCase")]
+pub enum VrchatAuthSessionStartInput {
+    #[serde(rename_all = "camelCase")]
+    Basic {
+        #[serde(default)]
+        endpoint: String,
+        #[serde(default)]
+        username: String,
+        #[serde(default)]
+        password: String,
+        #[serde(default)]
+        save_credentials: bool,
+    },
+    #[serde(rename_all = "camelCase")]
+    SavedCredential {
+        #[serde(default)]
+        endpoint: String,
+        #[serde(default)]
+        user_id: String,
+    },
+    CookieRestore {
+        #[serde(default)]
+        endpoint: String,
+    },
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct VrchatAuthLoginSuccessRecordInput {
+pub struct VrchatAuthAutoLoginStartInput {
     #[serde(default)]
-    pub(crate) user: Value,
+    pub(crate) endpoint: String,
     #[serde(default)]
-    pub(crate) login_params: Value,
+    pub(crate) user_id: String,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VrchatAuthSessionRespondInput {
     #[serde(default)]
-    pub(crate) stored_login_params: Option<Value>,
+    pub(crate) method: String,
     #[serde(default)]
-    pub(crate) save_credentials: bool,
+    pub(crate) code: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

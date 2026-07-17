@@ -7,7 +7,8 @@ import {
     mergeInstanceUserRows as mergeLocationUserRows,
     pushInstanceUserSource as pushLocationUserSource,
     resolvePresenceLocation,
-    userDisplayName
+    userDisplayName,
+    type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -38,16 +39,28 @@ const locationUserProfileFetchConcurrency = 4;
 
 type UserDialogLocationPanelData = {
     location: unknown;
-    instance: unknown;
-    ownerUser: unknown;
-    ownerGroup: unknown;
-    users: unknown[];
+    instance: Record<string, unknown> | null;
+    ownerUser: Record<string, unknown> | null;
+    ownerGroup: Record<string, unknown> | null;
+    users: InstanceRosterRow[];
     friendCount: number;
     playerCount: number;
 };
 
 function recordValues(value: unknown): Record<string, unknown>[] {
-    return value && typeof value === 'object' ? Object.values(value) : [];
+    return value && typeof value === 'object'
+        ? Object.values(value).map((entry) =>
+              entry && typeof entry === 'object'
+                  ? Object.fromEntries(Object.entries(entry))
+                  : {}
+          )
+        : [];
+}
+
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
 }
 
 export function createEmptyUserDialogLocationPanel(
@@ -64,15 +77,16 @@ export function createEmptyUserDialogLocationPanel(
     };
 }
 
-function sortLocationUsers(users: any) {
-    return [...users].sort((left: any, right: any) =>
+function sortLocationUsers(users: InstanceRosterRow[]) {
+    return [...users].sort((left, right) =>
         userDisplayName(left).localeCompare(userDisplayName(right), undefined, {
             sensitivity: 'base'
         })
     );
 }
 
-function locationUserHasImage(user: any) {
+function locationUserHasImage(userValue: unknown) {
+    const user = record(userValue);
     return Boolean(
         user?.profilePicOverrideThumbnail ||
         user?.profilePicOverride ||
@@ -82,7 +96,8 @@ function locationUserHasImage(user: any) {
     );
 }
 
-function locationUserId(user: any) {
+function locationUserId(userValue: unknown) {
+    const user = record(userValue);
     return normalizeUserId(
         user?.id ||
             user?.userId ||
@@ -92,15 +107,18 @@ function locationUserId(user: any) {
     );
 }
 
-function mergeProfileIntoLocationUser(user: any, profile: any) {
-    const row = createLocationUserRow(profile, {
+function mergeProfileIntoLocationUser(
+    user: InstanceRosterRow,
+    profile: unknown
+) {
+    const row = createLocationUserRow(record(profile), {
         id: locationUserId(user),
         userId: locationUserId(user),
         displayName: user?.displayName,
         subtitle: user?.$subtitle || user?.subtitle || '',
         joinedAt: user?.joinedAt || user?.joined_at || user?.$location_at || ''
     });
-    return mergeLocationUserRows(user, row);
+    return mergeLocationUserRows(user, row) ?? user;
 }
 
 async function enrichLocationUsersWithProfiles({
@@ -108,9 +126,14 @@ async function enrichLocationUsersWithProfiles({
     knownUsersById,
     shouldContinue = () => true,
     users
-}: any) {
+}: {
+    endpoint: string;
+    knownUsersById: Map<string, unknown>;
+    shouldContinue?: () => boolean;
+    users: InstanceRosterRow[];
+}) {
     const nextUsers = [...users];
-    const fetchTargets = [];
+    const fetchTargets: Array<{ index: number; userId: string }> = [];
 
     for (let index = 0; index < nextUsers.length; index += 1) {
         const user = nextUsers[index];
@@ -121,7 +144,10 @@ async function enrichLocationUsersWithProfiles({
 
         const knownUser = knownUsersById.get(userId);
         if (locationUserHasImage(knownUser)) {
-            nextUsers[index] = mergeProfileIntoLocationUser(user, knownUser);
+            nextUsers[index] = mergeProfileIntoLocationUser(
+                user,
+                record(knownUser)
+            );
             continue;
         }
 
@@ -151,10 +177,13 @@ async function enrichLocationUsersWithProfiles({
                     if (!shouldContinue()) {
                         return;
                     }
-                    nextUsers[target.index] = mergeProfileIntoLocationUser(
-                        nextUsers[target.index],
-                        profile
-                    );
+                    const currentUser = nextUsers[target.index];
+                    if (currentUser) {
+                        nextUsers[target.index] = mergeProfileIntoLocationUser(
+                            currentUser,
+                            profile
+                        );
+                    }
                 } catch {
                     // no-op
                 }
@@ -175,15 +204,23 @@ export function useUserDialogLocationPanel({
     friendsById,
     profile,
     reloadToken
-}: any) {
+}: {
+    currentEndpoint: string;
+    currentUserId: unknown;
+    currentUserSnapshot: Record<string, unknown> | null;
+    gameState: Record<string, unknown> | null;
+    groupInstancesState: Record<string, unknown>;
+    friendsById: Record<string, Record<string, unknown>>;
+    profile: Record<string, unknown> | null;
+    reloadToken: number;
+}) {
     const normalizedCurrentUserId = normalizeUserId(currentUserId);
     const currentGameLocation = normalizeUserId(gameState?.currentLocation);
     const currentSnapshotLocation = normalizeUserId(
         currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
     );
-    const currentInviteLocation = resolveCurrentInviteLocation(
-        gameState,
-        currentUserSnapshot
+    const currentInviteLocation = normalizeUserId(
+        resolveCurrentInviteLocation(gameState, currentUserSnapshot)
     );
     const groupInstancesScopeMatches =
         groupInstancesState.userId === currentUserId &&
@@ -199,7 +236,10 @@ export function useUserDialogLocationPanel({
     const [locationPanel, setLocationPanel] = useState(() =>
         createEmptyUserDialogLocationPanel()
     );
-    const [currentInviteInstance, setCurrentInviteInstance] = useState(null);
+    const [currentInviteInstance, setCurrentInviteInstance] = useState<Record<
+        string,
+        unknown
+    > | null>(null);
     const [currentInviteInstanceStatus, setCurrentInviteInstanceStatus] =
         useState('idle');
     const [locationRefreshToken, setLocationRefreshToken] = useState(0);
@@ -231,10 +271,11 @@ export function useUserDialogLocationPanel({
             currentLocationMatches && currentLocation
                 ? currentLocation
                 : activeLocation;
-        const rowsById = new Map();
-        const knownUsersById = new Map();
+        const rowsById = new Map<string, InstanceRosterRow>();
+        const knownUsersById = new Map<string, unknown>();
 
-        function addKnownUser(user: any) {
+        function addKnownUser(userValue: unknown) {
+            const user = record(userValue);
             const userId = normalizeUserId(
                 user?.id ||
                     user?.userId ||
@@ -247,7 +288,7 @@ export function useUserDialogLocationPanel({
             }
         }
 
-        function userIsAtLocation(user: any) {
+        function userIsAtLocation(user: unknown) {
             if (!user) {
                 return false;
             }
@@ -278,17 +319,14 @@ export function useUserDialogLocationPanel({
             mergeLocationUser(rowsById, friend);
         }
 
-        const locationMetadata =
-            profile?.$location && typeof profile.$location === 'object'
-                ? profile.$location
-                : {};
+        const locationMetadata = record(profile?.$location);
         pushLocationUserSource(
             [
                 locationMetadata.users,
                 locationMetadata.players,
                 locationMetadata.friends
             ],
-            (user: any) => mergeLocationUser(rowsById, user)
+            (user) => mergeLocationUser(rowsById, user)
         );
 
         const canFetchInstance = Boolean(
@@ -317,7 +355,7 @@ export function useUserDialogLocationPanel({
                       instanceId: parsedLocation.instanceId,
                       endpoint: currentEndpoint
                   })
-                  .then((response: any) => response.json)
+                  .then((response) => record(response.json))
                   .catch((): null => null)
             : Promise.resolve(null);
         const playerSnapshotPromise = currentLocationMatches
@@ -335,11 +373,7 @@ export function useUserDialogLocationPanel({
             playerSnapshotPromise
         ])
             .then(
-                async ([
-                    ownerResult,
-                    instanceResult,
-                    playerSnapshotResult
-                ]: any) => {
+                async ([ownerResult, instanceResult, playerSnapshotResult]) => {
                     if (!active) {
                         return;
                     }
@@ -348,8 +382,10 @@ export function useUserDialogLocationPanel({
                         ownerResult.status === 'fulfilled'
                             ? ownerResult.value
                             : null;
-                    let ownerUser = ownerPayload?.ownerUser || null;
-                    let ownerGroup = ownerPayload?.ownerGroup || null;
+                    let ownerUser: Record<string, unknown> | null =
+                        ownerPayload?.ownerUser || null;
+                    let ownerGroup: Record<string, unknown> | null =
+                        ownerPayload?.ownerGroup || null;
                     const instance =
                         instanceResult.status === 'fulfilled'
                             ? instanceResult.value
@@ -358,11 +394,16 @@ export function useUserDialogLocationPanel({
                         playerSnapshotResult.status === 'fulfilled'
                             ? playerSnapshotResult.value
                             : null;
-                    const snapshotPlayers = Array.isArray(
-                        playerSnapshot?.players
-                    )
-                        ? playerSnapshot.players
-                        : [];
+                    const snapshotPlayers = (
+                        Array.isArray(playerSnapshot?.players)
+                            ? playerSnapshot.players
+                            : []
+                    ).map((player) => ({
+                        id: player.userId,
+                        userId: player.userId,
+                        displayName: player.displayName,
+                        joinedAt: player.joinedAt
+                    }));
                     const instanceOwnerId = resolveOwnerId(
                         instance,
                         parsedLocation.userId,
@@ -450,33 +491,32 @@ export function useUserDialogLocationPanel({
                             instance?.userIds,
                             instance?.usersById
                         ],
-                        (user: any) => mergeLocationUser(rowsById, user)
+                        (user) => mergeLocationUser(rowsById, user)
                     );
 
-                    for (const player of playerSnapshot?.players || []) {
+                    for (const player of snapshotPlayers) {
                         const playerId = normalizeUserId(
-                            player.userId ||
-                                player.user_id ||
-                                player.id ||
-                                player.targetUserId ||
-                                player.target_user_id
+                            player.userId || player.id
                         );
                         const knownUser = playerId
                             ? knownUsersById.get(playerId)
                             : null;
-                        mergeLocationUser(rowsById, knownUser || player, {
-                            id: playerId,
-                            userId: playerId,
-                            displayName:
-                                player.displayName || player.display_name,
-                            joinedAt: player.joinedAt || player.joined_at
-                        });
+                        mergeLocationUser(
+                            rowsById,
+                            knownUser ? record(knownUser) : player,
+                            {
+                                id: playerId,
+                                userId: playerId,
+                                displayName: player.displayName,
+                                joinedAt: player.joinedAt
+                            }
+                        );
                     }
 
                     const users = sortLocationUsers(
                         Array.from(rowsById.values())
                     );
-                    const friendCount = users.filter((user: any) => {
+                    const friendCount = users.filter((user) => {
                         const userId = normalizeUserId(
                             user?.id || user?.userId
                         );
@@ -511,11 +551,11 @@ export function useUserDialogLocationPanel({
                         knownUsersById,
                         shouldContinue: () => active,
                         users
-                    }).then((enrichedUsers: any) => {
+                    }).then((enrichedUsers) => {
                         if (!active) {
                             return;
                         }
-                        setLocationPanel((current: any) => {
+                        setLocationPanel((current) => {
                             if (
                                 !isSameLocationTag(
                                     current.location,
@@ -541,7 +581,7 @@ export function useUserDialogLocationPanel({
                 setLocationPanel({
                     ...createEmptyUserDialogLocationPanel(activeLocation),
                     users,
-                    friendCount: users.filter((user: any) => {
+                    friendCount: users.filter((user) => {
                         const userId = normalizeUserId(
                             user?.id || user?.userId
                         );
@@ -589,11 +629,11 @@ export function useUserDialogLocationPanel({
                 instanceId: parsedLocation.instanceId,
                 endpoint: currentEndpoint
             })
-            .then((response: any) => {
+            .then((response) => {
                 if (!active) {
                     return;
                 }
-                const instance = response?.json || null;
+                const instance = response?.json ? record(response.json) : null;
                 recordLocationHintsFromInstances({
                     endpoint: currentEndpoint,
                     instances: instance
@@ -616,7 +656,7 @@ export function useUserDialogLocationPanel({
         };
     }, [currentEndpoint, currentInviteLocation, reloadToken]);
 
-    function refreshLocationPanel(requestLocation: any): null {
+    function refreshLocationPanel(requestLocation: unknown): null {
         const activeLocation = resolvePresenceLocation(profile);
         if (
             requestLocation &&
@@ -626,27 +666,29 @@ export function useUserDialogLocationPanel({
             return null;
         }
 
-        setLocationRefreshToken((value: any) => value + 1);
+        setLocationRefreshToken((value) => value + 1);
         return null;
     }
 
     const inviteInstanceCache = useMemo(() => {
         const cache = buildCachedInstanceMap(groupInstances);
 
-        function setCachedInstance(location: any, instance: any) {
-            if (!location || !instance) {
+        function setCachedInstance(location: unknown, instanceValue: unknown) {
+            if (!location || !instanceValue) {
                 return;
             }
+            const instance = record(instanceValue);
 
-            const key = locationCacheKey(location);
+            const normalizedLocation = normalizeUserId(location);
+            const key = locationCacheKey(normalizedLocation);
             const existing =
-                cache.get(location) || (key ? cache.get(key) : null);
+                cache.get(normalizedLocation) || (key ? cache.get(key) : null);
             const merged =
                 existing?.closedAt && !instance?.closedAt
                     ? { ...instance, closedAt: existing.closedAt }
                     : instance;
 
-            cache.set(location, merged);
+            cache.set(normalizedLocation, merged);
             if (key) {
                 cache.set(key, merged);
             }
@@ -690,7 +732,7 @@ export function useUserDialogLocationPanel({
     const canInviteFromCurrentLocation =
         currentInviteInstanceStatus !== 'running' &&
         checkCanInvite(currentInviteLocation, {
-            currentUserId,
+            currentUserId: normalizedCurrentUserId,
             lastLocationStr: '',
             cachedInstances: inviteInstanceCache
         });

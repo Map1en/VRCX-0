@@ -1,22 +1,25 @@
 use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex, RwLock,
 };
 
-use chrono::Utc;
 use rusqlite::{
     types::{ToSql, Value as SqlValue},
-    Connection, OpenFlags, OptionalExtension, Statement, MAIN_DB,
+    Connection, OpenFlags, OptionalExtension, Statement,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-use super::sidecar::remove_sidecars;
 use super::value::{json_to_sql, sqlite_value_to_json};
+
+#[cfg(test)]
+mod tests;
+mod upgrade;
 
 const READ_CONNECTION_COUNT: usize = 2;
 
@@ -77,6 +80,43 @@ impl DatabaseService {
 
     pub fn db_path(&self) -> &Path {
         &self.db_path
+    }
+
+    pub fn is_main_mode(&self) -> bool {
+        self.inner
+            .read()
+            .map(|inner| matches!(&*inner, DatabaseMode::Main(_)))
+            .unwrap_or(false)
+    }
+
+    pub fn vacuum_into(&self, dest: &Path) -> Result<(), Error> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        if !matches!(&*inner, DatabaseMode::Main(_)) {
+            return Err(Error::Database(
+                "Database snapshot is unavailable in the current mode.".into(),
+            ));
+        }
+
+        if dest.exists() {
+            fs::remove_file(dest)?;
+        }
+
+        let conn = Connection::open_with_flags(&self.db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|error| Error::Database(error.to_string()))?;
+        conn.busy_timeout(std::time::Duration::from_secs(5))
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let dest = dest
+            .to_str()
+            .ok_or_else(|| {
+                Error::Database("Database snapshot destination path is not valid UTF-8.".into())
+            })?
+            .to_owned();
+        conn.execute("VACUUM INTO ?1", [&dest])
+            .map_err(map_profile_backup_sqlite_error)?;
+        Ok(())
     }
 
     pub(crate) fn execute(
@@ -150,313 +190,45 @@ impl DatabaseService {
         }
     }
 
-    pub fn begin_upgrade(&self, from_version: i64, to_version: i64) -> Result<(), Error> {
-        let mut inner = self
+    pub(crate) fn checkpoint_and_vacuum(&self) -> Result<(), Error> {
+        let inner = self
             .inner
-            .write()
+            .read()
             .map_err(|e| Error::Database(e.to_string()))?;
-
-        let main = match &*inner {
-            DatabaseMode::Main(main) => main,
-            DatabaseMode::Upgrade(_) => {
-                return Err(Error::Database(
-                    "A database upgrade is already running.".into(),
-                ));
-            }
+        let conn = match &*inner {
+            DatabaseMode::Main(main) => main
+                .writer
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Upgrade(upgrade) => upgrade
+                .conn
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
             DatabaseMode::Closed => {
                 return Err(Error::Database(
                     "Database connection is temporarily unavailable.".into(),
                 ));
             }
         };
-
-        {
-            let writer = main
-                .writer
-                .lock()
-                .map_err(|e| Error::Database(e.to_string()))?;
-            checkpoint(&writer)?;
-        }
-
-        if let Some(status) = self.blocking_upgrade_status()? {
-            return Err(Error::Database(format!(
-                "A previous database upgrade did not finish. Work database: {}",
-                status.work_db_path
-            )));
-        }
-
-        self.remove_upgrade_dir()?;
-        fs::create_dir_all(&self.upgrade_dir)?;
-
-        let work_db_path = self.work_db_path(from_version, to_version);
-        {
-            let writer = main
-                .writer
-                .lock()
-                .map_err(|e| Error::Database(e.to_string()))?;
-            writer
-                .backup(MAIN_DB, &work_db_path, None)
-                .map_err(|e| Error::Database(e.to_string()))?;
-        }
-
-        let conn = open_configured_connection(&work_db_path)?;
-        let status = DatabaseUpgradeStatus {
-            from_version,
-            to_version,
-            work_db_path: work_db_path.to_string_lossy().into_owned(),
-            started_at: Utc::now().to_rfc3339(),
-            failed_at: None,
-            reason: None,
-        };
-
-        self.write_status(&self.active_status_path(), &status)?;
-        *inner = DatabaseMode::Upgrade(UpgradeSession {
-            conn: Mutex::new(conn),
-            status,
-        });
-        Ok(())
-    }
-
-    pub fn commit_upgrade(&self) -> Result<(), Error> {
-        let mut inner = self
-            .inner
-            .write()
+        checkpoint(&conn)?;
+        conn.execute_batch("VACUUM;")
             .map_err(|e| Error::Database(e.to_string()))?;
-
-        let status = match &*inner {
-            DatabaseMode::Upgrade(session) => session.status.clone(),
-            _ => return Err(Error::Database("No database upgrade is running.".into())),
-        };
-
-        {
-            let session = match &*inner {
-                DatabaseMode::Upgrade(session) => session,
-                _ => unreachable!(),
-            };
-            let conn = session
-                .conn
-                .lock()
-                .map_err(|e| Error::Database(e.to_string()))?;
-            ensure_upgrade_version_written(&conn, status.to_version)?;
-            checkpoint(&conn)?;
-        }
-
-        let session = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
-            DatabaseMode::Upgrade(session) => session,
-            _ => unreachable!(),
-        };
-        let work_db_path = PathBuf::from(&session.status.work_db_path);
-        drop(session);
-
-        if let Err(error) = self.replace_main_database(&work_db_path) {
-            match open_main_database(&self.db_path) {
-                Ok(main) => {
-                    *inner = DatabaseMode::Main(main);
-                }
-                Err(reopen_error) => {
-                    tracing::warn!(
-                        "Failed to reopen database after upgrade rollback: {reopen_error}"
-                    );
-                }
-            }
-            return Err(error);
-        }
-
-        match open_main_database(&self.db_path) {
-            Ok(main) => {
-                *inner = DatabaseMode::Main(main);
-            }
-            Err(error) => {
-                let mut failed_status = status;
-                failed_status.work_db_path = self.db_path.to_string_lossy().into_owned();
-                failed_status.failed_at = Some(Utc::now().to_rfc3339());
-                failed_status.reason = Some(format!(
-                    "Database upgrade replaced the main database, but reopening it failed: {error}"
-                ));
-                if let Err(status_error) =
-                    self.write_status(&self.failed_status_path(), &failed_status)
-                {
-                    tracing::warn!(
-                        "Failed to write database upgrade failure status after replacement: {status_error}"
-                    );
-                }
-                if let Err(status_error) = self.remove_file_if_exists(&self.active_status_path()) {
-                    tracing::warn!(
-                        "Failed to remove active database upgrade status after replacement failure: {status_error}"
-                    );
-                }
-                return Err(error);
-            }
-        }
-
-        if let Err(error) = self.remove_upgrade_dir() {
-            tracing::warn!("Failed to clean database upgrade directory: {error}");
-        }
-
+        checkpoint(&conn)?;
         Ok(())
     }
+}
 
-    pub fn fail_upgrade(&self, reason: String) -> Result<(), Error> {
-        let mut inner = self
-            .inner
-            .write()
-            .map_err(|e| Error::Database(e.to_string()))?;
-
-        let reopen_main = matches!(&*inner, DatabaseMode::Upgrade(_));
-        let mut status = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
-            DatabaseMode::Upgrade(session) => {
-                let UpgradeSession { conn, status } = session;
-                match conn.into_inner() {
-                    Ok(conn) => {
-                        if let Err(error) = checkpoint(&conn) {
-                            tracing::warn!(
-                                "Failed to checkpoint failed database upgrade copy: {error}"
-                            );
-                        }
-                        drop(conn);
-                    }
-                    Err(error) => {
-                        tracing::warn!(
-                            "Failed to close failed database upgrade connection cleanly: {error}"
-                        );
-                    }
-                }
-                status
-            }
-            other => {
-                *inner = other;
-                if let Some(status) = self.read_status_if_exists(&self.active_status_path())? {
-                    status
-                } else {
-                    return Ok(());
-                }
-            }
-        };
-
-        status.failed_at = Some(Utc::now().to_rfc3339());
-        status.reason = Some(reason);
-        self.write_status(&self.failed_status_path(), &status)?;
-        self.remove_file_if_exists(&self.active_status_path())?;
-
-        if reopen_main {
-            match open_main_database(&self.db_path) {
-                Ok(main) => {
-                    *inner = DatabaseMode::Main(main);
-                }
-                Err(error) => {
-                    tracing::warn!("Failed to reopen database after upgrade failure: {error}");
-                }
-            }
-        }
-        Ok(())
+fn map_profile_backup_sqlite_error(error: rusqlite::Error) -> Error {
+    if matches!(
+        &error,
+        rusqlite::Error::SqliteFailure(code, _) if code.code == rusqlite::ErrorCode::DiskFull
+    ) {
+        return Error::Io(io::Error::new(
+            io::ErrorKind::StorageFull,
+            error.to_string(),
+        ));
     }
-
-    pub fn get_failed_upgrade(&self) -> Result<Option<DatabaseUpgradeStatus>, Error> {
-        if let Some(status) = self.read_status_if_exists(&self.failed_status_path())? {
-            if Path::new(&status.work_db_path).exists() {
-                return Ok(Some(status));
-            }
-        }
-
-        if let Some(mut status) = self.read_status_if_exists(&self.active_status_path())? {
-            if Path::new(&status.work_db_path).exists() {
-                status.reason = Some("A previous database upgrade did not finish.".into());
-                return Ok(Some(status));
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn work_db_path(&self, from_version: i64, to_version: i64) -> PathBuf {
-        self.upgrade_dir.join(format!(
-            "VRCX-0-upgrade-{from_version}-to-{to_version}.sqlite3"
-        ))
-    }
-
-    fn active_status_path(&self) -> PathBuf {
-        self.upgrade_dir.join("upgrade-active.json")
-    }
-
-    fn failed_status_path(&self) -> PathBuf {
-        self.upgrade_dir.join("upgrade-failed.json")
-    }
-
-    fn blocking_upgrade_status(&self) -> Result<Option<DatabaseUpgradeStatus>, Error> {
-        if let Some(status) = self.read_status_if_exists(&self.failed_status_path())? {
-            if Path::new(&status.work_db_path).exists() {
-                return Ok(Some(status));
-            }
-        }
-
-        if let Some(status) = self.read_status_if_exists(&self.active_status_path())? {
-            if Path::new(&status.work_db_path).exists() {
-                return Ok(Some(status));
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn read_status_if_exists(&self, path: &Path) -> Result<Option<DatabaseUpgradeStatus>, Error> {
-        if !path.exists() {
-            return Ok(None);
-        }
-
-        let content = fs::read_to_string(path)?;
-        Ok(Some(serde_json::from_str(&content)?))
-    }
-
-    fn write_status(&self, path: &Path, status: &DatabaseUpgradeStatus) -> Result<(), Error> {
-        fs::create_dir_all(&self.upgrade_dir)?;
-        let json = serde_json::to_string_pretty(status)?;
-        fs::write(path, json)?;
-        Ok(())
-    }
-
-    fn replace_main_database(&self, work_db_path: &Path) -> Result<(), Error> {
-        let old_main_path = self.upgrade_dir.join("VRCX-0-before-upgrade.sqlite3");
-        self.remove_file_if_exists(&old_main_path)?;
-        remove_sidecars(&old_main_path)?;
-        remove_sidecars(&self.db_path)?;
-        remove_sidecars(work_db_path)?;
-
-        if self.db_path.exists() {
-            fs::rename(&self.db_path, &old_main_path)?;
-        }
-
-        match fs::rename(work_db_path, &self.db_path) {
-            Ok(()) => {
-                if let Err(error) = self.remove_file_if_exists(&old_main_path) {
-                    tracing::warn!("Failed to remove old database after upgrade: {error}");
-                }
-                if let Err(error) = remove_sidecars(&old_main_path) {
-                    tracing::warn!("Failed to remove old database sidecars after upgrade: {error}");
-                }
-                Ok(())
-            }
-            Err(error) => {
-                if old_main_path.exists() && !self.db_path.exists() {
-                    let _ = fs::rename(&old_main_path, &self.db_path);
-                }
-                Err(Error::Io(error))
-            }
-        }
-    }
-
-    fn remove_upgrade_dir(&self) -> Result<(), Error> {
-        if self.upgrade_dir.exists() {
-            fs::remove_dir_all(&self.upgrade_dir)?;
-        }
-        Ok(())
-    }
-
-    fn remove_file_if_exists(&self, path: &Path) -> Result<(), Error> {
-        if path.exists() {
-            fs::remove_file(path)?;
-        }
-        Ok(())
-    }
+    Error::Database(error.to_string())
 }
 
 pub fn optimize_database(db: &DatabaseService) -> Result<(), Error> {
@@ -566,9 +338,11 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
         "PRAGMA locking_mode=NORMAL;
          PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
+         PRAGMA secure_delete=ON;
          PRAGMA optimize=0x10002;",
     )
     .map_err(|e| Error::Database(e.to_string()))?;
+    conn.set_prepared_statement_cache_capacity(64);
     Ok(())
 }
 
@@ -578,12 +352,19 @@ fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
          PRAGMA query_only=ON;",
     )
     .map_err(|e| Error::Database(e.to_string()))?;
+    conn.set_prepared_statement_cache_capacity(64);
     Ok(())
 }
 
 fn checkpoint(conn: &Connection) -> Result<(), Error> {
-    conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+    let busy = conn
+        .query_row("PRAGMA wal_checkpoint(TRUNCATE);", [], |row| {
+            row.get::<_, i64>(0)
+        })
         .map_err(|e| Error::Database(e.to_string()))?;
+    if busy != 0 {
+        return Err(Error::Database("WAL checkpoint remained busy.".into()));
+    }
     Ok(())
 }
 
@@ -629,7 +410,7 @@ fn execute_on_connection(
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<Vec<Vec<serde_json::Value>>, Error> {
     let mut stmt = conn
-        .prepare(sql)
+        .prepare_cached(sql)
         .map_err(|e| Error::Database(e.to_string()))?;
 
     let param_names = statement_param_names(&stmt);
@@ -667,7 +448,7 @@ fn execute_non_query_on_connection(
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<i64, Error> {
     let mut stmt = conn
-        .prepare(sql)
+        .prepare_cached(sql)
         .map_err(|e| Error::Database(e.to_string()))?;
 
     let param_names = statement_param_names(&stmt);
@@ -704,107 +485,4 @@ fn statement_param_values(
                 .ok_or_else(|| Error::Database(format!("Missing SQL parameter: {name}")))
         })
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    #[test]
-    fn executes_daily_named_parameter_reads_and_writes() -> Result<(), Error> {
-        let dir = TestDir::new("sqlite-daily");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        let empty = HashMap::new();
-
-        db.execute_non_query(
-            "CREATE TABLE daily_items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, visits INTEGER NOT NULL)",
-            &empty,
-        )?;
-
-        let mut args = HashMap::new();
-        args.insert("@id".to_string(), serde_json::json!(1));
-        args.insert("@name".to_string(), serde_json::json!("trusted"));
-        args.insert("@visits".to_string(), serde_json::json!(3));
-        assert_eq!(
-            db.execute_non_query(
-                "INSERT INTO daily_items (id, name, visits) VALUES (@id, @name, @visits)",
-                &args,
-            )?,
-            1
-        );
-
-        let mut update_args = HashMap::new();
-        update_args.insert("@id".to_string(), serde_json::json!(1));
-        update_args.insert("@visits".to_string(), serde_json::json!(4));
-        assert_eq!(
-            db.execute_non_query(
-                "UPDATE daily_items SET visits = @visits WHERE id = @id",
-                &update_args,
-            )?,
-            1
-        );
-
-        let rows = db.execute(
-            "SELECT name, visits FROM daily_items WHERE id = @id",
-            &update_args,
-        )?;
-
-        assert_eq!(
-            rows,
-            vec![vec![serde_json::json!("trusted"), serde_json::json!(4)]]
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn rolls_back_writer_transaction_when_any_statement_fails() -> Result<(), Error> {
-        let dir = TestDir::new("sqlite-transaction-rollback");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        let empty = HashMap::new();
-
-        db.execute_non_query(
-            "CREATE TABLE transaction_items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)",
-            &empty,
-        )?;
-
-        let result = db.write_transaction(|tx| {
-            let mut args = HashMap::new();
-            args.insert("@id".to_string(), serde_json::json!(1));
-            args.insert("@name".to_string(), serde_json::json!("pending"));
-            tx.execute_non_query(
-                "INSERT INTO transaction_items (id, name) VALUES (@id, @name)",
-                &args,
-            )?;
-            tx.execute_non_query("INSERT INTO missing_table (value) VALUES (1)", &empty)?;
-            Ok(())
-        });
-
-        assert!(result.is_err());
-        let rows = db.execute("SELECT COUNT(*) FROM transaction_items", &empty)?;
-        assert_eq!(rows[0][0], serde_json::json!(0));
-        Ok(())
-    }
 }

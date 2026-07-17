@@ -285,3 +285,6 @@ pub(crate) fn instance_activity_from_row(row: &[Value]) -> InstanceActivityRowOu
 pub(crate) fn is_traveling_location(location: &str) -> bool {
     matches!(location.trim(), "traveling" | "traveling:traveling")
 }
+
+#[cfg(test)]
+mod tests;

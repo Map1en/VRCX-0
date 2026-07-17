@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { commands } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
 import { restartApplication } from '@/services/shellIntegrationService';
 import {
     canInstallUpdatesOnPlatform,
-    downloadAndInstallUpdate,
-    fetchLatestBranchRelease,
+    confirmInstall,
     formatReleaseDisplayVersion,
     getPreviewStableReleaseUpdateMode,
-    hasUpdateForBranch,
+    toNormalizedReleaseFromSnapshot,
     type NormalizedRelease
 } from '@/services/updateService';
 import { links } from '@/shared/constants/link';
@@ -26,8 +26,6 @@ import {
 } from '@/ui/shadcn/dialog';
 import { FieldGroup } from '@/ui/shadcn/field';
 
-const STABLE_BRANCH = 'Stable';
-
 type UpdaterDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -38,20 +36,28 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
     );
-    const hostArch = useRuntimeStore((state) => state.hostCapabilities.arch);
-    const linuxPackageKind = useRuntimeStore(
-        (state) => state.hostCapabilities.linuxPackageKind
-    );
     const canInstallUpdates = canInstallUpdatesOnPlatform(hostPlatform);
-    const previewStableUpdateMode = getPreviewStableReleaseUpdateMode();
-    const isPreviewUpdateCheck = previewStableUpdateMode.enabled;
+    const isPreviewUpdateCheck = getPreviewStableReleaseUpdateMode().enabled;
 
     const [latestRelease, setLatestRelease] =
         useState<NormalizedRelease | null>(null);
+    const [hasNewerRelease, setHasNewerRelease] = useState(false);
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [detail, setDetail] = useState('');
+    const autoDownloadState = useRuntimeStore(
+        (state) => state.updateLoop.autoDownloadState
+    );
+    const downloadedVersion = useRuntimeStore(
+        (state) => state.updateLoop.downloadedVersion
+    );
+    const downloadProgress = useRuntimeStore(
+        (state) => state.updateLoop.downloadProgress
+    );
+    const progress =
+        latestRelease && downloadedVersion === latestRelease.canonicalVersion
+            ? downloadProgress
+            : 0;
     const currentVersionText =
         // oxlint-disable-next-line no-undef
         formatReleaseDisplayVersion(VERSION || '') || '-';
@@ -61,15 +67,6 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
             ? formatReleaseDisplayVersion(latestRelease.canonicalVersion)
             : '') ||
         '-';
-    const hasNewerRelease = latestRelease
-        ? isPreviewUpdateCheck ||
-          hasUpdateForBranch(
-              STABLE_BRANCH,
-              // oxlint-disable-next-line no-undef
-              VERSION || '',
-              latestRelease.canonicalVersion
-          )
-        : false;
     const visibleDetail =
         detail ||
         (latestRelease && !hasNewerRelease
@@ -84,28 +81,33 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         let active = true;
         setLoading(true);
         setLatestRelease(null);
+        setHasNewerRelease(false);
         setDetail(t('message.vrcx_updater.checking_update_state'));
 
-        const releaseCheck = isPreviewUpdateCheck
-            ? previewStableUpdateMode.check({
-                  hostArch,
-                  linuxPackageKind,
-                  hostPlatform
-              })
-            : fetchLatestBranchRelease(STABLE_BRANCH, {
-                  hostArch,
-                  linuxPackageKind,
-                  hostPlatform,
-                  requireInstallerAsset: canInstallUpdates
-              });
-
-        releaseCheck
-            .then((nextRelease) => {
+        commands
+            .appAppUpdateCheckRun()
+            .then((snapshot) => {
                 if (!active) {
                     return;
                 }
 
+                if (snapshot.error) {
+                    setDetail(
+                        userFacingErrorMessage(
+                            snapshot.error,
+                            t(
+                                'message.vrcx_updater.failed_to_load_update_releases'
+                            )
+                        )
+                    );
+                    return;
+                }
+
+                const nextRelease = toNormalizedReleaseFromSnapshot(
+                    snapshot.release
+                );
                 setLatestRelease(nextRelease);
+                setHasNewerRelease(snapshot.hasAvailableUpdate);
                 setDetail(
                     nextRelease
                         ? ''
@@ -137,15 +139,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         return () => {
             active = false;
         };
-    }, [
-        canInstallUpdates,
-        hostArch,
-        hostPlatform,
-        isPreviewUpdateCheck,
-        linuxPackageKind,
-        open,
-        t
-    ]);
+    }, [canInstallUpdates, isPreviewUpdateCheck, open, t]);
 
     async function handleInstallUpdate() {
         if (
@@ -158,19 +152,13 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         }
 
         setDownloading(true);
-        setProgress(0);
         setDetail(
             t('host.system_dialogs.dynamic.downloading_value', {
                 value: latestVersionText
             })
         );
         try {
-            await downloadAndInstallUpdate(latestRelease, {
-                hostArch,
-                linuxPackageKind,
-                hostPlatform,
-                onProgress: setProgress
-            });
+            await confirmInstall(latestRelease.canonicalVersion);
             await restartApplication();
         } catch (error) {
             setDetail(
@@ -181,7 +169,6 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
             );
         } finally {
             setDownloading(false);
-            setProgress(0);
         }
     }
 
@@ -221,7 +208,8 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                                 />
                             </div>
                             <div className="text-muted-foreground text-xs">
-                                {progress === 100
+                                {autoDownloadState === 'downloaded' ||
+                                autoDownloadState === 'installing'
                                     ? t(
                                           'message.vrcx_updater.installing_update'
                                       )

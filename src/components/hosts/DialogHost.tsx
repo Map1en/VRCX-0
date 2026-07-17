@@ -65,7 +65,10 @@ export function DialogHost() {
                 showCloseButton={false}
                 className={cn(
                     'flex max-h-[90vh] w-[calc(100vw-2rem)] !max-w-[calc(100vw-2rem)] flex-col overflow-hidden',
-                    isUserDialog || isWorldDialog || isGroupDialog
+                    isUserDialog ||
+                        isWorldDialog ||
+                        isGroupDialog ||
+                        isAvatarDialog
                         ? 'sm:w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]'
                         : 'sm:w-[65rem] sm:!max-w-[65rem]',
                     isOwnerDialog && 'owner-dialog'

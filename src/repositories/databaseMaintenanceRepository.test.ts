@@ -13,14 +13,12 @@ vi.mock('@/platform/tauri/bindings', () => ({
 }));
 
 import databaseMaintenanceRepository, {
-    addV17PerformanceIndexes,
-    fixBrokenGameLogDisplayNames,
     getBrokenGameLogDisplayNames,
     getBrokenLeaveEntries,
     getGlobalTableSizes,
     getMaxFriendLogNumber,
     getUserTableSizes,
-    optimize
+    vacuum
 } from './databaseMaintenanceRepository';
 
 const runtimeSizes = {
@@ -64,16 +62,12 @@ describe('databaseMaintenanceRepository', () => {
         );
     });
 
-    it('dispatches named maintenance tasks through the shared command', async () => {
-        await addV17PerformanceIndexes();
-        await optimize();
-        await fixBrokenGameLogDisplayNames();
+    it('exposes only the user-triggered vacuum maintenance task', async () => {
+        await vacuum();
 
-        expect(commandMocks.appDatabaseMaintenanceRun.mock.calls).toEqual([
-            ['addV17PerformanceIndexes'],
-            ['optimize'],
-            ['fixBrokenGameLogDisplayNames']
-        ]);
+        expect(commandMocks.appDatabaseMaintenanceRun).toHaveBeenCalledWith(
+            'vacuum'
+        );
     });
 
     it('normalizes max friend log and table-size inputs and outputs', async () => {

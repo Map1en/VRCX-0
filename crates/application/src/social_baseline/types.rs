@@ -14,7 +14,7 @@ pub struct SocialFavoritesBaselineInput {
     pub friend_roster_by_id: RawJson,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialFavoritesBaselineOutput {
     pub user_id: String,
@@ -38,7 +38,7 @@ pub struct SocialFriendRosterBaselineInput {
     pub is_first_load: bool,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialFriendRosterBaselineOutput {
     pub user_id: String,

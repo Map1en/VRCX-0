@@ -5,6 +5,8 @@ use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::realtime::FriendProfileLoadStatusPayload;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum BackendRuntimeMode {
@@ -42,6 +44,7 @@ pub struct BackendRuntimeSnapshot {
     pub game_log_persisted_count: u64,
     pub last_error: Option<String>,
     pub updated_at: String,
+    pub friend_profile_load: FriendProfileLoadStatusPayload,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -67,6 +70,7 @@ struct BackendRuntimeState {
     game_log_persisted_count: u64,
     last_error: Option<String>,
     updated_at: String,
+    friend_profile_load: FriendProfileLoadStatusPayload,
 }
 
 impl Default for BackendRuntimeState {
@@ -85,6 +89,7 @@ impl Default for BackendRuntimeState {
             game_log_persisted_count: 0,
             last_error: None,
             updated_at: now_iso(),
+            friend_profile_load: FriendProfileLoadStatusPayload::default(),
         }
     }
 }
@@ -213,6 +218,15 @@ impl BackendRuntime {
         })
     }
 
+    pub fn set_friend_profile_load_state(
+        &self,
+        payload: FriendProfileLoadStatusPayload,
+    ) -> BackendRuntimeSnapshot {
+        self.update(|state| {
+            state.friend_profile_load = payload;
+        })
+    }
+
     pub fn observe_runtime_event(
         &self,
         event: &str,
@@ -229,6 +243,14 @@ impl BackendRuntime {
                 })
             }
             "runtimeGameLogEvent" => None,
+            "friendProfileLoadStatus" => {
+                if let Ok(status) =
+                    serde_json::from_value::<FriendProfileLoadStatusPayload>(payload.clone())
+                {
+                    self.set_friend_profile_load_state(status);
+                }
+                None
+            }
             "updateIsGameRunning" => {
                 let running = payload
                     .get("isGameRunning")
@@ -330,6 +352,7 @@ impl BackendRuntime {
             game_log_persisted_count: state.game_log_persisted_count,
             last_error: state.last_error.clone(),
             updated_at: state.updated_at.clone(),
+            friend_profile_load: state.friend_profile_load.clone(),
         }
     }
 

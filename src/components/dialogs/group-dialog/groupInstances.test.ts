@@ -74,7 +74,7 @@ describe('groupInstances', () => {
             }
         );
 
-        expect(rows.map((row: any) => row.location)).toEqual([
+        expect(rows.map((row) => row.location)).toEqual([
             currentLocation,
             'wrld_base:base~group(grp_target)'
         ]);
@@ -83,18 +83,18 @@ describe('groupInstances', () => {
             instanceId: 'current~group(grp_target)',
             friendCount: 1
         });
-        expect(rows[0].users.map((user: any) => user.id)).toEqual([
+        expect(rows[0].users.map((user) => user.id)).toEqual([
             'usr_self',
             'usr_traveling'
         ]);
-        expect(rows[1].users.map((user: any) => user.id)).toEqual([
+        expect(rows[1].users.map((user) => user.id)).toEqual([
             'usr_existing',
             'usr_friend'
         ]);
         expect(rows[1].friendCount).toBe(3);
         expect(
-            rows.some((row: any) =>
-                row.users.some((user: any) => user.id === 'usr_wrong_group')
+            rows.some((row) =>
+                row.users.some((user) => user.id === 'usr_wrong_group')
             )
         ).toBe(false);
     });
@@ -122,11 +122,11 @@ describe('groupInstances', () => {
             }
         );
 
-        expect(rows.map((row: any) => row.location)).toEqual([
+        expect(rows.map((row) => row.location)).toEqual([
             'wrld_big:1~group(grp_target)',
             'wrld_small:1~group(grp_target)'
         ]);
-        expect(rows[0].users.map((user: any) => user.displayName)).toEqual([
+        expect(rows[0].users.map((user) => user.displayName)).toEqual([
             'Alpha',
             'Beta'
         ]);
@@ -134,7 +134,7 @@ describe('groupInstances', () => {
 
     it('keeps existing users and counts when duplicate base instances merge', () => {
         const location = 'wrld_dup:1~group(grp_target)';
-        const explicitRef: any = { source: 'repository' };
+        const explicitRef = { source: 'repository' };
         const rows = mergeGroupInstances(
             [
                 {
@@ -170,8 +170,6 @@ describe('groupInstances', () => {
             friendCount: 4,
             ref: explicitRef
         });
-        expect(rows[0].users.map((user: any) => user.id)).toEqual([
-            'usr_first'
-        ]);
+        expect(rows[0].users.map((user) => user.id)).toEqual(['usr_first']);
     });
 });

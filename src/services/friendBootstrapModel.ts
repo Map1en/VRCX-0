@@ -1,11 +1,4 @@
-import type {
-    FriendLogCurrentEntry,
-    FriendLogCurrentRow
-} from '@/repositories/friendLogRepository';
-import {
-    computeTrustLevel,
-    computeUserPlatform
-} from '@/shared/utils/userTransforms';
+import type { FriendLogCurrentRow } from '@/repositories/friendLogRepository';
 
 export type FriendBootstrapSnapshot = Record<string, unknown> & {
     friendsById?: unknown;
@@ -48,31 +41,6 @@ export type CurrentUserFriendSnapshot = Record<string, unknown> & {
     activeFriends?: unknown;
     onlineFriends?: unknown;
 };
-export type RecordFriendLogFriendOptions = {
-    currentUserId?: unknown;
-    targetUserId?: unknown;
-    targetUser?: unknown;
-    stateBucket?: unknown;
-    nowIso?: () => string;
-};
-export type RecordFriendLogFriendResult = {
-    userId: string;
-    targetUserId?: string;
-    count: number;
-    inserted?: boolean;
-    historyCount: number;
-};
-export type RecordFriendLogUnfriendOptions = {
-    currentUserId?: unknown;
-    targetUserId?: unknown;
-    nowIso?: () => string;
-};
-export type RecordFriendLogUnfriendResult = {
-    userId: string;
-    targetUserId: string;
-    removedCount: number;
-    historyCount: number;
-};
 export type FriendBootstrapOptions = {
     userId?: unknown;
     endpoint?: unknown;
@@ -93,24 +61,8 @@ export function normalizeUserId(value: unknown) {
         : String(value ?? '').trim();
 }
 
-export function normalizeStateBucket(value: unknown) {
-    const normalized = normalizeUserId(value).toLowerCase();
-    if (
-        normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-    ) {
-        return normalized;
-    }
-    return '';
-}
-
 export function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
-}
-
-export function asFriendRecord(value: unknown): FriendRecord | null {
-    return isRecord(value) ? (value as FriendRecord) : null;
 }
 
 export function normalizeStringArray(value: unknown): string[] {
@@ -139,20 +91,6 @@ export function getDisplayName(
         normalizeUserId(user?.username) ||
         normalizeUserId(user?.id)
     );
-}
-
-export function getMeaningfulDisplayName(
-    user: FriendRecord | null | undefined,
-    userId: unknown = ''
-) {
-    const normalizedUserId = normalizeUserId(userId || user?.id);
-    for (const candidate of [user?.displayName, user?.username]) {
-        const displayName = normalizeUserId(candidate);
-        if (displayName && displayName !== normalizedUserId) {
-            return displayName;
-        }
-    }
-    return '';
 }
 
 function addStateBucketIds(
@@ -201,124 +139,6 @@ export function hasCompleteFriendStateSnapshot(
         Array.isArray(currentUserSnapshot.activeFriends) &&
         Array.isArray(currentUserSnapshot.onlineFriends)
     );
-}
-
-export function hasFriendListSnapshot(
-    currentUserSnapshot: unknown
-): currentUserSnapshot is CurrentUserFriendSnapshot & { friends: unknown[] } {
-    return (
-        isRecord(currentUserSnapshot) &&
-        Array.isArray(currentUserSnapshot.friends)
-    );
-}
-
-export function buildCurrentEntryFromFriend({
-    userId,
-    friend,
-    friendNumber
-}: {
-    userId: string;
-    friend: FriendRecord | null | undefined;
-    friendNumber: number;
-}): FriendLogCurrentEntry {
-    const trustLevel =
-        normalizeUserId(friend?.$trustLevel || friend?.trustLevel) || 'Visitor';
-    return {
-        userId,
-        displayName: getDisplayName(friend) || userId,
-        trustLevel,
-        friendNumber
-    };
-}
-
-export function createFallbackFriendUser(
-    userId: unknown,
-    existingRow: FriendLogRow
-): FriendRecord {
-    const normalizedUserId = normalizeUserId(userId);
-    return {
-        id: normalizedUserId,
-        displayName: existingRow?.displayName || normalizedUserId,
-        username: '',
-        tags: [],
-        developerType: '',
-        platform: 'offline',
-        last_platform: '',
-        location: 'offline',
-        state: 'offline'
-    };
-}
-
-export function normalizeFriendEntry(
-    friend: FriendRecord | null | undefined,
-    stateBucket: string,
-    existingRow: FriendLogRow
-) {
-    const source =
-        friend ?? createFallbackFriendUser(existingRow?.userId, existingRow);
-    const sourceRecord = source;
-    const tags = Array.isArray(sourceRecord.tags)
-        ? sourceRecord.tags.filter(
-              (entry): entry is string => typeof entry === 'string'
-          )
-        : [];
-    const trust = computeTrustLevel(
-        tags,
-        normalizeUserId(sourceRecord.developerType)
-    );
-    const explicitTrustLevel = normalizeUserId(
-        sourceRecord.$trustLevel || sourceRecord.trustLevel
-    );
-    const hasTrustMetadata =
-        Boolean(friend) &&
-        (tags.length > 0 ||
-            Boolean(sourceRecord.developerType) ||
-            Boolean(explicitTrustLevel));
-    const trustLevel =
-        explicitTrustLevel ||
-        (hasTrustMetadata
-            ? trust.trustLevel
-            : existingRow?.trustLevel || existingRow?.$trustLevel) ||
-        trust.trustLevel;
-    const friendNumber =
-        Number.parseInt(
-            String(
-                sourceRecord?.friendNumber ??
-                    sourceRecord?.$friendNumber ??
-                    existingRow?.friendNumber ??
-                    existingRow?.$friendNumber ??
-                    0
-            ),
-            10
-        ) || 0;
-    const displayName =
-        getMeaningfulDisplayName(
-            sourceRecord,
-            sourceRecord.id || existingRow?.userId
-        ) ||
-        existingRow?.displayName ||
-        getDisplayName(sourceRecord) ||
-        normalizeUserId(sourceRecord.id);
-
-    return {
-        ...sourceRecord,
-        displayName,
-        state: stateBucket,
-        stateBucket,
-        friendNumber,
-        trustLevel,
-        $friendNumber: friendNumber,
-        $trustLevel: trustLevel,
-        $trustClass: trust.trustClass,
-        $trustSortNum: trust.trustSortNum,
-        $isModerator: trust.isModerator,
-        $isTroll: trust.isTroll,
-        $isProbableTroll: trust.isProbableTroll,
-        $platform: computeUserPlatform(
-            normalizeUserId(sourceRecord.platform),
-            normalizeUserId(sourceRecord.last_platform)
-        )
-    };
 }
 
 export function buildFriendLogRowsById(rows: FriendLogSeedRow[] = []) {

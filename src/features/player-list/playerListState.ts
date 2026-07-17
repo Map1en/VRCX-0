@@ -29,6 +29,13 @@ export const PLAYER_LIST_COLUMN_IDS = [
     'note'
 ];
 
+const PLAYER_LIST_SORTABLE_COLUMN_IDS = [
+    'timer',
+    'displayName',
+    'rank',
+    'platform'
+];
+
 export const DEFAULT_PLAYER_LIST_SORTING = [{ id: 'timer', desc: true }];
 
 export function readPersistedPlayerListState() {
@@ -48,7 +55,7 @@ export function sanitizePlayerListSorting(value: unknown): SortingState {
         (entry): entry is SortingState[number] =>
             entry &&
             typeof entry.id === 'string' &&
-            PLAYER_LIST_COLUMN_IDS.includes(entry.id)
+            PLAYER_LIST_SORTABLE_COLUMN_IDS.includes(entry.id)
     );
 
     return filtered.length ? filtered : DEFAULT_PLAYER_LIST_SORTING;

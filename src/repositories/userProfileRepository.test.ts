@@ -41,6 +41,49 @@ describe('UserProfileRepository', () => {
         });
     });
 
+    it('preserves optional, nullable, and nested profile fields from dialog data', () => {
+        const profile = userProfileRepository.normalize({
+            id: 'usr_redacted',
+            ageVerificationStatus: 'hidden',
+            ageVerified: false,
+            accountDeletionDate: null,
+            badges: [
+                {
+                    badgeId: 'bdg_redacted',
+                    badgeName: 'Badge',
+                    assignedAt: '2026-01-01T00:00:00.000Z',
+                    hidden: false,
+                    showcased: true
+                }
+            ],
+            last_mobile: null,
+            platform_history: [
+                {
+                    isMobile: false,
+                    platform: 'standalonewindows',
+                    recorded: '2026-01-01T00:00:00.000Z'
+                }
+            ],
+            tags: ['system_trust_known'],
+            $travelingToLocation: {
+                worldId: 'wrld_redacted',
+                instanceId: 'instance-redacted'
+            }
+        });
+
+        expect(profile).toMatchObject({
+            id: 'usr_redacted',
+            ageVerificationStatus: 'hidden',
+            ageVerified: false,
+            accountDeletionDate: null,
+            badges: [{ badgeId: 'bdg_redacted', showcased: true }],
+            last_mobile: null,
+            platform_history: [{ platform: 'standalonewindows' }],
+            $travelingToLocation: { worldId: 'wrld_redacted' },
+            $trustLevel: 'User'
+        });
+    });
+
     it('strips the default robot avatar image so it resolves as unknown, not "Robot"', () => {
         const robotImage =
             'https://api.vrchat.cloud/api/1/file/file_0e8c4e32-7444-44ea-ade4-313c010d4bae/1/file';

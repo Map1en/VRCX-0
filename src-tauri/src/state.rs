@@ -1,14 +1,12 @@
 use std::ops::Deref;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::adapters::ipc::{IpcEventSink, IpcServer};
 use crate::adapters::log_watcher::LogWatcherCompatBridge;
+use crate::deep_link::PendingDeepLinks;
 use crate::error::AppError;
-use serde::Serialize;
-use tauri_plugin_updater::Update;
+use vrcx_0_application::{DatabaseUpgradeRuntime, UpdaterPort};
 use vrcx_0_harness::AssistantController;
 use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_mcp::{McpRuntime, McpServerController};
@@ -20,45 +18,13 @@ pub struct AppState {
     pub runtime: RuntimeHostState,
     pub mcp_controller: McpServerController,
     pub log_watcher_compat_bridge: LogWatcherCompatBridge,
-    pub ipc: IpcServer,
-    pub pending_tauri_update: tokio::sync::Mutex<Option<PendingTauriUpdate>>,
+    pub pending_deep_links: PendingDeepLinks,
+    pub database_upgrade: DatabaseUpgradeRuntime,
     assistant: tokio::sync::OnceCell<AssistantController>,
     background_resume_route: Mutex<Option<String>>,
+    pub(crate) background_delay_generation: AtomicU64,
     main_window_rebuild_in_progress: AtomicBool,
     auth_failure_notification: Mutex<Option<AuthFailureNotificationRecord>>,
-}
-
-pub struct PendingTauriUpdate {
-    pub version: String,
-    pub update: Update,
-    pub bytes: Vec<u8>,
-    pub metadata: TauriUpdateMetadata,
-}
-
-#[derive(Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct TauriUpdateMetadata {
-    current_version: String,
-    version: String,
-    date: Option<String>,
-    body: Option<String>,
-    raw_json: serde_json::Value,
-}
-
-impl From<&Update> for TauriUpdateMetadata {
-    fn from(update: &Update) -> Self {
-        Self {
-            current_version: update.current_version.clone(),
-            version: update.version.clone(),
-            date: update
-                .raw_json
-                .get("pub_date")
-                .and_then(serde_json::Value::as_str)
-                .map(str::to_string),
-            body: update.body.clone(),
-            raw_json: update.raw_json.clone(),
-        }
-    }
 }
 
 struct AuthFailureNotificationRecord {
@@ -78,27 +44,38 @@ impl Drop for MainWindowRebuildGuard<'_> {
 }
 
 impl AppState {
-    pub fn new(app_data_dir: AppDataDirResolution) -> Result<Self, AppError> {
+    pub fn new(
+        app_data_dir: AppDataDirResolution,
+        updater_port: Arc<dyn UpdaterPort>,
+    ) -> Result<Self, AppError> {
         let launched_from_autostart = std::env::args().any(|arg| arg == "--autostart");
         let runtime = RuntimeHostState::new(RuntimeHostOptions {
             realtime_origin: realtime_origin(),
             launched_from_autostart,
             app_data_dir,
             app_version: env!("CARGO_PKG_VERSION").into(),
+            is_headless: false,
+            app_update_build_label: crate::bootstrap::app_update_build_label(),
+            app_update_build_badge: crate::bootstrap::app_update_build_badge(),
+            updater_port,
         })?;
+        let database_upgrade = DatabaseUpgradeRuntime::new(
+            runtime.db.clone(),
+            runtime.runtime_context.diagnostics.clone(),
+            runtime.runtime_context.background_jobs.clone(),
+        );
         let mcp_controller = McpServerController::new(McpRuntime::from_host(&runtime));
-        let ipc_sink: Arc<dyn IpcEventSink> = runtime.game_client_runtime.clone();
-        let ipc = IpcServer::new(Some(ipc_sink));
         let log_watcher_compat_bridge = LogWatcherCompatBridge::new();
 
         Ok(Self {
             runtime,
             mcp_controller,
             log_watcher_compat_bridge,
-            ipc,
-            pending_tauri_update: tokio::sync::Mutex::new(None),
+            pending_deep_links: PendingDeepLinks::default(),
+            database_upgrade,
             assistant: tokio::sync::OnceCell::new(),
             background_resume_route: Mutex::new(None),
+            background_delay_generation: AtomicU64::new(0),
             main_window_rebuild_in_progress: AtomicBool::new(false),
             auth_failure_notification: Mutex::new(None),
         })

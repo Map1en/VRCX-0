@@ -37,7 +37,7 @@ describe('favoriteStore', () => {
 
     it('keeps local entity details until the entity is removed from every group', () => {
         const store = useFavoriteStore.getState();
-        const world: any = {
+        const world = {
             name: 'Test World'
         };
 
@@ -241,7 +241,7 @@ describe('favoriteStore', () => {
             },
             localFriendFavoriteGroups: ['Friends', undefined],
             localFriendFavoritesList: ['usr_1', 123, '']
-        } as any);
+        });
 
         expect(useFavoriteStore.getState()).toMatchObject({
             localWorldFavorites: {
@@ -263,6 +263,71 @@ describe('favoriteStore', () => {
         });
     });
 
+    it('setLocalFavoritesForKind only replaces the targeted kind local slice', () => {
+        const store = useFavoriteStore.getState();
+        store.setFavoritesSnapshot({
+            remoteFavoritesById: {
+                fvrt_record_1: {
+                    id: 'fvrt_record_1',
+                    type: 'world',
+                    favoriteId: 'wrld_remote',
+                    tags: ['group_0'],
+                    $groupKey: 'world:group_0'
+                }
+            }
+        });
+        store.addLocalFavorite({
+            kind: 'friend',
+            groupName: 'Friends',
+            entityId: 'usr_1'
+        });
+
+        store.setLocalFavoritesForKind('world', {
+            localFavorites: { Worlds: ['wrld_1'] },
+            localFavoriteGroups: ['Worlds']
+        });
+
+        expect(useFavoriteStore.getState()).toMatchObject({
+            localWorldFavorites: { Worlds: ['wrld_1'] },
+            localWorldFavoriteGroups: ['Worlds'],
+            localWorldFavoritesList: ['wrld_1'],
+            localFriendFavorites: { Friends: ['usr_1'] },
+            localAvatarFavorites: {},
+            favoriteWorldIds: ['wrld_remote']
+        });
+    });
+
+    it('setLocalFavoritesForKind sorts the union of explicit groups and map keys', () => {
+        const store = useFavoriteStore.getState();
+
+        store.setLocalFavoritesForKind('avatar', {
+            localFavorites: { Zebra: ['avtr_1'] },
+            localFavoriteGroups: ['Alpha', 'Zebra']
+        });
+
+        expect(useFavoriteStore.getState().localAvatarFavoriteGroups).toEqual([
+            'Alpha',
+            'Zebra'
+        ]);
+    });
+
+    it('setLocalFavoritesForKind normalizes illegal input without throwing', () => {
+        const store = useFavoriteStore.getState();
+
+        expect(() =>
+            store.setLocalFavoritesForKind('friend', {
+                localFavorites: 'not-an-object',
+                localFavoriteGroups: 'not-an-array'
+            })
+        ).not.toThrow();
+
+        expect(useFavoriteStore.getState()).toMatchObject({
+            localFriendFavorites: {},
+            localFriendFavoriteGroups: [],
+            localFriendFavoritesList: []
+        });
+    });
+
     it('ignores invalid local favorite action kinds', () => {
         const store = useFavoriteStore.getState();
 
@@ -271,11 +336,14 @@ describe('favoriteStore', () => {
             groupName: 'Friends',
             entityId: 'usr_1'
         });
-        store.addLocalFavorite({
+        const invalidAction: unknown = {
             kind: 'invalid',
             groupName: 'Friends',
             entityId: 'usr_2'
-        } as any);
+        };
+        store.addLocalFavorite(
+            invalidAction as Parameters<typeof store.addLocalFavorite>[0]
+        );
 
         expect(useFavoriteStore.getState()).toMatchObject({
             localFriendFavorites: {

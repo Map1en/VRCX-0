@@ -155,7 +155,10 @@ export function AvatarProviderSettingsDialog({
                                     <InputGroupButton
                                         type="button"
                                         size="icon-xs"
-                                        aria-label={`Remove avatar provider ${index + 1}`}
+                                        aria-label={t(
+                                            'accessibility.remove_avatar_provider',
+                                            { number: index + 1 }
+                                        )}
                                         disabled={isSaving}
                                         onClick={() => removeProvider(index)}
                                     >

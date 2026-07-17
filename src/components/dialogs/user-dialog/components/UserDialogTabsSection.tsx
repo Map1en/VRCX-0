@@ -1,6 +1,10 @@
+import { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { EntityDialogTabs } from '../../EntityDialogScaffold';
+import {
+    EntityDialogTabs,
+    type EntityDialogTab
+} from '../../EntityDialogScaffold';
 import { formatPreviousInstanceCount } from '../../previous-instances-table/previousInstancesRows';
 import {
     UserDialogActivityTab,
@@ -21,22 +25,118 @@ import {
     type UserDialogProfileLinksSectionProps
 } from './UserDialogInfoTab';
 
-export function UserDialogTabsSection(props: any) {
+type MutualTabProps = ComponentProps<typeof UserDialogMutualTab>;
+type GroupsTabProps = ComponentProps<typeof UserDialogGroupsTab>;
+type WorldsTabProps = ComponentProps<typeof UserDialogWorldsTab>;
+type FavoriteWorldsTabProps = ComponentProps<
+    typeof UserDialogFavoriteWorldsTab
+>;
+type AvatarsTabProps = ComponentProps<typeof UserDialogAvatarsTab>;
+type HistoryTabProps = ComponentProps<typeof UserDialogInstanceHistoryTab>;
+type JsonTabProps = ComponentProps<typeof UserDialogJsonTab>;
+
+type UserDialogTabsSectionProps = {
+    tabsModel: {
+        root: {
+            activeTab: string;
+            tabCounts: Record<string, unknown>;
+            tabs: Array<EntityDialogTab & { hidden?: boolean }>;
+        };
+        info: Omit<
+            UserDialogProfileLinksSectionProps,
+            'openAvatarDialog' | 'openGroupDialog'
+        > &
+            Omit<UserDialogNotesSectionProps, 'onEditMemo'> &
+            UserDialogBioSectionProps &
+            Omit<
+                UserDialogActivitySummarySectionProps,
+                'onOpenInstanceHistory' | 'previousInstances'
+            >;
+        presence: Omit<
+            UserDialogPresenceSectionProps['presence'],
+            'currentUserId' | 'locationInstance'
+        > & {
+            currentUserId?: string | null;
+            locationInstance?: unknown;
+        };
+        remote: Pick<
+            MutualTabProps,
+            'loadTab' | 'remoteErrors' | 'remoteStatus' | 'search'
+        > &
+            Pick<FavoriteWorldsTabProps, 'remoteData'>;
+        mutual: Pick<
+            MutualTabProps,
+            | 'filteredMutualFriends'
+            | 'mutualFriends'
+            | 'mutualSort'
+            | 'visibleMutualFriends'
+        >;
+        groups: Pick<
+            GroupsTabProps,
+            | 'effectiveGroupSort'
+            | 'filteredProfileGroups'
+            | 'groupSearchActive'
+            | 'ownGroupCountText'
+            | 'profileGroups'
+            | 'remainingGroupCountText'
+            | 'userGroupSections'
+        >;
+        worlds: Pick<
+            WorldsTabProps,
+            | 'filteredProfileWorlds'
+            | 'profileWorlds'
+            | 'worldOrder'
+            | 'worldSort'
+        >;
+        favoriteWorlds: Pick<
+            FavoriteWorldsTabProps,
+            'favoriteWorlds' | 'filteredFavoriteWorlds'
+        >;
+        avatars: Pick<
+            AvatarsTabProps,
+            | 'avatarReleaseStatus'
+            | 'avatarSort'
+            | 'currentUserId'
+            | 'profileAvatars'
+            | 'visibleProfileAvatars'
+        >;
+        history: Pick<HistoryTabProps, 'previousInstances'>;
+        json: Pick<JsonTabProps, 'isFavorite' | 'isFriend' | 'moderationState'>;
+    };
+    tabsCommands: Pick<MutualTabProps, 'setMutualSort' | 'setSearch'> &
+        Pick<GroupsTabProps, 'setGroupSort'> &
+        Pick<WorldsTabProps, 'changeWorldOrder' | 'changeWorldSort'> &
+        Pick<
+            AvatarsTabProps,
+            'changeAvatarReleaseStatus' | 'changeAvatarSort'
+        > & {
+            changeTab: (value: string) => void;
+            onEditMemo: UserDialogNotesSectionProps['onEditMemo'];
+            onOpenInstanceHistory: () => void;
+            onPreviousInstancesChange: HistoryTabProps['onPreviousInstancesChange'];
+            onRefreshLocation: UserDialogPresenceSectionProps['actions']['onRefreshLocation'];
+            openAvatarDialog: UserDialogProfileLinksSectionProps['openAvatarDialog'];
+            openGroupDialog: UserDialogProfileLinksSectionProps['openGroupDialog'];
+        };
+};
+
+export function UserDialogTabsSection({
+    tabsModel: model,
+    tabsCommands: commands
+}: UserDialogTabsSectionProps) {
     const { t } = useTranslation();
-    const model = props?.tabsModel || props || {};
-    const commands = props?.tabsCommands || props || {};
     const {
-        root = {},
-        info = {},
-        presence = {},
-        remote = {},
-        mutual = {},
-        groups = {},
-        worlds = {},
-        favoriteWorlds = {},
-        avatars = {},
-        history = {},
-        json = {}
+        root,
+        info,
+        presence,
+        remote,
+        mutual,
+        groups,
+        worlds,
+        favoriteWorlds,
+        avatars,
+        history,
+        json
     } = model;
     const { activeTab, tabCounts = {}, tabs = [] } = root;
     const {
@@ -103,9 +203,35 @@ export function UserDialogTabsSection(props: any) {
         setMutualSort,
         setSearch
     } = commands;
+    const locationInstanceSource =
+        presence.locationInstance &&
+        typeof presence.locationInstance === 'object'
+            ? Object.fromEntries(Object.entries(presence.locationInstance))
+            : undefined;
+    const locationInstance = locationInstanceSource
+        ? {
+              ...locationInstanceSource,
+              capacity:
+                  typeof locationInstanceSource.capacity === 'number'
+                      ? locationInstanceSource.capacity
+                      : undefined,
+              groupName:
+                  typeof locationInstanceSource.groupName === 'string'
+                      ? locationInstanceSource.groupName
+                      : undefined,
+              recommendedCapacity:
+                  typeof locationInstanceSource.recommendedCapacity === 'number'
+                      ? locationInstanceSource.recommendedCapacity
+                      : undefined,
+              shortName:
+                  typeof locationInstanceSource.shortName === 'string'
+                      ? locationInstanceSource.shortName
+                      : undefined
+          }
+        : undefined;
     const tabsWithCounts = tabs
-        .filter((tab: any) => !tab.hidden)
-        .map((tab: any) => {
+        .filter((tab: EntityDialogTab & { hidden?: boolean }) => !tab.hidden)
+        .map((tab: EntityDialogTab & { hidden?: boolean }) => {
             const count = Number(tabCounts[tab.value]);
             const countText =
                 tab.value === 'instance-history'
@@ -126,7 +252,11 @@ export function UserDialogTabsSection(props: any) {
                 : tab;
         });
     const presenceSection: UserDialogPresenceSectionProps = {
-        presence,
+        presence: {
+            ...presence,
+            currentUserId: presence.currentUserId || '',
+            locationInstance
+        },
         actions: {
             onRefreshLocation,
             onShowInstanceHistory: onOpenInstanceHistory

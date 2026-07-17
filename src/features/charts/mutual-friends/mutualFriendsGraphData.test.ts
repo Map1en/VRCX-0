@@ -34,21 +34,19 @@ describe('mutualFriendsGraphData', () => {
         );
 
         expect(
-            graph.links.map((link: any) => [link.source, link.target].sort())
+            graph.links.map((link) => [link.source, link.target].sort())
         ).toEqual([
             ['usr_a', 'usr_b'],
             ['usr_a', 'usr_c']
         ]);
         expect(
-            graph.nodes.map((node: any) => [node.id, node.label, node.degree])
+            graph.nodes.map((node) => [node.id, node.label, node.degree])
         ).toEqual([
             ['usr_a', 'Ava', 2],
             ['usr_b', 'ben_user', 1],
             ['usr_c', 'Cora', 1]
         ]);
-        expect(
-            graph.nodes.find((node: any) => node.id === 'usr_c')
-        ).toMatchObject({
+        expect(graph.nodes.find((node) => node.id === 'usr_c')).toMatchObject({
             lastFetchedAt: '2026-04-01T00:00:00.000Z',
             optedOut: true
         });
@@ -65,10 +63,7 @@ describe('mutualFriendsGraphData', () => {
             ['usr_c']
         );
 
-        expect(graph.nodes.map((node: any) => node.id)).toEqual([
-            'usr_a',
-            'usr_b'
-        ]);
+        expect(graph.nodes.map((node) => node.id)).toEqual(['usr_a', 'usr_b']);
         expect(graph.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
     });
 
@@ -80,7 +75,7 @@ describe('mutualFriendsGraphData', () => {
         );
 
         expect(
-            graph.nodes.map((node: any) => [node.id, node.label, node.degree])
+            graph.nodes.map((node) => [node.id, node.label, node.degree])
         ).toEqual([
             ['usr_a', 'usr_a', 1],
             ['usr_b', 'usr_b', 1]
@@ -89,7 +84,10 @@ describe('mutualFriendsGraphData', () => {
     });
 
     it('keeps direct neighbors visible when searching for a person in the graph', () => {
-        const graph: any = {
+        const graph: {
+            nodes: Array<{ id: string; label: string }>;
+            links: Array<{ source: string; target: string }>;
+        } = {
             nodes: [
                 { id: 'usr_a', label: 'Ava' },
                 { id: 'usr_b', label: 'Ben' },
@@ -103,7 +101,7 @@ describe('mutualFriendsGraphData', () => {
 
         const filtered = filterMutualFriendsGraph(graph, 'ava');
 
-        expect(filtered.nodes.map((node: any) => node.id)).toEqual([
+        expect(filtered.nodes.map((node: { id: string }) => node.id)).toEqual([
             'usr_a',
             'usr_b'
         ]);

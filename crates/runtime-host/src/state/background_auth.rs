@@ -227,6 +227,7 @@ mod tests {
             game_log_persisted_count: 0,
             last_error: None,
             updated_at: "2026-07-03T08:30:00.000Z".into(),
+            friend_profile_load: vrcx_0_application::FriendProfileLoadStatusPayload::default(),
         }
     }
 

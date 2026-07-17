@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { instanceLocationKey } from '@/domain/presence/instancePresence';
+import { evictOverflow } from '@/state/storeEviction';
 
 interface LocationHint {
     endpoint: string;
@@ -33,13 +34,20 @@ interface LocationHintInput {
 interface LocationHintStoreState {
     version: number;
     hintsByKey: Record<string, LocationHint>;
+    order: string[];
     upsertLocationHint: (input: LocationHintInput) => void;
     resetLocationHints: () => void;
 }
 
-const initialState: Pick<LocationHintStoreState, 'version' | 'hintsByKey'> = {
+const LOCATION_HINT_CAPACITY = 512;
+
+const initialState: Pick<
+    LocationHintStoreState,
+    'version' | 'hintsByKey' | 'order'
+> = {
     version: 0,
-    hintsByKey: {}
+    hintsByKey: {},
+    order: []
 };
 
 function text(value: unknown): string {
@@ -51,6 +59,22 @@ function text(value: unknown): string {
 function hintKey(endpoint: unknown, location: unknown): string {
     const key = instanceLocationKey(location);
     return key ? `${text(endpoint) || 'default'}::${key}` : '';
+}
+
+function sameHintIgnoringUpdatedAt(a: LocationHint, b: LocationHint): boolean {
+    return (
+        a.endpoint === b.endpoint &&
+        a.locationKey === b.locationKey &&
+        a.location === b.location &&
+        a.worldId === b.worldId &&
+        a.groupId === b.groupId &&
+        a.worldName === b.worldName &&
+        a.groupName === b.groupName &&
+        a.instanceName === b.instanceName &&
+        a.region === b.region &&
+        a.isClosed === b.isClosed &&
+        a.ageGate === b.ageGate
+    );
 }
 
 export const useLocationHintStore = create<LocationHintStoreState>((set) => ({
@@ -78,19 +102,21 @@ export const useLocationHintStore = create<LocationHintStoreState>((set) => ({
                 ageGate: Boolean(input.ageGate || existing?.ageGate),
                 updatedAt: new Date().toISOString()
             };
-            if (
-                existing &&
-                JSON.stringify({ ...existing, updatedAt: '' }) ===
-                    JSON.stringify({ ...next, updatedAt: '' })
-            ) {
+            if (existing && sameHintIgnoringUpdatedAt(existing, next)) {
                 return state;
+            }
+            const hintsByKey = { ...state.hintsByKey, [key]: next };
+            const order = existing ? state.order : [...state.order, key];
+            for (const evictedKey of evictOverflow(
+                order,
+                LOCATION_HINT_CAPACITY
+            )) {
+                delete hintsByKey[evictedKey];
             }
             return {
                 version: state.version + 1,
-                hintsByKey: {
-                    ...state.hintsByKey,
-                    [key]: next
-                }
+                hintsByKey,
+                order
             };
         });
     },

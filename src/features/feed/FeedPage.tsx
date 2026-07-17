@@ -13,6 +13,7 @@ import { FeedTableShell } from './components/FeedTableShell';
 import { FeedToolbar } from './components/FeedToolbar';
 import type { FeedViewMode } from './feedColumnsState';
 import { useFeedPageController } from './useFeedPageController';
+import { useFeedRowArrivals } from './useFeedRowArrivals';
 import { useFeedViewModeState } from './useFeedViewModeState';
 
 type FeedPageProps = {
@@ -127,6 +128,7 @@ function FeedTableMode({ modeToggle }: { modeToggle: ReactNode }) {
         table,
         tableModel
     } = useFeedPageController();
+    const arrivals = useFeedRowArrivals(rows, loadStatus);
 
     return (
         <>
@@ -164,6 +166,7 @@ function FeedTableMode({ modeToggle }: { modeToggle: ReactNode }) {
             />
             <PageBody>
                 <FeedTableShell
+                    arrivals={arrivals}
                     columns={columns}
                     favoritesOnly={filters.favoritesOnly}
                     isFavoritesLoaded={isFavoritesLoaded}

@@ -1,16 +1,18 @@
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Barrier};
 
 use chrono::DateTime;
 use serde_json::json;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::activity::{
     activity_bucket_cache_get, activity_bucket_cache_upsert, activity_overlap_view_build,
-    activity_sessions_replace, activity_sync_state_upsert, activity_view_build,
-    ActivityBucketCacheInput, ActivityBucketCacheQueryInput, ActivityOverlapViewBuildInput,
-    ActivitySessionInput, ActivitySyncStateInput, ActivityViewBuildInput,
+    activity_self_sessions_warmup, activity_sessions_replace, activity_sync_state_get,
+    activity_sync_state_upsert, activity_view_build, ActivityBucketCacheInput,
+    ActivityBucketCacheQueryInput, ActivityOverlapViewBuildInput, ActivitySessionInput,
+    ActivitySyncStateInput, ActivityViewBuildInput,
 };
 use vrcx_0_persistence::feed::feed_add_entry;
+use vrcx_0_persistence::game_log::{write_batch, GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_persistence::DatabaseService;
 
 struct TestDir {
@@ -105,6 +107,113 @@ fn add_presence(
         })),
     )
     .unwrap();
+}
+
+#[test]
+fn self_activity_warmup_prepares_a_year_without_bucket_cache() {
+    let (_dir, db) = test_db("activity-self-warmup");
+    let owner = "usr_self";
+    write_batch(
+        &db,
+        &GameLogWriteBatch {
+            locations: vec![GameLogLocationEntry {
+                created_at: "2025-01-05T01:00:00Z".to_string(),
+                location: "wrld_1:1".to_string(),
+                world_id: "wrld_1".to_string(),
+                world_name: "World".to_string(),
+                time: 3_600_000,
+                group_name: String::new(),
+            }],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let warmed = activity_self_sessions_warmup(
+        &db,
+        owner.to_string(),
+        365,
+        Some(ms("2025-01-06T00:00:00Z")),
+    )
+    .unwrap();
+
+    assert_eq!(warmed.sync.cached_range_days, 365);
+    assert_eq!(warmed.sync.source_last_created_at, "2025-01-05T01:00:00Z");
+    assert!(!warmed.sessions.is_empty());
+    assert!(activity_bucket_cache_get(
+        &db,
+        ActivityBucketCacheQueryInput {
+            owner_user_id: owner.to_string(),
+            target_user_id: String::new(),
+            range_days: json!(365),
+            view_kind: "activity".to_string(),
+            exclude_key: String::new(),
+        },
+    )
+    .unwrap()
+    .is_none());
+}
+
+#[test]
+fn concurrent_page_refresh_cannot_downgrade_year_warmup() {
+    let (_dir, db) = test_db("activity-warmup-page-race");
+    let owner = "usr_self";
+    write_batch(
+        &db,
+        &GameLogWriteBatch {
+            locations: vec![GameLogLocationEntry {
+                created_at: "2025-01-05T01:00:00Z".to_string(),
+                location: "wrld_1:1".to_string(),
+                world_id: "wrld_1".to_string(),
+                world_name: "World".to_string(),
+                time: 3_600_000,
+                group_name: String::new(),
+            }],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let barrier = Arc::new(Barrier::new(3));
+    let warmup_db = Arc::clone(&db);
+    let warmup_barrier = Arc::clone(&barrier);
+    let warmup = std::thread::spawn(move || {
+        warmup_barrier.wait();
+        activity_self_sessions_warmup(
+            warmup_db.as_ref(),
+            owner.to_string(),
+            365,
+            Some(ms("2025-01-06T00:00:00Z")),
+        )
+        .unwrap();
+    });
+    let page_db = Arc::clone(&db);
+    let page_barrier = Arc::clone(&barrier);
+    let page = std::thread::spawn(move || {
+        page_barrier.wait();
+        activity_view_build(
+            page_db.as_ref(),
+            ActivityViewBuildInput {
+                owner_user_id: owner.to_string(),
+                target_user_id: owner.to_string(),
+                is_self: true,
+                range_days: 30,
+                utc_offset_minutes: 0,
+                now_ms: ms("2025-01-06T00:00:00Z"),
+                force_refresh: true,
+            },
+        )
+        .unwrap();
+    });
+
+    barrier.wait();
+    warmup.join().unwrap();
+    page.join().unwrap();
+
+    let sync = activity_sync_state_get(&db, owner.to_string())
+        .unwrap()
+        .unwrap();
+    assert_eq!(sync.cached_range_days, 365);
 }
 
 #[test]

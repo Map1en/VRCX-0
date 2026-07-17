@@ -1,3 +1,4 @@
+use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::auth::{config_get_input, current_user_get_input};
@@ -8,6 +9,8 @@ use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
 
 use crate::WebClient;
 
+#[derive(Clone, Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthenticatedRuntimeSession {
     pub user_id: String,
     pub display_name: String,
@@ -303,6 +306,46 @@ mod tests {
         assert!(matches!(
             result,
             Err(NonInteractiveAuthError::Failed(message)) if message == "Forbidden"
+        ));
+    }
+
+    #[test]
+    fn parse_current_user_response_fails_a_401_with_a_top_level_message() {
+        let result = parse_current_user_response(response(
+            401,
+            serde_json::json!({ "message": "Missing Credentials" }),
+        ));
+
+        assert!(matches!(
+            result,
+            Err(NonInteractiveAuthError::Failed(message)) if message == "Missing Credentials"
+        ));
+    }
+
+    #[test]
+    fn parse_current_user_response_ignores_nested_error_message_objects() {
+        let result = parse_current_user_response(response(
+            401,
+            serde_json::json!({
+                "error": { "message": "Missing Credentials" }
+            }),
+        ));
+
+        assert!(matches!(
+            result,
+            Err(NonInteractiveAuthError::Failed(message))
+                if message == "VRChat auth request failed with HTTP 401."
+        ));
+    }
+
+    #[test]
+    fn parse_current_user_response_falls_back_to_a_generic_message_when_none_is_provided() {
+        let result = parse_current_user_response(response(500, serde_json::json!({})));
+
+        assert!(matches!(
+            result,
+            Err(NonInteractiveAuthError::Failed(message))
+                if message == "VRChat auth request failed with HTTP 500."
         ));
     }
 

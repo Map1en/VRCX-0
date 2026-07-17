@@ -3,6 +3,7 @@ mod app;
 pub mod bindings_export;
 mod bootstrap;
 mod commands;
+mod deep_link;
 mod error;
 mod localization;
 #[cfg(target_os = "macos")]

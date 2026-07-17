@@ -4,10 +4,10 @@ import type {
 } from './feedColumnsState';
 import { normalizeFeedId as normalizeId } from './feedRows';
 
-export type FeedFavoriteGroupOption = {
-    key: string;
-    label: string;
-};
+export {
+    buildFeedFavoriteGroupOptions,
+    type FeedFavoriteGroupOption
+} from '@/domain/feed/feedFavoriteGroups';
 
 export type FeedColumnScopeDescriptionOptions = {
     allFavoritesLabel: string;
@@ -22,13 +22,6 @@ type FeedRemoteFavorite = {
     $groupKey?: unknown;
     favoriteId?: unknown;
     type?: unknown;
-};
-
-type FeedFavoriteGroup = {
-    displayName?: unknown;
-    id?: unknown;
-    key?: unknown;
-    name?: unknown;
 };
 
 function buildFavoriteIdsForGroupSelection({
@@ -123,42 +116,6 @@ export function buildFeedColumnExcludedFavoriteIds({
         localFriendFavorites,
         remoteFavoritesById
     });
-}
-
-export function buildFeedFavoriteGroupOptions({
-    favoriteFriendGroups,
-    localFriendFavoriteGroups
-}: {
-    favoriteFriendGroups: FeedFavoriteGroup[];
-    localFriendFavoriteGroups: unknown[];
-}): FeedFavoriteGroupOption[] {
-    const options = new Map<string, FeedFavoriteGroupOption>();
-    for (const group of Array.isArray(favoriteFriendGroups)
-        ? favoriteFriendGroups
-        : []) {
-        const key = normalizeId(group?.key || group?.name || group?.id);
-        if (key) {
-            options.set(key, {
-                key,
-                label:
-                    normalizeId(group?.displayName || group?.name || key) || key
-            });
-        }
-    }
-    for (const groupName of Array.isArray(localFriendFavoriteGroups)
-        ? localFriendFavoriteGroups
-        : []) {
-        const label = normalizeId(groupName);
-        if (label) {
-            options.set(`local:${label}`, {
-                key: `local:${label}`,
-                label
-            });
-        }
-    }
-    return [...options.values()].sort((left, right) =>
-        left.label.localeCompare(right.label)
-    );
 }
 
 export function describeFeedColumnScope(

@@ -15,6 +15,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import { signalFriendLogChanged } from '@/services/friendLogMutationService';
 import {
     acceptFriendRequestNotification,
     acceptRequestInviteNotification,
@@ -48,6 +49,7 @@ export function useNotificationActions({
     currentInviteLocation,
     currentUserId,
     endpoint,
+    notificationTypeLabel,
     reload,
     setBoopReplyRequest,
     setInviteResponseRequest
@@ -56,6 +58,7 @@ export function useNotificationActions({
     currentInviteLocation?: string;
     currentUserId?: string;
     endpoint?: string;
+    notificationTypeLabel: (type: unknown) => string;
     reload: () => void;
     setBoopReplyRequest: (request: NotificationRow | null) => void;
     setInviteResponseRequest: (request: NotificationDialogRequest) => void;
@@ -191,7 +194,7 @@ export function useNotificationActions({
                         description: t(
                             'view.notifications.modal.delete_the_local_value_log_entry',
                             {
-                                value: notification.type || 'notification'
+                                value: notificationTypeLabel(notification.type)
                             }
                         ),
                         destructive: true,
@@ -224,7 +227,7 @@ export function useNotificationActions({
                 );
             }
         },
-        [confirm, currentUserId, reload, t]
+        [confirm, currentUserId, notificationTypeLabel, reload, t]
     );
 
     const acceptFriendRequest = useCallback(
@@ -251,9 +254,18 @@ export function useNotificationActions({
                 if (acceptResult.status === 'not-found') {
                     return;
                 }
-                toast.success(
-                    t('view.notification.success.friend_request_accepted')
-                );
+                signalFriendLogChanged();
+                if (acceptResult.outcome.status === 'remoteOkLocalFailed') {
+                    toast.warning(
+                        t(
+                            'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+                        )
+                    );
+                } else {
+                    toast.success(
+                        t('view.notification.success.friend_request_accepted')
+                    );
+                }
             } catch (error) {
                 toast.error(
                     error instanceof Error
@@ -279,7 +291,7 @@ export function useNotificationActions({
                         description: t(
                             'view.notifications.dynamic.decline_the_value_notification',
                             {
-                                value: notification.type || 'notification'
+                                value: notificationTypeLabel(notification.type)
                             }
                         ),
                         destructive: true,
@@ -310,7 +322,7 @@ export function useNotificationActions({
                 );
             }
         },
-        [confirm, currentUserId, endpoint, reload, t]
+        [confirm, currentUserId, endpoint, notificationTypeLabel, reload, t]
     );
 
     const acceptRequestInvite = useCallback(

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
+import type { WorldDialogJson } from '@/domain/entities/profileEntities';
 import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
@@ -27,6 +28,11 @@ import {
 } from '../EntityDialogScaffold';
 import { formatPreviousInstanceCount } from '../previous-instances-table/previousInstancesRows';
 import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
+import type {
+    WorldDialogTabCommands,
+    WorldDialogTabModel,
+    WorldWorldScreenshots
+} from './WorldDialogTabbedView';
 import {
     InstanceUserTiles,
     WorldInstancesEmptyState,
@@ -38,7 +44,7 @@ const WORLD_DATE_FALLBACKS = {
     invalid: String
 };
 
-function firstKnownValue(...values: any[]) {
+function firstKnownValue(...values: unknown[]) {
     for (const value of values) {
         if (value !== null && typeof value !== 'undefined' && value !== '') {
             return value;
@@ -47,7 +53,21 @@ function firstKnownValue(...values: any[]) {
     return undefined;
 }
 
-function WorldScreenshotsEmptyState({ loading = false, message = '' }: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function record(value: unknown): Record<string, unknown> {
+    return isRecord(value) ? value : {};
+}
+
+function WorldScreenshotsEmptyState({
+    loading = false,
+    message = ''
+}: {
+    loading?: boolean;
+    message?: string;
+}) {
     const { t } = useTranslation();
 
     return (
@@ -73,7 +93,12 @@ function WorldScreenshotsGrid({
     worldId,
     worldName,
     onOpenScreenshot
-}: any) {
+}: {
+    screenshots: WorldWorldScreenshots;
+    worldId: string;
+    worldName: string;
+    onOpenScreenshot: (path: string) => void;
+}) {
     const { t } = useTranslation();
     const safeScreenshots = Array.isArray(screenshots) ? screenshots : [];
     const {
@@ -101,7 +126,7 @@ function WorldScreenshotsGrid({
                 className="min-h-0 flex-1 overflow-auto pr-1"
             >
                 <div className="relative" style={{ height: totalHeight }}>
-                    {visibleRows.map((row: any) => (
+                    {visibleRows.map((row) => (
                         <div
                             key={row.key}
                             className="absolute right-0 left-0 grid"
@@ -111,15 +136,17 @@ function WorldScreenshotsGrid({
                                 gap: gridGap
                             }}
                         >
-                            {row.items.map((item: any) => (
-                                <ScreenshotThumbnailCard
-                                    key={item.path}
-                                    compact
-                                    item={item}
-                                    onOpen={onOpenScreenshot}
-                                    worldNameHint={worldName}
-                                />
-                            ))}
+                            {row.items.map(
+                                (item: WorldWorldScreenshots[number]) => (
+                                    <ScreenshotThumbnailCard
+                                        key={item.path}
+                                        compact
+                                        item={item}
+                                        onOpen={onOpenScreenshot}
+                                        worldNameHint={worldName}
+                                    />
+                                )
+                            )}
                         </div>
                     ))}
                 </div>
@@ -128,10 +155,14 @@ function WorldScreenshotsGrid({
     );
 }
 
-export function WorldDialogTabPanels(props: any) {
+export function WorldDialogTabPanels({
+    tabModel: model,
+    tabCommands: commands
+}: {
+    tabModel: WorldDialogTabModel;
+    tabCommands: WorldDialogTabCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.tabModel || props || {};
-    const commands = props?.tabCommands || props || {};
     const {
         activeTab,
         authorTags,
@@ -194,7 +225,12 @@ export function WorldDialogTabPanels(props: any) {
                 </div>
                 <div className="flex flex-col gap-2">
                     {displayInstanceRows.length ? (
-                        displayInstanceRows.map((instance: any) => {
+                        displayInstanceRows.map((instance) => {
+                            const instanceRecord = record(instance);
+                            const instanceRef = record(instance.ref);
+                            const instanceRefWorld = record(instanceRef.world);
+                            const instanceGroup = record(instance.group);
+                            const instanceWorld = record(instanceRecord.world);
                             const location = resolveLaunchLocation(
                                 world,
                                 instance
@@ -212,8 +248,8 @@ export function WorldDialogTabPanels(props: any) {
                             );
                             const capacity = firstKnownValue(
                                 instance.capacity,
-                                instance.ref?.capacity,
-                                instance.ref?.world?.capacity,
+                                instanceRef.capacity,
+                                instanceRefWorld.capacity,
                                 world.capacity
                             );
                             return (
@@ -238,8 +274,8 @@ export function WorldDialogTabPanels(props: any) {
                                                     worldDialogShortName
                                                 }
                                                 grouphint={
-                                                    instance.groupName ||
-                                                    instance.group?.name ||
+                                                    instanceRecord.groupName ||
+                                                    instanceGroup.name ||
                                                     ''
                                                 }
                                                 playerCount={playerCount}
@@ -247,8 +283,8 @@ export function WorldDialogTabPanels(props: any) {
                                                 showPlayerSummary={false}
                                                 hint={
                                                     world.name ||
-                                                    instance.worldName ||
-                                                    instance.world?.name ||
+                                                    instanceRecord.worldName ||
+                                                    instanceWorld.name ||
                                                     ''
                                                 }
                                             />
@@ -260,14 +296,15 @@ export function WorldDialogTabPanels(props: any) {
                                                 shortName: launchToken,
                                                 worldName:
                                                     world.name ||
-                                                    instance.worldName ||
-                                                    instance.world?.name ||
+                                                    instanceRecord.worldName ||
+                                                    instanceWorld.name ||
                                                     ''
                                             }}
                                             instance={instance}
                                             friendCount={
-                                                Number(instance.friendCount) ||
-                                                undefined
+                                                Number(
+                                                    instanceRecord.friendCount
+                                                ) || undefined
                                             }
                                             playerCount={playerCount}
                                             capacity={capacity}
@@ -498,7 +535,7 @@ export function WorldDialogTabPanels(props: any) {
                             full
                         >
                             <div className="flex flex-wrap gap-1.5">
-                                {world.urlList.map((url: any) => (
+                                {world.urlList.map((url) => (
                                     <Badge key={url} variant="outline">
                                         {url}
                                     </Badge>
@@ -512,7 +549,7 @@ export function WorldDialogTabPanels(props: any) {
                             full
                         >
                             <div className="flex flex-wrap gap-1.5">
-                                {authorTags.map((tag: any) => (
+                                {authorTags.map((tag) => (
                                     <Badge key={tag} variant="outline">
                                         {tag}
                                     </Badge>
@@ -524,12 +561,14 @@ export function WorldDialogTabPanels(props: any) {
             </EntityDialogTabContent>
             <EntityDialogTabContent value="json">
                 <EntityRawJson
-                    value={{
-                        world,
-                        memo,
-                        hasPersistData,
-                        fileAnalysis: world.fileAnalysis || {}
-                    }}
+                    value={
+                        {
+                            world,
+                            memo,
+                            hasPersistData,
+                            fileAnalysis: world.fileAnalysis || {}
+                        } satisfies WorldDialogJson
+                    }
                 />
             </EntityDialogTabContent>
         </EntityDialogTabs>

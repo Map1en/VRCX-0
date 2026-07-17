@@ -30,7 +30,8 @@ type ToolDialogHostKey =
     | 'exportFriendsListOpen'
     | 'exportAvatarsListOpen'
     | 'editInviteMessagesOpen'
-    | 'llmEndpointsOpen';
+    | 'llmEndpointsOpen'
+    | 'profileBackupOpen';
 
 const toolRouteMap = {
     gallery: '/tools/gallery',
@@ -50,7 +51,8 @@ const toolDialogHostMap: Record<string, ToolDialogHostKey> = {
     'export-friends-list': 'exportFriendsListOpen',
     'export-avatars-list': 'exportAvatarsListOpen',
     'edit-invite-messages': 'editInviteMessagesOpen',
-    'llm-endpoints': 'llmEndpointsOpen'
+    'llm-endpoints': 'llmEndpointsOpen',
+    'profile-backup': 'profileBackupOpen'
 };
 
 const legacyToolAliases: Record<string, string> = {

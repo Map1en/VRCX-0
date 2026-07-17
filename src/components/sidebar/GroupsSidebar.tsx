@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import { cn } from '@/lib/utils';
 import { openGroupDialog } from '@/services/dialogService';
@@ -317,10 +318,16 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
                         >
                             <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border">
                                 {iconUrl ? (
-                                    <img
+                                    <FadeInImage
                                         src={iconUrl}
                                         alt=""
                                         className="size-full object-cover"
+                                        fallback={
+                                            <UsersIcon
+                                                data-icon="inline-start"
+                                                className="text-muted-foreground"
+                                            />
+                                        }
                                     />
                                 ) : (
                                     <UsersIcon

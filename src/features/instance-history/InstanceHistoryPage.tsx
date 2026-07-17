@@ -5,7 +5,7 @@ import {
     UserRoundIcon
 } from 'lucide-react';
 import type { ChangeEvent } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -30,12 +30,15 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
 import type { UserFact } from '@/domain/users/userFacts';
-import { UserPickerRow } from '@/features/charts/components/MutualFriendsViewParts';
 import { InstanceActivityDateControls } from '@/features/instance-history/components/InstanceActivityDateControls';
 import { InstanceActivitySettingsPopover } from '@/features/instance-history/components/InstanceActivitySettingsPopover';
-import { InstanceHistoryList } from '@/features/instance-history/components/InstanceHistoryList';
+import {
+    InstanceHistoryList,
+    rowKey
+} from '@/features/instance-history/components/InstanceHistoryList';
 import {
     buildChartRows,
     buildDetailGroups,
@@ -69,6 +72,7 @@ import {
     selectDefaultInstanceHistoryDay
 } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatCompactDateTime, timeToText } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -98,6 +102,8 @@ type TargetOption = {
 };
 
 type PreviousInstanceSortKey = 'date' | 'location' | 'duration';
+
+const CHART_LOADING_INDICATOR_DELAY_MS = 150;
 
 function rowsFromResult(result: unknown): PreviousInstanceRow[] {
     if (result instanceof Set || result instanceof Map) {
@@ -167,13 +173,14 @@ export function InstanceHistoryPage({
         }));
     const [sortKey, setSortKey] = useState<PreviousInstanceSortKey>('date');
     const [sortDesc, setSortDesc] = useState(true);
-    const [pageSize, setPageSize] = useState(25);
-    const [pageIndex, setPageIndex] = useState(0);
     const [detailRow, setDetailRow] = useState<PreviousInstanceRow | null>(
         null
     );
     const [reloadToken, setReloadToken] = useState(0);
     const [selectedDay, setSelectedDay] = useState('');
+    const [showChartLoadingIndicator, setShowChartLoadingIndicator] =
+        useState(false);
+    const targetSearchInputRef = useRef<HTMLInputElement>(null);
     const endpoint = normalizeEndpoint(currentEndpoint);
     const paramUserId = normalizeUserId(searchParams.get('id'));
     const activeUserId = paramUserId || normalizeUserId(currentUserId);
@@ -371,14 +378,29 @@ export function InstanceHistoryPage({
             ),
         [rawChartRows]
     );
+    const [displayedOnlineTime, setDisplayedOnlineTime] = useState(0);
+    useEffect(() => {
+        if (activityData.dataStatus !== 'running') {
+            setDisplayedOnlineTime(totalOnlineTime);
+        }
+    }, [activityData.dataStatus, totalOnlineTime]);
     const selectedActivityKey = detailRow
         ? findActivityRowForPreviousInstanceRow(detailRow, chartRows)
               ?.activityKey || ''
         : '';
 
     useEffect(() => {
-        setPageIndex(0);
-    }, [dateRange.from, dateRange.to, search, sortDesc, sortKey]);
+        if (activityData.dataStatus !== 'running') {
+            setShowChartLoadingIndicator(false);
+            return undefined;
+        }
+        const timer = window.setTimeout(() => {
+            setShowChartLoadingIndicator(true);
+        }, CHART_LOADING_INDICATOR_DELAY_MS);
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [activityData.dataStatus]);
 
     useEffect(() => {
         if (mode !== 'day') {
@@ -432,7 +454,6 @@ export function InstanceHistoryPage({
         let active = true;
         setStatus('running');
         setError('');
-        setDetailRow(null);
 
         gameLogRepository
             .getPreviousInstancesByUserId(
@@ -446,8 +467,20 @@ export function InstanceHistoryPage({
                 if (!active) {
                     return;
                 }
-                setRows(rowsFromResult(result));
+                const nextRows = rowsFromResult(result);
+                setRows(nextRows);
                 setStatus('ready');
+                setDetailRow((currentDetailRow) => {
+                    if (!currentDetailRow) {
+                        return null;
+                    }
+                    const currentKey = rowKey(currentDetailRow);
+                    return (
+                        nextRows.find(
+                            (candidate) => rowKey(candidate) === currentKey
+                        ) || null
+                    );
+                });
             })
             .catch((loadError: unknown) => {
                 if (!active) {
@@ -490,13 +523,6 @@ export function InstanceHistoryPage({
             : dateRows;
         return sortPreviousInstanceRows(nextRows, sortKey, sortDesc);
     }, [dateRange.from, dateRange.to, rows, search, sortDesc, sortKey]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-    const currentPageIndex = Math.min(pageIndex, totalPages - 1);
-    const visibleRows = filteredRows.slice(
-        currentPageIndex * pageSize,
-        currentPageIndex * pageSize + pageSize
-    );
 
     function selectSort(nextKey: PreviousInstanceSortKey, nextDesc: boolean) {
         setSortKey(nextKey);
@@ -570,20 +596,6 @@ export function InstanceHistoryPage({
 
     function handleSearchChange(value: string) {
         setSearch(value);
-        setPageIndex(0);
-    }
-
-    function handlePageSizeChange(value: number) {
-        setPageSize(value);
-        setPageIndex(0);
-    }
-
-    function handlePreviousPage() {
-        setPageIndex((value) => Math.max(0, value - 1));
-    }
-
-    function handleNextPage() {
-        setPageIndex((value) => Math.min(totalPages - 1, value + 1));
     }
 
     const handleActivityRowActivate = useCallback(
@@ -602,6 +614,7 @@ export function InstanceHistoryPage({
     const activityChartLifecycle = useInstanceActivityChartLifecycle({
         barWidth: activitySettings.barWidth,
         chartRows,
+        frozen: activityData.dataStatus === 'running',
         hour12: activityRuntime.hour12,
         onRowActivate: handleActivityRowActivate,
         resolvedTheme: activityRuntime.resolvedTheme,
@@ -669,7 +682,9 @@ export function InstanceHistoryPage({
                 currentRows.filter((item) => item !== row)
             );
             setDetailRow((current) => (current === row ? null : current));
-            setReloadToken((value) => value + 1);
+            if (isDayMode) {
+                setReloadToken((value) => value + 1);
+            }
             toast.success(
                 t('dialog.previous_instances.success.instance_record_deleted')
             );
@@ -684,7 +699,7 @@ export function InstanceHistoryPage({
         }
     }
 
-    const listVisibleRows = isDayMode ? rawDayRows : visibleRows;
+    const listVisibleRows = isDayMode ? rawDayRows : filteredRows;
     const listTotalCount = isDayMode ? rawDayRows.length : rows.length;
     const listFilteredCount = isDayMode
         ? rawDayRows.length
@@ -699,15 +714,9 @@ export function InstanceHistoryPage({
         selectedRow: detailRow,
         search,
         onSearchChange: handleSearchChange,
-        pageSize,
-        onPageSizeChange: handlePageSizeChange,
         sortKey,
         sortDesc,
         onSortSelect: selectSort,
-        currentPageIndex,
-        totalPages,
-        onPreviousPage: handlePreviousPage,
-        onNextPage: handleNextPage,
         onOpenDetails: setDetailRow,
         onDeleteRow: deleteRow,
         dateRangeControl,
@@ -750,9 +759,14 @@ export function InstanceHistoryPage({
                                 </Button>
                             }
                         />
-                        <PopoverContent align="start" className="w-96 p-2">
+                        <PopoverContent
+                            align="start"
+                            className="w-96 p-2"
+                            initialFocus={targetSearchInputRef}
+                        >
                             <div className="flex flex-col gap-2">
                                 <Input
+                                    ref={targetSearchInputRef}
                                     value={targetSearch}
                                     onChange={(
                                         event: ChangeEvent<HTMLInputElement>
@@ -858,7 +872,10 @@ export function InstanceHistoryPage({
                                             )}
                                         </span>
                                         <span className="font-medium tabular-nums">
-                                            {timeToText(totalOnlineTime, true)}
+                                            {timeToText(
+                                                displayedOnlineTime,
+                                                true
+                                            )}
                                         </span>
                                     </div>
                                 </div>
@@ -900,24 +917,17 @@ export function InstanceHistoryPage({
                                     >
                                         <ChevronUpIcon
                                             data-icon="icon"
-                                            className={
-                                                activitySettings.isChartCollapsed
-                                                    ? 'rotate-180'
-                                                    : ''
-                                            }
+                                            className={cn(
+                                                'transition-transform duration-200 ease-out',
+                                                activitySettings.isChartCollapsed &&
+                                                    'rotate-180'
+                                            )}
                                         />
                                     </Button>
                                 </div>
                             </div>
                             {activitySettings.isChartCollapsed ? null : dayStatus ===
-                              'running' ? (
-                                <div className="text-muted-foreground flex min-h-24 items-center justify-center gap-2 text-sm">
-                                    <Spinner className="size-4" />
-                                    {t(
-                                        'view.charts.loading.loading_instance_activity'
-                                    )}
-                                </div>
-                            ) : dayStatus === 'error' ? (
+                              'error' ? (
                                 <div className="text-destructive text-sm">
                                     {activityData.dataDetail ||
                                         t(
@@ -925,21 +935,35 @@ export function InstanceHistoryPage({
                                         )}
                                 </div>
                             ) : (
-                                <>
+                                <div className="relative">
                                     <div
                                         ref={
                                             activityChartLifecycle.setMainChartElementRef
                                         }
-                                        className="min-h-24 w-full bg-transparent"
+                                        className={cn(
+                                            'min-h-24 w-full bg-transparent',
+                                            dayStatus === 'running' &&
+                                                'pointer-events-none opacity-60'
+                                        )}
                                     />
-                                    {!dayHasChartRows ? (
+                                    {dayStatus === 'running' &&
+                                    showChartLoadingIndicator ? (
+                                        <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm">
+                                            <Spinner className="size-4" />
+                                            {t(
+                                                'view.charts.loading.loading_instance_activity'
+                                            )}
+                                        </div>
+                                    ) : null}
+                                    {dayStatus !== 'running' &&
+                                    !dayHasChartRows ? (
                                         <div className="text-muted-foreground text-sm">
                                             {t(
                                                 'view.charts.empty.no_instance_activity_on_this_day'
                                             )}
                                         </div>
                                     ) : null}
-                                </>
+                                </div>
                             )}
                         </div>
                     ) : null}

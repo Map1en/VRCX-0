@@ -72,9 +72,7 @@ export function parseNotificationDetails(details: unknown): NotificationRecord {
             if (object && typeof object === 'object') {
                 return object as NotificationRecord;
             }
-        } catch (err) {
-            console.log(err);
-        }
+        } catch {}
     }
     return {};
 }

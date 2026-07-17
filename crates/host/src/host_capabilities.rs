@@ -31,7 +31,6 @@ pub struct HostCapabilities {
     pub steam_runtime_integration: CapabilityStatus,
     pub registry_prefs: CapabilityStatus,
     pub game_launch: CapabilityStatus,
-    pub ipc: CapabilityStatus,
     pub vrchat_launch_pipe: CapabilityStatus,
     pub screenshot_cache: CapabilityStatus,
 }
@@ -43,7 +42,6 @@ pub enum HostCapability {
     VrchatPathDiscovery,
     RegistryPrefs,
     GameLaunch,
-    Ipc,
     VrchatLaunchPipe,
     ScreenshotCache,
 }
@@ -86,7 +84,6 @@ impl HostCapabilities {
             HostCapability::VrchatPathDiscovery => &self.vrchat_path_discovery,
             HostCapability::RegistryPrefs => &self.registry_prefs,
             HostCapability::GameLaunch => &self.game_launch,
-            HostCapability::Ipc => &self.ipc,
             HostCapability::VrchatLaunchPipe => &self.vrchat_launch_pipe,
             HostCapability::ScreenshotCache => &self.screenshot_cache,
         }
@@ -101,7 +98,6 @@ impl HostCapability {
             HostCapability::VrchatPathDiscovery => "VRChat path discovery",
             HostCapability::RegistryPrefs => "VRChat registry preferences",
             HostCapability::GameLaunch => "Game launch",
-            HostCapability::Ipc => "IPC",
             HostCapability::VrchatLaunchPipe => "VRChat launch pipe",
             HostCapability::ScreenshotCache => "Screenshot cache",
         }
@@ -185,7 +181,6 @@ pub fn current_host_capabilities() -> HostCapabilities {
             steam_runtime_integration: available.clone(),
             registry_prefs: available.clone(),
             game_launch: available.clone(),
-            ipc: available.clone(),
             vrchat_launch_pipe: available.clone(),
             screenshot_cache: available,
         },
@@ -223,7 +218,6 @@ pub fn current_host_capabilities() -> HostCapabilities {
             ),
             registry_prefs: CapabilityStatus::unsupported("VRChat registry preferences", "macOS"),
             game_launch: CapabilityStatus::unsupported("Game launch", "macOS"),
-            ipc: CapabilityStatus::unsupported("IPC", "macOS"),
             vrchat_launch_pipe: CapabilityStatus::unsupported("VRChat launch pipe", "macOS"),
             screenshot_cache: CapabilityStatus::unsupported("Screenshot cache", "macOS"),
         },
@@ -259,7 +253,6 @@ pub fn current_host_capabilities() -> HostCapabilities {
             ),
             registry_prefs: CapabilityStatus::unsupported("VRChat registry preferences", platform),
             game_launch: CapabilityStatus::unsupported("Game launch", platform),
-            ipc: CapabilityStatus::unsupported("IPC", platform),
             vrchat_launch_pipe: CapabilityStatus::unsupported("VRChat launch pipe", platform),
             screenshot_cache: CapabilityStatus::unsupported("Screenshot cache", platform),
         },
@@ -328,7 +321,6 @@ fn linux_host_capabilities(platform: &str, available: &CapabilityStatus) -> Host
         ),
         registry_prefs,
         game_launch,
-        ipc: CapabilityStatus::unsupported("IPC", "Linux"),
         vrchat_launch_pipe,
         screenshot_cache,
     }

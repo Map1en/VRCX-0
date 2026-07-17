@@ -1,6 +1,9 @@
 import { EyeIcon, EyeOffIcon, ShieldCheckIcon } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type { UserBadgeRecord } from '@/domain/entities/profileEntities';
 import { cn } from '@/lib/utils';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
@@ -10,28 +13,43 @@ import { Separator } from '@/ui/shadcn/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import { formatStatsDate } from '../userDialogRows';
+import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
+import type {
+    UserHeaderCommands,
+    UserHeaderModel
+} from './UserDialogHeaderSection';
 
-function resolveBadgeImageUrl(badge: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function resolveBadgeImageUrl(badge: UserBadgeRecord) {
     const imageUrl =
         [
             badge?.badgeImageUrl,
             badge?.imageUrl,
             badge?.iconUrl,
             badge?.image
-        ].find((value: any) => typeof value === 'string' && value.trim()) || '';
+        ].find(
+            (value): value is string =>
+                typeof value === 'string' && Boolean(value.trim())
+        ) || '';
     return imageUrl ? convertFileUrlToImageUrl(imageUrl, 128) : '';
 }
 
-function resolveBadgeName(badge: any, profileTitle: any, profileId: any) {
+function resolveBadgeName(
+    badge: UserBadgeRecord,
+    profileTitle: string,
+    profileId: string
+) {
     return String(
         badge?.badgeName || badge?.name || profileTitle || profileId || ''
     );
 }
 
-function isRenderableBadge(badge: any) {
+function isRenderableBadge(badge: unknown): badge is UserBadgeRecord {
     return Boolean(
-        badge &&
-        typeof badge === 'object' &&
+        isRecord(badge) &&
         (resolveBadgeImageUrl(badge) ||
             badge.badgeName ||
             badge.name ||
@@ -40,9 +58,11 @@ function isRenderableBadge(badge: any) {
     );
 }
 
-export function hasRenderableUserProfileBadges(profile: any) {
+export function hasRenderableUserProfileBadges(profile: unknown) {
     return (
-        Array.isArray(profile?.badges) && profile.badges.some(isRenderableBadge)
+        isRecord(profile) &&
+        Array.isArray(profile.badges) &&
+        profile.badges.some(isRenderableBadge)
     );
 }
 
@@ -53,8 +73,27 @@ export function UserDialogHeaderBadges({
     platform,
     PlatformIcon,
     onOpenDiscordProfile
-}: any) {
+}: {
+    profile: UserDialogProfileRecord;
+    moderationState: UserHeaderModel['moderationState'];
+    friendNumber?: number | string;
+    platform: UserHeaderModel['platform'];
+    PlatformIcon: ComponentType | null;
+    onOpenDiscordProfile: (discordId: string) => void;
+}) {
     const { t } = useTranslation();
+    const customTag =
+        typeof profile.$customTag === 'string' ? profile.$customTag : '';
+    const customTagColour =
+        typeof profile.$customTagColour === 'string'
+            ? profile.$customTagColour
+            : '';
+    const trustLevel =
+        typeof profile.$trustLevel === 'string'
+            ? profile.$trustLevel
+            : 'Visitor';
+    const discordId =
+        typeof profile.discordId === 'string' ? profile.discordId : '';
 
     return (
         <>
@@ -76,19 +115,19 @@ export function UserDialogHeaderBadges({
                     {t('view.favorite.avatars.almost_nuisance')}
                 </Badge>
             ) : null}
-            {profile.$customTag ? (
+            {customTag ? (
                 <Badge
                     variant="outline"
                     style={
-                        profile.$customTagColour
+                        customTagColour
                             ? {
-                                  color: profile.$customTagColour,
-                                  borderColor: profile.$customTagColour
+                                  color: customTagColour,
+                                  borderColor: customTagColour
                               }
                             : undefined
                     }
                 >
-                    {profile.$customTag}
+                    {customTag}
                 </Badge>
             ) : null}
             {profile.ageVerified ? <Badge variant="outline">18+</Badge> : null}
@@ -108,14 +147,14 @@ export function UserDialogHeaderBadges({
                     {t('dialog.user.label.muted')}
                 </Badge>
             ) : null}
-            <Badge variant="outline">{profile.$trustLevel || 'Visitor'}</Badge>
+            <Badge variant="outline">{trustLevel}</Badge>
             <Badge variant="outline">
                 {PlatformIcon ? (
                     <PlatformIcon data-icon="inline-start" />
                 ) : null}
                 {platform.label}
             </Badge>
-            {profile.discordId ? (
+            {discordId ? (
                 <Button
                     type="button"
                     variant="outline"
@@ -123,7 +162,7 @@ export function UserDialogHeaderBadges({
                     className="h-5 rounded-4xl px-2 py-0.5 text-xs"
                     aria-label={t('dialog.user.tags.open_in_discord')}
                     title={t('dialog.user.tags.open_in_discord')}
-                    onClick={() => onOpenDiscordProfile(profile.discordId)}
+                    onClick={() => onOpenDiscordProfile(discordId)}
                 >
                     {t('dialog.user.tags.discord')}
                 </Button>
@@ -140,7 +179,15 @@ export function UserDialogHeaderMediaBadges({
     onOpenImagePreview,
     onToggleBadgeVisibility,
     onToggleBadgeShowcased
-}: any) {
+}: {
+    profile: UserDialogProfileRecord;
+    profileTitle: string;
+    actionStatus: string;
+    isCurrentUser: boolean;
+    onOpenImagePreview?: (request: { url: string; title: string }) => void;
+    onToggleBadgeVisibility?: UserHeaderCommands['onToggleBadgeVisibility'];
+    onToggleBadgeShowcased?: UserHeaderCommands['onToggleBadgeShowcased'];
+}) {
     const { t } = useTranslation();
     const hiddenLabel = t('dialog.user.badges.hidden');
     const visibleLabel = t('dialog.user.badges.visible');
@@ -153,12 +200,12 @@ export function UserDialogHeaderMediaBadges({
 
     return (
         <>
-            {profile.badges.filter(isRenderableBadge).map((badge: any) => {
+            {profile.badges.filter(isRenderableBadge).map((badge) => {
                 const badgeImageUrl = resolveBadgeImageUrl(badge);
                 const badgeName = resolveBadgeName(
                     badge,
                     profileTitle,
-                    profile.id
+                    String(profile.id || '')
                 );
                 const isBadgeVisible =
                     Boolean(badge.showcased) && !badge.hidden;
@@ -170,12 +217,12 @@ export function UserDialogHeaderMediaBadges({
 
                 return (
                     <Popover
-                        key={
+                        key={String(
                             badge.badgeId ||
-                            badge.id ||
-                            badge.badgeName ||
-                            badgeImageUrl
-                        }
+                                badge.id ||
+                                badge.badgeName ||
+                                badgeImageUrl
+                        )}
                     >
                         <PopoverTrigger
                             render={
@@ -201,7 +248,7 @@ export function UserDialogHeaderMediaBadges({
                                     onClick={(event) => event.stopPropagation()}
                                 >
                                     {badgeImageUrl ? (
-                                        <img
+                                        <FadeInImage
                                             src={badgeImageUrl}
                                             alt={badge.badgeName || ''}
                                             className={cn(
@@ -233,7 +280,7 @@ export function UserDialogHeaderMediaBadges({
                                         })
                                     }
                                 >
-                                    <img
+                                    <FadeInImage
                                         src={badgeImageUrl}
                                         alt={badge.badgeName || ''}
                                         className={cn(

@@ -20,16 +20,25 @@ impl VrcxMcpServer {
         &self,
         Parameters(input): Parameters<FavoriteLocalParams>,
     ) -> Result<CallToolResult, String> {
-        social_aggregates_result(social_aggregates::favorite_local(
+        let dry_run = input.dry_run.unwrap_or(true);
+        let result = social_aggregates::favorite_local(
             self.runtime.db.as_ref(),
             social_aggregates::FavoriteLocalInput {
                 kind: input.kind,
                 entity_id: input.entity_id,
                 group: input.group,
                 action: input.action.unwrap_or_else(|| "add".into()),
-                dry_run: input.dry_run.unwrap_or(true),
+                dry_run,
             },
-        ))
+        );
+        if !dry_run {
+            if let Ok(output) = &result {
+                self.runtime
+                    .realtime_runtime
+                    .notify_favorites_changed(&output.kind, true, false);
+            }
+        }
+        social_aggregates_result(result)
     }
 
     #[tool(
@@ -118,6 +127,9 @@ impl VrcxMcpServer {
         )
         .await
         .map_err(|error| error.to_string())?;
+        self.runtime
+            .realtime_runtime
+            .notify_favorites_changed(&kind, false, true);
         Ok(FavoriteVrchatOutput {
             kind,
             entity_id,

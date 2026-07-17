@@ -147,3 +147,6 @@ fn scan_log_file_vr_mode(path: &Path) -> Option<bool> {
 
     vr_mode
 }
+
+#[cfg(test)]
+mod tests;

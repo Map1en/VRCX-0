@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
@@ -223,7 +224,7 @@ export function GroupEventCard({
                                     })
                                 )}
                             >
-                                <img
+                                <FadeInImage
                                     src={bannerUrl}
                                     alt=""
                                     loading="lazy"

@@ -20,7 +20,7 @@ import {
 
 describe('notification row helpers', () => {
     it('builds readable notification date, message, and group labels', () => {
-        const notification: any = {
+        const notification = {
             created_at: '2026-01-01T00:00:00Z',
             title: 'Invite',
             message: 'This is a generated invite to Test World',

@@ -18,14 +18,16 @@ pub(super) fn handle_runtime_auth_failure_notification(
     event: &str,
     payload: &serde_json::Value,
 ) {
-    if event != "realtimeWsStatus" || json_string_field(payload, "status") != "authFailure" {
+    let Some(reason) = runtime_auth_failure_reason(event, payload) else {
         return;
-    }
+    };
     let Some(state) = app_handle.try_state::<AppState>() else {
         return;
     };
+    if !runtime_auth_failure_matches_scope(&state, event, payload) {
+        return;
+    }
     let snapshot = state.snapshot_backend_runtime();
-    let reason = json_string_field(payload, "reason");
     if !should_show_runtime_auth_failure_notification(&snapshot, &reason) {
         return;
     }
@@ -40,17 +42,56 @@ pub(super) fn handle_runtime_auth_failure_recovery(
     event: &str,
     payload: &serde_json::Value,
 ) {
-    if event != "realtimeWsStatus" || json_string_field(payload, "status") != "authFailure" {
+    let Some(reason) = runtime_auth_failure_reason(event, payload) else {
         return;
-    }
-    let reason = json_string_field(payload, "reason");
+    };
+    let event = event.to_string();
+    let payload = payload.clone();
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
         let Some(state) = app_handle.try_state::<AppState>() else {
             return;
         };
+        if !runtime_auth_failure_matches_scope(&state, &event, &payload) {
+            return;
+        }
         state.recover_background_auth_after_failure(reason).await;
     });
+}
+
+fn runtime_auth_failure_reason(event: &str, payload: &serde_json::Value) -> Option<String> {
+    match event {
+        "realtimeWsStatus" if json_string_field(payload, "status") == "authFailure" => {
+            Some(json_string_field(payload, "reason"))
+        }
+        "runtimeVrchatAuthFailure"
+            if payload
+                .get("statusCode")
+                .and_then(serde_json::Value::as_i64)
+                == Some(401) =>
+        {
+            Some(json_string_field(payload, "reason"))
+        }
+        _ => None,
+    }
+}
+
+fn runtime_auth_failure_matches_scope(
+    state: &AppState,
+    event: &str,
+    payload: &serde_json::Value,
+) -> bool {
+    if event != "runtimeVrchatAuthFailure" {
+        return true;
+    }
+    let scope = state.runtime.runtime_context.auth_scope.snapshot();
+    scope.active
+        && scope.current_user_id == json_string_field(payload, "ownerUserId")
+        && scope.endpoint == json_string_field(payload, "endpoint")
+        && payload
+            .get("authScopeGeneration")
+            .and_then(serde_json::Value::as_u64)
+            == Some(scope.generation)
 }
 
 fn should_show_runtime_auth_failure_notification(
@@ -188,6 +229,7 @@ mod tests {
             game_log_persisted_count: 0,
             last_error: None,
             updated_at: String::new(),
+            friend_profile_load: vrcx_0_application::FriendProfileLoadStatusPayload::default(),
         }
     }
 
@@ -219,6 +261,24 @@ mod tests {
             &snapshot,
             "auth transport bootstrap failed (401): {\"error\":{\"message\":\"Missing Credentials\"}}"
         ));
+    }
+
+    #[test]
+    fn structured_http_401_is_recognized_as_runtime_auth_failure() {
+        let payload = serde_json::json!({
+            "statusCode": 401,
+            "reason": "Missing Credentials (401)"
+        });
+
+        assert_eq!(
+            runtime_auth_failure_reason("runtimeVrchatAuthFailure", &payload).as_deref(),
+            Some("Missing Credentials (401)")
+        );
+        assert!(runtime_auth_failure_reason(
+            "runtimeVrchatAuthFailure",
+            &serde_json::json!({ "statusCode": 403, "reason": "Forbidden" })
+        )
+        .is_none());
     }
 
     #[test]

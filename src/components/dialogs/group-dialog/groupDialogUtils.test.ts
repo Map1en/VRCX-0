@@ -31,7 +31,7 @@ describe('group dialog permissions', () => {
     });
 
     it('inherits permissions from matching member role ids only', () => {
-        const group: any = {
+        const group = {
             myMember: {
                 permissions: [],
                 roleIds: ['role_moderator']

@@ -4,8 +4,46 @@ import {
     UserProfileDetailsDialog,
     UserSocialStatusDialog
 } from '../UserSelfEditDialogs';
+import type { useUserDialogActions } from '../useUserDialogActions';
+import type { useUserDialogMemoState } from '../useUserDialogMemoState';
+import type { useUserDialogSelfActions } from '../useUserDialogSelfActions';
 import { UserDialogGroupQuickModerationDialog } from './UserDialogGroupQuickModerationDialog';
 import { UserNoteMemoDialog } from './UserNoteMemoDialog';
+
+type UserActionsState = ReturnType<typeof useUserDialogActions>;
+type SelfActionsState = ReturnType<typeof useUserDialogSelfActions>;
+
+type UserDialogContentDialogsProps = {
+    actionStatus: string;
+    boopDialog: {
+        request: UserActionsState['boopDialogRequest'];
+        isLocalUserVrcPlusSupporter: boolean;
+        onOpenChange: UserActionsState['handleBoopDialogOpenChange'];
+        onSend: UserActionsState['sendUserBoopEmoji'];
+    };
+    groupQuickModerationDialog: {
+        open: boolean;
+        endpoint: string;
+        currentUserId: string;
+        targetUserId: string;
+        targetLabel?: string;
+        targetImageUrl: string;
+        onOpenChange: (open: boolean) => void;
+        onDetailedManagement: (groupId: string) => void;
+    };
+    noteMemoDialog: ReturnType<typeof useUserDialogMemoState>['memoDialog'];
+    socialStatusDialog: SelfActionsState['socialStatusDialog'];
+    profileDetailsDialog: SelfActionsState['profileDetailsDialog'];
+    inviteMessageDialog: {
+        request: UserActionsState['inviteMessageRequest'];
+        onOpenChange: UserActionsState['handleInviteMessageDialogOpenChange'];
+        normalizedCurrentUserId: string;
+        currentEndpoint: string;
+        allowImageUpload: boolean;
+        targetLabel?: string;
+        onUse: UserActionsState['selectInviteMessage'];
+    };
+};
 
 export function UserDialogContentDialogs({
     actionStatus,
@@ -15,7 +53,7 @@ export function UserDialogContentDialogs({
     socialStatusDialog,
     profileDetailsDialog,
     inviteMessageDialog
-}: any) {
+}: UserDialogContentDialogsProps) {
     return (
         <>
             <UserNoteMemoDialog

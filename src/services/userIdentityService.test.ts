@@ -14,10 +14,19 @@ import { useUserFactsStore } from '@/state/userFactsStore';
 
 import { resolveUserByDisplayName } from './userIdentityService';
 
+type ResolveOptions = NonNullable<
+    Parameters<typeof resolveUserByDisplayName>[1]
+>;
+type IdentityRepositories = NonNullable<ResolveOptions['repositories']>;
+
+type IngestedEntry = {
+    user?: { id?: string };
+};
+
 function ingestedEntryFor(userId: string) {
     return tauriMock.commands.appIngestUserFacts.mock.calls
         .flatMap((call) => (Array.isArray(call[0]) ? call[0] : []))
-        .find((entry: any) => entry?.user?.id === userId);
+        .find((entry: IngestedEntry) => entry.user?.id === userId);
 }
 
 describe('userIdentityService', () => {
@@ -49,12 +58,14 @@ describe('userIdentityService', () => {
             stateBucket: 'online'
         });
 
-        const repositories: any = {
+        const getUserIdFromDisplayName = vi.fn();
+        const getUsers = vi.fn();
+        const repositories: IdentityRepositories = {
             gameLogRepository: {
-                getUserIdFromDisplayName: vi.fn()
+                getUserIdFromDisplayName
             },
             vrchatSearchRepository: {
-                getUsers: vi.fn()
+                getUsers
             }
         };
 
@@ -78,16 +89,12 @@ describe('userIdentityService', () => {
             title: 'Friend User',
             source: 'friend'
         });
-        expect(
-            repositories.gameLogRepository.getUserIdFromDisplayName
-        ).not.toHaveBeenCalled();
-        expect(
-            repositories.vrchatSearchRepository.getUsers
-        ).not.toHaveBeenCalled();
+        expect(getUserIdFromDisplayName).not.toHaveBeenCalled();
+        expect(getUsers).not.toHaveBeenCalled();
     });
 
     it('uses game log and search fallbacks and ingests resolved users to Rust', async () => {
-        const repositories: any = {
+        const repositories: IdentityRepositories = {
             gameLogRepository: {
                 getUserIdFromDisplayName: vi
                     .fn()

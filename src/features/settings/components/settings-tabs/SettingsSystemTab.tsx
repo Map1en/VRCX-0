@@ -14,20 +14,26 @@ type SettingsSystemTabProps = {
     autoLoginDelayEnabled?: boolean;
     autoLoginDelaySeconds?: ReactNode;
     backgroundModeEnabled?: boolean;
+    backgroundModeDelayEnabled?: boolean;
+    backgroundModeDelayMinutes?: ReactNode;
     hostPlatform?: string;
     isCloseToTray?: boolean;
     isStartAsMinimizedState?: boolean;
     isStartAtWindowsStartup?: boolean;
     proxyEnabled?: boolean;
     proxyServer?: string;
+    showPostUpdateChangelogToast?: boolean;
     onAutoBackgroundDownloadUpdatesChange: (checked: boolean) => unknown;
     onAutoInstallUpdatesOnStartupChange: (checked: boolean) => unknown;
     onAutoLoginDelayEnabledChange: (checked: boolean) => unknown;
     onBackgroundModeEnabledChange: (checked: boolean) => unknown;
+    onBackgroundModeDelayEnabledChange: (checked: boolean) => unknown;
     onCloseToTrayChange: (checked: boolean) => unknown;
     onPromptAutoLoginDelaySeconds: () => unknown;
+    onPromptBackgroundModeDelayMinutes: () => unknown;
     onProxyEnabledChange: (checked: boolean) => unknown;
     onProxySettings: () => unknown;
+    onPostUpdateChangelogToastChange: (checked: boolean) => unknown;
     onStartAsMinimizedChange: (checked: boolean) => unknown;
     onStartAtWindowsStartupChange: (checked: boolean) => unknown;
 };
@@ -41,7 +47,10 @@ export function SettingsSystemTab({
     autoLoginDelaySeconds,
     autoInstallUpdatesOnStartup,
     autoBackgroundDownloadUpdates,
+    showPostUpdateChangelogToast,
     backgroundModeEnabled,
+    backgroundModeDelayEnabled,
+    backgroundModeDelayMinutes,
     proxyEnabled,
     proxyServer,
     onStartAtWindowsStartupChange,
@@ -50,8 +59,11 @@ export function SettingsSystemTab({
     onAutoLoginDelayEnabledChange,
     onPromptAutoLoginDelaySeconds,
     onBackgroundModeEnabledChange,
+    onBackgroundModeDelayEnabledChange,
+    onPromptBackgroundModeDelayMinutes,
     onAutoInstallUpdatesOnStartupChange,
     onAutoBackgroundDownloadUpdatesChange,
+    onPostUpdateChangelogToastChange,
     onProxyEnabledChange,
     onProxySettings
 }: SettingsSystemTabProps) {
@@ -72,6 +84,8 @@ export function SettingsSystemTab({
                   }
               )
             : '';
+    const backgroundModeDelayDisabled =
+        !isCloseToTray || !backgroundModeEnabled;
 
     return (
         <SettingsTabContent value="system">
@@ -126,6 +140,47 @@ export function SettingsSystemTab({
                 </Field>
                 <Field
                     label={t(
+                        'view.settings.general.application.background_mode_delay'
+                    )}
+                    description={t(
+                        'view.settings.general.application.background_mode_delay_description'
+                    )}
+                    disabled={backgroundModeDelayDisabled}
+                >
+                    <Switch
+                        checked={backgroundModeDelayEnabled}
+                        disabled={backgroundModeDelayDisabled}
+                        onCheckedChange={onBackgroundModeDelayEnabledChange}
+                    />
+                </Field>
+                {backgroundModeDelayEnabled ? (
+                    <Field
+                        label={t(
+                            'view.settings.general.application.background_mode_delay_button'
+                        )}
+                        disabled={backgroundModeDelayDisabled}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                                {backgroundModeDelayMinutes}
+                                {t('common.time_units.m')}
+                            </Badge>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={backgroundModeDelayDisabled}
+                                onClick={onPromptBackgroundModeDelayMinutes}
+                            >
+                                {t(
+                                    'view.settings.general.application.background_mode_delay_button'
+                                )}
+                            </Button>
+                        </div>
+                    </Field>
+                ) : null}
+                <Field
+                    label={t(
                         'view.settings.general.application.auto_install_updates_on_startup'
                     )}
                     description={t(
@@ -148,6 +203,19 @@ export function SettingsSystemTab({
                     <Switch
                         checked={autoBackgroundDownloadUpdates}
                         onCheckedChange={onAutoBackgroundDownloadUpdatesChange}
+                    />
+                </Field>
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.post_update_changelog_prompt'
+                    )}
+                    description={t(
+                        'view.settings.notifications.notifications.post_update_changelog_prompt_description'
+                    )}
+                >
+                    <Switch
+                        checked={showPostUpdateChangelogToast}
+                        onCheckedChange={onPostUpdateChangelogToastChange}
                     />
                 </Field>
                 <Field

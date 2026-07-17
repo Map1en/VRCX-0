@@ -64,6 +64,13 @@ export function useFeedFilters() {
         [searchDraft]
     );
 
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setSearchQuery(searchDraft);
+        }, 250);
+        return () => window.clearTimeout(timeoutId);
+    }, [searchDraft]);
+
     const clearSearch = useCallback(() => {
         setSearchDraft('');
         setSearchQuery('');

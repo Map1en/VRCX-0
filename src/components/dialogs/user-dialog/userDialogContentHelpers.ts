@@ -9,22 +9,35 @@ export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 
 import { normalizeUserId } from './userProfileFields';
 
-export function isGroupId(value: any) {
+type LocationUserRow = Record<string, unknown> & {
+    id: string;
+    userId: string;
+    displayName: string;
+};
+
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+export function isGroupId(value: unknown) {
     return hasGroupIdPrefix(normalizeUserId(value));
 }
 
-export function groupSeed(value: any) {
-    if (!value || typeof value !== 'object') {
+export function groupSeed(value: unknown) {
+    const group = record(value);
+    if (!Object.keys(group).length) {
         return null;
     }
     const groupId = normalizeUserId(
-        value.groupId || value.group_id || value.id
+        group.groupId || group.group_id || group.id
     );
-    return isGroupId(groupId) ? value : null;
+    return isGroupId(groupId) ? group : null;
 }
 
-export function groupDisplayName(...values: any[]) {
-    const fallback = [];
+export function groupDisplayName(...values: unknown[]) {
+    const fallback: string[] = [];
     for (const value of values) {
         const text = normalizeUserId(value);
         if (!text) {
@@ -38,12 +51,16 @@ export function groupDisplayName(...values: any[]) {
     return fallback[0] || '';
 }
 
-export function hasGroupProfileDetails(group: any, fallback: any = {}) {
-    if (!group || typeof group !== 'object') {
+export function hasGroupProfileDetails(
+    source: unknown,
+    fallbackSource: unknown = {}
+) {
+    const group = record(source);
+    if (!Object.keys(group).length) {
         return false;
     }
-    const nestedGroup =
-        group.group && typeof group.group === 'object' ? group.group : {};
+    const fallback = record(fallbackSource);
+    const nestedGroup = record(group.group);
     const name = groupDisplayName(
         group.name,
         group.displayName,
@@ -75,7 +92,7 @@ export function hasGroupProfileDetails(group: any, fallback: any = {}) {
     return Boolean((name && !isGroupId(name)) || image);
 }
 
-export function resolvePlatformMeta(platform: any) {
+export function resolvePlatformMeta(platform: unknown) {
     const normalized = normalizeUserId(platform).toLowerCase();
 
     if (
@@ -109,11 +126,11 @@ export function resolvePlatformMeta(platform: any) {
     };
 }
 
-export function resolvePresenceLocation(profile: any) {
+export function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
-export function isSameLocationTag(left: any, right: any) {
+export function isSameLocationTag(left: unknown, right: unknown) {
     const leftTag = normalizeUserId(left);
     const rightTag = normalizeUserId(right);
     if (!leftTag || !rightTag) {
@@ -134,35 +151,40 @@ export function isSameLocationTag(left: any, right: any) {
     );
 }
 
-export function userDisplayName(user: any) {
+export function userDisplayName(user: unknown) {
     if (typeof user === 'string') {
         return normalizeUserId(user);
     }
+    const source = record(user);
+    const nestedUser = record(source.user);
     return normalizeUserId(
-        user?.displayName ||
-            user?.display_name ||
-            user?.username ||
-            user?.name ||
-            user?.user?.displayName ||
-            user?.user?.display_name ||
-            user?.user?.username ||
-            user?.user?.name ||
-            user?.userId ||
-            user?.user_id ||
-            user?.id ||
-            user?.user?.id ||
-            user?.user?.userId ||
-            user?.user?.user_id
+        source.displayName ||
+            source.display_name ||
+            source.username ||
+            source.name ||
+            nestedUser.displayName ||
+            nestedUser.display_name ||
+            nestedUser.username ||
+            nestedUser.name ||
+            source.userId ||
+            source.user_id ||
+            source.id ||
+            nestedUser.id ||
+            nestedUser.userId ||
+            nestedUser.user_id
     );
 }
 
-export function createLocationUserRow(user: any, fallback: any = {}) {
+export function createLocationUserRow(
+    user: unknown,
+    fallbackSource: unknown = {}
+): LocationUserRow {
     const source =
         typeof user === 'string'
             ? { id: user, userId: user, displayName: user }
-            : user || {};
-    const nestedUser =
-        source.user && typeof source.user === 'object' ? source.user : {};
+            : record(user);
+    const fallback = record(fallbackSource);
+    const nestedUser = record(source.user);
     const userId = normalizeUserId(
         source.id ||
             source.userId ||
@@ -230,13 +252,16 @@ export function createLocationUserRow(user: any, fallback: any = {}) {
     };
 }
 
-export function createLocationGroupRow(group: any, fallback: any = {}) {
+export function createLocationGroupRow(
+    group: unknown,
+    fallbackSource: unknown = {}
+) {
     const source =
         typeof group === 'string'
             ? { id: group, groupId: group, name: group }
-            : group || {};
-    const nestedGroup =
-        source.group && typeof source.group === 'object' ? source.group : {};
+            : record(group);
+    const fallback = record(fallbackSource);
+    const nestedGroup = record(source.group);
     const groupId = normalizeUserId(
         source.groupId ||
             source.group_id ||
@@ -293,11 +318,14 @@ export function createLocationGroupRow(group: any, fallback: any = {}) {
     };
 }
 
-function isPresentValue(value: any) {
+function isPresentValue(value: unknown) {
     return value !== undefined && value !== null && value !== '';
 }
 
-export function mergeLocationUserRows(existing: any, incoming: any) {
+export function mergeLocationUserRows(
+    existing: LocationUserRow | undefined,
+    incoming: LocationUserRow | undefined
+) {
     if (!existing) {
         return incoming;
     }
@@ -305,7 +333,7 @@ export function mergeLocationUserRows(existing: any, incoming: any) {
         return existing;
     }
 
-    const merged: any = { ...incoming, ...existing };
+    const merged: LocationUserRow = { ...incoming, ...existing };
     for (const [key, value] of Object.entries(incoming)) {
         if (!isPresentValue(merged[key]) && isPresentValue(value)) {
             merged[key] = value;
@@ -315,9 +343,9 @@ export function mergeLocationUserRows(existing: any, incoming: any) {
 }
 
 export function mergeLocationUser(
-    rowsById: any,
-    user: any,
-    fallback: any = {}
+    rowsById: Map<string, LocationUserRow>,
+    user: unknown,
+    fallback: unknown = {}
 ) {
     const row = createLocationUserRow(user, fallback);
     const key = row.id || `display:${row.displayName}`;
@@ -326,13 +354,16 @@ export function mergeLocationUser(
     }
     const existing = rowsById.get(key);
     if (existing) {
-        rowsById.set(key, mergeLocationUserRows(existing, row));
+        rowsById.set(key, mergeLocationUserRows(existing, row) || row);
         return;
     }
     rowsById.set(key, row);
 }
 
-export function pushLocationUserSource(source: any, push: any) {
+export function pushLocationUserSource(
+    source: unknown,
+    push: (value: unknown) => void
+) {
     if (!source) {
         return;
     }
@@ -349,25 +380,27 @@ export function pushLocationUserSource(source: any, push: any) {
         return;
     }
     if (typeof source === 'object') {
+        const sourceRecord = record(source);
+        const nestedUser = record(sourceRecord.user);
         if (
-            source.id ||
-            source.userId ||
-            source.user_id ||
-            source.targetUserId ||
-            source.target_user_id ||
-            source.displayName ||
-            source.display_name ||
-            source.username ||
-            source.name ||
-            source.user?.id ||
-            source.user?.userId ||
-            source.user?.displayName ||
-            source.user?.username
+            sourceRecord.id ||
+            sourceRecord.userId ||
+            sourceRecord.user_id ||
+            sourceRecord.targetUserId ||
+            sourceRecord.target_user_id ||
+            sourceRecord.displayName ||
+            sourceRecord.display_name ||
+            sourceRecord.username ||
+            sourceRecord.name ||
+            nestedUser.id ||
+            nestedUser.userId ||
+            nestedUser.displayName ||
+            nestedUser.username
         ) {
-            push(source);
+            push(sourceRecord);
             return;
         }
-        for (const value of Object.values(source)) {
+        for (const value of Object.values(sourceRecord)) {
             pushLocationUserSource(value, push);
         }
         return;
@@ -375,19 +408,22 @@ export function pushLocationUserSource(source: any, push: any) {
     push(source);
 }
 
-export function instanceLocation(instance: any) {
-    const source = instance?.instance || instance;
+export function instanceLocation(instance: unknown) {
+    const instanceRecord = record(instance);
+    const source = record(instanceRecord.instance || instanceRecord);
+    const sourceLocation = record(source.$location);
+    const instanceLocationRecord = record(instanceRecord.$location);
     return normalizeUserId(
-        source?.location ||
-            source?.tag ||
-            source?.$location?.tag ||
-            instance?.location ||
-            instance?.tag ||
-            instance?.$location?.tag
+        source.location ||
+            source.tag ||
+            sourceLocation.tag ||
+            instanceRecord.location ||
+            instanceRecord.tag ||
+            instanceLocationRecord.tag
     );
 }
 
-export function locationCacheKey(location: any) {
+export function locationCacheKey(location: unknown) {
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
         return '';
@@ -395,10 +431,11 @@ export function locationCacheKey(location: any) {
     return `${parsed.worldId}:${parsed.instanceId}`;
 }
 
-export function buildCachedInstanceMap(instances: any) {
-    const map = new Map();
+export function buildCachedInstanceMap(instances: unknown) {
+    const map = new Map<string, Record<string, unknown>>();
     for (const instance of Array.isArray(instances) ? instances : []) {
-        const source = instance?.instance || instance;
+        const instanceRecord = record(instance);
+        const source = record(instanceRecord.instance || instanceRecord);
         const location = instanceLocation(instance);
         if (!location) {
             continue;
@@ -412,8 +449,9 @@ export function buildCachedInstanceMap(instances: any) {
     return map;
 }
 
-export function resolveFriendRequestState(profile: any) {
-    const status = normalizeUserId(profile?.friendRequestStatus).toLowerCase();
+export function resolveFriendRequestState(source: unknown) {
+    const profile = record(source);
+    const status = normalizeUserId(profile.friendRequestStatus).toLowerCase();
     return {
         incoming:
             Boolean(profile?.incomingRequest) || status.includes('incoming'),

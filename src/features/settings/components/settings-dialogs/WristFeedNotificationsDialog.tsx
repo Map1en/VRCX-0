@@ -2,12 +2,15 @@ import { ChevronDownIcon, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { buildFeedFavoriteGroupOptions } from '@/features/feed/feedColumnScope';
+import { buildFeedFavoriteGroupOptions } from '@/domain/feed/feedFavoriteGroups';
 import { commands } from '@/platform/tauri/bindings';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
+    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
+    DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     defaultOverlayActivityFilterProfileFromDefinitions,
+    disabledOverlayActivityFilterProfileFromDefinitions,
     hmdDefaultOverlayActivityFilterProfileFromDefinitions,
     normalizeOverlayActivityFilterProfile,
     normalizeOverlayActivityFilterProfileWithDefinitions,
@@ -56,6 +59,14 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 
+function scopeUsesFavoriteGroups(scope: OverlayActivityScope) {
+    return scope === 'selectedFavorites';
+}
+
+function selectedGroupKeys(groupKeys: OverlayActivityFavoriteGroupKeys) {
+    return Array.isArray(groupKeys) ? groupKeys : [];
+}
+
 type WristFeedNotificationsDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
@@ -66,7 +77,7 @@ type WristFeedNotificationsDialogProps = {
     ): Promise<unknown>;
 };
 
-type VrNotificationsDialogProps = {
+type NotificationProfileDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
     value: OverlayActivityFilterProfilePreference;
@@ -76,20 +87,13 @@ type VrNotificationsDialogProps = {
     ): Promise<unknown>;
 };
 
-type OverlayActivityFilterDialogProps = {
-    open: boolean;
-    onOpenChange(open: boolean): void;
+type OverlayActivityFilterDialogProps = NotificationProfileDialogProps & {
     titleKey: string;
     descriptionKey: string;
-    value: OverlayActivityFilterProfilePreference;
     defaultProfileFromDefinitions?: (
         definitions: OverlayActivityTypeDefinition[]
     ) => OverlayActivityFilterProfilePreference;
     fallbackDefaultProfile?: OverlayActivityFilterProfilePreference;
-    onSave(
-        value: OverlayActivityFilterProfilePreference,
-        definitions: OverlayActivityTypeDefinition[]
-    ): Promise<unknown>;
 };
 
 function normalizeDraft(
@@ -102,14 +106,6 @@ function normalizeDraft(
               definitions
           )
         : normalizeOverlayActivityFilterProfile(value);
-}
-
-function scopeUsesFavoriteGroups(scope: OverlayActivityScope) {
-    return scope === 'selectedFavorites';
-}
-
-function selectedGroupKeys(groupKeys: OverlayActivityFavoriteGroupKeys) {
-    return Array.isArray(groupKeys) ? groupKeys : [];
 }
 
 export function WristFeedNotificationsDialog({
@@ -149,7 +145,7 @@ export function VrNotificationsDialog({
     onOpenChange,
     value,
     onSave
-}: VrNotificationsDialogProps) {
+}: NotificationProfileDialogProps) {
     return (
         <OverlayActivityFilterDialog
             open={open}
@@ -167,7 +163,7 @@ export function DesktopNotificationsDialog({
     onOpenChange,
     value,
     onSave
-}: VrNotificationsDialogProps) {
+}: NotificationProfileDialogProps) {
     return (
         <OverlayActivityFilterDialog
             open={open}
@@ -185,7 +181,7 @@ export function HmdNotificationsDialog({
     onOpenChange,
     value,
     onSave
-}: VrNotificationsDialogProps) {
+}: NotificationProfileDialogProps) {
     return (
         <OverlayActivityFilterDialog
             open={open}
@@ -207,7 +203,7 @@ export function WebhookNotificationsDialog({
     onOpenChange,
     value,
     onSave
-}: VrNotificationsDialogProps) {
+}: NotificationProfileDialogProps) {
     return (
         <OverlayActivityFilterDialog
             open={open}
@@ -215,6 +211,29 @@ export function WebhookNotificationsDialog({
             titleKey="dialog.webhook_notifications.title"
             descriptionKey="dialog.webhook_notifications.description"
             value={value}
+            defaultProfileFromDefinitions={
+                disabledOverlayActivityFilterProfileFromDefinitions
+            }
+            fallbackDefaultProfile={DEFAULT_WEBHOOK_ACTIVITY_FILTERS}
+            onSave={onSave}
+        />
+    );
+}
+
+export function TtsNotificationsDialog({
+    open,
+    onOpenChange,
+    value,
+    onSave
+}: NotificationProfileDialogProps) {
+    return (
+        <OverlayActivityFilterDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            titleKey="dialog.tts_notifications.title"
+            descriptionKey="dialog.tts_notifications.description"
+            value={value}
+            fallbackDefaultProfile={DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS}
             onSave={onSave}
         />
     );
@@ -288,7 +307,7 @@ function OverlayActivityFilterDialog({
             })
             .catch((error) => {
                 console.warn(
-                    'Failed to load wrist activity definitions:',
+                    'Failed to load notification activity definitions:',
                     error
                 );
             });
@@ -538,7 +557,6 @@ function OverlayActivityFilterDialog({
                                                         </SelectGroup>
                                                     </SelectContent>
                                                 </Select>
-
                                                 {usesFavoriteGroups ? (
                                                     <FavoriteGroupMenu
                                                         disabled={
@@ -592,7 +610,7 @@ function OverlayActivityFilterDialog({
                         disabled={!definitionsLoaded}
                     >
                         <RotateCcwIcon data-icon="inline-start" />
-                        {t('dialog.wrist_feed_notifications.reset_recommended')}
+                        {t('common.actions.reset')}
                     </Button>
                     <div className="flex gap-2">
                         <DialogClose
@@ -653,12 +671,12 @@ function FavoriteGroupMenu({
                 }
             />
             <DropdownMenuContent align="end" className="w-72">
-                <DropdownMenuLabel>
-                    {t(
-                        'dialog.wrist_feed_notifications.favorite_groups.menu_label'
-                    )}
-                </DropdownMenuLabel>
                 <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                        {t(
+                            'dialog.wrist_feed_notifications.favorite_groups.menu_label'
+                        )}
+                    </DropdownMenuLabel>
                     <DropdownMenuCheckboxItem
                         checked={allFavoriteGroups}
                         onCheckedChange={(checked) =>
@@ -670,8 +688,6 @@ function FavoriteGroupMenu({
                             'dialog.wrist_feed_notifications.favorite_groups.all_groups'
                         )}
                     </DropdownMenuCheckboxItem>
-                </DropdownMenuGroup>
-                <DropdownMenuGroup>
                     {favoriteGroupOptions.map((group) => (
                         <DropdownMenuCheckboxItem
                             key={group.key}

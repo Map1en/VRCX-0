@@ -601,6 +601,48 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
             return nextState;
         });
     },
+    setLocalFavoritesForKind(kind, { localFavorites, localFavoriteGroups }) {
+        set((state) => {
+            const normalizedFavorites =
+                normalizeFavoriteGroupMap(localFavorites);
+            const normalizedGroups = Array.from(
+                new Set([
+                    ...normalizeStringArray(localFavoriteGroups),
+                    ...getSortedLocalGroupNames(normalizedFavorites)
+                ])
+            ).sort();
+            const normalizedList = flattenFavoriteGroups(normalizedFavorites);
+
+            if (kind === 'friend') {
+                return {
+                    ...state,
+                    localFriendFavorites: normalizedFavorites,
+                    localFriendFavoriteGroups: normalizedGroups,
+                    localFriendFavoritesList: normalizedList
+                };
+            }
+
+            if (kind === 'avatar') {
+                return {
+                    ...state,
+                    localAvatarFavorites: normalizedFavorites,
+                    localAvatarFavoriteGroups: normalizedGroups,
+                    localAvatarFavoritesList: normalizedList
+                };
+            }
+
+            if (kind === 'world') {
+                return {
+                    ...state,
+                    localWorldFavorites: normalizedFavorites,
+                    localWorldFavoriteGroups: normalizedGroups,
+                    localWorldFavoritesList: normalizedList
+                };
+            }
+
+            return state;
+        });
+    },
     getRemoteFavoriteByObjectId(objectId) {
         const normalizedObjectId =
             typeof objectId === 'string'

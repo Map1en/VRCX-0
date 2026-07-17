@@ -1,10 +1,9 @@
-import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
-import { useShellStore } from '@/state/shellStore';
-
 import {
-    recordFriendLogFriendByUserId,
-    registerFriendLogExplicitAddIntent
-} from './friendBootstrapService';
+    commands,
+    type SocialFriendMutationOutcome
+} from '@/platform/tauri/bindings';
+import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
+
 import { sendBoopToUser, sendInviteToLocation } from './inviteDeliveryService';
 
 type NotificationRecord = Record<string, unknown> & {
@@ -25,7 +24,6 @@ interface NotificationActionInput {
 
 interface FriendRequestNotificationInput extends NotificationActionInput {
     targetUser?: NotificationRecord | null;
-    stateBucket?: unknown;
 }
 
 interface AcceptRequestInviteInput extends NotificationActionInput {
@@ -54,12 +52,15 @@ function normalizeText(value: unknown): string {
 }
 
 function isNotFoundError(error: unknown): boolean {
-    return Boolean(
+    if (
         error &&
         typeof error === 'object' &&
         'status' in error &&
         (error as { status?: unknown }).status === 404
-    );
+    ) {
+        return true;
+    }
+    return error instanceof Error && /\(404\)/.test(error.message);
 }
 
 function requireNotification(
@@ -136,46 +137,31 @@ export async function acceptFriendRequestNotification({
     currentUserId,
     endpoint = '',
     notification,
-    targetUser = null,
-    stateBucket = 'offline'
-}: FriendRequestNotificationInput) {
+    targetUser = null
+}: FriendRequestNotificationInput): Promise<
+    | { status: 'accepted'; outcome: SocialFriendMutationOutcome }
+    | { status: 'not-found' }
+> {
     const target = requireNotification(notification);
     const targetUserId = normalizeText(target.senderUserId);
-    let clearFriendLogAddIntent = () => {};
+    const targetDisplayName =
+        normalizeText(targetUser?.displayName) ||
+        normalizeText(target.senderUsername);
 
     try {
-        clearFriendLogAddIntent = registerFriendLogExplicitAddIntent({
-            currentUserId,
-            targetUserId
+        const outcome = await commands.appSocialFriendRequestAccept({
+            ownerUserId: normalizeText(currentUserId),
+            endpoint,
+            notificationId: normalizeText(target.id),
+            targetUserId,
+            targetDisplayName
         });
-        await notificationPersistenceRepository.acceptFriendRequest({
-            id: target.id,
-            endpoint
-        });
-        try {
-            const friendLogResult = await recordFriendLogFriendByUserId({
-                currentUserId,
-                targetUserId,
-                targetUser: targetUser || {
-                    id: target.senderUserId,
-                    displayName: target.senderUsername
-                },
-                stateBucket
-            });
-            if (friendLogResult?.historyCount > 0) {
-                useShellStore.getState().notifyMenu('friend-log');
-            }
-        } catch (error) {
-            clearFriendLogAddIntent();
-            console.warn('Friend log add recording failed:', error);
-        }
         await expireNotificationLocally({
             currentUserId,
             notification: target
         });
-        return { status: 'accepted' as const };
+        return { status: 'accepted' as const, outcome };
     } catch (error) {
-        clearFriendLogAddIntent();
         if (isNotFoundError(error)) {
             await expireNotificationLocally({
                 currentUserId,

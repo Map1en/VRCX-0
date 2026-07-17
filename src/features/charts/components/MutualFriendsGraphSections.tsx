@@ -1,6 +1,7 @@
 import { CheckIcon, RefreshCcwIcon, Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -19,11 +20,7 @@ import { Slider } from '@/ui/shadcn/slider';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { MUTUAL_GRAPH_LAYOUT_LIMITS } from '../mutual-friends/mutualFriendsSettings';
-import {
-    GraphEmptyState,
-    GraphLoadingState,
-    UserPickerRow
-} from './MutualFriendsViewParts';
+import { GraphEmptyState, GraphLoadingState } from './MutualFriendsViewParts';
 
 const {
     layoutIterations: LAYOUT_ITERATIONS_LIMITS,

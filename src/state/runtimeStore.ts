@@ -20,19 +20,6 @@ type TransportState = Record<string, unknown> & {
     reconnectCount: number;
     lastConnectedAt: string | null;
     lastDisconnectedAt: string | null;
-    ipcAnnounced: boolean;
-    lastIpcAnnouncedAt: string | null;
-};
-
-type ActivityState = Record<string, unknown> & {
-    currentUserId: string | null;
-    status: string;
-    detail: string;
-    cachedRangeDays: number;
-    sessionCount: number;
-    fullCacheReady: boolean;
-    lastUpdatedAt: string | null;
-    lastReadyAt: string | null;
 };
 
 type MutualGraphState = Record<string, unknown> & {
@@ -46,6 +33,31 @@ type MutualGraphState = Record<string, unknown> & {
     optedOutFriends: number;
     failedFriends: number;
     cancelRequested: boolean;
+    startedAt: string | null;
+    updatedAt: string | null;
+    finishedAt: string | null;
+    lastError: string | null;
+};
+
+export type FriendProfileLoadStatus =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+
+export type FriendProfileLoadState = Record<string, unknown> & {
+    runId: number;
+    status: FriendProfileLoadStatus;
+    ownerUserId: string;
+    ownerEndpoint: string;
+    totalFriends: number;
+    processedFriends: number;
+    loadedFriends: number;
+    failedFriends: number;
+    cancelRequested: boolean;
+    dialogOpen: boolean;
     startedAt: string | null;
     updatedAt: string | null;
     finishedAt: string | null;
@@ -96,7 +108,6 @@ type HostCapabilitiesState = Record<string, unknown> & {
     steamRuntimeIntegration: CapabilityStatus;
     registryPrefs: CapabilityStatus;
     gameLaunch: CapabilityStatus;
-    ipc: CapabilityStatus;
     vrchatLaunchPipe: CapabilityStatus;
     screenshotCache: CapabilityStatus;
 };
@@ -169,8 +180,8 @@ type RuntimeStore = {
         downloadedVersion: string | null;
         downloadProgress: number;
     };
-    activity: ActivityState;
     mutualGraph: MutualGraphState;
+    friendProfileLoad: FriendProfileLoadState;
     transport: TransportState;
     gameState: Record<string, unknown> & {
         isGameRunning: boolean | null;
@@ -190,7 +201,6 @@ type RuntimeStore = {
         lastGameLogType: string;
         lastScreenshotPath: string;
         lastBrowserFocusAt: string | null;
-        externalNotifierVersion: number;
     };
     nowPlaying: Record<string, unknown> & {
         url: string;
@@ -226,10 +236,10 @@ type RuntimeStore = {
     setAuthBootstrap(payload: Partial<RuntimeStore['auth']>): void;
     setHostCapabilities(payload?: Record<string, unknown> | null): void;
     setUpdateLoopState(patch: Record<string, unknown>): void;
-    setActivityState(patch: Partial<ActivityState>): void;
-    resetActivityState(): void;
     setMutualGraphState(patch: Partial<MutualGraphState>): void;
     resetMutualGraphState(): void;
+    setFriendProfileLoadState(patch: Partial<FriendProfileLoadState>): void;
+    resetFriendProfileLoadState(): void;
     setTransportState(patch: Partial<TransportState>): void;
     incrementTransportReconnect(): void;
     recordRuntimeEvent(name: string, payload: unknown): void;
@@ -274,22 +284,7 @@ function createTransportState(): TransportState {
         websocketDomain: '',
         reconnectCount: 0,
         lastConnectedAt: null,
-        lastDisconnectedAt: null,
-        ipcAnnounced: false,
-        lastIpcAnnouncedAt: null
-    };
-}
-
-function createActivityState(): ActivityState {
-    return {
-        currentUserId: null,
-        status: 'idle',
-        detail: '',
-        cachedRangeDays: 0,
-        sessionCount: 0,
-        fullCacheReady: false,
-        lastUpdatedAt: null,
-        lastReadyAt: null
+        lastDisconnectedAt: null
     };
 }
 
@@ -305,6 +300,25 @@ function createMutualGraphState(): MutualGraphState {
         optedOutFriends: 0,
         failedFriends: 0,
         cancelRequested: false,
+        startedAt: null,
+        updatedAt: null,
+        finishedAt: null,
+        lastError: null
+    };
+}
+
+function createFriendProfileLoadState(): FriendProfileLoadState {
+    return {
+        runId: 0,
+        status: 'idle',
+        ownerUserId: '',
+        ownerEndpoint: '',
+        totalFriends: 0,
+        processedFriends: 0,
+        loadedFriends: 0,
+        failedFriends: 0,
+        cancelRequested: false,
+        dialogOpen: false,
         startedAt: null,
         updatedAt: null,
         finishedAt: null,
@@ -364,7 +378,6 @@ const HOST_CAPABILITY_KEYS = Object.freeze([
     'steamRuntimeIntegration',
     'registryPrefs',
     'gameLaunch',
-    'ipc',
     'vrchatLaunchPipe',
     'screenshotCache'
 ]);
@@ -400,10 +413,10 @@ type RuntimeStoreState = Omit<
     | 'setAuthBootstrap'
     | 'setHostCapabilities'
     | 'setUpdateLoopState'
-    | 'setActivityState'
-    | 'resetActivityState'
     | 'setMutualGraphState'
     | 'resetMutualGraphState'
+    | 'setFriendProfileLoadState'
+    | 'resetFriendProfileLoadState'
     | 'setTransportState'
     | 'incrementTransportReconnect'
     | 'recordRuntimeEvent'
@@ -458,8 +471,8 @@ const initialState: RuntimeStoreState = {
         downloadedVersion: null,
         downloadProgress: 0
     },
-    activity: createActivityState(),
     mutualGraph: createMutualGraphState(),
+    friendProfileLoad: createFriendProfileLoadState(),
     transport: createTransportState(),
     gameState: {
         isGameRunning: null,
@@ -478,8 +491,7 @@ const initialState: RuntimeStoreState = {
         lastGameLogAt: null,
         lastGameLogType: '',
         lastScreenshotPath: '',
-        lastBrowserFocusAt: null,
-        externalNotifierVersion: 0
+        lastBrowserFocusAt: null
     },
     nowPlaying: createNowPlayingState(),
     instanceQueue: createInstanceQueueState(),
@@ -513,7 +525,8 @@ const initialState: RuntimeStoreState = {
         exportFriendsListOpen: false,
         exportAvatarsListOpen: false,
         editInviteMessagesOpen: false,
-        llmEndpointsOpen: false
+        llmEndpointsOpen: false,
+        profileBackupOpen: false
     },
     changelogTargetVersion: '',
     databaseUpgrade: {
@@ -535,6 +548,7 @@ const initialState: RuntimeStoreState = {
         gameLogPersistenceFallback: createRuntimeEventState(),
         gameLogSideEffect: createRuntimeEventState(),
         runtimeGroupInstancesProjection: createRuntimeEventState(),
+        friendProfileLoadStatus: createRuntimeEventState(),
         realtimeWsStatus: createRuntimeEventState(),
         realtimeFriendProjection: createRuntimeEventState(),
         realtimeNotificationProjection: createRuntimeEventState(),
@@ -542,7 +556,6 @@ const initialState: RuntimeStoreState = {
         realtimeInstanceClosedProjection: createRuntimeEventState(),
         realtimeInstanceQueueProjection: createRuntimeEventState(),
         updateIsGameRunning: createRuntimeEventState(),
-        ipcEvent: createRuntimeEventState(),
         browserFocus: createRuntimeEventState()
     }
 };
@@ -576,7 +589,10 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
                 auth,
                 groupInstances: scopeChanged
                     ? createGroupInstancesState()
-                    : state.groupInstances
+                    : state.groupInstances,
+                friendProfileLoad: scopeChanged
+                    ? createFriendProfileLoadState()
+                    : state.friendProfileLoad
             };
         });
     },
@@ -594,24 +610,6 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
             }
         }));
     },
-    setActivityState(patch: Partial<ActivityState>) {
-        set((state) => ({
-            activity: {
-                ...state.activity,
-                ...patch,
-                lastUpdatedAt: new Date().toISOString(),
-                lastReadyAt:
-                    patch?.status === 'ready' || patch?.fullCacheReady
-                        ? new Date().toISOString()
-                        : state.activity.lastReadyAt
-            }
-        }));
-    },
-    resetActivityState() {
-        set({
-            activity: createActivityState()
-        });
-    },
     setMutualGraphState(patch: Partial<MutualGraphState>) {
         set((state) => ({
             mutualGraph: {
@@ -624,6 +622,20 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
     resetMutualGraphState() {
         set({
             mutualGraph: createMutualGraphState()
+        });
+    },
+    setFriendProfileLoadState(patch: Partial<FriendProfileLoadState>) {
+        set((state) => ({
+            friendProfileLoad: {
+                ...state.friendProfileLoad,
+                ...patch,
+                updatedAt: patch.updatedAt || new Date().toISOString()
+            }
+        }));
+    },
+    resetFriendProfileLoadState() {
+        set({
+            friendProfileLoad: createFriendProfileLoadState()
         });
     },
     setTransportState(patch: Partial<TransportState>) {

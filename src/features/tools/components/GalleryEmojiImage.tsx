@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import {
     buildEmojiKeyframes,
@@ -35,7 +36,7 @@ export function GalleryEmojiImage({ file, imageUrl, alt, className }: any) {
 
     if (!isAnimated) {
         return (
-            <img
+            <FadeInImage
                 src={imageUrl}
                 alt={alt}
                 loading="lazy"

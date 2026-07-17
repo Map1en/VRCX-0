@@ -16,7 +16,7 @@ use super::{
 
 const PREVIEW_ENABLED_ENV_KEY: &str = "VRCX_0_OVERLAY_PREVIEW";
 const PREVIEW_PATH_ENV_KEY: &str = "VRCX_0_OVERLAY_PREVIEW_PATH";
-const PREVIEW_DIR_NAME: &str = "vrcx0-overlay-preview";
+const PREVIEW_DIR_NAME: &str = "vrcx0-overlay-devtool";
 const PREVIEW_FILE_NAME: &str = "wrist.json";
 const PREVIEW_WRITE_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -59,7 +59,7 @@ pub fn start_preview_bridge_if_enabled(context: Arc<RuntimeHostContext>) {
     }
 
     let tasks = context.tasks.clone();
-    tasks.spawn_cancellable_thread("vr-overlay-preview-bridge", move |stop_token| {
+    tasks.spawn_cancellable_thread("vr-overlay-devtool-preview-bridge", move |stop_token| {
         let path = default_preview_snapshot_path();
         let mut last_json = Vec::new();
         while !stop_token.is_stop_requested() {
@@ -131,6 +131,7 @@ mod tests {
             footer: Default::default(),
             options: Default::default(),
             locale: "zh-CN".to_string(),
+            show_instance_id_in_location: false,
             captured_at_ms: 42,
         };
         let snapshot = WristOverlayPreviewSnapshot::from_frame_input(input.clone());

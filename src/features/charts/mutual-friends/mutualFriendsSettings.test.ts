@@ -9,24 +9,38 @@ import {
     writeExcludedMutualFriendIds
 } from './mutualFriendsSettings';
 
-const originalLocalStorage = globalThis.localStorage;
+const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'localStorage'
+);
 
-function installLocalStorage(initialValue: any = null) {
-    const store = new Map();
+function installLocalStorage(initialValue: string | null = null) {
+    const store = new Map<string, string>();
     if (initialValue !== null) {
         store.set(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY, initialValue);
     }
-    globalThis.localStorage = {
-        getItem: vi.fn((key: any) => (store.has(key) ? store.get(key) : null)),
-        setItem: vi.fn((key: any, value: any) => {
-            store.set(key, value);
-        })
-    } as any;
+    Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        value: {
+            getItem: vi.fn((key: string) => store.get(key) ?? null),
+            setItem: vi.fn((key: string, value: string) => {
+                store.set(key, value);
+            })
+        }
+    });
     return store;
 }
 
 afterEach(() => {
-    globalThis.localStorage = originalLocalStorage;
+    if (originalLocalStorageDescriptor) {
+        Object.defineProperty(
+            globalThis,
+            'localStorage',
+            originalLocalStorageDescriptor
+        );
+    } else {
+        Reflect.deleteProperty(globalThis, 'localStorage');
+    }
 });
 
 describe('mutualFriendsSettings', () => {
@@ -58,7 +72,7 @@ describe('mutualFriendsSettings', () => {
         writeExcludedMutualFriendIds([' usr_a ', '', 'usr_b']);
 
         expect(
-            JSON.parse(store.get(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY))
+            JSON.parse(store.get(MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY) ?? '')
         ).toEqual(['usr_a', 'usr_b']);
     });
 

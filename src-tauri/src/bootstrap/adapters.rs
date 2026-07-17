@@ -1,11 +1,18 @@
 use std::time::Duration;
 
+use async_trait::async_trait;
 use serde::Serialize;
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, Url};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_updater::{Update, UpdaterExt};
 use vrcx_0_application::RuntimeEventSink;
 use vrcx_0_application::{format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputMode};
 use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase};
+use vrcx_0_application::{
+    Error as ApplicationError, Result as ApplicationResult, UpdaterCheckRequest,
+    UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
+    UpdaterPort, UpdaterProgressCallback,
+};
 use vrcx_0_application::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
 use vrcx_0_host::host_capabilities::{is_host_capability_available, HostCapability};
 use vrcx_0_runtime_host::notification::DesktopNotifier;
@@ -273,27 +280,139 @@ pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
     state.start_telemetry_runtime();
     state.start_shell_neutral_services();
 
-    if is_host_capability_available(HostCapability::Ipc) {
-        state.ipc.start(app.clone());
-        state
-            .runtime_context
-            .background_jobs
-            .mark_running("ipcServer", "Local IPC server is active.");
-    } else {
-        state.runtime_context.background_jobs.register_job(
-            "ipcServer",
-            "rust-host",
-            None,
-            "unavailable",
-            "IPC capability is unavailable.",
-        );
-    }
-
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     if is_host_capability_available(HostCapability::GameLogWatcher) {
         state
             .log_watcher_compat_bridge
             .start(app.clone(), state.log_watcher.clone());
+    }
+}
+
+#[derive(Clone)]
+pub struct TauriUpdaterPort {
+    app_handle: tauri::AppHandle,
+}
+
+impl TauriUpdaterPort {
+    pub fn new(app_handle: tauri::AppHandle) -> Self {
+        Self { app_handle }
+    }
+}
+
+struct TauriPendingUpdate {
+    update: Update,
+    bytes: Vec<u8>,
+}
+
+fn updater_metadata_from(update: &Update) -> UpdaterMetadata {
+    UpdaterMetadata {
+        current_version: update.current_version.clone(),
+        version: update.version.clone(),
+        date: update
+            .raw_json
+            .get("pub_date")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string),
+        body: update.body.clone(),
+    }
+}
+
+async fn find_update(
+    app_handle: &tauri::AppHandle,
+    request: &UpdaterCheckRequest,
+) -> ApplicationResult<Option<Update>> {
+    let endpoint = vrcx_0_host::updater_policy::validate_update_request(
+        &request.manifest_url,
+        &request.target,
+        request.allow_downgrades,
+    )
+    .map_err(|error| ApplicationError::Custom(error.to_string()))?;
+    let mut builder = app_handle
+        .updater_builder()
+        .endpoints(vec![endpoint])
+        .map_err(|error| {
+            ApplicationError::Custom(format!("Failed to configure update endpoint: {error}"))
+        })?
+        .target(request.target.clone());
+
+    if let Some(proxy_url) = request
+        .proxy
+        .as_deref()
+        .filter(|value| !value.trim().is_empty())
+    {
+        let proxy: Url = proxy_url.parse().map_err(|error| {
+            ApplicationError::Custom(format!("Invalid update proxy URL: {error}"))
+        })?;
+        builder = builder.proxy(proxy);
+    }
+
+    let updater = builder.build().map_err(|error| {
+        ApplicationError::Custom(format!("Failed to initialize updater: {error}"))
+    })?;
+    updater
+        .check()
+        .await
+        .map_err(|error| ApplicationError::Custom(format!("Failed to check for updates: {error}")))
+}
+
+#[async_trait]
+impl UpdaterPort for TauriUpdaterPort {
+    async fn check(
+        &self,
+        request: UpdaterCheckRequest,
+    ) -> ApplicationResult<Option<UpdaterMetadata>> {
+        Ok(find_update(&self.app_handle, &request)
+            .await?
+            .as_ref()
+            .map(updater_metadata_from))
+    }
+
+    async fn download(
+        &self,
+        request: UpdaterCheckRequest,
+        on_progress: UpdaterProgressCallback,
+    ) -> ApplicationResult<UpdaterDownloadOutcome> {
+        let Some(update) = find_update(&self.app_handle, &request).await? else {
+            return Err(ApplicationError::Custom(
+                "No installable update was found.".into(),
+            ));
+        };
+        let metadata = updater_metadata_from(&update);
+        let mut first_chunk = true;
+        let progress_started = on_progress.clone();
+        let progress_finished = on_progress;
+        let bytes = update
+            .download(
+                move |chunk_length, content_length| {
+                    if first_chunk {
+                        first_chunk = false;
+                        progress_started(UpdaterDownloadProgress::Started { content_length });
+                    }
+                    progress_started(UpdaterDownloadProgress::Progress { chunk_length });
+                },
+                move || {
+                    progress_finished(UpdaterDownloadProgress::Finished);
+                },
+            )
+            .await
+            .map_err(|error| {
+                ApplicationError::Custom(format!("Failed to download update: {error}"))
+            })?;
+
+        Ok(UpdaterDownloadOutcome {
+            metadata,
+            handle: UpdaterInstallHandle(Box::new(TauriPendingUpdate { update, bytes })),
+        })
+    }
+
+    async fn install(&self, handle: UpdaterInstallHandle) -> ApplicationResult<()> {
+        let pending = handle
+            .0
+            .downcast::<TauriPendingUpdate>()
+            .map_err(|_| ApplicationError::Custom("Invalid pending update handle.".into()))?;
+        pending.update.install(pending.bytes).map_err(|error| {
+            ApplicationError::Custom(format!("Failed to install pending update: {error}"))
+        })
     }
 }
 

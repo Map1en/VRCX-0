@@ -7,8 +7,6 @@ use url::Url;
 const STATUS_API_ORIGIN: &str = "https://status.vrchat.com";
 const YOUTUBE_API_ORIGIN: &str = "https://www.googleapis.com";
 const GITHUB_API_ORIGIN: &str = "https://api.github.com";
-// TODO
-const AVATAR_SEARCH_REFERER: &str = "https://vrcx.app";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExternalApiError {
@@ -104,10 +102,7 @@ fn external_get_input(url: String, headers: HashMap<String, String>) -> External
 pub fn avatar_search_get_input(url: &str, vrcx_id: &str) -> ExternalHttpRequestInput {
     external_get_input(
         url.to_string(),
-        HashMap::from([
-            ("Referer".to_string(), AVATAR_SEARCH_REFERER.to_string()),
-            ("VRCX-ID".to_string(), vrcx_id.to_string()),
-        ]),
+        HashMap::from([("VRCX-ID".to_string(), vrcx_id.to_string())]),
     )
 }
 
@@ -169,7 +164,7 @@ pub fn vrc_status_json_get_input(path: &str) -> ExternalHttpRequestInput {
             "{STATUS_API_ORIGIN}/api/v2/{}",
             path.trim_start_matches('/')
         ),
-        HashMap::from([("Referer".to_string(), AVATAR_SEARCH_REFERER.to_string())]),
+        HashMap::new(),
     )
 }
 
@@ -477,5 +472,4 @@ fn value_as_query_strings(value: &Value, skip_empty_string: bool) -> Vec<String>
 }
 
 #[cfg(test)]
-#[path = "../tests/external_api_tests.rs"]
 mod tests;

@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
     buildInstanceRosterModel,
     buildInstancePresenceFact,
-    instancePresenceKey
+    instancePresenceKey,
+    type RosterUserRow
 } from './instancePresence';
 
 describe('instancePresence domain model', () => {
@@ -88,7 +89,7 @@ describe('instancePresence domain model', () => {
             instanceCreatorLabel: 'Creator'
         });
 
-        expect(roster.rows.map((row: any) => row.id)).toEqual([
+        expect(roster.rows.map((row: RosterUserRow) => row.id)).toEqual([
             'usr_owner',
             'usr_self',
             'usr_ask',
@@ -96,7 +97,9 @@ describe('instancePresence domain model', () => {
         ]);
         expect(roster.rows[0].$subtitle).toBe('Creator');
         expect(
-            roster.rows.some((row: any) => row.id === 'usr_busy_private')
+            roster.rows.some(
+                (row: RosterUserRow) => row.id === 'usr_busy_private'
+            )
         ).toBe(false);
         expect(roster.friendCount).toBe(1);
         expect(roster.playerCount).toBe(4);
@@ -119,6 +122,8 @@ describe('instancePresence domain model', () => {
 
         expect(roster.ownerId).toBe('grp_owner');
         expect(roster.ownerIsGroup).toBe(true);
-        expect(roster.rows.map((row: any) => row.id)).toEqual(['usr_friend']);
+        expect(roster.rows.map((row: RosterUserRow) => row.id)).toEqual([
+            'usr_friend'
+        ]);
     });
 });

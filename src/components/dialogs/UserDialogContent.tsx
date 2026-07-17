@@ -36,11 +36,20 @@ import {
 import { useUserDialogRuntimeState } from './user-dialog/useUserDialogRuntimeState';
 import { useUserDialogSelfActions } from './user-dialog/useUserDialogSelfActions';
 import { useUserDialogSupplementalData } from './user-dialog/useUserDialogSupplementalData';
+import type {
+    AvatarOverrideType,
+    ExtendedModerationType,
+    ModerationType
+} from './user-dialog/useUserModerationActions';
 import { UserDialogTabbedView } from './UserDialogTabbedView';
 
 const userDialogSkeletonDelayMs = 160;
 
-function useDelayedUserDialogSkeleton(loading: any, identity: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function useDelayedUserDialogSkeleton(loading: boolean, identity: string) {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -66,9 +75,15 @@ export function UserDialogContent({
     userId,
     seedData = null,
     initialAction = '',
-    openNonce = 0
-}: any) {
+    openNonce: openNonceValue = 0
+}: {
+    userId: unknown;
+    seedData?: unknown;
+    initialAction?: string;
+    openNonce?: unknown;
+}) {
     const { t } = useTranslation();
+    const openNonce = typeof openNonceValue === 'number' ? openNonceValue : 0;
 
     const normalizedUserId = normalizeUserId(userId);
     const {
@@ -164,7 +179,7 @@ export function UserDialogContent({
     useEffect(
         () =>
             subscribeRecentActions(() => {
-                setRecentActionVersion((version: any) => version + 1);
+                setRecentActionVersion((version) => version + 1);
             }),
         []
     );
@@ -240,7 +255,7 @@ export function UserDialogContent({
         profileUserId && (friendsById[profileUserId] || profile?.isFriend)
     );
     useEffect(() => {
-        if (seedData && typeof seedData === 'object') {
+        if (isRecord(seedData)) {
             recordKnownUser(seedData, {
                 endpoint: currentEndpoint,
                 source: 'seed'
@@ -313,7 +328,6 @@ export function UserDialogContent({
     } = useUserDialogActions({
         actionStatusRef,
         activeUserTargetRef,
-        applyFriendPatch,
         avatarOverrideState,
         canInviteFromCurrentLocation,
         confirm,
@@ -429,7 +443,7 @@ export function UserDialogContent({
                     onEditMemo: editMemo
                 }}
                 friendControls={{
-                    onFriendRequest: (action: any) => {
+                    onFriendRequest: (action: string) => {
                         userActions.updateFriendRequest(action);
                     },
                     onInvite: () => {
@@ -452,13 +466,16 @@ export function UserDialogContent({
                     onUnfriend: () => {
                         userActions.unfriendUser();
                     },
-                    onModeration: (type: any, enabled: any) => {
+                    onModeration: (type: ModerationType, enabled: boolean) => {
                         userActions.setUserModeration(type, enabled);
                     },
-                    onExtendedModeration: (type: any, enabled: any) => {
+                    onExtendedModeration: (
+                        type: ExtendedModerationType,
+                        enabled: boolean
+                    ) => {
                         userActions.setExtendedUserModeration(type, enabled);
                     },
-                    onAvatarOverride: (type: any) => {
+                    onAvatarOverride: (type: AvatarOverrideType) => {
                         userActions.setAvatarOverrideModeration(type);
                     },
                     onReportHacking: () => {

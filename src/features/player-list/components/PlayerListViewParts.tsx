@@ -1,5 +1,5 @@
 import type { Table as ReactTable } from '@tanstack/react-table';
-import { HomeIcon, UsersIcon } from 'lucide-react';
+import { Clock3Icon, HeartIcon, HomeIcon, UsersIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,8 @@ import {
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { LocationWorld } from '@/components/LocationWorld';
-import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import { FadeInImage } from '@/components/media/FadeInImage';
+import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
@@ -30,7 +31,6 @@ import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 import {
     fileAnalysisSizeForPlatform,
-    formatCount,
     getHomeWorldId,
     getWorldImage,
     resolvePlatformBadge
@@ -123,6 +123,7 @@ export function CurrentWorldHeader({
         : [];
     const startedAtMs = parseTimeMs(startedAt || instanceCreatedAt);
     const elapsedMs = startedAtMs ? Math.max(clockNow - startedAtMs, 0) : 0;
+    const capacity = Number(world?.capacity) || 0;
     const hasAvatarScalingDisabled = Array.isArray(world?.tags)
         ? world.tags.includes('feature_avatar_scaling_disabled')
         : false;
@@ -138,11 +139,11 @@ export function CurrentWorldHeader({
     }
 
     return (
-        <div className="flex min-h-28 flex-col gap-3 md:flex-row">
+        <div className="flex min-h-20 shrink-0 flex-col gap-2 pb-3 md:flex-row md:items-start">
             <Button
                 type="button"
                 variant="ghost"
-                className="bg-muted h-28 w-40 shrink-0 overflow-hidden rounded-md border p-0"
+                className="bg-muted h-20 w-28 shrink-0 overflow-hidden rounded-md border p-0"
                 disabled={!imageUrl}
                 aria-label={worldName}
                 onClick={() =>
@@ -157,11 +158,17 @@ export function CurrentWorldHeader({
                 }
             >
                 {imageUrl ? (
-                    <img
+                    <FadeInImage
                         src={imageUrl}
                         alt=""
                         loading="lazy"
                         className="size-full object-cover"
+                        fallback={
+                            <UsersIcon
+                                data-icon="inline-start"
+                                className="text-muted-foreground"
+                            />
+                        }
                     />
                 ) : (
                     <UsersIcon
@@ -170,8 +177,8 @@ export function CurrentWorldHeader({
                     />
                 )}
             </Button>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div className="flex min-w-0 items-center gap-2">
                     <Button
                         type="button"
                         variant="ghost"
@@ -186,23 +193,26 @@ export function CurrentWorldHeader({
                         {isHome ? <HomeIcon data-icon="inline-start" /> : null}
                         <span className="truncate">{worldName}</span>
                     </Button>
+                    {authorName ? (
+                        <>
+                            <span className="text-muted-foreground/60">·</span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-primary h-auto min-w-0 justify-start p-0 font-mono text-xs"
+                                onClick={() =>
+                                    authorId &&
+                                    openUserDialog({
+                                        userId: authorId,
+                                        title: authorName || undefined
+                                    })
+                                }
+                            >
+                                <span className="truncate">{authorName}</span>
+                            </Button>
+                        </>
+                    ) : null}
                 </div>
-                {authorName ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-primary h-auto justify-start p-0 font-mono text-xs"
-                        onClick={() =>
-                            authorId &&
-                            openUserDialog({
-                                userId: authorId,
-                                title: authorName || undefined
-                            })
-                        }
-                    >
-                        {authorName}
-                    </Button>
-                ) : null}
                 <div className="flex flex-wrap gap-1.5">
                     {world?.isLabs ? (
                         <Badge variant="outline">
@@ -258,14 +268,34 @@ export function CurrentWorldHeader({
                         <Badge variant="outline">{instanceGroupName}</Badge>
                     ) : null}
                     {playerCount > 0 ? (
-                        <Badge variant="outline">
-                            {playerCount}
-                            {friendCount > 0 ? ` (${friendCount})` : ''}
-                            {' players'}
+                        <Badge
+                            variant="outline"
+                            className="gap-1 tabular-nums"
+                            title={t('dialog.world.info.capacity')}
+                        >
+                            <UsersIcon className="size-3.5" />
+                            {capacity > 0
+                                ? `${playerCount}/${capacity}`
+                                : playerCount}
+                        </Badge>
+                    ) : null}
+                    {friendCount > 0 ? (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 tabular-nums"
+                            title={t('common.affinity.friend')}
+                        >
+                            <HeartIcon className="size-3.5 fill-current text-rose-400" />
+                            {friendCount}
                         </Badge>
                     ) : null}
                     {elapsedMs > 0 ? (
-                        <Badge variant="outline">
+                        <Badge
+                            variant="outline"
+                            className="gap-1 tabular-nums"
+                            title={t('table.playerList.timer')}
+                        >
+                            <Clock3Icon className="size-3.5" />
                             {timeToText(elapsedMs, true)}
                         </Badge>
                     ) : null}
@@ -280,50 +310,10 @@ export function CurrentWorldHeader({
                     />
                 </div>
                 {description && description !== worldName ? (
-                    <div className="line-clamp-2 text-xs break-words">
+                    <div className="truncate text-xs" title={description}>
                         {description}
                     </div>
                 ) : null}
-            </div>
-            <div className="grid min-w-40 content-start gap-2 text-xs sm:grid-cols-3 md:grid-cols-1">
-                <div>
-                    <span className="text-muted-foreground block">
-                        {t('dialog.world.info.capacity')}
-                    </span>
-                    <span className="font-medium">
-                        {formatCount(
-                            world?.recommendedCapacity || world?.capacity
-                        )}
-                        {world?.capacity
-                            ? ` (${formatCount(world.capacity)})`
-                            : ''}
-                    </span>
-                </div>
-                <div>
-                    <span className="text-muted-foreground block">
-                        {t('view.player_list.success.last_updated')}
-                    </span>
-                    <span className="font-medium">
-                        {fileAnalysis?.standalonewindows?.created_at
-                            ? formatDateFilter(
-                                  fileAnalysis.standalonewindows.created_at,
-                                  'long'
-                              )
-                            : world?.updatedAt
-                              ? formatDateFilter(world.updatedAt, 'long')
-                              : '-'}
-                    </span>
-                </div>
-                <div>
-                    <span className="text-muted-foreground block">
-                        {t('view.player_list.success.created')}
-                    </span>
-                    <span className="font-medium">
-                        {world?.createdAt
-                            ? formatDateFilter(world.createdAt, 'long')
-                            : '-'}
-                    </span>
-                </div>
             </div>
         </div>
     );
@@ -372,6 +362,7 @@ export function PlayerListRows({
     emptyTitle?: string;
     emptyDescription?: string;
 }) {
+    const { t } = useTranslation();
     if (!hasRows) {
         return (
             <PlayerListEmptyRow
@@ -393,7 +384,12 @@ export function PlayerListRows({
                     'border-l-muted-foreground/50 bg-muted/40 hover:bg-muted/60'
             )}
             tabIndex={0}
-            aria-label={`Open ${row.original?.displayName || row.original?.userId || 'player'}`}
+            aria-label={t('accessibility.open_player', {
+                player:
+                    row.original?.displayName ||
+                    row.original?.userId ||
+                    t('accessibility.player')
+            })}
             onKeyDown={(event) => {
                 if (event.key !== 'Enter' && event.key !== ' ') {
                     return;

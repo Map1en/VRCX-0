@@ -47,7 +47,7 @@ describe('notificationTransforms', () => {
             .spyOn(console, 'log')
             .mockImplementation(() => undefined);
         expect(parseNotificationDetails('{bad json')).toEqual({});
-        expect(consoleLog).toHaveBeenCalledOnce();
+        expect(consoleLog).not.toHaveBeenCalled();
     });
 
     it('builds default refs and parses v1 details', () => {

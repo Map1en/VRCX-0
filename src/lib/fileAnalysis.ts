@@ -1,3 +1,7 @@
+import type {
+    FileAnalysisRecord,
+    PlatformFileAnalysis
+} from '@/domain/entities/profileEntities';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -67,11 +71,7 @@ function isAnalyzablePackage(
     return true;
 }
 
-function formatFileAnalysis(json: unknown):
-    | (Record<string, unknown> & {
-          success?: boolean;
-      })
-    | null {
+function formatFileAnalysis(json: unknown): FileAnalysisRecord | null {
     if (!isRecord(json)) {
         return null;
     }
@@ -100,7 +100,7 @@ export async function getFileAnalysisForUnityPackages({
     sdkUnityVersion = '',
     endpoint = ''
 }: FileAnalysisOptions = {}) {
-    const result: Record<string, unknown> = {};
+    const result: PlatformFileAnalysis = {};
     const packages = Array.isArray(unityPackages) ? unityPackages : [];
 
     for (const unityPackage of packages) {

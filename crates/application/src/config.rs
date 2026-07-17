@@ -48,6 +48,9 @@ pub fn validate_config_writes(entries: &[ConfigWriteEntry]) -> Result<()> {
 
 fn validate_config_write(key: &str, value: &str) -> Result<()> {
     match resolve_config_key(key).as_str() {
+        "config:vrcx_savedcredentials" => Err(Error::Custom(
+            "savedCredentials must be changed through the dedicated auth service.".into(),
+        )),
         "config:vrcx_usergeneratedcontentpath" => validate_ugc_path(value),
         "config:vrcx_translationapiendpoint" => validate_optional_provider_url(
             value,
@@ -157,5 +160,11 @@ mod tests {
         assert!(
             validate_config_writes(&[entry("userGeneratedContentPath", "relative/path")]).is_err()
         );
+    }
+
+    #[test]
+    fn rejects_raw_saved_credentials_writes() {
+        assert!(validate_config_writes(&[entry("savedCredentials", "{}")]).is_err());
+        assert!(validate_config_writes(&[entry("config:vrcx_savedcredentials", "{}")]).is_err());
     }
 }

@@ -1,4 +1,5 @@
 import { ArrowLeftIcon } from 'lucide-react';
+import type { ComponentType, ReactNode } from 'react';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,15 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
+
+type EmptyStateVariant = 'page' | 'panel' | 'table' | 'inline';
+
+const emptyStateVariantClassName: Record<EmptyStateVariant, string> = {
+    page: 'min-h-72',
+    panel: 'min-h-48 px-4',
+    table: 'min-h-24 px-3',
+    inline: 'min-h-0 py-4'
+};
 
 export function PageScaffold({
     embedded = false,
@@ -140,10 +150,21 @@ export function EmptyState({
     title,
     description,
     icon: Icon,
+    variant = 'page',
     className = '',
     contentClassName = '',
+    descriptionClassName = '',
     children
-}: any) {
+}: {
+    title?: ReactNode;
+    description?: ReactNode;
+    icon?: ComponentType;
+    variant?: EmptyStateVariant;
+    className?: string;
+    contentClassName?: string;
+    descriptionClassName?: string;
+    children?: ReactNode;
+}) {
     const safeDescription =
         typeof description === 'string'
             ? userFacingErrorMessage(
@@ -151,29 +172,42 @@ export function EmptyState({
                   'The requested data could not be loaded.'
               )
             : description;
+    const hasHeaderContent = Boolean(Icon || title || safeDescription);
 
     return (
-        <Empty className={cn('min-h-72', className)}>
-            <EmptyHeader className={contentClassName}>
-                {Icon ? (
-                    <EmptyMedia variant="icon">
-                        <Icon />
-                    </EmptyMedia>
-                ) : null}
-                {title ? <EmptyTitle>{title}</EmptyTitle> : null}
-                {safeDescription ? (
-                    <EmptyDescription>{safeDescription}</EmptyDescription>
-                ) : null}
-            </EmptyHeader>
+        <Empty className={cn(emptyStateVariantClassName[variant], className)}>
+            {hasHeaderContent ? (
+                <EmptyHeader className={contentClassName}>
+                    {Icon ? (
+                        <EmptyMedia variant="icon">
+                            <Icon />
+                        </EmptyMedia>
+                    ) : null}
+                    {title ? <EmptyTitle>{title}</EmptyTitle> : null}
+                    {safeDescription ? (
+                        <EmptyDescription className={descriptionClassName}>
+                            {safeDescription}
+                        </EmptyDescription>
+                    ) : null}
+                </EmptyHeader>
+            ) : null}
             {children ? <EmptyContent>{children}</EmptyContent> : null}
         </Empty>
     );
 }
 
-export function LoadingState({ label, className = '' }: any) {
+export function LoadingState({
+    label,
+    variant,
+    className = ''
+}: {
+    label?: ReactNode;
+    variant?: EmptyStateVariant;
+    className?: string;
+}) {
     return (
-        <EmptyState className={className}>
-            <div className="flex items-center gap-2">
+        <EmptyState variant={variant} className={className}>
+            <div className="text-muted-foreground flex items-center gap-2">
                 <Spinner />
                 {label}
             </div>

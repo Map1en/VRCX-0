@@ -383,20 +383,20 @@ export function StaticSidebarLocation({
                         {showInstanceName ? (
                             <span className="ml-1">{`\u00b7 #${instanceName}`}</span>
                         ) : null}
+                        {showGroupLink && metadata?.groupName ? (
+                            <span
+                                role="button"
+                                tabIndex={0}
+                                className="hover:text-primary focus-visible:ring-ring/50 ml-0.5 cursor-pointer text-left font-normal text-inherit focus-visible:ring-[3px] focus-visible:outline-none"
+                                onClick={openGroup}
+                                onKeyDown={openGroupFromKeyboard}
+                            >
+                                ({String(metadata.groupName)})
+                            </span>
+                        ) : null}
                     </span>
                 </span>
             </StaticLocationTooltip>
-            {showGroupLink && metadata?.groupName ? (
-                <span
-                    role="button"
-                    tabIndex={0}
-                    className="hover:text-primary focus-visible:ring-ring/50 ml-0.5 min-w-0 cursor-pointer truncate text-left font-normal text-inherit focus-visible:ring-[3px] focus-visible:outline-none"
-                    onClick={openGroup}
-                    onKeyDown={openGroupFromKeyboard}
-                >
-                    ({String(metadata.groupName)})
-                </span>
-            ) : null}
             {metadata?.isClosed ? (
                 <StaticLocationTooltip
                     disabled={!tooltips}

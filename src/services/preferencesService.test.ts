@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     appOverlayActivityFiltersReload: vi.fn(),
     appVrOverlayEnabledSet: vi.fn(),
     appReadConfigFile: vi.fn(),
+    appRuntimeDiscordReconcileRequest: vi.fn(),
     appWriteConfigFile: vi.fn(),
     appSystemCulture: vi.fn(),
     getRawValue: vi.fn(),
@@ -26,7 +27,6 @@ const mocks = vi.hoisted(() => ({
     storageGetString: vi.fn(),
     storageSetString: vi.fn(),
     publishPreferenceChanged: vi.fn(),
-    refreshDiscordPresence: vi.fn(),
     configureRecentActionCooldown: vi.fn(),
     readRecentActionCooldown: vi.fn(),
     applyAppFontPreferences: vi.fn(),
@@ -48,6 +48,8 @@ vi.mock('@/platform/tauri/bindings', () => ({
         appOverlayActivityFiltersReload: mocks.appOverlayActivityFiltersReload,
         appVrOverlayEnabledSet: mocks.appVrOverlayEnabledSet,
         appReadConfigFile: mocks.appReadConfigFile,
+        appRuntimeDiscordReconcileRequest:
+            mocks.appRuntimeDiscordReconcileRequest,
         appWriteConfigFile: mocks.appWriteConfigFile,
         appSystemCulture: mocks.appSystemCulture
     }
@@ -85,10 +87,6 @@ vi.mock('@/shared/events/preferenceEvents', () => ({
 
 vi.mock('./changelogService', () => ({
     POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY: 'showPostUpdateChangelogToast'
-}));
-
-vi.mock('./discordPresenceService', () => ({
-    refreshDiscordPresence: mocks.refreshDiscordPresence
 }));
 
 vi.mock('./recentActionService', () => ({
@@ -202,7 +200,7 @@ void assertSettingsPreferenceActionTypes;
 function installDocumentStub() {
     const attributes = new Map<string, string>();
     const classes = new Set<string>();
-    globalThis.document = {
+    vi.stubGlobal('document', {
         documentElement: {
             setAttribute: vi.fn((key: string, value: string) => {
                 attributes.set(key, value);
@@ -232,7 +230,7 @@ function installDocumentStub() {
                 removeProperty: vi.fn()
             }
         }
-    } as any;
+    });
 
     return { attributes, classes };
 }
@@ -247,7 +245,7 @@ describe('preferencesService characterization', () => {
             tableDensity: 'standard',
             notificationLayout: 'notification-center',
             navWidth: 240
-        } as any);
+        });
 
         mocks.getRawValue.mockResolvedValue(null);
         mocks.has.mockResolvedValue(true);
@@ -282,7 +280,7 @@ describe('preferencesService characterization', () => {
         mocks.appVrOverlayConfigReload.mockResolvedValue(undefined);
         mocks.appLanguageChanged.mockResolvedValue(undefined);
         mocks.appRestartApplication.mockResolvedValue(undefined);
-        mocks.refreshDiscordPresence.mockResolvedValue(undefined);
+        mocks.appRuntimeDiscordReconcileRequest.mockResolvedValue(1);
         mocks.readRecentActionCooldown.mockReturnValue({
             enabled: false,
             minutes: 60
@@ -611,7 +609,7 @@ describe('preferencesService characterization', () => {
         mocks.getString.mockImplementation((key: string, fallback = '') => {
             const values: Record<string, string> = {
                 VRCX_fontFamily: 'geist',
-                VRCX_cjkFontPack: 'noto-sans-sc',
+                VRCX_cjkFontPack: 'noto',
                 customFontFamily: 'Custom Font'
             };
             return Promise.resolve(values[key] ?? String(fallback ?? ''));
@@ -628,7 +626,7 @@ describe('preferencesService characterization', () => {
         expect(mocks.applyAppFontPreferences).toHaveBeenCalledWith({
             fontFamily: 'geist',
             customFontFamily: 'Custom Font',
-            cjkFontPack: 'noto-sans-sc',
+            cjkFontPack: 'noto',
             locale: 'ko'
         });
         expect(mocks.appVrOverlayConfigReload).toHaveBeenCalledTimes(1);
@@ -739,7 +737,12 @@ describe('preferencesService characterization', () => {
             setTrustColorPreference('basic', 'not-a-color')
         ).rejects.toThrow('Invalid color. Use #RRGGBB.');
         await expect(
-            setDiscordBoolPreference('unknownDiscordKey' as any, true)
+            setDiscordBoolPreference(
+                'unknownDiscordKey' as Parameters<
+                    typeof setDiscordBoolPreference
+                >[0],
+                true
+            )
         ).rejects.toThrow('Unsupported Discord preference: unknownDiscordKey');
 
         expect(mocks.setObject).not.toHaveBeenCalled();
@@ -769,9 +772,9 @@ describe('preferencesService characterization', () => {
                 2
             )
         );
-        expect(mocks.refreshDiscordPresence).toHaveBeenCalledWith({
-            force: true
-        });
+        expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
+            1
+        );
         expect(usePreferencesStore.getState().discordActive).toBe(true);
     });
 

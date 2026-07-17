@@ -92,6 +92,38 @@ describe('runtimeStore render mirrors', () => {
         });
     });
 
+    it('resets friend profile loading when authenticated owner scope changes', () => {
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserEndpoint: 'https://api.example.test'
+        });
+        useRuntimeStore.getState().setFriendProfileLoadState({
+            runId: 3,
+            status: 'running',
+            ownerUserId: 'usr_self',
+            ownerEndpoint: 'https://api.example.test',
+            totalFriends: 8,
+            dialogOpen: true
+        });
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserDisplayName: 'Self'
+        });
+        expect(useRuntimeStore.getState().friendProfileLoad.status).toBe(
+            'running'
+        );
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserEndpoint: 'https://api.other.test'
+        });
+        expect(useRuntimeStore.getState().friendProfileLoad).toMatchObject({
+            runId: 0,
+            status: 'idle',
+            totalFriends: 0,
+            dialogOpen: false
+        });
+    });
+
     it('mirrors database upgrade open state into system hosts', () => {
         useRuntimeStore.getState().setDatabaseUpgradeState({
             open: true,

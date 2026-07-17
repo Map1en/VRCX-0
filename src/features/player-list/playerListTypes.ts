@@ -120,9 +120,7 @@ export type PlayerListRow = PlayerListSourceRow & {
     isChatBoxMuted: boolean;
     timeoutTime: number;
     moderationSeverity: 'blocked' | 'muted' | '';
-    moderationTags: string[];
     ageVerified: boolean;
-    iconWeight: number;
     timerMs: number;
     worldName: unknown;
     location: unknown;

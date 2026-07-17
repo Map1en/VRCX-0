@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex};
-#[cfg(any(test, feature = "test-utils"))]
 use std::time::Duration;
 
-use vrcx_0_core::ipc::IpcEventDisposition;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
@@ -11,10 +9,9 @@ use crate::process_monitor::GameProcessEvent;
 use crate::session::HostSessionRuntime;
 use crate::task_supervisor::TaskSupervisor;
 use crate::worker::{RuntimeWorker, RuntimeWorkerOptions};
-use crate::{Error, Result};
+use crate::Result;
 
-use super::actions::GameClientActions;
-use super::ipc::{parse_ipc_event, ParsedIpcEvent};
+use super::actions::{GameClientActions, GameClientDebugLoggingActions};
 use super::processor::{
     GameClientCacheActions, GameClientJob, GameClientLocationSource, GameClientProcessor,
     GameClientProcessorDeps, GameClientState, GameClientWindowActions,
@@ -31,6 +28,7 @@ pub struct GameClientRuntimeDeps {
     pub cache_actions: Arc<dyn GameClientCacheActions>,
     pub location_source: Arc<dyn GameClientLocationSource>,
     pub window_actions: Arc<dyn GameClientWindowActions>,
+    pub debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
 }
 
 pub struct GameClientRuntime {
@@ -52,6 +50,7 @@ impl GameClientRuntime {
                 cache_actions: deps.cache_actions,
                 location_source: deps.location_source,
                 window_actions: deps.window_actions,
+                debug_logging_actions: deps.debug_logging_actions,
             },
             Arc::clone(&state),
         );
@@ -63,64 +62,44 @@ impl GameClientRuntime {
             move |jobs| worker_processor.handle_jobs(jobs),
         );
 
+        if let Err(error) = worker.push_batch([GameClientJob::DebugLoggingCheck {
+            delay: Duration::ZERO,
+            game_generation: None,
+        }]) {
+            tracing::warn!("failed to schedule startup debug logging check: {error}");
+        }
+
         Self { state, worker }
     }
 
-    pub fn set_runtime_state(&self, session_active: bool, current_location: &str) {
+    pub fn set_runtime_state(&self, current_location: &str) {
         let Ok(mut state) = self.state.lock() else {
             tracing::warn!("failed to lock GameClient runtime state");
             return;
         };
-        state.session_active = session_active;
         state.current_location = current_location.trim().to_string();
     }
 
-    pub fn on_ipc_packet(&self, packet: &str) -> Result<IpcEventDisposition> {
-        match parse_ipc_event(packet) {
-            Ok(ParsedIpcEvent::MsgPing { version }) => {
-                self.state
-                    .lock()
-                    .map_err(|error| Error::Custom(format!("GameClient state lock: {error}")))?
-                    .external_notifier_version = version;
-                Ok(IpcEventDisposition::Forward)
-            }
-            Ok(ParsedIpcEvent::VrcxNoty { message }) => {
-                if !self.is_session_active()? {
-                    return Ok(IpcEventDisposition::Forward);
-                }
-                self.enqueue_job(GameClientJob::VrcxNoty {
-                    message,
-                    fallback_packet: packet.to_string(),
-                })?;
-                Ok(IpcEventDisposition::Handled)
-            }
-            Ok(ParsedIpcEvent::VrcxExternal {
-                message,
-                display_name,
-                user_id,
-                notify,
-            }) => {
-                if !self.is_session_active()? {
-                    return Ok(IpcEventDisposition::Forward);
-                }
-                self.enqueue_job(GameClientJob::VrcxExternal {
-                    message,
-                    display_name,
-                    user_id,
-                    notify,
-                    fallback_packet: packet.to_string(),
-                })?;
-                Ok(IpcEventDisposition::Handled)
-            }
-            Ok(ParsedIpcEvent::Forward) | Err(_) => Ok(IpcEventDisposition::Forward),
-        }
-    }
-
     pub fn on_game_process_event(&self, event: GameProcessEvent) -> Result<()> {
-        if event.game_changed && !event.is_game_running {
-            self.enqueue_job(GameClientJob::GameStopped)?;
+        if event.game_changed {
+            let game_generation = self.advance_debug_logging_generation()?;
+            if event.is_game_running {
+                self.enqueue_job(GameClientJob::DebugLoggingCheck {
+                    delay: Duration::from_secs(1),
+                    game_generation: Some(game_generation),
+                })?;
+            } else {
+                self.enqueue_job(GameClientJob::GameStopped)?;
+            }
         }
         Ok(())
+    }
+
+    pub fn debug_logging_outcome(&self) -> Option<super::DebugLoggingOutcome> {
+        self.state
+            .lock()
+            .ok()
+            .and_then(|state| state.debug_logging_outcome.clone())
     }
 
     pub fn stop(&self) {
@@ -132,12 +111,13 @@ impl GameClientRuntime {
         Ok(())
     }
 
-    fn is_session_active(&self) -> Result<bool> {
-        Ok(self
+    fn advance_debug_logging_generation(&self) -> Result<u64> {
+        let mut state = self
             .state
             .lock()
-            .map_err(|error| Error::Custom(format!("GameClient state lock: {error}")))?
-            .session_active)
+            .map_err(|error| crate::Error::Custom(format!("GameClient state lock: {error}")))?;
+        state.debug_logging_generation = state.debug_logging_generation.saturating_add(1);
+        Ok(state.debug_logging_generation)
     }
 
     #[cfg(any(test, feature = "test-utils"))]

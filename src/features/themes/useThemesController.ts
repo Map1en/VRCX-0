@@ -251,7 +251,6 @@ export function useThemesController() {
             if (localPreview) {
                 await stopLocalCommunityThemePreview();
             }
-            toast.success(t('view.themes.toast.built_in_enabled'));
         } catch (sourceError) {
             toast.error(
                 sourceError instanceof Error
@@ -268,10 +267,7 @@ export function useThemesController() {
                 backgroundImageMode === 'custom' && backgroundImageCustomSource
                     ? 'custom'
                     : 'daily';
-            const updated = await setBackgroundImageMode(nextMode);
-            if (updated) {
-                toast.success(t('view.background_image.toast.enabled'));
-            }
+            await setBackgroundImageMode(nextMode);
         } catch (sourceError) {
             toast.error(
                 sourceError instanceof Error

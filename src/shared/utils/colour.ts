@@ -92,13 +92,3 @@ export function getColourFromUserID(userId: string): number {
     const hash = md5(userId);
     return (hash[3] << 8) | hash[4];
 }
-
-export function getColourBulk(
-    userIds: Iterable<string>
-): Record<string, number> {
-    const output: Record<string, number> = {};
-    for (const userId of userIds) {
-        output[userId] = getColourFromUserID(userId);
-    }
-    return output;
-}

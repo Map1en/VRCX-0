@@ -2,31 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     toastWarning: vi.fn(),
-    sqliteGetFailedUpgrade: vi.fn(),
-    sqliteBeginUpgrade: vi.fn(),
-    sqliteCommitUpgrade: vi.fn(),
-    sqliteFailUpgrade: vi.fn(),
+    appDatabaseUpgradePreflight: vi.fn(),
+    appDatabaseUpgradeRun: vi.fn(),
     appGetLegacyVrcxMigrationStatus: vi.fn(),
     appCheckLegacyVrcxAvailable: vi.fn(),
     appRequestLegacyMigration: vi.fn(),
-    configGetInt: vi.fn(),
-    configGetString: vi.fn(),
-    configSetString: vi.fn(),
     configReload: vi.fn(),
-    cleanLegendFromFriendLog: vi.fn(),
-    fixGameLogTraveling: vi.fn(),
-    fixNegativeGPS: vi.fn(),
-    fixBrokenLeaveEntries: vi.fn(),
-    fixBrokenGroupInvites: vi.fn(),
-    fixBrokenNotifications: vi.fn(),
-    fixBrokenGroupChange: vi.fn(),
-    fixCancelFriendRequestTypo: vi.fn(),
-    fixBrokenGameLogDisplayNames: vi.fn(),
-    upgradeDatabaseVersion: vi.fn(),
-    vacuum: vi.fn(),
-    addV17PerformanceIndexes: vi.fn(),
-    repairZeroCopresenceDurations: vi.fn(),
-    optimize: vi.fn(),
     t: vi.fn(),
     showSQLiteErrorDialog: vi.fn(),
     alert: vi.fn()
@@ -40,10 +21,8 @@ vi.mock('sonner', () => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        sqliteGetFailedUpgrade: mocks.sqliteGetFailedUpgrade,
-        sqliteBeginUpgrade: mocks.sqliteBeginUpgrade,
-        sqliteCommitUpgrade: mocks.sqliteCommitUpgrade,
-        sqliteFailUpgrade: mocks.sqliteFailUpgrade,
+        appDatabaseUpgradePreflight: mocks.appDatabaseUpgradePreflight,
+        appDatabaseUpgradeRun: mocks.appDatabaseUpgradeRun,
         appGetLegacyVrcxMigrationStatus: mocks.appGetLegacyVrcxMigrationStatus,
         appCheckLegacyVrcxAvailable: mocks.appCheckLegacyVrcxAvailable,
         appRequestLegacyMigration: mocks.appRequestLegacyMigration
@@ -52,29 +31,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 vi.mock('@/repositories/configRepository', () => ({
     default: {
-        getInt: mocks.configGetInt,
-        getString: mocks.configGetString,
-        setString: mocks.configSetString,
         reload: mocks.configReload
-    }
-}));
-
-vi.mock('@/repositories/databaseMaintenanceRepository', () => ({
-    default: {
-        cleanLegendFromFriendLog: mocks.cleanLegendFromFriendLog,
-        fixGameLogTraveling: mocks.fixGameLogTraveling,
-        fixNegativeGPS: mocks.fixNegativeGPS,
-        fixBrokenLeaveEntries: mocks.fixBrokenLeaveEntries,
-        fixBrokenGroupInvites: mocks.fixBrokenGroupInvites,
-        fixBrokenNotifications: mocks.fixBrokenNotifications,
-        fixBrokenGroupChange: mocks.fixBrokenGroupChange,
-        fixCancelFriendRequestTypo: mocks.fixCancelFriendRequestTypo,
-        fixBrokenGameLogDisplayNames: mocks.fixBrokenGameLogDisplayNames,
-        upgradeDatabaseVersion: mocks.upgradeDatabaseVersion,
-        vacuum: mocks.vacuum,
-        addV17PerformanceIndexes: mocks.addV17PerformanceIndexes,
-        repairZeroCopresenceDurations: mocks.repairZeroCopresenceDurations,
-        optimize: mocks.optimize
     }
 }));
 
@@ -105,6 +62,24 @@ function unavailableLegacyStatus() {
     };
 }
 
+function preflight(
+    status:
+        | 'current'
+        | 'upgradeRequired'
+        | 'running'
+        | 'finished'
+        | 'blocked'
+        | 'newerSchema',
+    fromVersion = 18,
+    toVersion = 18
+) {
+    return {
+        status,
+        fromVersion,
+        toVersion
+    };
+}
+
 describe('databaseUpgradeService', () => {
     beforeEach(() => {
         vi.resetAllMocks();
@@ -115,37 +90,20 @@ describe('databaseUpgradeService', () => {
             alert: mocks.alert
         });
 
-        mocks.sqliteGetFailedUpgrade.mockResolvedValue(null);
-        mocks.sqliteBeginUpgrade.mockResolvedValue(undefined);
-        mocks.sqliteCommitUpgrade.mockResolvedValue(undefined);
-        mocks.sqliteFailUpgrade.mockResolvedValue(undefined);
+        mocks.appDatabaseUpgradePreflight.mockResolvedValue(
+            preflight('current')
+        );
+        mocks.appDatabaseUpgradeRun.mockResolvedValue({
+            status: 'current',
+            fromVersion: 18,
+            toVersion: 18
+        });
         mocks.appGetLegacyVrcxMigrationStatus.mockResolvedValue(
             unavailableLegacyStatus()
         );
         mocks.appCheckLegacyVrcxAvailable.mockResolvedValue(false);
         mocks.appRequestLegacyMigration.mockResolvedValue(false);
-        mocks.configGetInt.mockResolvedValue(18);
-        mocks.configGetString.mockResolvedValue('');
-        mocks.configSetString.mockResolvedValue(undefined);
         mocks.configReload.mockResolvedValue(undefined);
-        for (const task of [
-            mocks.cleanLegendFromFriendLog,
-            mocks.fixGameLogTraveling,
-            mocks.fixNegativeGPS,
-            mocks.fixBrokenLeaveEntries,
-            mocks.fixBrokenGroupInvites,
-            mocks.fixBrokenNotifications,
-            mocks.fixBrokenGroupChange,
-            mocks.fixCancelFriendRequestTypo,
-            mocks.fixBrokenGameLogDisplayNames,
-            mocks.upgradeDatabaseVersion,
-            mocks.vacuum,
-            mocks.addV17PerformanceIndexes,
-            mocks.repairZeroCopresenceDurations,
-            mocks.optimize
-        ]) {
-            task.mockResolvedValue(undefined);
-        }
         mocks.t.mockImplementation(
             (key: string, params?: Record<string, unknown>) =>
                 params ? `${key}:${JSON.stringify(params)}` : key
@@ -158,11 +116,14 @@ describe('databaseUpgradeService', () => {
     });
 
     it('blocks startup on a preserved failed upgrade before checking legacy migration', async () => {
-        mocks.sqliteGetFailedUpgrade.mockResolvedValueOnce({
-            workDbPath: 'C:/Temp/work.sqlite3',
-            reason: 'disk full',
-            fromVersion: 16,
-            toVersion: 17
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
+            ...preflight('blocked', 16, 18),
+            failedUpgrade: {
+                workDbPath: 'C:/Temp/work.sqlite3',
+                reason: 'disk full',
+                fromVersion: 16,
+                toVersion: 18
+            }
         });
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(false);
@@ -170,7 +131,7 @@ describe('databaseUpgradeService', () => {
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
             phase: 'error',
             fromVersion: 16,
-            toVersion: 17,
+            toVersion: 18,
             legacyMigrationAvailable: false
         });
         expect(mocks.alert).toHaveBeenCalledWith(
@@ -181,9 +142,13 @@ describe('databaseUpgradeService', () => {
         );
         expect(useSessionStore.getState().databaseReady).toBe(false);
         expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
     });
 
-    it('opens the legacy migration confirmation when a supported legacy database is available', async () => {
+    it('opens the legacy migration confirmation after backend preflight', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce(
+            preflight('upgradeRequired', 0, 18)
+        );
         mocks.appGetLegacyVrcxMigrationStatus.mockResolvedValueOnce({
             detected: true,
             available: true
@@ -194,17 +159,19 @@ describe('databaseUpgradeService', () => {
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
             open: true,
             phase: 'confirm-legacy-migration',
+            fromVersion: 0,
+            toVersion: 18,
             legacyMigrationAvailable: true
         });
         expect(useSessionStore.getState().databaseReady).toBe(false);
-        expect(mocks.sqliteBeginUpgrade).not.toHaveBeenCalled();
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
     });
 
-    it('marks the database ready when the schema version is already current', async () => {
-        mocks.configGetInt.mockResolvedValueOnce(18);
-
+    it('marks an already current database ready from the backend result', async () => {
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
+        expect(mocks.configReload).not.toHaveBeenCalled();
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
             open: false,
             phase: 'completed',
@@ -212,74 +179,106 @@ describe('databaseUpgradeService', () => {
             toVersion: 18
         });
         expect(useSessionStore.getState().databaseReady).toBe(true);
-        expect(mocks.sqliteBeginUpgrade).not.toHaveBeenCalled();
-        expect(mocks.repairZeroCopresenceDurations).toHaveBeenCalledTimes(1);
-        expect(mocks.configSetString).toHaveBeenCalledWith(
-            'copresenceDurationRepairV1Done',
-            '1'
-        );
     });
 
-    it('skips the co-presence duration repair when the marker is already set', async () => {
-        mocks.configGetInt.mockResolvedValueOnce(18);
-        mocks.configGetString.mockResolvedValueOnce('1');
+    it('joins an upgrade already running after the frontend is rebuilt', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
+            ...preflight('running', 17, 18),
+            stage: 'optimize'
+        });
+        mocks.appDatabaseUpgradeRun.mockResolvedValueOnce({
+            status: 'upgraded',
+            fromVersion: 17,
+            toVersion: 18
+        });
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
-        expect(mocks.repairZeroCopresenceDurations).not.toHaveBeenCalled();
-    });
-
-    it('runs the legacy maintenance sequence and commits a full upgrade from old schemas', async () => {
-        mocks.configGetInt.mockResolvedValueOnce(15);
-
-        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
-
-        expect(mocks.sqliteBeginUpgrade).toHaveBeenCalledWith(15, 18);
-        expect(mocks.cleanLegendFromFriendLog).toHaveBeenCalledTimes(1);
-        expect(mocks.fixBrokenGameLogDisplayNames).toHaveBeenCalledTimes(1);
-        expect(mocks.vacuum).toHaveBeenCalledTimes(1);
-        expect(mocks.addV17PerformanceIndexes).toHaveBeenCalledTimes(1);
-        expect(mocks.repairZeroCopresenceDurations).toHaveBeenCalledTimes(1);
-        expect(mocks.optimize).toHaveBeenCalledTimes(1);
-        expect(mocks.configSetString).toHaveBeenCalledWith(
-            'VRCX_0_databaseVersion',
-            '18'
-        );
-        expect(mocks.configSetString).toHaveBeenCalledWith(
-            'databaseVersion',
-            '18'
-        );
-        expect(mocks.sqliteCommitUpgrade).toHaveBeenCalledTimes(1);
+        expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
         expect(mocks.configReload).toHaveBeenCalledTimes(1);
+    });
+
+    it('hydrates a finished upgrade without starting or prompting again', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
+            ...preflight('finished', 17, 18),
+            result: {
+                status: 'upgraded',
+                fromVersion: 17,
+                toVersion: 18
+            }
+        });
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
+
+        expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+        expect(mocks.configReload).toHaveBeenCalledTimes(1);
+    });
+
+    it('propagates preflight infrastructure failures to startup', async () => {
+        const error = new Error('status journal is unreadable');
+        mocks.appDatabaseUpgradePreflight.mockRejectedValueOnce(error);
+
+        await expect(initializeDatabaseUpgradeFlow()).rejects.toBe(error);
+
+        expect(mocks.alert).not.toHaveBeenCalled();
+        expect(mocks.showSQLiteErrorDialog).not.toHaveBeenCalled();
+        expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+    });
+
+    it('delegates the entire old-schema upgrade to one backend command', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce(
+            preflight('upgradeRequired', 15, 18)
+        );
+        mocks.appDatabaseUpgradeRun.mockResolvedValueOnce({
+            status: 'upgraded',
+            fromVersion: 15,
+            toVersion: 18
+        });
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
+
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
+        expect(mocks.configReload).toHaveBeenCalledTimes(1);
+        expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+            phase: 'completed',
+            fromVersion: 15,
+            toVersion: 18
+        });
         expect(useSessionStore.getState().databaseReady).toBe(true);
     });
 
-    it('preserves failed upgrade details when a started upgrade fails before commit', async () => {
-        const failedUpgrade = {
-            workDbPath: 'C:/Temp/work.sqlite3',
-            reason: 'index failed',
-            fromVersion: 16,
-            toVersion: 17
-        };
-        mocks.configGetInt.mockResolvedValueOnce(16);
-        mocks.sqliteGetFailedUpgrade
-            .mockResolvedValueOnce(null)
-            .mockResolvedValueOnce(null)
-            .mockResolvedValueOnce(failedUpgrade);
-        mocks.addV17PerformanceIndexes.mockRejectedValueOnce(
-            new Error('index failed')
+    it('shows the preserved work-copy details returned by a failed backend run', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce(
+            preflight('upgradeRequired', 17, 18)
         );
+        mocks.appDatabaseUpgradeRun.mockResolvedValueOnce({
+            status: 'failed',
+            fromVersion: 17,
+            toVersion: 18,
+            failedStage: 'performanceIndexes',
+            error: 'index failed',
+            failedUpgrade: {
+                workDbPath: 'C:/Temp/work.sqlite3',
+                reason: 'index failed',
+                fromVersion: 17,
+                toVersion: 18
+            }
+        });
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(false);
 
-        expect(mocks.sqliteFailUpgrade).toHaveBeenCalledWith('index failed');
         expect(mocks.showSQLiteErrorDialog).toHaveBeenCalledWith(
             expect.objectContaining({
                 message: 'index failed'
             })
         );
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
-            phase: 'error'
+            phase: 'error',
+            fromVersion: 17,
+            toVersion: 18
         });
         expect(mocks.alert).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -288,6 +287,27 @@ describe('databaseUpgradeService', () => {
             })
         );
         expect(useSessionStore.getState().databaseReady).toBe(false);
+    });
+
+    it('blocks a database created by a newer application before mutation', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce(
+            preflight('newerSchema', 19, 18)
+        );
+
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(false);
+
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+        expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+            phase: 'error',
+            fromVersion: 19,
+            toVersion: 18
+        });
+        expect(mocks.alert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description:
+                    'service.database_upgrade_service.error.newer_schema_requires_newer_app:{"value":19,"value2":18}'
+            })
+        );
     });
 
     it('restores the confirm state when a legacy migration request does not restart', async () => {
@@ -301,15 +321,31 @@ describe('databaseUpgradeService', () => {
         });
     });
 
-    it('skips legacy migration and continues into the regular upgrade flow', async () => {
-        mocks.configGetInt.mockResolvedValueOnce(17);
+    it('skips legacy migration and invokes only the backend orchestration', async () => {
+        useRuntimeStore.getState().setDatabaseUpgradeState({
+            open: true,
+            phase: 'confirm-legacy-migration',
+            fromVersion: 16,
+            toVersion: 18
+        });
+        mocks.appDatabaseUpgradeRun.mockImplementationOnce(async () => {
+            expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+                open: true,
+                phase: 'running',
+                fromVersion: 16,
+                toVersion: 18
+            });
+            return {
+                status: 'upgraded',
+                fromVersion: 16,
+                toVersion: 18
+            };
+        });
 
         await expect(skipLegacyDatabaseMigration()).resolves.toBe(true);
 
-        expect(mocks.configGetInt).toHaveBeenCalledWith(
-            'VRCX_0_databaseVersion',
-            0
-        );
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
+        expect(mocks.configReload).toHaveBeenCalledTimes(1);
         expect(useSessionStore.getState().databaseReady).toBe(true);
     });
 });

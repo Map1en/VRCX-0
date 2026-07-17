@@ -18,10 +18,12 @@ import {
     SettingsIcon,
     Trash2Icon
 } from 'lucide-react';
-import { isValidElement } from 'react';
+import { isValidElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu';
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
@@ -38,18 +40,28 @@ import {
     EntityOverviewCard
 } from '../EntityDialogScaffold';
 import { useWorldDescriptionTranslation } from './useWorldDescriptionTranslation';
+import type {
+    WorldDialogHeaderCommands,
+    WorldDialogHeaderModel
+} from './WorldDialogTabbedView';
 import { PlatformBadge } from './WorldDialogViewParts';
 
-function overviewValue(value: any) {
+function overviewValue(value: unknown) {
     return value || value === 0 ? String(value) : '—';
 }
 
-function scoreValue(value: any) {
+function scoreValue(value: unknown) {
     const displayValue = overviewValue(value);
     return displayValue === '—' ? displayValue : `${displayValue}/10`;
 }
 
-function WorldOverviewMetric({ label, value }: any) {
+function WorldOverviewMetric({
+    label,
+    value
+}: {
+    label: ReactNode;
+    value: unknown;
+}) {
     const displayValue = overviewValue(value);
     if (displayValue === '—') {
         return null;
@@ -65,14 +77,14 @@ function WorldOverviewMetric({ label, value }: any) {
     );
 }
 
-function compactWorldId(worldId: any) {
+function compactWorldId(worldId: string) {
     if (!worldId || worldId.length <= 18) {
         return worldId || '';
     }
     return `${worldId.slice(0, 12)}\u2026${worldId.slice(-4)}`;
 }
 
-function compactUrl(url: any) {
+function compactUrl(url: string) {
     if (!url) {
         return '';
     }
@@ -85,7 +97,13 @@ function compactUrl(url: any) {
     return `${displayUrl.slice(0, 12)}\u2026${displayUrl.slice(-4)}`;
 }
 
-function WorldOverviewFactRow({ children, label }: any) {
+function WorldOverviewFactRow({
+    children,
+    label
+}: {
+    children: ReactNode;
+    label: ReactNode;
+}) {
     return (
         <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="text-muted-foreground min-w-0 truncate">
@@ -102,7 +120,13 @@ function WorldOverviewFacts({
     onOpenWorldPage,
     world,
     worldUrl
-}: any) {
+}: {
+    onCopyWorldId: () => void;
+    onCopyWorldUrl: () => void;
+    onOpenWorldPage: () => void;
+    world: WorldProfileRecord;
+    worldUrl: string;
+}) {
     const { t } = useTranslation();
 
     if (!world.id && !worldUrl) {
@@ -203,10 +227,14 @@ function WorldOverviewFacts({
     );
 }
 
-function WorldOverviewActions(props: any) {
+function WorldOverviewActions({
+    actionModel: model,
+    actionCommands: commands
+}: {
+    actionModel: WorldDialogHeaderModel;
+    actionCommands: WorldDialogHeaderCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.actionModel || props || {};
-    const commands = props?.actionCommands || props || {};
     const {
         actionStatus,
         canManageWorld,
@@ -421,10 +449,14 @@ function WorldOverviewActions(props: any) {
     );
 }
 
-export function WorldDialogOverviewSection(props: any) {
+export function WorldDialogOverviewSection({
+    headerModel: model,
+    headerCommands: commands
+}: {
+    headerModel: WorldDialogHeaderModel;
+    headerCommands: WorldDialogHeaderCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.headerModel || props || {};
-    const commands = props?.headerCommands || props || {};
     const {
         detail,
         favoriteRate,
@@ -489,7 +521,7 @@ export function WorldDialogOverviewSection(props: any) {
                     )}
                 >
                     {imageUrl ? (
-                        <img
+                        <FadeInImage
                             src={imageUrl}
                             alt={world.name || world.id || 'World'}
                             className="size-full object-cover"
@@ -575,10 +607,10 @@ export function WorldDialogOverviewSection(props: any) {
                         {t('dialog.world.info.persistent_data')}
                     </Badge>
                 ) : null}
-                {platformRows.map((platform: any) => (
+                {platformRows.map((platform) => (
                     <PlatformBadge key={platform} name={platform} />
                 ))}
-                {visibleTags.map((tag: any) => (
+                {visibleTags.map((tag) => (
                     <Badge
                         key={tag.key}
                         variant="outline"

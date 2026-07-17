@@ -69,7 +69,7 @@ describe('avatarAssets', () => {
     });
 
     it('resolves cache args from the latest matching package and falls back when sdk filtering has no match', () => {
-        const avatar: any = {
+        const avatar = {
             assetUrl:
                 'https://api.vrchat.cloud/api/1/file/file_avatar-fallback/9/file',
             unityPackages: [

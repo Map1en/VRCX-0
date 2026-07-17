@@ -6,6 +6,8 @@ import type {
     FavoriteRecord
 } from '@/state/favoriteStoreTypes';
 
+import type { FeedRow } from './feedTypes';
+
 export const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 
 type FeedRecord = Record<string, unknown>;
@@ -136,6 +138,33 @@ export function resolveFeedLocationForDisplay(row: FeedRowLike) {
         return '';
     }
     return location;
+}
+
+export function canExpandFeedRow(row: FeedRow): boolean {
+    const type = normalizeFeedId(row.type);
+    switch (type) {
+        case 'GPS':
+            return Boolean(row.previousLocation);
+        case 'Online':
+        case 'Offline':
+            return false;
+        case 'Status':
+            return (
+                String(row.statusDescription || '') !==
+                String(row.previousStatusDescription || '')
+            );
+        case 'Avatar':
+            return Boolean(
+                row.previousCurrentAvatarThumbnailImageUrl ||
+                row.previousCurrentAvatarImageUrl ||
+                row.currentAvatarThumbnailImageUrl ||
+                row.currentAvatarImageUrl
+            );
+        case 'Bio':
+            return Boolean(row.bio || row.previousBio);
+        default:
+            return false;
+    }
 }
 
 export function resolveFeedFriendStateBucket(

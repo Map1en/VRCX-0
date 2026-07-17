@@ -43,7 +43,7 @@ vi.mock('@/ui/shadcn/button', async () => {
     const React = await import('react');
 
     return {
-        Button: ({ children, ...props }: any) =>
+        Button: ({ children, ...props }: React.ComponentProps<'button'>) =>
             React.createElement('button', props, children)
     };
 });
@@ -64,7 +64,7 @@ vi.mock('@/ui/shadcn/dialog', async () => {
     };
 
     return {
-        Dialog: ({ children }: any) =>
+        Dialog: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('div', null, children),
         DialogClose: ({
             children,
@@ -78,13 +78,13 @@ vi.mock('@/ui/shadcn/dialog', async () => {
                 null,
                 renderMockSlot(render, children)
             ),
-        DialogContent: ({ children }: any) =>
+        DialogContent: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('section', null, children),
-        DialogFooter: ({ children }: any) =>
+        DialogFooter: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('footer', null, children),
-        DialogHeader: ({ children }: any) =>
+        DialogHeader: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('header', null, children),
-        DialogTitle: ({ children }: any) =>
+        DialogTitle: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('h1', null, children)
     };
 });
@@ -93,7 +93,7 @@ vi.mock('@/ui/shadcn/scroll-area', async () => {
     const React = await import('react');
 
     return {
-        ScrollArea: ({ children }: any) =>
+        ScrollArea: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children)
     };
 });
@@ -110,12 +110,13 @@ vi.mock('@/ui/shadcn/tabs', async () => {
     const React = await import('react');
 
     return {
-        Tabs: ({ children }: any) => React.createElement('div', null, children),
-        TabsContent: ({ children }: any) =>
+        Tabs: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        TabsList: ({ children }: any) =>
+        TabsContent: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        TabsTrigger: ({ children }: any) =>
+        TabsList: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        TabsTrigger: ({ children }: React.PropsWithChildren) =>
             React.createElement('button', null, children)
     };
 });

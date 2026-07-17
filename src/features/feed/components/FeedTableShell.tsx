@@ -1,5 +1,5 @@
 import type { PaginationState } from '@tanstack/react-table';
-import { Fragment } from 'react';
+import { Fragment, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
+import { cn } from '@/lib/utils';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
 
@@ -28,7 +29,17 @@ import type {
 } from '../feedTypes';
 import { FeedExpandedRow } from './FeedTableParts';
 
+function shouldSkipRowToggle(event: MouseEvent<HTMLTableRowElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest('button,a')) {
+        return true;
+    }
+
+    return Boolean(window.getSelection()?.toString());
+}
+
 type FeedTableShellProps = {
+    arrivals: Set<string>;
     columns: FeedColumns;
     favoritesOnly: boolean;
     isFavoritesLoaded: boolean;
@@ -49,6 +60,7 @@ type FeedTableShellProps = {
 };
 
 export function FeedTableShell({
+    arrivals,
     columns,
     favoritesOnly,
     isFavoritesLoaded,
@@ -67,7 +79,7 @@ export function FeedTableShell({
 
     return (
         <>
-            <DataTableSurface>
+            <DataTableSurface className="border-border/70">
                 <DataTableScrollArea>
                     <DataTableColumnDndProvider table={table}>
                         <Table
@@ -80,7 +92,31 @@ export function FeedTableShell({
                                 {table.getRowModel().rows.length > 0 ? (
                                     table.getRowModel().rows.map((row) => (
                                         <Fragment key={row.id}>
-                                            <TableRow className="h-9">
+                                            <TableRow
+                                                className={cn(
+                                                    'border-border/40 hover:bg-muted/35 h-9',
+                                                    row.getCanExpand() &&
+                                                        'cursor-pointer',
+                                                    arrivals.has(row.id) &&
+                                                        'animate-[feed-row-arrive_2s_ease-out]'
+                                                )}
+                                                onClick={
+                                                    row.getCanExpand()
+                                                        ? (
+                                                              event: MouseEvent<HTMLTableRowElement>
+                                                          ) => {
+                                                              if (
+                                                                  shouldSkipRowToggle(
+                                                                      event
+                                                                  )
+                                                              ) {
+                                                                  return;
+                                                              }
+                                                              row.toggleExpanded();
+                                                          }
+                                                        : undefined
+                                                }
+                                            >
                                                 <DataTableColumnSortableContext
                                                     table={table}
                                                 >
@@ -96,7 +132,7 @@ export function FeedTableShell({
                                                 </DataTableColumnSortableContext>
                                             </TableRow>
                                             {row.getIsExpanded() ? (
-                                                <TableRow>
+                                                <TableRow className="border-border/40 bg-muted/20">
                                                     <TableCell
                                                         colSpan={
                                                             row.getVisibleCells()

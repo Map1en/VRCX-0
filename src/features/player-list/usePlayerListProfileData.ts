@@ -1,8 +1,8 @@
 import { useQueries } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
 import { queryKeys } from '@/lib/entityQueryCache';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';

@@ -1,17 +1,18 @@
 import { toast } from 'sonner';
 
 import { clearEntityQueryCache } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AuthenticatedRuntimeSession,
+    type LoginFailureKind,
+    type LoginSessionState
+} from '@/platform/tauri/bindings';
 import authRepository, {
     type SavedAuthSnapshot,
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
-import {
-    isVrchatInvalidCredentialsError,
-    isVrchatSessionRecoveryError
-} from '@/repositories/vrchatRequest';
 import webRepository from '@/repositories/webRepository';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -26,8 +27,6 @@ import {
 import { useSessionStore } from '@/state/sessionStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
-import { resetActivityCacheState } from './activityCacheService';
-import { resetReactAutoLoginThrottle } from './authAutoLoginState';
 import { runWithRuntimeAuthFailureRecoverySuppressed } from './authSessionRecoveryService';
 import {
     applySavedAuthSnapshot,
@@ -39,11 +38,11 @@ import {
     resetDomainFacts
 } from './domainIngestionService';
 import i18n from './i18nService';
-import { stopRealtimeTransport } from './realtimeTransportService';
 import { bootstrapAuthenticatedSession } from './sessionBootstrapService';
 
 type AuthExecutionError = Error & {
     code?: string;
+    kind?: LoginFailureKind;
     authSnapshot?: unknown;
 };
 
@@ -59,16 +58,7 @@ type LoginParams = {
     websocket: string;
 };
 type TwoFactorMode = 'emailOtp' | 'otp' | 'totp';
-type TwoFactorRestartChallenge = () => Promise<{ json: unknown }>;
-type AuthResponse =
-    | {
-          type: 'twoFactor';
-          methods: string[];
-      }
-    | {
-          type: 'authenticated';
-          user: AuthUserRecord;
-      };
+type RestartLoginChallenge = () => Promise<LoginSessionState>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
@@ -106,46 +96,33 @@ function createAuthExecutionError(
     return error;
 }
 
-function parseAuthResponse(json: unknown): AuthResponse {
-    if (!isRecord(json)) {
-        throw createAuthExecutionError(
-            'The auth request returned an invalid response.',
-            'AUTH_INVALID_RESPONSE'
+function loginSessionFailureError(
+    state: LoginSessionState
+): AuthExecutionError {
+    if (state.status === 'failed') {
+        const error = createAuthExecutionError(
+            state.reason || 'VRChat login failed.',
+            'AUTH_LOGIN_FAILED'
         );
+        error.kind = state.kind;
+        return error;
     }
-
-    if (
-        Array.isArray(json.requiresTwoFactorAuth) &&
-        json.requiresTwoFactorAuth.length > 0
-    ) {
-        return {
-            type: 'twoFactor',
-            methods: json.requiresTwoFactorAuth.filter(
-                (method): method is string => typeof method === 'string'
-            )
-        };
-    }
-
-    if (!json.id) {
-        throw createAuthExecutionError(
-            'The auth request did not return a current user payload.',
-            'AUTH_INVALID_RESPONSE'
-        );
-    }
-
-    return {
-        type: 'authenticated',
-        user: json as AuthUserRecord
-    };
+    return createAuthExecutionError(
+        'The login session was cancelled.',
+        'AUTH_LOGIN_CANCELLED'
+    );
 }
 
-function isMissingCredentialsError(error: unknown) {
-    return Boolean(
-        isRecord(error) &&
-        error.status === 401 &&
-        typeof error.message === 'string' &&
-        error.message.includes('Missing Credentials')
-    );
+export function toAuthUserRecord(
+    session: AuthenticatedRuntimeSession
+): AuthUserRecord {
+    if (isRecord(session.currentUser)) {
+        return session.currentUser as AuthUserRecord;
+    }
+    return {
+        id: session.userId,
+        displayName: session.displayName
+    };
 }
 
 function getCurrentUserDisplayName(user: AuthUserRecord | null) {
@@ -188,14 +165,12 @@ function setAuthenticatingSessionState() {
 }
 
 export function resetCurrentUserRuntimeAuth() {
-    stopRealtimeTransport();
     clearEntityQueryCache();
     avatarProfileRepository.clearAvatarNameCache();
     useFriendRosterStore.getState().resetRoster();
     useFavoriteStore.getState().resetFavorites();
     useFeedLiveStore.getState().resetFeedLive();
     resetDomainFacts();
-    resetActivityCacheState();
     useRuntimeStore
         .getState()
         .setGroupInstancesState(createGroupInstancesState());
@@ -213,7 +188,6 @@ function setCurrentUserRuntimeAuth(
     user: AuthUserRecord | null,
     { endpoint = '', websocket = '' }: Record<string, string> = {}
 ) {
-    stopRealtimeTransport({ updateStatus: false });
     clearEntityQueryCache();
     avatarProfileRepository.clearAvatarNameCache();
     useFriendRosterStore.getState().resetRoster();
@@ -321,96 +295,75 @@ async function getTwoFactorInputErrorMessage(mode: TwoFactorMode) {
     }
 }
 
-async function completeTwoFactorChallenge({
-    endpoint,
-    initialMethods,
-    restartChallenge
-}: {
-    endpoint: string;
-    initialMethods: string[];
-    restartChallenge?: TwoFactorRestartChallenge;
-}) {
-    let methods = Array.isArray(initialMethods) ? [...initialMethods] : [];
-    let mode: TwoFactorMode = methods.includes('emailOtp')
-        ? 'emailOtp'
-        : 'totp';
+function normalizeTwoFactorMode(mode: string): TwoFactorMode {
+    return mode === 'emailOtp' || mode === 'otp' ? mode : 'totp';
+}
 
-    while (methods.length > 0) {
+async function completeTwoFactorChallenge(
+    challenge: LoginSessionState & { status: 'challenge' },
+    restartChallenge: RestartLoginChallenge
+): Promise<AuthenticatedRuntimeSession> {
+    let mode = normalizeTwoFactorMode(challenge.mode);
+
+    while (true) {
         const result = await promptForTwoFactorCode(mode);
         if (!result.ok) {
-            if (
-                mode === 'emailOtp' &&
-                result.reason === 'cancel' &&
-                typeof restartChallenge === 'function'
-            ) {
-                const restartedResponse = await restartChallenge();
-                const restartedAuth = parseAuthResponse(restartedResponse.json);
-                if (restartedAuth.type === 'authenticated') {
-                    return restartedAuth.user;
+            if (result.reason === 'cancel') {
+                if (mode === 'emailOtp') {
+                    const restarted = await restartChallenge();
+                    if (restarted.status === 'authenticated') {
+                        return restarted.session;
+                    }
+                    if (restarted.status !== 'challenge') {
+                        throw loginSessionFailureError(restarted);
+                    }
+                    mode = normalizeTwoFactorMode(restarted.mode);
+                    continue;
                 }
 
-                methods = restartedAuth.methods;
-                mode = methods.includes('emailOtp') ? 'emailOtp' : 'totp';
-                continue;
-            }
-
-            if (result.reason === 'cancel') {
                 mode = mode === 'totp' ? 'otp' : 'totp';
                 continue;
             }
 
+            await vrchatAuthRepository.cancelLoginSession();
             throw createAuthExecutionError(
                 'Two-factor verification was cancelled.',
                 'AUTH_2FA_CANCELLED'
             );
         }
 
-        try {
-            if (mode === 'emailOtp') {
-                await vrchatAuthRepository.verifyEmailOTP({
-                    code: result.value,
-                    endpoint
-                });
-            } else if (mode === 'otp') {
-                await vrchatAuthRepository.verifyOTP({
-                    code: result.value,
-                    endpoint
-                });
-            } else {
-                await vrchatAuthRepository.verifyTOTP({
-                    code: result.value,
-                    endpoint
-                });
-            }
-        } catch (error) {
-            const fallbackMessage = await getTwoFactorInputErrorMessage(mode);
-            toast.error(
-                error instanceof Error && error.message
-                    ? error.message
-                    : fallbackMessage
-            );
+        const next = await vrchatAuthRepository.respondLoginSession({
+            method: mode,
+            code: result.value
+        });
+        if (next.status === 'authenticated') {
+            return next.session;
+        }
+        if (next.status !== 'challenge') {
+            throw loginSessionFailureError(next);
+        }
+        if (next.error) {
+            toast.error(await getTwoFactorInputErrorMessage(mode));
             continue;
         }
-
-        const currentUserResponse = await vrchatAuthRepository.getCurrentUser({
-            endpoint
-        });
-        const currentAuth = parseAuthResponse(currentUserResponse.json);
-        if (currentAuth.type === 'authenticated') {
-            return currentAuth.user;
-        }
-
-        methods = currentAuth.methods;
-        mode = methods.includes('emailOtp') ? 'emailOtp' : mode;
+        mode = normalizeTwoFactorMode(next.mode);
     }
-
-    throw createAuthExecutionError(
-        'The auth challenge did not return a usable current user payload.',
-        'AUTH_INVALID_RESPONSE'
-    );
 }
 
-async function finalizeSuccessfulLogin(
+export async function resolveLoginSessionState(
+    state: LoginSessionState,
+    restartChallenge: RestartLoginChallenge
+): Promise<AuthenticatedRuntimeSession> {
+    if (state.status === 'authenticated') {
+        return state.session;
+    }
+    if (state.status === 'challenge') {
+        return completeTwoFactorChallenge(state, restartChallenge);
+    }
+    throw loginSessionFailureError(state);
+}
+
+export async function finalizeSuccessfulLogin(
     snapshot: SavedAuthSnapshot,
     detail: string,
     user: AuthUserRecord,
@@ -437,21 +390,19 @@ async function finalizeSuccessfulLogin(
 }
 
 async function restoreAuthSnapshotOnFailure(
-    error: AuthExecutionError,
-    { credentialSubmission = false }: { credentialSubmission?: boolean } = {}
-) {
-    const shouldClearAutoLoginTarget = Boolean(
-        isVrchatSessionRecoveryError(error)
-    );
+    error: AuthExecutionError
+): Promise<never> {
+    const kind: LoginFailureKind = error.kind ?? 'other';
+    const isInvalidCredentials = kind === 'invalidCredentials';
+    const shouldClearAutoLoginTarget =
+        isInvalidCredentials ||
+        kind === 'sessionInvalidated' ||
+        kind === 'missingCredentials';
     const failedUserId = String(
         useRuntimeStore.getState().auth.currentUserId ||
             useRuntimeStore.getState().auth.lastUserLoggedIn ||
             ''
     );
-
-    const isInvalidCredentials = isVrchatInvalidCredentialsError(error, {
-        credentialSubmission
-    });
 
     try {
         if (isInvalidCredentials) {
@@ -482,6 +433,10 @@ async function restoreAuthSnapshotOnFailure(
     }
 
     throw error;
+}
+
+function normalizeAuthExecutionError(error: unknown): AuthExecutionError {
+    return error instanceof Error ? error : new Error(String(error));
 }
 
 export async function logoutFromReactShell() {
@@ -532,7 +487,7 @@ export async function logoutFromReactShell() {
             clearLastUserLoggedIn: true
         });
         await webRepository.clearCookies();
-        resetReactAutoLoginThrottle();
+        await vrchatAuthRepository.resetAutoLoginThrottle();
 
         await resetCurrentUserRuntimeAuth();
 
@@ -559,57 +514,6 @@ export async function logoutFromReactShell() {
     }
 
     return true;
-}
-
-export async function executeCookieSessionRestore({
-    endpoint = ''
-}: { endpoint?: string } = {}) {
-    const runtimeStore = useRuntimeStore.getState();
-    setAuthenticatingSessionState();
-    runtimeStore.setStartupTask(
-        'auth',
-        'running',
-        endpoint
-            ? `Restoring an existing browser session from ${endpoint}.`
-            : 'Restoring an existing browser session.'
-    );
-
-    let currentUser: AuthUserRecord | null = null;
-    let snapshot: SavedAuthSnapshot | null = null;
-
-    try {
-        const response = await vrchatAuthRepository.restoreCookieSession({
-            endpoint
-        });
-        const authResponse = parseAuthResponse(response.json);
-
-        if (authResponse.type !== 'authenticated') {
-            throw createAuthExecutionError(
-                'The stored browser session still requires interactive verification.',
-                'AUTH_RESTORE_INTERACTIVE_REQUIRED'
-            );
-        }
-
-        currentUser = authResponse.user;
-        snapshot = await refreshSavedAuthSnapshot();
-    } catch (error) {
-        const normalizedError: AuthExecutionError =
-            error instanceof Error ? error : new Error(String(error));
-        if (isMissingCredentialsError(normalizedError)) {
-            throw normalizedError;
-        }
-
-        return restoreAuthSnapshotOnFailure(normalizedError);
-    }
-
-    return finalizeSuccessfulLogin(
-        snapshot,
-        'Restored an existing browser session.',
-        currentUser,
-        {
-            endpoint
-        }
-    );
 }
 
 export async function executeManualLogin({
@@ -646,32 +550,27 @@ export async function executeManualLogin({
 
     try {
         await webRepository.clearAuthCookies();
-        const response =
-            await vrchatAuthRepository.loginWithBasicAuth(loginParams);
-        const authResponse = parseAuthResponse(response.json);
-        currentUser =
-            authResponse.type === 'authenticated'
-                ? authResponse.user
-                : await completeTwoFactorChallenge({
-                      endpoint: loginParams.endpoint,
-                      initialMethods: authResponse.methods,
-                      async restartChallenge() {
-                          await webRepository.clearAuthCookies();
-                          return vrchatAuthRepository.loginWithBasicAuth(
-                              loginParams
-                          );
-                      }
-                  });
-        snapshot = await authRepository.recordLoginSuccess({
-            user: currentUser,
-            loginParams,
-            saveCredentials
-        });
-    } catch (error) {
-        return restoreAuthSnapshotOnFailure(
-            error instanceof Error ? error : new Error(String(error)),
-            { credentialSubmission: true }
+        const startSession = () =>
+            vrchatAuthRepository.startLoginSession({
+                mode: 'basic',
+                endpoint: loginParams.endpoint,
+                username: loginParams.username,
+                password: loginParams.password,
+                saveCredentials
+            });
+        const state = await startSession();
+        const session = await resolveLoginSessionState(
+            state,
+            async function restartChallenge() {
+                await vrchatAuthRepository.cancelLoginSession();
+                await webRepository.clearAuthCookies();
+                return startSession();
+            }
         );
+        currentUser = toAuthUserRecord(session);
+        snapshot = await refreshSavedAuthSnapshot();
+    } catch (error) {
+        return restoreAuthSnapshotOnFailure(normalizeAuthExecutionError(error));
     }
 
     return finalizeSuccessfulLogin(
@@ -719,32 +618,25 @@ export async function executeSavedCredentialLogin(
     let snapshot: SavedAuthSnapshot | null = null;
 
     try {
-        const response = await vrchatAuthRepository.loginWithSavedCredential({
-            userId,
-            endpoint: loginParams.endpoint
-        });
-        const authResponse = parseAuthResponse(response.json);
-        currentUser =
-            authResponse.type === 'authenticated'
-                ? authResponse.user
-                : await completeTwoFactorChallenge({
-                      endpoint: loginParams.endpoint,
-                      initialMethods: authResponse.methods,
-                      async restartChallenge() {
-                          return vrchatAuthRepository.loginWithSavedCredential({
-                              userId,
-                              endpoint: loginParams.endpoint
-                          });
-                      }
-                  });
-        snapshot = await authRepository.recordLoginSuccess({
-            user: currentUser,
-            saveCredentials: false
-        });
+        const startSession = () =>
+            vrchatAuthRepository.startLoginSession({
+                mode: 'savedCredential',
+                endpoint: loginParams.endpoint,
+                userId
+            });
+        const state = await startSession();
+        const session = await resolveLoginSessionState(
+            state,
+            async function restartChallenge() {
+                await vrchatAuthRepository.cancelLoginSession();
+                return startSession();
+            }
+        );
+        currentUser = toAuthUserRecord(session);
+        snapshot = await refreshSavedAuthSnapshot();
     } catch (error) {
-        const normalizedError: AuthExecutionError =
-            error instanceof Error ? error : new Error(String(error));
-        if (userId && isVrchatInvalidCredentialsError(normalizedError)) {
+        const normalizedError = normalizeAuthExecutionError(error);
+        if (userId && normalizedError.kind === 'invalidCredentials') {
             await webRepository.clearCookies();
             await resetCurrentUserRuntimeAuth();
             setSignedOutSessionState();

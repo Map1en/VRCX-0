@@ -19,6 +19,7 @@ import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -74,17 +75,19 @@ export function VrchatLogToolbar({
                             />
                         </SelectTrigger>
                         <SelectContent align="start">
-                            {files.map((file: any) => (
-                                <SelectItem
-                                    key={file.fileName}
-                                    value={file.fileName}
-                                >
-                                    {fileLabel(
-                                        file,
-                                        t('view.tools.vrchat_log.latest')
-                                    )}
-                                </SelectItem>
-                            ))}
+                            <SelectGroup>
+                                {files.map((file: any) => (
+                                    <SelectItem
+                                        key={file.fileName}
+                                        value={file.fileName}
+                                    >
+                                        {fileLabel(
+                                            file,
+                                            t('view.tools.vrchat_log.latest')
+                                        )}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                     {selectedFile ? (

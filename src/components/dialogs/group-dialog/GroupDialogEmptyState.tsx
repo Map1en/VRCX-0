@@ -5,7 +5,9 @@ export function GroupDialogEmptyState({
     title,
     description,
     loading = false
-}: any) {
+}: Pick<ComponentProps<typeof AppEmptyState>, 'title' | 'description'> & {
+    loading?: boolean;
+}) {
     return (
         <AppEmptyState
             className="min-h-56"
@@ -15,3 +17,4 @@ export function GroupDialogEmptyState({
         />
     );
 }
+import type { ComponentProps } from 'react';

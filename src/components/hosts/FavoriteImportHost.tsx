@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import {
     openAvatarDialog,
     openUserDialog,
@@ -9,6 +10,7 @@ import {
 import {
     cancelFavoriteImport,
     clearFavoriteImportRows,
+    closeFavoriteImportDialog,
     getFavoriteImportTypeConfig,
     importFavoriteImportRows,
     processFavoriteImportList
@@ -102,7 +104,6 @@ export function FavoriteImportHost() {
     const localGroupName = useFavoriteImportStore(
         (state) => state.localGroupName
     );
-    const closeDialog = useFavoriteImportStore((state) => state.closeDialog);
     const setInput = useFavoriteImportStore((state) => state.setInput);
     const setRemoteGroupName = useFavoriteImportStore(
         (state) => state.setRemoteGroupName
@@ -162,7 +163,9 @@ export function FavoriteImportHost() {
     return (
         <Dialog
             open={open}
-            onOpenChange={(nextOpen) => !nextOpen && closeDialog()}
+            onOpenChange={(nextOpen) =>
+                !nextOpen && closeFavoriteImportDialog()
+            }
         >
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
                 <DialogHeader>
@@ -345,10 +348,13 @@ export function FavoriteImportHost() {
                                     <TableRow key={row.id}>
                                         <TableCell>
                                             {getRowImage(row) ? (
-                                                <img
+                                                <FadeInImage
                                                     alt=""
                                                     src={getRowImage(row)}
                                                     className="size-10 rounded object-cover"
+                                                    fallback={
+                                                        <div className="bg-muted size-10 rounded" />
+                                                    }
                                                 />
                                             ) : (
                                                 <div className="bg-muted size-10 rounded" />

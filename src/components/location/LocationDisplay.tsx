@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { cn } from '@/lib/utils';
-import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -124,20 +123,29 @@ export function LocationDisplay({
                                 {shouldShowInstanceId && instanceName ? (
                                     <span className="ml-1">{`· #${instanceName}`}</span>
                                 ) : null}
+                                {showGroupLink && groupName ? (
+                                    <span
+                                        role="button"
+                                        tabIndex={0}
+                                        className="hover:text-primary ml-0.5 cursor-pointer"
+                                        onClick={onOpenGroup}
+                                        onKeyDown={(event) => {
+                                            event.stopPropagation();
+                                            if (
+                                                event.key === 'Enter' ||
+                                                event.key === ' '
+                                            ) {
+                                                event.preventDefault();
+                                                onOpenGroup?.(event);
+                                            }
+                                        }}
+                                    >
+                                        ({groupName})
+                                    </span>
+                                ) : null}
                             </span>
                         </LocationTrigger>
                     </LocationTooltip>
-                    {showGroupLink && groupName ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="hover:text-primary ml-0.5 h-auto min-w-0 p-0 text-left [font-size:inherit] [line-height:inherit] font-normal text-inherit"
-                            onClick={onOpenGroup}
-                            onKeyDown={(event) => event.stopPropagation()}
-                        >
-                            ({groupName})
-                        </Button>
-                    ) : null}
                     {isClosed ? (
                         <LocationTooltip
                             disabled={disableTooltip}

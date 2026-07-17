@@ -15,8 +15,8 @@ import {
     isDashboardFilterActive
 } from './dashboardConfig';
 
-const dashboardT = (key: any, params: any = {}) => {
-    const messages: any = {
+const dashboardT = (key: string, params: { value?: string } = {}) => {
+    const messages: Record<string, string> = {
         'dashboard.registry.feed': 'Feed',
         'dashboard.registry.feed_widget': 'Feed Widget',
         'view.dashboard.dynamic.existing_value': `Existing · ${params.value}`,
@@ -71,17 +71,16 @@ describe('dashboardConfig', () => {
     it('gives dashboard rows stable keys for persisted and legacy rows', () => {
         expect(getDashboardRowKey({ id: ' row_custom ' })).toBe('row_custom');
 
-        const legacyRow: any = {
+        const legacyRow: unknown = {
             direction: 'vertical',
             panels: ['feed', { key: 'game-log' }]
         };
 
-        expect(getDashboardRowKey(legacyRow)).toBe(
-            getDashboardRowKey(legacyRow)
-        );
+        const row = legacyRow as Parameters<typeof getDashboardRowKey>[0];
+        expect(getDashboardRowKey(row)).toBe(getDashboardRowKey(row));
         expect(
-            getDashboardRowKey({ ...legacyRow, direction: 'horizontal' })
-        ).not.toBe(getDashboardRowKey(legacyRow));
+            getDashboardRowKey({ ...row, direction: 'horizontal' })
+        ).not.toBe(getDashboardRowKey(row));
     });
 
     it('lets users pick widgets, pages, and existing unknown panels', () => {
@@ -95,22 +94,20 @@ describe('dashboardConfig', () => {
             label: 'Existing · legacy-panel'
         });
         expect(
-            options.some(
-                (option: any) => option.label === 'Widget · Feed Widget'
-            )
+            options.some((option) => option.label === 'Widget · Feed Widget')
         ).toBe(true);
-        expect(
-            options.some((option: any) => option.label === 'Page · Feed')
-        ).toBe(true);
+        expect(options.some((option) => option.label === 'Page · Feed')).toBe(
+            true
+        );
         expect(
             createDashboardPanelSelectOptions('__none__', dashboardT).some(
-                (option: any) => option.value === '__none__'
+                (option) => option.value === '__none__'
             )
         ).toBe(false);
     });
 
     it('keeps widget panel configs isolated when changing panel settings', () => {
-        const config: any = {
+        const config = {
             filters: ['friend'],
             nested: { enabled: true }
         };
@@ -192,7 +189,7 @@ describe('dashboardConfig', () => {
             ).columns
         ).toEqual(['displayName', 'platform', 'legacyColumn']);
 
-        const config: any = { columns: ['displayName', 'timer'] };
+        const config = { columns: ['displayName', 'timer'] };
         expect(
             getNextDashboardInstanceColumnConfig(config, 'displayName')
         ).toBe(config);

@@ -21,7 +21,26 @@ import {
     normalizeProfileLanguageRows
 } from './userProfileFields';
 
-function optionalFiniteCount(...values: any[]) {
+type DialogRecord = Record<string, unknown>;
+type DialogRow = DialogRecord & {
+    id?: string;
+    name?: string;
+    displayName?: string;
+    releaseStatus?: string;
+};
+type Translate = (key: string) => string;
+
+function record(value: unknown): DialogRecord {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+function rows(value: unknown): DialogRow[] {
+    return Array.isArray(value) ? value.map(record) : [];
+}
+
+function optionalFiniteCount(...values: unknown[]) {
     for (const value of values) {
         if (value === undefined || value === null || value === '') {
             continue;
@@ -34,14 +53,14 @@ function optionalFiniteCount(...values: any[]) {
     return undefined;
 }
 
-function validTimestampValue(value: any) {
+function validTimestampValue(value: unknown) {
     if (value === undefined || value === null || value === '') {
         return '';
     }
-    return validTimestampMs(value) ? value : '';
+    return validTimestampMs(value) ? normalizedText(value) : '';
 }
 
-function validTimestampMs(value: any) {
+function validTimestampMs(value: unknown) {
     if (value === undefined || value === null || value === '') {
         return 0;
     }
@@ -61,14 +80,14 @@ function validTimestampMs(value: any) {
     return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function isCurrentlyOnline(profile: any) {
+function isCurrentlyOnline(profile: DialogRecord) {
     const state = normalizedText(
         profile?.stateBucket || profile?.state
     ).toLowerCase();
     return state === 'online';
 }
 
-function estimatedOnlineDuration(profile: any, nowMs: any) {
+function estimatedOnlineDuration(profile: DialogRecord, nowMs: unknown) {
     if (!isCurrentlyOnline(profile)) {
         return 0;
     }
@@ -84,8 +103,9 @@ function estimatedOnlineDuration(profile: any, nowMs: any) {
     return normalizedNowMs - lastLoginMs;
 }
 
-function resolvePresenceActivityAt(profile: any) {
+function resolvePresenceActivityAt(profile: DialogRecord) {
     return (
+        validTimestampValue(profile?.last_activity) ||
         validTimestampValue(profile?.locationUpdatedAt) ||
         validTimestampValue(profile?.$location_at) ||
         validTimestampValue(profile?.locationAt) ||
@@ -109,15 +129,9 @@ function resolvePresenceActivityAt(profile: any) {
     );
 }
 
-function resolveFriendedAt(profile: any) {
-    const friendship =
-        profile?.friendship && typeof profile.friendship === 'object'
-            ? profile.friendship
-            : {};
-    const relationship =
-        profile?.relationship && typeof profile.relationship === 'object'
-            ? profile.relationship
-            : {};
+function resolveFriendedAt(profile: DialogRecord) {
+    const friendship = record(profile.friendship);
+    const relationship = record(profile.relationship);
 
     return (
         validTimestampValue(profile?.friendedAt) ||
@@ -146,8 +160,12 @@ export function buildUserDialogTabs({
     isCurrentUser,
     currentUserHasSharedConnectionsOptOut,
     t
-}: any) {
-    const translate = typeof t === 'function' ? t : (key: any) => key;
+}: {
+    isCurrentUser: boolean;
+    currentUserHasSharedConnectionsOptOut: boolean;
+    t?: Translate;
+}) {
+    const translate = typeof t === 'function' ? t : (key: string) => key;
 
     return [
         { value: 'info', label: translate('dialog.user.info.header') },
@@ -195,7 +213,25 @@ export function buildUserDialogListViewData({
     avatarSort,
     currentUserHasSharedConnectionsOptOut,
     t
-}: any) {
+}: {
+    profile: DialogRecord;
+    remoteData: DialogRecord;
+    remoteStatus: Record<string, string>;
+    friendsById?: Record<string, DialogRecord> | null;
+    search: Record<string, string>;
+    mutualSort: unknown;
+    groupSort: string;
+    isCurrentUser: boolean;
+    inGameGroupOrder: readonly unknown[];
+    selectedGroupIds: Set<string>;
+    effectiveAvatarReleaseStatus: string;
+    avatarSort: unknown;
+    currentUserHasSharedConnectionsOptOut: boolean;
+    t?: Translate;
+}) {
+    const normalizedGroupOrder = inGameGroupOrder
+        .map(normalizedText)
+        .filter(Boolean);
     const profileGroups = normalizeUserGroupMembershipRows(
         remoteStatus.groups === 'ready'
             ? remoteData.groups
@@ -206,24 +242,31 @@ export function buildUserDialogListViewData({
               )
     );
     const mutualFriends = hydrateMutualFriendRows(
-        remoteStatus.mutual === 'ready'
-            ? remoteData.mutual
-            : firstArray(profile.mutualFriends, profile.$mutualFriends),
+        rows(
+            remoteStatus.mutual === 'ready'
+                ? remoteData.mutual
+                : firstArray(profile.mutualFriends, profile.$mutualFriends)
+        ),
         friendsById
     );
-    const profileWorlds =
+    const profileWorlds = rows(
         remoteStatus.worlds === 'ready'
             ? remoteData.worlds
-            : firstArray(profile.worlds, profile.$worlds, profile.recentWorlds);
-    const favoriteWorlds =
+            : firstArray(profile.worlds, profile.$worlds, profile.recentWorlds)
+    );
+    const favoriteWorlds = rows(
         remoteStatus['favorite-worlds'] === 'ready'
             ? remoteData.favoriteWorlds
-            : firstArray(profile.favoriteWorlds, profile.$favoriteWorlds);
-    const profileAvatars =
+            : firstArray(profile.favoriteWorlds, profile.$favoriteWorlds)
+    );
+    const profileAvatars = rows(
         remoteStatus.avatars === 'ready'
             ? remoteData.avatars
-            : firstArray(profile.avatars, profile.$avatars);
-    const bioLinks = firstArray(profile.bioLinks);
+            : firstArray(profile.avatars, profile.$avatars)
+    );
+    const bioLinks = firstArray(profile.bioLinks)
+        .map(normalizedText)
+        .filter(Boolean);
     const filteredMutualFriends = filterRows(mutualFriends, search.mutual);
     const visibleMutualFriends = sortMutualFriendRows(
         filteredMutualFriends,
@@ -234,13 +277,13 @@ export function buildUserDialogListViewData({
     const sortedProfileGroups = sortUserGroupRows(
         profileGroups,
         effectiveGroupSort,
-        inGameGroupOrder
+        normalizedGroupOrder
     );
     const filteredProfileGroups = filterRows(
         sortedProfileGroups,
         search.groups
     );
-    const selectedUserGroups = sortedProfileGroups.filter((group: any) =>
+    const selectedUserGroups = sortedProfileGroups.filter((group) =>
         selectedGroupIds.has(groupIdForRow(group))
     );
     const filteredProfileWorlds = filterRows(profileWorlds, search.worlds);
@@ -253,7 +296,7 @@ export function buildUserDialogListViewData({
         effectiveAvatarReleaseStatus === 'all'
             ? filteredProfileAvatars
             : filteredProfileAvatars.filter(
-                  (avatar: any) =>
+                  (avatar) =>
                       avatar.releaseStatus === effectiveAvatarReleaseStatus
               ),
         avatarSort
@@ -296,14 +339,28 @@ export function buildUserDialogProfileSummary({
     vrchatConfigConstants,
     currentUserSnapshot,
     nowMs
-}: any) {
+}: {
+    profile: DialogRecord;
+    userStats: DialogRecord;
+    sortedProfileGroups: ReturnType<typeof normalizeUserGroupMembershipRows>;
+    selectedUserGroups: ReturnType<typeof normalizeUserGroupMembershipRows>;
+    isCurrentUser: boolean;
+    vrchatConfigConstants: unknown;
+    currentUserSnapshot: DialogRecord | null;
+    nowMs?: unknown;
+} & DialogRecord) {
+    const statsPreviousDisplayNames = Array.isArray(
+        userStats.previousDisplayNames
+    )
+        ? userStats.previousDisplayNames
+        : [];
     const previousDisplayNames = normalizePreviousDisplayNames(
-        userStats.previousDisplayNames?.length
-            ? userStats.previousDisplayNames
+        statsPreviousDisplayNames.length
+            ? statsPreviousDisplayNames
             : profile.previousDisplayNames || profile.pastDisplayNames
     );
     const previousDisplayNamesTitle = previousDisplayNames
-        .map((entry: any) =>
+        .map((entry) =>
             entry.updated_at
                 ? `${entry.displayName} - ${formatStatsDate(entry.updated_at)}`
                 : entry.displayName
@@ -316,12 +373,14 @@ export function buildUserDialogProfileSummary({
         isCurrentUser
     );
     const selectedGroupCount = selectedUserGroups.length;
-    const groupLimits = vrchatConfigConstants?.GROUPS || {};
+    const groupLimits = record(record(vrchatConfigConstants).GROUPS);
+    const currentUserTags = Array.isArray(currentUserSnapshot?.tags)
+        ? currentUserSnapshot.tags
+        : [];
     const isLocalUserVrcPlusSupporter = Boolean(
         currentUserSnapshot?.$isVRCPlus ||
-        currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-        (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
-            ?.debugVrcPlus
+        currentUserTags.includes('system_supporter') ||
+        globalThis.$debug?.debugVrcPlus
     );
     const ownGroupCountText = formatCountText(
         userGroupSections.ownGroups.length,
@@ -343,12 +402,12 @@ export function buildUserDialogProfileSummary({
         Number(
             userStats.joinCount ?? profile.joinCount ?? profile.$joinCount ?? 0
         ) || 0;
-    const lastSeen = userStats.lastSeen || profile.lastSeen || '';
+    const lastSeen = normalizedText(userStats.lastSeen || profile.lastSeen);
     const languageOptions = normalizeLanguageOptionsFromConfig({
         constants: vrchatConfigConstants
     });
     const languageOptionsMap = new Map(
-        languageOptions.map((option: any) => [option.key, option])
+        languageOptions.map((option) => [option.key, option])
     );
     const profileLanguages = normalizeProfileLanguageRows(
         profile,
@@ -363,7 +422,9 @@ export function buildUserDialogProfileSummary({
         Number(profile.$friendNumber ?? profile.friendNumber ?? 0) || 0;
     const estimatedOnlineDurationMs = estimatedOnlineDuration(profile, nowMs);
     const presenceActivityAt = resolvePresenceActivityAt(profile);
-    const friendedAt = userStats.friendedAt || resolveFriendedAt(profile);
+    const friendedAt = normalizedText(
+        userStats.friendedAt || resolveFriendedAt(profile)
+    );
 
     return {
         previousDisplayNames,

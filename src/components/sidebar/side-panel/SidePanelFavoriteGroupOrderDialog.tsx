@@ -52,7 +52,9 @@ export function SidePanelFavoriteGroupOrderDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label={`Move ${group.label} up`}
+                                aria-label={t('accessibility.move_item_up', {
+                                    item: group.label
+                                })}
                                 disabled={index === 0}
                                 onClick={() => onMove(index, -1)}
                             >
@@ -62,7 +64,9 @@ export function SidePanelFavoriteGroupOrderDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label={`Move ${group.label} down`}
+                                aria-label={t('accessibility.move_item_down', {
+                                    item: group.label
+                                })}
                                 disabled={
                                     index === favoriteGroupOrderDraft.length - 1
                                 }

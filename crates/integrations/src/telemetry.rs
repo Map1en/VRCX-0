@@ -19,12 +19,20 @@ static SLASH_PATH_PATTERN: LazyLock<Regex> =
 static VRCHAT_ID_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(?:usr|wrld|avtr|grp|file|vol|inst|auth|not|rgn|prn)_[A-Za-z0-9-]+\b").unwrap()
 });
+static PROVIDER_ID_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b(?:org|req|key|sk)[_-][A-Za-z0-9_-]{3,}\b").unwrap());
 static UUID_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b")
         .unwrap()
 });
 static LONG_HEX_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)\b[0-9a-f]{24,}\b").unwrap());
+static LONG_TOKEN_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b[A-Za-z0-9_-]{48,}\b").unwrap());
+static ISO_LINE_PREFIX_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?m)^\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\s*")
+        .unwrap()
+});
 static WHITESPACE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 static SAFE_TOKEN_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[^A-Za-z0-9_.:-]+").unwrap());
@@ -125,8 +133,8 @@ pub struct TelemetryConfigSnapshot {
     pub xs_notifications: bool,
     pub ovrt_hud_notifications: bool,
     pub ovrt_wrist_notifications: bool,
+    pub hmd_notifications_enabled: bool,
     pub discord_active: bool,
-    pub mcp_server_enabled: bool,
     pub webhook_enabled: bool,
     pub auto_state_change_enabled: bool,
     pub auto_accept_invite_requests: String,
@@ -140,22 +148,6 @@ pub struct ConfigSnapshotPayload {
     #[serde(flatten)]
     pub context: TelemetryContext,
     pub config: TelemetryConfigSnapshot,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ViewModeUsageEntry {
-    pub dimension: String,
-    pub used: Vec<String>,
-    pub switches: u32,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ViewModeUsagePayload {
-    #[serde(flatten)]
-    pub context: TelemetryContext,
-    pub modes: Vec<ViewModeUsageEntry>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -210,16 +202,6 @@ pub struct AssistantHealthPayload {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AssistantUsagePayload {
-    #[serde(flatten)]
-    pub context: TelemetryContext,
-    pub opens: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub api_key_configured: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ClientErrorPayload {
     #[serde(flatten)]
     pub context: TelemetryContext,
@@ -255,12 +237,15 @@ pub fn resolve_endpoint_for(
 
 pub fn sanitize_error_summary(value: impl AsRef<str>) -> String {
     let value = value.as_ref();
-    let value = URL_PATTERN.replace_all(value, "<url>");
+    let value = ISO_LINE_PREFIX_PATTERN.replace_all(value, "");
+    let value = URL_PATTERN.replace_all(&value, "<url>");
     let value = WINDOWS_PATH_PATTERN.replace_all(&value, "<path>");
     let value = SLASH_PATH_PATTERN.replace_all(&value, " <path>");
     let value = VRCHAT_ID_PATTERN.replace_all(&value, "<id>");
+    let value = PROVIDER_ID_PATTERN.replace_all(&value, "<id>");
     let value = UUID_PATTERN.replace_all(&value, "<uuid>");
     let value = LONG_HEX_PATTERN.replace_all(&value, "<hash>");
+    let value = LONG_TOKEN_PATTERN.replace_all(&value, "<token>");
     let value = WHITESPACE_PATTERN.replace_all(&value, " ");
     truncate_chars(value.trim(), MAX_SUMMARY_LENGTH)
 }

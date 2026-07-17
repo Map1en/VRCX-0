@@ -1,7 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+    type Dispatch,
+    type MutableRefObject,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type {
+    EntityRecord,
+    UserBadgeRecord
+} from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
@@ -19,17 +30,19 @@ import {
     selfStatusBaseOptions
 } from './userProfileFields';
 import { useSelfStatusPresets } from './useSelfStatusPresets';
+import type { SocialStatusDraft } from './useSelfStatusPresets';
+import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
 function setSelfActionStatus(
-    actionStatusRef: any,
-    setActionStatus: any,
-    nextStatus: any
+    actionStatusRef: MutableRefObject<string>,
+    setActionStatus: Dispatch<SetStateAction<string>>,
+    nextStatus: string
 ) {
     actionStatusRef.current = nextStatus;
     setActionStatus(nextStatus);
 }
 
-type ProfileDetailsDraft = {
+export type ProfileDetailsDraft = {
     languageKeys: string[];
     bio: string;
     bioLinks: string[];
@@ -45,10 +58,10 @@ function createProfileDetailsDraft(): ProfileDetailsDraft {
     };
 }
 
-function normalizeStringArray(values: any) {
-    const seen = new Set();
-    const rows = [];
-    for (const value of values ?? []) {
+function normalizeStringArray(values: unknown) {
+    const seen = new Set<string>();
+    const rows: string[] = [];
+    for (const value of Array.isArray(values) ? values : []) {
         const normalized =
             typeof value === 'string'
                 ? value.trim()
@@ -62,10 +75,10 @@ function normalizeStringArray(values: any) {
     return rows;
 }
 
-function normalizeLanguageKeys(values: any) {
-    const keys = [];
-    const seen = new Set();
-    for (const value of values ?? []) {
+function normalizeLanguageKeys(values: unknown) {
+    const keys: string[] = [];
+    const seen = new Set<string>();
+    for (const value of Array.isArray(values) ? values : []) {
         const key = normalizeLanguageKey(value);
         if (!key || seen.has(key)) {
             continue;
@@ -76,9 +89,9 @@ function normalizeLanguageKeys(values: any) {
     return keys.slice(0, 3);
 }
 
-function normalizeBioLinks(values: any) {
-    return (values ?? [])
-        .map((value: any) =>
+function normalizeBioLinks(values: unknown) {
+    return (Array.isArray(values) ? values : [])
+        .map((value) =>
             typeof value === 'string'
                 ? value.trim().slice(0, 1000)
                 : String(value ?? '')
@@ -89,19 +102,19 @@ function normalizeBioLinks(values: any) {
         .slice(0, 3);
 }
 
-function normalizeProfileBioLinks(profile: any) {
+function normalizeProfileBioLinks(profile: Record<string, unknown>) {
     return normalizeBioLinks(
         Array.isArray(profile?.bioLinks) ? profile.bioLinks : []
     );
 }
 
-function normalizeProfilePronouns(profile: any) {
+function normalizeProfilePronouns(profile: Record<string, unknown>) {
     return Array.isArray(profile?.pronouns)
         ? normalizeStringArray(profile.pronouns).join(', ')
         : String(profile?.pronouns || '');
 }
 
-function buildProfileMediaFileUrl(endpoint: any, fileId: any) {
+function buildProfileMediaFileUrl(endpoint: string, fileId: string) {
     if (!fileId) {
         return '';
     }
@@ -109,12 +122,30 @@ function buildProfileMediaFileUrl(endpoint: any, fileId: any) {
     return `${base}/file/${fileId}/1`;
 }
 
-function areStringArraysEqual(left: any, right: any) {
+function areStringArraysEqual(left: string[], right: string[]) {
     if (left.length !== right.length) {
         return false;
     }
-    return left.every((value: any, index: any) => value === right[index]);
+    return left.every((value, index) => value === right[index]);
 }
+
+type UseUserDialogSelfActionsProps = {
+    profile: UserDialogProfileRecord | null;
+    isCurrentUser: boolean;
+    currentUserId: string | null;
+    currentUserSnapshot: UserDialogProfileRecord | null;
+    currentEndpoint: string;
+    baseProfile: UserDialogProfileRecord | null;
+    setBaseProfile: Dispatch<SetStateAction<UserDialogProfileRecord | null>>;
+    actionStatusRef: MutableRefObject<string>;
+    setActionStatus: Dispatch<SetStateAction<string>>;
+};
+
+type CurrentUserPatch = EntityRecord & {
+    bio?: string;
+    bioLinks?: string[];
+    pronouns?: string;
+};
 
 export function useUserDialogSelfActions({
     profile,
@@ -126,24 +157,27 @@ export function useUserDialogSelfActions({
     setBaseProfile,
     actionStatusRef,
     setActionStatus
-}: any) {
+}: UseUserDialogSelfActionsProps) {
     const { t } = useTranslation();
 
     const [socialStatusDialogOpen, setSocialStatusDialogOpen] = useState(false);
-    const [socialStatusDraft, setSocialStatusDraft] = useState<any>({
-        status: 'active',
-        statusDescription: ''
-    });
+    const [socialStatusDraft, setSocialStatusDraft] =
+        useState<SocialStatusDraft>({
+            status: 'active',
+            statusDescription: ''
+        });
     const [profileDetailsDialogOpen, setProfileDetailsDialogOpen] =
         useState(false);
     const [profileDetailsDraft, setProfileDetailsDraft] = useState(
         createProfileDetailsDraft
     );
-    const [languageOptions, setLanguageOptions] = useState<any[]>([]);
+    const [languageOptions, setLanguageOptions] = useState<
+        Array<{ key: string; value: string }>
+    >([]);
     const [languageOptionsStatus, setLanguageOptionsStatus] = useState('idle');
 
     const selfStatusOptions = useMemo(() => {
-        const baseOptions = selfStatusBaseOptions.map((option: any) => ({
+        const baseOptions = selfStatusBaseOptions.map((option) => ({
             ...option,
             label: t(option.labelKey)
         }));
@@ -158,16 +192,26 @@ export function useUserDialogSelfActions({
             : baseOptions;
     }, [profile?.$isModerator, t]);
     const languageOptionsMap = useMemo(
-        () =>
-            new Map(languageOptions.map((option: any) => [option.key, option])),
+        () => new Map(languageOptions.map((option) => [option.key, option])),
         [languageOptions]
     );
     const currentLanguageRows = useMemo(
-        () => normalizeProfileLanguageRows(profile, languageOptionsMap),
+        () =>
+            normalizeProfileLanguageRows(
+                {
+                    $languages: Array.isArray(profile?.$languages)
+                        ? profile.$languages
+                        : undefined,
+                    tags: Array.isArray(profile?.tags)
+                        ? profile.tags
+                        : undefined
+                },
+                languageOptionsMap
+            ),
         [profile, languageOptionsMap]
     );
     const currentLanguageKeys = useMemo(
-        () => currentLanguageRows.map((language: any) => language.key),
+        () => currentLanguageRows.map((language) => language.key),
         [currentLanguageRows]
     );
     const profileDetailsLanguageKeys = useMemo(
@@ -176,7 +220,7 @@ export function useUserDialogSelfActions({
     );
     const profileDetailsLanguageRows = useMemo(
         () =>
-            profileDetailsLanguageKeys.map((key: any) => ({
+            profileDetailsLanguageKeys.map((key) => ({
                 key,
                 value: languageOptionsMap.get(key)?.value || key.toUpperCase()
             })),
@@ -189,7 +233,7 @@ export function useUserDialogSelfActions({
     const availableLanguageOptions = useMemo(
         () =>
             languageOptions.filter(
-                (option: any) => !profileDetailsLanguageKeySet.has(option.key)
+                (option) => !profileDetailsLanguageKeySet.has(option.key)
             ),
         [languageOptions, profileDetailsLanguageKeySet]
     );
@@ -200,10 +244,7 @@ export function useUserDialogSelfActions({
     const selfStatusLabelByValue = useMemo(
         () =>
             new Map(
-                selfStatusOptions.map((option: any) => [
-                    option.value,
-                    option.label
-                ])
+                selfStatusOptions.map((option) => [option.value, option.label])
             ),
         [selfStatusOptions]
     );
@@ -230,7 +271,7 @@ export function useUserDialogSelfActions({
         setLanguageOptionsStatus('running');
         vrchatAuthRepository
             .getConfig({ endpoint: currentEndpoint })
-            .then((response: any) => {
+            .then((response) => {
                 if (!active) {
                     return;
                 }
@@ -257,7 +298,7 @@ export function useUserDialogSelfActions({
         };
     }, [currentEndpoint, languageOptions.length, profileDetailsDialogOpen]);
 
-    function applyCurrentUserSnapshot(nextUser: any) {
+    function applyCurrentUserSnapshot(nextUser: UserDialogProfileRecord) {
         const displayBaseUser = mergeCurrentUserPresenceFields(
             nextUser,
             baseProfile
@@ -280,8 +321,11 @@ export function useUserDialogSelfActions({
     }
 
     async function saveCurrentUserPatch(
-        patch: any,
-        { successMessage, errorMessage }: any
+        patch: CurrentUserPatch,
+        {
+            successMessage,
+            errorMessage
+        }: { successMessage: string; errorMessage: string }
     ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return false;
@@ -305,12 +349,17 @@ export function useUserDialogSelfActions({
         }
     }
 
-    async function runSelfProfileMutation({
+    async function runSelfProfileMutation<TResult>({
         task,
         successMessage,
         fallbackErrorMessage,
         onSuccess
-    }: any) {
+    }: {
+        task: () => Promise<TResult>;
+        successMessage?: string;
+        fallbackErrorMessage: string;
+        onSuccess?: (result: TResult) => void;
+    }) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return null;
         }
@@ -391,7 +440,7 @@ export function useUserDialogSelfActions({
         const bioLinks = normalizeProfileBioLinks(profile);
         setProfileDetailsDraft({
             languageKeys: currentLanguageRows
-                .map((language: any) => language.key)
+                .map((language) => language.key)
                 .slice(0, 3),
             bio: String(profile.bio || ''),
             bioLinks: bioLinks.length ? bioLinks : [''],
@@ -409,10 +458,10 @@ export function useUserDialogSelfActions({
             profileDetailsDraft.languageKeys
         );
         const addLanguageKeys = nextLanguageKeys.filter(
-            (key: any) => !currentLanguageKeys.includes(key)
+            (key) => !currentLanguageKeys.includes(key)
         );
         const removeLanguageKeys = currentLanguageKeys.filter(
-            (key: any) => !nextLanguageKeys.includes(key)
+            (key) => !nextLanguageKeys.includes(key)
         );
         const nextBio = String(profileDetailsDraft.bio || '').slice(0, 512);
         const nextBioLinks = normalizeProfileBioLinks({
@@ -422,7 +471,7 @@ export function useUserDialogSelfActions({
             0,
             32
         );
-        const patch: any = {};
+        const patch: CurrentUserPatch = {};
 
         if (nextBio !== String(profile.bio || '')) {
             patch.bio = nextBio;
@@ -465,9 +514,7 @@ export function useUserDialogSelfActions({
                     await userProfileRepository.removeCurrentUserTags({
                         userId: currentUserId,
                         endpoint: currentEndpoint,
-                        tags: removeLanguageKeys.map(
-                            (key: any) => `language_${key}`
-                        )
+                        tags: removeLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
             }
@@ -476,9 +523,7 @@ export function useUserDialogSelfActions({
                     await userProfileRepository.addCurrentUserTags({
                         userId: currentUserId,
                         endpoint: currentEndpoint,
-                        tags: addLanguageKeys.map(
-                            (key: any) => `language_${key}`
-                        )
+                        tags: addLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
             }
@@ -497,19 +542,22 @@ export function useUserDialogSelfActions({
         }
     }
 
-    async function setSelfProfileMediaField(fieldName: any, fileId: any) {
+    async function setSelfProfileMediaField(
+        fieldName: 'userIcon' | 'profilePicOverride',
+        fileId: unknown
+    ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle' || !profile) {
-            return false;
+            return;
         }
         const isVrcPlusSupporter = Boolean(
             currentUserSnapshot?.$isVRCPlus ||
-            currentUserSnapshot?.tags?.includes?.('system_supporter') ||
-            (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
-                ?.debugVrcPlus
+            (Array.isArray(currentUserSnapshot?.tags) &&
+                currentUserSnapshot.tags.includes('system_supporter')) ||
+            globalThis.$debug?.debugVrcPlus
         );
         if (!isVrcPlusSupporter) {
             toast.error(t('message.vrcplus.required'));
-            return false;
+            return;
         }
         const normalizedFileId =
             typeof fileId === 'string'
@@ -520,9 +568,9 @@ export function useUserDialogSelfActions({
             normalizedFileId
         );
         if (nextValue === profile?.[fieldName]) {
-            return true;
+            return;
         }
-        return saveCurrentUserPatch(
+        await saveCurrentUserPatch(
             {
                 [fieldName]: nextValue
             },
@@ -596,7 +644,10 @@ export function useUserDialogSelfActions({
         );
     }
 
-    async function toggleBadgeVisibility(badge: any, hidden: any) {
+    async function toggleBadgeVisibility(
+        badge: UserBadgeRecord,
+        hidden: boolean
+    ) {
         if (!badge?.badgeId) {
             return;
         }
@@ -612,13 +663,16 @@ export function useUserDialogSelfActions({
                 }),
             successMessage: t('message.badge.updated'),
             fallbackErrorMessage: t('dialog.user.toast.failed_to_update_badge'),
-            onSuccess: (nextProfile: any) => {
+            onSuccess: (nextProfile) => {
                 applyCurrentUserSnapshot(nextProfile);
             }
         });
     }
 
-    async function toggleBadgeShowcased(badge: any, showcased: any) {
+    async function toggleBadgeShowcased(
+        badge: UserBadgeRecord,
+        showcased: boolean
+    ) {
         if (!badge?.badgeId) {
             return;
         }
@@ -634,19 +688,19 @@ export function useUserDialogSelfActions({
                 }),
             successMessage: t('message.badge.updated'),
             fallbackErrorMessage: t('dialog.user.toast.failed_to_update_badge'),
-            onSuccess: (nextProfile: any) => {
+            onSuccess: (nextProfile) => {
                 applyCurrentUserSnapshot(nextProfile);
             }
         });
     }
 
-    function handleSocialStatusDialogOpenChange(nextOpen: any) {
+    function handleSocialStatusDialogOpenChange(nextOpen: boolean) {
         if (nextOpen || actionStatusRef.current === 'idle') {
             setSocialStatusDialogOpen(nextOpen);
         }
     }
 
-    function handleProfileDetailsDialogOpenChange(nextOpen: any) {
+    function handleProfileDetailsDialogOpenChange(nextOpen: boolean) {
         if (nextOpen || actionStatusRef.current === 'idle') {
             setProfileDetailsDialogOpen(nextOpen);
         }

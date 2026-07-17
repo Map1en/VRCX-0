@@ -18,7 +18,7 @@ import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { recordCurrentUserSnapshot } from './domainIngestionService';
 import { handleRealtimeInstanceQueueProjection } from './realtimeInstanceQueueService';
-import { pushSharedFeedNotification } from './sharedFeedFilterService';
+import { pushSharedFeedNotification } from './sharedFeedNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
@@ -181,26 +181,6 @@ function mergeCurrentUserProjectionSnapshot(
     return nextSnapshot;
 }
 
-function applyFriendPatch(
-    userId: string,
-    patch: ProjectionRecord,
-    stateBucket: string,
-    stateBucketAuthority: string
-) {
-    const normalizedUserId = normalizeUserId(
-        userId || patch.id || patch.userId
-    );
-    if (!normalizedUserId) {
-        return;
-    }
-    useFriendRosterStore.getState().applyFriendPatch({
-        userId: normalizedUserId,
-        patch,
-        stateBucket,
-        stateBucketAuthority
-    });
-}
-
 function pushProjectionFeedEntry(entry: unknown) {
     const feedEntry = asRecord(entry);
     if (!Object.keys(feedEntry).length) {
@@ -268,17 +248,24 @@ function handleRealtimeFriendProjection(payload: FriendProjectionInput) {
         useFriendRosterStore.getState().removeFriend(normalizedUserId);
     }
 
-    for (const entry of projection.patches ?? []) {
+    const patchEntries = (projection.patches ?? []).map((entry) => {
         const patchEntry = asRecord(entry);
         const patch: FriendProjectionPatchPayload = asRecord(patchEntry.patch);
-        applyFriendPatch(
-            normalizeUserId(patchEntry.userId || patch.id || patch.userId),
+        return {
+            userId: normalizeUserId(
+                patchEntry.userId || patch.id || patch.userId
+            ),
             patch,
-            normalizeUserId(
+            stateBucket: normalizeUserId(
                 patchEntry.stateBucket || patch.stateBucket || patch.state
             ),
-            normalizeUserId(patchEntry.stateBucketAuthority || 'explicit')
-        );
+            stateBucketAuthority: normalizeUserId(
+                patchEntry.stateBucketAuthority || 'explicit'
+            )
+        };
+    });
+    if (patchEntries.length) {
+        useFriendRosterStore.getState().applyFriendPatches(patchEntries);
     }
 
     for (const entry of projection.feedEntries ?? []) {

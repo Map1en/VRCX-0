@@ -1,11 +1,11 @@
+import defaultGameLogRepository from '@/repositories/gameLogRepository';
+import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import {
     getKnownUserFact,
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile
-} from '@/domain/users/userFactAccess';
-import defaultGameLogRepository from '@/repositories/gameLogRepository';
-import defaultVrchatSearchRepository from '@/repositories/vrchatSearchRepository';
+} from '@/services/userFactAccessService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
@@ -105,7 +105,8 @@ function findKnownUserByDisplayName(
 
     const normalizedEndpoint = resolvedEndpoint(endpoint);
     const state = useUserFactsStore.getState();
-    const userIds = state.userIdsByEndpoint[normalizedEndpoint] || [];
+    const userIds =
+        state.userIdsByEndpoint[normalizedEndpoint] ?? new Set<string>();
     for (const userId of userIds) {
         const fact = getKnownUserFact(normalizedEndpoint, userId);
         if (displayNameMatches(fact, targetDisplayName)) {

@@ -1,5 +1,5 @@
 import { ClockIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
@@ -21,6 +21,10 @@ import {
 import { UserDialogHeaderSection } from './user-dialog/components/UserDialogHeaderSection';
 import { UserDialogProfileMediaPanel } from './user-dialog/components/UserDialogProfileMediaPanel';
 import { UserDialogTabsSection } from './user-dialog/components/UserDialogTabsSection';
+import type {
+    resolveFriendRequestState,
+    resolvePlatformMeta
+} from './user-dialog/userDialogContentHelpers';
 import { buildUserDialogLocationUsers } from './user-dialog/userDialogLocationUsers';
 import {
     isOfflineLikeValue,
@@ -30,21 +34,118 @@ import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData'
 import { useUserDialogAvatarAuthorAction } from './user-dialog/useUserDialogAvatarAuthorAction';
 import { useUserDialogClipboardActions } from './user-dialog/useUserDialogClipboardActions';
 import { useUserDialogGroupActions } from './user-dialog/useUserDialogGroupActions';
+import type { useUserDialogLocationPanel } from './user-dialog/useUserDialogLocationPanel';
+import type {
+    AvatarOverrideState,
+    ExtendedModerationState,
+    ModerationState
+} from './user-dialog/useUserDialogModerationState';
+import type { UserDialogProfileRecord } from './user-dialog/useUserDialogProfileResource';
 import { useUserDialogTabbedRuntimeState } from './user-dialog/useUserDialogRuntimeState';
+import type { useUserDialogSelfActions } from './user-dialog/useUserDialogSelfActions';
+import type { useUserDialogSupplementalData } from './user-dialog/useUserDialogSupplementalData';
 import { useUserDialogTabData } from './user-dialog/useUserDialogTabData';
+import type {
+    AvatarOverrideType,
+    ExtendedModerationType,
+    ModerationType
+} from './user-dialog/useUserModerationActions';
+
+type SupplementalData = ReturnType<typeof useUserDialogSupplementalData>;
+type SelfControls = ReturnType<typeof useUserDialogSelfActions>['actions'];
+type LocationPanelController = ReturnType<typeof useUserDialogLocationPanel>;
+
+interface UserDialogTabbedViewProps {
+    profile: UserDialogProfileRecord;
+    resource: {
+        memo: string;
+        detail: string;
+        imageUrl: string;
+        loadStatus: string;
+        actionStatus: string;
+        recentActionVersion?: number;
+        reloadToken?: number;
+        initialAction?: string;
+    };
+    relationship: {
+        moderationState: ModerationState;
+        extendedModerationState?: ExtendedModerationState;
+        avatarOverrideState?: AvatarOverrideState;
+        isCurrentUser: boolean;
+        isFriend: boolean;
+        isFavorite: boolean;
+        friendRequestState: ReturnType<typeof resolveFriendRequestState>;
+    };
+    platformInfo: {
+        platform: ReturnType<typeof resolvePlatformMeta>;
+        platformIcon: ComponentType | null;
+    };
+    presence: {
+        presenceLocation: string;
+        currentAvatarTarget: string;
+        homeLocationTarget: string;
+        canInviteFromCurrentLocation: boolean;
+        currentUserHasSharedConnectionsOptOut: boolean;
+        currentUserBoopingEnabled: boolean;
+        userStats?: SupplementalData['userStats'];
+        previousInstances?: SupplementalData['previousInstances'];
+        representedGroup?: SupplementalData['representedGroup'];
+        representedGroupStatus?: string;
+        hideUserNotes?: boolean;
+        hideUserMemos?: boolean;
+    };
+    locationPanel: {
+        sameInstanceUsers?: unknown[];
+        locationOwnerUser?: unknown;
+        locationOwnerGroup?: unknown;
+        locationInstance?: unknown;
+        locationFriendCount?: number;
+        locationPlayerCount?: number;
+        onRefreshLocation?: LocationPanelController['refreshLocationPanel'];
+        onPreviousInstancesChange: SupplementalData['setPreviousInstances'];
+    };
+    profileControls: {
+        onRefresh: () => void;
+        onEditMemo: () => void | Promise<void>;
+    };
+    friendControls: {
+        onFriendRequest: (action: string) => void;
+        onInvite: () => void;
+        onInviteMessage: () => void;
+        onInviteRequest: () => void;
+        onInviteRequestMessage: () => void;
+        onBoop: () => void;
+        onUnfriend: () => void;
+        onModeration: (type: ModerationType, enabled: boolean) => void;
+        onExtendedModeration: (
+            type: ExtendedModerationType,
+            enabled: boolean
+        ) => void;
+        onAvatarOverride: (type: AvatarOverrideType) => void;
+        onReportHacking: () => void;
+        onGroupModeration: () => void;
+    };
+    selfControls: SelfControls;
+}
+
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
 
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
 
-function finiteTabCount(value: any) {
+function finiteTabCount(value: unknown) {
     const count = Number(value);
     return Number.isFinite(count) && count >= 0 ? count : undefined;
 }
 
-function loadedTabCount(status: any, rows: any) {
+function loadedTabCount(status: unknown, rows: unknown) {
     return status === 'ready' && Array.isArray(rows) ? rows.length : undefined;
 }
 
-function resolveTabCount(primary: any, fallback: any) {
+function resolveTabCount(primary: unknown, fallback: unknown) {
     return finiteTabCount(primary) ?? finiteTabCount(fallback);
 }
 
@@ -58,7 +159,7 @@ export function UserDialogTabbedView({
     relationship,
     resource,
     selfControls
-}: any) {
+}: UserDialogTabbedViewProps) {
     const {
         memo,
         detail,
@@ -143,7 +244,9 @@ export function UserDialogTabbedView({
         previousAvatarSwapTime,
         prompt
     } = useUserDialogTabbedRuntimeState();
-    const [selectedGroupIds, setSelectedGroupIds] = useState(() => new Set());
+    const [selectedGroupIds, setSelectedGroupIds] = useState(
+        () => new Set<string>()
+    );
     const [selfPanel, setSelfPanel] = useState('');
     const { copyUserText, openDiscordProfile } =
         useUserDialogClipboardActions();
@@ -160,7 +263,7 @@ export function UserDialogTabbedView({
         };
     }, []);
 
-    const tabData: any = useUserDialogTabData({
+    const tabData = useUserDialogTabData({
         profile,
         reloadToken,
         isCurrentUser,
@@ -249,7 +352,7 @@ export function UserDialogTabbedView({
     const userSubtitle = username;
     const pronounsText = Array.isArray(profile.pronouns)
         ? profile.pronouns.join(', ')
-        : profile.pronouns;
+        : normalizedText(profile.pronouns);
     const {
         previousDisplayNames,
         statusStateText,
@@ -286,7 +389,7 @@ export function UserDialogTabbedView({
     const currentAvatarDisplayName = String(
         profile.currentAvatarName || profile.avatarName || ''
     ).trim();
-    const currentAvatarDialogArgs: any = {
+    const currentAvatarDialogArgs = {
         avatarId: currentAvatarTarget,
         ...(currentAvatarDisplayName
             ? {
@@ -305,7 +408,7 @@ export function UserDialogTabbedView({
         typeof profile.fallbackAvatar === 'string'
             ? profile.fallbackAvatar.trim()
             : '';
-    const fallbackAvatarDialogArgs: any = {
+    const fallbackAvatarDialogArgs = {
         avatarId: fallbackAvatarTarget,
         title: 'Fallback Avatar'
     };
@@ -318,12 +421,14 @@ export function UserDialogTabbedView({
     const visiblePresenceParsedLocation = visiblePresenceLocation
         ? parseLocation(visiblePresenceLocation)
         : null;
+    const projectedLocation = record(profile.$location);
+    const projectedWorld = record(projectedLocation.world);
     const locationWorldTitle = normalizedText(
         profile.worldName ||
             profile.$worldName ||
-            profile.$location?.worldName ||
-            profile.$location?.name ||
-            profile.$location?.world?.name
+            projectedLocation.worldName ||
+            projectedLocation.name ||
+            projectedWorld.name
     );
     const { locationInstanceUsers, locationOwnerId } = useMemo(
         () =>
@@ -386,9 +491,12 @@ export function UserDialogTabbedView({
             remoteTabCounts
         ]
     );
-    const isRecentDialogAction = (actionType: any) =>
-        recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
-    const recentDialogShortcut = (actionType: any) =>
+    const isRecentDialogAction = (
+        actionType: Parameters<typeof isActionRecent>[1]
+    ) => recentActionVersion >= 0 && isActionRecent(profile.id, actionType);
+    const recentDialogShortcut = (
+        actionType: Parameters<typeof isActionRecent>[1]
+    ) =>
         isRecentDialogAction(actionType) ? (
             <ClockIcon className="text-muted-foreground size-3.5" />
         ) : null;
@@ -402,7 +510,7 @@ export function UserDialogTabbedView({
         changeTab('instance-history', { allowHidden: true });
     }
 
-    const headerModel: any = {
+    const headerModel = {
         actionStatus,
         avatarOverrideState,
         canInviteFromCurrentLocation,
@@ -433,11 +541,11 @@ export function UserDialogTabbedView({
         userUrl,
         estimatedOnlineDurationMs
     };
-    const headerCommands: any = {
+    const headerCommands = {
         onAvatarOverride,
         onBoop,
         onCopyUserId: () => {
-            copyUserText(profile.id, 'User ID');
+            copyUserText(normalizedText(profile.id), 'User ID');
         },
         onCopyUserUrl: () => {
             copyUserText(userUrl, 'User URL');
@@ -465,7 +573,10 @@ export function UserDialogTabbedView({
         onOpenImagePreview: openImagePreview,
         onOpenUserIcon: () =>
             openImagePreview({
-                url: convertFileUrlToImageUrl(profile.userIcon, 512),
+                url: convertFileUrlToImageUrl(
+                    normalizedText(profile.userIcon),
+                    512
+                ),
                 title: profileTitle
             }),
         onOpenUserUrl: () => openExternalLink(userUrl),
@@ -482,7 +593,9 @@ export function UserDialogTabbedView({
             profile.displayName || profile.username
                 ? () => {
                       copyUserText(
-                          profile.displayName || profile.username,
+                          normalizedText(
+                              profile.displayName || profile.username
+                          ),
                           'Display name'
                       );
                   }
@@ -495,7 +608,7 @@ export function UserDialogTabbedView({
         onToggleSelfSharedConnections,
         onUnfriend
     };
-    const tabsModel: any = {
+    const tabsModel = {
         root: {
             activeTab,
             tabCounts,
@@ -580,7 +693,7 @@ export function UserDialogTabbedView({
             moderationState
         }
     };
-    const tabsCommands: any = {
+    const tabsCommands = {
         changeAvatarReleaseStatus,
         changeAvatarSort,
         changeTab,

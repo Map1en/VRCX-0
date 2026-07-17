@@ -52,14 +52,10 @@ pub fn app__is_steamvr_running(state: State<'_, AppState>) -> Result<bool, AppEr
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__set_game_client_runtime_state(
-    state: State<'_, AppState>,
-    session_active: bool,
-    current_location: String,
-) {
+pub fn app__set_game_client_runtime_state(state: State<'_, AppState>, current_location: String) {
     state
         .game_client_runtime
-        .set_runtime_state(session_active, &current_location);
+        .set_runtime_state(&current_location);
 }
 
 #[tauri::command]

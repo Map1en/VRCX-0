@@ -17,6 +17,20 @@ import {
 } from '@/ui/shadcn/field';
 import { Textarea } from '@/ui/shadcn/textarea';
 
+export type UserNoteMemoDialogProps = {
+    open: boolean;
+    targetLabel: string;
+    editingCurrentUser: boolean;
+    note: string;
+    memo: string;
+    saving: boolean;
+    onOpenChange: (open: boolean) => void;
+    onNoteChange: (note: string) => void;
+    onMemoChange: (memo: string) => void;
+    onCancel: () => void;
+    onSave: () => void;
+};
+
 export function UserNoteMemoDialog({
     open,
     targetLabel,
@@ -29,7 +43,7 @@ export function UserNoteMemoDialog({
     onMemoChange,
     onCancel,
     onSave
-}: any) {
+}: UserNoteMemoDialogProps) {
     const { t } = useTranslation();
 
     return (

@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { commands, type NoteExportStatus } from '@/platform/tauri/bindings';
+import { tauriClient } from '@/platform/tauri/client';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -29,8 +31,6 @@ import {
 import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
-    delay,
-    getEndpoint,
     getFriendIds,
     getUserMemoMap,
     normalizeExportMemo,
@@ -44,20 +44,29 @@ type NoteExportRow = {
     ref: Record<string, unknown>;
 };
 
+type NoteExportDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+};
+
 function asObjectRecord(value: unknown): Record<string, unknown> | null {
     return value && typeof value === 'object'
         ? (value as Record<string, unknown>)
         : null;
 }
 
-export function NoteExportDialog({ open, onOpenChange }: any) {
+export function NoteExportDialog({
+    open,
+    onOpenChange
+}: NoteExportDialogProps) {
     const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const orderedFriendIds = useFriendRosterStore(
         (state) => state.orderedFriendIds
     );
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const cancelRef = useRef(false);
+    const activeRunIdRef = useRef('');
+    const terminalRunIdRef = useRef('');
     const refreshRequestRef = useRef(0);
     const [rows, setRows] = useState<NoteExportRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -111,57 +120,126 @@ export function NoteExportDialog({ open, onOpenChange }: any) {
         }
     }
 
-    useEffect(() => {
-        if (open) {
-            cancelRef.current = false;
-            setRows([]);
-            setProgress({ done: 0, total: 0 });
-            setErrors('');
-            refreshRows();
-        } else {
-            cancelRef.current = true;
-            refreshRequestRef.current += 1;
+    function applyExportStatus(status: NoteExportStatus) {
+        const active =
+            status.status === 'running' || status.status === 'cancelling';
+        if (active && terminalRunIdRef.current === status.runId) {
+            return;
         }
+        if (!activeRunIdRef.current && status.runId) {
+            activeRunIdRef.current = status.runId;
+        }
+        if (activeRunIdRef.current !== status.runId) {
+            return;
+        }
+
+        const succeededIds = new Set(
+            status.items
+                .filter((item) => item.state === 'succeeded')
+                .map((item) => item.userId)
+        );
+        setRows((current) => {
+            if (current.length) {
+                return current.filter((item) => !succeededIds.has(item.id));
+            }
+            return status.items
+                .filter((item) => item.state !== 'succeeded')
+                .map((item) => ({
+                    id: item.userId,
+                    name: item.displayName || item.userId,
+                    memo: item.note,
+                    ref: {}
+                }));
+        });
+        setProgress({ done: status.processed, total: status.total });
+        setLoading(active);
+
+        const failedItem = status.items.find((item) => item.state === 'failed');
+        if (failedItem) {
+            setErrors(
+                `Name: ${failedItem.displayName || failedItem.userId}\n${failedItem.error || status.lastError || t('dialog.note_export.failed_to_update_local_note')}\n\n`
+            );
+        }
+        if (!active) {
+            terminalRunIdRef.current = status.runId;
+            activeRunIdRef.current = '';
+        }
+    }
+
+    useEffect(() => {
+        if (!open) {
+            refreshRequestRef.current += 1;
+            if (activeRunIdRef.current) {
+                void commands.appNoteExportCancel().catch((error: unknown) => {
+                    console.warn('Failed to cancel note export:', error);
+                });
+            }
+            return;
+        }
+
+        let disposed = false;
+        let unsubscribe: (() => void) | null = null;
+        activeRunIdRef.current = '';
+        terminalRunIdRef.current = '';
+        setRows([]);
+        setProgress({ done: 0, total: 0 });
+        setErrors('');
+        void (async () => {
+            unsubscribe = await tauriClient.events.subscribe<NoteExportStatus>(
+                'noteExportStatus',
+                (status) => {
+                    if (!disposed) {
+                        applyExportStatus(status);
+                    }
+                }
+            );
+            const status = await commands.appNoteExportStatus();
+            if (disposed) {
+                return;
+            }
+            if (status.status === 'running' || status.status === 'cancelling') {
+                applyExportStatus(status);
+            } else {
+                await refreshRows();
+            }
+        })().catch((error: unknown) => {
+            if (!disposed) {
+                toast.error(userFacingErrorMessage(error));
+                setLoading(false);
+            }
+        });
+
+        return () => {
+            disposed = true;
+            unsubscribe?.();
+            refreshRequestRef.current += 1;
+        };
     }, [open]);
 
     async function exportNotes() {
         const snapshot = [...rows].reverse();
-        cancelRef.current = false;
         setLoading(true);
         setProgress({ done: 0, total: snapshot.length });
         setErrors('');
+        terminalRunIdRef.current = '';
         try {
-            for (let index = 0; index < snapshot.length; index += 1) {
-                if (cancelRef.current) {
-                    break;
-                }
-                const row = snapshot[index];
-                try {
-                    await vrchatToolsRepository.saveUserNote(
-                        {
-                            targetUserId: row.id,
-                            note: truncateExportMemo(row.memo)
-                        },
-                        { endpoint: getEndpoint() }
-                    );
-                    setRows((current) =>
-                        current.filter((item) => item.id !== row.id)
-                    );
-                    setProgress({ done: index + 1, total: snapshot.length });
-                    if (index < snapshot.length - 1) {
-                        await delay(5000);
-                    }
-                } catch (error) {
-                    setErrors(
-                        (current) =>
-                            `${current}Name: ${row.name}\n${userFacingErrorMessage(error, t('dialog.note_export.failed_to_update_local_note'))}\n\n`
-                    );
-                    break;
-                }
-            }
-        } finally {
+            const status = await commands.appNoteExportStart({
+                items: snapshot.map((row) => ({
+                    userId: row.id,
+                    displayName: row.name,
+                    note: truncateExportMemo(row.memo)
+                }))
+            });
+            applyExportStatus(status);
+            applyExportStatus(await commands.appNoteExportStatus());
+        } catch (error) {
+            setErrors(
+                userFacingErrorMessage(
+                    error,
+                    t('dialog.note_export.failed_to_update_local_note')
+                )
+            );
             setLoading(false);
-            setProgress({ done: 0, total: 0 });
         }
     }
 
@@ -212,7 +290,14 @@ export function NoteExportDialog({ open, onOpenChange }: any) {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                                cancelRef.current = true;
+                                void commands
+                                    .appNoteExportCancel()
+                                    .then(applyExportStatus)
+                                    .catch((error: unknown) => {
+                                        toast.error(
+                                            userFacingErrorMessage(error)
+                                        );
+                                    });
                             }}
                         >
                             {t('dialog.note_export.cancel')}
@@ -287,7 +372,7 @@ export function NoteExportDialog({ open, onOpenChange }: any) {
                                                         }
                                                     }}
                                                 >
-                                                    <img
+                                                    <FadeInImage
                                                         src={userImage(
                                                             row.ref,
                                                             true,
@@ -296,6 +381,9 @@ export function NoteExportDialog({ open, onOpenChange }: any) {
                                                         alt=""
                                                         className="size-full object-cover"
                                                         loading="lazy"
+                                                        fallback={
+                                                            <span className="bg-muted block size-10 rounded-full border" />
+                                                        }
                                                     />
                                                 </Button>
                                             ) : (

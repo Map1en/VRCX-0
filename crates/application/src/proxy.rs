@@ -134,10 +134,7 @@ pub async fn test_proxy_connectivity(
 ) -> Result<ProxySettingsTestResult, Error> {
     let normalized_proxy = normalize_proxy_url(proxy_url)?;
     let client = TransportWebClient::new(normalized_proxy.clone(), None, app_version)?;
-    let mut request = WebExecuteRequest::new(VRC_STATUS_TEST_URL.into(), "GET".into());
-    request
-        .headers
-        .push(("Referer".into(), "https://vrcx.app".into()));
+    let request = WebExecuteRequest::new(VRC_STATUS_TEST_URL.into(), "GET".into());
     let (status, data) = tokio::time::timeout(PROXY_TEST_TIMEOUT, client.execute(request))
         .await
         .map_err(|_| Error::Custom("Proxy test timed out.".into()))??;

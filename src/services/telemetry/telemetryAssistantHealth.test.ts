@@ -39,7 +39,50 @@ describe('assistant health telemetry', () => {
             type: 'assistantToolError',
             source: 'recall_encounter',
             summary:
-                'includeNonFriends=true, limit=3, nested=<object>, query=<text>; result=<text>'
+                'includeNonFriends=true, limit=3, nested=<object>, query=<text>; result=error'
+        });
+    });
+
+    it('classifies assistant tool result summaries without sending result text', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryAssistantHealth');
+
+        mod.recordAssistantToolError({
+            source: 'search_worlds_visited',
+            summary: 'request timed out after 30s'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_friend_profile',
+            summary: 'No local-history user matched "Alice"'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            summary: 'invalid arguments: limit must be positive'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_friend_log',
+            summary: 'sqlite database is unavailable'
+        });
+
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
+            type: 'assistantToolError',
+            source: 'search_worlds_visited',
+            summary: 'result=timeout'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(2, {
+            type: 'assistantToolError',
+            source: 'get_friend_profile',
+            summary: 'result=not_found'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(3, {
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary: 'result=invalid_args'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(4, {
+            type: 'assistantToolError',
+            source: 'get_friend_log',
+            summary: 'result=db_error'
         });
     });
 

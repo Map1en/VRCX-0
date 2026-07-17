@@ -1,0 +1,594 @@
+{
+    "version": 1,
+    "fallbackLocale": "en",
+    "domains": {
+        "overlay": {
+            "locales": ["en", "zh-CN", "zh-TW", "ja", "ko"],
+            "coverage": "required",
+            "messages": [
+                {
+                    "key": "notifications.has_joined",
+                    "source": "notifications.has_joined"
+                },
+                {
+                    "key": "notifications.has_left",
+                    "source": "notifications.has_left"
+                },
+                {
+                    "key": "notifications.joined_with_others",
+                    "source": "notifications.joined_with_others"
+                },
+                {
+                    "key": "notifications.left_with_others",
+                    "source": "notifications.left_with_others"
+                },
+                {
+                    "key": "notifications.is_joining",
+                    "source": "notifications.is_joining"
+                },
+                { "key": "notifications.gps", "source": "notifications.gps" },
+                {
+                    "key": "notifications.online",
+                    "source": "notifications.online"
+                },
+                {
+                    "key": "notifications.online_location",
+                    "source": "notifications.online_location"
+                },
+                {
+                    "key": "notifications.offline",
+                    "source": "notifications.offline"
+                },
+                {
+                    "key": "notifications.status_update",
+                    "source": "notifications.status_update"
+                },
+                {
+                    "key": "notifications.avatar_change",
+                    "source": "notifications.avatar_change"
+                },
+                {
+                    "key": "notifications.friend",
+                    "source": "notifications.friend"
+                },
+                {
+                    "key": "notifications.unfriend",
+                    "source": "notifications.unfriend"
+                },
+                {
+                    "key": "notifications.display_name",
+                    "source": "notifications.display_name"
+                },
+                {
+                    "key": "notifications.trust_level",
+                    "source": "notifications.trust_level"
+                },
+                { "key": "notifications.bio", "source": "notifications.bio" },
+                {
+                    "key": "notifications.invite",
+                    "source": "notifications.invite"
+                },
+                {
+                    "key": "notifications.request_invite",
+                    "source": "notifications.request_invite"
+                },
+                {
+                    "key": "notifications.invite_response",
+                    "source": "notifications.invite_response"
+                },
+                {
+                    "key": "notifications.request_invite_response",
+                    "source": "notifications.request_invite_response"
+                },
+                {
+                    "key": "notifications.friend_request",
+                    "source": "notifications.friend_request"
+                },
+                {
+                    "key": "notifications.group_announcement_title",
+                    "source": "notifications.group_announcement_title"
+                },
+                {
+                    "key": "notifications.group_informative_title",
+                    "source": "notifications.group_informative_title"
+                },
+                {
+                    "key": "notifications.group_invite_title",
+                    "source": "notifications.group_invite_title"
+                },
+                {
+                    "key": "notifications.group_join_request_title",
+                    "source": "notifications.group_join_request_title"
+                },
+                {
+                    "key": "notifications.group_transfer_request_title",
+                    "source": "notifications.group_transfer_request_title"
+                },
+                {
+                    "key": "notifications.group_queue_ready_title",
+                    "source": "notifications.group_queue_ready_title"
+                },
+                {
+                    "key": "notifications.instance_closed_title",
+                    "source": "notifications.instance_closed_title"
+                },
+                {
+                    "key": "notifications.event_title",
+                    "source": "notifications.event_title"
+                },
+                {
+                    "key": "notifications.external_title",
+                    "source": "notifications.external_title"
+                },
+                {
+                    "key": "notifications.video_play_title",
+                    "source": "notifications.video_play_title"
+                },
+                {
+                    "key": "notifications.blocked",
+                    "source": "notifications.blocked"
+                },
+                {
+                    "key": "notifications.unblocked",
+                    "source": "notifications.unblocked"
+                },
+                {
+                    "key": "notifications.muted",
+                    "source": "notifications.muted"
+                },
+                {
+                    "key": "notifications.unmuted",
+                    "source": "notifications.unmuted"
+                },
+                {
+                    "key": "notifications.blocked_player_joined",
+                    "source": "notifications.blocked_player_joined"
+                },
+                {
+                    "key": "notifications.blocked_player_left",
+                    "source": "notifications.blocked_player_left"
+                },
+                {
+                    "key": "notifications.muted_player_joined",
+                    "source": "notifications.muted_player_joined"
+                },
+                {
+                    "key": "notifications.muted_player_left",
+                    "source": "notifications.muted_player_left"
+                },
+                {
+                    "key": "overlay.footer.players",
+                    "source": "overlay.footer.players"
+                },
+                {
+                    "key": "overlay.footer.instance_duration",
+                    "source": "overlay.footer.instance_duration"
+                },
+                {
+                    "key": "overlay.generic_instance_location",
+                    "source": "overlay.generic_instance_location"
+                },
+                {
+                    "key": "overlay.friends_panel.title",
+                    "source": "overlay.friends_panel.title"
+                },
+                {
+                    "key": "overlay.friends_panel.all",
+                    "source": "overlay.friends_panel.all"
+                },
+                {
+                    "key": "overlay.friends_panel.empty",
+                    "source": "overlay.friends_panel.empty"
+                },
+                {
+                    "key": "overlay.friends_panel.note",
+                    "source": "overlay.friends_panel.note"
+                },
+                {
+                    "key": "overlay.friends_panel.memo",
+                    "source": "overlay.friends_panel.memo"
+                },
+                {
+                    "key": "overlay.friends_panel.open",
+                    "source": "overlay.friends_panel.open"
+                },
+                {
+                    "key": "overlay.friends_panel.request",
+                    "source": "overlay.friends_panel.request"
+                },
+                {
+                    "key": "overlay.friends_panel.invite",
+                    "source": "overlay.friends_panel.invite"
+                },
+                {
+                    "key": "overlay.friends_panel.favorites_online",
+                    "source": "overlay.friends_panel.favorites_online"
+                },
+                {
+                    "key": "overlay.friends_panel.same_instance",
+                    "source": "overlay.friends_panel.same_instance"
+                },
+                {
+                    "key": "overlay.friends_panel.local_favorites",
+                    "source": "overlay.friends_panel.local_favorites"
+                },
+                {
+                    "key": "overlay.friends_panel.traveling",
+                    "source": "overlay.friends_panel.traveling"
+                },
+                {
+                    "key": "overlay.friends_panel.private",
+                    "source": "overlay.friends_panel.private"
+                },
+                {
+                    "key": "overlay.friends_panel.offline",
+                    "source": "overlay.friends_panel.offline"
+                },
+                {
+                    "key": "overlay.access.public",
+                    "source": "dialog.new_instance.access_type_public"
+                },
+                {
+                    "key": "overlay.access.invite",
+                    "source": "dialog.new_instance.access_type_invite"
+                },
+                {
+                    "key": "overlay.access.invite_plus",
+                    "source": "dialog.new_instance.access_type_invite_plus"
+                },
+                {
+                    "key": "overlay.access.friends",
+                    "source": "dialog.new_instance.access_type_friend"
+                },
+                {
+                    "key": "overlay.access.friends_plus",
+                    "source": "dialog.new_instance.access_type_friend_plus"
+                },
+                {
+                    "key": "overlay.access.group",
+                    "source": "dialog.new_instance.access_type_group"
+                },
+                {
+                    "key": "overlay.access.group_public",
+                    "source": "dialog.new_instance.group_access_type_public"
+                },
+                {
+                    "key": "overlay.access.group_plus",
+                    "source": "dialog.new_instance.group_access_type_plus"
+                },
+                {
+                    "key": "overlay.status.active",
+                    "source": "dialog.user.status.online"
+                },
+                {
+                    "key": "overlay.status.join_me",
+                    "source": "dialog.user.status.join_me"
+                },
+                {
+                    "key": "overlay.status.ask_me",
+                    "source": "dialog.user.status.ask_me"
+                },
+                {
+                    "key": "overlay.status.busy",
+                    "source": "dialog.user.status.busy"
+                },
+                {
+                    "key": "overlay.discord.title.invite",
+                    "source": "overlay.discord.title.invite"
+                },
+                {
+                    "key": "overlay.discord.title.request_invite",
+                    "source": "overlay.discord.title.request_invite"
+                },
+                {
+                    "key": "overlay.discord.title.invite_response",
+                    "source": "overlay.discord.title.invite_response"
+                },
+                {
+                    "key": "overlay.discord.title.request_invite_response",
+                    "source": "overlay.discord.title.request_invite_response"
+                },
+                {
+                    "key": "overlay.discord.title.gps",
+                    "source": "overlay.discord.title.gps"
+                },
+                {
+                    "key": "overlay.discord.title.status",
+                    "source": "overlay.discord.title.status"
+                },
+                {
+                    "key": "overlay.discord.title.avatar_change",
+                    "source": "overlay.discord.title.avatar_change"
+                },
+                {
+                    "key": "overlay.discord.title.online",
+                    "source": "overlay.discord.title.online"
+                },
+                {
+                    "key": "overlay.discord.title.offline",
+                    "source": "overlay.discord.title.offline"
+                }
+            ]
+        },
+        "discordPresence": {
+            "locales": "all",
+            "coverage": "fallback",
+            "messages": [
+                {
+                    "key": "discord.access.public",
+                    "source": "dialog.new_instance.access_type_public"
+                },
+                {
+                    "key": "discord.access.invite_plus",
+                    "source": "dialog.new_instance.access_type_invite_plus"
+                },
+                {
+                    "key": "discord.access.invite",
+                    "source": "dialog.new_instance.access_type_invite"
+                },
+                {
+                    "key": "discord.access.friends",
+                    "source": "dialog.new_instance.access_type_friend"
+                },
+                {
+                    "key": "discord.access.friends_plus",
+                    "source": "dialog.new_instance.access_type_friend_plus"
+                },
+                {
+                    "key": "discord.access.group",
+                    "source": "dialog.new_instance.access_type_group"
+                },
+                {
+                    "key": "discord.access.group_public",
+                    "source": "dialog.new_instance.group_access_type_public"
+                },
+                {
+                    "key": "discord.access.group_plus",
+                    "source": "dialog.new_instance.group_access_type_plus"
+                },
+                {
+                    "key": "discord.access.group_members",
+                    "source": "dialog.new_instance.group_access_type_members"
+                },
+                {
+                    "key": "discord.status.active",
+                    "source": "dialog.user.status.active"
+                },
+                {
+                    "key": "discord.status.join_me",
+                    "source": "dialog.user.status.join_me"
+                },
+                {
+                    "key": "discord.status.ask_me",
+                    "source": "dialog.user.status.ask_me"
+                },
+                {
+                    "key": "discord.status.busy",
+                    "source": "dialog.user.status.busy"
+                },
+                {
+                    "key": "discord.status.offline",
+                    "source": "dialog.user.status.offline"
+                },
+                {
+                    "key": "discord.platform.desktop",
+                    "source": "view.settings.discord_presence.rpc.desktop"
+                },
+                {
+                    "key": "discord.platform.vr",
+                    "source": "view.settings.discord_presence.rpc.vr"
+                },
+                {
+                    "key": "discord.private_world",
+                    "source": "view.settings.discord_presence.rpc.private_world"
+                }
+            ]
+        },
+        "shell": {
+            "locales": "all",
+            "coverage": "required",
+            "messages": [
+                {
+                    "key": "nativeShell.tray.open",
+                    "source": "nativeShell.tray.open"
+                },
+                {
+                    "key": "nativeShell.tray.backgroundMode",
+                    "source": "nativeShell.tray.backgroundMode"
+                },
+                {
+                    "key": "nativeShell.tray.rebuildUi",
+                    "source": "nativeShell.tray.rebuildUi"
+                },
+                {
+                    "key": "nativeShell.tray.disableTheme",
+                    "source": "nativeShell.tray.disableTheme"
+                },
+                {
+                    "key": "nativeShell.tray.exit",
+                    "source": "nativeShell.tray.exit"
+                },
+                {
+                    "key": "nativeShell.notification.backgroundModeStarted.title",
+                    "source": "nativeShell.notification.backgroundModeStarted.title"
+                },
+                {
+                    "key": "nativeShell.notification.backgroundModeStarted.body",
+                    "source": "nativeShell.notification.backgroundModeStarted.body"
+                },
+                {
+                    "key": "nativeShell.notification.authFailure.title",
+                    "source": "nativeShell.notification.authFailure.title"
+                },
+                {
+                    "key": "nativeShell.notification.authFailure.body",
+                    "source": "nativeShell.notification.authFailure.body"
+                },
+                {
+                    "key": "nativeShell.menu.app.title",
+                    "source": "nativeShell.menu.app.title"
+                },
+                {
+                    "key": "nativeShell.menu.app.about",
+                    "source": "nativeShell.menu.app.about"
+                },
+                {
+                    "key": "nativeShell.menu.app.settings",
+                    "source": "nativeShell.menu.app.settings"
+                },
+                {
+                    "key": "nativeShell.menu.app.checkUpdates",
+                    "source": "nativeShell.menu.app.checkUpdates"
+                },
+                {
+                    "key": "nativeShell.menu.app.restart",
+                    "source": "nativeShell.menu.app.restart"
+                },
+                {
+                    "key": "nativeShell.menu.app.startBackgroundMode",
+                    "source": "nativeShell.menu.app.startBackgroundMode"
+                },
+                {
+                    "key": "nativeShell.menu.app.logout",
+                    "source": "nativeShell.menu.app.logout"
+                },
+                {
+                    "key": "nativeShell.menu.app.quit",
+                    "source": "nativeShell.menu.app.quit"
+                },
+                {
+                    "key": "nativeShell.menu.view.title",
+                    "source": "nativeShell.menu.view.title"
+                },
+                {
+                    "key": "nativeShell.menu.view.notificationCenter",
+                    "source": "nativeShell.menu.view.notificationCenter"
+                },
+                {
+                    "key": "nativeShell.menu.view.quickSearch",
+                    "source": "nativeShell.menu.view.quickSearch"
+                },
+                {
+                    "key": "nativeShell.menu.view.directAccess",
+                    "source": "nativeShell.menu.view.directAccess"
+                },
+                {
+                    "key": "nativeShell.menu.view.toggleNav",
+                    "source": "nativeShell.menu.view.toggleNav"
+                },
+                {
+                    "key": "nativeShell.menu.view.toggleFriendsSidebar",
+                    "source": "nativeShell.menu.view.toggleFriendsSidebar"
+                },
+                {
+                    "key": "nativeShell.menu.view.customNav",
+                    "source": "nativeShell.menu.view.customNav"
+                },
+                {
+                    "key": "nativeShell.menu.view.themes",
+                    "source": "nativeShell.menu.view.themes"
+                },
+                {
+                    "key": "nativeShell.menu.view.zoomIn",
+                    "source": "nativeShell.menu.view.zoomIn"
+                },
+                {
+                    "key": "nativeShell.menu.view.zoomOut",
+                    "source": "nativeShell.menu.view.zoomOut"
+                },
+                {
+                    "key": "nativeShell.menu.view.resetZoom",
+                    "source": "nativeShell.menu.view.resetZoom"
+                },
+                {
+                    "key": "nativeShell.menu.tools.title",
+                    "source": "nativeShell.menu.tools.title"
+                },
+                {
+                    "key": "nativeShell.menu.tools.allTools",
+                    "source": "nativeShell.menu.tools.allTools"
+                },
+                {
+                    "key": "nativeShell.menu.edit.title",
+                    "source": "nativeShell.menu.edit.title"
+                },
+                {
+                    "key": "nativeShell.menu.edit.undo",
+                    "source": "nativeShell.menu.edit.undo"
+                },
+                {
+                    "key": "nativeShell.menu.edit.redo",
+                    "source": "nativeShell.menu.edit.redo"
+                },
+                {
+                    "key": "nativeShell.menu.edit.cut",
+                    "source": "nativeShell.menu.edit.cut"
+                },
+                {
+                    "key": "nativeShell.menu.edit.copy",
+                    "source": "nativeShell.menu.edit.copy"
+                },
+                {
+                    "key": "nativeShell.menu.edit.paste",
+                    "source": "nativeShell.menu.edit.paste"
+                },
+                {
+                    "key": "nativeShell.menu.edit.selectAll",
+                    "source": "nativeShell.menu.edit.selectAll"
+                },
+                {
+                    "key": "nativeShell.menu.window.title",
+                    "source": "nativeShell.menu.window.title"
+                },
+                {
+                    "key": "nativeShell.menu.window.minimize",
+                    "source": "nativeShell.menu.window.minimize"
+                },
+                {
+                    "key": "nativeShell.menu.window.maximize",
+                    "source": "nativeShell.menu.window.maximize"
+                },
+                {
+                    "key": "nativeShell.menu.window.close",
+                    "source": "nativeShell.menu.window.close"
+                },
+                {
+                    "key": "nativeShell.menu.help.title",
+                    "source": "nativeShell.menu.help.title"
+                },
+                {
+                    "key": "nativeShell.menu.help.changelog",
+                    "source": "nativeShell.menu.help.changelog"
+                },
+                {
+                    "key": "nativeShell.menu.help.keyboardShortcuts",
+                    "source": "nativeShell.menu.help.keyboardShortcuts"
+                },
+                {
+                    "key": "nativeShell.menu.help.reportIssue",
+                    "source": "nativeShell.menu.help.reportIssue"
+                },
+                {
+                    "key": "nativeShell.menu.help.github",
+                    "source": "nativeShell.menu.help.github"
+                },
+                {
+                    "key": "nativeShell.menu.help.discord",
+                    "source": "nativeShell.menu.help.discord"
+                },
+                {
+                    "key": "nativeShell.menu.help.qqGroup",
+                    "source": "nativeShell.menu.help.qqGroup"
+                },
+                {
+                    "key": "nativeShell.menu.help.openDevtools",
+                    "source": "nativeShell.menu.help.openDevtools"
+                },
+                {
+                    "key": "nativeShell.menu.help.supportVrcx",
+                    "source": "nativeShell.menu.help.supportVrcx"
+                }
+            ]
+        }
+    }
+}

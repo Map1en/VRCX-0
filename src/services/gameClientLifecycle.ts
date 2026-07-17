@@ -1,7 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useSessionStore } from '@/state/sessionStore';
 
 import { isHostCapabilityAvailable } from './hostCapabilityService';
 
@@ -16,7 +15,7 @@ let lastRuntimeCrashRelaunchDecision: {
     handled: boolean;
     receivedAt: number;
 } | null = null;
-let lastRuntimeStateSignature = '';
+let lastRuntimeStateSignature: string | null = null;
 let crashRelaunchDecisionWaiters: Array<(received: boolean) => void> = [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -113,25 +112,21 @@ function getRuntimeLocationMirror(): string {
 
 export async function syncRuntimeGameClientState(): Promise<void> {
     if (!isRuntimeGameClientLifecycleActive()) {
-        lastRuntimeStateSignature = '';
+        lastRuntimeStateSignature = null;
         return;
     }
 
-    const sessionActive = useSessionStore.getState().isLoggedIn;
     const currentLocation = getRuntimeLocationMirror();
-    const signature = `${sessionActive ? '1' : '0'}\0${currentLocation}`;
+    const signature = currentLocation;
     if (signature === lastRuntimeStateSignature) {
         return;
     }
     lastRuntimeStateSignature = signature;
 
     try {
-        await commands.appSetGameClientRuntimeState(
-            sessionActive,
-            currentLocation
-        );
+        await commands.appSetGameClientRuntimeState(currentLocation);
     } catch (error) {
-        lastRuntimeStateSignature = '';
+        lastRuntimeStateSignature = null;
         console.warn('Failed to sync game client runtime state:', error);
     }
 }
@@ -140,12 +135,10 @@ export function startRuntimeGameClientSync(): () => void {
     const sync = () => {
         syncRuntimeGameClientState();
     };
-    const unsubscribeSession = useSessionStore.subscribe(sync);
     const unsubscribeRuntime = useRuntimeStore.subscribe(sync);
     sync();
 
     return () => {
-        unsubscribeSession();
         unsubscribeRuntime();
     };
 }

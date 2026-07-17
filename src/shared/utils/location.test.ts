@@ -8,6 +8,7 @@ import {
     resolveRegion,
     translateAccessType
 } from './location';
+import parserParityCases from './locationParserParityCases.json';
 
 describe('location utils', () => {
     it('uses current concrete location before traveling location for grouped friend locations', () => {
@@ -120,6 +121,23 @@ describe('location utils', () => {
 });
 
 describe('location parser', () => {
+    it('matches the shared Rust parser contract', () => {
+        for (const { name, tag, expected } of parserParityCases) {
+            expect(parseLocation(tag), name).toEqual(expected);
+        }
+    });
+
+    it('trims raw tags before canonical parsing', () => {
+        expect(parseLocation('  wrld_spaced:12345~region(jp)  ')).toMatchObject(
+            {
+                tag: 'wrld_spaced:12345~region(jp)',
+                worldId: 'wrld_spaced',
+                instanceId: '12345~region(jp)',
+                region: 'jp'
+            }
+        );
+    });
+
     it('normalizes sentinel locations', () => {
         expect(parseLocation('offline:offline')).toMatchObject({
             isOffline: true,
@@ -199,7 +217,7 @@ describe('location parser', () => {
 
     it('normalizes vrchat launch scheme URLs before parsing', () => {
         const parsed = parseLocation(
-            'vrchat://launch?ref=vrcx.app&id=wrld_123%3Ainstance1~region(us)&shortName=abc123'
+            'vrchat://launch?id=wrld_123%3Ainstance1~region(us)&shortName=abc123'
         );
 
         expect(parsed).toMatchObject({

@@ -7,12 +7,16 @@ edition = "2021"
 test-utils = []
 
 [dependencies]
+async-trait = { workspace = true }
 chrono = { workspace = true }
+base64 = { workspace = true }
 futures-util = "0.3"
+hex = "0.4"
 moka = { version = "0.12", features = ["future", "sync"] }
 percent-encoding = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = [
     "rt",
@@ -26,6 +30,7 @@ tracing = { workspace = true }
 url = { workspace = true }
 walkdir = { workspace = true }
 vrcx-0-core = { path = "../core" }
+vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-media = { path = "../media" }
 vrcx-0-persistence = { path = "../persistence" }

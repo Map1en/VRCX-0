@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
+import type {
+    EntityRecord,
+    GroupDialogInstanceRow
+} from '@/domain/entities/profileEntities';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import {
@@ -16,80 +20,111 @@ import {
 import { InstanceUserTiles } from '../world-dialog/WorldDialogViewParts';
 import { firstArray, firstText } from './groupDialogUtils';
 
-function getInstanceLocation(instance: any) {
-    const directLocation =
-        instance?.location || instance?.tag || instance?.$location?.tag;
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function nestedRecord(value: unknown): EntityRecord {
+    return isRecord(value) ? value : {};
+}
+
+function getInstanceLocation(instance: GroupDialogInstanceRow) {
+    const projectedLocation = nestedRecord(instance.$location);
+    const directLocation = firstText(
+        instance.location,
+        instance.tag,
+        projectedLocation.tag
+    );
     if (directLocation) {
         return directLocation;
     }
-    const worldId = instance?.worldId || instance?.world?.id;
-    const instanceId = instance?.instanceId || instance?.id || instance?.name;
+    const world = nestedRecord(instance.world);
+    const worldId = firstText(instance.worldId, world.id);
+    const instanceId = firstText(
+        instance.instanceId,
+        instance.id,
+        instance.name
+    );
     return worldId && instanceId ? `${worldId}:${instanceId}` : '';
 }
 
-function getInstanceTitle(instance: any) {
-    return instance?.world?.name || instance?.worldName || instance?.name || '';
-}
-
-function getInstanceOwnerId(instance: any) {
+function getInstanceTitle(instance: GroupDialogInstanceRow) {
     return firstText(
-        instance?.ownerUserId,
-        instance?.owner_user_id,
-        instance?.ownerId,
-        instance?.owner_id,
-        instance?.creatorUserId,
-        instance?.creator_user_id,
-        instance?.userId,
-        instance?.user_id,
-        instance?.ownerUser?.id,
-        instance?.ownerUser?.userId,
-        instance?.owner?.id,
-        instance?.owner?.userId,
-        instance?.creatorUser?.id,
-        instance?.creatorUser?.userId,
-        instance?.user?.id,
-        instance?.user?.userId,
-        instance?.$location?.userId,
-        instance?.$location?.user_id
+        nestedRecord(instance.world).name,
+        instance.worldName,
+        instance.name
     );
 }
 
-function getInstanceOwnerName(instance: any) {
+function getInstanceOwnerId(instance: GroupDialogInstanceRow) {
+    const ownerUser = nestedRecord(instance.ownerUser);
+    const owner = nestedRecord(instance.owner);
+    const creatorUser = nestedRecord(instance.creatorUser);
+    const user = nestedRecord(instance.user);
+    const projectedLocation = nestedRecord(instance.$location);
     return firstText(
-        instance?.ownerUser?.displayName,
-        instance?.ownerUser?.username,
-        instance?.owner?.displayName,
-        instance?.owner?.username,
-        instance?.creatorUser?.displayName,
-        instance?.creatorUser?.username,
-        instance?.user?.displayName,
-        instance?.user?.username,
-        instance?.ownerName,
-        instance?.owner_name,
-        instance?.ownerDisplayName,
-        instance?.owner_display_name
+        instance.ownerUserId,
+        instance.owner_user_id,
+        instance.ownerId,
+        instance.owner_id,
+        instance.creatorUserId,
+        instance.creator_user_id,
+        instance.userId,
+        instance.user_id,
+        ownerUser.id,
+        ownerUser.userId,
+        owner.id,
+        owner.userId,
+        creatorUser.id,
+        creatorUser.userId,
+        user.id,
+        user.userId,
+        projectedLocation.userId,
+        projectedLocation.user_id
     );
 }
 
-function getInstanceUsers(instance: any) {
+function getInstanceOwnerName(instance: GroupDialogInstanceRow) {
+    const ownerUser = nestedRecord(instance.ownerUser);
+    const owner = nestedRecord(instance.owner);
+    const creatorUser = nestedRecord(instance.creatorUser);
+    const user = nestedRecord(instance.user);
+    return firstText(
+        ownerUser.displayName,
+        ownerUser.username,
+        owner.displayName,
+        owner.username,
+        creatorUser.displayName,
+        creatorUser.username,
+        user.displayName,
+        user.username,
+        instance.ownerName,
+        instance.owner_name,
+        instance.ownerDisplayName,
+        instance.owner_display_name
+    );
+}
+
+function getInstanceUsers(instance: GroupDialogInstanceRow) {
+    const ref = instance.ref;
     const users = firstArray(
-        instance?.users,
-        instance?.players,
-        instance?.playerList,
-        instance?.userList,
-        instance?.ref?.users,
-        instance?.ref?.players
+        instance.users,
+        Array.isArray(instance.players) ? instance.players : undefined,
+        Array.isArray(instance.playerList) ? instance.playerList : undefined,
+        Array.isArray(instance.userList) ? instance.userList : undefined,
+        Array.isArray(ref.users) ? ref.users : undefined,
+        Array.isArray(ref.players) ? ref.players : undefined
     );
     if (users.length) {
         return users;
     }
-    const usersById = instance?.usersById || instance?.ref?.usersById;
+    const usersById = instance.usersById || ref.usersById;
     return usersById && typeof usersById === 'object'
         ? Object.values(usersById)
         : [];
 }
 
-function firstKnownValue(...values: any[]) {
+function firstKnownValue(...values: unknown[]) {
     for (const value of values) {
         if (value !== null && typeof value !== 'undefined' && value !== '') {
             return value;
@@ -98,11 +133,15 @@ function firstKnownValue(...values: any[]) {
     return undefined;
 }
 
-function isUserId(value: any) {
+function isUserId(value: unknown) {
     return hasUserIdPrefix(String(value || ''));
 }
 
-function normalizeGroupInstance(instance: any, location: any, users: any) {
+function normalizeGroupInstance(
+    instance: GroupDialogInstanceRow,
+    location: string,
+    users: unknown[]
+) {
     const ownerId = getInstanceOwnerId(instance);
     const ownerName = isUserId(ownerId) ? getInstanceOwnerName(instance) : '';
     const parsedLocation = parseLocation(location);
@@ -133,7 +172,13 @@ function normalizeGroupInstance(instance: any, location: any, users: any) {
     };
 }
 
-export function GroupInstanceRows({ instances, currentUserId }: any) {
+export function GroupInstanceRows({
+    instances,
+    currentUserId
+}: {
+    instances: GroupDialogInstanceRow[];
+    currentUserId: string | null;
+}) {
     const { t } = useTranslation();
     const rows = Array.isArray(instances) ? instances : [];
 
@@ -159,7 +204,7 @@ export function GroupInstanceRows({ instances, currentUserId }: any) {
 
     return (
         <div className="flex flex-col gap-2">
-            {rows.map((instance: any, index: any) => {
+            {rows.map((instance, index) => {
                 const location = getInstanceLocation(instance);
                 const parsedLocation = parseLocation(location);
                 const users = getInstanceUsers(instance);
@@ -176,15 +221,15 @@ export function GroupInstanceRows({ instances, currentUserId }: any) {
                 );
                 const capacity = firstKnownValue(
                     instance.capacity,
-                    instance.ref?.capacity,
-                    instance.ref?.world?.capacity,
-                    instance.world?.capacity
+                    instance.ref.capacity,
+                    nestedRecord(instance.ref.world).capacity,
+                    nestedRecord(instance.world).capacity
                 );
-                const worldName =
-                    normalizedInstance.worldName ||
-                    instance.worldName ||
-                    instance.world?.name ||
-                    '';
+                const worldName = firstText(
+                    normalizedInstance.worldName,
+                    instance.worldName,
+                    nestedRecord(instance.world).name
+                );
                 const launchToken =
                     normalizedInstance.launchToken ||
                     parsedLocation.shortName ||
@@ -202,11 +247,10 @@ export function GroupInstanceRows({ instances, currentUserId }: any) {
                                     locationObject={normalizedInstance}
                                     currentUserId={currentUserId}
                                     worldDialogShortName={launchToken}
-                                    grouphint={
-                                        instance.groupName ||
-                                        instance.group?.name ||
-                                        ''
-                                    }
+                                    grouphint={firstText(
+                                        instance.groupName,
+                                        nestedRecord(instance.group).name
+                                    )}
                                     instanceOwner={
                                         isUserId(getInstanceOwnerId(instance))
                                             ? getInstanceOwnerId(instance)
@@ -219,6 +263,7 @@ export function GroupInstanceRows({ instances, currentUserId }: any) {
                                     }
                                     playerCount={playerCount}
                                     capacity={capacity}
+                                    instanceClickAction="world"
                                     showGroupName={false}
                                     showPlayerSummary={false}
                                     hint={worldName}

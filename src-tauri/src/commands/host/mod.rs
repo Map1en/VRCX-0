@@ -15,6 +15,7 @@ pub mod registry;
 pub mod screenshots;
 pub mod shell;
 pub mod theme_debug;
+pub mod tts;
 pub mod updater;
 pub mod vrchat_log;
 pub mod window;

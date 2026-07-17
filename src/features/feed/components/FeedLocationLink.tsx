@@ -74,9 +74,10 @@ function FeedLocationLink({
                         : undefined
                 }
                 className={cn(
-                    'text-foreground [&_button:hover]:text-foreground max-w-full text-sm',
+                    'text-muted-foreground [&_button:hover]:text-foreground max-w-full text-sm',
                     className
                 )}
+                worldNameClassName="text-foreground/85 font-normal"
             />
         </span>
     );

@@ -1,0 +1,355 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        types:
+            - opened
+            - synchronize
+            - reopened
+            - ready_for_review
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    changes:
+        name: Detect Changes
+        runs-on: ubuntu-latest
+        outputs:
+            frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
+            rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust }}
+            rust_backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust_backend }}
+            native_catalog: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.native_catalog }}
+            tauri_bindings: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_bindings }}
+        steps:
+            - uses: actions/checkout@v7
+            - uses: dorny/paths-filter@v4
+              if: github.event_name != 'workflow_dispatch'
+              id: filter
+              with:
+                  filters: |
+                      frontend:
+                        - '.github/actions/setup-node/**'
+                        - '.github/workflows/ci.yml'
+                        - 'index.html'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'public/**'
+                        - 'scripts/**'
+                        - 'src/**'
+                        - 'tsconfig*.json'
+                        - 'vite.config.*'
+                      rust:
+                        - '.github/actions/setup-linux-tauri/**'
+                        - '.github/actions/setup-rust/**'
+                        - '.github/workflows/ci.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'scripts/**'
+                        - 'src-tauri/**'
+                      rust_backend:
+                        - '.github/actions/setup-linux-tauri/**'
+                        - '.github/actions/setup-rust/**'
+                        - '.github/workflows/ci.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'src-tauri/**'
+                      native_catalog:
+                        - '.github/workflows/ci.yml'
+                        - 'crates/i18n/**'
+                        - 'src/localization/**'
+                      tauri_bindings:
+                        - '.github/actions/setup-linux-tauri/**'
+                        - '.github/actions/setup-node/**'
+                        - '.github/actions/setup-rust/**'
+                        - '.github/workflows/ci.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'src/platform/tauri/**'
+                        - 'src-tauri/**'
+
+    frontend-checks:
+        name: Frontend Checks
+        runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-node
+            - run: npm run format:check
+            - run: npm run lint
+            - run: npm run typecheck
+
+    frontend-build:
+        name: Frontend Build
+        runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-node
+            - run: npm run build
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: frontend-dist
+                  path: dist
+                  if-no-files-found: error
+
+    frontend-test:
+        name: Frontend Tests
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-node
+            - run: npm run test -- --coverage
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: ts-coverage-summary
+                  path: coverage/coverage-summary.json
+                  if-no-files-found: error
+                  retention-days: 7
+
+    rust-checks:
+        name: Rust Checks
+        runs-on: ubuntu-24.04
+        needs: changes
+        if: needs.changes.outputs.rust == 'true'
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-linux-tauri
+              with:
+                  mode: ci
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24.x
+            - uses: ./.github/actions/setup-rust
+              with:
+                  components: rustfmt, clippy
+                  cache-key: ci-linux-x86_64
+            - run: npm run rust:fmt:check
+            - run: mkdir -p dist && printf '<!doctype html><html><body></body></html>' > dist/index.html
+            - run: npm run rust:clippy
+
+    tauri-build:
+        name: Tauri Build (${{ matrix.label }})
+        runs-on: ${{ matrix.os }}
+        needs: changes
+        if: needs.changes.outputs.rust == 'true'
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - label: Windows
+                      os: windows-latest
+                      rust_target: ''
+                      cache_key: ci-windows-x86_64
+                    - label: Linux
+                      os: ubuntu-24.04
+                      rust_target: ''
+                      cache_key: ci-linux-x86_64
+                    - label: macOS Apple Silicon
+                      os: macos-latest
+                      rust_target: aarch64-apple-darwin
+                      cache_key: ci-macos-aarch64
+                    - label: macOS Intel
+                      os: macos-latest
+                      rust_target: x86_64-apple-darwin
+                      cache_key: ci-macos-x86_64
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-linux-tauri
+              if: runner.os == 'Linux'
+              with:
+                  mode: ci
+            - uses: ./.github/actions/setup-rust
+              with:
+                  target: ${{ matrix.rust_target }}
+                  cache-key: ${{ matrix.cache_key }}
+                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+            - run: mkdir -p dist && printf '<!doctype html><html><body></body></html>' > dist/index.html
+            - name: Build Tauri crate
+              env:
+                  RUST_TARGET: ${{ matrix.rust_target }}
+              run: |
+                  if [[ -n "$RUST_TARGET" ]]; then
+                      cargo build --manifest-path src-tauri/Cargo.toml --locked --target "$RUST_TARGET"
+                  else
+                      cargo build --manifest-path src-tauri/Cargo.toml --locked
+                  fi
+
+    rust-coverage:
+        name: Rust Coverage
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-linux-tauri
+              with:
+                  mode: ci
+            - uses: ./.github/actions/setup-rust
+              with:
+                  components: llvm-tools-preview
+                  cache-key: ci-linux-coverage
+                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+            - uses: taiki-e/install-action@cargo-llvm-cov
+            - name: Generate coverage report
+              run: cargo llvm-cov --workspace --exclude vrcx-0 --locked --json --summary-only > rust-coverage-summary.json
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: rust-coverage-summary
+                  path: rust-coverage-summary.json
+                  if-no-files-found: error
+                  retention-days: 7
+
+    rust-tests:
+        name: Rust Tests (${{ matrix.label }})
+        runs-on: ${{ matrix.os }}
+        needs: changes
+        if: needs.changes.outputs.rust_backend == 'true'
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - label: Windows
+                      os: windows-latest
+                      cache_key: ci-test-windows-x86_64
+                    - label: Linux
+                      os: ubuntu-24.04
+                      cache_key: ci-test-linux-x86_64
+                    - label: macOS
+                      os: macos-latest
+                      cache_key: ci-test-macos-aarch64
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-linux-tauri
+              if: runner.os == 'Linux'
+              with:
+                  mode: ci
+            - uses: ./.github/actions/setup-rust
+              with:
+                  cache-key: ${{ matrix.cache_key }}
+                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+            - run: npm run rust:test
+
+    native-catalog:
+        name: Native Catalog Build
+        runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.native_catalog == 'true'
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-rust
+              with:
+                  cache-key: ci-native-catalog
+            - run: cargo check -p vrcx-0-i18n --locked
+
+    tauri-bindings:
+        name: Tauri Bindings Up-to-date
+        runs-on: ubuntu-24.04
+        needs: changes
+        if: needs.changes.outputs.tauri_bindings == 'true'
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup-linux-tauri
+              with:
+                  mode: ci
+            - uses: ./.github/actions/setup-node
+            - uses: ./.github/actions/setup-rust
+              with:
+                  cache-key: ci-linux-x86_64
+            - run: npm run generate:tauri-bindings
+            - name: Verify bindings.ts is regenerated
+              run: git diff --exit-code src/platform/tauri/bindings.ts
+
+    combined-coverage:
+        name: Publish Coverage Badge
+        runs-on: ubuntu-latest
+        needs:
+            - frontend-test
+            - rust-coverage
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24.x
+            - uses: actions/download-artifact@v8
+              with:
+                  name: ts-coverage-summary
+                  path: coverage-artifacts/ts
+            - uses: actions/download-artifact@v8
+              with:
+                  name: rust-coverage-summary
+                  path: coverage-artifacts/rust
+            - name: Generate combined coverage badge
+              run: |
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const ts = JSON.parse(fs.readFileSync('coverage-artifacts/ts/coverage-summary.json', 'utf8'));
+                  const rust = JSON.parse(fs.readFileSync('coverage-artifacts/rust/rust-coverage-summary.json', 'utf8'));
+
+                  const tsLines = ts.total.lines;
+                  const rustLines = rust.data[0].totals.lines;
+                  const covered = tsLines.covered + rustLines.covered;
+                  const total = tsLines.total + rustLines.count;
+                  const pct = (covered / total) * 100;
+                  const color = pct >= 80 ? 'brightgreen' : pct >= 50 ? 'yellow' : 'red';
+
+                  fs.writeFileSync(
+                      'coverage.json',
+                      JSON.stringify({
+                          schemaVersion: 1,
+                          label: 'coverage',
+                          message: pct.toFixed(1) + '%',
+                          color
+                      }) + '\n'
+                  );
+                  NODE
+            - name: Publish coverage badge to badge-data branch
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  set -euo pipefail
+                  work="$(mktemp -d)"
+                  cd "$work"
+                  git init -q
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  repo_url="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+                  if git fetch -q "$repo_url" badge-data 2>/dev/null; then
+                      git checkout -q -b badge-data FETCH_HEAD
+                  else
+                      git checkout -q --orphan badge-data
+                      git rm -rf . --quiet 2>/dev/null || true
+                  fi
+                  cp "$GITHUB_WORKSPACE/coverage.json" coverage.json
+                  git rm -f --ignore-unmatch rust-coverage.json
+                  git add coverage.json
+                  git diff --cached --quiet && exit 0
+                  git commit -q -m "chore(badge): coverage"
+                  git push -q -f "$repo_url" badge-data

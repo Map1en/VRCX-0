@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
+use vrcx_0_i18n::{render_overlay_message, OverlayMessage};
 
 use super::definitions::{
     default_activity_rules, default_rule, disabled_activity_rules, has_persisted_filter_rules,
-    hmd_activity_rules, known_definition_for_type, migrate_legacy_shared_feed_wrist_filters,
-    normalize_filters, normalize_surface,
+    hmd_activity_rules, known_definition_for_type, normalize_filters, normalize_surface,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -121,6 +121,7 @@ pub enum OverlayActivitySurface {
     Vr,
     Hmd,
     Webhook,
+    Tts,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -136,6 +137,8 @@ pub struct OverlayActivityFilters {
     pub hmd: OverlayActivitySurfaceFilters,
     #[serde(default = "OverlayActivitySurfaceFilters::disabled_rules")]
     pub webhook: OverlayActivitySurfaceFilters,
+    #[serde(default = "OverlayActivitySurfaceFilters::default_rules")]
+    pub tts: OverlayActivitySurfaceFilters,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -177,6 +180,7 @@ impl Default for OverlayActivityFilters {
             vr: OverlayActivitySurfaceFilters::default_rules(),
             hmd: OverlayActivitySurfaceFilters::hmd_default_rules(),
             webhook: OverlayActivitySurfaceFilters::disabled_rules(),
+            tts: OverlayActivitySurfaceFilters::default_rules(),
         }
     }
 }
@@ -190,10 +194,6 @@ impl OverlayActivityFilters {
         has_persisted_filter_rules(value)
     }
 
-    pub fn from_legacy_shared_feed_filters(value: Value) -> Self {
-        migrate_legacy_shared_feed_wrist_filters(value)
-    }
-
     pub fn surface(&self, surface: OverlayActivitySurface) -> &OverlayActivitySurfaceFilters {
         match surface {
             OverlayActivitySurface::Wrist => &self.wrist,
@@ -201,6 +201,7 @@ impl OverlayActivityFilters {
             OverlayActivitySurface::Vr => &self.vr,
             OverlayActivitySurface::Hmd => &self.hmd,
             OverlayActivitySurface::Webhook => &self.webhook,
+            OverlayActivitySurface::Tts => &self.tts,
         }
     }
 
@@ -233,13 +234,41 @@ pub struct OverlayActivityCandidate {
     pub payload: Value,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct OverlayActivityText {
-    pub key: String,
-    pub fallback: String,
-    #[serde(default)]
-    pub params: Value,
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", content = "value", rename_all = "camelCase")]
+pub enum OverlayActivityText {
+    Message(OverlayMessage),
+    Literal(String),
+}
+
+impl Default for OverlayActivityText {
+    fn default() -> Self {
+        Self::Literal(String::new())
+    }
+}
+
+impl OverlayActivityText {
+    pub fn message(message: OverlayMessage) -> Self {
+        Self::Message(message)
+    }
+
+    pub fn literal(value: impl Into<String>) -> Self {
+        Self::Literal(value.into())
+    }
+
+    pub fn as_message(&self) -> Option<&OverlayMessage> {
+        match self {
+            Self::Message(message) => Some(message),
+            Self::Literal(_) => None,
+        }
+    }
+
+    pub fn source_text(&self) -> String {
+        match self {
+            Self::Message(message) => render_overlay_message("en", message),
+            Self::Literal(value) => value.trim().to_string(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
@@ -301,4 +330,5 @@ pub struct OverlayActivityDelivery {
     pub vr: bool,
     pub hmd: bool,
     pub webhook: bool,
+    pub tts: bool,
 }

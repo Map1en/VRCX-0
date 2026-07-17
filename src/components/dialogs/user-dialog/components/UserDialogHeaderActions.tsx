@@ -37,27 +37,79 @@ import {
     EntityActionSeparator,
     EntityActionSub
 } from '../../EntityDialogScaffold';
+import type {
+    UserHeaderCommands,
+    UserHeaderModel
+} from './UserDialogHeaderSection';
 
-export function UserDialogHeaderActions(props: any) {
+type UserActionMenuModel = Pick<
+    UserHeaderModel,
+    | 'profile'
+    | 'loadStatus'
+    | 'actionStatus'
+    | 'moderationState'
+    | 'extendedModerationState'
+    | 'avatarOverrideState'
+    | 'isCurrentUser'
+    | 'isFriend'
+    | 'friendRequestState'
+    | 'canInviteFromCurrentLocation'
+    | 'currentUserBoopingEnabled'
+    | 'currentAvatarTarget'
+    | 'fallbackAvatarTarget'
+    | 'previousInstances'
+    | 'recentDialogShortcut'
+>;
+
+type UserActionMenuCommands = Pick<
+    UserHeaderCommands,
+    | 'onRefresh'
+    | 'onEditMemo'
+    | 'onShowAvatarAuthor'
+    | 'onOpenFallbackAvatar'
+    | 'onEditSelfStatus'
+    | 'onEditSelfProfileDetails'
+    | 'onEditSelfProfileMedia'
+    | 'onFriendRequest'
+    | 'onInvite'
+    | 'onInviteMessage'
+    | 'onInviteRequest'
+    | 'onInviteRequestMessage'
+    | 'onBoop'
+    | 'onUnfriend'
+    | 'onInviteToGroup'
+    | 'onGroupModeration'
+    | 'onShowInstanceHistory'
+    | 'onModeration'
+    | 'onAvatarOverride'
+    | 'onExtendedModeration'
+    | 'onReportHacking'
+>;
+
+export function UserDialogHeaderActions({
+    actionMenuModel: model,
+    actionMenuCommands: commands
+}: {
+    actionMenuModel: UserActionMenuModel;
+    actionMenuCommands: UserActionMenuCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.actionMenuModel || props || {};
-    const commands = props?.actionMenuCommands || props || {};
     const {
-        profile = {},
+        profile,
         loadStatus,
-        actionStatus = 'idle',
-        moderationState = {},
-        extendedModerationState = {},
-        avatarOverrideState = {},
+        actionStatus,
+        moderationState,
+        extendedModerationState,
+        avatarOverrideState,
         isCurrentUser,
         isFriend,
-        friendRequestState = {},
+        friendRequestState,
         canInviteFromCurrentLocation,
         currentUserBoopingEnabled,
         currentAvatarTarget,
         fallbackAvatarTarget,
-        previousInstances = [],
-        recentDialogShortcut = (): null => null
+        previousInstances,
+        recentDialogShortcut
     } = model;
     const {
         onRefresh,

@@ -4,12 +4,29 @@ import {
     PersonStandingIcon,
     RectangleGogglesIcon
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import type { PlatformFileAnalysis } from '@/domain/entities/profileEntities';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
-function PlatformBadge({ label, rating, fileSize, icon: Icon }: any) {
+import type {
+    AvatarPlatformInfo,
+    AvatarViewRecord
+} from '../avatarDialogTypes';
+
+function PlatformBadge({
+    label,
+    rating,
+    fileSize,
+    icon: Icon
+}: {
+    label: string;
+    rating?: string;
+    fileSize?: string;
+    icon?: LucideIcon;
+}) {
     return (
         <Badge variant="outline">
             {Icon ? <Icon data-icon="inline-start" /> : null}
@@ -35,7 +52,18 @@ export function AvatarDialogHeaderBadges({
     hasImposter,
     imposterVersion,
     onOpenCache
-}: any) {
+}: {
+    avatar: AvatarViewRecord;
+    isCurrentAvatar: boolean;
+    avatarBlocked: boolean;
+    platformInfo: AvatarPlatformInfo;
+    fileAnalysis: PlatformFileAnalysis;
+    contentTags: string[];
+    authorTags: string[];
+    hasImposter: boolean;
+    imposterVersion: string;
+    onOpenCache(): void;
+}) {
     const { t } = useTranslation();
 
     return (
@@ -93,7 +121,7 @@ export function AvatarDialogHeaderBadges({
                     {t('dialog.avatar.tags.future_proofing')}
                 </Badge>
             ) : null}
-            {avatar.tags?.some((tag: any) => /quest/i.test(tag)) ? (
+            {avatar.tags.some((tag) => /quest/i.test(tag)) ? (
                 <Badge variant="outline">
                     {t('dialog.avatar.tags.fallback')}
                 </Badge>
@@ -122,12 +150,12 @@ export function AvatarDialogHeaderBadges({
                     icon={AppleIcon}
                 />
             ) : null}
-            {contentTags.map((tag: any) => (
+            {contentTags.map((tag) => (
                 <Badge key={tag} variant="outline">
                     {tag.replace('content_', '')}
                 </Badge>
             ))}
-            {authorTags.map((tag: any) => (
+            {authorTags.map((tag) => (
                 <Badge key={tag} variant="outline">
                     {tag.replace('author_tag_', '')}
                 </Badge>

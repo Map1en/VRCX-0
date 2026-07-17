@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 
-import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
+    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
-    migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
     parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile,
@@ -73,10 +72,6 @@ export interface TableLimitsPreference {
     searchLimit: number;
 }
 
-export interface SharedFeedFiltersPreference {
-    noty: Record<string, unknown>;
-}
-
 export { normalizeOverlayActivityFilters, parseOverlayActivityFilters };
 
 function hasPersistedOverlayActivityFilters(value: unknown): boolean {
@@ -95,14 +90,10 @@ function hasPersistedOverlayActivityFilters(value: unknown): boolean {
     return Boolean(wrist.types || wrist.categories);
 }
 
-export function parseOverlayActivityFiltersPreference(
-    value?: unknown,
-    legacySharedFeedFilters?: unknown
-) {
-    if (!hasPersistedOverlayActivityFilters(value)) {
-        return migrateLegacySharedFeedWristFilters(legacySharedFeedFilters);
-    }
-    return parseOverlayActivityFilters(value);
+export function parseOverlayActivityFiltersPreference(value?: unknown) {
+    return hasPersistedOverlayActivityFilters(value)
+        ? parseOverlayActivityFilters(value)
+        : normalizeOverlayActivityFilters();
 }
 
 type BoundedIntOptions = {
@@ -111,6 +102,7 @@ type BoundedIntOptions = {
     fallback?: number;
 };
 type PreferenceInputSnapshot = Record<string, unknown>;
+export type NotificationTtsNameMode = 'username' | 'note' | 'usernameAndNote';
 
 function asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object'
@@ -126,6 +118,20 @@ function normalizeBool(value: unknown): boolean {
         return value.trim().toLowerCase() === 'true';
     }
     return Boolean(value);
+}
+
+export function normalizeNotificationTtsNameMode(
+    value: unknown,
+    legacyNicknameEnabled: unknown = false
+): NotificationTtsNameMode {
+    if (
+        value === 'username' ||
+        value === 'note' ||
+        value === 'usernameAndNote'
+    ) {
+        return value;
+    }
+    return normalizeBool(legacyNicknameEnabled) ? 'note' : 'username';
 }
 
 function normalizeText(value: unknown): string {
@@ -245,6 +251,14 @@ export function normalizeAutoDeletePrintsLimit(value: unknown): number {
     });
 }
 
+export function normalizeBackgroundModeDelayMinutes(value: unknown): number {
+    return normalizeBoundedInt(value, {
+        min: 10,
+        max: 600,
+        fallback: 60
+    });
+}
+
 export function normalizeTableLimits(value: unknown = {}): {
     maxTableSize: number;
     searchLimit: number;
@@ -262,33 +276,6 @@ export function normalizeTableLimits(value: unknown = {}): {
             fallback: DEFAULT_SEARCH_LIMIT
         })
     };
-}
-
-export function normalizeSharedFeedFilters(
-    value: unknown = {}
-): SharedFeedFiltersPreference {
-    const filters = asRecord(value);
-    const noty = asRecord(filters.noty);
-    return {
-        noty: {
-            ...sharedFeedFiltersDefaults.noty,
-            ...noty
-        }
-    };
-}
-
-export function parseSharedFeedFilters(value?: unknown) {
-    if (!value) {
-        return normalizeSharedFeedFilters();
-    }
-    if (typeof value === 'object') {
-        return normalizeSharedFeedFilters(value);
-    }
-    try {
-        return normalizeSharedFeedFilters(JSON.parse(String(value)));
-    } catch {
-        return normalizeSharedFeedFilters();
-    }
 }
 
 export function normalizeFeedHiddenUsers(value: unknown): string[] {
@@ -356,8 +343,9 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     afkDesktopToast: false,
     desktopNotificationSound: false,
     notificationTTS: 'Never',
+    notificationTTSNameMode: 'username',
     notificationTTSNickName: false,
-    notificationTTSVoice: '0',
+    notificationTTSVoiceNative: '',
     xsNotifications: false,
     ovrtHudNotifications: false,
     ovrtWristNotifications: false,
@@ -373,8 +361,8 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     webhookAuthEventsEnabled: true,
     webhookUrl: '',
     webhookFormat: 'generic',
-    vrOverlayPanelEnabled: true,
-    vrOverlayPanelAllFriendsIncludesFavorites: true,
+    vrOverlayPanelEnabled: false,
+    vrOverlayPanelAllFriendsIncludesFavorites: false,
     wristOverlayEnabled: false,
     wristOverlayStartMode: 'vrchatVrMode',
     wristOverlayButton: 'grip',
@@ -387,7 +375,6 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     relaunchVRChatAfterCrash: false,
     vrcQuitFix: true,
     autoSweepVRChatCache: false,
-    showConfirmationOnSwitchAvatar: true,
     gameLogDisabled: false,
     avatarAutoCleanup: 'Off',
     defaultLaunchMode: 'vr',
@@ -397,6 +384,8 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     autoLoginDelayEnabled: false,
     autoLoginDelaySeconds: 0,
     backgroundModeEnabled: false,
+    backgroundModeDelayEnabled: false,
+    backgroundModeDelayMinutes: 60,
     isStartAtWindowsStartup: false,
     isStartAsMinimizedState: false,
     isCloseToTray: false,
@@ -412,15 +401,13 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     },
     localFavoriteFriendsGroups: [],
     feedHiddenUsers: [],
-    sharedFeedFilters: {
-        noty: { ...sharedFeedFiltersDefaults.noty }
-    },
     overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     hmdNotificationActivityFilters: DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     desktopNotificationActivityFilters:
         DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
+    ttsNotificationActivityFilters: DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     feedTimeDisplayMode: 'relative',
     trustColor: { ...TRUST_COLOR_DEFAULTS },
     youtubeAPI: false,
@@ -446,10 +433,6 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
 
 export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
     const snapshotRecord = asRecord(snapshot);
-    const hasOverlayActivityFiltersInput = Object.prototype.hasOwnProperty.call(
-        snapshotRecord,
-        'overlayActivityFilters'
-    );
     const next: PreferenceInputSnapshot = {
         ...DEFAULT_PREFERENCES,
         ...snapshotRecord
@@ -519,8 +502,14 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         afkDesktopToast: normalizeBool(next.afkDesktopToast),
         desktopNotificationSound: normalizeBool(next.desktopNotificationSound),
         notificationTTS: next.notificationTTS || 'Never',
+        notificationTTSNameMode: normalizeNotificationTtsNameMode(
+            next.notificationTTSNameMode,
+            next.notificationTTSNickName
+        ),
         notificationTTSNickName: normalizeBool(next.notificationTTSNickName),
-        notificationTTSVoice: String(next.notificationTTSVoice ?? '0'),
+        notificationTTSVoiceNative: String(
+            next.notificationTTSVoiceNative ?? ''
+        ),
         xsNotifications: normalizeBool(next.xsNotifications),
         ovrtHudNotifications: normalizeBool(next.ovrtHudNotifications),
         ovrtWristNotifications: normalizeBool(next.ovrtWristNotifications),
@@ -562,10 +551,8 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         webhookAuthEventsEnabled: normalizeBool(next.webhookAuthEventsEnabled),
         webhookUrl: String(next.webhookUrl || ''),
         webhookFormat: next.webhookFormat === 'discord' ? 'discord' : 'generic',
-        vrOverlayPanelEnabled: normalizeBool(next.vrOverlayPanelEnabled),
-        vrOverlayPanelAllFriendsIncludesFavorites: normalizeBool(
-            next.vrOverlayPanelAllFriendsIncludesFavorites
-        ),
+        vrOverlayPanelEnabled: false,
+        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             next.wristOverlayStartMode
@@ -588,9 +575,6 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         relaunchVRChatAfterCrash: normalizeBool(next.relaunchVRChatAfterCrash),
         vrcQuitFix: normalizeBool(next.vrcQuitFix),
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
-        showConfirmationOnSwitchAvatar: normalizeBool(
-            next.showConfirmationOnSwitchAvatar
-        ),
         gameLogDisabled: normalizeBool(next.gameLogDisabled),
         avatarAutoCleanup: next.avatarAutoCleanup || 'Off',
         defaultLaunchMode: normalizeDefaultLaunchMode(next.defaultLaunchMode),
@@ -604,6 +588,12 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             fallback: 0
         }),
         backgroundModeEnabled: normalizeBool(next.backgroundModeEnabled),
+        backgroundModeDelayEnabled: normalizeBool(
+            next.backgroundModeDelayEnabled
+        ),
+        backgroundModeDelayMinutes: normalizeBackgroundModeDelayMinutes(
+            next.backgroundModeDelayMinutes
+        ),
         isStartAtWindowsStartup: normalizeBool(next.isStartAtWindowsStartup),
         isStartAsMinimizedState: normalizeBool(next.isStartAsMinimizedState),
         isCloseToTray: normalizeBool(next.isCloseToTray),
@@ -620,12 +610,8 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             ? next.localFavoriteFriendsGroups.filter(Boolean)
             : [],
         feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
-        sharedFeedFilters: parseSharedFeedFilters(next.sharedFeedFilters),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
-            hasOverlayActivityFiltersInput
-                ? next.overlayActivityFilters
-                : undefined,
-            next.sharedFeedFilters
+            next.overlayActivityFilters
         ),
         vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
             next.vrNotificationActivityFilters
@@ -638,6 +624,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         ),
         webhookActivityFilters: parseOverlayActivityFilterProfile(
             next.webhookActivityFilters || DEFAULT_WEBHOOK_ACTIVITY_FILTERS
+        ),
+        ttsNotificationActivityFilters: parseOverlayActivityFilterProfile(
+            next.ttsNotificationActivityFilters ||
+                DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS
         ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(
             next.feedTimeDisplayMode

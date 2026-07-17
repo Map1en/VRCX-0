@@ -3,7 +3,22 @@ import { compareByMemberCount, compareByName } from '@/shared/utils/compare';
 
 import { firstArray, normalizedText } from './userDialogRows';
 
-function firstText(...values: any[]) {
+type UserGroupRow = Record<string, unknown> & {
+    group?: Record<string, unknown>;
+    id?: string;
+    memberCount?: number;
+    name?: string;
+};
+
+type UserGroupSort = 'alphabetical' | 'members' | 'inGame';
+
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+function firstText(...values: unknown[]) {
     for (const value of values) {
         const normalized = normalizedText(value);
         if (normalized) {
@@ -13,9 +28,9 @@ function firstText(...values: any[]) {
     return '';
 }
 
-export function groupIdForRow(group: any) {
-    const nestedGroup =
-        group?.group && typeof group.group === 'object' ? group.group : {};
+export function groupIdForRow(source: unknown) {
+    const group = record(source);
+    const nestedGroup = record(group.group);
     const explicitGroupId = firstText(
         group?.groupId,
         group?.group_id,
@@ -30,16 +45,16 @@ export function groupIdForRow(group: any) {
     return hasGroupIdPrefix(directId) ? directId : '';
 }
 
-function compareGroupRowsByInGameOrder(groupOrder: any[] = []) {
+function compareGroupRowsByInGameOrder(groupOrder: string[] = []) {
     const orderMap = new Map(
-        (groupOrder || []).map((groupId: any, index: any) => [groupId, index])
+        groupOrder.map((groupId, index) => [groupId, index])
     );
-    return (left: any, right: any) => {
+    return (left: UserGroupRow, right: UserGroupRow) => {
         const leftOrder = orderMap.has(groupIdForRow(left))
-            ? orderMap.get(groupIdForRow(left))
+            ? (orderMap.get(groupIdForRow(left)) ?? Number.MAX_SAFE_INTEGER)
             : Number.MAX_SAFE_INTEGER;
         const rightOrder = orderMap.has(groupIdForRow(right))
-            ? orderMap.get(groupIdForRow(right))
+            ? (orderMap.get(groupIdForRow(right)) ?? Number.MAX_SAFE_INTEGER)
             : Number.MAX_SAFE_INTEGER;
         if (leftOrder !== rightOrder) {
             return leftOrder - rightOrder;
@@ -49,17 +64,23 @@ function compareGroupRowsByInGameOrder(groupOrder: any[] = []) {
 }
 
 export function sortUserGroupRows(
-    rows: any,
-    sortBy: any,
-    groupOrder: any[] = []
+    rows: UserGroupRow[],
+    sortBy: UserGroupSort | string,
+    groupOrder: string[] = []
 ) {
-    const comparers: any = {
+    const comparers: Record<
+        UserGroupSort,
+        (left: UserGroupRow, right: UserGroupRow) => number
+    > = {
         alphabetical: compareByName,
         members: compareByMemberCount,
         inGame: compareGroupRowsByInGameOrder(groupOrder)
     };
-    const comparer = comparers[sortBy] || comparers.alphabetical;
-    return [...rows].sort((left: any, right: any) => {
+    const comparer =
+        sortBy === 'members' || sortBy === 'inGame'
+            ? comparers[sortBy]
+            : comparers.alphabetical;
+    return [...rows].sort((left, right) => {
         const result = comparer(left, right);
         return Number.isFinite(result) && result !== 0
             ? result
@@ -67,19 +88,22 @@ export function sortUserGroupRows(
     });
 }
 
-export function groupMemberVisibility(group: any) {
+export function groupMemberVisibility(source: unknown) {
+    const group = record(source);
+    const myMember = record(group.myMember);
+    const legacyMyMember = record(group.my_member);
     return (
         normalizedText(
-            group?.memberVisibility ||
-                group?.member_visibility ||
-                group?.myMember?.visibility ||
-                group?.my_member?.visibility ||
+            group.memberVisibility ||
+                group.member_visibility ||
+                myMember.visibility ||
+                legacyMyMember.visibility ||
                 'visible'
         ) || 'visible'
     );
 }
 
-function normalizedBoolean(value: any) {
+function normalizedBoolean(value: unknown) {
     if (typeof value === 'boolean') {
         return value;
     }
@@ -101,12 +125,10 @@ function normalizedBoolean(value: any) {
     return Boolean(value);
 }
 
-function isMutualGroup(group: any) {
-    const membership =
-        group?.membership && typeof group.membership === 'object'
-            ? group.membership
-            : {};
-    const myMember = group?.myMember || group?.my_member || {};
+function isMutualGroup(source: unknown) {
+    const group = record(source);
+    const membership = record(group.membership);
+    const myMember = record(group.myMember || group.my_member);
     return normalizedBoolean(
         group?.mutualGroup ??
             group?.mutual_group ??
@@ -131,9 +153,12 @@ function isMutualGroup(group: any) {
     );
 }
 
-function groupOwnerId(group: any) {
-    const owner = group?.owner;
-    const creator = group?.creator || group?.createdBy || group?.created_by;
+function groupOwnerId(source: unknown) {
+    const group = record(source);
+    const owner = group.owner;
+    const ownerRecord = record(owner);
+    const creator = group.creator || group.createdBy || group.created_by;
+    const creatorRecord = record(creator);
     return firstText(
         group?.ownerId,
         group?.owner_id,
@@ -146,20 +171,21 @@ function groupOwnerId(group: any) {
         group?.creatorUserId,
         group?.creator_user_id,
         typeof owner === 'string' ? owner : '',
-        owner?.id,
-        owner?.userId,
-        owner?.user_id,
-        owner?.userID,
+        ownerRecord.id,
+        ownerRecord.userId,
+        ownerRecord.user_id,
+        ownerRecord.userID,
         typeof creator === 'string' ? creator : '',
-        creator?.id,
-        creator?.userId,
-        creator?.user_id,
-        creator?.userID
+        creatorRecord.id,
+        creatorRecord.userId,
+        creatorRecord.user_id,
+        creatorRecord.userID
     );
 }
 
-function groupMemberUserId(group: any) {
-    const myMember = group?.myMember || group?.my_member || {};
+function groupMemberUserId(source: unknown) {
+    const group = record(source);
+    const myMember = record(group.myMember || group.my_member);
     return firstText(
         group?.userId,
         group?.user_id,
@@ -171,17 +197,22 @@ function groupMemberUserId(group: any) {
     );
 }
 
-function topLevelMembershipStatus(group: any) {
+function topLevelMembershipStatus(source: unknown) {
+    const group = record(source);
+    const membership = record(group.membership);
+    const member = record(group.member);
+    const myMember = record(group.myMember);
+    const legacyMyMember = record(group.my_member);
     return firstText(
         group?.membershipStatus,
         group?.membership_status,
         group?.memberStatus,
         group?.member_status,
-        group?.membership?.status,
-        group?.membership?.role,
-        group?.member?.role,
-        group?.myMember?.role,
-        group?.my_member?.role,
+        membership.status,
+        membership.role,
+        member.role,
+        myMember.role,
+        legacyMyMember.role,
         group?.roleName,
         group?.role_name,
         group?.role,
@@ -189,7 +220,7 @@ function topLevelMembershipStatus(group: any) {
     ).toLowerCase();
 }
 
-function roleNameContainsOwner(value: any) {
+function roleNameContainsOwner(value: unknown): boolean {
     if (!value) {
         return false;
     }
@@ -197,18 +228,24 @@ function roleNameContainsOwner(value: any) {
         return value.some(roleNameContainsOwner);
     }
     if (typeof value === 'object') {
+        const role = record(value);
         return roleNameContainsOwner(
-            value.name ||
-                value.displayName ||
-                value.roleName ||
-                value.role_name ||
-                value.id
+            role.name ||
+                role.displayName ||
+                role.roleName ||
+                role.role_name ||
+                role.id
         );
     }
     return normalizedText(value).toLowerCase().includes('owner');
 }
 
-function isOwnedGroupForUser(group: any, userId: any) {
+function isOwnedGroupForUser(source: unknown, userId: unknown) {
+    const group = record(source);
+    const membership = record(group.membership);
+    const member = record(group.member);
+    const myMember = record(group.myMember);
+    const legacyMyMember = record(group.my_member);
     const normalizedUserId = normalizedText(userId);
     if (!normalizedUserId) {
         return false;
@@ -231,31 +268,27 @@ function isOwnedGroupForUser(group: any, userId: any) {
     return (
         (memberUserId === normalizedUserId || !memberUserId) &&
         (normalizedBoolean(group?.isOwner ?? group?.is_owner ?? group?.owned) ||
-            roleNameContainsOwner(group?.membership?.roles) ||
-            roleNameContainsOwner(group?.member?.roles) ||
+            roleNameContainsOwner(membership.roles) ||
+            roleNameContainsOwner(member.roles) ||
             roleNameContainsOwner(group?.userRoles) ||
             roleNameContainsOwner(group?.user_roles) ||
             roleNameContainsOwner(group?.userRoleNames) ||
             roleNameContainsOwner(group?.user_role_names) ||
-            roleNameContainsOwner(group?.myMember?.roles) ||
-            roleNameContainsOwner(group?.my_member?.roles))
+            roleNameContainsOwner(myMember.roles) ||
+            roleNameContainsOwner(legacyMyMember.roles))
     );
 }
 
-function isMutualGroupForUser(group: any, isCurrentUser: any) {
+function isMutualGroupForUser(group: unknown, isCurrentUser: boolean) {
     if (isCurrentUser) {
         return false;
     }
     return isMutualGroup(group);
 }
 
-function normalizeUserGroupMembershipRow(group: any) {
-    if (!group || typeof group !== 'object') {
-        return group;
-    }
-
-    const nestedGroup =
-        group.group && typeof group.group === 'object' ? group.group : {};
+function normalizeUserGroupMembershipRow(source: unknown): UserGroupRow {
+    const group = record(source);
+    const nestedGroup = record(group.group);
     const groupId = groupIdForRow(group);
     const currentId = normalizedText(group.id);
     const memberId = normalizedText(
@@ -264,8 +297,8 @@ function normalizeUserGroupMembershipRow(group: any) {
             group.member_id ||
             (currentId && currentId !== groupId ? currentId : '')
     );
-    const myMember = group.myMember || group.my_member || {};
-    const mergedGroup: any = { ...nestedGroup, ...group };
+    const myMember = record(group.myMember || group.my_member);
+    const mergedGroup: UserGroupRow = { ...nestedGroup, ...group };
     const ownerId = groupOwnerId(mergedGroup);
 
     return {
@@ -308,14 +341,18 @@ function normalizeUserGroupMembershipRow(group: any) {
     };
 }
 
-export function normalizeUserGroupMembershipRows(groups: any) {
+export function normalizeUserGroupMembershipRows(groups: unknown) {
     return firstArray(groups).map(normalizeUserGroupMembershipRow);
 }
 
-export function splitUserGroups(groups: any, userId: any, isCurrentUser: any) {
-    const ownGroups = [];
-    const mutualGroups = [];
-    const remainingGroups = [];
+export function splitUserGroups(
+    groups: UserGroupRow[],
+    userId: unknown,
+    isCurrentUser: boolean
+) {
+    const ownGroups: UserGroupRow[] = [];
+    const mutualGroups: UserGroupRow[] = [];
+    const remainingGroups: UserGroupRow[] = [];
 
     for (const group of groups || []) {
         if (isOwnedGroupForUser(group, userId)) {

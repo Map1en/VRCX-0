@@ -1,9 +1,10 @@
-import { ArrowDownIcon, ArrowRightIcon } from 'lucide-react';
+import { ArrowRightIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
 import { useModalStore } from '@/state/modalStore';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
 import { resolveFeedLocationForDisplay } from '../feedRows';
@@ -20,6 +21,63 @@ type FeedExpandedRowProps = {
     row: FeedRow;
 };
 
+function ExpandedRowShell({ children }: { children: ReactNode }) {
+    return (
+        <div className="animate-in fade-in border-border ml-3 border-l-2 py-3 pl-4 text-sm duration-150">
+            {children}
+        </div>
+    );
+}
+
+type AvatarColumnProps = {
+    avatarName: unknown;
+    avatarTags: unknown;
+    imageAlt: string;
+    imageUrl: string;
+    label: string;
+    onOpenPreview(): void;
+    ownerId: unknown;
+    userId: unknown;
+};
+
+function AvatarColumn({
+    avatarName,
+    avatarTags,
+    imageAlt,
+    imageUrl,
+    label,
+    onOpenPreview,
+    ownerId,
+    userId
+}: AvatarColumnProps) {
+    return (
+        <div className="flex w-40 flex-col gap-1">
+            <span className="text-muted-foreground text-xs">{label}</span>
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-auto w-fit p-0"
+                aria-label={label}
+                onClick={onOpenPreview}
+            >
+                <FadeInImage
+                    src={imageUrl}
+                    alt={imageAlt}
+                    className="h-30 w-40 rounded-lg border object-cover"
+                    loading="lazy"
+                />
+            </Button>
+            <AvatarInfoLine
+                avatarName={avatarName}
+                avatarTags={avatarTags}
+                imageUrl={imageUrl}
+                ownerId={ownerId}
+                userId={userId}
+            />
+        </div>
+    );
+}
+
 function FeedExpandedRow({
     loadingHistoryKey,
     onNewInstance,
@@ -28,35 +86,31 @@ function FeedExpandedRow({
 }: FeedExpandedRowProps) {
     const { t } = useTranslation();
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const displayLocation = resolveFeedLocationForDisplay(row);
 
     if (row?.type === 'GPS') {
+        const displayLocation = resolveFeedLocationForDisplay(row);
+
         return (
-            <div className="pl-5 text-sm">
-                {row.previousLocation ? (
-                    <>
-                        <FeedLocationLink
-                            disableTooltip
-                            groupName={row.previousGroupName}
-                            loadingHistoryKey={loadingHistoryKey}
-                            location={row.previousLocation}
-                            onNewInstance={onNewInstance}
-                            onOpenPreviousInstances={onOpenPreviousInstances}
-                            worldName={row.previousWorldName}
-                            wrapperClassName="inline-block align-middle"
-                        />
+            <ExpandedRowShell>
+                <div className="flex items-center gap-3">
+                    <FeedLocationLink
+                        disableTooltip
+                        groupName={row.previousGroupName}
+                        loadingHistoryKey={loadingHistoryKey}
+                        location={row.previousLocation}
+                        onNewInstance={onNewInstance}
+                        onOpenPreviousInstances={onOpenPreviousInstances}
+                        worldName={row.previousWorldName}
+                        wrapperClassName="min-w-0"
+                    />
+                    <span className="flex shrink-0 flex-col items-center gap-1">
                         {row.time ? (
-                            <Badge variant="secondary" className="ml-1 w-fit">
+                            <span className="text-muted-foreground text-xs">
                                 {timeToText(row.time)}
-                            </Badge>
+                            </span>
                         ) : null}
-                        <br />
-                        <span className="inline-flex">
-                            <ArrowDownIcon className="size-4" />
-                        </span>
-                    </>
-                ) : null}
-                {displayLocation ? (
+                        <ArrowRightIcon className="text-muted-foreground size-4" />
+                    </span>
                     <FeedLocationLink
                         disableTooltip
                         groupName={row.groupName}
@@ -65,90 +119,32 @@ function FeedExpandedRow({
                         onNewInstance={onNewInstance}
                         onOpenPreviousInstances={onOpenPreviousInstances}
                         worldName={row.worldName}
+                        wrapperClassName="min-w-0"
                     />
-                ) : null}
-            </div>
+                </div>
+            </ExpandedRowShell>
         );
-    }
-
-    if (row?.type === 'Offline') {
-        return displayLocation ? (
-            <div className="pl-5 text-sm">
-                <FeedLocationLink
-                    disableTooltip
-                    groupName={row.groupName}
-                    loadingHistoryKey={loadingHistoryKey}
-                    location={displayLocation}
-                    onNewInstance={onNewInstance}
-                    onOpenPreviousInstances={onOpenPreviousInstances}
-                    worldName={row.worldName}
-                    wrapperClassName="inline-block align-middle"
-                />
-                {row.time ? (
-                    <Badge variant="secondary" className="ml-1 w-fit">
-                        {timeToText(row.time)}
-                    </Badge>
-                ) : null}
-            </div>
-        ) : null;
-    }
-
-    if (row?.type === 'Online') {
-        return displayLocation ? (
-            <div className="pl-5 text-sm">
-                <FeedLocationLink
-                    disableTooltip
-                    groupName={row.groupName}
-                    loadingHistoryKey={loadingHistoryKey}
-                    location={displayLocation}
-                    onNewInstance={onNewInstance}
-                    onOpenPreviousInstances={onOpenPreviousInstances}
-                    worldName={row.worldName}
-                />
-            </div>
-        ) : null;
     }
 
     if (row?.type === 'Status') {
-        if (row.statusDescription === row.previousStatusDescription) {
-            return (
-                <div className="flex items-center pl-5 text-sm">
-                    <FeedStatusBadge status={row.previousStatus} />
-                    <span className="mx-2 inline-flex">
-                        <ArrowRightIcon className="size-4" />
+        return (
+            <ExpandedRowShell>
+                <div className="flex max-w-2xl items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5">
+                        <FeedStatusBadge status={row.previousStatus} />
+                        <span className="bg-destructive/10 text-destructive rounded px-0.5 line-through">
+                            {String(row.previousStatusDescription || '')}
+                        </span>
                     </span>
-                    <FeedStatusBadge status={row.status} />
+                    <ArrowRightIcon className="text-muted-foreground size-4 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5">
+                        <FeedStatusBadge status={row.status} />
+                        <span className="bg-primary/10 text-primary rounded px-0.5">
+                            {String(row.statusDescription || '')}
+                        </span>
+                    </span>
                 </div>
-            );
-        }
-
-        return (
-            <div className="flex items-center pl-5 text-sm">
-                <FeedStatusBadge
-                    status={row.previousStatus}
-                    label={String(row.previousStatusDescription || '')}
-                />
-                <span className="mx-2 inline-flex">
-                    <ArrowRightIcon className="size-4" />
-                </span>
-                <FeedStatusBadge
-                    status={row.status}
-                    label={String(row.statusDescription || '')}
-                />
-            </div>
-        );
-    }
-
-    if (row?.type === 'Bio') {
-        return (
-            <div className="pl-5 text-sm">
-                <pre
-                    className="font-inherit text-xs leading-5 whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{
-                        __html: formatDifferenceHtml(row.previousBio, row.bio)
-                    }}
-                />
-            </div>
+            </ExpandedRowShell>
         );
     }
 
@@ -165,93 +161,71 @@ function FeedExpandedRow({
         const currentAvatarLabel = t('dialog.avatar.actions.current_avatar');
 
         return (
-            <div className="pl-5 text-sm">
-                <div className="flex items-center">
-                    <div className="inline-block w-40 align-top">
-                        {previousImage ? (
-                            <>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto p-0"
-                                    aria-label={previousAvatarLabel}
-                                    onClick={() =>
-                                        openImagePreview({
-                                            url: String(
-                                                row.previousCurrentAvatarImageUrl ||
-                                                    previousImage
-                                            ),
-                                            title:
-                                                String(
-                                                    row.previousAvatarName || ''
-                                                ) || previousAvatarLabel
-                                        })
-                                    }
-                                >
-                                    <img
-                                        src={String(previousImage)}
-                                        alt={previousAvatarLabel}
-                                        className="h-30 w-40 rounded object-cover"
-                                        loading="lazy"
-                                    />
-                                </Button>
-                                <br />
-                                <AvatarInfoLine
-                                    avatarName={row.previousAvatarName}
-                                    avatarTags={row.previousCurrentAvatarTags}
-                                    imageUrl={previousImage}
-                                    ownerId={row.previousOwnerId}
-                                    userId={row.userId}
-                                />
-                            </>
-                        ) : null}
-                    </div>
-                    <span className="mx-2 inline-flex">
-                        <ArrowRightIcon className="size-4" />
-                    </span>
-                    <div className="inline-block w-40 align-top">
-                        {currentImage ? (
-                            <>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto p-0"
-                                    aria-label={currentAvatarLabel}
-                                    onClick={() =>
-                                        openImagePreview({
-                                            url: String(
-                                                row.currentAvatarImageUrl ||
-                                                    currentImage
-                                            ),
-                                            title:
-                                                String(row.avatarName || '') ||
-                                                currentAvatarLabel
-                                        })
-                                    }
-                                >
-                                    <img
-                                        src={String(currentImage)}
-                                        alt={
-                                            String(row.avatarName || '') ||
-                                            currentAvatarLabel
-                                        }
-                                        className="h-30 w-40 rounded object-cover"
-                                        loading="lazy"
-                                    />
-                                </Button>
-                                <br />
-                                <AvatarInfoLine
-                                    avatarName={row.avatarName}
-                                    avatarTags={row.currentAvatarTags}
-                                    imageUrl={currentImage}
-                                    ownerId={row.ownerId}
-                                    userId={row.userId}
-                                />
-                            </>
-                        ) : null}
-                    </div>
+            <ExpandedRowShell>
+                <div className="flex items-center gap-3">
+                    {previousImage ? (
+                        <AvatarColumn
+                            avatarName={row.previousAvatarName}
+                            avatarTags={row.previousCurrentAvatarTags}
+                            imageAlt={previousAvatarLabel}
+                            imageUrl={String(previousImage)}
+                            label={previousAvatarLabel}
+                            onOpenPreview={() =>
+                                openImagePreview({
+                                    url: String(
+                                        row.previousCurrentAvatarImageUrl ||
+                                            previousImage
+                                    ),
+                                    title:
+                                        String(row.previousAvatarName || '') ||
+                                        previousAvatarLabel
+                                })
+                            }
+                            ownerId={row.previousOwnerId}
+                            userId={row.userId}
+                        />
+                    ) : null}
+                    <ArrowRightIcon className="text-muted-foreground size-4 shrink-0" />
+                    {currentImage ? (
+                        <AvatarColumn
+                            avatarName={row.avatarName}
+                            avatarTags={row.currentAvatarTags}
+                            imageAlt={
+                                String(row.avatarName || '') ||
+                                currentAvatarLabel
+                            }
+                            imageUrl={String(currentImage)}
+                            label={currentAvatarLabel}
+                            onOpenPreview={() =>
+                                openImagePreview({
+                                    url: String(
+                                        row.currentAvatarImageUrl ||
+                                            currentImage
+                                    ),
+                                    title:
+                                        String(row.avatarName || '') ||
+                                        currentAvatarLabel
+                                })
+                            }
+                            ownerId={row.ownerId}
+                            userId={row.userId}
+                        />
+                    ) : null}
                 </div>
-            </div>
+            </ExpandedRowShell>
+        );
+    }
+
+    if (row?.type === 'Bio') {
+        return (
+            <ExpandedRowShell>
+                <pre
+                    className="font-inherit max-w-prose text-sm leading-6 whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{
+                        __html: formatDifferenceHtml(row.previousBio, row.bio)
+                    }}
+                />
+            </ExpandedRowShell>
         );
     }
 

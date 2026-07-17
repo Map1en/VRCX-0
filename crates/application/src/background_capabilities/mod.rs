@@ -6,7 +6,7 @@ mod shared;
 
 pub use discord::{
     build_background_discord_presence_command, BackgroundDiscordActivityPayload,
-    BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState,
+    BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState, DiscordPresenceLabels,
 };
 pub use group_instances::{
     refresh_background_current_user, refresh_background_group_instances,

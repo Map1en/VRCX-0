@@ -11,6 +11,7 @@ members = [
     "crates/media",
     "crates/application",
     "crates/runtime-host",
+    "crates/overlay-devtool",
     "crates/headless",
     "crates/mcp",
     "crates/harness"
@@ -34,23 +35,35 @@ default-members = [
 resolver = "2"
 
 [workspace.dependencies]
+async-trait = "0.1"
 base64 = "0.22"
+chacha20poly1305 = "0.11"
 chrono = "0.4"
 dirs = "6"
 image = "0.25"
 iana-time-zone = "0.1"
+machine-uid = "0.6"
 percent-encoding = "2"
 reqwest = "0.13"
 regex = "1"
+fs4 = "0.13"
 rusqlite = "0.40"
 serde = "1"
 serde_json = "1"
+sha2 = "0.11"
+slint = { version = "~1.17", default-features = false, features = [
+    "compat-1-2",
+    "renderer-software",
+    "std"
+] }
+slint-build = "~1.17"
 specta = { version = "=2.0.0-rc.22", features = [
     "derive",
     "serde_json",
     "chrono"
 ] }
 sys-locale = "0.3"
+tar = "0.4"
 thiserror = "2"
 tokio = "1"
 tokio-util = "0.7"
@@ -58,9 +71,19 @@ tracing = "0.1"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
+zstd = { version = "0.13", features = ["zstdmt"] }
 
 [profile.dev]
 incremental = true
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+opt-level = 1
+
+[profile.test]
+debug = false
+opt-level = 0
 
 [profile.release]
 codegen-units = 1

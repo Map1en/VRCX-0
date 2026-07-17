@@ -40,7 +40,7 @@ describe('screenshotMetadataValues', () => {
             getDroppedScreenshotPath({
                 dataTransfer: {
                     files: [],
-                    getData: (type: any) =>
+                    getData: (type: string) =>
                         type === 'text/plain' ? 'D:\\VRChat\\fallback.png' : ''
                 }
             })
@@ -164,17 +164,17 @@ describe('screenshotMetadataValues', () => {
 
         expect(
             sortScreenshotSearchRows(rows, DEFAULT_SCREENSHOT_SEARCH_SORT).map(
-                (row: any) => row.filePath
+                (row) => row.filePath
             )
         ).toEqual(['new', 'middle', 'old']);
         expect(
             sortScreenshotSearchRows(rows, { key: 'world', asc: true }).map(
-                (row: any) => row.filePath
+                (row) => row.filePath
             )
         ).toEqual(['new', 'middle', 'old']);
         expect(
             sortScreenshotRowsByNewest([null, ...rows]).map(
-                (row: any) => row.filePath
+                (row) => row.filePath
             )
         ).toEqual(['new', 'middle', 'old']);
     });

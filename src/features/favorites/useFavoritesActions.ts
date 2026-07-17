@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { openFavoriteImportDialog } from '@/services/favoriteImportService';
+import { useFavoriteStore } from '@/state/favoriteStore';
 
 import type {
     FavoriteGroup,
@@ -27,14 +28,12 @@ export function useFavoritesActions({
     newLocalGroupName,
     refreshRemoteDetails,
     remoteGroups,
-    selectedGroup,
     selectedContentItems,
     selectedGroupKey,
     selectedSource,
     setAvatarHistory,
     setAvatarHistoryLoading,
     setCreatingLocalGroup,
-    setEditMode,
     setExportDialogOpen,
     setNewLocalGroupName,
     setSelectedGroupKey,
@@ -55,7 +54,6 @@ export function useFavoritesActions({
     newLocalGroupName: string;
     refreshRemoteDetails(): void;
     remoteGroups: FavoriteGroup[];
-    selectedGroup: FavoriteGroup | null;
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
@@ -64,7 +62,6 @@ export function useFavoritesActions({
     ): void;
     setAvatarHistoryLoading(value: boolean): void;
     setCreatingLocalGroup(value: boolean): void;
-    setEditMode(value: boolean): void;
     setExportDialogOpen(value: boolean): void;
     setNewLocalGroupName(value: string): void;
     setSelectedGroupKey(value: string): void;
@@ -74,6 +71,9 @@ export function useFavoritesActions({
     const [refreshing, setRefreshing] = useState(false);
     const [removingFavoriteKey, setRemovingFavoriteKey] = useState('');
     const removingFavoriteKeyRef = useRef('');
+    const remoteFavoritesByObjectId = useFavoriteStore(
+        (state) => state.remoteFavoritesByObjectId
+    );
     const collectionActions = useFavoritesCollectionActions({
         allItems,
         currentEndpoint,
@@ -121,12 +121,11 @@ export function useFavoritesActions({
         kind,
         localGroups,
         refreshFavorites: collectionActions.refreshFavorites,
+        remoteFavoritesByObjectId,
         remoteGroups,
-        selectedGroup,
         selectedContentItems,
         selectedGroupKey,
         selectedSource,
-        setEditMode,
         setSelectedKeys
     });
 

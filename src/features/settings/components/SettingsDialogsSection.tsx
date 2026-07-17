@@ -1,6 +1,13 @@
+import type { SettingsPageStateSections } from '../settingsPageStateSections';
 import { SettingsDialogs } from './SettingsDialogs';
 
-export function SettingsDialogsSection({ dialogs }: any) {
+type SettingsDialogsSectionProps = {
+    dialogs: SettingsPageStateSections['dialogs'];
+};
+
+export function SettingsDialogsSection({
+    dialogs
+}: SettingsDialogsSectionProps) {
     const {
         customFontDialogOpen,
         setCustomFontDialogOpen,
@@ -48,13 +55,6 @@ export function SettingsDialogsSection({ dialogs }: any) {
         setPurgePeriod,
         purgeInProgress,
         purgeAvatarFeedData,
-        feedFilterDialogOpen,
-        setFeedFilterDialogOpen,
-        feedFilterMode,
-        currentSharedFeedFilterOptions,
-        sharedFeedFilters,
-        updateSharedFeedFilter,
-        resetSharedFeedFilters,
         wristFeedNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen,
         vrNotificationsDialogOpen,
@@ -65,16 +65,20 @@ export function SettingsDialogsSection({ dialogs }: any) {
         setDesktopNotificationsDialogOpen,
         webhookNotificationsDialogOpen,
         setWebhookNotificationsDialogOpen,
+        ttsNotificationsDialogOpen,
+        setTtsNotificationsDialogOpen,
         overlayActivityFilters,
-        saveOverlayActivityFilters,
         vrNotificationActivityFilters,
-        saveVrNotificationActivityFilters,
         hmdNotificationActivityFilters,
-        saveHmdNotificationActivityFilters,
         desktopNotificationActivityFilters,
-        saveDesktopNotificationActivityFilters,
         webhookActivityFilters,
-        saveWebhookActivityFilters
+        ttsNotificationActivityFilters,
+        saveOverlayActivityFilters,
+        saveVrNotificationActivityFilters,
+        saveHmdNotificationActivityFilters,
+        saveDesktopNotificationActivityFilters,
+        saveWebhookActivityFilters,
+        saveTtsNotificationActivityFilters
     } = dialogs;
 
     return (
@@ -111,8 +115,8 @@ export function SettingsDialogsSection({ dialogs }: any) {
             tablePageSizes={{
                 open: tablePageSizesDialogOpen,
                 setOpen: setTablePageSizesDialogOpen,
-                onSaved: (tablePageSizes: any) =>
-                    setPrefs((current: any) => ({
+                onSaved: (tablePageSizes: unknown) =>
+                    setPrefs((current) => ({
                         ...current,
                         tablePageSizes
                     }))
@@ -144,15 +148,6 @@ export function SettingsDialogsSection({ dialogs }: any) {
                 inProgress: purgeInProgress,
                 onConfirm: purgeAvatarFeedData
             }}
-            feedFilter={{
-                open: feedFilterDialogOpen,
-                setOpen: setFeedFilterDialogOpen,
-                mode: feedFilterMode,
-                options: currentSharedFeedFilterOptions,
-                filters: sharedFeedFilters,
-                onUpdate: updateSharedFeedFilter,
-                onReset: resetSharedFeedFilters
-            }}
             wristFeedNotifications={{
                 open: wristFeedNotificationsDialogOpen,
                 setOpen: setWristFeedNotificationsDialogOpen,
@@ -182,6 +177,12 @@ export function SettingsDialogsSection({ dialogs }: any) {
                 setOpen: setWebhookNotificationsDialogOpen,
                 value: webhookActivityFilters,
                 onSave: saveWebhookActivityFilters
+            }}
+            ttsNotifications={{
+                open: ttsNotificationsDialogOpen,
+                setOpen: setTtsNotificationsDialogOpen,
+                value: ttsNotificationActivityFilters,
+                onSave: saveTtsNotificationActivityFilters
             }}
         />
     );

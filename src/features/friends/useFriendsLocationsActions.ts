@@ -42,22 +42,22 @@ export function useFriendsLocationsActions({
     currentEndpoint,
     currentInviteLocation,
     currentUserId,
-    setCollapsedFavoriteGroups,
+    setCollapsedGroups,
     instanceActionGatesByLocation
 }: {
     canInviteFromCurrentLocation: boolean;
     currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
-    setCollapsedFavoriteGroups: Dispatch<SetStateAction<Set<string>>>;
+    setCollapsedGroups: Dispatch<SetStateAction<Set<string>>>;
     instanceActionGatesByLocation: Map<string, LocalInstanceActionGates>;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
 
-    function toggleFavoriteGroup(groupKey: string) {
-        setCollapsedFavoriteGroups((current) => {
+    function toggleCollapsibleGroup(groupKey: string) {
+        setCollapsedGroups((current) => {
             const next = new Set(current);
             if (next.has(groupKey)) {
                 next.delete(groupKey);
@@ -306,6 +306,6 @@ export function useFriendsLocationsActions({
         selfInviteFriendLocation,
         sendFriendBoop,
         sendFriendInvite,
-        toggleFavoriteGroup
+        toggleCollapsibleGroup
     };
 }

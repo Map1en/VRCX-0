@@ -4,6 +4,7 @@ use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry};
 use crate::Error;
+use vrcx_0_core::trust::trust_level_changed;
 
 use super::schema::{ensure_realtime_tables, normalize_user_table_prefix};
 use super::types::*;
@@ -42,6 +43,7 @@ pub fn write_realtime_batch(
             "Realtime persistence requires a current user id.".into(),
         ));
     }
+    validate_friend_log_backed_feed_entries(batch)?;
     let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;
     if !batch.game_log_locations.is_empty() {
@@ -56,6 +58,12 @@ pub fn write_realtime_batch(
             counts.add_realtime_rows(delete_friend_log_current(tx, &user_prefix, entry)?);
         }
         for entry in &batch.feed_entries {
+            if matches!(
+                entry_string(entry, "type").as_str(),
+                "TrustLevel" | "Friend" | "Unfriend"
+            ) {
+                continue;
+            }
             counts.add_realtime_rows(insert_feed_entry(tx, &user_prefix, entry)?);
         }
         for entry in &batch.notification_v1_upserts {
@@ -84,6 +92,39 @@ pub fn write_realtime_batch(
         }
         Ok(counts)
     })
+}
+
+fn validate_friend_log_backed_feed_entries(batch: &RealtimePersistenceBatch) -> Result<(), Error> {
+    for entry in batch
+        .feed_entries
+        .iter()
+        .filter(|entry| entry_string(entry, "type") == "TrustLevel")
+    {
+        let created_at = entry_string(entry, "created_at");
+        let user_id = normalize_user_id(&entry_string(entry, "userId"));
+        let display_name = entry_string(entry, "displayName");
+        let trust_level = entry_string(entry, "trustLevel");
+        let previous_trust_level = entry_string(entry, "previousTrustLevel");
+        let friend_number = entry_i64(entry, "friendNumber");
+        let valid = !created_at.is_empty()
+            && !user_id.is_empty()
+            && !trust_level.is_empty()
+            && !previous_trust_level.is_empty()
+            && entry.get("friendNumber").is_some()
+            && batch.friend_log_upserts.iter().any(|upsert| {
+                normalize_user_id(&upsert.target_user_id) == user_id
+                    && upsert.created_at.trim() == created_at
+                    && upsert.display_name.trim() == display_name.trim()
+                    && upsert.trust_level.trim() == trust_level.trim()
+                    && upsert.friend_number == friend_number
+            });
+        if !valid {
+            return Err(Error::InvalidData(
+                "TrustLevel feed entry requires a matching friend-log upsert.".into(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn upsert_friend_log_current(
@@ -123,7 +164,12 @@ fn upsert_friend_log_current(
     } else {
         "Unknown"
     };
-    let trust_level = first_non_empty([entry.trust_level.as_str(), "Visitor"]);
+    let existing_trust_level = existing
+        .as_ref()
+        .map(|existing| existing.trust_level.trim())
+        .unwrap_or("");
+    let trust_level =
+        first_non_empty([entry.trust_level.as_str(), existing_trust_level, "Visitor"]);
     let insert_count = tx.execute_non_query(
         &format!(
             "INSERT OR IGNORE INTO {user_prefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)"
@@ -148,6 +194,42 @@ fn upsert_friend_log_current(
                 .set("friend_number", friend_number)
                 .build(),
         )?));
+        let renamed = !existing_display_name.is_empty()
+            && existing_display_name != "Unknown"
+            && display_name != "Unknown"
+            && display_name != existing_display_name;
+        if renamed {
+            affected = affected.saturating_add(add_friend_log_history(
+                tx,
+                user_prefix,
+                &FriendLogHistoryEntry {
+                    created_at: &entry.created_at,
+                    entry_type: "DisplayName",
+                    user_id: &target_user_id,
+                    display_name,
+                    previous_display_name: existing_display_name,
+                    trust_level,
+                    previous_trust_level: "",
+                    friend_number,
+                },
+            )?);
+        }
+        if trust_level_changed(existing_trust_level, trust_level) {
+            affected = affected.saturating_add(add_friend_log_history(
+                tx,
+                user_prefix,
+                &FriendLogHistoryEntry {
+                    created_at: &entry.created_at,
+                    entry_type: "TrustLevel",
+                    user_id: &target_user_id,
+                    display_name,
+                    previous_display_name: "",
+                    trust_level,
+                    previous_trust_level: existing_trust_level,
+                    friend_number,
+                },
+            )?);
+        }
         if entry.force_history {
             affected = affected.saturating_add(add_friend_log_history(
                 tx,
@@ -709,5 +791,4 @@ fn first_non_empty<'a>(values: impl IntoIterator<Item = &'a str>) -> &'a str {
 }
 
 #[cfg(test)]
-#[path = "../../tests/realtime/write_tests.rs"]
 mod tests;

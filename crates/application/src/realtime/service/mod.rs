@@ -1,3 +1,6 @@
 mod host;
 
-pub use host::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
+pub use host::{
+    FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, RealtimeHostRuntime,
+    RealtimeHostRuntimeDeps, RealtimeStopRequest, SyntheticFriendEventOutcome,
+};

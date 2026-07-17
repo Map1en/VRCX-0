@@ -2,8 +2,22 @@ import { GroupDialogEmptyState } from './group-dialog/GroupDialogEmptyState';
 import { GroupDialogTabbedView } from './group-dialog/GroupDialogTabbedView';
 import { useGroupDialogState } from './group-dialog/useGroupDialogState';
 
-export function GroupDialogContent({ groupId, seedData = null }: any) {
-    const dialogState: any = useGroupDialogState({ groupId, seedData });
+function isEntityRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export function GroupDialogContent({
+    groupId,
+    seedData = null
+}: {
+    groupId: unknown;
+    seedData?: unknown;
+}) {
+    const normalizedSeedData = isEntityRecord(seedData) ? seedData : null;
+    const dialogState = useGroupDialogState({
+        groupId,
+        seedData: normalizedSeedData
+    });
 
     if (dialogState.status !== 'ready') {
         return <GroupDialogEmptyState {...dialogState.emptyState} />;
@@ -45,10 +59,10 @@ export function GroupDialogContent({ groupId, seedData = null }: any) {
                 onCancelRequest: () => {
                     actions.cancelJoinRequest();
                 },
-                onRepresent: (enabled: any) => {
+                onRepresent: (enabled: boolean) => {
                     actions.updateGroupRepresentation(enabled);
                 },
-                onSubscribe: (enabled: any) => {
+                onSubscribe: (enabled: boolean) => {
                     actions.updateGroupMemberProps(
                         { isSubscribedToAnnouncements: enabled },
                         enabled
@@ -56,13 +70,13 @@ export function GroupDialogContent({ groupId, seedData = null }: any) {
                             : labels.unsubscribedAnnouncements
                     );
                 },
-                onVisibility: (visibility: any) => {
+                onVisibility: (visibility: string) => {
                     actions.updateGroupMemberProps(
                         { visibility },
                         labels.visibilityUpdated
                     );
                 },
-                onBlock: (enabled: any) => {
+                onBlock: (enabled: boolean) => {
                     actions.updateGroupBlock(enabled);
                 }
             }}

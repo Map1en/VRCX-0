@@ -1,6 +1,7 @@
 import { ImageIcon, UploadIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { Button } from '@/ui/shadcn/button';
 
 import {
@@ -8,6 +9,11 @@ import {
     EntityInfoBlock,
     EntityInfoGrid
 } from '../../EntityDialogScaffold';
+import type {
+    AvatarActionStatus,
+    AvatarGalleryEntry,
+    AvatarListing
+} from '../avatarDialogTypes';
 
 export function AvatarDialogGalleryTab({
     canManageAvatar,
@@ -16,7 +22,19 @@ export function AvatarDialogGalleryTab({
     onOpenGalleryPreview,
     onGalleryIndexChange,
     onUploadGallery
-}: any) {
+}: {
+    canManageAvatar: boolean;
+    actionStatus: AvatarActionStatus;
+    media: {
+        galleryImages: AvatarGalleryEntry[];
+        currentGalleryImage: string;
+        galleryIndex: number;
+        listings: AvatarListing[];
+    };
+    onOpenGalleryPreview(): void;
+    onGalleryIndexChange(updater: (currentIndex: number) => number): void;
+    onUploadGallery(): void;
+}) {
     const { t } = useTranslation();
     const { galleryImages, currentGalleryImage, galleryIndex, listings } =
         media;
@@ -52,7 +70,7 @@ export function AvatarDialogGalleryTab({
                                         onClick={onOpenGalleryPreview}
                                     >
                                         {currentGalleryImage ? (
-                                            <img
+                                            <FadeInImage
                                                 src={currentGalleryImage}
                                                 alt=""
                                                 className="size-full object-contain"
@@ -71,7 +89,7 @@ export function AvatarDialogGalleryTab({
                                             disabled={galleryImages.length <= 1}
                                             onClick={() =>
                                                 onGalleryIndexChange(
-                                                    (currentIndex: any) =>
+                                                    (currentIndex) =>
                                                         (currentIndex +
                                                             galleryImages.length -
                                                             1) %
@@ -92,7 +110,7 @@ export function AvatarDialogGalleryTab({
                                             disabled={galleryImages.length <= 1}
                                             onClick={() =>
                                                 onGalleryIndexChange(
-                                                    (currentIndex: any) =>
+                                                    (currentIndex) =>
                                                         (currentIndex + 1) %
                                                         galleryImages.length
                                                 )
@@ -116,7 +134,7 @@ export function AvatarDialogGalleryTab({
                         full
                     >
                         <div className="flex flex-col gap-2">
-                            {listings.map((listing: any, index: any) => (
+                            {listings.map((listing, index) => (
                                 <div
                                     key={`${listing?.id || listing?.platform || index}`}
                                     className="box-border flex flex-col p-1.5 text-sm"

@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type Dispatch,
+    type ReactNode,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type {
+    EntityRecord,
+    GroupProfileRecord,
+    WorldProfileRecord
+} from '@/domain/entities/profileEntities';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
@@ -24,10 +37,17 @@ import {
     EntityDialogScaffold,
     EntityDialogTwoColumnLayout
 } from '../EntityDialogScaffold';
+import type { WorldPreviousInstances } from './useWorldDialogData';
 import { useWorldDialogTabbedRuntimeState } from './useWorldDialogRuntimeState';
 import { WorldDialogOverviewSection } from './WorldDialogHeaderSection';
 import { buildWorldDialogDisplayInstanceRows } from './worldDialogInstanceRows';
 import { WorldDialogTabPanels } from './WorldDialogTabPanels';
+import {
+    authorWorldTags,
+    firstKnownValue,
+    resolveWorldDialogTab,
+    visibleWorldTags
+} from './worldDialogUtils';
 import {
     firstText,
     groupSeed,
@@ -38,7 +58,7 @@ import {
     sameLocationTag
 } from './WorldDialogViewParts';
 
-type WorldWorldScreenshots = Array<{
+export type WorldWorldScreenshots = Array<{
     path: string;
     folderPath: string;
     fileName: string;
@@ -72,125 +92,172 @@ type WorldWorldScreenshots = Array<{
     error: string | null;
 }>;
 
+export type WorldDialogDisplayInstanceRows = ReturnType<
+    typeof buildWorldDialogDisplayInstanceRows
+>['displayInstanceRows'];
+
+export interface WorldDialogHeaderModel {
+    actionStatus: string;
+    canManageWorld: boolean;
+    canUpdateHome: boolean;
+    detail: string;
+    favoriteRate: number;
+    hasPersistData: boolean;
+    imageUrl: string;
+    isHomeWorld: boolean;
+    isPublished: boolean;
+    canOpenInstanceInGame: boolean;
+    packageUrl: string;
+    platformRows: string[];
+    previousInstances: WorldPreviousInstances;
+    visibleTags: ReturnType<typeof visibleWorldTags>;
+    world: WorldProfileRecord;
+    worldUrl: string;
+}
+
+export interface WorldDialogHeaderCommands {
+    onChangeAllowedDomains: () => void;
+    onEditDetails: () => void;
+    onChangeImage: () => void;
+    onChangeTags: () => void;
+    onChangeTab: (tab: string) => void;
+    onCopyWorldId: () => void;
+    onCopyWorldName: () => void;
+    onCopyWorldUrl: () => void;
+    onDelete: () => void;
+    onDeleteCache: () => void;
+    onDeletePersistentData: () => void;
+    onHome: () => void;
+    onNewInstance: () => void;
+    onNewInstanceSelfInvite: () => void;
+    onOpenAuthor: () => void;
+    onOpenCache: () => void;
+    onOpenImage?: () => void;
+    onOpenPackage: () => void;
+    onOpenWorldPage: () => void;
+    onPublication: () => void;
+    onRefresh: () => void;
+}
+
+export interface WorldDialogTabModel {
+    activeTab: string;
+    authorTags: string[];
+    currentUserId: string | null;
+    displayInstanceRows: WorldDialogDisplayInstanceRows;
+    favoriteRate: number;
+    hasPersistData: boolean;
+    isInstanceLocation: boolean;
+    lastVisitedInstance: WorldPreviousInstances[number] | undefined;
+    memo: string;
+    previousInstances: WorldPreviousInstances;
+    previewUrl: string;
+    screenshots: WorldWorldScreenshots;
+    screenshotsError: string;
+    screenshotsRefreshDisabled: boolean;
+    screenshotsStatus: string;
+    tabs: Array<{ value: string; label: ReactNode }>;
+    totalVisitTime: number;
+    world: WorldProfileRecord;
+    worldDialogShortName: string;
+}
+
+export interface WorldDialogTabCommands {
+    onChangeTab: (tab: string) => void;
+    onOpenAuthor: () => void;
+    onOpenScreenshot: (path: string) => void;
+    onPreviousInstancesChange: Dispatch<SetStateAction<WorldPreviousInstances>>;
+    onRefreshScreenshots: () => void;
+    onSaveMemo: (memo: string) => void | Promise<void>;
+}
+
 let lastWorldDialogTab = 'instances';
 
-function resolveWorldDialogTab(
-    tabs: any,
-    preferred: any,
-    fallback: any = 'instances'
-) {
-    return tabs.some((tab: any) => tab.value === preferred)
-        ? preferred
-        : fallback;
+type CurrentInstanceDetails = {
+    location: string;
+    instance: EntityRecord | null;
+    ownerUser: EntityRecord | null;
+    ownerGroup: EntityRecord | null;
+    playerSnapshot: unknown;
+};
+
+type InstanceDetailTarget = {
+    location: string;
+    worldId: string;
+    instanceId: string;
+};
+
+type InstanceDetailCacheEntry = {
+    endpoint: string;
+    instance: EntityRecord;
+};
+
+type InstanceDetailResult = {
+    location: string;
+    instance: EntityRecord;
+};
+
+function isInstanceDetailResult(
+    value: { location: string; instance: EntityRecord | null } | null
+): value is InstanceDetailResult {
+    return Boolean(value?.instance);
 }
 
-function authorWorldTags(tags: any[] = []) {
-    if (!Array.isArray(tags)) {
-        return [];
-    }
-    return tags
-        .filter((tag: any) => String(tag).startsWith('author_tag_'))
-        .map((tag: any) => String(tag).replace(/^author_tag_/, ''))
-        .filter(Boolean);
-}
+type ScreenshotScanStatus = Awaited<
+    ReturnType<typeof mediaRepository.getScreenshotLibraryStatus>
+>;
 
-function firstKnownValue(...values: any[]) {
-    for (const value of values) {
-        if (value !== null && typeof value !== 'undefined' && value !== '') {
-            return value;
-        }
-    }
-    return undefined;
-}
-
-const visibleWorldFeatureTags = [
-    [
-        'feature_avatar_scaling_disabled',
-        'dialog.world.tags.avatar_scaling_disabled',
-        'Avatar scaling disabled'
-    ],
-    [
-        'feature_focus_view_disabled',
-        'dialog.world.tags.focus_view_disabled',
-        'Focus view disabled'
-    ],
-    [
-        'feature_emoji_disabled',
-        'dialog.world.tags.emoji_disabled',
-        'Emoji disabled'
-    ],
-    [
-        'feature_stickers_disabled',
-        'dialog.world.tags.stickers_disabled',
-        'Stickers disabled'
-    ],
-    [
-        'feature_pedestals_disabled',
-        'dialog.world.tags.pedestals_disabled',
-        'Pedestals disabled'
-    ],
-    [
-        'feature_prints_disabled',
-        'dialog.world.tags.prints_disabled',
-        'Prints disabled'
-    ],
-    [
-        'feature_drones_disabled',
-        'dialog.world.tags.drones_disabled',
-        'Drones disabled'
-    ],
-    [
-        'feature_props_disabled',
-        'dialog.world.tags.props_disabled',
-        'Items disabled'
-    ],
-    [
-        'feature_third_person_view_disabled',
-        'dialog.world.tags.third_person_view_disabled',
-        'Third person disabled'
-    ]
-];
-
-function visibleWorldTags(world: any, t: any) {
-    const tags = Array.isArray(world?.tags) ? world.tags : [];
-    const entries: Array<{ key: string; label: string }> = [];
-    const seen = new Set<string>();
-    const pushTag = (key: any, label: any) => {
-        if (!key || seen.has(key)) {
-            return;
-        }
-        seen.add(key);
-        entries.push({ key, label: label || key });
+type WorldDialogTabbedViewProps = {
+    world: WorldProfileRecord;
+    resource: {
+        memo: string;
+        detail: string;
+        imageUrl: string;
+        actionStatus: string;
+        normalizedWorldId: string;
+        openNonce?: number;
+        previousInstances?: WorldPreviousInstances;
     };
+    permissions: {
+        isInstanceLocation: boolean;
+        worldDialogShortName?: string;
+        isHomeWorld: boolean;
+        isGameRunning: boolean;
+        canUpdateHome: boolean;
+        canManageWorld: boolean;
+        hasPersistData?: boolean;
+    };
+    worldControls: {
+        onRefresh: () => void;
+        onHome: () => void;
+        onEditDetails: () => void;
+        onChangeTags: () => void;
+        onChangeAllowedDomains: () => void;
+        onChangeImage: () => void;
+        onNewInstance: () => void;
+        onNewInstanceSelfInvite: () => void;
+        onPublication: (published: boolean) => void;
+        onSaveMemo: (memo: string) => void | Promise<void>;
+        onOpenCache: () => void;
+        onDeleteCache: () => void;
+        onDeletePersistentData: () => void;
+        onDelete: () => void;
+        onOpenScreenshot: (path: string) => void;
+        onPreviousInstancesChange: Dispatch<
+            SetStateAction<WorldPreviousInstances>
+        >;
+    };
+};
 
-    for (const [tag, localeKey, fallbackLabel] of visibleWorldFeatureTags) {
-        if (!tags.includes(tag)) {
-            continue;
-        }
-        const localized = t(localeKey);
-        pushTag(tag, localized === localeKey ? fallbackLabel : localized);
-    }
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
 
-    if (tags.includes('debug_allowed')) {
-        pushTag('debug_allowed', 'Debug allowed');
-    }
-    if (world?.unityPackageUrl || world?.unityPackage?.url) {
-        pushTag('future_proofing', t('dialog.world.tags.future_proofing'));
-    }
-    for (const tag of tags) {
-        if (String(tag).startsWith('content_')) {
-            const localeKey = `dialog.world.tags.${tag}`;
-            const localized = t(localeKey);
-            pushTag(
-                tag,
-                localized === localeKey
-                    ? String(tag).replace(/^content_/, '')
-                    : localized
-            );
-        }
-    }
+function record(value: unknown): EntityRecord {
+    return isRecord(value) ? value : {};
+}
 
-    return entries;
+function firstRecord(...values: unknown[]): EntityRecord | null {
+    return values.find(isRecord) ?? null;
 }
 
 export function WorldDialogTabbedView({
@@ -198,7 +265,7 @@ export function WorldDialogTabbedView({
     resource,
     world,
     worldControls
-}: any) {
+}: WorldDialogTabbedViewProps) {
     const { t } = useTranslation();
     const {
         memo,
@@ -247,16 +314,20 @@ export function WorldDialogTabbedView({
         screenshotCacheStatus
     } = useWorldDialogTabbedRuntimeState();
     const [activeTab, setActiveTab] = useState(() => lastWorldDialogTab);
-    const [currentInstanceDetails, setCurrentInstanceDetails] = useState<any>({
-        location: '',
-        instance: null,
-        ownerUser: null,
-        ownerGroup: null,
-        playerSnapshot: null
-    });
-    const [instanceDetailsByLocation, setInstanceDetailsByLocation] =
-        useState<any>({});
-    const [creatorGroupsById, setCreatorGroupsById] = useState<any>({});
+    const [currentInstanceDetails, setCurrentInstanceDetails] =
+        useState<CurrentInstanceDetails>({
+            location: '',
+            instance: null,
+            ownerUser: null,
+            ownerGroup: null,
+            playerSnapshot: null
+        });
+    const [instanceDetailsByLocation, setInstanceDetailsByLocation] = useState<
+        Record<string, InstanceDetailCacheEntry>
+    >({});
+    const [creatorGroupsById, setCreatorGroupsById] = useState<
+        Record<string, GroupProfileRecord>
+    >({});
     const [worldScreenshots, setWorldScreenshots] =
         useState<WorldWorldScreenshots>([]);
     const [worldScreenshotsStatus, setWorldScreenshotsStatus] =
@@ -270,7 +341,7 @@ export function WorldDialogTabbedView({
         [world?.id, world?.instances]
     );
     const instanceDetailTargets = useMemo(() => {
-        const targetsByLocation = new Map();
+        const targetsByLocation = new Map<string, InstanceDetailTarget>();
         for (const instance of instanceRows) {
             const location = resolveLaunchLocation(world, instance);
             const parsedLocation = parseLocation(location);
@@ -289,10 +360,10 @@ export function WorldDialogTabbedView({
         return Array.from(targetsByLocation.values());
     }, [instanceRows, world?.id]);
     const instanceDetailTargetKey = instanceDetailTargets
-        .map((target: any) => target.location)
+        .map((target) => target.location)
         .sort()
         .join('|');
-    const hydratedInstanceRows = instanceRows.map((instance: any) => {
+    const hydratedInstanceRows = instanceRows.map((instance: EntityRecord) => {
         const location = resolveLaunchLocation(world, instance);
         const cachedDetail = instanceDetailsByLocation[location];
         if (
@@ -329,7 +400,7 @@ export function WorldDialogTabbedView({
             ),
             capacity: firstKnownValue(
                 detail.capacity,
-                detail.world?.capacity,
+                record(detail.world).capacity,
                 instance.capacity,
                 world.capacity
             )
@@ -365,14 +436,14 @@ export function WorldDialogTabbedView({
         { value: 'json', label: t('dialog.world.json.header') }
     ];
 
-    function changeTab(tab: any) {
+    function changeTab(tab: string) {
         lastWorldDialogTab = resolveWorldDialogTab(tabs, tab);
         setActiveTab(lastWorldDialogTab);
     }
 
     function refreshWorldScreenshots() {
         worldScreenshotsForceRefreshRef.current = true;
-        setWorldScreenshotsRefreshToken((current: any) => current + 1);
+        setWorldScreenshotsRefreshToken((current) => current + 1);
     }
 
     useEffect(() => {
@@ -427,7 +498,7 @@ export function WorldDialogTabbedView({
             }
         };
 
-        const completeScan = (status: any) => {
+        const completeScan = (status: ScreenshotScanStatus) => {
             if (scanCompleted) {
                 return;
             }
@@ -445,7 +516,7 @@ export function WorldDialogTabbedView({
             pollInFlight = true;
             mediaRepository
                 .getScreenshotLibraryStatus()
-                .then((status: any) => {
+                .then((status) => {
                     if (!active) {
                         return;
                     }
@@ -487,7 +558,7 @@ export function WorldDialogTabbedView({
         worldScreenshotsForceRefreshRef.current = false;
         mediaRepository
             .startScreenshotLibraryScan(forceRefresh)
-            .then((status: any) => {
+            .then((status) => {
                 if (!active) {
                     return;
                 }
@@ -530,24 +601,24 @@ export function WorldDialogTabbedView({
 
         let active = true;
         const targetLocations = new Set(
-            instanceDetailTargets.map((target: any) => target.location)
+            instanceDetailTargets.map((target) => target.location)
         );
 
         Promise.all(
-            instanceDetailTargets.map((target: any) =>
+            instanceDetailTargets.map((target) =>
                 vrchatInstanceRepository
                     .getInstance({
                         worldId: target.worldId,
                         instanceId: target.instanceId,
                         endpoint: currentEndpoint
                     })
-                    .then((response: any) => ({
+                    .then((response) => ({
                         location: target.location,
-                        instance: response.json
+                        instance: isRecord(response.json) ? response.json : null
                     }))
                     .catch((): null => null)
             )
-        ).then((rawEntries: any) => {
+        ).then((rawEntries) => {
             if (!active) {
                 return;
             }
@@ -555,8 +626,8 @@ export function WorldDialogTabbedView({
             recordLocationHintsFromInstances({
                 endpoint: currentEndpoint,
                 instances: entries
-                    .filter((entry: any) => entry?.instance)
-                    .map((entry: any) => {
+                    .filter(isInstanceDetailResult)
+                    .map((entry) => {
                         const parsedLocation = parseLocation(entry.location);
                         return {
                             ...entry.instance,
@@ -566,8 +637,8 @@ export function WorldDialogTabbedView({
                         };
                     })
             });
-            setInstanceDetailsByLocation((current: any) => {
-                const next: any = {};
+            setInstanceDetailsByLocation((current) => {
+                const next: Record<string, InstanceDetailCacheEntry> = {};
                 for (const location of targetLocations) {
                     const currentEntry = current[location];
                     if (currentEntry?.endpoint === currentEndpoint) {
@@ -602,30 +673,31 @@ export function WorldDialogTabbedView({
 
         let active = true;
         Promise.all(
-            groupIds.map((groupId: any) =>
+            groupIds.map((groupId) =>
                 groupProfileRepository
                     .getGroupProfile({
                         groupId,
                         endpoint: currentEndpoint,
                         includeRoles: false
                     })
-                    .then((groupProfile: any) => [groupId, groupProfile])
+                    .then((groupProfile) => ({ groupId, groupProfile }))
                     .catch((): null => null)
             )
-        ).then((rawEntries: any) => {
+        ).then((rawEntries) => {
             if (!active) {
                 return;
             }
             const entries = rawEntries;
-            setCreatorGroupsById((current: any) => {
-                const next: any = { ...current };
+            setCreatorGroupsById((current) => {
+                const next: Record<string, GroupProfileRecord> = {
+                    ...current
+                };
                 let changed = false;
                 for (const entry of entries) {
                     if (!entry) {
                         continue;
                     }
-                    const [groupId, groupProfile] = entry;
-                    next[groupId] = groupProfile;
+                    next[entry.groupId] = entry.groupProfile;
                     changed = true;
                 }
                 return changed ? next : current;
@@ -673,7 +745,9 @@ export function WorldDialogTabbedView({
                     instanceId: parsedLocation.instanceId,
                     endpoint: currentEndpoint
                 })
-                .then((response: any) => response.json)
+                .then((response) =>
+                    isRecord(response.json) ? response.json : null
+                )
                 .catch((): null => null),
             isCurrentLiveInstance
                 ? playerListPersistenceRepository
@@ -684,47 +758,71 @@ export function WorldDialogTabbedView({
                       .catch((): null => null)
                 : Promise.resolve(null)
         ])
-            .then(async ([instance, playerSnapshot]: any) => {
-                const snapshotPlayers = Array.isArray(playerSnapshot?.players)
-                    ? playerSnapshot.players
-                    : [];
+            .then(async ([instance, playerSnapshot]) => {
+                const playerSnapshotRecord = record(playerSnapshot);
+                const playerContext = record(playerSnapshotRecord.context);
+                const snapshotPlayers = (
+                    Array.isArray(playerSnapshotRecord.players)
+                        ? playerSnapshotRecord.players
+                        : []
+                ).map((player) => {
+                    const source = record(player);
+                    const userId = firstText(source.userId, source.user_id);
+                    return {
+                        id: userId,
+                        userId,
+                        displayName: firstText(
+                            source.displayName,
+                            source.display_name
+                        ),
+                        joinedAt: firstText(source.joinedAt, source.joined_at)
+                    };
+                });
+                const instanceRecord = instance || {};
+                const ownerUserRecord = record(instanceRecord.ownerUser);
+                const ownerRecord = record(instanceRecord.owner);
+                const creatorUserRecord = record(instanceRecord.creatorUser);
+                const userRecord = record(instanceRecord.user);
+                const groupRecord = record(instanceRecord.group);
                 const ownerId = firstText(
                     parsedLocation.userId,
-                    instance?.ownerUserId,
-                    instance?.owner_user_id,
-                    instance?.ownerId,
-                    instance?.owner_id,
-                    instance?.userId,
-                    instance?.user_id,
-                    instance?.creatorUserId,
-                    instance?.creator_user_id,
-                    instance?.ownerUser?.id,
-                    instance?.ownerUser?.userId,
-                    instance?.owner?.id,
-                    instance?.owner?.userId,
-                    instance?.creatorUser?.id,
-                    instance?.creatorUser?.userId,
-                    instance?.user?.id,
-                    instance?.user?.userId,
-                    instance?.groupId,
-                    instance?.group_id,
-                    instance?.group?.id,
+                    instanceRecord.ownerUserId,
+                    instanceRecord.owner_user_id,
+                    instanceRecord.ownerId,
+                    instanceRecord.owner_id,
+                    instanceRecord.userId,
+                    instanceRecord.user_id,
+                    instanceRecord.creatorUserId,
+                    instanceRecord.creator_user_id,
+                    ownerUserRecord.id,
+                    ownerUserRecord.userId,
+                    ownerRecord.id,
+                    ownerRecord.userId,
+                    creatorUserRecord.id,
+                    creatorUserRecord.userId,
+                    userRecord.id,
+                    userRecord.userId,
+                    instanceRecord.groupId,
+                    instanceRecord.group_id,
+                    groupRecord.id,
                     parsedLocation.groupId
                 );
                 const ownerIsGroup = isGroupId(ownerId);
                 const ownerSeed = ownerIsGroup
-                    ? instance?.group ||
-                      instance?.ownerGroup ||
-                      instance?.owner_group ||
-                      groupSeed(instance?.owner) ||
-                      instance?.creatorGroup ||
-                      instance?.creator_group ||
-                      null
-                    : instance?.ownerUser ||
-                      instance?.owner ||
-                      instance?.creatorUser ||
-                      instance?.user ||
-                      null;
+                    ? firstRecord(
+                          instanceRecord.group,
+                          instanceRecord.ownerGroup,
+                          instanceRecord.owner_group,
+                          groupSeed(instanceRecord.owner),
+                          instanceRecord.creatorGroup,
+                          instanceRecord.creator_group
+                      )
+                    : firstRecord(
+                          instanceRecord.ownerUser,
+                          instanceRecord.owner,
+                          instanceRecord.creatorUser,
+                          instanceRecord.user
+                      );
                 let ownerUser = null;
                 let ownerGroup = null;
                 if (ownerIsGroup) {
@@ -767,15 +865,15 @@ export function WorldDialogTabbedView({
                     endpoint: currentEndpoint,
                     instances: [
                         {
-                            ...(instance || {}),
+                            ...instanceRecord,
                             location: normalizedWorldId,
                             worldId: parsedLocation.worldId,
                             instanceId: parsedLocation.instanceId,
                             worldName: world?.name,
-                            users: instance?.users,
-                            players: instance?.players || snapshotPlayers,
-                            usersById: instance?.usersById,
-                            userIds: instance?.userIds
+                            users: instanceRecord.users,
+                            players: instanceRecord.players || snapshotPlayers,
+                            usersById: instanceRecord.usersById,
+                            userIds: instanceRecord.userIds
                         }
                     ]
                 });
@@ -787,13 +885,11 @@ export function WorldDialogTabbedView({
                         currentLocation: normalizedWorldId,
                         currentLocationStartedAt:
                             currentLocationStartedAt ||
-                            playerSnapshot?.context?.createdAt ||
+                            playerContext.createdAt ||
                             '',
                         currentLocationPlayers: snapshotPlayers,
                         currentWorldName:
-                            playerSnapshot?.context?.worldName ||
-                            world?.name ||
-                            ''
+                            playerContext.worldName || world?.name || ''
                     });
                 }
                 setCurrentInstanceDetails({
@@ -832,7 +928,7 @@ export function WorldDialogTabbedView({
 
     const worldUrl = world.id ? vrchatWorldUrl(world.id) : '';
     const packageUrl = replaceVrcPackageUrl(
-        world.unityPackageUrl || world.unityPackage?.url || ''
+        firstText(world.unityPackageUrl, record(world.unityPackage).url)
     );
     const isPublished =
         Array.isArray(world.tags) &&
@@ -846,7 +942,7 @@ export function WorldDialogTabbedView({
         : '';
     const lastVisitedInstance = previousInstances[0];
     const totalVisitTime = previousInstances.reduce(
-        (total: any, instance: any) => total + (Number(instance?.time) || 0),
+        (total, instance) => total + (Number(instance?.time) || 0),
         0
     );
     const favoriteRate =
@@ -862,7 +958,7 @@ export function WorldDialogTabbedView({
         });
     }
 
-    const headerModel: any = {
+    const headerModel: WorldDialogHeaderModel = {
         actionStatus,
         canManageWorld,
         canUpdateHome,
@@ -880,7 +976,7 @@ export function WorldDialogTabbedView({
         world,
         worldUrl
     };
-    const headerCommands: any = {
+    const headerCommands: WorldDialogHeaderCommands = {
         onChangeAllowedDomains,
         onEditDetails,
         onChangeImage,
@@ -911,7 +1007,7 @@ export function WorldDialogTabbedView({
         onPublication: () => onPublication(!isPublished),
         onRefresh
     };
-    const tabModel: any = {
+    const tabModel: WorldDialogTabModel = {
         activeTab,
         authorTags,
         currentUserId,
@@ -932,7 +1028,7 @@ export function WorldDialogTabbedView({
         world,
         worldDialogShortName
     };
-    const tabCommands: any = {
+    const tabCommands: WorldDialogTabCommands = {
         onChangeTab: changeTab,
         onOpenAuthor: () =>
             openUserDialog({

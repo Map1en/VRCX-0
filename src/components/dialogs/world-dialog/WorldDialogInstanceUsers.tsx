@@ -1,26 +1,40 @@
 import { useTranslation } from 'react-i18next';
 
-import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import { UserStatusAvatar } from '@/components/UserStatusAvatar';
+import {
+    resolveSidebarStatusDotClassName,
+    type SidebarFriendRecord
+} from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { UserDetailTile } from '@/components/UserDetailTile';
 import {
     createInstanceUserRow,
     firstText,
     isGroupId,
     mergeInstanceUsers,
-    normalizeInstanceUsers
+    normalizeInstanceUsers,
+    type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
 import { timeToText } from '@/lib/dateTime';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 export { firstText, isGroupId, mergeInstanceUsers, normalizeInstanceUsers };
 
-function timestampFromValue(value: any) {
+type InstanceUserSource = Record<string, unknown> | string | null | undefined;
+type Translate = NonNullable<Parameters<typeof userStatusLabel>[1]>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): Record<string, unknown> {
+    return isRecord(value) ? value : {};
+}
+
+function timestampFromValue(value: unknown) {
     if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
         return value;
     }
@@ -36,50 +50,50 @@ function timestampFromValue(value: any) {
     return Number.isNaN(parsed) ? 0 : parsed;
 }
 
-function instanceUserTravelingTimestamp(user: any) {
-    if (firstText(user?.location).toLowerCase() !== 'traveling') {
+function instanceUserTravelingTimestamp(user: InstanceRosterRow) {
+    if (firstText(user.location).toLowerCase() !== 'traveling') {
         return 0;
     }
     return (
-        timestampFromValue(user?.$travelingToTime) ||
-        timestampFromValue(user?.travelingToTime) ||
-        timestampFromValue(user?.traveling_to_time)
+        timestampFromValue(user.$travelingToTime) ||
+        timestampFromValue(user.travelingToTime) ||
+        timestampFromValue(user.traveling_to_time)
     );
 }
 
-function instanceUserSubtitle(user: any, t: any) {
-    if (user?.$subtitle) {
+function instanceUserSubtitle(user: InstanceRosterRow, t: Translate) {
+    if (user.$subtitle) {
         return user.$subtitle;
     }
     if (instanceUserTravelingTimestamp(user)) {
         return '';
     }
     const timestamp =
-        timestampFromValue(user?.$location_at) ||
-        timestampFromValue(user?.locationAt) ||
-        timestampFromValue(user?.location_at) ||
-        timestampFromValue(user?.joinedAt) ||
-        timestampFromValue(user?.joined_at) ||
-        timestampFromValue(user?.created_at) ||
-        timestampFromValue(user?.createdAt);
+        timestampFromValue(user.$location_at) ||
+        timestampFromValue(user.locationAt) ||
+        timestampFromValue(user.location_at) ||
+        timestampFromValue(user.joinedAt) ||
+        timestampFromValue(user.joined_at) ||
+        timestampFromValue(user.created_at) ||
+        timestampFromValue(user.createdAt);
     if (timestamp) {
         return timeToText(Date.now() - timestamp);
     }
     return firstText(
-        user?.subtitle,
-        user?.statusDescription,
+        user.subtitle,
+        user.statusDescription,
         userStatusLabel(user, t)
     );
 }
 
-function firstDisplayName(userId: any, ...sources: any[]) {
+function firstDisplayName(userId: unknown, ...sources: unknown[]) {
     const normalizedUserId = firstText(userId);
     for (const source of sources) {
         const displayName = firstText(
-            source?.displayName,
-            source?.display_name,
-            source?.username,
-            source?.name
+            record(source).displayName,
+            record(source).display_name,
+            record(source).username,
+            record(source).name
         );
         if (displayName && displayName !== normalizedUserId) {
             return displayName;
@@ -88,7 +102,7 @@ function firstDisplayName(userId: any, ...sources: any[]) {
     return normalizedUserId;
 }
 
-export function InstanceUserTiles({ instance }: any) {
+export function InstanceUserTiles({ instance }: { instance: unknown }) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -96,12 +110,14 @@ export function InstanceUserTiles({ instance }: any) {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const creatorUserId = firstText(instance?.creatorUserId);
+    const source = record(instance);
+    const creatorUser = record(source.creatorUser);
+    const creatorUserId = firstText(source.creatorUserId);
     const knownCreatorUser = useKnownUserFact(creatorUserId, {
         endpoint: currentEndpoint
     });
-    const userMap = new Map();
-    const pushUser = (user: any) => {
+    const userMap = new Map<string, InstanceRosterRow>();
+    const pushUser = (user: InstanceUserSource) => {
         const row = createInstanceUserRow(user);
         if (!row) {
             return;
@@ -115,25 +131,25 @@ export function InstanceUserTiles({ instance }: any) {
 
     if (creatorUserId && !isGroupId(creatorUserId)) {
         pushUser({
-            ...(knownCreatorUser || {}),
-            ...(instance.creatorUser || {}),
+            ...record(knownCreatorUser),
+            ...creatorUser,
             id: creatorUserId,
-            userId: instance.creatorUser?.userId || creatorUserId,
+            userId: creatorUser.userId || creatorUserId,
             displayName: firstDisplayName(
                 creatorUserId,
-                instance.creatorUser,
+                creatorUser,
                 knownCreatorUser
             ),
             $subtitle: t('dialog.world.instances.instance_creator')
         });
     }
     for (const user of normalizeInstanceUsers(
-        instance?.users,
-        instance?.players,
-        instance?.playerList,
-        instance?.userList,
-        instance?.userIds,
-        instance?.usersById
+        source.users,
+        source.players,
+        source.playerList,
+        source.userList,
+        source.userIds,
+        source.usersById
     )) {
         pushUser(user);
     }
@@ -143,68 +159,80 @@ export function InstanceUserTiles({ instance }: any) {
     }
     return (
         <div className="mt-2 flex flex-wrap items-start">
-            {users.map((user: any, index: any) => {
+            {users.map((user, index) => {
                 const userId = firstText(
-                    user?.id,
-                    user?.userId,
-                    user?.user_id,
-                    user?.targetUserId,
-                    user?.target_user_id
+                    user.id,
+                    user.userId,
+                    user.user_id,
+                    user.targetUserId,
+                    user.target_user_id
                 );
                 const image = userImage(user, true);
                 const isCurrentUser = Boolean(
                     userId && userId === currentUserSnapshot?.id
                 );
+                const statusUser: SidebarFriendRecord = {
+                    id: user.id,
+                    userId: user.userId,
+                    displayName: user.displayName,
+                    location:
+                        typeof user.location === 'string'
+                            ? user.location
+                            : undefined,
+                    state:
+                        typeof user.state === 'string' ? user.state : undefined,
+                    stateBucket:
+                        typeof user.stateBucket === 'string'
+                            ? user.stateBucket
+                            : undefined,
+                    status:
+                        typeof user.status === 'string' ? user.status : null,
+                    statusDescription: user.statusDescription,
+                    isFriend: user.isFriend,
+                    $userColour:
+                        typeof user.$userColour === 'string'
+                            ? user.$userColour
+                            : undefined,
+                    $location_at:
+                        typeof user.$location_at === 'string' ||
+                        typeof user.$location_at === 'number' ||
+                        user.$location_at === null
+                            ? user.$location_at
+                            : undefined
+                };
                 const dotClassName = resolveSidebarStatusDotClassName(
-                    user,
+                    statusUser,
                     currentUserSnapshot,
                     isCurrentUser,
                     { hideNonFriend: false }
                 );
                 const displayName = firstText(
-                    user?.displayName,
-                    user?.display_name,
-                    user?.username,
-                    user?.name,
+                    user.displayName,
+                    user.display_name,
+                    user.username,
+                    user.name,
                     userId,
                     'User'
                 );
                 const subtitle = instanceUserSubtitle(user, t);
                 const travelingTimestamp = instanceUserTravelingTimestamp(user);
                 return (
-                    <Button
+                    <UserDetailTile
                         key={`${userId || displayName || 'user'}:${index}`}
-                        type="button"
-                        variant="ghost"
-                        className="h-auto w-44 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
-                        onClick={() => {
-                            if (!userId) {
-                                return;
-                            }
-                            openUserDialog({
-                                userId,
-                                title: displayName || undefined,
-                                seedData: user
-                            });
-                        }}
-                    >
-                        <UserStatusAvatar
-                            imageUrl={image}
-                            statusDotClassName={dotClassName}
-                        />
-                        <span className="min-w-0 flex-1 overflow-hidden">
-                            <span
-                                className="block truncate leading-snug font-medium"
-                                style={
-                                    user?.$userColour
-                                        ? { color: user.$userColour }
-                                        : undefined
-                                }
-                            >
-                                {displayName}
-                            </span>
-                            {travelingTimestamp ? (
-                                <span className="text-muted-foreground block truncate text-xs">
+                        userId={userId}
+                        seed={user}
+                        className="w-44"
+                        imageUrl={image}
+                        statusDotClassName={dotClassName}
+                        displayName={displayName}
+                        nameStyle={
+                            typeof user.$userColour === 'string'
+                                ? { color: user.$userColour }
+                                : undefined
+                        }
+                        subline={
+                            travelingTimestamp ? (
+                                <>
                                     <Spinner
                                         aria-hidden="true"
                                         aria-label={undefined}
@@ -214,14 +242,22 @@ export function InstanceUserTiles({ instance }: any) {
                                     {timeToText(
                                         Date.now() - travelingTimestamp
                                     )}
-                                </span>
-                            ) : subtitle ? (
-                                <span className="text-muted-foreground block truncate text-xs">
-                                    {subtitle}
-                                </span>
-                            ) : null}
-                        </span>
-                    </Button>
+                                </>
+                            ) : (
+                                subtitle || undefined
+                            )
+                        }
+                        onOpen={() => {
+                            if (!userId) {
+                                return;
+                            }
+                            openUserDialog({
+                                userId,
+                                title: displayName || undefined,
+                                seedData: user
+                            });
+                        }}
+                    />
                 );
             })}
         </div>

@@ -10,7 +10,6 @@ import {
     type PlaybookMode,
     type Session
 } from '@/platform/tauri/bindings';
-import { recordAssistantOpen } from '@/services/telemetry/telemetryAssistantUsage';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import {
     openLlmEndpointsManager,
@@ -147,13 +146,7 @@ export function AssistantDialog() {
     );
 
     const bottomRef = useRef<HTMLDivElement | null>(null);
-    const previousOpenRef = useRef(false);
-
     useEffect(() => {
-        if (open && !previousOpenRef.current) {
-            recordAssistantOpen();
-        }
-        previousOpenRef.current = open;
         if (open) {
             refreshSessions();
             loadEndpoints().catch(() => {});

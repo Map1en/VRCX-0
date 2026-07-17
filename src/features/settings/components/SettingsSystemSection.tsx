@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { handleAutoBackgroundDownloadUpdatesPreferenceChange } from '@/services/backgroundMaintenanceService';
+import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '@/services/changelogService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import type { SettingsPageStateSections } from '../settingsPageStateSections';
@@ -28,7 +29,8 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
         setStartAtWindowsStartupPreference,
         setStartAsMinimizedPreference,
         setCloseToTrayPreference,
-        promptAutoLoginDelaySeconds
+        promptAutoLoginDelaySeconds,
+        promptBackgroundModeDelayMinutes
     } = system;
 
     return (
@@ -41,7 +43,10 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
             autoLoginDelaySeconds={prefs.autoLoginDelaySeconds}
             autoInstallUpdatesOnStartup={prefs.autoInstallUpdatesOnStartup}
             autoBackgroundDownloadUpdates={prefs.autoBackgroundDownloadUpdates}
+            showPostUpdateChangelogToast={prefs.showPostUpdateChangelogToast}
             backgroundModeEnabled={prefs.backgroundModeEnabled}
+            backgroundModeDelayEnabled={prefs.backgroundModeDelayEnabled}
+            backgroundModeDelayMinutes={prefs.backgroundModeDelayMinutes}
             proxyEnabled={prefs.proxyEnabled}
             proxyServer={prefs.proxyServer}
             onStartAtWindowsStartupChange={(checked: unknown) => {
@@ -78,6 +83,14 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
                     enabled
                 );
             }}
+            onBackgroundModeDelayEnabledChange={(checked: unknown) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'backgroundModeDelayEnabled',
+                    'backgroundModeDelayEnabled',
+                    enabled
+                );
+            }}
             onAutoInstallUpdatesOnStartupChange={(checked: unknown) => {
                 const enabled = normalizeCheckedState(checked);
                 saveBoolPreference(
@@ -97,8 +110,19 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
                     enabled
                 );
             }}
+            onPostUpdateChangelogToastChange={(checked: unknown) => {
+                const enabled = normalizeCheckedState(checked);
+                saveBoolPreference(
+                    'showPostUpdateChangelogToast',
+                    POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
+                    enabled
+                );
+            }}
             onPromptAutoLoginDelaySeconds={() => {
                 promptAutoLoginDelaySeconds();
+            }}
+            onPromptBackgroundModeDelayMinutes={() => {
+                promptBackgroundModeDelayMinutes();
             }}
             onProxyEnabledChange={async (checked: unknown) => {
                 const enabled = normalizeCheckedState(checked);

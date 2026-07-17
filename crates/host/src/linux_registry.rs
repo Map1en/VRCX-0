@@ -573,7 +573,7 @@ mod tests {
         fs::write(&wine, b"").unwrap();
 
         assert_eq!(
-            discover_wine_path(&[root.clone()], "Proton Hotfix"),
+            discover_wine_path(std::slice::from_ref(&root), "Proton Hotfix"),
             Some(wine)
         );
 
@@ -602,7 +602,7 @@ mod tests {
         std::env::set_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS", &extra_root);
 
         assert_eq!(
-            discover_wine_path(&[steam_root.clone()], "GE-Proton9-27"),
+            discover_wine_path(std::slice::from_ref(&steam_root), "GE-Proton9-27"),
             Some(wine)
         );
 
@@ -629,7 +629,7 @@ mod tests {
         std::env::set_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS", &tool_root);
 
         assert_eq!(
-            discover_wine_path(&[steam_root.clone()], "GE-Proton9-27"),
+            discover_wine_path(std::slice::from_ref(&steam_root), "GE-Proton9-27"),
             Some(wine)
         );
 

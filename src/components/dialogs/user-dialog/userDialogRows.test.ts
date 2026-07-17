@@ -45,10 +45,10 @@ describe('userDialogRows', () => {
             { id: 'wrld_c', name: 'Club', $favoriteGroup: 'Weekend picks' }
         ];
 
-        expect(filterRows(rows, 'quest').map((row: any) => row.id)).toEqual([
+        expect(filterRows(rows, 'quest').map((row) => row.id)).toEqual([
             'avtr_b'
         ]);
-        expect(filterRows(rows, 'weekend').map((row: any) => row.id)).toEqual([
+        expect(filterRows(rows, 'weekend').map((row) => row.id)).toEqual([
             'wrld_c'
         ]);
     });
@@ -82,17 +82,21 @@ describe('userDialogRows', () => {
             }
         ];
 
-        expect(sortAvatarRows(rows, 'name').map((row: any) => row.id)).toEqual([
+        expect(sortAvatarRows(rows, 'name').map((row) => row.id)).toEqual([
             'avtr_a',
             'avtr_b',
             'avtr_c'
         ]);
-        expect(
-            sortAvatarRows(rows, 'update').map((row: any) => row.id)
-        ).toEqual(['avtr_a', 'avtr_b', 'avtr_c']);
-        expect(
-            sortAvatarRows(rows, 'createdAt').map((row: any) => row.id)
-        ).toEqual(['avtr_c', 'avtr_b', 'avtr_a']);
+        expect(sortAvatarRows(rows, 'update').map((row) => row.id)).toEqual([
+            'avtr_a',
+            'avtr_b',
+            'avtr_c'
+        ]);
+        expect(sortAvatarRows(rows, 'createdAt').map((row) => row.id)).toEqual([
+            'avtr_c',
+            'avtr_b',
+            'avtr_a'
+        ]);
     });
 
     it('shows mutual friends with roster details while keeping dialog friend order', () => {
@@ -135,14 +139,10 @@ describe('userDialogRows', () => {
             }
         ]);
         expect(
-            sortMutualFriendRows(hydrated, 'friendOrder').map(
-                (row: any) => row.id
-            )
+            sortMutualFriendRows(hydrated, 'friendOrder').map((row) => row.id)
         ).toEqual(['usr_bob', 'usr_alice']);
         expect(
-            sortMutualFriendRows(hydrated, 'alphabetical').map(
-                (row: any) => row.id
-            )
+            sortMutualFriendRows(hydrated, 'alphabetical').map((row) => row.id)
         ).toEqual(['usr_alice', 'usr_bob']);
     });
 
@@ -167,7 +167,7 @@ describe('userDialogRows', () => {
                     }
                 ],
                 'lastActive'
-            ).map((row: any) => row.id)
+            ).map((row) => row.id)
         ).toEqual(['usr_new', 'usr_mid', 'usr_old']);
     });
 

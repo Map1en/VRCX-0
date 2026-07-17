@@ -11,16 +11,14 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
-import {
-    useKnownUserFact,
-    useKnownUserFacts
-} from '@/domain/users/useKnownUser';
 import { openGameLogUser } from '@/features/game-log/gameLogUserLookup';
 import {
     formatClock,
     formatDateFilterOrFallback,
     timeToText
 } from '@/lib/dateTime';
+import { useKnownUserFact, useKnownUserFacts } from '@/lib/useKnownUser';
+import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
@@ -30,6 +28,7 @@ import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
     Empty,
+    EmptyContent,
     EmptyDescription,
     EmptyHeader,
     EmptyTitle
@@ -49,6 +48,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart';
 import {
     normalizePlayerRows,
+    playerJoinMs,
+    playerLeaveMs,
     playerDisplayName,
     playerUserId,
     rowDuration,
@@ -57,28 +58,29 @@ import {
     rowWorldId
 } from './previousInstancesRows';
 
-function playerLeaveMs(player: any) {
-    const value = new Date(
-        player?.created_at || player?.createdAt || 0
-    ).getTime();
-    return Number.isFinite(value) && value > 0 ? value : 0;
-}
+const DETAILS_LOADING_INDICATOR_DELAY_MS = 150;
 
-function playerJoinClock(player: any) {
-    const leaveMs = playerLeaveMs(player);
-    if (!leaveMs) {
+type PreviousInstancePlayerClockRow = Parameters<typeof playerJoinMs>[0];
+
+function playerJoinClock(player: PreviousInstancePlayerClockRow) {
+    const joinedMs = playerJoinMs(player);
+    if (!joinedMs) {
         return '—';
     }
-    const stayMs = Math.max(0, Number(player?.time || 0)) * 1000;
-    return formatClock(leaveMs - stayMs) || '—';
+    return formatClock(joinedMs) || '—';
 }
 
-function playerLeaveClock(player: any) {
+function playerLeaveClock(player: PreviousInstancePlayerClockRow) {
     const leaveMs = playerLeaveMs(player);
     return leaveMs ? formatClock(leaveMs) || '—' : '—';
 }
 
-export function DialogEmptyState({ title, description, className = '' }: any) {
+export function DialogEmptyState({
+    title,
+    description,
+    action,
+    className = ''
+}: any) {
     return (
         <Empty
             className={['min-h-52 border', className].filter(Boolean).join(' ')}
@@ -89,6 +91,7 @@ export function DialogEmptyState({ title, description, className = '' }: any) {
                     <EmptyDescription>{description}</EmptyDescription>
                 ) : null}
             </EmptyHeader>
+            {action ? <EmptyContent>{action}</EmptyContent> : null}
         </Empty>
     );
 }
@@ -329,7 +332,11 @@ export function PreviousInstanceDetailsPanel({
         }
 
         let active = true;
-        setInfoData({ status: 'running', error: '', players: [], details: [] });
+        setInfoData((current: any) => ({
+            ...current,
+            status: 'running',
+            error: ''
+        }));
 
         Promise.all([
             gameLogRepository.getPlayersFromInstance(location),
@@ -367,6 +374,21 @@ export function PreviousInstanceDetailsPanel({
             active = false;
         };
     }, [currentEndpoint, row, t]);
+
+    const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
+    useEffect(() => {
+        if (!row || !rowLocation(row)) {
+            setShowLoadingIndicator(false);
+            return undefined;
+        }
+        setShowLoadingIndicator(false);
+        const timer = window.setTimeout(() => {
+            setShowLoadingIndicator(true);
+        }, DETAILS_LOADING_INDICATOR_DELAY_MS);
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [row]);
 
     useEffect(() => {
         if (!missingPlayerProfileIds.length) {
@@ -547,150 +569,157 @@ export function PreviousInstanceDetailsPanel({
                             )}
                         </span>
                     </div>
-                    {infoData.status === 'running' ? (
-                        <div className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed p-4 text-sm">
-                            <Spinner className="size-4" />
-                            <span>
-                                {t(
-                                    'dialog.previous_instances.loading.loading_instance_details'
-                                )}
-                            </span>
-                        </div>
-                    ) : null}
                     {infoData.status === 'error' ? (
                         <DialogErrorState>{infoData.error}</DialogErrorState>
-                    ) : null}
-                    {infoData.status === 'ready' ? (
-                        <>
-                            <TabsContent
-                                value="players"
-                                className="mt-2 min-h-0"
+                    ) : (
+                        <div className="relative min-h-0">
+                            {infoData.status === 'running' &&
+                            showLoadingIndicator ? (
+                                <div className="bg-popover text-muted-foreground pointer-events-none absolute top-1 right-1 z-10 flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs shadow-sm">
+                                    <Spinner className="size-3.5" />
+                                    {t(
+                                        'dialog.previous_instances.loading.loading_instance_details'
+                                    )}
+                                </div>
+                            ) : null}
+                            <div
+                                className={cn(
+                                    'min-h-0',
+                                    infoData.status === 'running' &&
+                                        'pointer-events-none opacity-60'
+                                )}
                             >
-                                <div className="max-h-[32vh] min-h-0 overflow-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="vrcx-0-table-header sticky top-0">
-                                            <TableRow>
-                                                <TableHead>
-                                                    {t(
-                                                        'table.previous_instances.display_name'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-20">
-                                                    {t(
-                                                        'dialog.world.info.visits'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-20">
-                                                    {t(
-                                                        'table.previous_instances.joined'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-20">
-                                                    {t(
-                                                        'table.previous_instances.left'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-28">
-                                                    {t(
-                                                        'table.previous_instances.time'
-                                                    )}
-                                                </TableHead>
-                                                <TableHead className="w-44">
-                                                    {t(
-                                                        'table.previous_instances.date'
-                                                    )}
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {infoData.players.length ? (
-                                                infoData.players.map(
-                                                    (
-                                                        player: any,
-                                                        index: any
-                                                    ) => (
-                                                        <TableRow
-                                                            key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
-                                                        >
-                                                            <TableCell className="align-top">
-                                                                <PreviousInstancePlayerNameButton
-                                                                    player={
-                                                                        player
-                                                                    }
-                                                                    displayName={resolvePlayerDisplayName(
+                                <TabsContent
+                                    value="players"
+                                    className="mt-2 min-h-0"
+                                >
+                                    <div className="max-h-[32vh] min-h-0 overflow-auto rounded-md border">
+                                        <Table>
+                                            <TableHeader className="vrcx-0-table-header sticky top-0">
+                                                <TableRow>
+                                                    <TableHead>
+                                                        {t(
+                                                            'table.previous_instances.display_name'
+                                                        )}
+                                                    </TableHead>
+                                                    <TableHead className="w-20">
+                                                        {t(
+                                                            'dialog.world.info.visits'
+                                                        )}
+                                                    </TableHead>
+                                                    <TableHead className="w-20">
+                                                        {t(
+                                                            'table.previous_instances.joined'
+                                                        )}
+                                                    </TableHead>
+                                                    <TableHead className="w-20">
+                                                        {t(
+                                                            'table.previous_instances.left'
+                                                        )}
+                                                    </TableHead>
+                                                    <TableHead className="w-28">
+                                                        {t(
+                                                            'table.previous_instances.time'
+                                                        )}
+                                                    </TableHead>
+                                                    <TableHead className="w-44">
+                                                        {t(
+                                                            'table.previous_instances.date'
+                                                        )}
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {infoData.players.length ? (
+                                                    infoData.players.map(
+                                                        (
+                                                            player: any,
+                                                            index: any
+                                                        ) => (
+                                                            <TableRow
+                                                                key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
+                                                            >
+                                                                <TableCell className="align-top">
+                                                                    <PreviousInstancePlayerNameButton
+                                                                        player={
+                                                                            player
+                                                                        }
+                                                                        displayName={resolvePlayerDisplayName(
+                                                                            player
+                                                                        )}
+                                                                        knownUser={
+                                                                            knownPlayersById[
+                                                                                playerUserId(
+                                                                                    player
+                                                                                )
+                                                                            ]
+                                                                        }
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell className="align-top text-xs tabular-nums">
+                                                                    {player?.count ||
+                                                                        '-'}
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
+                                                                    {playerJoinClock(
                                                                         player
                                                                     )}
-                                                                    knownUser={
-                                                                        knownPlayersById[
-                                                                            playerUserId(
-                                                                                player
-                                                                            )
-                                                                        ]
-                                                                    }
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell className="align-top text-xs tabular-nums">
-                                                                {player?.count ||
-                                                                    '-'}
-                                                            </TableCell>
-                                                            <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                {playerJoinClock(
-                                                                    player
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                {playerLeaveClock(
-                                                                    player
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="align-top text-xs tabular-nums">
-                                                                {Number(
-                                                                    player?.time ||
-                                                                        0
-                                                                ) > 0
-                                                                    ? timeToText(
-                                                                          Number(
-                                                                              player.time
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
+                                                                    {playerLeaveClock(
+                                                                        player
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="align-top text-xs tabular-nums">
+                                                                    {Number(
+                                                                        player?.time ||
+                                                                            0
+                                                                    ) > 0
+                                                                        ? timeToText(
+                                                                              Number(
+                                                                                  player.time
+                                                                              )
                                                                           )
-                                                                      )
-                                                                    : '-'}
-                                                            </TableCell>
-                                                            <TableCell className="text-muted-foreground align-top text-xs">
-                                                                {formatDateFilterOrFallback(
-                                                                    player?.created_at ||
-                                                                        player?.createdAt,
-                                                                    'long'
-                                                                )}
-                                                            </TableCell>
-                                                        </TableRow>
+                                                                        : '-'}
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground align-top text-xs">
+                                                                    {formatDateFilterOrFallback(
+                                                                        player?.created_at ||
+                                                                            player?.createdAt,
+                                                                        'long'
+                                                                    )}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )
                                                     )
-                                                )
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={6}
-                                                        className="py-6 text-center"
-                                                    >
-                                                        {t(
-                                                            'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </TabsContent>
-                            <TabsContent
-                                value="timeline"
-                                className="mt-2 max-h-[52vh] overflow-auto rounded-md border p-2"
-                            >
-                                <PreviousInstanceInfoChart
-                                    rows={infoData.details}
-                                />
-                            </TabsContent>
-                        </>
-                    ) : null}
+                                                ) : infoData.status ===
+                                                  'running' ? null : (
+                                                    <TableRow>
+                                                        <TableCell
+                                                            colSpan={6}
+                                                            className="py-6 text-center"
+                                                        >
+                                                            {t(
+                                                                'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent
+                                    value="timeline"
+                                    className="mt-2 max-h-[52vh] overflow-auto rounded-md border p-2"
+                                >
+                                    <PreviousInstanceInfoChart
+                                        rows={infoData.details}
+                                    />
+                                </TabsContent>
+                            </div>
+                        </div>
+                    )}
                 </Tabs>
             </div>
         </div>

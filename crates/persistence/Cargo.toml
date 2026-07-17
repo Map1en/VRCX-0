@@ -2,26 +2,23 @@
 name = "vrcx-0-persistence"
 version = "0.1.0"
 edition = "2021"
-autotests = false
 
 [dependencies]
+base64 = { workspace = true }
+chacha20poly1305 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
+fs4 = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled", "backup"] }
 sea-query = { version = "1.0.1", default-features = false, features = [
     "backend-sqlite"
 ] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 specta.workspace = true
+tar = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 vrcx-0-core = { path = "../core" }
-
-[[test]]
-name = "activity_view"
-path = "tests/activity_view.rs"
-
-[[test]]
-name = "favorites_move"
-path = "tests/favorites_move.rs"
+zstd = { workspace = true }

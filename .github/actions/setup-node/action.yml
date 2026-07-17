@@ -1,0 +1,12 @@
+name: Setup Node
+description: Set up the repository Node.js toolchain and install locked dependencies.
+
+runs:
+    using: composite
+    steps:
+        - uses: actions/setup-node@v6
+          with:
+              node-version: 24.x
+              cache: npm
+        - run: npm ci
+          shell: bash

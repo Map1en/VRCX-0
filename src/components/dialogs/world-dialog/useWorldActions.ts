@@ -1,3 +1,4 @@
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -15,7 +16,40 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 
+import type { WorldWorldSideData } from './useWorldDialogData';
+import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
 import { normalizeEntityId } from './worldInstances';
+
+type WorldRecord = ReturnType<typeof worldProfileRepository.normalize>;
+type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
+
+interface UseWorldActionsInput {
+    world: WorldRecord | null;
+    setWorld: Dispatch<SetStateAction<WorldRecord | null>>;
+    currentEndpoint: string;
+    currentUserId: string | null;
+    profileWorldId: string;
+    normalizedWorldId: string;
+    isInstanceLocation: boolean;
+    worldDialogShortName: string;
+    isHomeWorld: boolean;
+    canUpdateHome: boolean;
+    actionStatusRef: MutableRefObject<string>;
+    setActionStatus: Dispatch<SetStateAction<string>>;
+    activeWorldTargetRef: MutableRefObject<{
+        worldId: string;
+        endpoint: string;
+    }>;
+    memoRevisionRef: MutableRefObject<number>;
+    memo: string;
+    setMemo: Dispatch<SetStateAction<string>>;
+    worldSideData: WorldWorldSideData;
+    setWorldSideData: Dispatch<SetStateAction<WorldWorldSideData>>;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
+    confirm: RuntimeState['confirm'];
+    prompt: RuntimeState['prompt'];
+    setAuthBootstrap: RuntimeState['setAuthBootstrap'];
+}
 
 export function useWorldActions({
     world,
@@ -40,7 +74,7 @@ export function useWorldActions({
     confirm,
     prompt,
     setAuthBootstrap
-}: any) {
+}: UseWorldActionsInput) {
     const { t } = useTranslation();
 
     async function copyUnavailableWorldId() {
@@ -53,7 +87,7 @@ export function useWorldActions({
     }
 
     async function refreshWorldProfile() {
-        if (actionStatusRef.current !== 'idle') {
+        if (!world || actionStatusRef.current !== 'idle') {
             return;
         }
 
@@ -123,7 +157,7 @@ export function useWorldActions({
     }
 
     async function updateHomeLocation() {
-        if (!canUpdateHome || actionStatusRef.current !== 'idle') {
+        if (!world || !canUpdateHome || actionStatusRef.current !== 'idle') {
             return;
         }
 
@@ -187,7 +221,10 @@ export function useWorldActions({
         }
     }
 
-    async function saveMemo(nextValue: any) {
+    async function saveMemo(nextValue: string) {
+        if (!world) {
+            return;
+        }
         const targetWorldId = normalizeEntityId(world.id);
         memoRevisionRef.current += 1;
         try {
@@ -231,7 +268,7 @@ export function useWorldActions({
     }
 
     async function deleteWorldCache() {
-        if (actionStatusRef.current !== 'idle') {
+        if (!world || actionStatusRef.current !== 'idle') {
             return;
         }
         const targetWorld = world;
@@ -266,7 +303,7 @@ export function useWorldActions({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            setWorldSideData((current: any) => ({ ...current, cache }));
+            setWorldSideData((current) => ({ ...current, cache }));
             toast.success(t('dialog.world.success.world_cache_deleted'));
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
@@ -286,6 +323,9 @@ export function useWorldActions({
     }
 
     async function editMemo() {
+        if (!world) {
+            return;
+        }
         const result = await prompt({
             title: t('dialog.world.modal.edit_local_memo'),
             description: world.name || world.id,
@@ -299,7 +339,7 @@ export function useWorldActions({
             return;
         }
 
-        await saveMemo(result.value);
+        await saveMemo(String(result.value ?? ''));
     }
 
     return {

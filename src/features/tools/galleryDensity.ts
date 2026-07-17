@@ -1,3 +1,5 @@
+import { createDensityPreset } from '@/lib/densityPreset';
+
 export const DEFAULT_GALLERY_GRID_DENSITY = 'standard';
 
 export const GALLERY_GRID_DENSITY_OPTIONS = Object.freeze([
@@ -14,10 +16,6 @@ export const GALLERY_GRID_DENSITY_OPTIONS = Object.freeze([
         labelKey: 'dialog.gallery_icons.density_options.dense'
     }
 ]);
-
-const DENSITY_VALUES = new Set(
-    GALLERY_GRID_DENSITY_OPTIONS.map((option: any) => option.value)
-);
 
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
@@ -61,15 +59,11 @@ const DENSITY_CONFIGS = Object.freeze({
     })
 });
 
-export function sanitizeGalleryGridDensity(value: any = '') {
-    const normalizedValue = typeof value === 'string' ? value.trim() : '';
-    return DENSITY_VALUES.has(normalizedValue)
-        ? normalizedValue
-        : DEFAULT_GALLERY_GRID_DENSITY;
-}
+const preset = createDensityPreset(
+    DEFAULT_GALLERY_GRID_DENSITY,
+    DENSITY_CONFIGS
+);
 
-export function getGalleryGridDensityConfig(value: any) {
-    return DENSITY_CONFIGS[
-        sanitizeGalleryGridDensity(value) as keyof typeof DENSITY_CONFIGS
-    ];
-}
+export const sanitizeGalleryGridDensity = preset.sanitize;
+
+export const getGalleryGridDensityConfig = preset.getConfig;

@@ -70,8 +70,14 @@ describe('AvatarSearchProviderRepository', () => {
                     releaseStatus: String(avatar.releaseStatus ?? 'public'),
                     thumbnailImageUrl: String(avatar.thumbnailImageUrl ?? ''),
                     imageUrl: String(avatar.imageUrl ?? ''),
-                    created_at: avatar.created_at ?? '',
-                    updated_at: avatar.updated_at ?? '',
+                    created_at:
+                        typeof avatar.created_at === 'string'
+                            ? avatar.created_at
+                            : '',
+                    updated_at:
+                        typeof avatar.updated_at === 'string'
+                            ? avatar.updated_at
+                            : '',
                     version: 0,
                     tags: [],
                     unityPackages: [],

@@ -1,7 +1,6 @@
 import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
-import databaseMaintenanceRepository from '@/repositories/databaseMaintenanceRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
@@ -11,11 +10,7 @@ import { initializeBackgroundImage } from './background-image/backgroundImageSer
 import { runStartupMaintenance } from './backgroundMaintenanceService';
 import { initializeCommunityThemes } from './communityThemeService';
 import { initializeDatabaseUpgradeFlow } from './databaseUpgradeService';
-import { checkVRChatDebugLogging } from './gameStateService';
-import {
-    initializeHostCapabilities,
-    isHostCapabilityAvailable
-} from './hostCapabilityService';
+import { initializeHostCapabilities } from './hostCapabilityService';
 import { loadPreferenceSnapshot } from './preferencesService';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 import {
@@ -111,7 +106,6 @@ export async function initializeReactRuntime() {
             locale: normalizedLocale
         });
         await runNonCriticalStartupSync('zoom', applyZoomLevel(zoomLevel));
-        await databaseMaintenanceRepository.initGlobalTables();
         const databaseReady = await initializeDatabaseUpgradeFlow();
         sessionStore.setSessionState({ databaseReady });
         await loadPreferenceSnapshot();
@@ -131,14 +125,6 @@ export async function initializeReactRuntime() {
         }
 
         await refreshSavedAuthSnapshot();
-        if (isHostCapabilityAvailable('registryPrefs')) {
-            checkVRChatDebugLogging().catch((error: unknown) => {
-                console.warn(
-                    'Startup VRChat debug logging check failed:',
-                    error
-                );
-            });
-        }
         runStartupMaintenance().catch((error: unknown) => {
             console.warn('Startup maintenance failed:', error);
         });

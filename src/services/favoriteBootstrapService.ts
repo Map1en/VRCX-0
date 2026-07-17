@@ -23,8 +23,12 @@ type FavoriteBootstrapResult = {
     stale: boolean;
     count: number;
 };
+type ActiveFavoriteHydration = {
+    promise: Promise<FavoriteBootstrapResult>;
+    invalidated: boolean;
+};
 
-const activeHydrations = new Map<string, Promise<FavoriteBootstrapResult>>();
+const activeHydrations = new Map<string, ActiveFavoriteHydration>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
@@ -66,8 +70,11 @@ function isCurrentFavoriteBootstrapTarget(
 async function runFavoriteBootstrap({
     userId,
     endpoint = '',
-    currentUserSnapshot
-}: FavoriteBootstrapOptions): Promise<FavoriteBootstrapResult> {
+    currentUserSnapshot,
+    isCurrentTarget
+}: FavoriteBootstrapOptions & {
+    isCurrentTarget: () => boolean;
+}): Promise<FavoriteBootstrapResult> {
     const currentSnapshot = isRecord(currentUserSnapshot)
         ? currentUserSnapshot
         : null;
@@ -116,7 +123,7 @@ async function runFavoriteBootstrap({
         : null;
 
     if (result.stale || !snapshot) {
-        if (isCurrentFavoriteBootstrapTarget(normalizedUserId, endpoint)) {
+        if (isCurrentTarget()) {
             throw new Error(
                 `Favorites baseline was stale for ${normalizedUserId}.`
             );
@@ -129,7 +136,7 @@ async function runFavoriteBootstrap({
         };
     }
 
-    if (!isCurrentFavoriteBootstrapTarget(normalizedUserId, endpoint)) {
+    if (!isCurrentTarget()) {
         return {
             userId: normalizedUserId,
             stale: true,
@@ -172,22 +179,48 @@ export function bootstrapFavorites(
     }
 
     const activeKey = favoriteBootstrapKey(normalizedUserId, options?.endpoint);
-    if (activeHydrations.has(activeKey)) {
-        return activeHydrations.get(activeKey)!;
+    const activeHydration = activeHydrations.get(activeKey);
+    if (activeHydration && !activeHydration.invalidated) {
+        return activeHydration.promise;
     }
 
-    const promise = runFavoriteBootstrap({
+    const hydration: ActiveFavoriteHydration = {
+        promise: Promise.resolve({
+            userId: normalizedUserId,
+            stale: true,
+            count: 0
+        }),
+        invalidated: false
+    };
+    const isCurrentTarget = () =>
+        !hydration.invalidated &&
+        isCurrentFavoriteBootstrapTarget(normalizedUserId, options?.endpoint);
+    const invalidateIfStale = () => {
+        if (
+            isCurrentFavoriteBootstrapTarget(
+                normalizedUserId,
+                options?.endpoint
+            )
+        ) {
+            return;
+        }
+
+        hydration.invalidated = true;
+        if (activeHydrations.get(activeKey) === hydration) {
+            activeHydrations.delete(activeKey);
+        }
+    };
+    const unsubscribeSession = useSessionStore.subscribe(invalidateIfStale);
+    const unsubscribeRuntime = useRuntimeStore.subscribe(invalidateIfStale);
+
+    hydration.promise = runFavoriteBootstrap({
         ...options,
         userId: normalizedUserId,
-        currentUserSnapshot
+        currentUserSnapshot,
+        isCurrentTarget
     })
         .catch((error: unknown) => {
-            if (
-                isCurrentFavoriteBootstrapTarget(
-                    normalizedUserId,
-                    options?.endpoint
-                )
-            ) {
+            if (isCurrentTarget()) {
                 useRuntimeStore
                     .getState()
                     .setStartupTask(
@@ -206,9 +239,13 @@ export function bootstrapFavorites(
             throw error;
         })
         .finally(() => {
-            activeHydrations.delete(activeKey);
+            unsubscribeSession();
+            unsubscribeRuntime();
+            if (activeHydrations.get(activeKey) === hydration) {
+                activeHydrations.delete(activeKey);
+            }
         });
 
-    activeHydrations.set(activeKey, promise);
-    return promise;
+    activeHydrations.set(activeKey, hydration);
+    return hydration.promise;
 }

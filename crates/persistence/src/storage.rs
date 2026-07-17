@@ -145,6 +145,28 @@ mod tests {
     }
 
     #[test]
+    fn starts_clean_in_a_restored_profile_without_a_config_file() -> Result<(), Error> {
+        let dir = TestDir::new("storage-restored-profile");
+        std::fs::write(dir.path.join("VRCX-0.sqlite3"), b"restored database")?;
+        let config_path = dir.path.join("VRCX-0.json");
+
+        let storage = StorageService::new(&config_path)?;
+        assert_eq!(storage.get("VRCX_ProfileBackupAutoEnabled"), None);
+        assert!(storage.get_all().is_empty());
+
+        storage.set("VRCX_ProfileBackupLastAutoAt".into(), "".into());
+        storage.save()?;
+        drop(storage);
+
+        let reloaded = StorageService::new(&config_path)?;
+        assert_eq!(
+            reloaded.get("VRCX_ProfileBackupLastAutoAt").as_deref(),
+            Some("")
+        );
+        Ok(())
+    }
+
+    #[test]
     fn loads_and_flushes_daily_app_settings() -> Result<(), Error> {
         let dir = TestDir::new("storage-daily");
         let config_path = dir.path.join("VRCX-0.json");

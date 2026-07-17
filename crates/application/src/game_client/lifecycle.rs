@@ -56,7 +56,7 @@ pub fn plan_crash_relaunch(
 
 fn build_launch_arguments(location: &str, launch_arguments: &str, desktop_mode: bool) -> String {
     let launch_url = format!(
-        "vrchat://launch?ref=vrcx.app&id={}",
+        "vrchat://launch?id={}",
         utf8_percent_encode(location, NON_ALPHANUMERIC)
     );
     let mut args = vec![launch_url];
@@ -113,9 +113,7 @@ mod tests {
         let mut cfg = config();
         cfg.is_game_no_vr = true;
         let plan = plan_crash_relaunch(&cfg, "wrld_test:1", false, 10_000, None).unwrap();
-        assert!(plan
-            .launch_arguments
-            .contains("vrchat://launch?ref=vrcx.app&id=wrld"));
+        assert!(plan.launch_arguments.contains("vrchat://launch?id=wrld"));
         assert!(plan.launch_arguments.contains("--profile=0"));
         assert!(plan.launch_arguments.ends_with("--no-vr"));
         assert_eq!(plan.delay.as_secs(), 2);

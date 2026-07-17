@@ -1,7 +1,9 @@
 import { CopyIcon, ExternalLinkIcon, PersonStandingIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type { AvatarDialogJson } from '@/domain/entities/profileEntities';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import {
@@ -15,6 +17,14 @@ import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import type {
+    AvatarControls,
+    AvatarDialogTab,
+    AvatarGalleryEntry,
+    AvatarListing,
+    AvatarViewRecord,
+    AvatarViewState
+} from './avatar-dialog/avatarDialogTypes';
 import { AvatarDialogGalleryTab } from './avatar-dialog/components/AvatarDialogGalleryTab';
 import { AvatarDialogHeaderActions } from './avatar-dialog/components/AvatarDialogHeaderActions';
 import { AvatarDialogHeaderBadges } from './avatar-dialog/components/AvatarDialogHeaderBadges';
@@ -30,34 +40,34 @@ import {
     EntityRawJson
 } from './EntityDialogScaffold';
 
-function firstArray(...values: any[]) {
-    return values.find((value: any) => Array.isArray(value)) || [];
+function firstArray<T>(...values: (T[] | null | undefined)[]): T[];
+function firstArray(...values: unknown[]) {
+    const result = values.find(Array.isArray);
+    return Array.isArray(result) ? result : [];
 }
 
-function normalizeEntityId(value: any) {
+function normalizeEntityId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
 function resolveAvatarDialogTab(
-    tabs: any,
-    preferred: any,
-    fallback: any = 'info'
-) {
-    return tabs.some((tab: any) => tab.value === preferred)
-        ? preferred
-        : fallback;
+    tabs: ReadonlyArray<{ value: AvatarDialogTab }>,
+    preferred: string,
+    fallback: AvatarDialogTab = 'info'
+): AvatarDialogTab {
+    return tabs.find((tab) => tab.value === preferred)?.value ?? fallback;
 }
 
-function compactAvatarId(avatarId: any) {
+function compactAvatarId(avatarId: string): string {
     if (!avatarId || avatarId.length <= 22) {
         return avatarId || '';
     }
     return `${avatarId.slice(0, 16)}\u2026${avatarId.slice(-4)}`;
 }
 
-function compactAvatarUrl(url: any) {
+function compactAvatarUrl(url: string): string {
     if (!url) {
         return '';
     }
@@ -70,7 +80,15 @@ function compactAvatarUrl(url: any) {
     return `${displayUrl.slice(0, 20)}\u2026${displayUrl.slice(-4)}`;
 }
 
-function AvatarOverviewFactRow({ label, value, children }: any) {
+function AvatarOverviewFactRow({
+    label,
+    value,
+    children
+}: {
+    label: string;
+    value?: string;
+    children?: ReactNode;
+}) {
     return (
         <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="text-muted-foreground min-w-0 truncate">
@@ -91,7 +109,13 @@ function AvatarOverviewReferences({
     onCopyAvatarId,
     onCopyAvatarUrl,
     onOpenAvatarUrl
-}: any) {
+}: {
+    avatar: AvatarViewRecord;
+    avatarUrl: string;
+    onCopyAvatarId(): void;
+    onCopyAvatarUrl(): void;
+    onOpenAvatarUrl(): void;
+}) {
     const { t } = useTranslation();
 
     if (!avatar.id && !avatarUrl) {
@@ -204,7 +228,20 @@ function AvatarDialogOverviewSection({
     onCopyAvatarId,
     onCopyAvatarUrl,
     onOpenAvatarUrl
-}: any) {
+}: {
+    avatar: AvatarViewRecord;
+    avatarFallbackLabel: string;
+    imageUrl: string;
+    avatarUrl: string;
+    badges: ReactNode;
+    actions: ReactNode;
+    onImageClick?: () => void;
+    onTitleClick?: () => void;
+    onAuthorClick(): void;
+    onCopyAvatarId(): void;
+    onCopyAvatarUrl(): void;
+    onOpenAvatarUrl(): void;
+}) {
     const { t } = useTranslation();
     const imageClickable = Boolean(
         (imageUrl || avatar.imageUrl) && onImageClick
@@ -224,7 +261,7 @@ function AvatarDialogOverviewSection({
                     )}
                 >
                     {imageUrl ? (
-                        <img
+                        <FadeInImage
                             src={imageUrl}
                             alt={
                                 avatar.name || avatar.id || avatarFallbackLabel
@@ -303,7 +340,12 @@ export function AvatarDialogTabbedView({
     avatar,
     avatarView,
     imageUrl
-}: any) {
+}: {
+    avatarControls: AvatarControls;
+    avatar: AvatarViewRecord;
+    avatarView: AvatarViewState;
+    imageUrl: string;
+}) {
     const { t } = useTranslation();
     const {
         memo,
@@ -335,7 +377,7 @@ export function AvatarDialogTabbedView({
         onDelete
     } = avatarControls;
 
-    const [activeTab, setActiveTab] = useState('info');
+    const [activeTab, setActiveTab] = useState<AvatarDialogTab>('info');
     const [galleryIndex, setGalleryIndex] = useState(0);
     const copyAvatarText = useAvatarDialogClipboard();
     const openImagePreview = useAvatarDialogPreview();
@@ -344,38 +386,39 @@ export function AvatarDialogTabbedView({
     const packageUrl = replaceVrcPackageUrl(
         avatar.unityPackageUrl || avatar.unityPackage?.url || ''
     );
-    const galleryImages = firstArray(
+    const galleryImages = firstArray<AvatarGalleryEntry>(
         avatar.galleryImages,
         avatar.galleries,
         avatar.gallery
     );
-    const listings = firstArray(avatar.publishedListings, avatar.listings);
+    const listings = firstArray<AvatarListing>(
+        avatar.publishedListings,
+        avatar.listings
+    );
     const currentGalleryEntry = galleryImages[galleryIndex] || null;
     const currentGalleryRawImage =
-        currentGalleryEntry?.imageUrl ||
-        currentGalleryEntry?.thumbnailImageUrl ||
-        currentGalleryEntry?.fileUrl ||
-        currentGalleryEntry ||
-        '';
+        typeof currentGalleryEntry === 'string'
+            ? currentGalleryEntry
+            : currentGalleryEntry?.imageUrl ||
+              currentGalleryEntry?.thumbnailImageUrl ||
+              currentGalleryEntry?.fileUrl ||
+              '';
     const currentGalleryImage = currentGalleryRawImage
         ? convertFileUrlToImageUrl(currentGalleryRawImage, 1024)
         : '';
     const platformInfo = getPlatformInfo(avatar.unityPackages);
     const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
     const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
-    const contentTags = remoteTags.filter((tag: any) =>
-        tag.startsWith('content_')
-    );
-    const authorTags = remoteTags.filter((tag: any) =>
+    const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
+    const authorTags = remoteTags.filter((tag) =>
         tag.startsWith('author_tag_')
     );
     const otherTags = remoteTags.filter(
-        (tag: any) =>
-            !tag.startsWith('content_') && !tag.startsWith('author_tag_')
+        (tag) => !tag.startsWith('content_') && !tag.startsWith('author_tag_')
     );
     const imposterPackage = Array.isArray(avatar.unityPackages)
         ? avatar.unityPackages.find(
-              (unityPackage: any) => unityPackage?.variant === 'impostor'
+              (unityPackage) => unityPackage.variant === 'impostor'
           )
         : null;
     const hasImposter = Boolean(imposterPackage);
@@ -384,25 +427,23 @@ export function AvatarDialogTabbedView({
     );
     const hasGalleryTab =
         galleryImages.length > 0 || listings.length > 0 || canManageAvatar;
-    const tabs = [
-        { value: 'info', label: t('dialog.avatar.info.header') },
-        ...(hasGalleryTab
-            ? [
-                  {
-                      value: 'gallery',
-                      label: t('dialog.avatar.info.gallery')
-                  }
-              ]
-            : []),
-        { value: 'json', label: t('dialog.avatar.json.header') }
+    const tabs: Array<{ value: AvatarDialogTab; label: string }> = [
+        { value: 'info', label: t('dialog.avatar.info.header') }
     ];
+    if (hasGalleryTab) {
+        tabs.push({
+            value: 'gallery',
+            label: t('dialog.avatar.info.gallery')
+        });
+    }
+    tabs.push({ value: 'json', label: t('dialog.avatar.json.header') });
 
-    function changeTab(tab: any) {
+    function changeTab(tab: string) {
         setActiveTab(resolveAvatarDialogTab(tabs, tab));
     }
 
     useEffect(() => {
-        setGalleryIndex((index: any) =>
+        setGalleryIndex((index) =>
             Math.min(index, Math.max(0, galleryImages.length - 1))
         );
     }, [galleryImages.length]);
@@ -413,7 +454,7 @@ export function AvatarDialogTabbedView({
     }, [avatar.id]);
 
     useEffect(() => {
-        setActiveTab((tab: any) => resolveAvatarDialogTab(tabs, tab));
+        setActiveTab((tab) => resolveAvatarDialogTab(tabs, tab));
     }, [hasGalleryTab]);
 
     function openAvatarAuthor() {
@@ -462,7 +503,7 @@ export function AvatarDialogTabbedView({
                         onImageClick={
                             imageUrl || avatar.imageUrl
                                 ? openPrimaryImagePreview
-                                : null
+                                : undefined
                         }
                         onTitleClick={
                             avatar.name
@@ -572,14 +613,16 @@ export function AvatarDialogTabbedView({
                     ) : null}
                     <EntityDialogTabContent value="json">
                         <EntityRawJson
-                            value={{
-                                avatar,
-                                memo,
-                                avatarBlocked,
-                                galleryImages,
-                                platformInfo,
-                                fileAnalysis
-                            }}
+                            value={
+                                {
+                                    avatar,
+                                    memo,
+                                    avatarBlocked,
+                                    galleryImages,
+                                    platformInfo,
+                                    fileAnalysis
+                                } satisfies AvatarDialogJson
+                            }
                         />
                     </EntityDialogTabContent>
                 </EntityDialogTabs>

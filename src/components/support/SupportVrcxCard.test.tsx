@@ -26,7 +26,7 @@ vi.mock('@/ui/shadcn/button', async () => {
     const React = await import('react');
 
     return {
-        Button: ({ children, ...props }: any) =>
+        Button: ({ children, ...props }: React.ComponentProps<'button'>) =>
             React.createElement('button', props, children)
     };
 });
@@ -35,15 +35,15 @@ vi.mock('@/ui/shadcn/card', async () => {
     const React = await import('react');
 
     return {
-        Card: ({ children }: any) =>
+        Card: ({ children }: React.PropsWithChildren) =>
             React.createElement('section', null, children),
-        CardContent: ({ children }: any) =>
+        CardContent: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        CardDescription: ({ children }: any) =>
+        CardDescription: ({ children }: React.PropsWithChildren) =>
             React.createElement('p', null, children),
-        CardHeader: ({ children }: any) =>
+        CardHeader: ({ children }: React.PropsWithChildren) =>
             React.createElement('header', null, children),
-        CardTitle: ({ children }: any) =>
+        CardTitle: ({ children }: React.PropsWithChildren) =>
             React.createElement('h2', null, children)
     };
 });

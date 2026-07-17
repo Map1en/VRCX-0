@@ -136,6 +136,7 @@ export function parseTypeFilters(value: any) {
 
     return parsed.filter(
         (entry: any) =>
-            typeof entry === 'string' && FRIEND_LOG_TYPES.includes(entry)
+            typeof entry === 'string' &&
+            (FRIEND_LOG_TYPES as readonly string[]).includes(entry)
     );
 }

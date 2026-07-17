@@ -49,7 +49,8 @@ async function setNotificationActivityFilterSurfacePreference(
     key:
         | 'vrNotificationActivityFilters'
         | 'desktopNotificationActivityFilters'
-        | 'webhookActivityFilters',
+        | 'webhookActivityFilters'
+        | 'ttsNotificationActivityFilters',
     value: unknown
 ) {
     const normalized = normalizeOverlayActivityFilterProfile(value);
@@ -96,6 +97,13 @@ export async function setHmdNotificationActivityFiltersPreference(
 export function setWebhookActivityFiltersPreference(value: unknown) {
     return setNotificationActivityFilterSurfacePreference(
         'webhookActivityFilters',
+        value
+    );
+}
+
+export function setTtsNotificationActivityFiltersPreference(value: unknown) {
+    return setNotificationActivityFilterSurfacePreference(
+        'ttsNotificationActivityFilters',
         value
     );
 }

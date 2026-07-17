@@ -10,87 +10,117 @@ import {
 } from './userDialogContentHelpers';
 import { normalizeUserId } from './userProfileFields';
 
+type DialogRecord = Record<string, unknown>;
+
+function record(value: unknown): DialogRecord {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
 export function resolveOwnerId(
-    source: any,
-    fallbackOwnerId: any = '',
-    fallbackGroupId: any = ''
+    sourceValue: unknown,
+    fallbackOwnerId: unknown = '',
+    fallbackGroupId: unknown = ''
 ) {
+    const source = record(sourceValue);
+    const ownerUser = record(source.ownerUser);
+    const owner = record(source.owner);
+    const creatorUser = record(source.creatorUser);
+    const user = record(source.user);
+    const group = record(source.group);
     return normalizeUserId(
-        source?.ownerUserId ||
-            source?.owner_user_id ||
-            source?.ownerId ||
-            source?.owner_id ||
-            source?.userId ||
-            source?.user_id ||
-            source?.creatorUserId ||
-            source?.creator_user_id ||
-            source?.ownerUser?.id ||
-            source?.ownerUser?.userId ||
-            source?.ownerUser?.user_id ||
-            source?.owner?.id ||
-            source?.owner?.userId ||
-            source?.owner?.user_id ||
-            source?.creatorUser?.id ||
-            source?.creatorUser?.userId ||
-            source?.creatorUser?.user_id ||
-            source?.user?.id ||
-            source?.user?.userId ||
-            source?.user?.user_id ||
-            source?.groupId ||
-            source?.group_id ||
-            source?.group?.id ||
-            source?.group?.groupId ||
-            source?.group?.group_id ||
+        source.ownerUserId ||
+            source.owner_user_id ||
+            source.ownerId ||
+            source.owner_id ||
+            source.userId ||
+            source.user_id ||
+            source.creatorUserId ||
+            source.creator_user_id ||
+            ownerUser.id ||
+            ownerUser.userId ||
+            ownerUser.user_id ||
+            owner.id ||
+            owner.userId ||
+            owner.user_id ||
+            creatorUser.id ||
+            creatorUser.userId ||
+            creatorUser.user_id ||
+            user.id ||
+            user.userId ||
+            user.user_id ||
+            source.groupId ||
+            source.group_id ||
+            group.id ||
+            group.groupId ||
+            group.group_id ||
             fallbackOwnerId ||
             fallbackGroupId
     );
 }
 
 export function resolveOwnerSeed(
-    source: any,
-    ownerId: any,
-    knownUsersById: any
+    sourceValue: unknown,
+    ownerId: unknown,
+    knownUsersById: Map<string, unknown>
 ) {
+    const source = record(sourceValue);
     if (!ownerId) {
         return null;
     }
 
     if (isGroupId(ownerId)) {
         return (
-            source?.group ||
-            source?.ownerGroup ||
-            source?.owner_group ||
-            groupSeed(source?.owner) ||
-            source?.creatorGroup ||
-            source?.creator_group ||
+            source.group ||
+            source.ownerGroup ||
+            source.owner_group ||
+            groupSeed(source.owner) ||
+            source.creatorGroup ||
+            source.creator_group ||
             null
         );
     }
 
     return (
-        source?.ownerUser ||
-        source?.owner ||
-        source?.creatorUser ||
-        source?.user ||
-        knownUsersById.get(ownerId) ||
+        source.ownerUser ||
+        source.owner ||
+        source.creatorUser ||
+        source.user ||
+        knownUsersById.get(normalizeUserId(ownerId)) ||
         null
     );
 }
 
-export function resolveGroupFallback(source: any, ownerId: any) {
+export function resolveGroupFallback(sourceValue: unknown, ownerId: unknown) {
+    const source = record(sourceValue);
+    const group = record(source.group);
     return {
-        id: ownerId,
-        name:
-            source?.groupName || source?.group_name || source?.group?.name || ''
+        id: normalizeUserId(ownerId),
+        name: normalizeUserId(
+            source.groupName || source.group_name || group.name
+        )
     };
 }
+
+type LoadLocationOwnerInput = {
+    ownerId: string;
+    ownerSeed: unknown;
+    endpoint: string;
+    groupFallback: { id: string; name: string };
+};
+
+type LocationOwnerResult = {
+    ownerUser: ReturnType<typeof createLocationUserRow> | null;
+    ownerGroup: ReturnType<typeof createLocationGroupRow> | null;
+};
 
 export async function loadLocationOwner({
     ownerId,
     ownerSeed,
     endpoint,
     groupFallback
-}: any): Promise<{ ownerUser: unknown; ownerGroup: unknown }> {
+}: LoadLocationOwnerInput): Promise<LocationOwnerResult> {
     if (!ownerId) {
         return { ownerUser: null, ownerGroup: null };
     }

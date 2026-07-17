@@ -1,20 +1,28 @@
 import { useEffect, useState } from 'react';
 
+import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 
 import { normalizeLanguageOptionsFromConfig } from '../user-dialog/userProfileFields';
 import { normalizeGroupLanguages } from './GroupDialogViewParts';
 
-export function useGroupDialogLanguageRows({ currentEndpoint, group }: any) {
-    const [vrchatConfigConstants, setVrchatConfigConstants] = useState(null);
+export function useGroupDialogLanguageRows({
+    currentEndpoint,
+    group
+}: {
+    currentEndpoint: string;
+    group: GroupProfileRecord;
+}) {
+    const [vrchatConfigConstants, setVrchatConfigConstants] =
+        useState<unknown>(null);
 
     useEffect(() => {
         let active = true;
         vrchatAuthRepository
             .getConfig({ endpoint: currentEndpoint })
-            .then((response: any) => {
+            .then((response) => {
                 if (active) {
-                    setVrchatConfigConstants(response?.json?.constants || null);
+                    setVrchatConfigConstants(response.json.constants || null);
                 }
             })
             .catch(() => {
@@ -31,7 +39,7 @@ export function useGroupDialogLanguageRows({ currentEndpoint, group }: any) {
         constants: vrchatConfigConstants
     });
     const languageOptionsMap = new Map(
-        languageOptions.map((option: any) => [option.key, option])
+        languageOptions.map((option) => [option.key, option])
     );
     return normalizeGroupLanguages(group, languageOptionsMap);
 }

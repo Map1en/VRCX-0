@@ -1,3 +1,4 @@
+import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
 import { Badge } from '@/ui/shadcn/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -8,13 +9,23 @@ import {
 import { firstText } from './groupDialogUtils';
 
 export function normalizeGroupLanguages(
-    group: any,
-    languageOptionMap: any = new Map()
+    group: GroupProfileRecord,
+    languageOptionMap: Parameters<
+        typeof normalizeProfileLanguageRows
+    >[1] = new Map()
 ) {
     return normalizeProfileLanguageRows(group, languageOptionMap);
 }
 
-export function GroupTitleLanguages({ languages, limit = Infinity }: any) {
+type LanguageRow = ReturnType<typeof normalizeProfileLanguageRows>[number];
+
+export function GroupTitleLanguages({
+    languages,
+    limit = Infinity
+}: {
+    languages: LanguageRow[];
+    limit?: number;
+}) {
     if (!languages.length) {
         return null;
     }
@@ -29,7 +40,7 @@ export function GroupTitleLanguages({ languages, limit = Infinity }: any) {
 
     return (
         <span className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-1">
-            {visibleLanguages.map((language: any) => {
+            {visibleLanguages.map((language) => {
                 const key = String(
                     language?.key || language?.value || ''
                 ).trim();
@@ -69,7 +80,7 @@ export function GroupTitleLanguages({ languages, limit = Infinity }: any) {
     );
 }
 
-export function shouldShowGroupBadgeValue(value: any) {
+export function shouldShowGroupBadgeValue(value: unknown) {
     const normalizedValue = firstText(value).toLowerCase();
     return Boolean(normalizedValue && normalizedValue !== 'default');
 }

@@ -1,19 +1,57 @@
+import type {
+    EntityRecord,
+    GroupDialogInstanceRow,
+    GroupInstanceRecord
+} from '@/domain/entities/profileEntities';
+import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
 import { parseLocation } from '@/shared/utils/location';
+import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
-export function normalizeEntityId(value: any) {
+type InstanceUser = EntityRecord & {
+    displayName?: unknown;
+    id?: unknown;
+    location?: unknown;
+    travelingToLocation?: unknown;
+    userId?: unknown;
+};
+
+interface MergeGroupInstancesOptions {
+    groupId: unknown;
+    friendsById:
+        | FriendRosterById
+        | Record<string, InstanceUser | null | undefined>;
+    currentUserSnapshot: CurrentUserSnapshotState | null;
+    currentLocation: unknown;
+}
+
+function isEntityRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function entityRecord(value: unknown): EntityRecord | null {
+    return isEntityRecord(value) ? value : null;
+}
+
+function entityRows(value: unknown): EntityRecord[] {
+    return Array.isArray(value)
+        ? value.filter((row): row is EntityRecord => Boolean(entityRecord(row)))
+        : [];
+}
+
+export function normalizeEntityId(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
-export function normalizeLocation(value: any) {
+export function normalizeLocation(value: unknown) {
     const normalized = typeof value === 'string' ? value.trim() : '';
     return normalized && normalized !== 'offline' && normalized !== 'private'
         ? normalized
         : '';
 }
 
-export function userGroupLocation(user: any) {
+export function userGroupLocation(user: InstanceUser | null | undefined) {
     const location = normalizeLocation(user?.location);
     if (location === 'traveling') {
         return normalizeLocation(user?.travelingToLocation);
@@ -21,49 +59,60 @@ export function userGroupLocation(user: any) {
     return location;
 }
 
-export function instanceLocation(instance: any) {
+export function instanceLocation(instance: GroupInstanceRecord) {
+    const projectedLocation = entityRecord(instance.$location);
     const directLocation = normalizeLocation(
-        instance?.location || instance?.tag || instance?.$location?.tag
+        instance.location || instance.tag || projectedLocation?.tag
     );
     if (directLocation) {
         return directLocation;
     }
-    const worldId = instance?.worldId || instance?.world?.id || '';
+    const world = entityRecord(instance.world);
+    const worldId = instance.worldId || world?.id || '';
     const instanceId =
-        instance?.instanceId || instance?.id || instance?.name || '';
+        instance.instanceId || instance.id || instance.name || '';
     return worldId && instanceId ? `${worldId}:${instanceId}` : '';
 }
 
 export function mergeGroupInstances(
-    baseInstances: any,
-    { groupId, friendsById, currentUserSnapshot, currentLocation }: any
-) {
+    baseInstances: GroupInstanceRecord[],
+    {
+        groupId,
+        friendsById,
+        currentUserSnapshot,
+        currentLocation
+    }: MergeGroupInstancesOptions
+): GroupDialogInstanceRow[] {
     const normalizedGroupId = normalizeEntityId(groupId);
     const currentLocationKey = normalizeLocation(currentLocation);
-    const byLocation = new Map();
+    const byLocation = new Map<string, GroupDialogInstanceRow>();
 
-    function ensureInstance(location: any, seed: any = {}) {
+    function ensureInstance(
+        location: unknown,
+        seed: GroupInstanceRecord = {}
+    ): GroupDialogInstanceRow | null {
         const normalizedLocation = normalizeLocation(location);
         if (!normalizedLocation) {
             return null;
         }
         const parsed = parseLocation(normalizedLocation);
+        const world = entityRecord(seed.world);
         const existing = byLocation.get(normalizedLocation);
         if (existing) {
-            existing.worldId =
-                seed.worldId ||
-                seed.world?.id ||
-                parsed.worldId ||
-                existing.worldId ||
-                '';
-            existing.instanceId =
+            const worldId = normalizeEntityId(
+                seed.worldId || world?.id || parsed.worldId || existing.worldId
+            );
+            const instanceId = normalizeEntityId(
                 seed.instanceId ||
-                seed.id ||
-                parsed.instanceId ||
-                existing.instanceId ||
-                '';
-            existing.ref = seed.ref || existing.ref || seed;
+                    seed.id ||
+                    parsed.instanceId ||
+                    existing.instanceId
+            );
+            const ref = entityRecord(seed.ref) || existing.ref || seed;
             return Object.assign(existing, seed, {
+                worldId,
+                instanceId,
+                ref,
                 location: normalizedLocation,
                 tag: normalizedLocation,
                 users: existing.users,
@@ -71,32 +120,33 @@ export function mergeGroupInstances(
             });
         }
 
-        const row: any = {
+        const instanceId = normalizeEntityId(
+            seed.instanceId || seed.id || parsed.instanceId
+        );
+        const row: GroupDialogInstanceRow = {
             ...seed,
-            id:
-                seed.instanceId ||
-                seed.id ||
-                parsed.instanceId ||
-                normalizedLocation,
+            id: instanceId || normalizedLocation,
             location: normalizedLocation,
             tag: normalizedLocation,
-            worldId: seed.worldId || seed.world?.id || parsed.worldId || '',
-            instanceId: seed.instanceId || seed.id || parsed.instanceId || '',
-            users: Array.isArray(seed.users) ? [...seed.users] : [],
+            worldId: normalizeEntityId(
+                seed.worldId || world?.id || parsed.worldId
+            ),
+            instanceId,
+            users: entityRows(seed.users),
             friendCount: Number(seed.friendCount || seed.userCount || 0) || 0,
-            ref: seed.ref || seed
+            ref: entityRecord(seed.ref) || seed
         };
         byLocation.set(normalizedLocation, row);
         return row;
     }
 
-    for (const instance of Array.isArray(baseInstances) ? baseInstances : []) {
+    for (const instance of baseInstances) {
         ensureInstance(instanceLocation(instance), instance);
     }
 
-    function addUser(user: any, isFriend: any = false) {
+    function addUser(user: InstanceUser | null | undefined, isFriend = false) {
         const location = userGroupLocation(user);
-        if (!location) {
+        if (!location || !user) {
             return;
         }
         const parsed = parseLocation(location);
@@ -104,14 +154,13 @@ export function mergeGroupInstances(
             return;
         }
         const row = ensureInstance(location);
-        const userId = normalizeEntityId(user?.id || user?.userId);
+        const userId = normalizeEntityId(user.id || user.userId);
         if (
             !row ||
             !userId ||
             row.users.some(
-                (existing: any) =>
-                    normalizeEntityId(existing?.id || existing?.userId) ===
-                    userId
+                (existing) =>
+                    normalizeEntityId(existing.id || existing.userId) === userId
             )
         ) {
             return;
@@ -122,24 +171,22 @@ export function mergeGroupInstances(
         }
     }
 
-    Object.values(friendsById || {}).forEach((friend: any) =>
-        addUser(friend, true)
-    );
+    Object.values(friendsById).forEach((friend) => addUser(friend, true));
     if (currentUserSnapshot) {
         addUser(currentUserSnapshot, false);
     }
 
     return Array.from(byLocation.values())
-        .map((row: any) => ({
+        .map((row) => ({
             ...row,
             friendCount: row.friendCount || row.users.length,
-            users: [...row.users].sort((left: any, right: any) =>
-                String(left?.displayName || left?.id || '').localeCompare(
-                    String(right?.displayName || right?.id || '')
+            users: [...row.users].sort((left, right) =>
+                String(left.displayName || left.id || '').localeCompare(
+                    String(right.displayName || right.id || '')
                 )
             )
         }))
-        .sort((left: any, right: any) => {
+        .sort((left, right) => {
             if (currentLocationKey && left.location === currentLocationKey) {
                 return -1;
             }
@@ -147,8 +194,8 @@ export function mergeGroupInstances(
                 return 1;
             }
             return (
-                (right.users.length || right.ref?.userCount || 0) -
-                (left.users.length || left.ref?.userCount || 0)
+                (right.users.length || Number(right.ref.userCount) || 0) -
+                (left.users.length || Number(left.ref.userCount) || 0)
             );
         });
 }

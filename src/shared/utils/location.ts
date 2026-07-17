@@ -396,7 +396,7 @@ function parseLocation(tag: unknown): ParsedLocation {
     if (parsedObject) {
         return parsedObject;
     }
-    return parseLocationTag(normalizeLocationTag(tag));
+    return parseLocationTag(normalizeLocationTag(tag).trim());
 }
 
 function resolveRegion(L: ParsedLocation): string {

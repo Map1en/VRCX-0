@@ -2,12 +2,13 @@ import { useTranslation } from 'react-i18next';
 
 import { LoadingState } from '@/components/layout/PageScaffold';
 import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import { Separator } from '@/ui/shadcn/separator';
 
 import type { useFriendsLocationsPageController } from '../useFriendsLocationsPageController';
 import {
     FriendsLocationCardItem,
     FriendsLocationsEmptyState,
-    FriendsLocationsFavoriteGroupHeader,
+    FriendsLocationsCollapsibleGroupHeader,
     FriendsLocationsSectionHeader
 } from './FriendsLocationsViewParts';
 
@@ -83,22 +84,22 @@ export function FriendsLocationsVirtualList({
                                     }
                                 />
                             ) : row.type === 'group-header' ? (
-                                <FriendsLocationsFavoriteGroupHeader
+                                <FriendsLocationsCollapsibleGroupHeader
                                     section={row.section}
                                     onToggle={
-                                        locationCommands.toggleFavoriteGroup
+                                        locationCommands.toggleCollapsibleGroup
                                     }
                                 />
                             ) : row.type === 'divider' ? (
                                 <div className="flex h-full items-center">
-                                    <div className="border-border w-full border-t" />
+                                    <Separator />
                                 </div>
                             ) : (
                                 <div
                                     className="grid overflow-hidden p-px"
                                     style={{
                                         gap: `${derived.cardGridGap}px`,
-                                        height: `${derived.cardGridRowHeight}px`,
+                                        height: `${row.gridRowHeight}px`,
                                         gridTemplateColumns: `repeat(${derived.cardGridColumns}, minmax(${derived.cardGridMinWidth}px, 1fr))`
                                     }}
                                 >

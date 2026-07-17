@@ -1,4 +1,5 @@
 import { WorldDialogContentController } from './WorldDialogContentController';
+import type { WorldDialogWorkflowProps } from './WorldDialogContentWorkflow';
 
 export function WorldDialogContent({
     worldId,
@@ -7,7 +8,7 @@ export function WorldDialogContent({
     openNonce = 0,
     initialActionNonce = 0,
     initialNewInstanceDefaults = null
-}: any) {
+}: WorldDialogWorkflowProps) {
     return (
         <WorldDialogContentController
             worldId={worldId}

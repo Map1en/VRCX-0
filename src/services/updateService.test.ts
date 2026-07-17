@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     fetchGithubReleases: vi.fn(),
-    checkTauriUpdate: vi.fn(),
-    discardPendingTauriUpdate: vi.fn(),
-    downloadTauriUpdate: vi.fn(),
-    downloadAndInstallTauriUpdate: vi.fn(),
-    installPendingTauriUpdate: vi.fn(),
-    getStorageString: vi.fn()
+    appAppUpdateDownloadStatusGet: vi.fn(),
+    appAppUpdateInstallConfirm: vi.fn()
 }));
 
 vi.mock('@/repositories/externalApiRepository', () => ({
@@ -16,27 +12,15 @@ vi.mock('@/repositories/externalApiRepository', () => ({
     }
 }));
 
-vi.mock('@/repositories/storageRepository', () => ({
-    default: {
-        getString: mocks.getStorageString
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: {
+        appAppUpdateDownloadStatusGet: mocks.appAppUpdateDownloadStatusGet,
+        appAppUpdateInstallConfirm: mocks.appAppUpdateInstallConfirm
     }
 }));
 
-vi.mock('@/platform/tauri/updater', () => ({
-    checkTauriUpdate: mocks.checkTauriUpdate,
-    discardPendingTauriUpdate: mocks.discardPendingTauriUpdate,
-    downloadTauriUpdate: mocks.downloadTauriUpdate,
-    downloadAndInstallTauriUpdate: mocks.downloadAndInstallTauriUpdate,
-    installPendingTauriUpdate: mocks.installPendingTauriUpdate
-}));
-
-import {
-    discardPendingUpdate,
-    downloadUpdate,
-    getPreviewStableReleaseUpdateMode,
-    handlePreviewStableReleaseUpdateCheck,
-    installPendingUpdate
-} from './updateService';
+import { confirmInstall, getDownloadStatus } from './updateService';
+import * as updateService from './updateService';
 
 function release({ publishedAt }: { publishedAt: string }) {
     return {
@@ -50,310 +34,78 @@ function release({ publishedAt }: { publishedAt: string }) {
     };
 }
 
-function installableRelease() {
-    return {
-        canonicalVersion: '2.7.0',
-        displayVersion: '2.7.0',
-        htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
-        tagName: 'v2.7.0',
-        displayName: 'VRCX-0 2.7.0',
-        prerelease: false,
-        publishedAt: '2026-06-22T00:00:00Z',
-        body: '',
-        channel: 'Stable' as const,
-        updaterType: 'tauri' as const,
-        manifestUrl:
-            'https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json',
-        target: 'windows-x86_64-stable'
-    };
-}
+describe('updateService facade', () => {
+    it('preserves the public runtime exports', () => {
+        expect(Object.keys(updateService).sort()).toEqual([
+            'canInstallUpdatesOnPlatform',
+            'confirmInstall',
+            'fetchBranchReleases',
+            'fetchLatestBranchRelease',
+            'formatReleaseDisplayVersion',
+            'getDownloadStatus',
+            'getPreviewStableReleaseUpdateMode',
+            'sanitizeBranch',
+            'toNormalizedReleaseFromSnapshot'
+        ]);
+    });
+});
 
-describe('updateService preview stable update checks', () => {
+describe('updateService branch release fetching', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.stubGlobal('VRCX_0_BUILD_LABEL', 'preview');
-        vi.stubGlobal('VRCX_0_BUILD_BADGE', 'Preview 20260621-1530');
+    });
+
+    it('fetches and normalizes releases for the Stable branch', async () => {
         mocks.fetchGithubReleases.mockResolvedValue({
             status: 200,
             data: [release({ publishedAt: '2026-06-21T07:00:00Z' })]
         });
-        mocks.getStorageString.mockResolvedValue('');
-    });
 
-    it('returns the latest stable release when it was published after the preview build timestamp', async () => {
-        const update = await handlePreviewStableReleaseUpdateCheck({
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: ''
+        const releases = await updateService.fetchBranchReleases('Stable', {
+            requireInstallerAsset: false
         });
 
-        expect(update.handled).toBe(true);
-        expect(update.release?.tagName).toBe('v2.7.0');
-        expect(update.release?.updaterType).toBe('manual');
+        expect(releases).toHaveLength(1);
+        expect(releases[0].canonicalVersion).toBe('2.7.0');
     });
 
-    it('does not return a stable release published before the preview build timestamp', async () => {
+    it('throws when the GitHub release request fails', async () => {
         mocks.fetchGithubReleases.mockResolvedValue({
-            status: 200,
-            data: [release({ publishedAt: '2026-06-21T06:29:59Z' })]
+            status: 500,
+            data: []
         });
 
         await expect(
-            handlePreviewStableReleaseUpdateCheck({
-                hostPlatform: 'windows',
-                hostArch: 'x86_64',
-                linuxPackageKind: ''
-            })
-        ).resolves.toEqual({
-            handled: true,
-            release: null
-        });
-    });
-
-    it('does not check GitHub when the build is not a timestamped preview build', async () => {
-        vi.stubGlobal('VRCX_0_BUILD_LABEL', 'devkit');
-        vi.stubGlobal('VRCX_0_BUILD_BADGE', 'Dev Kit 20260621-1530');
-
-        await expect(
-            handlePreviewStableReleaseUpdateCheck({
-                hostPlatform: 'windows',
-                hostArch: 'x86_64',
-                linuxPackageKind: ''
-            })
-        ).resolves.toEqual({
-            handled: false,
-            release: null
-        });
-        expect(mocks.fetchGithubReleases).not.toHaveBeenCalled();
-    });
-
-    it('does not check GitHub when the preview badge timestamp cannot be parsed', async () => {
-        vi.stubGlobal('VRCX_0_BUILD_BADGE', 'Preview latest');
-
-        expect(getPreviewStableReleaseUpdateMode().enabled).toBe(true);
-        await expect(
-            handlePreviewStableReleaseUpdateCheck({
-                hostPlatform: 'windows',
-                hostArch: 'x86_64',
-                linuxPackageKind: ''
-            })
-        ).resolves.toEqual({
-            handled: true,
-            release: null
-        });
-        expect(mocks.fetchGithubReleases).not.toHaveBeenCalled();
+            updateService.fetchLatestBranchRelease('Stable')
+        ).rejects.toThrow('GitHub release request failed (500).');
     });
 });
 
-describe('updateService pending update downloads', () => {
+describe('updateService backend-owned download/install commands', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.getStorageString.mockResolvedValue('');
     });
 
-    it('downloads a Tauri update into the pending slot and reports progress', async () => {
-        const progress = vi.fn();
-        mocks.downloadTauriUpdate.mockImplementation(
-            async (_version: string, _request: unknown, onEvent: any) => {
-                onEvent({
-                    event: 'Started',
-                    data: { contentLength: 100 }
-                });
-                onEvent({
-                    event: 'Progress',
-                    data: { chunkLength: 25 }
-                });
-                return {
-                    currentVersion: '2.6.0',
-                    version: '2.7.0',
-                    date: null,
-                    body: null,
-                    rawJson: {}
-                };
-            }
-        );
-
-        await downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: '',
-            onDownloadProgress: progress
+    it('delegates download status and install to the thin backend commands', async () => {
+        mocks.appAppUpdateDownloadStatusGet.mockResolvedValue({
+            phase: 'idle',
+            version: null,
+            downloadedBytes: 0,
+            totalBytes: 0,
+            percent: 0,
+            error: null
         });
-
-        expect(mocks.downloadTauriUpdate).toHaveBeenCalledWith(
-            '2.7.0',
-            expect.objectContaining({
-                manifestUrl:
-                    'https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json',
-                target: 'windows-x86_64-stable'
-            }),
-            expect.any(Function)
-        );
-        expect(progress).toHaveBeenCalledWith({
-            downloadedBytes: 25,
-            totalBytes: 100,
-            percent: 25
-        });
-    });
-
-    it('does not pass a stored updater proxy when proxy is explicitly disabled', async () => {
-        mocks.getStorageString.mockImplementation(
-            (key: string, fallback = '') => {
-                if (key === 'VRCX_ProxyEnabled') {
-                    return Promise.resolve('false');
-                }
-                if (key === 'VRCX_ProxyServer') {
-                    return Promise.resolve('127.0.0.1:7890');
-                }
-                return Promise.resolve(String(fallback ?? ''));
-            }
-        );
-        mocks.downloadTauriUpdate.mockResolvedValue({
+        mocks.appAppUpdateInstallConfirm.mockResolvedValue({
             currentVersion: '2.6.0',
             version: '2.7.0',
             date: null,
-            body: null,
-            rawJson: {}
+            body: null
         });
 
-        await downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: ''
-        });
+        await getDownloadStatus();
+        await confirmInstall('2.7.0');
 
-        expect(mocks.downloadTauriUpdate).toHaveBeenCalledWith(
-            '2.7.0',
-            expect.objectContaining({
-                proxy: null
-            }),
-            expect.any(Function)
-        );
-    });
-
-    it('reuses the same pending download promise for the same version', async () => {
-        let resolveDownload: (value: any) => void = () => {};
-        let markDownloadStarted: () => void = () => {};
-        const downloadStarted = new Promise<void>((resolve) => {
-            markDownloadStarted = resolve;
-        });
-        mocks.downloadTauriUpdate.mockImplementation(() => {
-            markDownloadStarted();
-            return new Promise((resolve) => {
-                resolveDownload = resolve;
-            });
-        });
-
-        const first = downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: ''
-        });
-        const second = downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: ''
-        });
-
-        await downloadStarted;
-        expect(mocks.downloadTauriUpdate).toHaveBeenCalledTimes(1);
-        resolveDownload({
-            currentVersion: '2.6.0',
-            version: '2.7.0',
-            date: null,
-            body: null,
-            rawJson: {}
-        });
-        await expect(Promise.all([first, second])).resolves.toHaveLength(2);
-    });
-
-    it('forwards in-flight download progress to same-version callers', async () => {
-        const firstProgress = vi.fn();
-        const secondProgress = vi.fn();
-        let resolveDownload: (value: any) => void = () => {};
-        let markDownloadStarted: () => void = () => {};
-        let emitDownloadEvent: (event: any) => void = () => {};
-        const downloadStarted = new Promise<void>((resolve) => {
-            markDownloadStarted = resolve;
-        });
-        mocks.downloadTauriUpdate.mockImplementation(
-            (_version: string, _request: unknown, onEvent: any) => {
-                emitDownloadEvent = onEvent;
-                markDownloadStarted();
-                return new Promise((resolve) => {
-                    resolveDownload = resolve;
-                });
-            }
-        );
-
-        const first = downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: '',
-            onDownloadProgress: firstProgress
-        });
-        await downloadStarted;
-        emitDownloadEvent({
-            event: 'Started',
-            data: { contentLength: 100 }
-        });
-        emitDownloadEvent({
-            event: 'Progress',
-            data: { chunkLength: 25 }
-        });
-
-        const second = downloadUpdate(installableRelease(), {
-            hostPlatform: 'windows',
-            hostArch: 'x86_64',
-            linuxPackageKind: '',
-            onDownloadProgress: secondProgress
-        });
-
-        expect(secondProgress).toHaveBeenLastCalledWith({
-            downloadedBytes: 25,
-            totalBytes: 100,
-            percent: 25
-        });
-
-        emitDownloadEvent({
-            event: 'Progress',
-            data: { chunkLength: 25 }
-        });
-        expect(firstProgress).toHaveBeenLastCalledWith({
-            downloadedBytes: 50,
-            totalBytes: 100,
-            percent: 50
-        });
-        expect(secondProgress).toHaveBeenLastCalledWith({
-            downloadedBytes: 50,
-            totalBytes: 100,
-            percent: 50
-        });
-
-        resolveDownload({
-            currentVersion: '2.6.0',
-            version: '2.7.0',
-            date: null,
-            body: null,
-            rawJson: {}
-        });
-        await expect(Promise.all([first, second])).resolves.toHaveLength(2);
-    });
-
-    it('wraps pending install and discard commands', async () => {
-        mocks.installPendingTauriUpdate.mockResolvedValue({
-            currentVersion: '2.6.0',
-            version: '2.7.0',
-            date: null,
-            body: null,
-            rawJson: {}
-        });
-        mocks.discardPendingTauriUpdate.mockResolvedValue(undefined);
-
-        await installPendingUpdate('2.7.0');
-        await discardPendingUpdate();
-
-        expect(mocks.installPendingTauriUpdate).toHaveBeenCalledWith('2.7.0');
-        expect(mocks.discardPendingTauriUpdate).toHaveBeenCalled();
+        expect(mocks.appAppUpdateDownloadStatusGet).toHaveBeenCalled();
+        expect(mocks.appAppUpdateInstallConfirm).toHaveBeenCalledWith('2.7.0');
     });
 });

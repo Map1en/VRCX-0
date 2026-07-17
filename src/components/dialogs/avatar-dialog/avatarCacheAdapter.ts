@@ -3,7 +3,7 @@ import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 
 import { defaultAvatarSideData, resolveAssetBundleArgs } from './avatarAssets';
 
-export async function readAvatarCacheInfo(avatar: any, endpoint: any = '') {
+export async function readAvatarCacheInfo(avatar: unknown, endpoint = '') {
     const configResponse = await vrchatAuthRepository
         .getConfig({ endpoint })
         .catch((): null => null);

@@ -14,6 +14,12 @@ function rustUser(overrides: Record<string, unknown> = {}) {
     };
 }
 
+function manyUsers(count: number) {
+    return Array.from({ length: count }, (_, index) =>
+        rustUser({ id: `usr_${index}`, endpoint: 'api' })
+    );
+}
+
 describe('userFactsStore', () => {
     beforeEach(() => {
         useUserFactsStore.getState().resetUserFacts();
@@ -28,7 +34,7 @@ describe('userFactsStore', () => {
         const state = useUserFactsStore.getState();
         expect(state.usersByKey['api::usr_test']).toBe(user);
         expect(state.version).toBe(1);
-        expect(state.userIdsByEndpoint.api).toEqual(['usr_test']);
+        expect(state.userIdsByEndpoint.api).toEqual(new Set(['usr_test']));
 
         const replacement = rustUser({ displayName: 'Mirror User v2' });
         store.replaceUserFacts([replacement]);
@@ -45,15 +51,18 @@ describe('userFactsStore', () => {
         expect(useUserFactsStore.getState().version).toBe(0);
         expect(useUserFactsStore.getState().usersByKey).toEqual({});
 
-        store.replaceUserFacts([
+        const facts: unknown[] = [
             rustUser(),
-            { endpoint: 'api', displayName: 'No Id' } as any
-        ]);
+            { endpoint: 'api', displayName: 'No Id' }
+        ];
+        store.replaceUserFacts(
+            facts as Parameters<typeof store.replaceUserFacts>[0]
+        );
 
         const state = useUserFactsStore.getState();
         expect(state.version).toBe(1);
         expect(Object.keys(state.usersByKey)).toEqual(['api::usr_test']);
-        expect(state.userIdsByEndpoint.api).toEqual(['usr_test']);
+        expect(state.userIdsByEndpoint.api).toEqual(new Set(['usr_test']));
     });
 
     it('resets user facts on auth boundary changes', () => {
@@ -63,5 +72,41 @@ describe('userFactsStore', () => {
 
         expect(useUserFactsStore.getState().usersByKey).toEqual({});
         expect(useUserFactsStore.getState().userIdsByEndpoint).toEqual({});
+        expect(useUserFactsStore.getState().order).toEqual([]);
+    });
+
+    it('evicts the oldest non-friend user once the non-friend capacity is exceeded', () => {
+        const store = useUserFactsStore.getState();
+
+        store.replaceUserFacts(manyUsers(1001));
+
+        const state = useUserFactsStore.getState();
+        expect(state.order.length).toBe(1000);
+        expect(Object.keys(state.usersByKey).length).toBe(1000);
+        expect(state.usersByKey['api::usr_0']).toBeUndefined();
+        expect(state.usersByKey['api::usr_1000']).toBeDefined();
+    });
+
+    it('pins friends so they are never evicted even past capacity', () => {
+        const store = useUserFactsStore.getState();
+        const friend = rustUser({ id: 'usr_friend', isFriend: true });
+        store.replaceUserFacts([friend]);
+
+        store.replaceUserFacts(manyUsers(1001));
+
+        const state = useUserFactsStore.getState();
+        expect(state.usersByKey['api::usr_friend']).toBeDefined();
+        expect(state.order).not.toContain('api::usr_friend');
+    });
+
+    it('removes evicted user ids from userIdsByEndpoint', () => {
+        const store = useUserFactsStore.getState();
+
+        store.replaceUserFacts(manyUsers(1001));
+
+        const state = useUserFactsStore.getState();
+        expect(state.userIdsByEndpoint.api.has('usr_0')).toBe(false);
+        expect(state.userIdsByEndpoint.api.has('usr_1000')).toBe(true);
+        expect(state.userIdsByEndpoint.api.size).toBe(1000);
     });
 });

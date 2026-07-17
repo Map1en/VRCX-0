@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import configRepository from '@/repositories/configRepository';
-import { recordViewModeUsage } from '@/services/telemetry/telemetryViewModeUsage';
 
 import {
     DEFAULT_FEED_COLUMN_DENSITY,
@@ -102,7 +101,6 @@ export function useFeedViewModeState() {
     }, []);
 
     const setViewMode = useCallback((value: FeedViewMode) => {
-        recordViewModeUsage('feedViewMode', value);
         setViewModeState(value);
     }, []);
 

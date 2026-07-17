@@ -1,7 +1,7 @@
-import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 export {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     OVERLAY_ACTIVITY_CATEGORIES,
@@ -9,7 +9,7 @@ export {
     OVERLAY_ACTIVITY_SCOPES,
     OVERLAY_ACTIVITY_TYPE_DEFINITIONS,
     OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY,
-    migrateLegacySharedFeedWristFilters,
+    disabledOverlayActivityFilterProfileFromDefinitions,
     normalizeOverlayActivityFilters,
     overlayActivityTypeLabelKey,
     parseOverlayActivityFilters,
@@ -53,9 +53,7 @@ export type CustomFontDraft = {
     override: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+export type CustomFontMode = 'installed' | 'css';
 
 export function parseWebJson(response: { data?: unknown } | null | undefined) {
     if (response?.data && typeof response.data === 'object') {
@@ -92,17 +90,6 @@ export function buildOpenAiModelsEndpoint(endpoint: string | undefined) {
         }
         return `${normalized}/models`;
     }
-}
-
-export function normalizeSharedFeedFilters(value: unknown = {}) {
-    const record = isRecord(value) ? value : {};
-    const noty = isRecord(record.noty) ? record.noty : {};
-    return {
-        noty: {
-            ...sharedFeedFiltersDefaults.noty,
-            ...noty
-        }
-    };
 }
 
 export function normalizeTablePageSizes(input: unknown): number[] {
@@ -195,6 +182,31 @@ export function composeCustomFontFamily(
     }
     parts.push('system-ui');
     return parts.join(', ');
+}
+
+export function createEffectiveCustomFontDraft(
+    value: Partial<CustomFontDraft>,
+    mode: CustomFontMode
+): CustomFontDraft {
+    const draft = {
+        primary: String(value.primary ?? '').trim(),
+        secondary: String(value.secondary ?? '').trim(),
+        override: String(value.override ?? '').trim()
+    };
+
+    if (mode === 'css') {
+        return {
+            primary: '',
+            secondary: '',
+            override: draft.override
+        };
+    }
+
+    return {
+        primary: draft.primary,
+        secondary: draft.secondary,
+        override: ''
+    };
 }
 
 export function createCustomFontDraftFromPrefs(

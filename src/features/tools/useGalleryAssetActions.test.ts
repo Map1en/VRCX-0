@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { useGalleryAssetActions } from './useGalleryAssetActions';
 
-function createActions(overrides: any = {}) {
+function createActions(overrides: Record<string, unknown> = {}) {
     const uploadAssetImage = vi.fn().mockResolvedValue({ json: null });
     const actions = useGalleryAssetActions({
         FILE_TABS: {},

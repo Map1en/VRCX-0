@@ -18,9 +18,15 @@ import {
     UsersIcon,
     XIcon
 } from 'lucide-react';
-import { isValidElement } from 'react';
+import {
+    isValidElement,
+    type ComponentProps,
+    type ComponentType,
+    type ReactNode
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';
@@ -37,9 +43,63 @@ import {
     EntityActionSub,
     EntityOverviewCard
 } from '../EntityDialogScaffold';
+import type { GroupRemoteStatus } from './groupDialogTypes';
 import { GroupTitleLanguages } from './GroupDialogViewParts';
 
-function GroupRailMetric({ label, value }: any) {
+interface GroupHeaderModel {
+    actionStatus: string;
+    canInviteToGroup: boolean;
+    canJoin: boolean;
+    canManagePosts: boolean;
+    canModerateGroup: boolean;
+    canSetVisibility: boolean;
+    detail: string;
+    group: GroupProfileRecord;
+    groupTitle: string;
+    groupUrl: string;
+    iconUrl: string;
+    isBlocked: boolean;
+    isMember: boolean;
+    isPrivateGroup: boolean;
+    isRepresenting: boolean;
+    isSubscribedToAnnouncements: boolean;
+    languageRows: { key: string; value: string }[];
+    joinState: string;
+    memberStatus: string;
+    memberVisibility: string;
+    ownerLinkLabel: string;
+    remoteStatus: GroupRemoteStatus;
+    showMembershipBadge: boolean;
+    showPrivacyBadge: boolean;
+}
+
+interface GroupHeaderCommands {
+    onBlockToggle: () => void;
+    onCancelRequest: () => void;
+    onCopyGroupId: () => void;
+    onCopyGroupName: () => void;
+    onCopyGroupUrl: () => void;
+    onCreateGroupPost: () => void;
+    onJoin: () => void;
+    onLeave: () => void;
+    onOpenGroupPage: () => void;
+    onOpenModeration: () => void;
+    onOpenOwner: () => void;
+    onPreviewIcon: () => void;
+    onRefresh: () => void;
+    onRepresentToggle: () => void;
+    onSubscribeToggle: () => void;
+    onInviteUserToGroup: () => void;
+    onVisibilityChange: (visibility: string) => void;
+}
+
+function GroupRailMetric({
+    label,
+    value
+}: {
+    label: ReactNode;
+    value: ReactNode;
+}) {
     return (
         <div className="min-w-0">
             <div className="text-muted-foreground truncate text-xs">
@@ -52,10 +112,14 @@ function GroupRailMetric({ label, value }: any) {
     );
 }
 
-export function GroupDialogHeaderSection(props: any) {
+export function GroupDialogHeaderSection({
+    headerModel: model,
+    headerCommands: commands
+}: {
+    headerModel: GroupHeaderModel;
+    headerCommands: GroupHeaderCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.headerModel || props || {};
-    const commands = props?.headerCommands || props || {};
 
     const {
         actionStatus,
@@ -107,7 +171,13 @@ export function GroupDialogHeaderSection(props: any) {
         group.shortCode && group.discriminator
             ? `${group.shortCode}.${group.discriminator}`
             : group.url || '';
-    const primaryAction: any =
+    const primaryAction: {
+        icon: ComponentType;
+        label: string;
+        disabled: boolean;
+        onClick: () => void;
+        variant: ComponentProps<typeof Button>['variant'];
+    } =
         memberStatus === 'requested'
             ? {
                   icon: XIcon,
@@ -167,7 +237,7 @@ export function GroupDialogHeaderSection(props: any) {
             <div className="flex min-w-0 items-start gap-2">
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <CardTitle className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight">
-                        {onCopyGroupName && group.name ? (
+                        {group.name ? (
                             <Tooltip>
                                 <TooltipTrigger
                                     render={

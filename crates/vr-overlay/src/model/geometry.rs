@@ -219,6 +219,36 @@ pub fn grab_follow_transform(
     }
 }
 
+pub fn grab_follow_transform_facing(
+    panel_start: OverlayTransform,
+    controller_start: OverlayTransform,
+    controller_current: OverlayTransform,
+    hmd: Option<OverlayTransform>,
+) -> OverlayTransform {
+    let followed = grab_follow_transform(panel_start, controller_start, controller_current);
+    let Some(hmd) = hmd else {
+        return followed;
+    };
+    let to_hmd = sub(hmd.translation, followed.translation);
+    let horizontal = [to_hmd[0], 0.0, to_hmd[2]];
+    let length = dot(horizontal, horizontal).sqrt();
+    if length <= 0.05 {
+        return followed;
+    }
+    let z_axis = scale(horizontal, 1.0 / length);
+    let up = [0.0, 1.0, 0.0];
+    let x_axis = normalize_or(cross(up, z_axis), followed.right());
+    let y_axis = cross(z_axis, x_axis);
+    OverlayTransform {
+        translation: followed.translation,
+        rotation: [
+            [x_axis[0], y_axis[0], z_axis[0]],
+            [x_axis[1], y_axis[1], z_axis[1]],
+            [x_axis[2], y_axis[2], z_axis[2]],
+        ],
+    }
+}
+
 fn add(left: [f32; 3], right: [f32; 3]) -> [f32; 3] {
     [left[0] + right[0], left[1] + right[1], left[2] + right[2]]
 }
@@ -233,6 +263,14 @@ fn scale(value: [f32; 3], scalar: f32) -> [f32; 3] {
 
 fn dot(left: [f32; 3], right: [f32; 3]) -> f32 {
     left[0] * right[0] + left[1] * right[1] + left[2] * right[2]
+}
+
+fn cross(left: [f32; 3], right: [f32; 3]) -> [f32; 3] {
+    [
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    ]
 }
 
 fn normalize_or(value: [f32; 3], fallback: [f32; 3]) -> [f32; 3] {

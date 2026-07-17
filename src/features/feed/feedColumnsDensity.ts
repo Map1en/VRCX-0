@@ -1,3 +1,5 @@
+import { createDensityPreset } from '@/lib/densityPreset';
+
 export type FeedColumnDensity = 'compact' | 'dense';
 
 export type FeedColumnDensityConfig = {
@@ -57,19 +59,11 @@ const DENSITY_CONFIGS: Record<FeedColumnDensity, FeedColumnDensityConfig> =
         })
     });
 
-const DENSITY_VALUES = new Set(
-    FEED_COLUMN_DENSITY_OPTIONS.map((option) => option.value)
+const preset = createDensityPreset(
+    DEFAULT_FEED_COLUMN_DENSITY,
+    DENSITY_CONFIGS
 );
 
-export function sanitizeFeedColumnDensity(value: unknown): FeedColumnDensity {
-    const normalizedValue = typeof value === 'string' ? value.trim() : '';
-    return DENSITY_VALUES.has(normalizedValue as FeedColumnDensity)
-        ? (normalizedValue as FeedColumnDensity)
-        : DEFAULT_FEED_COLUMN_DENSITY;
-}
+export const sanitizeFeedColumnDensity = preset.sanitize;
 
-export function getFeedColumnDensityConfig(
-    value: unknown
-): FeedColumnDensityConfig {
-    return DENSITY_CONFIGS[sanitizeFeedColumnDensity(value)];
-}
+export const getFeedColumnDensityConfig = preset.getConfig;

@@ -48,7 +48,7 @@ describe('favoriteCollectionSidebarRows', () => {
             t
         });
 
-        expect(rows.map((row: any) => row.key)).toEqual([
+        expect(rows.map((row) => row.key)).toEqual([
             'section:sameInstance',
             'instance:wrld_live:1:0',
             'friend:favoriteCollection:sameInstance:wrld_live:1:0:usr_same',
@@ -82,7 +82,7 @@ describe('favoriteCollectionSidebarRows', () => {
                 rowsLength: 0,
                 sameInstanceGroups: [],
                 t
-            }).map((row: any) => row.key)
+            }).map((row) => row.key)
         ).toContain('message:empty-favorite-collection');
     });
 });

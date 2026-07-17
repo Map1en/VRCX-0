@@ -133,13 +133,18 @@ pub async fn app__vrchat_favorite_add(
         input.favorite_id,
         input.tags,
     )?;
-    execute_favorite_api(
+    let realtime_runtime = state.realtime_runtime.clone();
+    let result = execute_favorite_api(
         state,
         "app__vrchat_favorite_add",
         format!("Adding {type_name} favorite {favorite_id}."),
         request,
     )
-    .await
+    .await;
+    if result.is_ok() {
+        realtime_runtime.notify_favorites_changed(&type_name, false, true);
+    }
+    result
 }
 
 #[tauri::command]
@@ -149,13 +154,18 @@ pub async fn app__vrchat_favorite_delete(
     input: VrchatFavoriteDeleteInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (object_id, request) = favorite_delete_input(input.endpoint, input.object_id)?;
-    execute_favorite_api(
+    let realtime_runtime = state.realtime_runtime.clone();
+    let result = execute_favorite_api(
         state,
         "app__vrchat_favorite_delete",
         format!("Deleting favorite for {object_id}."),
         request,
     )
-    .await
+    .await;
+    if result.is_ok() {
+        realtime_runtime.notify_favorites_changed("unknown", false, true);
+    }
+    result
 }
 
 #[tauri::command]
@@ -164,6 +174,7 @@ pub async fn app__vrchat_favorite_group_save(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupSaveInput,
 ) -> Result<VrchatApiResponse, AppError> {
+    let kind = input.type_name.clone();
     let (group, request) = favorite_group_save_input(
         input.endpoint,
         input.owner_id,
@@ -172,13 +183,18 @@ pub async fn app__vrchat_favorite_group_save(
         input.display_name,
         input.visibility,
     )?;
-    execute_favorite_api(
+    let realtime_runtime = state.realtime_runtime.clone();
+    let result = execute_favorite_api(
         state,
         "app__vrchat_favorite_group_save",
         format!("Saving favorite group {group}."),
         request,
     )
-    .await
+    .await;
+    if result.is_ok() {
+        realtime_runtime.notify_favorites_changed(&kind, false, true);
+    }
+    result
 }
 
 #[tauri::command]
@@ -187,15 +203,21 @@ pub async fn app__vrchat_favorite_group_clear(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupClearInput,
 ) -> Result<VrchatApiResponse, AppError> {
+    let kind = input.type_name.clone();
     let (group, request) =
         favorite_group_clear_input(input.endpoint, input.owner_id, input.type_name, input.group)?;
-    execute_favorite_api(
+    let realtime_runtime = state.realtime_runtime.clone();
+    let result = execute_favorite_api(
         state,
         "app__vrchat_favorite_group_clear",
         format!("Clearing favorite group {group}."),
         request,
     )
-    .await
+    .await;
+    if result.is_ok() {
+        realtime_runtime.notify_favorites_changed(&kind, false, true);
+    }
+    result
 }
 
 #[tauri::command]
@@ -234,7 +256,11 @@ pub fn app__local_favorite_group_create(
         "LocalFavoriteGroupCreate requires groupName.",
     )?;
     vrcx_0_application::create_local_favorite_group(state.db.as_ref(), &kind, group_name)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
+    Ok(())
 }
 
 #[tauri::command]
@@ -252,13 +278,17 @@ pub fn app__local_favorite_group_rename(
         input.new_group_name,
         "LocalFavoriteGroupRename requires newGroupName.",
     )?;
-    vrcx_0_application::rename_local_favorite_group(
+    let affected = vrcx_0_application::rename_local_favorite_group(
         state.db.as_ref(),
         &kind,
         group_name,
         new_group_name,
     )
-    .map_err(AppError::from)
+    .map_err(AppError::from)?;
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
+    Ok(affected)
 }
 
 #[tauri::command]
@@ -268,7 +298,6 @@ pub fn app__local_favorite_group_delete(
     input: LocalFavoriteGroupInput,
 ) -> Result<i64, AppError> {
     let kind = require_text(input.kind, "LocalFavoriteGroupDelete requires kind.")?;
-    let is_world = kind.trim() == "world";
     let group_name = require_text(
         input.group_name,
         "LocalFavoriteGroupDelete requires groupName.",
@@ -276,8 +305,8 @@ pub fn app__local_favorite_group_delete(
     let affected =
         vrcx_0_application::delete_local_favorite_group(state.db.as_ref(), &kind, group_name)
             .map_err(AppError::from)?;
-    if is_world {
-        state.realtime_runtime.sync_world_cache_favorites_from_db();
-    }
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
     Ok(affected)
 }

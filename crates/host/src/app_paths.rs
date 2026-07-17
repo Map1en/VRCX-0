@@ -332,3 +332,32 @@ fn paths_match(left: &Path, right: &Path) -> bool {
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_validation_warns_but_accepts_a_database_only_profile_dir() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "vrcx-0-app-paths-db-only-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(PROFILE_DB_FILE), b"restored database").unwrap();
+
+        let validation = validate_startup_app_data_dir(&dir, false).unwrap();
+        assert!(validation.has_database);
+        assert!(!validation.has_config);
+        assert_eq!(
+            validation.warning_kind.as_deref(),
+            Some("missingProfileFiles")
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

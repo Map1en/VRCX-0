@@ -1,3 +1,4 @@
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -67,36 +68,6 @@ interface WorldSaveInput extends WorldIdInput {
 interface WorldPersistentDataInput extends WorldIdInput {
     userId?: unknown;
 }
-
-type WorldRecord = Record<string, unknown>;
-export type WorldProfileRecord = WorldRecord & {
-    id: string;
-    name: string;
-    description: string;
-    authorId: string;
-    authorName: string;
-    releaseStatus: string;
-    thumbnailImageUrl: string;
-    imageUrl: string;
-    occupants: number;
-    capacity: number;
-    recommendedCapacity: number;
-    favorites: number;
-    visits: number;
-    popularity: number;
-    heat: number;
-    tags: string[];
-    isLabs: boolean;
-    createdAt: unknown;
-    updatedAt: unknown;
-    publicationDate: unknown;
-    platforms: string[];
-    created_at?: unknown;
-    updated_at?: unknown;
-    unityPackages?: unknown;
-    version?: unknown;
-    hasPersistData?: unknown;
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
@@ -259,9 +230,20 @@ function normalizeWorldProfile(world: unknown): WorldProfileRecord {
         heat: parseNumber(source.heat),
         tags,
         isLabs: tags.includes('system_labs'),
-        createdAt: source.created_at ?? source.createdAt ?? '',
-        updatedAt: source.updated_at ?? source.updatedAt ?? '',
-        publicationDate: source.publicationDate ?? '',
+        createdAt:
+            typeof (source.created_at ?? source.createdAt) === 'string'
+                ? String(source.created_at ?? source.createdAt)
+                : '',
+        updatedAt:
+            typeof (source.updated_at ?? source.updatedAt) === 'string'
+                ? String(source.updated_at ?? source.updatedAt)
+                : '',
+        publicationDate:
+            source.publicationDate === null
+                ? null
+                : typeof source.publicationDate === 'string'
+                  ? source.publicationDate
+                  : '',
         platforms: resolveWorldPlatforms(source)
     };
 }
@@ -647,4 +629,5 @@ export {
     hasWorldPersistentData,
     getAllWorldsByUser
 };
+export type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 export default worldProfileRepository;

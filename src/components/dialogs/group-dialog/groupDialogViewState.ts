@@ -7,7 +7,12 @@ export function buildGroupDialogViewState({
     friendsById,
     group,
     ownerProfile
-}: any) {
+}: {
+    currentUserId: string | null;
+    friendsById: FriendRosterById;
+    group: GroupProfileRecord;
+    ownerProfile: UserProfileRecord | null;
+}) {
     const bannerUrl = convertFileUrlToImageUrl(group.bannerUrl, 1024);
     const iconUrl = convertFileUrlToImageUrl(group.iconUrl, 256);
     const memberStatus = normalizeEntityId(
@@ -26,7 +31,9 @@ export function buildGroupDialogViewState({
         normalizeEntityId(
             group.ownerDisplayName ||
                 group.ownerName ||
-                group.owner?.displayName ||
+                (typeof group.owner === 'object' && group.owner
+                    ? Reflect.get(group.owner, 'displayName')
+                    : '') ||
                 ownerProfile?.displayName ||
                 ownerProfile?.username ||
                 ownerProfile?.name
@@ -56,3 +63,8 @@ export function buildGroupDialogViewState({
         ownerDisplayName
     };
 }
+import type {
+    GroupProfileRecord,
+    UserProfileRecord
+} from '@/domain/entities/profileEntities';
+import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';

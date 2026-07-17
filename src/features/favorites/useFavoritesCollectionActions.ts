@@ -74,7 +74,16 @@ export function useFavoritesCollectionActions({
     const refreshFavorites = async ({
         silent = false
     }: { silent?: boolean } = {}) => {
-        if (!currentUserId || !currentUserSnapshot || refreshing) {
+        if (refreshing) {
+            return;
+        }
+        if (!currentUserId || !currentUserSnapshot) {
+            console.warn(
+                'Favorites refresh skipped: no authenticated user context available.'
+            );
+            toast.error(
+                t('view.favorites.toast.favorites_refresh_unavailable')
+            );
             return;
         }
         setRefreshing(true);

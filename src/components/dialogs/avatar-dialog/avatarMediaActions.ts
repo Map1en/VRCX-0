@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { toast } from 'sonner';
 
 import { assetBundleRepository } from '@/repositories/assetBundleRepository';
@@ -13,8 +14,13 @@ import {
 
 import { avatarGalleryImageUrl, resolveAssetBundleArgs } from './avatarAssets';
 import { readAvatarCacheInfo } from './avatarCacheAdapter';
+import type {
+    AvatarCacheActionDependencies,
+    AvatarGalleryUploadActionDependencies,
+    AvatarImageUploadActionDependencies
+} from './avatarDialogTypes';
 
-function normalizeEntityId(value: any) {
+function normalizeEntityId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
@@ -34,7 +40,7 @@ export function createAvatarImageUploadActions({
     setDetail,
     setImageCropRequest,
     t
-}: any) {
+}: AvatarImageUploadActionDependencies) {
     function beginAvatarImageUpload() {
         if (!canManageAvatar || actionStatusRef.current !== 'idle') {
             return;
@@ -44,7 +50,7 @@ export function createAvatarImageUploadActions({
         imageUploadInputRef.current?.click();
     }
 
-    function onFileChangeAvatarImage(event: any) {
+    function onFileChangeAvatarImage(event: ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0] || null;
         event.target.value = '';
         if (!file) {
@@ -74,7 +80,7 @@ export function createAvatarImageUploadActions({
         });
     }
 
-    async function confirmAvatarImageUpload(blob: any) {
+    async function confirmAvatarImageUpload(blob: Blob | null) {
         const request = imageCropRequest;
         const selectedAvatar =
             request?.avatar || imageUploadAvatarRef.current || avatar;
@@ -156,7 +162,7 @@ export function createAvatarCacheActions({
     setAvatar,
     setAvatarSideData,
     t
-}: any) {
+}: AvatarCacheActionDependencies) {
     async function openAvatarCacheFolder() {
         const cachePath = avatarSideData.cache.cachePath;
         if (!cachePath) {
@@ -202,8 +208,8 @@ export function createAvatarCacheActions({
                 args.variantVersion
             );
             const cache = await readAvatarCacheInfo(avatar, currentEndpoint);
-            setAvatarSideData((current: any) => ({ ...current, cache }));
-            setAvatar((current: any) =>
+            setAvatarSideData((current) => ({ ...current, cache }));
+            setAvatar((current) =>
                 current ? { ...current, $isCached: cache.inCache } : current
             );
             toast.success(t('dialog.avatar.success.avatar_cache_deleted'));
@@ -235,7 +241,7 @@ export function createAvatarGalleryUploadActions({
     setActionStatus,
     setAvatarSideData,
     t
-}: any) {
+}: AvatarGalleryUploadActionDependencies) {
     function beginAvatarGalleryUpload() {
         if (!canManageAvatar || actionStatusRef.current !== 'idle') {
             return;
@@ -243,7 +249,9 @@ export function createAvatarGalleryUploadActions({
         galleryUploadInputRef.current?.click();
     }
 
-    async function onFileChangeAvatarGallery(event: any) {
+    async function onFileChangeAvatarGallery(
+        event: ChangeEvent<HTMLInputElement>
+    ) {
         const file = event.target.files?.[0];
         event.target.value = '';
         const targetAvatarId = normalizeEntityId(avatar?.id);
@@ -279,12 +287,12 @@ export function createAvatarGalleryUploadActions({
                 activeAvatarTargetRef.current.avatarId === targetAvatarId &&
                 activeAvatarTargetRef.current.endpoint === requestEndpoint
             ) {
-                setAvatarSideData((current: any) => ({
+                setAvatarSideData((current) => ({
                     ...current,
                     galleryRows,
                     galleryImages: galleryRows
                         .map(avatarGalleryImageUrl)
-                        .filter(Boolean)
+                        .filter((url): url is string => Boolean(url))
                 }));
                 toast.success(
                     t('dialog.avatar.label.avatar_gallery_image_uploaded')

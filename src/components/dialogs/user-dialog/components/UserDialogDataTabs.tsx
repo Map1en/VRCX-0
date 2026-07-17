@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
+import type {
+    UserDialogJson,
+    UserModerationState,
+    UserProfileEntity
+} from '@/domain/entities/profileEntities';
 import {
     userDialogMutualFriendSortingOptions,
     userDialogWorldOrderOptions,
@@ -26,7 +31,17 @@ import {
 } from '../../EntityDialogScaffold';
 import { PreviousInstancesPanel } from '../../PreviousInstancesTableDialog';
 import { EntityList, FavoriteWorldGroups } from '../UserDialogViewParts';
+import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
+import type { useUserDialogSupplementalData } from '../useUserDialogSupplementalData';
+import type { useUserDialogTabData } from '../useUserDialogTabData';
 import { UserDialogSearchHeader } from './UserDialogSearchHeader';
+
+type UserTabData = ReturnType<typeof useUserDialogTabData>;
+type SupplementalData = ReturnType<typeof useUserDialogSupplementalData>;
+type RemoteTabProps = Pick<
+    UserTabData,
+    'remoteStatus' | 'remoteErrors' | 'loadTab' | 'search' | 'setSearch'
+>;
 
 export function UserDialogMutualTab({
     mutualFriends,
@@ -39,7 +54,15 @@ export function UserDialogMutualTab({
     setSearch,
     mutualSort,
     setMutualSort
-}: any) {
+}: RemoteTabProps &
+    Pick<
+        UserTabData,
+        | 'mutualFriends'
+        | 'filteredMutualFriends'
+        | 'visibleMutualFriends'
+        | 'mutualSort'
+        | 'setMutualSort'
+    >) {
     const { t } = useTranslation();
 
     return (
@@ -76,7 +99,7 @@ export function UserDialogMutualTab({
                         <SelectGroup>
                             {Object.entries(
                                 userDialogMutualFriendSortingOptions
-                            ).map(([key, option]: any) => (
+                            ).map(([key, option]) => (
                                 <SelectItem key={key} value={option.value}>
                                     {t(option.name)}
                                 </SelectItem>
@@ -107,7 +130,16 @@ export function UserDialogWorldsTab({
     changeWorldSort,
     worldOrder,
     changeWorldOrder
-}: any) {
+}: RemoteTabProps &
+    Pick<
+        UserTabData,
+        | 'filteredProfileWorlds'
+        | 'profileWorlds'
+        | 'worldSort'
+        | 'changeWorldSort'
+        | 'worldOrder'
+        | 'changeWorldOrder'
+    >) {
     const { t } = useTranslation();
 
     return (
@@ -208,7 +240,11 @@ export function UserDialogFavoriteWorldsTab({
     loadTab,
     search,
     setSearch
-}: any) {
+}: RemoteTabProps &
+    Pick<
+        UserTabData,
+        'remoteData' | 'favoriteWorlds' | 'filteredFavoriteWorlds'
+    >) {
     const { t } = useTranslation();
 
     return (
@@ -253,7 +289,19 @@ export function UserDialogAvatarsTab({
     changeAvatarSort,
     avatarReleaseStatus,
     changeAvatarReleaseStatus
-}: any) {
+}: RemoteTabProps &
+    Pick<
+        UserTabData,
+        | 'visibleProfileAvatars'
+        | 'profileAvatars'
+        | 'avatarSort'
+        | 'changeAvatarSort'
+        | 'avatarReleaseStatus'
+        | 'changeAvatarReleaseStatus'
+    > & {
+        profile: UserDialogProfileRecord;
+        currentUserId: string | null;
+    }) {
     const { t } = useTranslation();
 
     return (
@@ -379,7 +427,12 @@ export function UserDialogInstanceHistoryTab({
     previousInstances,
     profile,
     onPreviousInstancesChange
-}: any) {
+}: {
+    title: string;
+    previousInstances: SupplementalData['previousInstances'];
+    profile: UserDialogProfileRecord;
+    onPreviousInstancesChange: SupplementalData['setPreviousInstances'];
+}) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const closeDialog = useDialogStore((state) => state.closeDialog);
@@ -432,7 +485,15 @@ export function UserDialogInstanceHistoryTab({
     );
 }
 
-export function UserDialogActivityTab({ profile, isCurrentUser, active }: any) {
+export function UserDialogActivityTab({
+    profile,
+    isCurrentUser,
+    active
+}: {
+    profile: UserDialogProfileRecord;
+    isCurrentUser: boolean;
+    active: boolean;
+}) {
     return (
         <EntityDialogTabContent
             value="activity"
@@ -453,17 +514,25 @@ export function UserDialogJsonTab({
     moderationState,
     isFriend,
     isFavorite
-}: any) {
+}: {
+    profile: UserProfileEntity;
+    memo: string;
+    moderationState: UserModerationState;
+    isFriend: boolean;
+    isFavorite: boolean;
+}) {
     return (
         <EntityDialogTabContent value="json">
             <EntityRawJson
-                value={{
-                    profile,
-                    memo,
-                    moderationState,
-                    isFriend,
-                    isFavorite
-                }}
+                value={
+                    {
+                        profile,
+                        memo,
+                        moderationState,
+                        isFriend,
+                        isFavorite
+                    } satisfies UserDialogJson
+                }
             />
         </EntityDialogTabContent>
     );

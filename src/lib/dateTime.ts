@@ -10,7 +10,7 @@ import {
 } from '@/shared/utils/dateTime';
 import { useShellStore } from '@/state/shellStore';
 
-export function formatDateFilter(dateStr: any, format: DateFilterFormat) {
+export function formatDateFilter(dateStr: unknown, format: DateFilterFormat) {
     const { locale, dateCulture, dateIsoFormat, dateHour12 } =
         useShellStore.getState();
     return formatDateFilterWithPreferences(dateStr, format, {
@@ -101,7 +101,7 @@ export function formatRelativeTime(
 
 export function timeToText(
     sec: unknown,
-    isNeedSeconds: any = false,
+    isNeedSeconds: boolean = false,
     unitLabels: Partial<TimeUnitLabels> | undefined = undefined
 ) {
     return timeToTextWithLabels(

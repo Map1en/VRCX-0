@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
@@ -16,7 +17,41 @@ import { normalizeEntityId } from './groupInstances';
 import { useGroupDialogActiveInstances } from './useGroupDialogActiveInstances';
 import { useGroupOwnerProfile } from './useGroupOwnerProfile';
 
-export function useGroupDialogState({ groupId, seedData = null }: any) {
+interface GroupDialogStateInput {
+    groupId: unknown;
+    seedData?: EntityRecord | null;
+}
+
+interface ActiveGroupTarget {
+    groupId: string;
+    endpoint: string;
+}
+
+const groupDialogStatus: {
+    readonly loading: 'loading';
+    readonly empty: 'empty';
+    readonly ready: 'ready';
+} = {
+    loading: 'loading',
+    empty: 'empty',
+    ready: 'ready'
+};
+
+export type GroupPreviousInstanceRow =
+    Awaited<
+        ReturnType<typeof gameLogRepository.getPreviousInstancesByGroupId>
+    > extends Map<unknown, infer V>
+        ? V & { createdAt?: string }
+        : EntityRecord;
+
+function isEntityRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export function useGroupDialogState({
+    groupId,
+    seedData = null
+}: GroupDialogStateInput) {
     const { t } = useTranslation();
 
     const normalizedGroupId = normalizeEntityId(groupId);
@@ -44,14 +79,10 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
     const [actionStatus, setActionStatus] = useState('idle');
     const [detail, setDetail] = useState('');
     const [previousInstances, setPreviousInstances] = useState<
-        Awaited<
-            ReturnType<typeof gameLogRepository.getPreviousInstancesByGroupId>
-        > extends Map<unknown, infer V>
-            ? V[]
-            : unknown[]
+        GroupPreviousInstanceRow[]
     >([]);
     const actionStatusRef = useRef('idle');
-    const activeGroupTargetRef = useRef<any>({
+    const activeGroupTargetRef = useRef<ActiveGroupTarget>({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint
     });
@@ -116,7 +147,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
                 endpoint: currentEndpoint,
                 dialog: true
             })
-            .then((nextGroup: any) => {
+            .then((nextGroup) => {
                 if (!active) {
                     return;
                 }
@@ -176,7 +207,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
 
         gameLogRepository
             .getPreviousInstancesByGroupId(normalizedGroupId)
-            .then((rows: any) => {
+            .then((rows) => {
                 if (!active) {
                     return;
                 }
@@ -211,18 +242,18 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
                 userId: currentUserId,
                 endpoint: currentEndpoint
             })
-            .then((response: any) => {
+            .then((response) => {
                 if (!active) {
                     return;
                 }
                 const rows = Array.isArray(response.json)
                     ? response.json
-                    : Array.isArray(response.json?.instances)
+                    : Array.isArray(response.json.instances)
                       ? response.json.instances
                       : [];
                 recordLocationHintsFromInstances({
                     endpoint: currentEndpoint,
-                    instances: rows.map((row: any) => ({
+                    instances: rows.map((row) => ({
                         ...row,
                         groupId: normalizedGroupId,
                         groupName: group?.name || group?.displayName || ''
@@ -250,7 +281,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
 
     if (loadStatus === 'running' && !group) {
         return {
-            status: 'loading',
+            status: groupDialogStatus.loading,
             emptyState: {
                 loading: true,
                 title: t('dialog.group.loading.loading_group_profile'),
@@ -263,7 +294,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
 
     if (!group) {
         return {
-            status: 'empty',
+            status: groupDialogStatus.empty,
             emptyState: {
                 title: t('dialog.group.error.group_profile_unavailable'),
                 description:
@@ -297,7 +328,10 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         return nextGroup;
     }
 
-    function commitGroupSnapshot(nextGroup: any) {
+    function commitGroupSnapshot(nextGroup: unknown) {
+        if (!isEntityRecord(nextGroup)) {
+            return;
+        }
         if (
             activeGroupTargetRef.current.groupId === normalizedGroupId &&
             activeGroupTargetRef.current.endpoint === currentEndpoint
@@ -444,7 +478,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         }
     }
 
-    async function updateGroupRepresentation(enabled: any) {
+    async function updateGroupRepresentation(enabled: boolean) {
         if (!viewState.isMember || actionStatusRef.current !== 'idle') {
             return;
         }
@@ -477,7 +511,10 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         }
     }
 
-    async function updateGroupMemberProps(params: any, label: any) {
+    async function updateGroupMemberProps(
+        params: Record<string, unknown>,
+        label: string
+    ) {
         if (
             !viewState.isMember ||
             !currentUserId ||
@@ -511,7 +548,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
         }
     }
 
-    async function updateGroupBlock(enabled: any) {
+    async function updateGroupBlock(enabled: boolean) {
         if (
             viewState.isMember ||
             !currentUserId ||
@@ -570,7 +607,7 @@ export function useGroupDialogState({ groupId, seedData = null }: any) {
     }
 
     return {
-        status: 'ready',
+        status: groupDialogStatus.ready,
         group,
         detail,
         actionStatus,

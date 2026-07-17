@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getKnownUserFact } from '@/domain/users/userFactAccess';
 import friendLogRepository from '@/repositories/friendLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
+import { getKnownUserFact } from '@/services/userFactAccessService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 

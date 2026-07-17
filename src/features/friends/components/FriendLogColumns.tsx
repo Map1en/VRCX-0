@@ -4,14 +4,13 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter } from '@/lib/dateTime';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getFriendLogRowKey, normalizeUserId } from '../friendLogRows';
 import {
-    friendLogTypeLabel,
+    FriendLogTypeIndicator,
     SortButton,
     renderUserCell
 } from './FriendLogViewParts';
@@ -93,11 +92,7 @@ export function useFriendLogColumns({
                     />
                 ),
                 cell: ({ row }: any) => (
-                    <Badge variant="outline" className="text-muted-foreground">
-                        {friendLogTypeLabel(row.original?.type, t) ||
-                            row.original?.type ||
-                            ''}
-                    </Badge>
+                    <FriendLogTypeIndicator type={row.original?.type} />
                 )
             },
             {
@@ -115,8 +110,8 @@ export function useFriendLogColumns({
             },
             {
                 id: 'action',
-                size: 80,
-                maxSize: 80,
+                size: 64,
+                maxSize: 64,
                 enableSorting: false,
                 accessorFn: (row: any) =>
                     getFriendLogRowKey(row, rowsOwnerUserId),

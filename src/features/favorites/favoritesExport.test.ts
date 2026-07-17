@@ -16,13 +16,11 @@ describe('favorite export helpers', () => {
     it('returns friend export fields for friends and entity fields for worlds or avatars', () => {
         expect(
             getFavoriteExportFieldOptions('friend').map(
-                (option: any) => option.value
+                (option) => option.value
             )
         ).toEqual(['id', 'name', 'status', 'group', 'source']);
         expect(
-            getFavoriteExportFieldOptions('world').map(
-                (option: any) => option.value
-            )
+            getFavoriteExportFieldOptions('world').map((option) => option.value)
         ).toEqual(['id', 'name', 'author', 'thumbnail', 'group', 'source']);
     });
 
@@ -62,5 +60,30 @@ describe('favorite export helpers', () => {
         ).toBe(
             'ID,Name,Author,Thumbnail,Group,Source\nwrld_1,Hangout,World Author,https://example.test/thumb.png,worlds1,local'
         );
+    });
+
+    it('prefers authorName over subtitle and keeps unavailable authors empty', () => {
+        expect(
+            buildFavoriteExportCsv(
+                [
+                    {
+                        id: 'wrld_1',
+                        title: 'Hangout',
+                        authorName: 'Real Author',
+                        subtitle: 'Real Author',
+                        source: 'remote'
+                    },
+                    {
+                        id: 'wrld_2',
+                        title: 'Gone World',
+                        authorName: '',
+                        subtitle: 'World details unavailable',
+                        source: 'remote'
+                    }
+                ],
+                'world',
+                ['id', 'author']
+            )
+        ).toBe('ID,Author\nwrld_1,Real Author\nwrld_2,');
     });
 });

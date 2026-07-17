@@ -13,16 +13,21 @@ import {
     writePersistedPlayerListState
 } from './playerListState';
 
-function installLocalStorage(initial: any = {}) {
-    const store = new Map(Object.entries(initial));
-    globalThis.window = {
-        localStorage: {
-            getItem: (key: any) => store.get(key) ?? null,
-            setItem: (key: any, value: any) => {
-                store.set(key, String(value));
+function installLocalStorage(initial: Record<string, unknown> = {}) {
+    const store = new Map(
+        Object.entries(initial).map(([key, value]) => [key, String(value)])
+    );
+    Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: {
+            localStorage: {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => {
+                    store.set(key, String(value));
+                }
             }
         }
-    } as any;
+    });
     return store;
 }
 
@@ -34,16 +39,19 @@ describe('playerListState', () => {
     it('uses the default player-list table shape when saved state is missing or invalid', () => {
         expect(safeJsonParse('{bad json')).toBeNull();
         expect(readPersistedPlayerListState()).toEqual({});
-        globalThis.window = {
-            localStorage: {
-                getItem() {
-                    throw new Error('storage blocked');
-                },
-                setItem() {
-                    throw new Error('storage blocked');
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                localStorage: {
+                    getItem() {
+                        throw new Error('storage blocked');
+                    },
+                    setItem() {
+                        throw new Error('storage blocked');
+                    }
                 }
             }
-        } as any;
+        });
         expect(readPersistedPlayerListState()).toEqual({});
         expect(() =>
             writePersistedPlayerListState({ columnOrder: ['avatar'] })
@@ -67,6 +75,10 @@ describe('playerListState', () => {
             ])
         ).toEqual([{ id: 'displayName', desc: false }]);
 
+        expect(sanitizePlayerListSorting([{ id: 'icon', desc: true }])).toEqual(
+            DEFAULT_PLAYER_LIST_SORTING
+        );
+
         expect(
             sanitizePlayerListColumnVisibility({
                 avatar: false,
@@ -82,7 +94,7 @@ describe('playerListState', () => {
             'note',
             'avatar',
             ...PLAYER_LIST_COLUMN_IDS.filter(
-                (columnId: any) => !['note', 'avatar'].includes(columnId)
+                (columnId) => !['note', 'avatar'].includes(columnId)
             )
         ]);
 

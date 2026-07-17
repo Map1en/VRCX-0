@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 
 import avatarCacheRepository from '@/repositories/avatarCacheRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
-import configRepository from '@/repositories/configRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openWorldDialog } from '@/services/dialogService';
@@ -378,22 +377,6 @@ export function useFavoritesItemActions({
     async function selectFavoriteAvatar(item: any) {
         if (!item?.id) {
             return;
-        }
-        const shouldConfirm = await configRepository.getBool(
-            'showConfirmationOnSwitchAvatar',
-            true
-        );
-        if (shouldConfirm) {
-            const result = await confirm({
-                title: t('view.favorites.modal.select_avatar'),
-                description:
-                    item.title || t('view.favorites.empty.avatar_fallback'),
-                confirmText: t('common.actions.select'),
-                cancelText: t('common.actions.cancel')
-            });
-            if (!result.ok) {
-                return;
-            }
         }
         try {
             await avatarProfileRepository.selectAvatar({

@@ -1,6 +1,13 @@
 use super::*;
 
 impl RuntimeHostState {
+    fn login_api(&self) -> Arc<dyn LoginApi> {
+        Arc::new(WebClientLoginApi::new(
+            Arc::clone(&self.web),
+            Arc::clone(&self.db),
+        ))
+    }
+
     pub(super) async fn authenticate_non_interactive(
         &self,
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
@@ -44,25 +51,15 @@ impl RuntimeHostState {
         endpoint_override: Option<String>,
         snapshot: serde_json::Value,
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-        let raw_saved_credentials = self
-            .runtime_context
-            .config()
-            .get_json(SAVED_CREDENTIALS_KEY, serde_json::json!({}))
+        let saved_record = saved_credential_session_data(self.runtime_context.config(), &user_id)
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-        let saved_record = raw_saved_credentials.get(&user_id).cloned();
-        let saved_endpoint = saved_record
-            .as_ref()
-            .and_then(|record| record.get("loginParams"))
-            .and_then(|login_params| string_field(login_params, "endpoint"))
-            .unwrap_or_default();
+        let (saved_endpoint, websocket, saved_cookies) = saved_record.map_or_else(
+            || (String::new(), String::new(), None),
+            |record| (record.endpoint, record.websocket, record.cookies),
+        );
         let endpoint = endpoint_override
             .filter(|value| !value.trim().is_empty())
             .unwrap_or(saved_endpoint);
-        let websocket = saved_record
-            .as_ref()
-            .and_then(|record| record.get("loginParams"))
-            .and_then(|login_params| string_field(login_params, "websocket"))
-            .unwrap_or_default();
 
         match probe_current_user_from_cookie(
             self.web.as_ref(),
@@ -90,12 +87,7 @@ impl RuntimeHostState {
             }
         }
 
-        if let Some(cookies) = saved_record
-            .as_ref()
-            .and_then(|record| record.get("cookies"))
-            .and_then(serde_json::Value::as_str)
-            .filter(|cookies| !cookies.trim().is_empty())
-        {
+        if let Some(cookies) = saved_cookies.as_deref() {
             if let Err(error) = self.web.set_cookies(cookies) {
                 tracing::warn!(error = %error, "failed to restore saved auth cookies");
             } else {
@@ -140,10 +132,11 @@ impl RuntimeHostState {
             ));
         }
 
+        let api = self.login_api();
         let response = saved_credential_login_start(
             self.runtime_context.config(),
             self.web.as_ref(),
-            self.db.as_ref(),
+            api.as_ref(),
             SavedCredentialLoginStartInput {
                 user_id: user_id.clone(),
                 endpoint: endpoint.clone(),
@@ -217,76 +210,6 @@ impl RuntimeHostState {
         }
         self.clear_backend_authenticated_session(reason)
     }
-
-    pub(super) async fn build_backend_social_baseline(
-        &self,
-        session: &AuthenticatedRuntimeSession,
-    ) -> Result<BackendSocialBaseline> {
-        let deps = SocialBaselineDeps {
-            db: Arc::clone(&self.db),
-            web: Arc::clone(&self.web),
-            auth_scope: self.runtime_context.auth_scope.clone(),
-            session: self.runtime_context.session.clone(),
-        };
-        let output = build_friend_roster_baseline(
-            deps.clone(),
-            SocialFriendRosterBaselineInput {
-                user_id: session.user_id.clone(),
-                endpoint: session.endpoint.clone(),
-                websocket: session.websocket.clone(),
-                current_user_snapshot: RawJson::from(session.current_user.clone()),
-                is_first_load: true,
-            },
-        )
-        .await?;
-        let Some(snapshot) = output.snapshot else {
-            return Ok(BackendSocialBaseline::default());
-        };
-        let snapshot = snapshot.into_value();
-        let friends_by_id = snapshot
-            .get("friendsById")
-            .cloned()
-            .unwrap_or_else(|| serde_json::json!({}));
-        let friends_by_id_map =
-            serde_json::from_value::<HashMap<String, FriendRecord>>(friends_by_id.clone())?;
-        let mut favorite_groups_snapshot = None;
-        let favorite_groups = match build_favorites_baseline(
-            deps,
-            SocialFavoritesBaselineInput {
-                user_id: session.user_id.clone(),
-                endpoint: session.endpoint.clone(),
-                current_user_snapshot: RawJson::from(session.current_user.clone()),
-                friend_roster_by_id: RawJson::from(friends_by_id),
-            },
-        )
-        .await
-        {
-            Ok(output) => output.snapshot.map_or_else(HashMap::new, |snapshot| {
-                let value = snapshot.into_value();
-                favorite_groups_snapshot = Some(value.clone());
-                favorite_group_membership_from_snapshot(value)
-            }),
-            Err(error) => {
-                tracing::warn!(
-                    error = %error,
-                    "failed to build backend favorite baseline for overlay activity"
-                );
-                HashMap::new()
-            }
-        };
-        Ok(BackendSocialBaseline {
-            friends_by_id: friends_by_id_map,
-            favorite_groups,
-            favorite_groups_snapshot,
-        })
-    }
-}
-
-#[derive(Default)]
-pub(super) struct BackendSocialBaseline {
-    pub(super) friends_by_id: HashMap<String, FriendRecord>,
-    pub(super) favorite_groups: HashMap<String, Vec<String>>,
-    pub(super) favorite_groups_snapshot: Option<serde_json::Value>,
 }
 
 pub(super) fn string_field(value: &serde_json::Value, key: &str) -> Option<String> {
@@ -337,126 +260,40 @@ impl RuntimeHostState {
         let prompt_password = Arc::clone(&prompt);
         let password = run_blocking_prompt(move || prompt_password.prompt_password()).await?;
 
-        let (_, request) = vrcx_0_application::vrchat_api::auth::login_basic_input(
-            endpoint.clone(),
-            username,
-            password,
-            "Username is required.",
-            "Password is required.",
-        )
-        .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
+        let api = self.login_api();
+        let mut login = LoginSession::start(api, endpoint, username, password).await;
 
-        let response = self
-            .web
-            .execute_api(
-                request,
-                vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
-                self.db.as_ref(),
-            )
-            .await
-            .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
-
-        let mut current_user_json: serde_json::Value = serde_json::from_str(&response.data)
-            .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
-
-        if response.status == 200 && current_user_json.get("requiresTwoFactorAuth").is_some() {
-            let mut methods: Vec<String> = current_user_json["requiresTwoFactorAuth"]
-                .as_array()
-                .map(|values| {
-                    values
-                        .iter()
-                        .filter_map(|value| value.as_str().map(|s| s.to_string()))
-                        .collect()
-                })
-                .unwrap_or_default();
-
-            if methods.is_empty() {
-                return Err(NonInteractiveAuthError::Failed(
-                    "2FA is required but no supported method was returned.".into(),
-                ));
-            }
-
-            methods.sort_by_key(|m| match m.as_str() {
-                "totp" => 0,
-                "emailOtp" => 1,
-                "otp" => 2,
-                _ => 3,
-            });
+        loop {
+            let methods = match login.state() {
+                LoginSessionState::Authenticated { .. } => break,
+                LoginSessionState::Failed { reason, .. } => {
+                    return Err(NonInteractiveAuthError::Failed(reason.clone()));
+                }
+                LoginSessionState::Cancelled => {
+                    return Err(NonInteractiveAuthError::Failed(
+                        "Login was cancelled.".into(),
+                    ));
+                }
+                LoginSessionState::Challenge { methods, .. } => methods.clone(),
+            };
 
             let prompt_2fa = Arc::clone(&prompt);
             let choice =
                 run_blocking_prompt(move || prompt_2fa.prompt_two_factor(&methods)).await?;
+            login.respond(choice.method, choice.code).await;
 
-            let verify_req = match choice.method.as_str() {
-                "emailOtp" => vrcx_0_application::vrchat_api::auth::email_otp_verify_input(
-                    endpoint.clone(),
-                    choice.code,
-                ),
-                "otp" => vrcx_0_application::vrchat_api::auth::otp_verify_input(
-                    endpoint.clone(),
-                    choice.code,
-                ),
-                _ => vrcx_0_application::vrchat_api::auth::totp_verify_input(
-                    endpoint.clone(),
-                    choice.code,
-                ),
-            };
-
-            let verify_response = self
-                .web
-                .execute_api(
-                    verify_req,
-                    vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
-                    self.db.as_ref(),
-                )
-                .await
-                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
-
-            if verify_response.status != 200 {
-                return Err(NonInteractiveAuthError::Failed(format!(
-                    "2FA verification failed with HTTP {}",
-                    verify_response.status
-                )));
+            if let LoginSessionState::Challenge {
+                error: Some(reason),
+                ..
+            } = login.state()
+            {
+                return Err(NonInteractiveAuthError::Failed(reason.clone()));
             }
-
-            let user_req =
-                vrcx_0_application::vrchat_api::auth::current_user_get_input(endpoint.clone());
-            let user_response = self
-                .web
-                .execute_api(
-                    user_req,
-                    vrcx_0_vrchat_client::http_api::ApiScope::Vrchat,
-                    self.db.as_ref(),
-                )
-                .await
-                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
-
-            if user_response.status != 200 {
-                return Err(NonInteractiveAuthError::Failed(format!(
-                    "Failed to fetch user profile after 2FA: HTTP {}",
-                    user_response.status
-                )));
-            }
-
-            current_user_json = serde_json::from_str(&user_response.data)
-                .map_err(|e| NonInteractiveAuthError::Failed(e.to_string()))?;
-        } else if response.status != 200 {
-            let error_msg = auth_response_error_message(
-                &response,
-                format!("Login failed with HTTP {}", response.status),
-            );
-            return Err(NonInteractiveAuthError::Failed(error_msg));
         }
 
-        let user_id = string_field(&current_user_json, "id").unwrap_or_default();
-        if user_id.is_empty() {
-            return Err(NonInteractiveAuthError::Failed(
-                "The auth request did not return a valid user payload.".into(),
-            ));
-        }
-
-        let session =
-            AuthenticatedRuntimeSession::from_user(current_user_json, endpoint, String::new());
+        let LoginSessionState::Authenticated { session } = login.into_state() else {
+            unreachable!("loop only breaks once the session is Authenticated");
+        };
         self.record_non_interactive_login_success(&session)?;
         Ok(session)
     }

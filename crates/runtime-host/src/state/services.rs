@@ -38,6 +38,9 @@ impl RuntimeHostState {
         self.runtime_context
             .background_jobs
             .start_database_optimize_loop(Arc::clone(&self.db), self.runtime_context.tasks.clone());
+        self.app_update
+            .start_loop(self.runtime_context.tasks.clone());
+        self.profile_backup.start_scheduler();
 
         self.start_log_watcher_for_current_platform(&host_capabilities);
 

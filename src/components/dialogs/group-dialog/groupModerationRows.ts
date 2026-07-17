@@ -1,3 +1,5 @@
+import type { EntityRecord } from '@/domain/entities/profileEntities';
+
 import {
     getGroupRoleNameMap,
     groupModerationTabPermissions,
@@ -11,6 +13,37 @@ export interface GroupModerationTab {
     disabled: boolean;
     label: string;
     value: GroupModerationTabValue;
+}
+
+export type GroupModerationActionKey =
+    | 'kick'
+    | 'ban'
+    | 'unban'
+    | 'delete-invite'
+    | 'accept-request'
+    | 'reject-request'
+    | 'block-request'
+    | 'delete-blocked';
+
+export interface GroupModerationAction {
+    key: GroupModerationActionKey;
+    label: string;
+    destructive?: boolean;
+}
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): EntityRecord {
+    return isRecord(value) ? value : {};
+}
+
+function text(...values: unknown[]): string {
+    const value = values.find(
+        (entry) => typeof entry === 'string' && entry.trim()
+    );
+    return typeof value === 'string' ? value : '';
 }
 
 const GROUP_MODERATION_TAB_LABELS: Array<{
@@ -68,96 +101,117 @@ export function resolveGroupModerationActiveTab(
     return tabs.find((tab) => !tab.disabled)?.value || '';
 }
 
-export function moderationRowUserId(row: any) {
-    return (
-        row?.userId || row?.targetUserId || row?.user?.id || row?.actorId || ''
+export function moderationRowUserId(row: unknown) {
+    const source = record(row);
+    return text(
+        source.userId,
+        source.targetUserId,
+        record(source.user).id,
+        source.actorId
     );
 }
 
-export function moderationRowLabel(row: any) {
-    if (!row || typeof row !== 'object') {
+export function moderationRowLabel(row: unknown) {
+    if (!isRecord(row)) {
         return String(row ?? '—');
     }
     return (
-        row?.user?.displayName ||
-        row?.displayName ||
-        row?.targetDisplayName ||
-        row?.actorDisplayName ||
-        row?.userId ||
-        row?.targetUserId ||
-        row?.actorId ||
-        row?.id ||
-        '—'
+        text(
+            record(row.user).displayName,
+            row.displayName,
+            row.targetDisplayName,
+            row.actorDisplayName,
+            row.userId,
+            row.targetUserId,
+            row.actorId,
+            row.id
+        ) || '—'
     );
 }
 
-export function moderationRowSubtitle(row: any) {
+export function moderationRowSubtitle(row: unknown) {
+    const source = record(row);
+    const roleIds = Array.isArray(source.roleIds)
+        ? source.roleIds.filter(
+              (value): value is string => typeof value === 'string'
+          )
+        : [];
     return [
-        row?.roleIds?.length ? row.roleIds.join(', ') : '',
-        row?.action ||
-            row?.eventType ||
-            row?.type ||
-            row?.membershipStatus ||
-            '',
-        row?.createdAt || row?.updatedAt || row?.joinedAt || ''
+        roleIds.join(', '),
+        text(
+            source.action,
+            source.eventType,
+            source.type,
+            source.membershipStatus
+        ),
+        text(source.createdAt, source.updatedAt, source.joinedAt)
     ]
         .filter(Boolean)
         .join(' | ');
 }
 
-export function moderationRowRoles(row: any, group: any) {
+export function moderationRowRoles(row: unknown, group: unknown) {
+    const source = record(row);
+    const user = record(source.user);
     const roles = getGroupRoleNameMap(group);
-    const roleIds = Array.isArray(row?.roleIds)
-        ? row.roleIds
-        : Array.isArray(row?.user?.roleIds)
-          ? row.user.roleIds
+    const roleIds = Array.isArray(source.roleIds)
+        ? source.roleIds
+        : Array.isArray(user.roleIds)
+          ? user.roleIds
           : [];
     return roleIds
-        .map((roleId: any) => roles.get(roleId) || 'Role')
+        .map((roleId) => roles.get(text(roleId)) || 'Role')
         .filter(Boolean)
         .join(', ');
 }
 
-export function moderationRowStatus(row: any) {
+export function moderationRowStatus(row: unknown) {
+    const source = record(row);
     return (
-        row?.action ||
-        row?.eventType ||
-        row?.type ||
-        row?.membershipStatus ||
-        row?.visibility ||
-        '—'
+        text(
+            source.action,
+            source.eventType,
+            source.type,
+            source.membershipStatus,
+            source.visibility
+        ) || '—'
     );
 }
 
-export function moderationRowDate(row: any) {
-    return (
-        row?.createdAt ||
-        row?.created_at ||
-        row?.updatedAt ||
-        row?.updated_at ||
-        row?.joinedAt ||
-        row?.joined_at ||
-        ''
+export function moderationRowDate(row: unknown) {
+    const source = record(row);
+    return text(
+        source.createdAt,
+        source.created_at,
+        source.updatedAt,
+        source.updated_at,
+        source.joinedAt,
+        source.joined_at
     );
 }
 
-export function moderationRowSearchText(row: any, group: any) {
+export function moderationRowSearchText(row: unknown, group: unknown) {
+    const source = record(row);
     return [
         moderationRowLabel(row),
         moderationRowUserId(row),
         moderationRowRoles(row, group),
         moderationRowStatus(row),
         moderationRowDate(row),
-        row?.description,
-        row?.note,
-        row?.managerNotes
+        text(source.description),
+        text(source.note),
+        text(source.managerNotes)
     ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
 }
 
-export function getGroupModerationActions(tabValue: any, row: any, t: any) {
+export function getGroupModerationActions(
+    tabValue: GroupModerationTabValue,
+    row: unknown,
+    t: TranslateFn
+): GroupModerationAction[] {
     const userId = moderationRowUserId(row);
     if (!userId) {
         return [];

@@ -12,13 +12,12 @@ use crate::Error;
 
 use super::repository::{
     activity_bucket_cache_get, activity_bucket_cache_upsert, activity_friend_presence_slice,
-    activity_iso_from_ms, activity_self_sessions_refresh, activity_sync_state_get,
-    parse_activity_time_ms,
+    activity_iso_from_ms, activity_self_sessions_refresh_auto, parse_activity_time_ms,
 };
 use super::types::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
     ActivityFriendPresenceSliceInput, ActivityOverlapViewBuildInput, ActivityOverlapViewOutput,
-    ActivitySelfSessionsRefreshInput, ActivityViewBuildInput, ActivityViewOutput,
+    ActivitySelfSessionsRefreshOutput, ActivityViewBuildInput, ActivityViewOutput,
 };
 
 const ACTIVITY_VIEW_KIND: &str = "activity";
@@ -177,6 +176,15 @@ pub fn activity_overlap_view_build(
     Ok(output)
 }
 
+pub fn activity_self_sessions_warmup(
+    db: &DatabaseService,
+    user_id: String,
+    range_days: i64,
+    now_ms: Option<i64>,
+) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
+    refresh_self_activity_sessions(db, &user_id, range_days, now_ms, false)
+}
+
 struct ActivitySource {
     sessions: Vec<ActivitySession>,
     cursor: String,
@@ -190,30 +198,8 @@ fn self_activity_source(
     now_ms: i64,
     force_refresh: bool,
 ) -> Result<ActivitySource, Error> {
-    let sync_state = activity_sync_state_get(db, user_id.to_string())?;
-    let mode = if force_refresh
-        || sync_state
-            .as_ref()
-            .is_none_or(|sync| sync.source_last_created_at.is_empty())
-    {
-        "full"
-    } else if sync_state
-        .as_ref()
-        .is_some_and(|sync| sync.cached_range_days < range_days)
-    {
-        "expand"
-    } else {
-        "incremental"
-    };
-    let refreshed = activity_self_sessions_refresh(
-        db,
-        ActivitySelfSessionsRefreshInput {
-            user_id: user_id.to_string(),
-            mode: mode.to_string(),
-            range_days: json!(range_days),
-            now_ms: Some(now_ms),
-        },
-    )?;
+    let refreshed =
+        refresh_self_activity_sessions(db, user_id, range_days, Some(now_ms), force_refresh)?;
     Ok(ActivitySource {
         has_any_data: !refreshed.sessions.is_empty(),
         cursor: refreshed.sync.source_last_created_at,
@@ -228,6 +214,16 @@ fn self_activity_source(
             })
             .collect(),
     })
+}
+
+fn refresh_self_activity_sessions(
+    db: &DatabaseService,
+    user_id: &str,
+    range_days: i64,
+    now_ms: Option<i64>,
+    force_refresh: bool,
+) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
+    activity_self_sessions_refresh_auto(db, user_id, range_days, now_ms, force_refresh)
 }
 
 fn friend_activity_source(

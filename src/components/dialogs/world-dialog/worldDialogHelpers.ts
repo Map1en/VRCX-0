@@ -1,8 +1,21 @@
+import type { TFunction } from 'i18next';
+
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
 
 import { normalizeEntityId } from './worldInstances';
 
-export function isWorldNotFoundMessage(message: any, worldId: any) {
+type InstanceGroupOption = EntityRecord & {
+    groupId?: unknown;
+    id?: unknown;
+    name: string;
+};
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+export function isWorldNotFoundMessage(message: unknown, worldId: unknown) {
     const normalizedMessage = normalizeEntityId(message);
     const normalizedWorldId = normalizeEntityId(worldId);
     const match = /^World\s+(.+?)\s+not found\.?$/i.exec(normalizedMessage);
@@ -14,10 +27,10 @@ export function isWorldNotFoundMessage(message: any, worldId: any) {
 }
 
 export function worldLoadErrorDescription(
-    error: any,
-    t: any,
-    worldId: any,
-    fallbackKey: any
+    error: unknown,
+    t: TFunction,
+    worldId: unknown,
+    fallbackKey: string
 ) {
     if (error instanceof Error) {
         if (isWorldNotFoundMessage(error.message, worldId)) {
@@ -38,7 +51,7 @@ export function defaultWorldSideData() {
     };
 }
 
-export function normalizeInstanceRegion(value: any) {
+export function normalizeInstanceRegion(value: unknown) {
     const region = normalizeEntityId(value);
     switch (region) {
         case 'us':
@@ -58,8 +71,8 @@ export function normalizeInstanceRegion(value: any) {
     }
 }
 
-export function normalizeNewInstanceSeed(seed: any) {
-    if (!seed || typeof seed !== 'object') {
+export function normalizeNewInstanceSeed(seed: unknown) {
+    if (!isRecord(seed)) {
         return {};
     }
     const groupId = normalizeEntityId(seed.groupId);
@@ -80,18 +93,29 @@ export function normalizeNewInstanceSeed(seed: any) {
     };
 }
 
-export function groupOptionId(group: any) {
-    return normalizeEntityId(group?.groupId || group?.id);
+export function groupOptionId(group: unknown) {
+    if (!isRecord(group)) {
+        return '';
+    }
+    return normalizeEntityId(group.groupId || group.id);
 }
 
-export function findGroupOption(groups: any, groupId: any) {
+export function findGroupOption(
+    groups: unknown,
+    groupId: unknown
+): InstanceGroupOption | null {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         return null;
     }
-    return (
-        (Array.isArray(groups) ? groups : []).find(
-            (group: any) => groupOptionId(group) === normalizedGroupId
-        ) || null
+    const group = (Array.isArray(groups) ? groups : []).find(
+        (candidate) => groupOptionId(candidate) === normalizedGroupId
     );
+    if (!isRecord(group)) {
+        return null;
+    }
+    return {
+        ...group,
+        name: normalizeEntityId(group.name)
+    };
 }

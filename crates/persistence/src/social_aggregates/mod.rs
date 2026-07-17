@@ -44,35 +44,24 @@ pub use types::{
 pub use worlds::{favorite_local, search_worlds_visited};
 
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/activity_tests.rs"]
 mod activity_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/caveats_tests.rs"]
 mod caveats_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/changes_tests.rs"]
 mod changes_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/companions_tests.rs"]
 mod companions_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/copresence_tests.rs"]
 mod copresence_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/friend_log_tests.rs"]
 mod friend_log_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/graph_tests.rs"]
 mod graph_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/invites_tests.rs"]
 mod invites_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/recall_tests.rs"]
 mod recall_tests;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/support.rs"]
 mod test_support;
 #[cfg(test)]
-#[path = "../../tests/social_aggregates/worlds_tests.rs"]
 mod worlds_tests;

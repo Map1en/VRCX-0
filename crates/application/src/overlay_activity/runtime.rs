@@ -24,6 +24,12 @@ pub struct OverlayFavoriteGroups {
     all_favorites: HashSet<String>,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct JoinedDeliveryCoverage {
+    vr: bool,
+    hmd: bool,
+}
+
 impl OverlayFavoriteGroups {
     pub fn from_map(groups: HashMap<String, Vec<String>>) -> Self {
         let mut normalized_groups = HashMap::new();
@@ -113,6 +119,9 @@ pub(super) struct OverlayActivityState {
     pub(super) filters: OverlayActivityFilters,
     pub(super) favorite_groups: OverlayFavoriteGroups,
     pub(super) friend_user_ids: HashSet<String>,
+    current_instance_location: String,
+    current_instance_user_ids: HashSet<String>,
+    joined_delivery_coverage: HashMap<(String, String), JoinedDeliveryCoverage>,
     pub(super) entries: VecDeque<OverlayActivityEntry>,
     pub(super) source_ids: HashSet<String>,
     pub(super) seen_order: VecDeque<(Instant, String)>,
@@ -128,6 +137,9 @@ impl Default for OverlayActivityState {
             filters: OverlayActivityFilters::default(),
             favorite_groups: OverlayFavoriteGroups::default(),
             friend_user_ids: HashSet::new(),
+            current_instance_location: String::new(),
+            current_instance_user_ids: HashSet::new(),
+            joined_delivery_coverage: HashMap::new(),
             entries: VecDeque::new(),
             source_ids: HashSet::new(),
             seen_order: VecDeque::new(),
@@ -171,6 +183,7 @@ impl OverlayActivityRuntime {
             state.entries.clear();
             state.source_ids.clear();
             state.seen_order.clear();
+            state.joined_delivery_coverage.clear();
             snapshot_from_state(&state)
         };
         self.emit_snapshot(snapshot);
@@ -205,12 +218,38 @@ impl OverlayActivityRuntime {
         }
     }
 
+    pub(crate) fn set_current_instance_presence<I, S>(&self, location: &str, user_ids: I)
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let location = location.trim().to_string();
+        let user_ids = user_ids
+            .into_iter()
+            .map(|user_id| normalize_id(user_id.as_ref()))
+            .filter(|user_id| !user_id.is_empty())
+            .collect::<HashSet<_>>();
+        if let Ok(mut state) = self.state.lock() {
+            if state.current_instance_location != location {
+                state.joined_delivery_coverage.clear();
+            }
+            state
+                .joined_delivery_coverage
+                .retain(|(user_id, joined_location), _| {
+                    joined_location == &location && user_ids.contains(user_id)
+                });
+            state.current_instance_location = location;
+            state.current_instance_user_ids = user_ids;
+        }
+    }
+
     pub fn set_delivery_armed(&self, armed: bool) {
         if let Ok(mut state) = self.state.lock() {
             if armed {
                 state.live_since.get_or_insert_with(Utc::now);
             } else {
                 state.live_since = None;
+                state.joined_delivery_coverage.clear();
             }
         }
     }
@@ -222,6 +261,9 @@ impl OverlayActivityRuntime {
             };
             state.favorite_groups = OverlayFavoriteGroups::default();
             state.friend_user_ids.clear();
+            state.current_instance_location.clear();
+            state.current_instance_user_ids.clear();
+            state.joined_delivery_coverage.clear();
             state.entries.clear();
             state.source_ids.clear();
             state.seen_order.clear();
@@ -244,6 +286,7 @@ impl OverlayActivityRuntime {
             if state.source_ids.contains(&source_id) {
                 return None;
             }
+            clear_joined_delivery_coverage_for_departing_gps(&mut state, &candidate);
 
             let wrist = surface_matches(
                 &state,
@@ -257,15 +300,31 @@ impl OverlayActivityRuntime {
                 OverlayActivitySurface::Desktop,
                 definition,
             );
-            let vr = surface_matches(&state, &candidate, OverlayActivitySurface::Vr, definition);
-            let hmd = surface_matches(&state, &candidate, OverlayActivitySurface::Hmd, definition);
+            let mut vr =
+                surface_matches(&state, &candidate, OverlayActivitySurface::Vr, definition);
+            let mut hmd =
+                surface_matches(&state, &candidate, OverlayActivitySurface::Hmd, definition);
             let webhook = surface_matches(
                 &state,
                 &candidate,
                 OverlayActivitySurface::Webhook,
                 definition,
             );
-            if !wrist && !desktop && !vr && !hmd && !webhook {
+            let tts = surface_matches(&state, &candidate, OverlayActivitySurface::Tts, definition);
+            let vr_suppressed = vr
+                && suppresses_current_instance_gps(&state, &candidate, OverlayActivitySurface::Vr);
+            if vr_suppressed {
+                vr = false;
+            }
+            let hmd_suppressed = hmd
+                && suppresses_current_instance_gps(&state, &candidate, OverlayActivitySurface::Hmd);
+            if hmd_suppressed {
+                hmd = false;
+            }
+            if !wrist && !desktop && !vr && !hmd && !webhook && !tts {
+                if vr_suppressed || hmd_suppressed {
+                    remember_source_id(&mut state, source_id);
+                }
                 return None;
             }
             remember_source_id(&mut state, source_id.clone());
@@ -303,18 +362,21 @@ impl OverlayActivityRuntime {
                 None
             };
 
-            let delivery =
-                if (desktop || vr || hmd || webhook) && is_live_event(&state, &entry.created_at) {
-                    Some(OverlayActivityDelivery {
-                        entry: entry.clone(),
-                        desktop,
-                        vr,
-                        hmd,
-                        webhook,
-                    })
-                } else {
-                    None
-                };
+            let delivery_is_live = (desktop || vr || hmd || webhook || tts)
+                && is_live_event(&state, &entry.created_at);
+            let delivery = if delivery_is_live {
+                remember_joined_delivery(&mut state, &entry, vr, hmd);
+                Some(OverlayActivityDelivery {
+                    entry: entry.clone(),
+                    desktop,
+                    vr,
+                    hmd,
+                    webhook,
+                    tts,
+                })
+            } else {
+                None
+            };
 
             (entry, snapshot, delivery)
         };
@@ -385,6 +447,99 @@ fn surface_matches(
         .get(definition.key)
         .unwrap_or(&fallback);
     candidate_matches_rule(state, candidate, rule)
+}
+
+fn suppresses_current_instance_gps(
+    state: &OverlayActivityState,
+    candidate: &OverlayActivityCandidate,
+    surface: OverlayActivitySurface,
+) -> bool {
+    if candidate.activity_type != "GPS" {
+        return false;
+    }
+    if state.filters.rule_for(surface, "GPS").scope != OverlayActivityScope::SelectedFavorites
+        || !surface_filters_joined_friends(state, surface)
+    {
+        return false;
+    }
+    let location = string_field(&candidate.payload, "location");
+    let Some(key) = current_instance_friend_key(state, &candidate.actor_user_id, &location) else {
+        return false;
+    };
+    let Some(coverage) = state.joined_delivery_coverage.get(&key) else {
+        return false;
+    };
+    match surface {
+        OverlayActivitySurface::Vr => coverage.vr,
+        OverlayActivitySurface::Hmd => coverage.hmd,
+        _ => false,
+    }
+}
+
+fn clear_joined_delivery_coverage_for_departing_gps(
+    state: &mut OverlayActivityState,
+    candidate: &OverlayActivityCandidate,
+) {
+    if candidate.activity_type != "GPS" {
+        return;
+    }
+    let user_id = normalize_id(&candidate.actor_user_id);
+    let location = string_field(&candidate.payload, "location");
+    if user_id.is_empty() || location.is_empty() || location == state.current_instance_location {
+        return;
+    }
+    state
+        .joined_delivery_coverage
+        .retain(|(covered_user_id, _), _| covered_user_id != &user_id);
+}
+
+fn remember_joined_delivery(
+    state: &mut OverlayActivityState,
+    entry: &OverlayActivityEntry,
+    vr: bool,
+    hmd: bool,
+) {
+    if entry.activity_type != "OnPlayerJoined" {
+        return;
+    }
+    let Some(key) =
+        current_instance_friend_key(state, &entry.actor_user_id, &entry.content.location)
+    else {
+        return;
+    };
+    let vr = vr && surface_filters_joined_friends(state, OverlayActivitySurface::Vr);
+    let hmd = hmd && surface_filters_joined_friends(state, OverlayActivitySurface::Hmd);
+    if !vr && !hmd {
+        return;
+    }
+    let coverage = state.joined_delivery_coverage.entry(key).or_default();
+    coverage.vr |= vr;
+    coverage.hmd |= hmd;
+}
+
+fn current_instance_friend_key(
+    state: &OverlayActivityState,
+    actor_user_id: &str,
+    location: &str,
+) -> Option<(String, String)> {
+    let user_id = normalize_id(actor_user_id);
+    let location = location.trim().to_string();
+    if user_id.is_empty()
+        || location.is_empty()
+        || location != state.current_instance_location
+        || !state.friend_user_ids.contains(&user_id)
+        || !state.current_instance_user_ids.contains(&user_id)
+    {
+        return None;
+    }
+    Some((user_id, location))
+}
+
+fn surface_filters_joined_friends(
+    state: &OverlayActivityState,
+    surface: OverlayActivitySurface,
+) -> bool {
+    state.filters.rule_for(surface, "OnPlayerJoined").scope == OverlayActivityScope::Friends
 }
 
 fn remember_source_id(state: &mut OverlayActivityState, source_id: String) {

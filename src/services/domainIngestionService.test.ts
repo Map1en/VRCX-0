@@ -122,6 +122,46 @@ describe('domainIngestionService', () => {
         ).toEqual(['usr_friend']);
     });
 
+    it('normalizes player snapshot ids to the real user id and drops synthetic ids for anonymous players', () => {
+        recordGameRuntimePresence({
+            endpoint: 'api',
+            currentUserId: 'usr_self',
+            currentUserSnapshot: {
+                id: 'usr_self',
+                displayName: 'Self'
+            },
+            currentLocation: 'wrld_game:12345',
+            currentLocationStartedAt: '2026-01-01T00:00:00.000Z',
+            currentLocationPlayers: [
+                {
+                    id: 'id:usr_dup',
+                    userId: 'usr_dup',
+                    displayName: 'Dup',
+                    joinedAt: '2026-01-01T00:00:00.000Z'
+                },
+                {
+                    id: 'row:1',
+                    displayName: 'Anon'
+                }
+            ]
+        });
+
+        expect(ingestedEntryFor('usr_dup', 'playerSnapshot')).toMatchObject({
+            user: {
+                id: 'usr_dup',
+                userId: 'usr_dup',
+                displayName: 'Dup'
+            },
+            source: 'playerSnapshot'
+        });
+
+        const ingestedIds = tauriMock.commands.appIngestUserFacts.mock.calls
+            .flatMap((call) => (Array.isArray(call[0]) ? call[0] : []))
+            .map((entry: { user?: { id?: unknown } }) => entry?.user?.id);
+        expect(ingestedIds).not.toContain('row:1');
+        expect(ingestedIds).not.toContain('id:usr_dup');
+    });
+
     it('keeps traveling as a sentinel and does not record destination as current presence', () => {
         recordGameRuntimePresence({
             endpoint: 'api',

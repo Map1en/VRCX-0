@@ -331,3 +331,6 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
 
     metadata
 }
+
+#[cfg(test)]
+mod tests;

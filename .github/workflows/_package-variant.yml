@@ -1,0 +1,258 @@
+name: Package Variant
+
+on:
+    workflow_call:
+        inputs:
+            variant:
+                description: Package variant (preview or devkit).
+                required: true
+                type: string
+
+permissions:
+    contents: read
+
+jobs:
+    prepare:
+        name: Prepare Package Metadata
+        runs-on: ubuntu-24.04
+        outputs:
+            build_script: ${{ steps.metadata.outputs.build_script }}
+            display_name: ${{ steps.metadata.outputs.display_name }}
+            timestamp: ${{ steps.timestamp.outputs.timestamp }}
+        steps:
+            - id: metadata
+              name: Resolve package variant
+              env:
+                  PACKAGE_VARIANT: ${{ inputs.variant }}
+              run: |
+                  case "$PACKAGE_VARIANT" in
+                      preview)
+                          echo "build_script=tauri:build:devtools" >> "$GITHUB_OUTPUT"
+                          echo "display_name=Preview" >> "$GITHUB_OUTPUT"
+                          ;;
+                      devkit)
+                          echo "build_script=tauri:build:devkit" >> "$GITHUB_OUTPUT"
+                          echo "display_name=Dev Kit" >> "$GITHUB_OUTPUT"
+                          ;;
+                      *)
+                          echo "Unknown package variant: $PACKAGE_VARIANT" >&2
+                          exit 1
+                          ;;
+                  esac
+            - id: timestamp
+              name: Generate package timestamp
+              run: |
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const timestampParts = new Intl.DateTimeFormat('en-US', {
+                      timeZone: 'Asia/Tokyo',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hourCycle: 'h23'
+                  })
+                      .formatToParts(new Date())
+                      .reduce((parts, part) => {
+                          parts[part.type] = part.value;
+                          return parts;
+                      }, {});
+                  const timestamp = `${timestampParts.year}${timestampParts.month}${timestampParts.day}-${timestampParts.hour}${timestampParts.minute}`;
+
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, `timestamp=${timestamp}\n`);
+                  NODE
+
+    package:
+        name: ${{ needs.prepare.outputs.display_name }} ${{ matrix.platform }}
+        needs: prepare
+        runs-on: ${{ matrix.os }}
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: windows_x86_64
+                      os: windows-latest
+                      rust_target: ''
+                    - platform: linux_x86_64
+                      os: ubuntu-24.04
+                      rust_target: ''
+                    - platform: macos_aarch64
+                      os: macos-latest
+                      rust_target: aarch64-apple-darwin
+                    - platform: macos_x86_64
+                      os: macos-latest
+                      rust_target: x86_64-apple-darwin
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - uses: dtolnay/rust-toolchain@stable
+
+            - name: Install Rust target
+              if: matrix.rust_target != ''
+              run: rustup target add "${{ matrix.rust_target }}"
+
+            - uses: ./.github/actions/setup-node
+
+            - uses: ./.github/actions/setup-linux-tauri
+              if: runner.os == 'Linux'
+              with:
+                  mode: package
+
+            - id: version
+              name: Read package version
+              run: |
+                  version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+                  if [[ -z "$version" ]]; then
+                      echo "Missing package version." >&2
+                      exit 1
+                  fi
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
+
+            - name: Validate package version
+              if: inputs.variant == 'devkit'
+              run: |
+                  node scripts/prepare-release-version.ts \
+                      --version "${{ steps.version.outputs.version }}" \
+                      --dry-run
+
+            - id: config
+              name: Prepare package config
+              env:
+                  MATRIX_PLATFORM: ${{ matrix.platform }}
+                  PACKAGE_VARIANT: ${{ inputs.variant }}
+              run: |
+                  node <<'NODE'
+                  const fs = require('node:fs');
+
+                  const platform = process.env.MATRIX_PLATFORM;
+                  const runnerOs = process.env.RUNNER_OS;
+                  const variant = process.env.PACKAGE_VARIANT;
+                  const tauriConfigPath = 'src-tauri/tauri.conf.json';
+                  const linuxConfigPath = 'src-tauri/tauri.linux.conf.json';
+                  const outputConfigPath = `src-tauri/tauri.${variant}.${platform}.conf.json`;
+
+                  const tauriConfig = JSON.parse(fs.readFileSync(tauriConfigPath, 'utf8'));
+                  let config = structuredClone(tauriConfig);
+
+                  if (runnerOs === 'Linux') {
+                      const linuxConfig = JSON.parse(fs.readFileSync(linuxConfigPath, 'utf8'));
+                      config = {
+                          bundle: {
+                              ...(linuxConfig.bundle ?? {}),
+                              targets: ['appimage'],
+                              createUpdaterArtifacts: false
+                          }
+                      };
+                  } else {
+                      config.bundle ??= {};
+                      config.bundle.createUpdaterArtifacts = false;
+                      if (runnerOs === 'Windows') {
+                          config.bundle.windows ??= {};
+                          delete config.bundle.windows.certificateThumbprint;
+                          delete config.bundle.windows.signCommand;
+                      }
+                      if (runnerOs === 'macOS') {
+                          config.bundle.targets = ['dmg'];
+                      }
+                  }
+
+                  fs.writeFileSync(outputConfigPath, `${JSON.stringify(config, null, 4)}\n`);
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, `config=${outputConfigPath}\n`);
+                  NODE
+
+            - name: Build Windows package
+              if: runner.os == 'Windows'
+              env:
+                  BUILD_SCRIPT: ${{ needs.prepare.outputs.build_script }}
+                  PACKAGE_VARIANT: ${{ inputs.variant }}
+                  VRCX_0_BUILD_LABEL: ${{ inputs.variant }}
+                  VRCX_0_BUILD_BADGE: ${{ needs.prepare.outputs.display_name }} ${{ needs.prepare.outputs.timestamp }}
+              run: |
+                  args=(
+                      --config "${{ steps.config.outputs.config }}"
+                      --no-sign
+                      --no-bundle
+                  )
+                  if [[ "$PACKAGE_VARIANT" == "preview" ]]; then
+                      args=(--debug "${args[@]}")
+                  fi
+                  npm run "$BUILD_SCRIPT" -- "${args[@]}"
+
+            - name: Build Linux AppImage
+              if: runner.os == 'Linux'
+              env:
+                  BUILD_SCRIPT: ${{ needs.prepare.outputs.build_script }}
+                  VRCX_0_BUILD_LABEL: ${{ inputs.variant }}
+                  VRCX_0_BUILD_BADGE: ${{ needs.prepare.outputs.display_name }} ${{ needs.prepare.outputs.timestamp }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: safari17
+              run: |
+                  npm run "$BUILD_SCRIPT" -- \
+                      --config "${{ steps.config.outputs.config }}" \
+                      --bundles appimage
+
+            - name: Build macOS DMG
+              if: runner.os == 'macOS'
+              env:
+                  BUILD_SCRIPT: ${{ needs.prepare.outputs.build_script }}
+                  VRCX_0_BUILD_LABEL: ${{ inputs.variant }}
+                  VRCX_0_BUILD_BADGE: ${{ needs.prepare.outputs.display_name }} ${{ needs.prepare.outputs.timestamp }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: safari18.2
+              run: |
+                  npm run "$BUILD_SCRIPT" -- \
+                      --target "${{ matrix.rust_target }}" \
+                      --config "${{ steps.config.outputs.config }}" \
+                      --bundles dmg
+
+            - id: collect
+              name: Collect package artifact
+              env:
+                  PACKAGE_VARIANT: ${{ inputs.variant }}
+              run: |
+                  mkdir -p package-assets
+                  version="${{ steps.version.outputs.version }}"
+                  timestamp="${{ needs.prepare.outputs.timestamp }}"
+
+                  if [[ "$PACKAGE_VARIANT" == "preview" ]]; then
+                      stem="VRCX-0_${version}_preview_${timestamp}"
+                      artifact_name="preview-${{ matrix.platform }}-${version}-${timestamp}"
+                  else
+                      stem="VRCX-0_${version}_devkit"
+                      artifact_name="devkit-${{ matrix.platform }}-${version}"
+                  fi
+
+                  case "${{ matrix.platform }}" in
+                      windows_x86_64)
+                          if [[ "$PACKAGE_VARIANT" == "preview" ]]; then
+                              source="target/debug/vrcx-0.exe"
+                          else
+                              source="target/release/vrcx-0.exe"
+                          fi
+                          cp "$source" "package-assets/${stem}_windows_x86_64.exe"
+                          ;;
+                      linux_x86_64)
+                          cp target/release/bundle/appimage/*.AppImage "package-assets/${stem}_linux_x86_64.AppImage"
+                          ;;
+                      macos_aarch64|macos_x86_64)
+                          cp "target/${{ matrix.rust_target }}/release/bundle/dmg/"*.dmg "package-assets/${stem}_${{ matrix.platform }}.dmg"
+                          ;;
+                      *)
+                          echo "Unknown platform: ${{ matrix.platform }}" >&2
+                          exit 1
+                          ;;
+                  esac
+
+                  echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+                  ls -la package-assets
+
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: ${{ steps.collect.outputs.artifact_name }}
+                  path: package-assets/*
+                  if-no-files-found: error

@@ -11,7 +11,7 @@ use vrcx_0_vrchat_client::worlds::world_get_input;
 use crate::{Result, WebClient};
 
 use super::presence_facts::BackgroundPresenceFacts;
-use super::shared::{first_non_empty, int_field, non_empty, parse_response_json, string_field};
+use super::shared::{int_field, non_empty, parse_response_json, string_field};
 
 const DEFAULT_APP_ID: &str = "1510639562177642557";
 const GAME_STOP_DISCORD_CLOSE_ATTEMPTS: u8 = 5;
@@ -23,6 +23,7 @@ pub struct BackgroundDiscordPresenceState {
     disabled_cleanup_sent: bool,
     close_attempts_remaining: u8,
     last_location_details: DiscordLocationDetails,
+    last_payload: Option<BackgroundDiscordActivityPayload>,
 }
 
 impl BackgroundDiscordPresenceState {
@@ -30,20 +31,71 @@ impl BackgroundDiscordPresenceState {
         self.is_active = active;
         if !active {
             self.last_location_details = DiscordLocationDetails::default();
+            self.last_payload = None;
         }
     }
 
-    pub fn apply_set_assets_result(&mut self, active: bool) {
+    pub fn apply_set_assets_result(
+        &mut self,
+        payload: &BackgroundDiscordActivityPayload,
+        active: bool,
+    ) {
         self.is_active = active;
+        self.last_payload = active.then(|| payload.clone());
     }
 }
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BackgroundDiscordActivityPayload {
     pub app_id: String,
     pub activity: Value,
     pub detail: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DiscordPresenceLabels {
+    pub access_public: String,
+    pub access_invite_plus: String,
+    pub access_invite: String,
+    pub access_friends: String,
+    pub access_friends_plus: String,
+    pub access_group: String,
+    pub group_access_public: String,
+    pub group_access_plus: String,
+    pub group_access_members: String,
+    pub status_active: String,
+    pub status_join_me: String,
+    pub status_ask_me: String,
+    pub status_busy: String,
+    pub status_offline: String,
+    pub platform_desktop: String,
+    pub platform_vr: String,
+    pub private_world: String,
+}
+
+impl Default for DiscordPresenceLabels {
+    fn default() -> Self {
+        Self {
+            access_public: "Public".into(),
+            access_invite_plus: "Invite+".into(),
+            access_invite: "Invite".into(),
+            access_friends: "Friends".into(),
+            access_friends_plus: "Friends+".into(),
+            access_group: "Group".into(),
+            group_access_public: "Public".into(),
+            group_access_plus: "Plus".into(),
+            group_access_members: "Members".into(),
+            status_active: "Active".into(),
+            status_join_me: "Join Me".into(),
+            status_ask_me: "Ask Me".into(),
+            status_busy: "Do Not Disturb".into(),
+            status_offline: "Offline".into(),
+            platform_desktop: "Desktop".into(),
+            platform_vr: "VR".into(),
+            private_world: "Private World".into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -96,6 +148,7 @@ pub async fn build_background_discord_presence_command(
     web: &WebClient,
     db: &DatabaseService,
     facts: &BackgroundPresenceFacts,
+    labels: &DiscordPresenceLabels,
     state: &mut BackgroundDiscordPresenceState,
     force: bool,
 ) -> Result<BackgroundDiscordPresenceCommand> {
@@ -160,9 +213,8 @@ pub async fn build_background_discord_presence_command(
         };
     let parsed_discord_location = parse_location(discord_location);
     if !parsed_discord_location.is_real_instance {
-        return Ok(BackgroundDiscordPresenceCommand::SetAssets {
-            payload: build_running_fallback_activity(&discord_config, facts),
-        });
+        let payload = build_running_fallback_activity(&discord_config, facts, labels);
+        return Ok(set_assets_or_noop(state, payload, force));
     }
 
     let location_details =
@@ -175,9 +227,22 @@ pub async fn build_background_discord_presence_command(
         });
     };
 
-    Ok(BackgroundDiscordPresenceCommand::SetAssets {
-        payload: build_discord_activity(&discord_config, facts, &location_details, &parsed),
-    })
+    let payload =
+        build_discord_activity(&discord_config, facts, labels, &location_details, &parsed);
+    Ok(set_assets_or_noop(state, payload, force))
+}
+
+fn set_assets_or_noop(
+    state: &BackgroundDiscordPresenceState,
+    payload: BackgroundDiscordActivityPayload,
+    force: bool,
+) -> BackgroundDiscordPresenceCommand {
+    if !force && state.is_active && state.last_payload.as_ref() == Some(&payload) {
+        return BackgroundDiscordPresenceCommand::Noop {
+            detail: "Discord activity is unchanged.".into(),
+        };
+    }
+    BackgroundDiscordPresenceCommand::SetAssets { payload }
 }
 
 fn load_discord_config(config: &ConfigRepository) -> Result<DiscordConfig> {
@@ -197,10 +262,12 @@ fn load_discord_config(config: &ConfigRepository) -> Result<DiscordConfig> {
 fn build_running_fallback_activity(
     config: &DiscordConfig,
     facts: &BackgroundPresenceFacts,
+    labels: &DiscordPresenceLabels,
 ) -> BackgroundDiscordActivityPayload {
     let status_info = status_info(
         string_field(&facts.current_user, "status").as_deref(),
         config.discord_hide_invite,
+        labels,
     );
     let platform = if config.discord_show_platform {
         platform_label(
@@ -208,7 +275,8 @@ fn build_running_fallback_activity(
                 .as_deref()
                 .unwrap_or_default(),
             facts.is_game_running,
-            !facts.is_steamvr_running,
+            facts.is_game_no_vr,
+            labels,
         )
     } else {
         String::new()
@@ -333,6 +401,7 @@ async fn load_discord_location_details(
 fn build_discord_activity(
     config: &DiscordConfig,
     facts: &BackgroundPresenceFacts,
+    labels: &DiscordPresenceLabels,
     details: &DiscordLocationDetails,
     parsed: &ParsedLocation,
 ) -> BackgroundDiscordActivityPayload {
@@ -342,15 +411,17 @@ fn build_discord_activity(
                 .as_deref()
                 .unwrap_or_default(),
             facts.is_game_running,
-            !facts.is_steamvr_running,
+            facts.is_game_no_vr,
+            labels,
         )
     } else {
         String::new()
     };
-    let access_name = build_access_name(parsed, &details.group_name, &platform);
+    let access_name = build_access_name(parsed, &details.group_name, &platform, labels);
     let status_info = status_info(
         string_field(&facts.current_user, "status").as_deref(),
         config.discord_hide_invite,
+        labels,
     );
     let mut hide_private = config.discord_hide_invite
         && (parsed.access_type == "invite"
@@ -369,11 +440,7 @@ fn build_discord_activity(
         .as_str(),
     );
     let mut state_text = access_name;
-    let mut start_time = first_non_empty([
-        facts.current_location_started_at.as_str(),
-        facts.last_game_started_at.as_deref().unwrap_or(""),
-    ])
-    .to_string();
+    let mut start_time = clamp_game_session_start_time(facts);
     let mut end_time = String::new();
     let mut activity_type = 0;
     let mut status_display_type = if config.discord_world_name_as_discord_status {
@@ -442,7 +509,7 @@ fn build_discord_activity(
         button_text.clear();
         button_url.clear();
         details_url.clear();
-        details_text = "Private World".into();
+        details_text = labels.private_world.clone();
         state_text.clear();
         start_time.clear();
         end_time.clear();
@@ -452,7 +519,7 @@ fn build_discord_activity(
         status_display_type = 0;
     }
 
-    if details_text.chars().count() < 2 {
+    while details_text.chars().count() < 2 {
         details_text.push('\u{FFA0}');
     }
 
@@ -494,73 +561,89 @@ fn current_user_platform(current_user: &Value) -> Option<String> {
         .or_else(|| string_field(current_user, "last_platform"))
 }
 
-fn platform_label(platform: &str, is_game_running: bool, is_game_no_vr: bool) -> String {
+fn platform_label(
+    platform: &str,
+    is_game_running: bool,
+    is_game_no_vr: bool,
+    labels: &DiscordPresenceLabels,
+) -> String {
     if is_game_running {
         if is_game_no_vr {
-            "(Desktop)".into()
+            format!(" ({})", labels.platform_desktop)
         } else {
-            "(VR)".into()
+            format!(" ({})", labels.platform_vr)
         }
     } else {
         match platform {
-            "standalonewindows" | "windows" => "(PC)".into(),
-            "android" => "(Android)".into(),
-            "ios" => "(iOS)".into(),
-            _ => String::new(),
+            "web" => String::new(),
+            "standalonewindows" => " (PC)".into(),
+            "android" => " (Android)".into(),
+            "ios" => " (iOS)".into(),
+            "" => String::new(),
+            value => format!(" ({value})"),
         }
     }
 }
 
 #[derive(Clone, Copy)]
-struct StatusInfo {
-    status_name: &'static str,
+struct StatusInfo<'a> {
+    status_name: &'a str,
     status_image: &'static str,
     hide_private: bool,
 }
 
-fn status_info(status: Option<&str>, hide_invite: bool) -> StatusInfo {
-    match status.unwrap_or("active") {
+fn status_info<'a>(
+    status: Option<&str>,
+    hide_invite: bool,
+    labels: &'a DiscordPresenceLabels,
+) -> StatusInfo<'a> {
+    match status.unwrap_or_default() {
+        "active" => StatusInfo {
+            status_name: &labels.status_active,
+            status_image: "active",
+            hide_private: false,
+        },
         "join me" => StatusInfo {
-            status_name: "Join Me",
+            status_name: &labels.status_join_me,
             status_image: "joinme",
             hide_private: false,
         },
         "ask me" => StatusInfo {
-            status_name: "Ask Me",
+            status_name: &labels.status_ask_me,
             status_image: "askme",
             hide_private: hide_invite,
         },
         "busy" => StatusInfo {
-            status_name: "Busy",
+            status_name: &labels.status_busy,
             status_image: "busy",
             hide_private: true,
         },
-        "offline" => StatusInfo {
-            status_name: "Offline",
+        _ => StatusInfo {
+            status_name: &labels.status_offline,
             status_image: "offline",
             hide_private: true,
-        },
-        _ => StatusInfo {
-            status_name: "Active",
-            status_image: "active",
-            hide_private: false,
         },
     }
 }
 
-fn build_access_name(parsed: &ParsedLocation, group_name: &str, platform: &str) -> String {
+fn build_access_name(
+    parsed: &ParsedLocation,
+    group_name: &str,
+    platform: &str,
+    labels: &DiscordPresenceLabels,
+) -> String {
     let suffix = format!("#{}{}", parsed.instance_name, platform);
     match parsed.access_type.as_str() {
-        "public" => format!("Public {suffix}"),
-        "invite+" => format!("Invite+ {suffix}"),
-        "invite" => format!("Invite {suffix}"),
-        "friends" => format!("Friends {suffix}"),
-        "friends+" => format!("Friends+ {suffix}"),
+        "public" => format!("{} {suffix}", labels.access_public),
+        "invite+" => format!("{} {suffix}", labels.access_invite_plus),
+        "invite" => format!("{} {suffix}", labels.access_invite),
+        "friends" => format!("{} {suffix}", labels.access_friends),
+        "friends+" => format!("{} {suffix}", labels.access_friends_plus),
         "group" => {
             let group_access = match parsed.group_access_type.as_deref() {
-                Some("public") => "Public",
-                Some("plus") => "Plus",
-                Some("members") => "Members",
+                Some("public") => labels.group_access_public.as_str(),
+                Some("plus") => labels.group_access_plus.as_str(),
+                Some("members") => labels.group_access_members.as_str(),
                 _ => "",
             };
             let group_suffix = if !group_name.is_empty() && !group_access.is_empty() {
@@ -572,9 +655,23 @@ fn build_access_name(parsed: &ParsedLocation, group_name: &str, platform: &str) 
             } else {
                 String::new()
             };
-            format!("Group{group_suffix} {suffix}")
+            format!("{}{group_suffix} {suffix}", labels.access_group)
         }
         _ => String::new(),
+    }
+}
+
+fn clamp_game_session_start_time(facts: &BackgroundPresenceFacts) -> String {
+    let location_start = facts.current_location_started_at.trim();
+    let game_start = facts.last_game_started_at.as_deref().unwrap_or("").trim();
+    let Some(game_start_seconds) = timestamp_seconds(game_start).filter(|value| *value > 0) else {
+        return location_start.to_string();
+    };
+    let location_start_seconds = timestamp_seconds(location_start).unwrap_or(0);
+    if location_start_seconds == 0 || location_start_seconds < game_start_seconds {
+        game_start.to_string()
+    } else {
+        location_start.to_string()
     }
 }
 
@@ -787,7 +884,9 @@ mod tests {
         };
         let facts = BackgroundPresenceFacts {
             is_game_running: true,
+            is_steamvr_running: true,
             current_location_started_at: "2026-05-19T00:00:00Z".into(),
+            current_user: json!({ "status": "active" }),
             now_playing: json!({
                 "url": "https://video.example/watch",
                 "name": "Example Movie",
@@ -808,7 +907,8 @@ mod tests {
             ..Default::default()
         };
 
-        let payload = build_discord_activity(&config, &facts, &details, &parsed);
+        let labels = DiscordPresenceLabels::default();
+        let payload = build_discord_activity(&config, &facts, &labels, &details, &parsed);
         let activity = payload.activity.as_object().unwrap();
 
         assert_eq!(payload.app_id, "1095440531821170820");
@@ -836,5 +936,162 @@ mod tests {
                 .and_then(Value::as_i64),
             timestamp_seconds("2026-05-19T01:02:00Z")
         );
+    }
+
+    #[test]
+    fn discord_payload_keeps_platform_spacing_labels_and_session_floor() {
+        let config = DiscordConfig {
+            discord_instance: true,
+            discord_show_platform: true,
+            ..Default::default()
+        };
+        let facts = BackgroundPresenceFacts {
+            is_game_running: true,
+            is_steamvr_running: true,
+            last_game_started_at: Some("2026-05-19T02:00:00Z".into()),
+            current_location_started_at: "2026-05-19T01:00:00Z".into(),
+            current_user: json!({ "status": "active" }),
+            player_count: 2,
+            ..Default::default()
+        };
+        let parsed = parse_location("wrld_test:12345");
+        let details = DiscordLocationDetails {
+            world_name: "Test World".into(),
+            world_capacity: 16,
+            parsed: Some(parsed.clone()),
+            ..Default::default()
+        };
+        let labels = DiscordPresenceLabels {
+            access_public: "公開".into(),
+            platform_vr: "VR".into(),
+            status_active: "オンライン".into(),
+            ..Default::default()
+        };
+
+        let payload = build_discord_activity(&config, &facts, &labels, &details, &parsed);
+        let activity = payload.activity.as_object().unwrap();
+
+        assert_eq!(activity.get("state"), Some(&json!("公開 #12345 (VR)")));
+        assert_eq!(
+            activity
+                .get("assets")
+                .and_then(|value| value.get("small_text")),
+            Some(&json!("オンライン"))
+        );
+        assert_eq!(
+            activity
+                .get("timestamps")
+                .and_then(|value| value.get("start"))
+                .and_then(Value::as_i64),
+            timestamp_seconds("2026-05-19T02:00:00Z")
+        );
+    }
+
+    #[test]
+    fn discord_platform_uses_vrchat_launch_mode_instead_of_steamvr_process() {
+        let config = DiscordConfig {
+            discord_instance: true,
+            discord_show_platform: true,
+            ..Default::default()
+        };
+        let facts = BackgroundPresenceFacts {
+            is_game_running: true,
+            is_steamvr_running: true,
+            is_game_no_vr: true,
+            current_user: json!({ "status": "active" }),
+            ..Default::default()
+        };
+        let parsed = parse_location("wrld_test:12345");
+        let details = DiscordLocationDetails {
+            world_name: "Test World".into(),
+            parsed: Some(parsed.clone()),
+            ..Default::default()
+        };
+
+        let payload = build_discord_activity(
+            &config,
+            &facts,
+            &DiscordPresenceLabels::default(),
+            &details,
+            &parsed,
+        );
+
+        assert_eq!(
+            payload.activity.get("state"),
+            Some(&json!("Public #12345 (Desktop)"))
+        );
+    }
+
+    #[test]
+    fn discord_group_members_access_uses_localized_label() {
+        let parsed = parse_location("wrld_test:12345~group(grp_test)~groupAccessType(members)");
+        let labels = DiscordPresenceLabels {
+            access_group: "群组".into(),
+            group_access_members: "仅限成员".into(),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            build_access_name(&parsed, "测试群组", "", &labels),
+            "群组 仅限成员(测试群组) #12345"
+        );
+    }
+
+    #[test]
+    fn discord_unknown_status_preserves_private_fallback() {
+        let config = DiscordConfig {
+            discord_hide_invite: true,
+            discord_instance: true,
+            ..Default::default()
+        };
+        let facts = BackgroundPresenceFacts {
+            is_game_running: true,
+            current_user: json!({ "status": "unknown" }),
+            ..Default::default()
+        };
+        let parsed = parse_location("wrld_test:12345");
+        let details = DiscordLocationDetails {
+            world_name: "Test World".into(),
+            parsed: Some(parsed.clone()),
+            ..Default::default()
+        };
+        let labels = DiscordPresenceLabels {
+            private_world: "非公開ワールド".into(),
+            status_offline: "オフライン".into(),
+            ..Default::default()
+        };
+
+        let payload = build_discord_activity(&config, &facts, &labels, &details, &parsed);
+
+        assert_eq!(
+            payload.activity.get("details"),
+            Some(&json!("非公開ワールド"))
+        );
+        assert_eq!(
+            payload.activity.pointer("/assets/small_text"),
+            Some(&json!("オフライン"))
+        );
+        assert!(payload.activity.get("party").is_none());
+        assert!(payload.activity.get("buttons").is_none());
+    }
+
+    #[test]
+    fn discord_unchanged_payload_is_not_published_twice() {
+        let payload = BackgroundDiscordActivityPayload {
+            app_id: DEFAULT_APP_ID.into(),
+            activity: json!({ "details": "VRChat" }),
+            detail: "VRChat".into(),
+        };
+        let mut state = BackgroundDiscordPresenceState::default();
+        state.apply_set_assets_result(&payload, true);
+
+        assert!(matches!(
+            set_assets_or_noop(&state, payload.clone(), false),
+            BackgroundDiscordPresenceCommand::Noop { .. }
+        ));
+        assert!(matches!(
+            set_assets_or_noop(&state, payload, true),
+            BackgroundDiscordPresenceCommand::SetAssets { .. }
+        ));
     }
 }

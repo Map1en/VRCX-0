@@ -194,7 +194,7 @@ describe('playerListRows', () => {
     });
 
     it('builds dialog seed data from the enriched profile on the player row', () => {
-        const userRef: any = {
+        const userRef = {
             id: 'usr_player',
             displayName: 'Display Name',
             bio: 'Full profile bio',

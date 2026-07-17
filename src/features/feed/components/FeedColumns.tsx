@@ -1,10 +1,10 @@
 import type { Column, Row } from '@tanstack/react-table';
-import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
-import { Badge } from '@/ui/shadcn/badge';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
+import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -19,9 +19,10 @@ import {
     FeedDetailCell,
     FeedUserLink,
     SortButton,
-    formatTimestamp,
-    formatTimestampLong
+    formatTimestampLong,
+    formatTimestampParts
 } from './FeedTableParts';
+import { FeedTypeIndicator } from './FeedTypeIndicator';
 
 type UseFeedColumnsOptions = {
     actions: FeedFriendActions;
@@ -41,24 +42,33 @@ function ExpanderCell({ row }: { row: Row<FeedRow> }) {
             type="button"
             variant="ghost"
             size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => row.toggleExpanded()}
         >
-            {row.getIsExpanded() ? (
-                <ChevronDownIcon data-icon="icon" />
-            ) : (
-                <ChevronRightIcon data-icon="icon" />
-            )}
+            <ChevronRightIcon
+                data-icon="icon"
+                className={cn(
+                    'transition-transform duration-150 ease-out',
+                    row.getIsExpanded() && 'rotate-90'
+                )}
+            />
         </Button>
     );
 }
 
 function DateCell({ row }: { row: Row<FeedRow> }) {
+    const { date, time } = formatTimestampParts(row.original.created_at);
     return (
         <Tooltip>
             <TooltipTrigger
                 render={
-                    <span className="text-muted-foreground text-sm">
-                        {formatTimestamp(row.original.created_at)}
+                    <span className="text-sm font-normal tabular-nums">
+                        <span className="text-muted-foreground/80">{date}</span>
+                        {time ? (
+                            <span className="text-foreground/75 ml-1">
+                                {time}
+                            </span>
+                        ) : null}
                     </span>
                 }
             />
@@ -117,7 +127,12 @@ export function useFeedColumns({
                     const typeLabel = row.original.type
                         ? t(`view.feed.filters.${String(row.original.type)}`)
                         : '';
-                    return <Badge variant="outline">{typeLabel}</Badge>;
+                    return (
+                        <FeedTypeIndicator
+                            label={typeLabel}
+                            type={row.original.type}
+                        />
+                    );
                 }
             },
             {
@@ -159,15 +174,21 @@ export function useFeedColumns({
                         .join(' '),
                 enableSorting: false,
                 meta: { label: t('table.feed.detail') },
-                header: () => t('table.feed.detail'),
+                header: () => (
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                        {t('table.feed.detail')}
+                    </span>
+                ),
                 minSize: 100,
                 cell: ({ row }: { row: Row<FeedRow> }) => (
-                    <FeedDetailCell
-                        loadingHistoryKey={loadingPreviousInstancesKey}
-                        onNewInstance={actions.openFeedNewInstance}
-                        onOpenPreviousInstances={onOpenPreviousInstances}
-                        row={row.original}
-                    />
+                    <div className="text-foreground/80 font-normal">
+                        <FeedDetailCell
+                            loadingHistoryKey={loadingPreviousInstancesKey}
+                            onNewInstance={actions.openFeedNewInstance}
+                            onOpenPreviousInstances={onOpenPreviousInstances}
+                            row={row.original}
+                        />
+                    </div>
                 )
             }
         ],

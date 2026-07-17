@@ -1,6 +1,10 @@
 import { DownloadIcon, RefreshCwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import type {
+    EntityRecord,
+    GroupProfileRecord
+} from '@/domain/entities/profileEntities';
 import { formatDateFilter } from '@/lib/dateTime';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
@@ -33,8 +37,22 @@ import {
     moderationRowSearchText,
     moderationRowStatus,
     moderationRowSubtitle,
-    moderationRowUserId
+    moderationRowUserId,
+    type GroupModerationAction,
+    type GroupModerationTab
 } from './groupModerationRows';
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): EntityRecord | null {
+    return isRecord(value) ? value : null;
+}
+
+function text(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+}
 
 export function GroupModerationTabPanel({
     actionKey,
@@ -52,9 +70,25 @@ export function GroupModerationTabPanel({
     rows,
     search,
     tab
-}: any) {
+}: {
+    actionKey: string;
+    activeTab: string;
+    error: string;
+    group: GroupProfileRecord;
+    loading: boolean;
+    onPageIndexChange: (value: number) => void;
+    onPageSizeChange: (value: number) => void;
+    onReload: () => void;
+    onRunAction: (action: GroupModerationAction, row: EntityRecord) => void;
+    onSearchChange: (value: string) => void;
+    pageIndex: number;
+    pageSize: number;
+    rows: EntityRecord[];
+    search: string;
+    tab: GroupModerationTab;
+}) {
     const { t } = useTranslation();
-    const filteredRows = rows.filter((row: any) => {
+    const filteredRows = rows.filter((row) => {
         const query = search.trim().toLowerCase();
         return !query || moderationRowSearchText(row, group).includes(query);
     });
@@ -123,7 +157,7 @@ export function GroupModerationTabPanel({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                {[10, 25, 50, 100].map((size: any) => (
+                                {[10, 25, 50, 100].map((size) => (
                                     <SelectItem key={size} value={String(size)}>
                                         {size}
                                     </SelectItem>
@@ -177,12 +211,13 @@ export function GroupModerationTabPanel({
                         </TableHeader>
                         <TableBody>
                             {visibleRows.length ? (
-                                visibleRows.map((row: any, index: any) => {
+                                visibleRows.map((row, index) => {
+                                    const user = record(row.user);
                                     const userId = moderationRowUserId(row);
                                     const label = moderationRowLabel(row);
                                     const date = moderationRowDate(row);
                                     const actions = getGroupModerationActions(
-                                        activeTab,
+                                        tab.value,
                                         row,
                                         t
                                     );
@@ -200,9 +235,7 @@ export function GroupModerationTabPanel({
                                                             openUserDialog({
                                                                 userId,
                                                                 title: label,
-                                                                seedData:
-                                                                    row?.user ||
-                                                                    null
+                                                                seedData: user
                                                             })
                                                         }
                                                     >
@@ -214,7 +247,9 @@ export function GroupModerationTabPanel({
                                                     </span>
                                                 )}
                                                 <div className="text-muted-foreground truncate font-mono text-xs">
-                                                    {userId || row?.id || '—'}
+                                                    {userId ||
+                                                        text(row.id) ||
+                                                        '—'}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground align-top text-xs whitespace-normal">
@@ -222,9 +257,9 @@ export function GroupModerationTabPanel({
                                                     row,
                                                     group
                                                 ) ||
-                                                    row?.description ||
-                                                    row?.note ||
-                                                    row?.managerNotes ||
+                                                    text(row.description) ||
+                                                    text(row.note) ||
+                                                    text(row.managerNotes) ||
                                                     moderationRowSubtitle(
                                                         row
                                                     ) ||
@@ -243,39 +278,35 @@ export function GroupModerationTabPanel({
                                             </TableCell>
                                             <TableCell className="align-top">
                                                 <div className="flex justify-end gap-2">
-                                                    {actions.map(
-                                                        (action: any) => {
-                                                            const nextActionKey = `${activeTab}:${action.key}:${userId}`;
-                                                            return (
-                                                                <Button
-                                                                    key={
-                                                                        action.key
-                                                                    }
-                                                                    type="button"
-                                                                    size="sm"
-                                                                    variant={
-                                                                        action.destructive
-                                                                            ? 'outline'
-                                                                            : 'secondary'
-                                                                    }
-                                                                    disabled={Boolean(
-                                                                        actionKey
-                                                                    )}
-                                                                    onClick={() => {
-                                                                        onRunAction(
-                                                                            action,
-                                                                            row
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    {actionKey ===
-                                                                    nextActionKey
-                                                                        ? '...'
-                                                                        : action.label}
-                                                                </Button>
-                                                            );
-                                                        }
-                                                    )}
+                                                    {actions.map((action) => {
+                                                        const nextActionKey = `${activeTab}:${action.key}:${userId}`;
+                                                        return (
+                                                            <Button
+                                                                key={action.key}
+                                                                type="button"
+                                                                size="sm"
+                                                                variant={
+                                                                    action.destructive
+                                                                        ? 'outline'
+                                                                        : 'secondary'
+                                                                }
+                                                                disabled={Boolean(
+                                                                    actionKey
+                                                                )}
+                                                                onClick={() => {
+                                                                    onRunAction(
+                                                                        action,
+                                                                        row
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {actionKey ===
+                                                                nextActionKey
+                                                                    ? '...'
+                                                                    : action.label}
+                                                            </Button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

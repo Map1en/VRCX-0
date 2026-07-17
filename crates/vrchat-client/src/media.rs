@@ -412,3 +412,6 @@ pub fn world_image_set_input(
         "VrchatMediaWorldImageSet requires worldId.",
     )
 }
+
+#[cfg(test)]
+mod tests;

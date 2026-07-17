@@ -9,5 +9,4 @@ pub struct WristSurfaceModel {
     pub feed_rows: Vec<FeedLine>,
     pub footer: OverlayFooter,
     pub accent: Color,
-    pub captured_at_ms: i64,
 }

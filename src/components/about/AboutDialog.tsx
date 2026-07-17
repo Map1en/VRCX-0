@@ -1,5 +1,5 @@
 import { CoffeeIcon, HeartIcon, type LucideIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -86,6 +86,11 @@ function ContributorNode({
     index: number;
 }) {
     const initials = contributor.login.slice(0, 2).toUpperCase();
+    const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
+        null
+    );
+    const imageReady = resolvedAvatarUrl === contributor.avatarUrl;
+    const entranceDelayMs = Math.min(index * 30, 180);
 
     return (
         <Tooltip>
@@ -93,20 +98,51 @@ function ContributorNode({
                 render={
                     <button
                         type="button"
+                        aria-label={contributor.login}
                         className={cn(
-                            'animate-in fade-in slide-in-from-bottom-2 fill-mode-both rounded-full transition-transform duration-200 hover:z-10 hover:scale-110 motion-reduce:animate-none',
-                            index % 2 === 1 && 'mt-2'
+                            'relative size-11 rounded-full transition-transform duration-150 ease-out hover:z-10 hover:scale-[1.07] active:scale-[0.98] motion-reduce:transition-none',
+                            index % 2 === 1 && 'mt-1.5'
                         )}
-                        style={{ animationDelay: `${index * 45}ms` }}
                         onClick={() => {
                             openExternalLink(contributor.profileUrl);
                         }}
                     >
-                        <Avatar className="size-11">
+                        <Skeleton
+                            aria-hidden="true"
+                            className={cn(
+                                'absolute inset-0 rounded-full transition-opacity duration-150',
+                                imageReady && 'animate-none opacity-0'
+                            )}
+                        />
+                        <Avatar
+                            className={cn(
+                                'size-11',
+                                imageReady
+                                    ? 'animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-200 ease-out motion-reduce:animate-none'
+                                    : 'invisible'
+                            )}
+                            style={
+                                imageReady
+                                    ? {
+                                          animationDelay: `${entranceDelayMs}ms`
+                                      }
+                                    : undefined
+                            }
+                        >
                             <AvatarImage
                                 src={contributor.avatarUrl}
                                 alt={contributor.login}
-                                loading="lazy"
+                                loading="eager"
+                                onLoadingStatusChange={(status) => {
+                                    if (
+                                        status === 'loaded' ||
+                                        status === 'error'
+                                    ) {
+                                        setResolvedAvatarUrl(
+                                            contributor.avatarUrl
+                                        );
+                                    }
+                                }}
                             />
                             <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
@@ -131,7 +167,7 @@ function AboutContributorsWall({ open }: { open: boolean }) {
                           key={index}
                           className={cn(
                               'size-11 rounded-full',
-                              index % 2 === 1 && 'mt-2'
+                              index % 2 === 1 && 'mt-1.5'
                           )}
                       />
                   ))
@@ -191,8 +227,8 @@ export function AboutVrcxDialog({
                     <DialogDescription className="mt-3 text-[13px]">
                         {t('view.about.tagline')}
                     </DialogDescription>
-                    <div className="text-muted-foreground mt-3 inline-flex h-6 items-center justify-center gap-2 text-xs">
-                        <span className="text-foreground/80 font-mono tracking-normal tabular-nums">
+                    <div className="text-muted-foreground mt-3 inline-flex h-6 items-center justify-center gap-2 font-sans text-xs tracking-[0.01em]">
+                        <span className="text-foreground/80 font-medium tabular-nums">
                             {displayVersion}
                         </span>
                         {platformLabel ? (
@@ -207,28 +243,28 @@ export function AboutVrcxDialog({
                     </div>
                 </div>
 
-                <div className="my-5 text-center">
+                <section className="mt-5 flex flex-col items-center gap-3.5 text-center">
                     <span className="text-muted-foreground/75 text-[10px] font-medium tracking-[0.18em] uppercase">
                         {t('view.about.contributors')}
                     </span>
-                </div>
-
-                <AboutContributorsWall open={open} />
-
-                <div className="text-muted-foreground/70 mt-5 text-center text-xs">
-                    <p className="mx-auto max-w-sm text-balance">
+                    <AboutContributorsWall open={open} />
+                    <p className="text-muted-foreground/70 mx-auto max-w-sm text-xs text-balance">
                         {t('view.about.thanks')}
                     </p>
-                </div>
+                </section>
 
-                <div className="mt-7 mb-4 text-center">
-                    <span className="text-muted-foreground/75 text-[10px] font-medium tracking-[0.18em] uppercase">
+                <div className="mt-6 flex flex-col items-center gap-3">
+                    <span
+                        id="about-support-title"
+                        className="text-muted-foreground/60 text-[10px] font-medium tracking-[0.16em] uppercase"
+                    >
                         {t('support_vrcx.title')}
                     </span>
-                </div>
-
-                <div className="flex justify-center">
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div
+                        className="flex flex-wrap justify-center gap-2"
+                        role="group"
+                        aria-labelledby="about-support-title"
+                    >
                         {SUPPORT_LINKS.map(
                             ({ key, labelKey, label, href, icon: Icon }) => (
                                 <Button

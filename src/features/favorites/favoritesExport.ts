@@ -51,7 +51,7 @@ export function buildFavoriteExportCsv(
                     id: item.id,
                     name: item.title,
                     status: item.statusLabel || item.subtitle || '',
-                    author: item.subtitle || '',
+                    author: item.authorName ?? (item.subtitle || ''),
                     thumbnail: item.imageUrl || '',
                     group: item.groupLabel || item.groupKey || '',
                     source: item.source || ''

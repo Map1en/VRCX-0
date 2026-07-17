@@ -84,6 +84,21 @@ export async function openFileSelectorDialog(
     return typeof selected === 'string' ? selected : '';
 }
 
+export async function saveFileSelectorDialog(
+    defaultPath: string,
+    defaultName: string,
+    defaultExt: string,
+    defaultFilter: string
+): Promise<string> {
+    const selected = await commands.appSaveFileSelectorDialog(
+        defaultPath,
+        defaultName,
+        defaultExt,
+        defaultFilter
+    );
+    return typeof selected === 'string' ? selected : '';
+}
+
 export async function openCalendarFile(icsContent: string): Promise<void> {
     await commands.appOpenCalendarFile(icsContent);
 }
@@ -93,6 +108,13 @@ export async function saveCalendarFile(
     icsContent: string
 ): Promise<void> {
     await commands.appSaveCalendarFile(defaultName, icsContent);
+}
+
+export async function saveJsonFile(
+    defaultName: string,
+    json: string
+): Promise<void> {
+    await commands.appSaveVrcRegJsonFile(null, defaultName, json);
 }
 
 export async function readVrchatConfigFileSafe(): Promise<string> {

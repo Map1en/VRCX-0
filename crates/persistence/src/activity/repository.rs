@@ -1,6 +1,10 @@
 #![allow(non_snake_case)]
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    sync::{Arc, Mutex, OnceLock, Weak},
+};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde_json::{json, Value};
@@ -20,6 +24,31 @@ use super::types::*;
 struct ActivitySourceLocationRow {
     created_at: String,
     time: i64,
+}
+
+type ActivityRefreshLockMap = HashMap<(PathBuf, String), Weak<Mutex<()>>>;
+
+fn with_activity_refresh_lock<T>(
+    db: &DatabaseService,
+    user_id: &str,
+    operation: impl FnOnce() -> Result<T, Error>,
+) -> Result<T, Error> {
+    static LOCKS: OnceLock<Mutex<ActivityRefreshLockMap>> = OnceLock::new();
+    let key = (db.db_path().to_path_buf(), user_id.to_string());
+    let lock = {
+        let mut locks = LOCKS
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        locks.retain(|_, lock| lock.strong_count() > 0);
+        locks.get(&key).and_then(Weak::upgrade).unwrap_or_else(|| {
+            let lock = Arc::new(Mutex::new(()));
+            locks.insert(key, Arc::downgrade(&lock));
+            lock
+        })
+    };
+    let _guard = lock.lock().unwrap_or_else(|error| error.into_inner());
+    operation()
 }
 
 #[derive(Clone, Debug)]
@@ -471,12 +500,72 @@ pub fn activity_self_sessions_refresh(
     db: &DatabaseService,
     input: ActivitySelfSessionsRefreshInput,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    let user_id = normalize_text(input.user_id);
+    let user_id = normalize_text(&input.user_id);
     if user_id.is_empty() {
         return Err(Error::Custom(
             "ActivitySelfSessionsRefresh requires userId.".into(),
         ));
     }
+    with_activity_refresh_lock(db, &user_id, || {
+        activity_self_sessions_refresh_inner(db, input, user_id.clone())
+    })
+}
+
+pub(super) fn activity_self_sessions_refresh_auto(
+    db: &DatabaseService,
+    user_id: &str,
+    range_days: i64,
+    now_ms: Option<i64>,
+    force_refresh: bool,
+) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Err(Error::Custom(
+            "ActivitySelfSessionsRefresh requires userId.".into(),
+        ));
+    }
+    with_activity_refresh_lock(db, &user_id, || {
+        let sync_state = activity_sync_state_get(db, user_id.clone())?;
+        let range_days = if force_refresh {
+            sync_state
+                .as_ref()
+                .map(|sync| sync.cached_range_days.max(range_days))
+                .unwrap_or(range_days)
+        } else {
+            range_days
+        };
+        let mode = if force_refresh
+            || sync_state
+                .as_ref()
+                .is_none_or(|sync| sync.source_last_created_at.is_empty())
+        {
+            "full"
+        } else if sync_state
+            .as_ref()
+            .is_some_and(|sync| sync.cached_range_days < range_days)
+        {
+            "expand"
+        } else {
+            "incremental"
+        };
+        activity_self_sessions_refresh_inner(
+            db,
+            ActivitySelfSessionsRefreshInput {
+                user_id: user_id.clone(),
+                mode: mode.to_string(),
+                range_days: json!(range_days),
+                now_ms,
+            },
+            user_id.clone(),
+        )
+    })
+}
+
+fn activity_self_sessions_refresh_inner(
+    db: &DatabaseService,
+    input: ActivitySelfSessionsRefreshInput,
+    user_id: String,
+) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
     let user_prefix = normalize_user_table_prefix(&user_id)?;
     ensure_game_log_tables(db)?;
     ensure_user_store_tables(db, &user_prefix)?;

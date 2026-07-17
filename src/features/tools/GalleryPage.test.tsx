@@ -1,19 +1,25 @@
 import React from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     confirmCroppedUpload: vi.fn(),
-    galleryDialogsProps: null as any
+    galleryDialogsProps: null as null | {
+        onConfirmCrop: (
+            blob: Blob,
+            options: { note: string; cropWhiteBorder: boolean }
+        ) => Promise<void>;
+    }
 }));
 
 vi.mock('@/components/layout/PageScaffold', async () => {
     const React = await import('react');
 
     return {
-        PageScaffold: ({ children, ...props }: any) =>
+        PageScaffold: ({ children, ...props }: HTMLAttributes<HTMLElement>) =>
             React.createElement('main', props, children),
-        PageBody: ({ children }: any) =>
+        PageBody: ({ children }: { children?: ReactNode }) =>
             React.createElement('section', null, children)
     };
 });
@@ -40,7 +46,9 @@ vi.mock('./components/GalleryDialogs', async () => {
     const React = await import('react');
 
     return {
-        GalleryDialogs: (props: any) => {
+        GalleryDialogs: (
+            props: NonNullable<typeof mocks.galleryDialogsProps>
+        ) => {
             mocks.galleryDialogsProps = props;
             return React.createElement('div', { 'data-gallery-dialogs': true });
         }
@@ -112,7 +120,11 @@ describe('GalleryPage', () => {
             note: 'print note',
             cropWhiteBorder: false
         };
-        await mocks.galleryDialogsProps.onConfirmCrop(blob, uploadOptions);
+        const galleryDialogsProps = mocks.galleryDialogsProps;
+        if (!galleryDialogsProps) {
+            throw new Error('Gallery dialogs were not rendered');
+        }
+        await galleryDialogsProps.onConfirmCrop(blob, uploadOptions);
 
         expect(mocks.confirmCroppedUpload).toHaveBeenCalledWith(
             blob,

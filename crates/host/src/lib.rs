@@ -10,9 +10,9 @@ pub mod game_launch;
 pub mod host_capabilities;
 #[cfg(target_os = "linux")]
 pub mod linux_registry;
-pub mod local_ipc_server;
 pub mod local_player_moderations;
 pub mod log_scanner;
+pub mod machine_key;
 pub mod overlay_notifications;
 pub mod path_utils;
 pub mod process_status;
@@ -20,6 +20,7 @@ pub mod proxy;
 pub mod shell_actions;
 pub mod system_fonts;
 pub mod system_theme;
+pub mod tts;
 pub mod updater_policy;
 pub mod vr_overlay;
 pub mod vrchat_ipc;

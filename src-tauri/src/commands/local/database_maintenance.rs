@@ -11,6 +11,10 @@ use vrcx_0_persistence::maintenance::{
     UserTableContextOutput,
 };
 
+fn is_user_requested_maintenance_task(task: DatabaseMaintenanceTask) -> bool {
+    matches!(task, DatabaseMaintenanceTask::Vacuum)
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn app__database_maintenance_broken_game_log_display_names_get(
@@ -53,6 +57,12 @@ pub fn app__database_maintenance_run(
     task: String,
 ) -> Result<(), AppError> {
     let parsed_task = DatabaseMaintenanceTask::parse(&task).map_err(AppError::from)?;
+    if !is_user_requested_maintenance_task(parsed_task) {
+        return Err(AppError::Custom(format!(
+            "Database maintenance task {} is internal to Rust orchestration.",
+            parsed_task.as_str()
+        )));
+    }
     let task = parsed_task.as_str();
     let job_name = format!("databaseMaintenance.{task}");
     state.runtime_context.diagnostics.record_command(
@@ -95,6 +105,30 @@ pub fn app__database_maintenance_run(
         }
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn user_requested_maintenance_allowlist_excludes_upgrade_steps() {
+        assert!(is_user_requested_maintenance_task(
+            DatabaseMaintenanceTask::Vacuum
+        ));
+        assert!(!is_user_requested_maintenance_task(
+            DatabaseMaintenanceTask::Optimize
+        ));
+        assert!(!is_user_requested_maintenance_task(
+            DatabaseMaintenanceTask::InitGlobalTables
+        ));
+        assert!(!is_user_requested_maintenance_task(
+            DatabaseMaintenanceTask::AddV17PerformanceIndexes
+        ));
+        assert!(!is_user_requested_maintenance_task(
+            DatabaseMaintenanceTask::RepairZeroCopresenceDurations
+        ));
+    }
 }
 
 #[tauri::command]

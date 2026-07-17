@@ -2,20 +2,28 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import {
     getTranslationConfig,
     translateText
 } from '@/services/translationService';
 
-export function useWorldDescriptionTranslation({ world }: any) {
+interface WorldDescriptionTranslation {
+    worldId: string;
+    source: string;
+    text: string;
+}
+
+export function useWorldDescriptionTranslation({
+    world
+}: {
+    world: WorldProfileRecord;
+}) {
     const { t } = useTranslation();
     const worldId = world?.id || '';
     const source = world?.description || '';
-    const [descriptionTranslation, setDescriptionTranslation] = useState<any>({
-        worldId,
-        source,
-        text: ''
-    });
+    const [descriptionTranslation, setDescriptionTranslation] =
+        useState<WorldDescriptionTranslation>({ worldId, source, text: '' });
     const [descriptionTranslationLoading, setDescriptionTranslationLoading] =
         useState(false);
     const translatedDescriptionActive = Boolean(

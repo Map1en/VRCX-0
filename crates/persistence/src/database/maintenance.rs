@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use chrono::DateTime;
+use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -11,13 +11,17 @@ use crate::database::schema::{
     add_column_if_missing, add_legacy_indexes, add_notification_indexes, add_v17_global_indexes,
     backfill_vrcx0_schema_version, drop_column_if_exists, ensure_global_store_tables,
     ensure_user_store_tables, read_vrcx0_schema_version, safe_identifier, select_table_names,
-    set_vrcx0_schema_version, table_column_names, VRCX0_SCHEMA_VERSION,
+    table_column_names, VRCX0_SCHEMA_VERSION,
 };
 use crate::game_log::ensure_game_log_tables;
-use crate::realtime::normalize_user_table_prefix;
+use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
 
 use super::DatabaseService;
+
+pub fn vacuum_after_secret_migration(db: &DatabaseService) -> Result<(), Error> {
+    db.checkpoint_and_vacuum()
+}
 
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -52,6 +56,24 @@ pub struct BrokenGameLogDisplayNameOutput {
     pub display_name: Value,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AvatarAutoCleanupState {
+    Disabled,
+    NotDue,
+    Ran,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarAutoCleanupOutcome {
+    pub state: AvatarAutoCleanupState,
+    pub retention_days: Option<i64>,
+    pub removed_count: i64,
+    pub cutoff: Option<String>,
+    pub completed_at: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DatabaseMaintenanceTask {
     InitGlobalTables,
@@ -65,7 +87,6 @@ pub enum DatabaseMaintenanceTask {
     AddNotificationPerformanceIndexes,
     AddV17PerformanceIndexes,
     AddPerformanceIndexes,
-    UpgradeDatabaseVersion,
     CleanLegendFromFriendLog,
     FixGameLogTraveling,
     FixNegativeGPS,
@@ -96,7 +117,6 @@ impl DatabaseMaintenanceTask {
             }
             task if task == "addV17PerformanceIndexes" => Ok(Self::AddV17PerformanceIndexes),
             task if task == "addPerformanceIndexes" => Ok(Self::AddPerformanceIndexes),
-            task if task == "upgradeDatabaseVersion" => Ok(Self::UpgradeDatabaseVersion),
             task if task == "cleanLegendFromFriendLog" => Ok(Self::CleanLegendFromFriendLog),
             task if task == "fixGameLogTraveling" => Ok(Self::FixGameLogTraveling),
             task if task == "fixNegativeGPS" => Ok(Self::FixNegativeGPS),
@@ -128,7 +148,6 @@ impl DatabaseMaintenanceTask {
             Self::AddNotificationPerformanceIndexes => "addNotificationPerformanceIndexes",
             Self::AddV17PerformanceIndexes => "addV17PerformanceIndexes",
             Self::AddPerformanceIndexes => "addPerformanceIndexes",
-            Self::UpgradeDatabaseVersion => "upgradeDatabaseVersion",
             Self::CleanLegendFromFriendLog => "cleanLegendFromFriendLog",
             Self::FixGameLogTraveling => "fixGameLogTraveling",
             Self::FixNegativeGPS => "fixNegativeGPS",
@@ -153,6 +172,85 @@ pub fn user_tables_ensure(
     Ok(UserTableContextOutput {
         user_id,
         user_prefix,
+    })
+}
+
+pub fn avatar_auto_cleanup_run(
+    db: &DatabaseService,
+    user_id: &str,
+    now: DateTime<Utc>,
+) -> Result<AvatarAutoCleanupOutcome, Error> {
+    crate::config::ensure_config_table(db)?;
+    let user_prefix = normalize_user_table_prefix(user_id)?;
+    ensure_realtime_tables(db, &user_prefix)?;
+    let cleanup_key = crate::config::resolve_config_key("VRCX_avatarAutoCleanup");
+    let completed_key =
+        crate::config::resolve_config_key(&format!("lastAvatarCleanupDate_{}", user_id.trim()));
+
+    db.write_transaction(|tx| {
+        let setting = tx
+            .execute(
+                "SELECT value FROM configs WHERE key = @key LIMIT 1",
+                &ParamsBuilder::new().set("key", cleanup_key).build(),
+            )?
+            .first()
+            .and_then(|row| row.first())
+            .and_then(Value::as_str)
+            .unwrap_or("Off")
+            .trim()
+            .to_string();
+        let Some(retention_days) = setting.parse::<i64>().ok().filter(|days| *days > 0) else {
+            return Ok(AvatarAutoCleanupOutcome {
+                state: AvatarAutoCleanupState::Disabled,
+                retention_days: None,
+                removed_count: 0,
+                cutoff: None,
+                completed_at: None,
+            });
+        };
+
+        let last_completed = tx
+            .execute(
+                "SELECT value FROM configs WHERE key = @key LIMIT 1",
+                &ParamsBuilder::new().set("key", completed_key.clone()).build(),
+            )?
+            .first()
+            .and_then(|row| row.first())
+            .and_then(Value::as_str)
+            .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
+            .map(|value| value.with_timezone(&Utc));
+        if last_completed.is_some_and(|last| now.signed_duration_since(last) < Duration::days(7)) {
+            return Ok(AvatarAutoCleanupOutcome {
+                state: AvatarAutoCleanupState::NotDue,
+                retention_days: Some(retention_days),
+                removed_count: 0,
+                cutoff: None,
+                completed_at: last_completed.map(|value| value.to_rfc3339()),
+            });
+        }
+
+        let cutoff = (now - Duration::days(retention_days))
+            .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+            .to_string();
+        let completed_at = now.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
+        let removed_count = tx.execute_non_query(
+            &format!("DELETE FROM {user_prefix}_feed_avatar WHERE created_at < @cutoff"),
+            &ParamsBuilder::new().set("cutoff", cutoff.clone()).build(),
+        )?;
+        tx.execute_non_query(
+            "INSERT INTO configs (key, value) VALUES (@key, @value) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            &ParamsBuilder::new()
+                .set("key", completed_key)
+                .set("value", completed_at.clone())
+                .build(),
+        )?;
+        Ok(AvatarAutoCleanupOutcome {
+            state: AvatarAutoCleanupState::Ran,
+            retention_days: Some(retention_days),
+            removed_count,
+            cutoff: Some(cutoff),
+            completed_at: Some(completed_at),
+        })
     })
 }
 
@@ -229,16 +327,6 @@ fn run_database_maintenance_task(
             add_legacy_indexes(db)?;
             add_v17_global_indexes(db)?;
             add_notification_indexes(db)?;
-        }
-        DatabaseMaintenanceTask::UpgradeDatabaseVersion => {
-            run_database_maintenance_task(db, DatabaseMaintenanceTask::UpdateTableForGroupNames)?;
-            run_database_maintenance_task(db, DatabaseMaintenanceTask::AddFriendLogFriendNumber)?;
-            run_database_maintenance_task(
-                db,
-                DatabaseMaintenanceTask::UpdateTableForAvatarHistory,
-            )?;
-            add_legacy_indexes(db)?;
-            set_vrcx0_schema_version(db, VRCX0_SCHEMA_VERSION)?;
         }
         DatabaseMaintenanceTask::CleanLegendFromFriendLog => {
             for table_name in select_table_names(db, "name LIKE '%_friend_log_history'")? {
@@ -627,6 +715,108 @@ mod tests {
         .first()
         .map(|row| row_i64(row, 0))
         .unwrap()
+    }
+
+    fn cleanup_test_db(name: &str) -> Result<(TestDir, DatabaseService), Error> {
+        let dir = TestDir::new(name);
+        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+        Ok((dir, db))
+    }
+
+    #[test]
+    fn avatar_auto_cleanup_disables_off_and_invalid_retention() -> Result<(), Error> {
+        let (_dir, db) = cleanup_test_db("avatar-cleanup-disabled")?;
+        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+
+        let off = avatar_auto_cleanup_run(&db, "usr_self", now)?;
+        assert_eq!(off.state, AvatarAutoCleanupState::Disabled);
+
+        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "invalid")?;
+        let invalid = avatar_auto_cleanup_run(&db, "usr_self", now)?;
+        assert_eq!(invalid.state, AvatarAutoCleanupState::Disabled);
+        Ok(())
+    }
+
+    #[test]
+    fn avatar_auto_cleanup_skips_when_last_run_is_less_than_seven_days_old() -> Result<(), Error> {
+        let (_dir, db) = cleanup_test_db("avatar-cleanup-not-due")?;
+        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
+        crate::config::set_string(
+            &db,
+            "lastAvatarCleanupDate_usr_self",
+            "2026-07-12T12:00:00Z",
+        )?;
+        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+
+        let outcome = avatar_auto_cleanup_run(&db, "usr_self", now)?;
+
+        assert_eq!(outcome.state, AvatarAutoCleanupState::NotDue);
+        assert_eq!(outcome.retention_days, Some(30));
+        Ok(())
+    }
+
+    #[test]
+    fn avatar_auto_cleanup_treats_invalid_last_date_as_due_and_commits_delete_with_flag(
+    ) -> Result<(), Error> {
+        let (_dir, db) = cleanup_test_db("avatar-cleanup-runs")?;
+        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
+        crate::config::set_string(&db, "lastAvatarCleanupDate_usr_self", "not-a-date")?;
+        let prefix = normalize_user_table_prefix("usr_self")?;
+        ensure_realtime_tables(&db, &prefix)?;
+        db.execute_non_query(
+            &format!("INSERT INTO {prefix}_feed_avatar (created_at) VALUES (@created_at)"),
+            &ParamsBuilder::new()
+                .set("created_at", "2026-05-01T00:00:00Z")
+                .build(),
+        )?;
+        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+
+        let outcome = avatar_auto_cleanup_run(&db, "usr_self", now)?;
+
+        assert_eq!(outcome.state, AvatarAutoCleanupState::Ran);
+        assert_eq!(outcome.removed_count, 1);
+        assert_eq!(
+            crate::config::get_string(&db, "lastAvatarCleanupDate_usr_self", "")?,
+            "2026-07-17T12:00:00.000Z"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn avatar_auto_cleanup_rolls_back_delete_when_completion_flag_fails() -> Result<(), Error> {
+        let (_dir, db) = cleanup_test_db("avatar-cleanup-rolls-back")?;
+        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
+        crate::config::set_string(&db, "lastAvatarCleanupDate_usr_self", "not-a-date")?;
+        let prefix = normalize_user_table_prefix("usr_self")?;
+        ensure_realtime_tables(&db, &prefix)?;
+        db.execute_non_query(
+            &format!("INSERT INTO {prefix}_feed_avatar (created_at) VALUES (@created_at)"),
+            &ParamsBuilder::new()
+                .set("created_at", "2026-05-01T00:00:00Z")
+                .build(),
+        )?;
+        db.execute_non_query(
+            "CREATE TRIGGER fail_avatar_cleanup_flag BEFORE UPDATE ON configs
+             BEGIN SELECT RAISE(ABORT, 'forced completion flag failure'); END",
+            &Default::default(),
+        )?;
+        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+
+        assert!(avatar_auto_cleanup_run(&db, "usr_self", now).is_err());
+        let remaining = db.execute(
+            &format!("SELECT COUNT(*) FROM {prefix}_feed_avatar"),
+            &Default::default(),
+        )?;
+        assert_eq!(remaining.first().map(|row| row_i64(row, 0)), Some(1));
+        Ok(())
     }
 
     #[test]

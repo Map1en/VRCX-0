@@ -11,11 +11,7 @@ import {
 } from '@/services/shellIntegrationService';
 
 import { AppMenuBar } from './AppMenuBar';
-import {
-    TitleBarBuildBadge,
-    TitleBarButton,
-    useTitleBarActions
-} from './useTitleBarActions';
+import { TitleBarButton, useTitleBarActions } from './useTitleBarActions';
 
 function TitleBarWindowButton({ className, ...props }: any) {
     return (
@@ -108,7 +104,6 @@ export function AppTitleBar() {
                             />
                         </div>
                     ) : null}
-                    <TitleBarBuildBadge />
                     <div
                         data-tauri-drag-region
                         className="h-full min-w-0 flex-1"

@@ -1,4 +1,8 @@
+import { createDensityPreset } from '@/lib/densityPreset';
+
 export const DEFAULT_FRIENDS_LOCATIONS_DENSITY = 'compact';
+
+export type FriendsLocationsCardContentMode = 'full' | 'status' | 'identity';
 
 export const FRIENDS_LOCATIONS_DENSITY_OPTIONS = Object.freeze([
     {
@@ -20,14 +24,16 @@ const DENSITY_CONFIGS = Object.freeze({
         value: 'standard',
         layout: 'card',
         avatarSize: 44,
-        dotSize: 11,
+        dotSize: 15,
         titleFontSize: 15,
         cardPadding: 10,
         cardGap: 10,
         cardInnerGap: 6,
         gridGap: 12,
         gridMinWidth: 200,
-        rowHeight: 158,
+        rowHeight: 132,
+        statusOnlyRowHeight: 112,
+        identityRowHeight: 64,
         locationLineClamp: 2,
         statusLineClamp: 1,
         showStatusDescription: true
@@ -36,7 +42,7 @@ const DENSITY_CONFIGS = Object.freeze({
         value: 'compact',
         layout: 'card',
         avatarSize: 36,
-        dotSize: 10,
+        dotSize: 15,
         titleFontSize: 14,
         cardPadding: 8,
         cardGap: 8,
@@ -44,6 +50,8 @@ const DENSITY_CONFIGS = Object.freeze({
         gridGap: 8,
         gridMinWidth: 180,
         rowHeight: 118,
+        statusOnlyRowHeight: 92,
+        identityRowHeight: 56,
         locationLineClamp: 1,
         statusLineClamp: 1,
         showStatusDescription: true
@@ -52,7 +60,7 @@ const DENSITY_CONFIGS = Object.freeze({
         value: 'dense',
         layout: 'item',
         avatarSize: 32,
-        dotSize: 9,
+        dotSize: 15,
         titleFontSize: 14,
         cardPadding: 8,
         cardGap: 8,
@@ -60,27 +68,32 @@ const DENSITY_CONFIGS = Object.freeze({
         gridGap: 6,
         gridMinWidth: 180,
         rowHeight: 72,
+        statusOnlyRowHeight: 52,
+        identityRowHeight: 52,
         locationLineClamp: 1,
         statusLineClamp: 0,
         showStatusDescription: false
     })
 });
 
-const DENSITY_VALUES = new Set(
-    FRIENDS_LOCATIONS_DENSITY_OPTIONS.map((option: any) => option.value)
+const preset = createDensityPreset(
+    DEFAULT_FRIENDS_LOCATIONS_DENSITY,
+    DENSITY_CONFIGS
 );
 
-export function sanitizeFriendsLocationsDensity(value: any) {
-    const normalizedValue = typeof value === 'string' ? value.trim() : '';
-    return DENSITY_VALUES.has(normalizedValue)
-        ? normalizedValue
-        : DEFAULT_FRIENDS_LOCATIONS_DENSITY;
-}
+export const sanitizeFriendsLocationsDensity = preset.sanitize;
 
-type FriendsLocationsDensityKey = keyof typeof DENSITY_CONFIGS;
+export const getFriendsLocationsDensityConfig = preset.getConfig;
 
-export function getFriendsLocationsDensityConfig(value: any) {
-    return DENSITY_CONFIGS[
-        sanitizeFriendsLocationsDensity(value) as FriendsLocationsDensityKey
-    ];
+export function getFriendsLocationsCardRowHeight(
+    densityConfig: ReturnType<typeof getFriendsLocationsDensityConfig>,
+    contentMode: FriendsLocationsCardContentMode = 'full'
+) {
+    if (contentMode === 'identity') {
+        return densityConfig.identityRowHeight;
+    }
+    if (contentMode === 'status') {
+        return densityConfig.statusOnlyRowHeight;
+    }
+    return densityConfig.rowHeight;
 }

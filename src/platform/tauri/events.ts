@@ -57,20 +57,31 @@ async function ensureTauriSubscription(name: string): Promise<UnlistenFn> {
             const unlisten = await listen<unknown>(
                 name,
                 (event: Event<unknown>) => {
-                    dispatch(name, event.payload);
+                    if (tauriRegistrations.get(name) === bucket) {
+                        dispatch(name, event.payload);
+                    }
                 }
             );
             bucket.unlisten = unlisten;
 
-            if (!listeners.has(name) || listeners.get(name)?.size === 0) {
+            if (
+                tauriRegistrations.get(name) !== bucket ||
+                !listeners.has(name) ||
+                listeners.get(name)?.size === 0
+            ) {
                 try {
                     unlisten();
                 } catch {}
-                tauriRegistrations.delete(name);
+                if (tauriRegistrations.get(name) === bucket) {
+                    tauriRegistrations.delete(name);
+                }
             }
 
             return unlisten;
         } catch (error) {
+            if (tauriRegistrations.get(name) === bucket) {
+                tauriRegistrations.delete(name);
+            }
             throw normalizePlatformError(
                 error,
                 `Unable to subscribe to Tauri event: ${name}`
@@ -86,10 +97,22 @@ export async function onTauriEvent(
     name: string,
     handler: TauriEventHandler
 ): Promise<() => void> {
-    getBucket(name).add(handler);
-    await ensureTauriSubscription(name);
+    const handlerBucket = getBucket(name);
+    handlerBucket.add(handler);
+    try {
+        await ensureTauriSubscription(name);
+    } catch (error) {
+        if (listeners.get(name) === handlerBucket) {
+            offTauriEvent(name, handler);
+        }
+        throw error;
+    }
 
-    return () => offTauriEvent(name, handler);
+    return () => {
+        if (listeners.get(name) === handlerBucket) {
+            offTauriEvent(name, handler);
+        }
+    };
 }
 
 export async function subscribeTauriEvent<TPayload = unknown>(
@@ -97,10 +120,22 @@ export async function subscribeTauriEvent<TPayload = unknown>(
     handler: TauriEventHandler<TPayload>
 ): Promise<() => void> {
     const eventHandler = handler as TauriEventHandler;
-    getBucket(name).add(eventHandler);
-    await ensureTauriSubscription(name);
+    const handlerBucket = getBucket(name);
+    handlerBucket.add(eventHandler);
+    try {
+        await ensureTauriSubscription(name);
+    } catch (error) {
+        if (listeners.get(name) === handlerBucket) {
+            offTauriEvent(name, eventHandler);
+        }
+        throw error;
+    }
 
-    return () => offTauriEvent(name, eventHandler);
+    return () => {
+        if (listeners.get(name) === handlerBucket) {
+            offTauriEvent(name, eventHandler);
+        }
+    };
 }
 
 export function offTauriEvent(name: string, handler: TauriEventHandler): void {

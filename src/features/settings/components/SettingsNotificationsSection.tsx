@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '@/services/changelogService';
-import { showDesktopNotification } from '@/services/shellIntegrationService';
-
 import type { SettingsPageStateSections } from '../settingsPageStateSections';
 import { normalizeCheckedState } from '../settingsValues';
 import { SettingsNotificationsTab } from './settings-tabs/SettingsNotificationsTab';
@@ -17,17 +14,14 @@ export function SettingsNotificationsSection({
     const { t } = useTranslation();
     const {
         prefs,
-        notificationLayoutOptions,
         desktopToastOptions,
         notificationTtsOptions,
+        notificationTtsNameModeOptions,
         ttsVoices,
         notificationTtsTestVisible,
         notificationTtsTest,
-        commit,
-        setNotificationLayoutPreference,
-        setPrefs,
-        setFeedFilterDialogOpen,
         setDesktopNotificationsDialogOpen,
+        setTtsNotificationsDialogOpen,
         saveStringPreference,
         saveBoolPreference,
         saveNotificationTtsMode,
@@ -40,64 +34,18 @@ export function SettingsNotificationsSection({
     return (
         <SettingsNotificationsTab
             prefs={prefs}
-            notificationLayoutOptions={notificationLayoutOptions}
             desktopToastOptions={desktopToastOptions}
             notificationTtsOptions={notificationTtsOptions}
+            notificationTtsNameModeOptions={notificationTtsNameModeOptions}
             ttsVoices={ttsVoices}
             notificationTtsTestVisible={notificationTtsTestVisible}
             notificationTtsTest={notificationTtsTest}
-            onNotificationLayoutChange={(value: string) => {
-                commit(
-                    async () => {
-                        const nextLayout =
-                            await setNotificationLayoutPreference(value);
-                        setPrefs((current) => ({
-                            ...current,
-                            notificationLayout: nextLayout
-                        }));
-                    },
-                    () => {
-                        const previous = prefs.notificationLayout;
-                        setPrefs((current) => ({
-                            ...current,
-                            notificationLayout: value
-                        }));
-                        return () =>
-                            setPrefs((current) => ({
-                                ...current,
-                                notificationLayout: previous
-                            }));
-                    }
-                );
-            }}
-            onNotificationIconDotChange={(checked: unknown) => {
-                const enabled = normalizeCheckedState(checked);
-                saveBoolPreference(
-                    'notificationIconDot',
-                    'notificationIconDot',
-                    enabled
-                );
-            }}
-            onPostUpdateChangelogToastChange={(checked: unknown) => {
-                const enabled = normalizeCheckedState(checked);
-                saveBoolPreference(
-                    'showPostUpdateChangelogToast',
-                    POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
-                    enabled
-                );
-            }}
-            onOpenFeedFilterDialog={() => setFeedFilterDialogOpen(true)}
             onOpenDesktopNotificationFiltersDialog={() =>
                 setDesktopNotificationsDialogOpen(true)
             }
-            onTestDesktopNotification={() => {
-                showDesktopNotification(
-                    'VRCX-0',
-                    t('view.settings.notifications.notifications.test_message'),
-                    '',
-                    prefs.desktopNotificationSound
-                );
-            }}
+            onOpenTtsNotificationFiltersDialog={() =>
+                setTtsNotificationsDialogOpen(true)
+            }
             onDesktopToastChange={(value: string) => {
                 saveStringPreference('desktopToast', 'desktopToast', value);
             }}
@@ -123,18 +71,24 @@ export function SettingsNotificationsSection({
             onNotificationTtsVoiceChange={(value: string) => {
                 saveNotificationTtsVoice(value);
             }}
-            onNotificationTtsNicknameChange={(checked: unknown) => {
-                const enabled = normalizeCheckedState(checked);
-                saveBoolPreference(
-                    'notificationTTSNickName',
-                    'notificationTTSNickName',
-                    enabled
+            onNotificationTtsNameModeChange={(value: string) => {
+                saveStringPreference(
+                    'notificationTTSNameMode',
+                    'notificationTTSNameMode',
+                    value
                 );
             }}
             onNotificationTtsTestVisibleChange={setNotificationTtsTestVisible}
             onNotificationTtsTestChange={setNotificationTtsTest}
             onSpeakNotificationTts={(message: unknown) =>
-                speakNotificationTts(message)
+                speakNotificationTts(
+                    String(
+                        message ||
+                            t(
+                                'view.settings.notifications.notifications.text_to_speech.tts_test_placeholder'
+                            )
+                    )
+                )
             }
         />
     );

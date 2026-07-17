@@ -8,7 +8,11 @@ pub fn prepare_media_upload_request(mut input: HttpApiRequestInput) -> Result<Ht
         return Ok(input);
     };
 
-    if input.upload_image.unwrap_or(false) || input.upload_image_legacy.unwrap_or(false) {
+    let upload_image = input.upload_image.unwrap_or(false);
+    let upload_image_print = input.upload_image_print.unwrap_or(false);
+    let upload_image_legacy = input.upload_image_legacy.unwrap_or(false);
+
+    if upload_image || (!upload_image_print && upload_image_legacy) {
         let matching_dimensions = input.matching_dimensions.unwrap_or(false);
         input.image_data = Some(image_processing::resize_upload_image_base64(
             &image_data,
@@ -18,7 +22,7 @@ pub fn prepare_media_upload_request(mut input: HttpApiRequestInput) -> Result<Ht
         return Ok(input);
     }
 
-    if input.upload_image_print.unwrap_or(false) {
+    if upload_image_print {
         let image_data = if input.crop_white_border.unwrap_or(false) {
             image_processing::crop_print_base64(&image_data)?
         } else {
@@ -40,3 +44,6 @@ pub fn require_prepared_image_data(input: &HttpApiRequestInput) -> Result<&str> 
         .filter(|value| !value.trim().is_empty())
         .ok_or_else(|| Error::Custom("media upload requires prepared imageData".into()))
 }
+
+#[cfg(test)]
+mod tests;

@@ -6,8 +6,17 @@ import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
 type ConfigEntries = Array<[string, unknown]>;
 type ConfigObject = Record<string, unknown> | unknown[] | null;
 
+const HIDDEN_VR_PANEL_CONFIG_DB_KEYS = new Set([
+    'config:vrcx_vroverlaypanelenabled',
+    'config:vrcx_vroverlaypanelallfriendsincludesfavorites'
+]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isHiddenVrPanelConfigDbKey(key: string): boolean {
+    return HIDDEN_VR_PANEL_CONFIG_DB_KEYS.has(key);
 }
 
 function normalizeConfigReadEntry(row: unknown): [string, string] | null {
@@ -64,6 +73,9 @@ class ConfigRepository {
         for (const row of rows) {
             const entry = normalizeConfigReadEntry(row);
             if (entry) {
+                if (isHiddenVrPanelConfigDbKey(entry[0])) {
+                    continue;
+                }
                 this.#cache.set(entry[0], entry[1]);
             }
         }
@@ -198,6 +210,10 @@ class ConfigRepository {
     async setString(key: string, value: unknown): Promise<unknown> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
+        if (isHiddenVrPanelConfigDbKey(dbKey)) {
+            this.#cache.delete(dbKey);
+            return null;
+        }
         const stringValue = String(value);
         const result = await commands.appConfigSetValues([
             { key: dbKey, value: stringValue }
@@ -236,14 +252,26 @@ class ConfigRepository {
                 ]
         );
 
+        for (const [dbKey] of normalizedEntries) {
+            if (isHiddenVrPanelConfigDbKey(dbKey)) {
+                this.#cache.delete(dbKey);
+            }
+        }
+        const writableEntries = normalizedEntries.filter(
+            ([dbKey]) => !isHiddenVrPanelConfigDbKey(dbKey)
+        );
+        if (writableEntries.length === 0) {
+            return;
+        }
+
         await commands.appConfigSetValues(
-            normalizedEntries.map(([key, value]) => ({
+            writableEntries.map(([key, value]) => ({
                 key,
                 value
             }))
         );
 
-        for (const [dbKey, stringValue] of normalizedEntries) {
+        for (const [dbKey, stringValue] of writableEntries) {
             this.#cache.set(dbKey, stringValue);
         }
     }

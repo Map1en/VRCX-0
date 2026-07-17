@@ -5,6 +5,7 @@ import {
     userFactKey,
     type UserFact
 } from '@/domain/users/userFacts';
+import { evictOverflow } from '@/state/storeEviction';
 
 type UserFactInput = Omit<
     Partial<UserFact>,
@@ -21,18 +22,22 @@ type UserFactInput = Omit<
 interface UserFactsStoreState {
     version: number;
     usersByKey: Record<string, UserFact>;
-    userIdsByEndpoint: Record<string, string[]>;
+    userIdsByEndpoint: Record<string, Set<string>>;
+    order: string[];
     replaceUserFacts: (users: UserFactInput[] | null | undefined) => void;
     resetUserFacts: () => void;
 }
 
+const USER_FACTS_NON_FRIEND_CAPACITY = 1000;
+
 const initialState: Pick<
     UserFactsStoreState,
-    'version' | 'usersByKey' | 'userIdsByEndpoint'
+    'version' | 'usersByKey' | 'userIdsByEndpoint' | 'order'
 > = {
     version: 0,
     usersByKey: {},
-    userIdsByEndpoint: {}
+    userIdsByEndpoint: {},
+    order: []
 };
 
 function text(value: unknown): string {
@@ -107,6 +112,7 @@ export const useUserFactsStore = create<UserFactsStoreState>((set) => ({
             }
             let usersByKey = state.usersByKey;
             let userIdsByEndpoint = state.userIdsByEndpoint;
+            let order = state.order;
             let changed = false;
             for (const user of list) {
                 const key = userFactKey(user.endpoint, user.id ?? user.userId);
@@ -120,23 +126,43 @@ export const useUserFactsStore = create<UserFactsStoreState>((set) => ({
                 if (!changed) {
                     usersByKey = { ...usersByKey };
                     userIdsByEndpoint = { ...userIdsByEndpoint };
+                    order = [...order];
                     changed = true;
                 }
+                const isNew = !usersByKey[key];
                 usersByKey[key] = userFact;
                 const endpoint = endpointFromKey(key);
-                const userId = userFact.id;
-                const currentIds = userIdsByEndpoint[endpoint] || [];
-                if (userId && !currentIds.includes(userId)) {
-                    userIdsByEndpoint[endpoint] = [...currentIds, userId];
+                if (isNew) {
+                    if (!userIdsByEndpoint[endpoint]) {
+                        userIdsByEndpoint[endpoint] = new Set();
+                    }
+                    userIdsByEndpoint[endpoint].add(userFact.id);
+                    if (!userFact.isFriend) {
+                        order.push(key);
+                    }
                 }
             }
             if (!changed) {
                 return state;
             }
+            for (const evictedKey of evictOverflow(
+                order,
+                USER_FACTS_NON_FRIEND_CAPACITY
+            )) {
+                const evicted = usersByKey[evictedKey];
+                if (evicted?.isFriend) {
+                    continue;
+                }
+                delete usersByKey[evictedKey];
+                userIdsByEndpoint[endpointFromKey(evictedKey)]?.delete(
+                    evicted?.id ?? ''
+                );
+            }
             const nextState = {
                 version: state.version + 1,
                 usersByKey,
-                userIdsByEndpoint
+                userIdsByEndpoint,
+                order
             };
             return nextState;
         });

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import mediaRepository from '@/repositories/mediaRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { photonEmojiId, photonEmojis } from '@/shared/constants/photonEmojis';
@@ -19,6 +20,7 @@ import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -208,16 +210,21 @@ export function BoopEmojiDialog({
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={noDefaultEmojiValue}>
-                                        {t(
-                                            'view.notification.action.clear_selection'
-                                        )}
-                                    </SelectItem>
-                                    {photonEmojiRows.map((row) => (
-                                        <SelectItem key={row.id} value={row.id}>
-                                            {row.name}
+                                    <SelectGroup>
+                                        <SelectItem value={noDefaultEmojiValue}>
+                                            {t(
+                                                'view.notification.action.clear_selection'
+                                            )}
                                         </SelectItem>
-                                    ))}
+                                        {photonEmojiRows.map((row) => (
+                                            <SelectItem
+                                                key={row.id}
+                                                value={row.id}
+                                            >
+                                                {row.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                             <Button
@@ -295,7 +302,7 @@ export function BoopEmojiDialog({
                                                         )
                                                     }
                                                 >
-                                                    <img
+                                                    <FadeInImage
                                                         src={imageUrl}
                                                         alt={
                                                             emoji.name ||

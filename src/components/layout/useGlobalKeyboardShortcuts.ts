@@ -6,7 +6,7 @@ import { useSessionStore } from '@/state/sessionStore';
 
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
-function isEditableTarget(target: any) {
+export function isEditableTarget(target: any) {
     if (!target || typeof target.tagName !== 'string') {
         return false;
     }

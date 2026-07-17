@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react';
+import {
+    useEffect,
+    useState,
+    type Dispatch,
+    type MutableRefObject,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { parseLocation } from '@/shared/utils/location';
+import type { LaunchStoreState } from '@/state/launchStore';
 
 import {
     findGroupOption,
@@ -26,12 +34,20 @@ import {
     parseRoleIds,
     resolveInstanceLocation
 } from './worldInstances';
+import type {
+    CreatedWorldInstance,
+    InstanceGroupOption,
+    NewInstanceAfterCreateAction,
+    WorldInstanceInviteRequest,
+    WorldNewInstanceForm,
+    WorldNewInstanceRequest
+} from './worldNewInstanceTypes';
 
-export type NewInstanceAfterCreateAction = '' | 'selfInvite' | 'openInGame';
+export type { NewInstanceAfterCreateAction } from './worldNewInstanceTypes';
 
 export function resolveNewInstanceAfterCreateAction(
-    requestedFollowUp: any,
-    isGameRunning: any
+    requestedFollowUp: unknown,
+    isGameRunning: boolean
 ): NewInstanceAfterCreateAction {
     if (!requestedFollowUp) {
         return '';
@@ -39,12 +55,29 @@ export function resolveNewInstanceAfterCreateAction(
     return isGameRunning ? 'openInGame' : 'selfInvite';
 }
 
-export function isNewInstanceSelfInviteRequest(request: any): boolean {
+export function isNewInstanceSelfInviteRequest(
+    request: { afterCreateAction?: unknown } | null | undefined
+): boolean {
     return request?.afterCreateAction === 'selfInvite';
 }
 
-export function isNewInstanceOpenInGameRequest(request: any): boolean {
+export function isNewInstanceOpenInGameRequest(
+    request: { afterCreateAction?: unknown } | null | undefined
+): boolean {
     return request?.afterCreateAction === 'openInGame';
+}
+
+interface UseWorldInstanceActionsInput {
+    world: WorldProfileRecord | null;
+    currentEndpoint: string;
+    currentUserId: string | null;
+    isGameRunning: boolean;
+    profileWorldId: string;
+    newInstanceGroups: InstanceGroupOption[];
+    actionStatusRef: MutableRefObject<string>;
+    setActionStatus: Dispatch<SetStateAction<string>>;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
+    showLaunchDialog: LaunchStoreState['showLaunchDialog'];
 }
 
 export function useWorldInstanceActions({
@@ -58,16 +91,18 @@ export function useWorldInstanceActions({
     setActionStatus,
     isCurrentWorldTarget,
     showLaunchDialog
-}: any) {
+}: UseWorldInstanceActionsInput) {
     const { t } = useTranslation();
-    const [newInstanceRequest, setNewInstanceRequest] = useState<any>(null);
-    const [inviteRequest, setInviteRequest] = useState<any>(null);
+    const [newInstanceRequest, setNewInstanceRequest] =
+        useState<WorldNewInstanceRequest | null>(null);
+    const [inviteRequest, setInviteRequest] =
+        useState<WorldInstanceInviteRequest | null>(null);
 
     useEffect(() => {
         setNewInstanceRequest(null);
     }, [profileWorldId]);
 
-    async function loadNewInstanceDefaults(seed: any = null) {
+    async function loadNewInstanceDefaults(seed: unknown = null) {
         const [
             accessType,
             region,
@@ -125,10 +160,10 @@ export function useWorldInstanceActions({
     }
 
     async function openNewInstanceDialog(
-        requestedFollowUp: any = false,
-        seed: any = null
+        requestedFollowUp: boolean = false,
+        seed: unknown = null
     ) {
-        if (!world.id || actionStatusRef.current !== 'idle') {
+        if (!world?.id || actionStatusRef.current !== 'idle') {
             return;
         }
         try {
@@ -153,10 +188,7 @@ export function useWorldInstanceActions({
         }
     }
 
-    function saveNewInstanceDraft(form: any) {
-        if (!form || typeof form !== 'object') {
-            return;
-        }
+    function saveNewInstanceDraft(form: WorldNewInstanceForm) {
         Promise.all([
             configRepository.setString(
                 'instanceDialogAccessType',
@@ -199,7 +231,7 @@ export function useWorldInstanceActions({
         ]).catch(() => {});
     }
 
-    function saveNewInstanceDisplayNamePreset(value: any) {
+    function saveNewInstanceDisplayNamePreset(value: unknown) {
         const normalized = normalizeInstanceDialogDisplayName(value);
         if (!normalized) {
             return;
@@ -207,7 +239,7 @@ export function useWorldInstanceActions({
 
         configRepository
             .getArray(INSTANCE_DIALOG_DISPLAY_NAME_PRESETS_KEY, [])
-            .then((current: any) => {
+            .then((current) => {
                 const next = prependInstanceDialogDisplayNamePreset(
                     current,
                     normalized
@@ -226,10 +258,10 @@ export function useWorldInstanceActions({
             .catch(() => {});
     }
 
-    async function createWorldInstance(form: any) {
+    async function createWorldInstance(form: WorldNewInstanceForm) {
         if (
             !newInstanceRequest ||
-            !world.id ||
+            !world?.id ||
             actionStatusRef.current !== 'idle'
         ) {
             return;
@@ -285,7 +317,7 @@ export function useWorldInstanceActions({
                 form.groupId
             );
             const response = await vrchatInstanceRepository.createInstance({
-                worldId: world.id,
+                worldId: targetWorldId,
                 ownerId: currentUserId,
                 accessType: form.accessType || 'public',
                 region: form.region || 'US West',
@@ -297,7 +329,10 @@ export function useWorldInstanceActions({
                 displayName: normalizeEntityId(form.displayName),
                 endpoint: currentEndpoint
             });
-            const location = resolveInstanceLocation(world.id, response.json);
+            const location = resolveInstanceLocation(
+                targetWorldId,
+                response.json
+            );
             if (!location) {
                 throw new Error(
                     t(
@@ -326,7 +361,7 @@ export function useWorldInstanceActions({
                 toast.success(t('dialog.world.success.instance_created'));
                 return;
             }
-            setNewInstanceRequest((current: any) => ({
+            setNewInstanceRequest((current) => ({
                 ...(current || {}),
                 selfInvite: isNewInstanceSelfInviteRequest(current),
                 afterCreateAction: current?.afterCreateAction || '',
@@ -386,7 +421,9 @@ export function useWorldInstanceActions({
         }
     }
 
-    async function openCreatedInstanceInGameRequest(created: any) {
+    async function openCreatedInstanceInGameRequest(
+        created: CreatedWorldInstance
+    ) {
         const opened = await tryOpenLaunchLocation(
             created.location,
             created.shortName || created.secureOrShortName || '',
@@ -409,7 +446,7 @@ export function useWorldInstanceActions({
         toast.success(t('dialog.world.success.vrchat_launch_request_sent'));
     }
 
-    async function copyCreatedInstance(created: any) {
+    async function copyCreatedInstance(created: CreatedWorldInstance) {
         if (!created?.url) {
             return;
         }
@@ -418,7 +455,7 @@ export function useWorldInstanceActions({
         });
     }
 
-    async function selfInviteCreatedInstance(created: any) {
+    async function selfInviteCreatedInstance(created: CreatedWorldInstance) {
         const parsedLocation = parseLocation(created?.location || '');
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
             toast.error(
@@ -449,7 +486,7 @@ export function useWorldInstanceActions({
         }
     }
 
-    function inviteCreatedInstance(created: any) {
+    function inviteCreatedInstance(created: CreatedWorldInstance) {
         if (!created?.location) {
             return;
         }
@@ -460,7 +497,7 @@ export function useWorldInstanceActions({
         });
     }
 
-    function launchCreatedInstance(created: any) {
+    function launchCreatedInstance(created: CreatedWorldInstance) {
         if (!created?.location) {
             return;
         }
@@ -475,7 +512,7 @@ export function useWorldInstanceActions({
         );
     }
 
-    async function openCreatedInstanceInGame(created: any) {
+    async function openCreatedInstanceInGame(created: CreatedWorldInstance) {
         if (!created?.location) {
             return;
         }

@@ -36,12 +36,7 @@ pub(crate) fn build_mcp_router(
     let service = StreamableHttpService::new(
         move || Ok(VrcxMcpServer::new(runtime.clone())),
         LocalSessionManager::default().into(),
-        {
-            let mut config = StreamableHttpServerConfig::default();
-            config.stateful_mode = true;
-            config.cancellation_token = cancel;
-            config
-        },
+        streamable_http_server_config(cancel, policy.allow_lan_connections),
     );
     let auth_state = McpAuthMiddlewareState {
         policy,
@@ -54,6 +49,19 @@ pub(crate) fn build_mcp_router(
             auth_state,
             mcp_auth_middleware,
         ))
+}
+
+fn streamable_http_server_config(
+    cancel: CancellationToken,
+    allow_lan_connections: bool,
+) -> StreamableHttpServerConfig {
+    let mut config = StreamableHttpServerConfig::default();
+    config.stateful_mode = true;
+    config.cancellation_token = cancel;
+    if allow_lan_connections {
+        config.allowed_hosts.clear();
+    }
+    config
 }
 
 async fn mcp_health() -> impl IntoResponse {
@@ -167,6 +175,20 @@ pub(crate) fn bind_mcp_listener(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn streamable_http_allows_lan_host_validation_to_be_owned_by_middleware() {
+        let config = streamable_http_server_config(CancellationToken::new(), true);
+
+        assert!(config.allowed_hosts.is_empty());
+    }
+
+    #[test]
+    fn streamable_http_keeps_default_host_validation_for_loopback_mode() {
+        let config = streamable_http_server_config(CancellationToken::new(), false);
+
+        assert!(!config.allowed_hosts.is_empty());
+    }
 
     #[test]
     fn active_connection_count_stays_until_response_body_drops() {

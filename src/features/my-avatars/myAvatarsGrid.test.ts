@@ -75,7 +75,7 @@ describe('myAvatarsGrid', () => {
 
     it('keeps nearby virtual rows mounted around the visible scroll window', () => {
         const gridRows = buildMyAvatarsGridRows({
-            avatars: Array.from({ length: 20 }, (_: any, index: any) => ({
+            avatars: Array.from({ length: 20 }, (_, index) => ({
                 id: `avtr_${index}`
             })),
             gridColumnCount: 2,

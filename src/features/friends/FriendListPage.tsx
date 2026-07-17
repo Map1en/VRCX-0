@@ -2,7 +2,6 @@ import { PageScaffold } from '@/components/layout/PageScaffold';
 
 import { FriendListTable } from './components/FriendListTable';
 import { FriendListToolbar } from './components/FriendListToolbar';
-import { FriendListUserLoadDialog } from './components/FriendListUserLoadDialog';
 import { useFriendListPageController } from './useFriendListPageController';
 
 export function FriendListPage({
@@ -19,8 +18,7 @@ export function FriendListPage({
         rows,
         selection,
         table,
-        tableState,
-        userLoad
+        tableState
     } = useFriendListPageController();
 
     return (
@@ -39,7 +37,7 @@ export function FriendListPage({
                 }}
                 loadModel={{
                     currentUserId: rows.currentUserId,
-                    isLoadingUserDetails: userLoad.isLoadingUserDetails,
+                    isLoadingUserDetails: actions.isLoadingUserDetails,
                     isMutualFetching: actions.isMutualFetching,
                     isMutualOptOut,
                     mutualProgress,
@@ -79,13 +77,6 @@ export function FriendListPage({
                 onResetTableLayout={actions.resetFriendListTableLayout}
                 onPageSizeChange={tableState.setPageSize}
                 onOpenUser={actions.openFriendDetails}
-            />
-
-            <FriendListUserLoadDialog
-                open={userLoad.userLoadProgress.open}
-                progress={userLoad.userLoadProgress}
-                percent={userLoad.userLoadPercent}
-                onCancel={userLoad.cancelFriendUserDetailsLoad}
             />
         </PageScaffold>
     );

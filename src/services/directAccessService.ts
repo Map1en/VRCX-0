@@ -43,7 +43,7 @@ function openWorldLocation(location: unknown, title: unknown = '') {
 export function buildVrcLaunchUrl(location: unknown, shortName: unknown = '') {
     const normalizedLocation = normalizeString(location);
     const normalizedShortName = normalizeString(shortName);
-    let launchUrl = `vrchat://launch?ref=vrcx.app&id=${normalizedLocation}`;
+    let launchUrl = `vrchat://launch?id=${normalizedLocation}`;
     if (normalizedShortName) {
         launchUrl += `&shortName=${normalizedShortName}`;
     }

@@ -1,8 +1,11 @@
 import { LockIcon, PersonStandingIcon, UserIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import { UserStatusAvatar } from '@/components/UserStatusAvatar';
+import { UserDetailTile } from '@/components/UserDetailTile';
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -16,17 +19,22 @@ import {
     userTravelingTimestamp,
     worldOccupantSubtitle
 } from '../userDialogRows';
-import { rowImage } from './userDialogEntityImages';
+import { rowImage, type UserDialogEntityKind } from './userDialogEntityImages';
 import { EntityListState } from './UserDialogEntityListState';
 import { openRow } from './userDialogEntityNavigation';
 import { UserGroupCard } from './UserDialogGroupCard';
 
 export function EntityList({
     rows,
-    kind = '',
+    kind,
     loading = false,
     error = ''
-}: any) {
+}: {
+    rows: readonly EntityRecord[];
+    kind: UserDialogEntityKind;
+    loading?: boolean;
+    error?: string;
+}) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -49,7 +57,7 @@ export function EntityList({
 
     return (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-1">
-            {rows.map((row: any, index: any) => {
+            {rows.map((row, index) => {
                 if (kind === 'group') {
                     return (
                         <UserGroupCard
@@ -61,16 +69,22 @@ export function EntityList({
                 }
 
                 const image = rowImage(row, kind);
-                const label =
+                const rawLabel =
                     kind === 'user'
                         ? row?.displayName || row?.username || ''
                         : summarizeEntityRow(row);
+                const label =
+                    typeof rawLabel === 'string'
+                        ? rawLabel
+                        : String(rawLabel ?? '');
                 const subtitle =
                     kind === 'user'
                         ? userRowSubtitle(row, nowMs, t)
                         : kind === 'world'
                           ? worldOccupantSubtitle(row)
-                          : row?.description || '';
+                          : typeof row.description === 'string'
+                            ? row.description
+                            : '';
                 const imageRoundedClassName =
                     kind === 'user' ? 'rounded-full' : 'rounded-md';
                 const RowFallbackIcon =
@@ -92,48 +106,69 @@ export function EntityList({
                         : '';
                 const isPrivateWorld =
                     kind === 'world' && row?.releaseStatus === 'private';
-                const rowClassName =
-                    'h-auto min-w-0 justify-start gap-2 px-1.5 py-1.5 text-left font-normal active:not-aria-[haspopup]:translate-y-0';
+                const userColour =
+                    typeof row.$userColour === 'string' ? row.$userColour : '';
+                const rowKey = `${row?.id || row?.userId || label}:${index}`;
+
+                if (kind === 'user') {
+                    return (
+                        <UserDetailTile
+                            key={rowKey}
+                            userId={userId}
+                            seed={row}
+                            className="active:not-aria-[haspopup]:translate-y-0"
+                            imageUrl={image}
+                            statusDotClassName={dotClassName}
+                            displayName={label || '\u2014'}
+                            nameStyle={
+                                userColour ? { color: userColour } : undefined
+                            }
+                            subline={
+                                travelingTimestamp ? (
+                                    <>
+                                        <Spinner
+                                            data-icon="inline-start"
+                                            className="mr-1 inline-block"
+                                        />
+                                        {timeToText(
+                                            Date.now() - travelingTimestamp
+                                        )}
+                                    </>
+                                ) : (
+                                    subtitle || undefined
+                                )
+                            }
+                            onOpen={() => openRow(row, kind)}
+                        />
+                    );
+                }
+
                 const content = (
                     <>
-                        {kind === 'user' ? (
-                            <UserStatusAvatar
-                                imageUrl={image}
-                                statusDotClassName={dotClassName}
-                            />
-                        ) : (
-                            <span className="relative size-9 shrink-0">
-                                {image ? (
-                                    <img
-                                        src={image}
-                                        alt=""
-                                        className={cn(
-                                            'size-9 object-cover',
-                                            imageRoundedClassName
-                                        )}
-                                    />
-                                ) : (
-                                    <span
-                                        className={cn(
-                                            'bg-muted flex size-9 items-center justify-center [&>svg]:size-4',
-                                            imageRoundedClassName
-                                        )}
-                                    >
-                                        <RowFallbackIcon className="text-muted-foreground" />
-                                    </span>
-                                )}
-                            </span>
-                        )}
+                        <span className="relative size-9 shrink-0">
+                            {image ? (
+                                <FadeInImage
+                                    src={image}
+                                    alt=""
+                                    className={cn(
+                                        'size-9 object-cover',
+                                        imageRoundedClassName
+                                    )}
+                                />
+                            ) : (
+                                <span
+                                    className={cn(
+                                        'bg-muted flex size-9 items-center justify-center [&>svg]:size-4',
+                                        imageRoundedClassName
+                                    )}
+                                >
+                                    <RowFallbackIcon className="text-muted-foreground" />
+                                </span>
+                            )}
+                        </span>
                         <span className="min-w-0 flex-1 overflow-hidden">
                             <span className="flex min-w-0 items-center gap-1">
-                                <span
-                                    className="block truncate leading-snug font-medium"
-                                    style={
-                                        kind === 'user' && row?.$userColour
-                                            ? { color: row.$userColour }
-                                            : undefined
-                                    }
-                                >
+                                <span className="block truncate leading-snug font-medium">
                                     {label || '\u2014'}
                                 </span>
                                 {isPrivateWorld ? (
@@ -145,17 +180,7 @@ export function EntityList({
                                     />
                                 ) : null}
                             </span>
-                            {travelingTimestamp ? (
-                                <span className="text-muted-foreground block truncate text-xs">
-                                    <Spinner
-                                        data-icon="inline-start"
-                                        className="mr-1 inline-block"
-                                    />
-                                    {timeToText(
-                                        Date.now() - travelingTimestamp
-                                    )}
-                                </span>
-                            ) : subtitle ? (
+                            {subtitle ? (
                                 <span className="text-muted-foreground block truncate text-xs">
                                     {subtitle}
                                 </span>
@@ -166,10 +191,10 @@ export function EntityList({
 
                 return (
                     <Button
-                        key={`${row?.id || row?.userId || label}:${index}`}
+                        key={rowKey}
                         type="button"
                         variant="ghost"
-                        className={rowClassName}
+                        className="h-auto min-w-0 justify-start gap-2 px-1.5 py-1.5 text-left font-normal active:not-aria-[haspopup]:translate-y-0"
                         onClick={() => openRow(row, kind)}
                     >
                         {content}
@@ -180,7 +205,15 @@ export function EntityList({
     );
 }
 
-export function UserGroupSection({ title, rows, countText }: any) {
+export function UserGroupSection({
+    title,
+    rows,
+    countText
+}: {
+    title: ReactNode;
+    rows: readonly EntityRecord[];
+    countText?: ReactNode;
+}) {
     if (!rows.length) {
         return null;
     }

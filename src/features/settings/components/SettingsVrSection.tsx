@@ -160,24 +160,6 @@ export function SettingsVrSection({ vr }: SettingsVrSectionProps) {
             onOpenHmdNotificationFiltersDialog={() =>
                 setHmdNotificationsDialogOpen(true)
             }
-            onVrOverlayPanelEnabledChange={(checked: unknown) => {
-                const enabled = normalizeCheckedState(checked);
-                saveBoolPreference(
-                    'vrOverlayPanelEnabled',
-                    'vrOverlayPanelEnabled',
-                    enabled
-                );
-            }}
-            onVrOverlayPanelAllFriendsIncludesFavoritesChange={(
-                checked: unknown
-            ) => {
-                const enabled = normalizeCheckedState(checked);
-                saveBoolPreference(
-                    'vrOverlayPanelAllFriendsIncludesFavorites',
-                    'vrOverlayPanelAllFriendsIncludesFavorites',
-                    enabled
-                );
-            }}
             onWristOverlayEnabledChange={(checked: unknown) =>
                 saveWristOverlayEnabled(normalizeCheckedState(checked))
             }

@@ -7,8 +7,8 @@ use crate::game_log::GameLogProjection;
 use crate::overlay_activity::OverlayActivitySnapshot;
 use crate::prints::cleanup::PrintAutoCleanupEvent;
 use crate::realtime::{
-    FriendProjection, RealtimeCurrentUserProjection, RealtimeEntryCorrection,
-    RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
+    FriendProfileLoadStatusPayload, FriendProjection, RealtimeCurrentUserProjection,
+    RealtimeEntryCorrection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
     RealtimeNotificationProjection,
 };
 use crate::session::HostSessionProjection;
@@ -17,6 +17,25 @@ use vrcx_0_persistence::game_log::GameLogWriteBatch;
 
 pub trait RuntimeEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FavoritesChangedPayload {
+    pub kind: String,
+    pub local: bool,
+    pub remote: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeVrchatAuthFailurePayload {
+    pub owner_user_id: String,
+    pub endpoint: String,
+    pub path: String,
+    pub reason: String,
+    pub status_code: i32,
+    pub auth_scope_generation: u64,
 }
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -140,10 +159,6 @@ impl RuntimeEventBus {
         );
     }
 
-    pub fn emit_ipc_event(&self, packet: &str) {
-        self.emit("ipcEvent", packet.to_string());
-    }
-
     pub fn emit_runtime_worker_error(&self, worker: &str, message: &str) {
         self.emit(
             "runtimeWorkerError",
@@ -160,6 +175,10 @@ impl RuntimeEventBus {
 
     pub fn emit_realtime_ws_status(&self, payload: RealtimeWsStatusPayload) {
         self.emit("realtimeWsStatus", payload);
+    }
+
+    pub fn emit_runtime_vrchat_auth_failure(&self, payload: RuntimeVrchatAuthFailurePayload) {
+        self.emit("runtimeVrchatAuthFailure", payload);
     }
 
     pub fn emit_backend_runtime_telemetry(&self, payload: Value) {
@@ -210,5 +229,13 @@ impl RuntimeEventBus {
 
     pub fn emit_prints_auto_cleanup(&self, payload: PrintAutoCleanupEvent) {
         self.emit("printsAutoCleanup", payload);
+    }
+
+    pub fn emit_friend_profile_load_status(&self, payload: FriendProfileLoadStatusPayload) {
+        self.emit("friendProfileLoadStatus", payload);
+    }
+
+    pub fn emit_favorites_changed(&self, payload: FavoritesChangedPayload) {
+        self.emit("favoritesChanged", payload);
     }
 }

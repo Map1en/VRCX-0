@@ -3,6 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
 
+import {
+    DEFAULT_FAVORITES_DENSITY_BY_KIND,
+    sanitizeFavoritesDensity,
+    type FavoritesDensity
+} from './favoritesDensity';
 import type { FavoriteKind } from './favoritesTypes';
 
 const SPLITTER_DEFAULT_SIZE_PX = 260;
@@ -13,16 +18,6 @@ const SORT_VALUES_BY_KIND: Record<FavoriteKind, Set<string>> = {
     avatar: new Set(['name', 'date'])
 };
 const DEFAULT_SORT_VALUE = 'date';
-const CARD_SCALE_SLIDER = { min: 0.6, max: 1, step: 0.01 };
-const CARD_SPACING_SLIDER = { min: 0.5, max: 1.5, step: 0.05 };
-
-function clampNumber(value: any, min: any, max: any, fallback: any) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-        return fallback;
-    }
-    return Math.min(max, Math.max(min, parsed));
-}
 
 function normalizeSplitterSizePx(value: any) {
     const parsed = Number(value);
@@ -41,16 +36,69 @@ function normalizeFavoriteSortValue(kind: FavoriteKind, value: any) {
         : DEFAULT_SORT_VALUE;
 }
 
+function usePersistedPreference<T extends string>(
+    configKey: string,
+    fallback: T,
+    sanitize: (value: unknown) => T
+): [T, (value: unknown) => void] {
+    const [value, setValue] = useState<T>(fallback);
+    const loadVersionRef = useRef(0);
+    const sanitizeRef = useRef(sanitize);
+    sanitizeRef.current = sanitize;
+    const fallbackRef = useRef(fallback);
+    fallbackRef.current = fallback;
+
+    useEffect(() => {
+        let active = true;
+        const loadVersion = loadVersionRef.current;
+
+        setValue((current) => sanitizeRef.current(current));
+
+        configRepository
+            .getString(configKey, fallbackRef.current)
+            .then((stored: any) => {
+                if (active && loadVersionRef.current === loadVersion) {
+                    setValue(sanitizeRef.current(stored));
+                }
+            })
+            .catch(() => {
+                if (active && loadVersionRef.current === loadVersion) {
+                    setValue(fallbackRef.current);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [configKey]);
+
+    const handleChange = (next: unknown) => {
+        const nextValue = sanitizeRef.current(next);
+        loadVersionRef.current += 1;
+        setValue(nextValue);
+        configRepository.setString(configKey, nextValue);
+    };
+
+    return [value, handleChange];
+}
+
 export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
     const [splitterSizePx, setSplitterSizePx] = useState(
         SPLITTER_DEFAULT_SIZE_PX
     );
     const [splitterLayoutVersion, setSplitterLayoutVersion] = useState(0);
-    const [cardScale, setCardScale] = useState(1);
-    const [cardSpacing, setCardSpacing] = useState(1);
-    const [sortValue, setSortValue] = useState(DEFAULT_SORT_VALUE);
     const pendingSplitterSizePxRef = useRef<number | null>(null);
-    const sortLoadVersionRef = useRef(0);
+    const [density, handleDensityChange] =
+        usePersistedPreference<FavoritesDensity>(
+            FAVORITES_LAYOUT_CONFIG_KEYS.density[kind],
+            DEFAULT_FAVORITES_DENSITY_BY_KIND[kind],
+            (value) => sanitizeFavoritesDensity(kind, value)
+        );
+    const [sortValue, handleSortValueChange] = usePersistedPreference(
+        FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind],
+        DEFAULT_SORT_VALUE,
+        (value) => normalizeFavoriteSortValue(kind, value)
+    );
 
     useEffect(() => {
         let active = true;
@@ -82,114 +130,6 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         };
     }, [kind]);
 
-    useEffect(() => {
-        let active = true;
-        const scaleKey = FAVORITES_LAYOUT_CONFIG_KEYS.cardScale[kind];
-        const spacingKey = FAVORITES_LAYOUT_CONFIG_KEYS.cardSpacing[kind];
-
-        Promise.all([
-            configRepository.getString(scaleKey, '1'),
-            configRepository.getString(spacingKey, '1')
-        ])
-            .then(([nextScale, nextSpacing]: any) => {
-                if (!active) {
-                    return;
-                }
-                setCardScale(
-                    clampNumber(
-                        nextScale,
-                        CARD_SCALE_SLIDER.min,
-                        CARD_SCALE_SLIDER.max,
-                        1
-                    )
-                );
-                setCardSpacing(
-                    clampNumber(
-                        nextSpacing,
-                        CARD_SPACING_SLIDER.min,
-                        CARD_SPACING_SLIDER.max,
-                        1
-                    )
-                );
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setCardScale(1);
-                setCardSpacing(1);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [kind]);
-
-    useEffect(() => {
-        let active = true;
-        const loadVersion = sortLoadVersionRef.current;
-        const sortKey = FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind];
-
-        setSortValue((current: any) =>
-            normalizeFavoriteSortValue(kind, current)
-        );
-
-        configRepository
-            .getString(sortKey, DEFAULT_SORT_VALUE)
-            .then((value: any) => {
-                if (active && sortLoadVersionRef.current === loadVersion) {
-                    setSortValue(normalizeFavoriteSortValue(kind, value));
-                }
-            })
-            .catch(() => {
-                if (active && sortLoadVersionRef.current === loadVersion) {
-                    setSortValue(DEFAULT_SORT_VALUE);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [kind]);
-
-    const handleCardScaleChange = (value: any) => {
-        const nextValue = clampNumber(
-            value,
-            CARD_SCALE_SLIDER.min,
-            CARD_SCALE_SLIDER.max,
-            1
-        );
-        setCardScale(nextValue);
-        configRepository.setString(
-            FAVORITES_LAYOUT_CONFIG_KEYS.cardScale[kind],
-            String(nextValue)
-        );
-    };
-
-    const handleCardSpacingChange = (value: any) => {
-        const nextValue = clampNumber(
-            value,
-            CARD_SPACING_SLIDER.min,
-            CARD_SPACING_SLIDER.max,
-            1
-        );
-        setCardSpacing(nextValue);
-        configRepository.setString(
-            FAVORITES_LAYOUT_CONFIG_KEYS.cardSpacing[kind],
-            String(nextValue)
-        );
-    };
-
-    const handleSortValueChange = (value: any) => {
-        const nextValue = normalizeFavoriteSortValue(kind, value);
-        sortLoadVersionRef.current += 1;
-        setSortValue(nextValue);
-        configRepository.setString(
-            FAVORITES_LAYOUT_CONFIG_KEYS.sort[kind],
-            nextValue
-        );
-    };
-
     function persistSplitterSizePx(nextSizePx: any) {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
         setSplitterSizePx(normalizedSizePx);
@@ -216,10 +156,8 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
     }
 
     return {
-        cardScale,
-        cardSpacing,
-        handleCardScaleChange,
-        handleCardSpacingChange,
+        density,
+        handleDensityChange,
         handleSortValueChange,
         handleSplitterResize,
         persistSplitterLayout,

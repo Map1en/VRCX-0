@@ -51,7 +51,7 @@ type FriendsLocationsSectionHeaderProps = {
     onOpenGroup: (section: FriendsLocationsSection) => void;
 };
 
-type FriendsLocationsFavoriteGroupHeaderProps = {
+type FriendsLocationsCollapsibleGroupHeaderProps = {
     section: FriendsLocationsSection;
     onToggle: BivariantCallback<[string | undefined]>;
 };
@@ -82,7 +82,9 @@ export function FriendsLocationsEmptyState({
     title,
     description
 }: FriendsLocationsEmptyStateProps) {
-    return <EmptyState title={title} description={description} />;
+    return (
+        <EmptyState variant="page" title={title} description={description} />
+    );
 }
 
 export function FriendsLocationsSectionHeader({
@@ -93,7 +95,7 @@ export function FriendsLocationsSectionHeader({
     const { t } = useTranslation();
 
     return (
-        <div className="bg-card/50 flex h-full min-h-0 flex-col gap-1.5 overflow-hidden rounded-lg border px-3 py-2 md:flex-row md:items-center md:justify-between">
+        <div className="border-border/70 flex h-full min-h-0 flex-col gap-1.5 overflow-hidden rounded-lg border-b px-2 py-2 md:flex-row md:items-center md:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
                 <div className="flex min-w-0 items-center gap-2">
                     <LayersIcon className="text-muted-foreground size-4 shrink-0" />
@@ -117,9 +119,11 @@ export function FriendsLocationsSectionHeader({
                     </Badge>
                 </div>
             </div>
-            {section.worldId || section.groupId ? (
+            {(section.worldId && section.displayInstanceInfo !== false) ||
+            section.groupId ? (
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                    {section.worldId ? (
+                    {section.worldId &&
+                    section.displayInstanceInfo !== false ? (
                         <Button
                             type="button"
                             size="xs"
@@ -147,10 +151,10 @@ export function FriendsLocationsSectionHeader({
     );
 }
 
-export function FriendsLocationsFavoriteGroupHeader({
+export function FriendsLocationsCollapsibleGroupHeader({
     section,
     onToggle
-}: FriendsLocationsFavoriteGroupHeaderProps) {
+}: FriendsLocationsCollapsibleGroupHeaderProps) {
     return (
         <Button
             type="button"
@@ -214,6 +218,7 @@ export function FriendsLocationCardItem({
             isTraveling={isTravelingLocation}
             travelingLocation={travelingLocation}
             densityConfig={densityConfig}
+            contentMode={section.cardContentMode}
             displayInstanceInfo={section.displayInstanceInfo !== false}
             canUseFriendLocation={
                 !friendIsCurrentUser && friendLocationAvailable

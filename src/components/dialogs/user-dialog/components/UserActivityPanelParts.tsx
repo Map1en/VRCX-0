@@ -1,6 +1,7 @@
 import type { EChartsType } from 'echarts/core';
 import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { timeToText } from '@/lib/dateTime';
@@ -16,10 +17,19 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 
-import { getWorldThumbnailUrl } from '../userActivityPanelModel';
+import {
+    getWorldThumbnailUrl,
+    type TopWorldsSort,
+    type UserActivityTopWorld
+} from '../userActivityPanelModel';
 
-function toHeatmapSeriesData(normalizedBuckets: any, weekStartsOn: any) {
-    const data = [];
+type HeatmapPoint = [number, number, number];
+
+function toHeatmapSeriesData(
+    normalizedBuckets: readonly number[],
+    weekStartsOn: number
+) {
+    const data: HeatmapPoint[] = [];
     for (let day = 0; day < 7; day += 1) {
         for (let hour = 0; hour < 24; hour += 1) {
             const slot = day * 24 + hour;
@@ -28,6 +38,18 @@ function toHeatmapSeriesData(normalizedBuckets: any, weekStartsOn: any) {
         }
     }
     return data;
+}
+
+interface HeatmapOptionInput {
+    data: HeatmapPoint[];
+    rawBuckets: readonly number[];
+    dayLabels: readonly string[];
+    hourLabels: readonly string[];
+    weekStartsOn: number;
+    isDarkMode: boolean;
+    emptyColor: string;
+    scaleColors: readonly string[];
+    unitLabel: string;
 }
 
 function buildHeatmapOption({
@@ -40,13 +62,15 @@ function buildHeatmapOption({
     emptyColor,
     scaleColors,
     unitLabel
-}: any) {
+}: HeatmapOptionInput) {
     return {
         tooltip: {
             confine: true,
             position: 'top',
-            formatter: (params: any) => {
-                const [hour, dayIndex] = params.data;
+            formatter: (params: { data?: unknown }) => {
+                const point = Array.isArray(params.data) ? params.data : [];
+                const hour = Number(point[0]) || 0;
+                const dayIndex = Number(point[1]) || 0;
                 const originalDay = (dayIndex + weekStartsOn) % 7;
                 const slot = originalDay * 24 + hour;
                 const minutes = Math.round(rawBuckets?.[slot] || 0);
@@ -133,7 +157,19 @@ export function HeatmapChart({
     unitLabel,
     renderDelay = 0,
     onContextMenu
-}: any) {
+}: {
+    rawBuckets?: number[];
+    normalizedBuckets?: number[];
+    dayLabels: string[];
+    hourLabels: string[];
+    weekStartsOn: number;
+    isDarkMode: boolean;
+    emptyColor: string;
+    scaleColors: string[];
+    unitLabel: string;
+    renderDelay?: number;
+    onContextMenu?: () => void;
+}) {
     const [chartElement, setChartElement] = useState<HTMLDivElement | null>(
         null
     );
@@ -260,7 +296,13 @@ export function HeatmapChart({
     );
 }
 
-export function ActivityEmptyState({ title, description }: any) {
+export function ActivityEmptyState({
+    title,
+    description
+}: {
+    title: ReactNode;
+    description?: ReactNode;
+}) {
     return (
         <Empty className="mt-8 min-h-40 border">
             <EmptyHeader>
@@ -273,13 +315,16 @@ export function ActivityEmptyState({ title, description }: any) {
     );
 }
 
-export function TopWorldRows({ worlds, sortBy }: any) {
+export function TopWorldRows({
+    worlds,
+    sortBy
+}: {
+    worlds: UserActivityTopWorld[];
+    sortBy: TopWorldsSort;
+}) {
     const { t } = useTranslation();
     const key = sortBy === 'count' ? 'visitCount' : 'totalTime';
-    const maxValue = Math.max(
-        ...worlds.map((world: any) => world[key] || 0),
-        0
-    );
+    const maxValue = Math.max(...worlds.map((world) => world[key] || 0), 0);
 
     if (!worlds.length) {
         return null;
@@ -287,7 +332,7 @@ export function TopWorldRows({ worlds, sortBy }: any) {
 
     return (
         <div className="flex flex-col gap-0.5">
-            {worlds.map((world: any, index: any) => {
+            {worlds.map((world, index) => {
                 const value = world[key] || 0;
                 const thumbnailUrl = getWorldThumbnailUrl(world);
                 const barWidth =
@@ -351,7 +396,7 @@ export function TopWorldRows({ worlds, sortBy }: any) {
                             </span>
                             <span className="bg-muted mt-1 block h-1.5 w-full overflow-hidden rounded-full">
                                 <span
-                                    className="bg-muted-foreground/45 block h-full rounded-full transition-all duration-500"
+                                    className="bg-muted-foreground/45 block h-full rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none"
                                     style={{ width: barWidth }}
                                 />
                             </span>

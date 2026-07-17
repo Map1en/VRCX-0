@@ -1,3 +1,4 @@
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { parseLocation } from '@/shared/utils/location';
 
 import {
@@ -9,8 +10,36 @@ import {
     normalizeInstanceGroup,
     resolveLaunchLocation,
     sameInstanceLocation,
-    sameLocationTag
+    sameLocationTag,
+    type WorldDialogInstanceRow
 } from './WorldDialogViewParts';
+
+type CurrentInstanceDetails = {
+    location?: unknown;
+    instance?: unknown;
+    ownerUser?: unknown;
+    ownerGroup?: unknown;
+    playerSnapshot?: unknown;
+};
+
+type BuildWorldDialogDisplayInstanceRowsInput = {
+    creatorGroupsById: Record<string, EntityRecord>;
+    currentInstanceDetails: CurrentInstanceDetails;
+    friendsById: Record<string, unknown>;
+    instanceRows: EntityRecord[];
+    isInstanceLocation: boolean;
+    normalizedWorldId: string;
+    world: EntityRecord & { id: string; capacity: number };
+    worldDialogShortName?: string;
+};
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): EntityRecord {
+    return isRecord(value) ? value : {};
+}
 
 export function buildWorldDialogDisplayInstanceRows({
     creatorGroupsById,
@@ -21,51 +50,89 @@ export function buildWorldDialogDisplayInstanceRows({
     normalizedWorldId,
     world,
     worldDialogShortName
-}: any) {
+}: BuildWorldDialogDisplayInstanceRowsInput) {
+    const normalizedInstanceRows: WorldDialogInstanceRow[] = instanceRows.map(
+        (instance) => ({
+            ...instance,
+            id: firstText(instance.id, instance.instanceId),
+            location: firstText(instance.location, instance.tag),
+            users: mergeInstanceUsers(instance.users),
+            creatorUserId: firstText(instance.creatorUserId),
+            creatorUser: instance.creatorUser ?? null,
+            creatorGroupId: firstText(instance.creatorGroupId),
+            creatorGroup: normalizeInstanceGroup(
+                instance.creatorGroup,
+                instance.creatorGroupId
+            )
+        })
+    );
     const parsedCurrentInstanceLocation = isInstanceLocation
         ? parseLocation(normalizedWorldId)
         : null;
+    const emptyInstanceDetails: CurrentInstanceDetails = {
+        location: '',
+        instance: null,
+        ownerUser: null,
+        ownerGroup: null,
+        playerSnapshot: null
+    };
     const currentInstanceDetailsForLocation = sameLocationTag(
         currentInstanceDetails.location,
         normalizedWorldId
     )
         ? currentInstanceDetails
-        : {
-              instance: null,
-              ownerUser: null,
-              ownerGroup: null,
-              playerSnapshot: null
-          };
+        : emptyInstanceDetails;
+    const currentInstance = record(currentInstanceDetailsForLocation.instance);
+    const currentOwnerUser = record(currentInstance.ownerUser);
+    const currentOwner = record(currentInstance.owner);
+    const currentCreatorUser = record(currentInstance.creatorUser);
+    const currentUser = record(currentInstance.user);
+    const currentGroup = record(currentInstance.group);
+    const playerSnapshot = record(
+        currentInstanceDetailsForLocation.playerSnapshot
+    );
+    const playerSnapshotContext = record(playerSnapshot.context);
     const currentInstanceOwnerId =
         parsedCurrentInstanceLocation?.worldId &&
         parsedCurrentInstanceLocation?.instanceId
             ? firstText(
                   parsedCurrentInstanceLocation.userId,
-                  currentInstanceDetailsForLocation.instance?.ownerId,
-                  currentInstanceDetailsForLocation.instance?.owner_id,
-                  currentInstanceDetailsForLocation.instance?.ownerUserId,
-                  currentInstanceDetailsForLocation.instance?.owner_user_id,
-                  currentInstanceDetailsForLocation.instance?.userId,
-                  currentInstanceDetailsForLocation.instance?.user_id,
-                  currentInstanceDetailsForLocation.instance?.creatorUserId,
-                  currentInstanceDetailsForLocation.instance?.creator_user_id,
-                  currentInstanceDetailsForLocation.instance?.ownerUser?.id,
-                  currentInstanceDetailsForLocation.instance?.ownerUser?.userId,
-                  currentInstanceDetailsForLocation.instance?.owner?.id,
-                  currentInstanceDetailsForLocation.instance?.owner?.userId,
-                  currentInstanceDetailsForLocation.instance?.creatorUser?.id,
-                  currentInstanceDetailsForLocation.instance?.creatorUser
-                      ?.userId,
-                  currentInstanceDetailsForLocation.instance?.user?.id,
-                  currentInstanceDetailsForLocation.instance?.user?.userId,
-                  currentInstanceDetailsForLocation.instance?.groupId,
-                  currentInstanceDetailsForLocation.instance?.group_id,
-                  currentInstanceDetailsForLocation.instance?.group?.id,
+                  currentInstance.ownerId,
+                  currentInstance.owner_id,
+                  currentInstance.ownerUserId,
+                  currentInstance.owner_user_id,
+                  currentInstance.userId,
+                  currentInstance.user_id,
+                  currentInstance.creatorUserId,
+                  currentInstance.creator_user_id,
+                  currentOwnerUser.id,
+                  currentOwnerUser.userId,
+                  currentOwner.id,
+                  currentOwner.userId,
+                  currentCreatorUser.id,
+                  currentCreatorUser.userId,
+                  currentUser.id,
+                  currentUser.userId,
+                  currentInstance.groupId,
+                  currentInstance.group_id,
+                  currentGroup.id,
                   parsedCurrentInstanceLocation.groupId
               )
             : '';
     const currentInstanceOwnerIsGroup = isGroupId(currentInstanceOwnerId);
-    const currentInstanceRow =
+    const snapshotPlayers = (
+        Array.isArray(playerSnapshot.players) ? playerSnapshot.players : []
+    ).map((player) => {
+        const source = record(player);
+        const userId = firstText(source.userId, source.user_id);
+        return {
+            id: userId,
+            userId,
+            displayName: firstText(source.displayName, source.display_name),
+            joinedAt: firstText(source.joinedAt, source.joined_at)
+        };
+    });
+    const currentInstanceRow: WorldDialogInstanceRow | null =
         parsedCurrentInstanceLocation?.worldId &&
         parsedCurrentInstanceLocation?.instanceId
             ? {
@@ -73,30 +140,28 @@ export function buildWorldDialogDisplayInstanceRows({
                   location: normalizedWorldId,
                   shortName:
                       parsedCurrentInstanceLocation.shortName ||
-                      worldDialogShortName,
+                      worldDialogShortName ||
+                      '',
                   occupants:
-                      currentInstanceDetailsForLocation.instance?.userCount ??
-                      currentInstanceDetailsForLocation.instance?.occupants ??
-                      currentInstanceDetailsForLocation.playerSnapshot?.context
-                          ?.playerCount,
+                      currentInstance.userCount ??
+                      currentInstance.occupants ??
+                      playerSnapshotContext.playerCount,
                   playerCount:
-                      currentInstanceDetailsForLocation.instance?.userCount ??
-                      currentInstanceDetailsForLocation.instance?.occupants ??
-                      currentInstanceDetailsForLocation.playerSnapshot?.context
-                          ?.playerCount,
+                      currentInstance.userCount ??
+                      currentInstance.occupants ??
+                      playerSnapshotContext.playerCount,
                   capacity:
-                      currentInstanceDetailsForLocation.instance?.capacity ??
-                      currentInstanceDetailsForLocation.instance?.world
-                          ?.capacity ??
+                      currentInstance.capacity ??
+                      record(currentInstance.world).capacity ??
                       world.capacity,
                   users: mergeInstanceUsers(
-                      currentInstanceDetailsForLocation.instance?.users,
-                      currentInstanceDetailsForLocation.instance?.players,
-                      currentInstanceDetailsForLocation.instance?.playerList,
-                      currentInstanceDetailsForLocation.instance?.userList,
-                      currentInstanceDetailsForLocation.instance?.userIds,
-                      currentInstanceDetailsForLocation.instance?.usersById,
-                      currentInstanceDetailsForLocation.playerSnapshot?.players
+                      currentInstance.users,
+                      currentInstance.players,
+                      currentInstance.playerList,
+                      currentInstance.userList,
+                      currentInstance.userIds,
+                      currentInstance.usersById,
+                      snapshotPlayers
                   ),
                   ref: currentInstanceDetailsForLocation.instance || null,
                   creatorUserId: currentInstanceOwnerIsGroup
@@ -105,11 +170,10 @@ export function buildWorldDialogDisplayInstanceRows({
                   creatorUser: currentInstanceOwnerIsGroup
                       ? null
                       : currentInstanceDetailsForLocation.ownerUser ||
-                        currentInstanceDetailsForLocation.instance?.ownerUser ||
-                        currentInstanceDetailsForLocation.instance?.owner ||
-                        currentInstanceDetailsForLocation.instance
-                            ?.creatorUser ||
-                        currentInstanceDetailsForLocation.instance?.user ||
+                        currentInstance.ownerUser ||
+                        currentInstance.owner ||
+                        currentInstance.creatorUser ||
+                        currentInstance.user ||
                         null,
                   creatorGroupId: currentInstanceOwnerIsGroup
                       ? currentInstanceOwnerId
@@ -117,14 +181,9 @@ export function buildWorldDialogDisplayInstanceRows({
                   creatorGroup: currentInstanceOwnerIsGroup
                       ? normalizeInstanceGroup(
                             currentInstanceDetailsForLocation.ownerGroup ||
-                                currentInstanceDetailsForLocation.instance
-                                    ?.group ||
-                                currentInstanceDetailsForLocation.instance
-                                    ?.ownerGroup ||
-                                groupSeed(
-                                    currentInstanceDetailsForLocation.instance
-                                        ?.owner
-                                ),
+                                currentInstance.group ||
+                                currentInstance.ownerGroup ||
+                                groupSeed(currentInstance.owner),
                             currentInstanceOwnerId
                         )
                       : null
@@ -138,10 +197,10 @@ export function buildWorldDialogDisplayInstanceRows({
     );
     const baseDisplayInstanceRows =
         currentInstanceRow && hasLiveCurrentInstanceDetails
-            ? instanceRows.some((instance: any) =>
+            ? normalizedInstanceRows.some((instance) =>
                   sameInstanceLocation(world, instance, normalizedWorldId)
               )
-                ? instanceRows.map((instance: any) =>
+                ? normalizedInstanceRows.map((instance) =>
                       sameInstanceLocation(world, instance, normalizedWorldId)
                           ? {
                                 ...instance,
@@ -181,12 +240,12 @@ export function buildWorldDialogDisplayInstanceRows({
                             }
                           : instance
                   )
-                : [currentInstanceRow, ...instanceRows]
-            : instanceRows;
+                : [currentInstanceRow, ...normalizedInstanceRows]
+            : normalizedInstanceRows;
     const creatorGroupKey = Array.from(
         new Set(
             baseDisplayInstanceRows
-                .map((instance: any) =>
+                .map((instance) =>
                     firstText(
                         instance.creatorGroupId,
                         isGroupId(instance.creatorUserId)
@@ -200,10 +259,10 @@ export function buildWorldDialogDisplayInstanceRows({
         .sort()
         .join('|');
     const friendRows = Object.values(friendsById || {});
-    const displayInstanceRows = baseDisplayInstanceRows.map((instance: any) => {
+    const displayInstanceRows = baseDisplayInstanceRows.map((instance) => {
         const location = resolveLaunchLocation(world, instance);
         const friendsInInstance = location
-            ? friendRows.filter((friend: any) =>
+            ? friendRows.filter((friend) =>
                   friendIsInInstance(friend, location)
               )
             : [];
@@ -214,7 +273,7 @@ export function buildWorldDialogDisplayInstanceRows({
         const creatorGroupProfile = creatorGroupId
             ? creatorGroupsById[creatorGroupId]
             : null;
-        const instanceWithFriends: any = {
+        const instanceWithFriends: WorldDialogInstanceRow = {
             ...instance,
             users: mergeInstanceUsers(instance.users, friendsInInstance)
         };

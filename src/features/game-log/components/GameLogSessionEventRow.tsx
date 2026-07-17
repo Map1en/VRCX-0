@@ -2,6 +2,8 @@ import {
     ChevronRightIcon,
     CopyIcon,
     ExternalLinkIcon,
+    LogInIcon,
+    LogOutIcon,
     UsersIcon,
     VideoIcon
 } from 'lucide-react';
@@ -34,6 +36,8 @@ import { getGameLogSessionPlayerDuration } from '../gameLogSessionDurations';
 import { openGameLogUser } from '../gameLogUserLookup';
 
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
+const PLAYER_EVENT_GRID_CLASS =
+    'grid-cols-[4.75rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
 
 function getEventLabel(event: any, t: any) {
     if (event?.type === 'JoinGroup') {
@@ -82,36 +86,43 @@ function getGroupCount(event: any, members: any[]) {
 function EventTime({ value }: { value: unknown }) {
     return (
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {formatDateFilter(value, 'short')}
+            {formatDateFilter(value, 'time')}
         </span>
     );
 }
 
-function EventBadge({ event }: { event: any }) {
-    const { t } = useTranslation();
+function EventIcon({ event }: { event: any }) {
+    const isJoin =
+        event?.type === 'OnPlayerJoined' || event?.type === 'JoinGroup';
+    const Icon = isJoin ? LogInIcon : LogOutIcon;
 
     return (
-        <Badge
-            variant="outline"
-            className="text-muted-foreground h-5 justify-center px-1.5 text-xs font-normal"
-        >
-            {getEventLabel(event, t)}
-        </Badge>
+        <Icon
+            aria-hidden="true"
+            className="text-muted-foreground size-3.5 shrink-0"
+        />
     );
 }
 
-function DurationBadge({ value }: { value: number }) {
+function EventLabel({ event }: { event: any }) {
+    const { t } = useTranslation();
+
+    return (
+        <span className="text-muted-foreground truncate text-xs">
+            {getEventLabel(event, t)}
+        </span>
+    );
+}
+
+function DurationText({ value }: { value: number }) {
     if (value <= 0) {
         return <span aria-hidden="true" />;
     }
 
     return (
-        <Badge
-            variant="outline"
-            className="h-5 shrink-0 px-1.5 text-xs tabular-nums"
-        >
+        <span className="text-foreground/80 shrink-0 text-right text-xs font-medium tabular-nums">
             {timeToText(value)}
-        </Badge>
+        </span>
     );
 }
 
@@ -133,7 +144,7 @@ function PlayerNameButton({ item }: any) {
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left font-normal"
+            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left font-medium"
             onClick={() => {
                 openGameLogUser(item, t);
             }}
@@ -150,6 +161,7 @@ function PlayerCell({ item }: any) {
             <AffinityBadge
                 isFriend={item?.isFriend}
                 isFavorite={item?.isFavorite}
+                className="h-auto rounded-none bg-transparent px-0 font-normal"
             />
         </div>
     );
@@ -163,10 +175,10 @@ function PlayerActivityRow({
     item: any;
 }) {
     return (
-        <div className="hover:bg-muted/40 grid min-h-7 grid-cols-[5.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
+        <div className="hover:bg-muted/35 grid min-h-7 grid-cols-[4.75rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
             <EventTime value={item?.created_at} />
             <PlayerCell item={item} />
-            <DurationBadge
+            <DurationText
                 value={getGameLogSessionPlayerDuration(durationByKey, item)}
             />
         </div>
@@ -183,11 +195,17 @@ function SinglePlayerActivityRow({
     const item = normalizeSessionMember(event, event?.created_at);
 
     return (
-        <div className="hover:bg-muted/45 grid min-h-8 grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
+        <div
+            className={cn(
+                'hover:bg-muted/35 grid min-h-8 items-center gap-2 rounded-md px-2 py-1 text-sm',
+                PLAYER_EVENT_GRID_CLASS
+            )}
+        >
             <EventTime value={event?.created_at} />
-            <EventBadge event={event} />
+            <EventIcon event={event} />
             <PlayerCell item={item} />
-            <DurationBadge
+            <EventLabel event={event} />
+            <DurationText
                 value={getGameLogSessionPlayerDuration(durationByKey, item)}
             />
         </div>
@@ -209,10 +227,13 @@ function GroupActivityRow({ durationByKey, event }: any) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="hover:bg-muted/45 grid min-h-8 w-full grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left text-sm"
+                        className={cn(
+                            'hover:bg-muted/35 grid min-h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm',
+                            PLAYER_EVENT_GRID_CLASS
+                        )}
                     >
                         <EventTime value={event?.created_at} />
-                        <EventBadge event={event} />
+                        <EventIcon event={event} />
                         <span className="flex min-w-0 items-center gap-2 font-normal">
                             <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 tabular-nums">
                                 <UsersIcon className="size-3.5 shrink-0" />
@@ -224,10 +245,11 @@ function GroupActivityRow({ durationByKey, event }: any) {
                                 </span>
                             ) : null}
                         </span>
+                        <EventLabel event={event} />
                         <ChevronRightIcon
                             data-icon="inline-end"
                             className={cn(
-                                'text-muted-foreground shrink-0 transition-transform duration-150',
+                                'text-muted-foreground shrink-0 justify-self-end transition-transform duration-150',
                                 isExpanded && 'rotate-90'
                             )}
                         />
@@ -236,7 +258,7 @@ function GroupActivityRow({ durationByKey, event }: any) {
             />
             {members.length ? (
                 <CollapsibleContent>
-                    <div className="border-border/70 ml-[5.75rem] border-l pl-3">
+                    <div className="border-border/70 ml-6 border-l pl-3">
                         {members.map((member: any, index: any) => (
                             <PlayerActivityRow
                                 key={`${member.userId}:${member.created_at}:${member.displayName}:${index}`}
@@ -265,11 +287,10 @@ function VideoActivityRow({ event }: any) {
         <ContextMenu>
             <ContextMenuTrigger
                 render={
-                    <div className="hover:bg-muted/45 grid min-h-8 grid-cols-[5.75rem_7rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
+                    <div className="hover:bg-muted/35 grid min-h-8 grid-cols-[4.75rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
                         <EventTime value={event?.created_at} />
-                        <EventBadge event={event} />
+                        <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
                         <div className="flex min-w-0 items-center gap-1.5">
-                            <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
                             {showVideoLink ? (
                                 <Button
                                     type="button"

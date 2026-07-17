@@ -19,6 +19,28 @@ export function clearFavoriteRemoteDetailsCache(): FavoriteRemoteDetailsCacheSta
     return result;
 }
 
+export function invalidateFavoriteRemoteDetailsCacheForType(
+    type: 'avatar' | 'world'
+): FavoriteRemoteDetailsCacheStats {
+    const prefix = `${type}::`;
+    let detailCacheCount = 0;
+    let detailPromiseCount = 0;
+    for (const cacheKey of detailCache.keys()) {
+        if (typeof cacheKey === 'string' && cacheKey.startsWith(prefix)) {
+            detailCache.delete(cacheKey);
+            detailCacheCount += 1;
+        }
+    }
+    for (const cacheKey of detailPromises.keys()) {
+        if (typeof cacheKey === 'string' && cacheKey.startsWith(prefix)) {
+            detailPromises.delete(cacheKey);
+            detailPromiseCount += 1;
+        }
+    }
+    detailCacheGeneration += 1;
+    return { detailCacheCount, detailPromiseCount };
+}
+
 export function getFavoriteRemoteDetailsCacheStats(): FavoriteRemoteDetailsCacheStats {
     return {
         detailCacheCount: detailCache.size,

@@ -6,26 +6,29 @@ vi.mock('@/ui/shadcn/context-menu', async () => {
     const React = await import('react');
 
     return {
-        ContextMenu: ({ children }: any) =>
+        ContextMenu: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        ContextMenuContent: ({ children }: any) =>
+        ContextMenuContent: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        ContextMenuGroup: ({ children }: any) =>
+        ContextMenuGroup: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children),
-        ContextMenuItem: ({ children, disabled }: any) =>
+        ContextMenuItem: ({
+            children,
+            disabled
+        }: React.PropsWithChildren<{ disabled?: boolean }>) =>
             React.createElement(
                 'div',
                 { 'aria-disabled': disabled ? 'true' : undefined },
                 children
             ),
         ContextMenuSeparator: () => React.createElement('hr'),
-        ContextMenuTrigger: ({ children }: any) =>
+        ContextMenuTrigger: ({ children }: React.PropsWithChildren) =>
             React.createElement('div', null, children)
     };
 });
 
 vi.mock('react-i18next', () => {
-    const translations: any = {
+    const translations: Record<string, string> = {
         'common.actions.view_details': 'View details',
         'dialog.launch.open_ingame': 'Open in-game',
         'dialog.launch.self_invite': 'Self invite',
@@ -41,14 +44,18 @@ vi.mock('react-i18next', () => {
 
     return {
         useTranslation: () => ({
-            t: (key: any) => translations[key] || key
+            t: (key: string) => translations[key] || key
         })
     };
 });
 
 import { LocationContextMenu } from './LocationContextMenu';
 
-function renderContextMenu(props: any = {}) {
+type ContextMenuTestProps = {
+    canOpenInstanceInGame?: boolean;
+};
+
+function renderContextMenu(props: ContextMenuTestProps = {}) {
     return renderToStaticMarkup(
         React.createElement(
             LocationContextMenu,

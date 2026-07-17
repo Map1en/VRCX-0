@@ -117,7 +117,7 @@ export function SettingsMediaTab({ media }: SettingsMediaTabProps) {
                 >
                     <Button
                         type="button"
-                        variant="outline"
+                        variant="destructive"
                         onClick={onDeleteAllScreenshotMetadata}
                     >
                         {t(

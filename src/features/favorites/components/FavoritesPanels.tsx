@@ -1,10 +1,29 @@
-import { useCallback, useRef } from 'react';
+import {
+    CloudIcon,
+    HardDriveIcon,
+    HistoryIcon,
+    Share2Icon
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { Button } from '@/ui/shadcn/button';
+import {
+    Popover,
+    PopoverContent,
+    PopoverDescription,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger
+} from '@/ui/shadcn/popover';
+
+import { getFavoritesDensityConfig } from '../favoritesDensity';
+import type { FavoriteGroup } from '../favoritesTypes';
 import { useFavoritesVirtualGrid } from '../useFavoritesVirtualGrid';
 import { FavoriteCard } from './FavoriteCard';
-import { FavoritesContentHeader } from './FavoritesContentHeader';
 import { GroupRailSection } from './FavoritesGroupRail';
+import { FavoritesSelectionBar } from './FavoritesSelectionBar';
 import {
     FavoritesEmptyState,
     FavoritesLoadingState
@@ -26,6 +45,69 @@ function useStableEvent(handler: any) {
     return useCallback((...args: any[]) => handlerRef.current?.(...args), []);
 }
 
+type ShareCollectionButtonProps = {
+    group: FavoriteGroup;
+    coachmarkOpen: boolean;
+    onShare(group: FavoriteGroup): void;
+    onDismissCoachmark?(): void;
+};
+
+function ShareCollectionButton({
+    group,
+    coachmarkOpen,
+    onShare,
+    onDismissCoachmark
+}: ShareCollectionButtonProps) {
+    const { t } = useTranslation();
+
+    return (
+        <Popover
+            open={coachmarkOpen}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onDismissCoachmark?.();
+                }
+            }}
+        >
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() => onShare(group)}
+                    >
+                        <Share2Icon data-icon="inline-start" />
+                        {t('view.favorite.share_collection.action.menu')}
+                    </Button>
+                }
+            />
+            <PopoverContent align="end" side="bottom">
+                <PopoverHeader>
+                    <PopoverTitle>
+                        {t('view.favorite.share_collection.coachmark.title')}
+                    </PopoverTitle>
+                    <PopoverDescription>
+                        {t(
+                            'view.favorite.share_collection.coachmark.description'
+                        )}
+                    </PopoverDescription>
+                </PopoverHeader>
+                <div className="flex justify-end">
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={onDismissCoachmark}
+                    >
+                        {t('view.favorite.share_collection.coachmark.dismiss')}
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 export function FavoritesGroupRailPanel({
     collections,
     creatingLocalGroup,
@@ -34,6 +116,7 @@ export function FavoritesGroupRailPanel({
     kind,
     newLocalGroupName,
     onNewGroupNameChange,
+    onShareCollectionGroup,
     setCreatingLocalGroup,
     viewData
 }: any) {
@@ -66,6 +149,7 @@ export function FavoritesGroupRailPanel({
         <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
             <GroupRailSection
                 title={viewData.pageConfig.remoteSectionTitle}
+                icon={CloudIcon}
                 groups={viewData.remoteGroups}
                 selectedSource={activeSource}
                 selectedGroupKey={activeGroupKey}
@@ -79,9 +163,11 @@ export function FavoritesGroupRailPanel({
                 onRemoteClear={favoriteCommands.handleRemoteGroupClear}
                 onLocalRename={favoriteCommands.handleLocalGroupRename}
                 onLocalDelete={favoriteCommands.handleLocalGroupDelete}
+                onShareCollection={onShareCollectionGroup}
             />
             <GroupRailSection
                 title={viewData.pageConfig.localSectionTitle}
+                icon={HardDriveIcon}
                 groups={viewData.localGroups}
                 selectedSource={activeSource}
                 selectedGroupKey={activeGroupKey}
@@ -103,10 +189,12 @@ export function FavoritesGroupRailPanel({
                 onRemoteClear={favoriteCommands.handleRemoteGroupClear}
                 onLocalRename={favoriteCommands.handleLocalGroupRename}
                 onLocalDelete={favoriteCommands.handleLocalGroupDelete}
+                onShareCollection={onShareCollectionGroup}
             />
             {kind === 'avatar' ? (
                 <GroupRailSection
                     title={t('view.favorite.avatars.local_history')}
+                    icon={HistoryIcon}
                     groups={viewData.avatarHistoryGroups}
                     selectedSource={activeSource}
                     selectedGroupKey={activeGroupKey}
@@ -135,6 +223,9 @@ export function FavoritesContentPanel({
     layout,
     selection,
     viewData,
+    onShareCollectionGroup,
+    shareCoachmarkOpen,
+    onDismissShareCoachmark,
     instanceActionGatesByItemKey
 }: any) {
     const { t } = useTranslation();
@@ -145,9 +236,12 @@ export function FavoritesContentPanel({
         remoteDetails.status === 'running' &&
         !Object.keys(remoteDetailsData).length &&
         filters.selectedSource === 'remote';
+    const densityConfig = useMemo(
+        () => getFavoritesDensityConfig(kind, layout.density),
+        [kind, layout.density]
+    );
     const virtualGrid = useFavoritesVirtualGrid({
-        cardScale: layout.cardScale,
-        cardSpacing: layout.cardSpacing,
+        densityConfig,
         items: viewData.contentItems,
         resetKey: [
             kind,
@@ -159,11 +253,9 @@ export function FavoritesContentPanel({
         ].join(':'),
         showGroupLabel: viewData.isSearchActive
     });
-    const editModeDisabled =
-        viewData.isSearchActive ||
-        !viewData.selectedGroup ||
-        viewData.contentItems.length === 0 ||
-        selection.avatarEditSelectionDisabled;
+    const showCopyIdsButton = selection.selectedContentItems.some(
+        (item: any) => item.source !== 'local'
+    );
     const title = viewData.isSearchActive
         ? viewData.pageConfig.searchPlaceholder
         : viewData.selectedGroup
@@ -177,24 +269,24 @@ export function FavoritesContentPanel({
               : String(viewData.selectedGroup.count)
           : '';
 
-    const handleEditModeChange = useStableEvent((value: any) => {
-        selection.setEditMode(value);
-        if (!value) {
-            selection.setSelectedKeys([]);
+    const handleToggleSelect = useStableEvent(
+        (itemKey: string, checked: boolean, shift: boolean) => {
+            selection.selectItem(itemKey, checked, { shift });
         }
-    });
-
-    const handleToggleSelect = useStableEvent((itemKey: any, checked: any) => {
-        selection.setSelectedKeys((keys: any) =>
-            checked
-                ? Array.from(new Set([...keys, itemKey]))
-                : keys.filter((key: any) => key !== itemKey)
-        );
-    });
-    const handleClearSelection = useStableEvent(() =>
-        selection.setSelectedKeys([])
     );
-    const handleCopySelection = useStableEvent(favoriteCommands.copySelection);
+    const handleClearSelection = useStableEvent(() =>
+        selection.clearSelection()
+    );
+    const handleEscapeKeyDown = useStableEvent((event: KeyboardEvent) => {
+        if (event.key !== 'Escape' || isEditableTarget(event.target)) {
+            return;
+        }
+        selection.clearSelection();
+    });
+    const handleCopyIds = useStableEvent(favoriteCommands.copySelection);
+    const handleCopySelection = useStableEvent(
+        favoriteCommands.bulkCopySelection
+    );
     const handleMoveSelection = useStableEvent(
         favoriteCommands.bulkMoveSelection
     );
@@ -232,150 +324,178 @@ export function FavoritesContentPanel({
         favoriteCommands.selectFavoriteAvatar
     );
 
+    useEffect(() => {
+        if (!selection.hasSelection) {
+            return;
+        }
+        window.addEventListener('keydown', handleEscapeKeyDown);
+        return () => window.removeEventListener('keydown', handleEscapeKeyDown);
+    }, [selection.hasSelection, handleEscapeKeyDown]);
+
     return (
         <div className="flex h-full min-h-0 min-w-0 flex-col pl-[26px]">
-            <FavoritesContentHeader
-                title={title}
-                subtitle={subtitle}
-                editMode={selection.editMode}
-                editModeDisabled={editModeDisabled}
-                editModeVisible={
-                    selection.editMode &&
-                    !viewData.isSearchActive &&
-                    !selection.avatarEditSelectionDisabled
-                }
-                isAllSelected={selection.isAllSelected}
-                hasSelection={selection.selectedKeysSet.size > 0}
-                moveTargets={favoriteCommands.moveTargets}
-                showCopyButton={filters.selectedSource !== 'local'}
-                onEditModeChange={handleEditModeChange}
-                onToggleSelectAll={selection.toggleSelectAll}
-                onClearSelection={handleClearSelection}
-                onCopySelection={handleCopySelection}
-                onMoveSelection={handleMoveSelection}
-                onBulkRemove={handleBulkRemoveSelection}
-            />
-            <div
-                ref={virtualGrid.viewportRef}
-                className="min-h-0 min-w-0 flex-1 overflow-auto pr-2"
-            >
-                {collections.favoriteLoadStatus === 'running' &&
-                !viewData.contentItems.length ? (
-                    <FavoritesLoadingState
-                        title={t(
-                            'view.favorite.loading.loading_favorites_baseline'
-                        )}
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-3 pl-0.5">
+                <div className="flex min-w-0 flex-col gap-0.5 text-base font-semibold">
+                    <span className="truncate">{title}</span>
+                    {subtitle ? (
+                        <small className="text-muted-foreground truncate text-xs font-normal">
+                            {subtitle}
+                        </small>
+                    ) : null}
+                </div>
+                {kind === 'world' &&
+                viewData.selectedGroup &&
+                onShareCollectionGroup ? (
+                    <ShareCollectionButton
+                        group={viewData.selectedGroup}
+                        coachmarkOpen={Boolean(shareCoachmarkOpen)}
+                        onShare={onShareCollectionGroup}
+                        onDismissCoachmark={onDismissShareCoachmark}
                     />
-                ) : collections.favoriteLoadStatus === 'error' ? (
-                    <FavoritesEmptyState
-                        title={t(
-                            'view.favorite.error.favorites_failed_to_load'
-                        )}
-                        description={
-                            collections.favoriteDetail ||
-                            t(
-                                'view.favorite.label.the_favorites_baseline_did_not_finish_loading'
-                            )
-                        }
-                    />
-                ) : isRemoteDetailsLoading ? (
-                    <FavoritesLoadingState
-                        title={
-                            kind === 'avatar'
-                                ? t(
-                                      'view.favorite.loading.loading_remote_avatar_details'
-                                  )
-                                : t(
-                                      'view.favorite.loading.loading_remote_world_details'
-                                  )
-                        }
-                    />
-                ) : !viewData.contentItems.length ? (
-                    <FavoritesEmptyState
-                        title={
-                            viewData.isSearchActive
-                                ? t('common.no_matching_records')
-                                : t('common.no_data')
-                        }
-                        description={
-                            viewData.isSearchActive
-                                ? t(
-                                      'view.favorite.label.try_a_different_search_term'
-                                  )
-                                : t(
-                                      'view.favorite.empty.the_selected_group_currently_has_no_items'
-                                  )
-                        }
-                    />
-                ) : (
-                    <div
-                        className="relative min-w-0"
-                        style={{
-                            height: `${virtualGrid.totalHeight}px`
-                        }}
-                    >
-                        {virtualGrid.visibleRows.map((row: any) => (
-                            <div
-                                key={row.key}
-                                className="absolute right-0 left-0 grid min-w-0"
-                                style={{
-                                    gap: `${virtualGrid.gridGap}px`,
-                                    height: `${row.cardHeight}px`,
-                                    gridTemplateColumns: `repeat(${virtualGrid.gridColumnCount}, minmax(${virtualGrid.gridMinWidth}px, 1fr))`,
-                                    transform: `translateY(${row.top}px)`
-                                }}
-                            >
-                                {row.items.map((item: any) => (
-                                    <FavoriteCard
-                                        key={item.key}
-                                        item={item}
-                                        instanceActionGate={instanceActionGatesByItemKey?.get(
-                                            item.key
-                                        )}
-                                        editMode={
-                                            selection.editMode &&
-                                            !viewData.isSearchActive
-                                        }
-                                        selected={selection.selectedKeysSet.has(
-                                            item.key
-                                        )}
-                                        showGroupLabel={viewData.isSearchActive}
-                                        cardScale={layout.cardScale}
-                                        cardHeight={row.cardHeight}
-                                        cardSpacing={layout.cardSpacing}
-                                        removing={
-                                            favoriteCommands.removingFavoriteKey ===
-                                            item.key
-                                        }
-                                        onToggleSelect={handleToggleSelect}
-                                        onRemoveLocal={
-                                            handleCardRemoveLocalFavorite
-                                        }
-                                        onRemoveRemote={
-                                            handleCardRemoveRemoteFavorite
-                                        }
-                                        onFriendLaunch={handleCardFriendLaunch}
-                                        onFriendSelfInvite={
-                                            handleCardFriendSelfInvite
-                                        }
-                                        onFriendInvite={handleCardFriendInvite}
-                                        onFriendRequestInvite={
-                                            handleCardFriendRequestInvite
-                                        }
-                                        onFriendBoop={handleCardFriendBoop}
-                                        onWorldNewInstance={
-                                            handleCardWorldNewInstance
-                                        }
-                                        onWorldSelfInvite={
-                                            handleCardWorldSelfInvite
-                                        }
-                                        onAvatarSelect={handleCardAvatarSelect}
-                                    />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                ) : null}
+            </div>
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                <div
+                    ref={virtualGrid.viewportRef}
+                    className="min-h-0 min-w-0 flex-1 overflow-auto pr-2"
+                >
+                    {collections.favoriteLoadStatus === 'running' &&
+                    !viewData.contentItems.length ? (
+                        <FavoritesLoadingState
+                            title={t(
+                                'view.favorite.loading.loading_favorites_baseline'
+                            )}
+                        />
+                    ) : collections.favoriteLoadStatus === 'error' ? (
+                        <FavoritesEmptyState
+                            title={t(
+                                'view.favorite.error.favorites_failed_to_load'
+                            )}
+                            description={
+                                collections.favoriteDetail ||
+                                t(
+                                    'view.favorite.label.the_favorites_baseline_did_not_finish_loading'
+                                )
+                            }
+                        />
+                    ) : isRemoteDetailsLoading ? (
+                        <FavoritesLoadingState
+                            title={
+                                kind === 'avatar'
+                                    ? t(
+                                          'view.favorite.loading.loading_remote_avatar_details'
+                                      )
+                                    : t(
+                                          'view.favorite.loading.loading_remote_world_details'
+                                      )
+                            }
+                        />
+                    ) : !viewData.contentItems.length ? (
+                        <FavoritesEmptyState
+                            title={
+                                viewData.isSearchActive
+                                    ? t('common.no_matching_records')
+                                    : t('common.no_data')
+                            }
+                            description={
+                                viewData.isSearchActive
+                                    ? t(
+                                          'view.favorite.label.try_a_different_search_term'
+                                      )
+                                    : t(
+                                          'view.favorite.empty.the_selected_group_currently_has_no_items'
+                                      )
+                            }
+                        />
+                    ) : (
+                        <div
+                            className="relative min-w-0"
+                            style={{
+                                height: `${virtualGrid.totalHeight}px`
+                            }}
+                        >
+                            {virtualGrid.visibleRows.map((row: any) => (
+                                <div
+                                    key={row.key}
+                                    className="absolute right-0 left-0 grid min-w-0"
+                                    style={{
+                                        gap: `${virtualGrid.gridGap}px`,
+                                        height: `${row.cardHeight}px`,
+                                        gridTemplateColumns: `repeat(${virtualGrid.gridColumnCount}, minmax(${virtualGrid.gridMinWidth}px, 1fr))`,
+                                        transform: `translateY(${row.top}px)`
+                                    }}
+                                >
+                                    {row.items.map((item: any) => (
+                                        <FavoriteCard
+                                            key={item.key}
+                                            item={item}
+                                            instanceActionGate={instanceActionGatesByItemKey?.get(
+                                                item.key
+                                            )}
+                                            selectionActive={
+                                                selection.hasSelection
+                                            }
+                                            selected={selection.selectedKeysSet.has(
+                                                item.key
+                                            )}
+                                            showGroupLabel={
+                                                viewData.isSearchActive
+                                            }
+                                            densityConfig={densityConfig}
+                                            removing={
+                                                favoriteCommands.removingFavoriteKey ===
+                                                item.key
+                                            }
+                                            onToggleSelect={handleToggleSelect}
+                                            onRemoveLocal={
+                                                handleCardRemoveLocalFavorite
+                                            }
+                                            onRemoveRemote={
+                                                handleCardRemoveRemoteFavorite
+                                            }
+                                            onFriendLaunch={
+                                                handleCardFriendLaunch
+                                            }
+                                            onFriendSelfInvite={
+                                                handleCardFriendSelfInvite
+                                            }
+                                            onFriendInvite={
+                                                handleCardFriendInvite
+                                            }
+                                            onFriendRequestInvite={
+                                                handleCardFriendRequestInvite
+                                            }
+                                            onFriendBoop={handleCardFriendBoop}
+                                            onWorldNewInstance={
+                                                handleCardWorldNewInstance
+                                            }
+                                            onWorldSelfInvite={
+                                                handleCardWorldSelfInvite
+                                            }
+                                            onAvatarSelect={
+                                                handleCardAvatarSelect
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <FavoritesSelectionBar
+                    selectedCount={selection.selectedContentItems.length}
+                    isAllSelected={selection.isAllSelected}
+                    moveTargets={favoriteCommands.moveTargets}
+                    copyTargets={favoriteCommands.copyTargets}
+                    showCopyIdsButton={showCopyIdsButton}
+                    actionsDisabled={selection.avatarSelectionActionsDisabled}
+                    onSelectAll={selection.toggleSelectAll}
+                    onClearSelection={handleClearSelection}
+                    onCopyIds={handleCopyIds}
+                    onCopySelection={handleCopySelection}
+                    onMoveSelection={handleMoveSelection}
+                    onBulkRemove={handleBulkRemoveSelection}
+                />
             </div>
         </div>
     );

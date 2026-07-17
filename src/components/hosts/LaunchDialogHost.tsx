@@ -117,6 +117,7 @@ function buildCachedInstanceMap(instances: any) {
 }
 
 function LaunchField({ label, value, notice = '', onCopy }: any) {
+    const { t } = useTranslation();
     return (
         <Field>
             <div className="flex items-center gap-1.5 text-sm font-medium">
@@ -140,7 +141,9 @@ function LaunchField({ label, value, notice = '', onCopy }: any) {
                     size="icon-sm"
                     variant="ghost"
                     className="shrink-0 rounded-full"
-                    aria-label={`Copy ${label}`}
+                    aria-label={t('accessibility.copy_value', {
+                        value: label
+                    })}
                     disabled={!value}
                     onClick={onCopy}
                 >

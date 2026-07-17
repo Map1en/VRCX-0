@@ -1,29 +1,98 @@
 import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 
-export function normalizeEntityId(value: any) {
+type DynamicRecord = Record<string, unknown>;
+
+export type WorldInstanceRecord = DynamicRecord & {
+    accessType?: unknown;
+    capacity?: unknown;
+    creatorGroup?: unknown;
+    creatorGroupId?: unknown;
+    creatorUser?: unknown;
+    creatorUserId?: unknown;
+    group?: unknown;
+    groupId?: unknown;
+    group_id?: unknown;
+    id?: unknown;
+    instanceId?: unknown;
+    location?: unknown;
+    occupants?: unknown;
+    owner?: unknown;
+    ownerId?: unknown;
+    playerCount?: unknown;
+    players?: unknown;
+    ref?: unknown;
+    secureName?: unknown;
+    shortName?: unknown;
+    tag?: unknown;
+    userCount?: unknown;
+    userIds?: unknown;
+    userList?: unknown;
+    users?: unknown;
+    usersById?: unknown;
+};
+
+export type CreatedInstanceFallback = DynamicRecord & {
+    accessType?: unknown;
+    group?: unknown;
+    groupId?: unknown;
+    ownerId?: unknown;
+};
+
+type LegacyInstanceForm = {
+    accessType?: string;
+    ageGate?: unknown;
+    groupAccessType?: string;
+    groupId?: string;
+    groupName?: string;
+    instanceName?: unknown;
+    legacyUserId?: unknown;
+    region?: string;
+    strict?: unknown;
+};
+
+type BuildLegacyCreatedInstanceInput = {
+    worldId: string;
+    form: LegacyInstanceForm;
+    currentUserId: unknown;
+    legacySeed: string;
+};
+
+function isRecord(value: unknown): value is DynamicRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): DynamicRecord {
+    return isRecord(value) ? value : {};
+}
+
+export function normalizeEntityId(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
-export function parseRoleIds(value: any) {
+export function parseRoleIds(value: unknown) {
     return String(value || '')
         .split(',')
-        .map((entry: any) => entry.trim())
+        .map((entry) => entry.trim())
         .filter(Boolean);
 }
 
-export function resolveInstanceLocation(worldId: any, instance: any) {
-    if (typeof instance?.location === 'string' && instance.location.trim()) {
-        return instance.location.trim();
+export function resolveInstanceLocation(worldId: unknown, instance: unknown) {
+    const source = record(instance);
+    if (typeof source.location === 'string' && source.location.trim()) {
+        return source.location.trim();
     }
-    const rawId = normalizeEntityId(instance?.id);
+    const rawId = normalizeEntityId(source.id);
     if (rawId.includes(':')) {
         return rawId;
     }
-    const instanceId = normalizeEntityId(instance?.instanceId || rawId);
-    return worldId && instanceId ? `${worldId}:${instanceId}` : '';
+    const instanceId = normalizeEntityId(source.instanceId || rawId);
+    const normalizedWorldId = normalizeEntityId(worldId);
+    return normalizedWorldId && instanceId
+        ? `${normalizedWorldId}:${instanceId}`
+        : '';
 }
 
 export function buildLegacyCreatedInstance({
@@ -31,8 +100,10 @@ export function buildLegacyCreatedInstance({
     form,
     currentUserId,
     legacySeed
-}: any) {
-    const legacyUserId = normalizeEntityId(form.legacyUserId) || currentUserId;
+}: BuildLegacyCreatedInstanceInput) {
+    const legacyUserId =
+        normalizeEntityId(form.legacyUserId) ||
+        normalizeEntityId(currentUserId);
     const instanceName =
         normalizeEntityId(form.instanceName).replace(/[^A-Za-z0-9]/g, '') ||
         legacySeed;
@@ -70,22 +141,24 @@ export function buildLegacyCreatedInstance({
 }
 
 export function buildCreatedInstanceDetails(
-    location: any,
-    instance: any,
-    fallback: any = {}
+    location: unknown,
+    instance: unknown,
+    fallback: CreatedInstanceFallback = {}
 ) {
+    const source = record(instance);
+    const owner = record(source.owner);
+    const group = record(source.group);
     const parsedLocation = parseLocation(location);
     const shortName = normalizeEntityId(
-        instance?.shortName || parsedLocation.shortName
+        source.shortName || parsedLocation.shortName
     );
-    const secureOrShortName =
-        shortName || normalizeEntityId(instance?.secureName);
-    const launchLocation = parsedLocation.tag || location;
+    const secureOrShortName = shortName || normalizeEntityId(source.secureName);
+    const launchLocation = parsedLocation.tag || normalizeEntityId(location);
     const groupId =
-        normalizeEntityId(instance?.groupId) ||
-        normalizeEntityId(instance?.group_id) ||
-        normalizeEntityId(instance?.group?.id) ||
-        normalizeEntityId(instance?.group?.groupId) ||
+        normalizeEntityId(source.groupId) ||
+        normalizeEntityId(source.group_id) ||
+        normalizeEntityId(group.id) ||
+        normalizeEntityId(group.groupId) ||
         normalizeEntityId(fallback.groupId) ||
         normalizeEntityId(parsedLocation.groupId);
     return {
@@ -93,18 +166,18 @@ export function buildCreatedInstanceDetails(
         shortName,
         secureOrShortName,
         accessType:
-            normalizeEntityId(instance?.accessType) ||
+            normalizeEntityId(source.accessType) ||
             normalizeEntityId(fallback.accessType) ||
             parsedLocation.accessType,
         ownerId:
-            normalizeEntityId(instance?.ownerId) ||
-            normalizeEntityId(instance?.owner?.id) ||
-            normalizeEntityId(instance?.creatorId) ||
+            normalizeEntityId(source.ownerId) ||
+            normalizeEntityId(owner.id) ||
+            normalizeEntityId(source.creatorId) ||
             normalizeEntityId(fallback.ownerId) ||
             normalizeEntityId(parsedLocation.userId),
         groupId,
         group:
-            instance?.group ||
+            source.group ||
             fallback.group ||
             (groupId ? { id: groupId, groupId, name: groupId } : null),
         url: getLaunchURL({

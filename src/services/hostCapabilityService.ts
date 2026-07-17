@@ -25,7 +25,6 @@ const HOST_CAPABILITY_KEYS: readonly HostCapabilityKey[] = Object.freeze([
     'steamRuntimeIntegration',
     'registryPrefs',
     'gameLaunch',
-    'ipc',
     'vrchatLaunchPipe',
     'screenshotCache'
 ]);

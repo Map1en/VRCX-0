@@ -156,7 +156,10 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
                                     type="button"
                                     variant="ghost"
                                     size="icon-xs"
-                                    aria-label={`Remove ${size}`}
+                                    aria-label={t(
+                                        'accessibility.remove_value',
+                                        { value: size }
+                                    )}
                                     onClick={() => removePageSize(size)}
                                 >
                                     <XIcon data-icon="inline-start" />
@@ -197,7 +200,9 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
                                 <InputGroupButton
                                     type="button"
                                     size="icon-xs"
-                                    aria-label="Table Page Sizes"
+                                    aria-label={t(
+                                        'accessibility.add_table_page_size'
+                                    )}
                                     onClick={() => addPageSize()}
                                 >
                                     <PlusIcon data-icon="inline-start" />

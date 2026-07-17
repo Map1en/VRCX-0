@@ -168,7 +168,7 @@ describe('gameLogRows', () => {
         expect(annotated.isFriend).toBe(true);
         expect(annotated.isFavorite).toBe(false);
         expect(
-            annotated.members.map((member: any) => [
+            annotated.members.map((member) => [
                 member.isFavorite,
                 member.isFriend
             ])

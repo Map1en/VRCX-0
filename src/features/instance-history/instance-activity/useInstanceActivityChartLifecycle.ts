@@ -13,6 +13,7 @@ import type { InstanceActivityChartRow } from './instanceActivityTypes';
 type InstanceActivityChartLifecycleOptions = {
     barWidth: number;
     chartRows: InstanceActivityChartRow[];
+    frozen?: boolean;
     hour12: boolean;
     onRowActivate?: (row: InstanceActivityChartRow) => void;
     onYAxisClick?: (row: InstanceActivityChartRow) => void;
@@ -24,6 +25,7 @@ type InstanceActivityChartLifecycleOptions = {
 export function useInstanceActivityChartLifecycle({
     barWidth,
     chartRows,
+    frozen = false,
     hour12,
     onRowActivate,
     onYAxisClick,
@@ -40,6 +42,7 @@ export function useInstanceActivityChartLifecycle({
     );
     const chartThemeRef = useRef<string | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
+    const hasRenderedRef = useRef(false);
 
     const setMainChartElementRef = useCallback(
         (node: HTMLDivElement | null) => {
@@ -49,6 +52,7 @@ export function useInstanceActivityChartLifecycle({
                 resizeObserverRef.current = null;
                 chartInstanceRef.current = null;
                 chartThemeRef.current = null;
+                hasRenderedRef.current = false;
             }
             chartElementRef.current = node;
             setMainChartElement(node);
@@ -66,7 +70,7 @@ export function useInstanceActivityChartLifecycle({
     }, []);
 
     useEffect(() => {
-        if (!mainChartElement) {
+        if (!mainChartElement || frozen) {
             return;
         }
 
@@ -80,6 +84,7 @@ export function useInstanceActivityChartLifecycle({
             chart = echarts.init(mainChartElement, themeName || undefined);
             chartInstanceRef.current = chart;
             chartThemeRef.current = themeName;
+            hasRenderedRef.current = false;
 
             resizeObserverRef.current = new ResizeObserver(() => {
                 chartInstanceRef.current?.resize();
@@ -100,17 +105,21 @@ export function useInstanceActivityChartLifecycle({
             return;
         }
 
+        const chartOption = buildChartOption({
+            rows: chartRows,
+            selectedDate,
+            barWidth,
+            hour12,
+            selectedActivityKey,
+            t
+        });
         chart.setOption(
-            buildChartOption({
-                rows: chartRows,
-                selectedDate,
-                barWidth,
-                hour12,
-                selectedActivityKey,
-                t
-            }),
+            hasRenderedRef.current
+                ? { ...chartOption, animation: false }
+                : chartOption,
             true
         );
+        hasRenderedRef.current = true;
         chart.on('click', (params: ChartEventParams) => {
             const row = getMainChartClickedRow(params, chartRows);
             if (!row) {
@@ -126,6 +135,7 @@ export function useInstanceActivityChartLifecycle({
     }, [
         barWidth,
         chartRows,
+        frozen,
         hour12,
         mainChartElement,
         onRowActivate,

@@ -1,11 +1,12 @@
 import { RefreshCwIcon } from 'lucide-react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-export function UserDialogSearchHeader({
+export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     searchKey,
     tab,
     rows,
@@ -16,7 +17,18 @@ export function UserDialogSearchHeader({
     loadTab,
     search,
     setSearch
-}: any) {
+}: {
+    searchKey: keyof TSearch & string;
+    tab?: string;
+    rows: readonly unknown[];
+    filteredRows: readonly unknown[];
+    placeholder?: string;
+    children?: ReactNode;
+    remoteStatus: Record<string, string>;
+    loadTab: (tab: string, options: { force?: boolean }) => void;
+    search: TSearch;
+    setSearch: Dispatch<SetStateAction<TSearch>>;
+}) {
     const { t } = useTranslation();
     const currentSearch = String(search?.[searchKey] ?? '');
     const hasSearch = currentSearch.trim().length > 0;
@@ -56,7 +68,7 @@ export function UserDialogSearchHeader({
                 <Input
                     value={currentSearch}
                     onChange={(event) =>
-                        setSearch((current: any) => ({
+                        setSearch((current) => ({
                             ...current,
                             [searchKey]: event.target.value
                         }))

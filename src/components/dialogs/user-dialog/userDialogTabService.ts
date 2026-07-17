@@ -1,10 +1,63 @@
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
 
-const userDialogDataTabs = new Set([
+export type UserDialogDataTab =
+    | 'mutual'
+    | 'groups'
+    | 'worlds'
+    | 'favorite-worlds'
+    | 'avatars';
+
+export type UserDialogRepositories = {
+    avatarSearchProviderRepository: {
+        getConfig(): Promise<{ enabled: boolean; selectedProvider: string }>;
+        search(input: {
+            provider: string;
+            query: string;
+        }): Promise<{ avatars: unknown[] }>;
+    };
+    myAvatarRepository: {
+        getMyAvatars(input: Record<string, unknown>): Promise<unknown[]>;
+    };
+    groupProfileRepository: {
+        getUserGroups(input: Record<string, unknown>): Promise<unknown[]>;
+    };
+    userProfileRepository: {
+        getAllMutualFriends(input: Record<string, unknown>): Promise<unknown[]>;
+    };
+    vrchatFavoriteRepository: {
+        getAllFavoriteGroups(
+            input: Record<string, unknown>
+        ): Promise<unknown[]>;
+        getAllFavoriteWorlds(
+            input: Record<string, unknown>
+        ): Promise<unknown[]>;
+    };
+    worldProfileRepository: {
+        getAllWorldsByUser(input: Record<string, unknown>): Promise<unknown[]>;
+    };
+};
+
+type UserDialogTabCounts = {
+    groups?: number;
+    worlds?: number;
+    'favorite-worlds'?: number;
+    avatars?: number;
+};
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function recordRows(value: unknown): EntityRecord[] {
+    return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+const userDialogDataTabs: ReadonlySet<unknown> = new Set<UserDialogDataTab>([
     'mutual',
     'groups',
     'worlds',
@@ -12,15 +65,15 @@ const userDialogDataTabs = new Set([
     'avatars'
 ]);
 
-export function isUserDialogDataTab(tab: any) {
+export function isUserDialogDataTab(tab: unknown): tab is UserDialogDataTab {
     return userDialogDataTabs.has(tab);
 }
 
-export function userDialogDataKeyForTab(tab: any) {
+export function userDialogDataKeyForTab(tab: UserDialogDataTab) {
     return tab === 'favorite-worlds' ? 'favoriteWorlds' : tab;
 }
 
-export function userDialogAvatarSortRequest(avatarSort: any) {
+export function userDialogAvatarSortRequest(avatarSort: unknown) {
     return {
         sort:
             avatarSort === 'createdAt'
@@ -32,25 +85,33 @@ export function userDialogAvatarSortRequest(avatarSort: any) {
     };
 }
 
-function countRows(rows: any) {
+function countRows(rows: unknown) {
     return Array.isArray(rows) ? rows.length : 0;
 }
 
-function resolvedCount(result: any) {
+function resolvedCount(result: PromiseSettledResult<unknown>) {
     return result.status === 'fulfilled' ? countRows(result.value) : undefined;
 }
 
-async function loadFavoriteWorldCount({ endpoint, userId, repositories }: any) {
+async function loadFavoriteWorldCount({
+    endpoint,
+    userId,
+    repositories
+}: {
+    endpoint: string;
+    userId: string;
+    repositories: UserDialogRepositories;
+}) {
     const favoriteGroups =
         await repositories.vrchatFavoriteRepository.getAllFavoriteGroups({
             endpoint,
             ownerId: userId
         });
-    const worldGroups = favoriteGroups.filter(
-        (group: any) => group?.type === 'world'
-    );
+    const worldGroups = favoriteGroups
+        .filter(isRecord)
+        .filter((group) => group.type === 'world');
     const worldListResults = await Promise.allSettled(
-        worldGroups.map((group: any) =>
+        worldGroups.map((group) =>
             repositories.vrchatFavoriteRepository.getAllFavoriteWorlds({
                 endpoint,
                 ownerId: userId,
@@ -60,7 +121,7 @@ async function loadFavoriteWorldCount({ endpoint, userId, repositories }: any) {
         )
     );
     return worldListResults.reduce(
-        (count: any, result: any) =>
+        (count, result) =>
             result.status === 'fulfilled'
                 ? count + countRows(result.value)
                 : count,
@@ -77,7 +138,16 @@ async function loadAvatarCount({
     effectiveAvatarReleaseStatus,
     providerConfig = null,
     repositories
-}: any) {
+}: {
+    endpoint: string;
+    userId: string;
+    currentUserId: string;
+    currentAvatarId: string;
+    previousAvatarSwapTime: number;
+    effectiveAvatarReleaseStatus: string;
+    providerConfig?: { enabled: boolean; selectedProvider: string } | null;
+    repositories: UserDialogRepositories;
+}) {
     if (userId === currentUserId) {
         const rows = await repositories.myAvatarRepository.getMyAvatars({
             endpoint,
@@ -89,8 +159,9 @@ async function loadAvatarCount({
             effectiveAvatarReleaseStatus === 'all'
                 ? rows
                 : rows.filter(
-                      (avatar: any) =>
-                          avatar?.releaseStatus === effectiveAvatarReleaseStatus
+                      (avatar) =>
+                          isRecord(avatar) &&
+                          avatar.releaseStatus === effectiveAvatarReleaseStatus
                   )
         );
     }
@@ -110,7 +181,9 @@ async function loadAvatarCount({
         query: userId
     });
     return countRows(
-        response.avatars.filter((avatar: any) => avatar.authorId === userId)
+        response.avatars.filter(
+            (avatar) => isRecord(avatar) && avatar.authorId === userId
+        )
     );
 }
 
@@ -123,7 +196,16 @@ export async function loadUserDialogTabCounts({
     effectiveAvatarReleaseStatus,
     repositories,
     force = false
-}: any) {
+}: {
+    userId: string;
+    endpoint: string;
+    currentUserId: string;
+    currentAvatarId?: string;
+    previousAvatarSwapTime?: number;
+    effectiveAvatarReleaseStatus: string;
+    repositories: UserDialogRepositories;
+    force?: boolean;
+}): Promise<UserDialogTabCounts> {
     if (!userId) {
         return {};
     }
@@ -209,7 +291,19 @@ export async function loadUserDialogTabData({
     worldSort,
     worldOrder,
     repositories
-}: any): Promise<{ rows: unknown[]; favoriteWorldGroups: unknown[] }> {
+}: {
+    tab: string;
+    userId: string;
+    endpoint?: string;
+    currentUserId?: string;
+    currentAvatarId?: string;
+    previousAvatarSwapTime?: number;
+    avatarSort?: string;
+    effectiveAvatarReleaseStatus?: string;
+    worldSort?: string;
+    worldOrder?: string;
+    repositories: UserDialogRepositories;
+}): Promise<{ rows: EntityRecord[]; favoriteWorldGroups: EntityRecord[] }> {
     if (!isUserDialogDataTab(tab)) {
         return { rows: [], favoriteWorldGroups: [] };
     }
@@ -220,7 +314,7 @@ export async function loadUserDialogTabData({
                 userId,
                 endpoint
             });
-        return { rows, favoriteWorldGroups: [] };
+        return { rows: recordRows(rows), favoriteWorldGroups: [] };
     }
 
     if (tab === 'groups') {
@@ -228,7 +322,7 @@ export async function loadUserDialogTabData({
             userId,
             endpoint
         });
-        return { rows, favoriteWorldGroups: [] };
+        return { rows: recordRows(rows), favoriteWorldGroups: [] };
     }
 
     if (tab === 'worlds') {
@@ -240,7 +334,7 @@ export async function loadUserDialogTabData({
                 order: worldOrder,
                 releaseStatus: userId === currentUserId ? 'all' : 'public'
             });
-        return { rows, favoriteWorldGroups: [] };
+        return { rows: recordRows(rows), favoriteWorldGroups: [] };
     }
 
     if (tab === 'avatars') {
@@ -251,7 +345,7 @@ export async function loadUserDialogTabData({
                 currentAvatarId,
                 previousAvatarSwapTime
             });
-            return { rows, favoriteWorldGroups: [] };
+            return { rows: recordRows(rows), favoriteWorldGroups: [] };
         }
 
         const providerConfig =
@@ -267,7 +361,8 @@ export async function loadUserDialogTabData({
             });
         return {
             rows: response.avatars.filter(
-                (avatar: any) => avatar.authorId === userId
+                (avatar): avatar is EntityRecord =>
+                    isRecord(avatar) && avatar.authorId === userId
             ),
             favoriteWorldGroups: []
         };
@@ -278,11 +373,11 @@ export async function loadUserDialogTabData({
             endpoint,
             ownerId: userId
         });
-    const worldGroups = favoriteGroups.filter(
-        (group: any) => group?.type === 'world'
-    );
+    const worldGroups = favoriteGroups
+        .filter(isRecord)
+        .filter((group) => group.type === 'world');
     const worldListResults = await Promise.allSettled(
-        worldGroups.map(async (group: any) => {
+        worldGroups.map(async (group) => {
             const worlds =
                 await repositories.vrchatFavoriteRepository.getAllFavoriteWorlds(
                     {
@@ -292,7 +387,7 @@ export async function loadUserDialogTabData({
                         tag: group.name
                     }
                 );
-            return worlds.map((world: any) => ({
+            return recordRows(worlds).map((world) => ({
                 ...world,
                 $favoriteGroup: group.displayName || group.name,
                 $favoriteGroupKey: group.name
@@ -300,9 +395,9 @@ export async function loadUserDialogTabData({
         })
     );
     return {
-        rows: worldListResults
-            .filter((result: any) => result.status === 'fulfilled')
-            .flatMap((result: any) => result.value),
-        favoriteWorldGroups: worldGroups
+        rows: worldListResults.flatMap((result) =>
+            result.status === 'fulfilled' ? result.value : []
+        ),
+        favoriteWorldGroups: recordRows(worldGroups)
     };
 }

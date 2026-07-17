@@ -154,3 +154,6 @@ fn md5_digest(input: &[u8]) -> [u8; 16] {
     output[12..16].copy_from_slice(&d0.to_le_bytes());
     output
 }
+
+#[cfg(test)]
+mod tests;

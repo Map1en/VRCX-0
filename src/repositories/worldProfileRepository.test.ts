@@ -83,6 +83,40 @@ describe('WorldProfileRepository', () => {
         });
     });
 
+    it('preserves nullable publication metadata and platform file details', () => {
+        const world = worldProfileRepository.normalize({
+            id: 'wrld_redacted',
+            name: 'World',
+            publicationDate: null,
+            previewYoutubeId: null,
+            unityPackages: [
+                {
+                    id: 'unp_redacted',
+                    platform: 'standalonewindows',
+                    scanStatus: 'passed',
+                    variant: 'security'
+                }
+            ],
+            fileAnalysis: {
+                standalonewindows: {
+                    fileSize: 1024,
+                    success: true,
+                    _fileSize: '1 KB'
+                }
+            }
+        });
+
+        expect(world).toMatchObject({
+            id: 'wrld_redacted',
+            publicationDate: null,
+            previewYoutubeId: null,
+            unityPackages: [{ scanStatus: 'passed', variant: 'security' }],
+            fileAnalysis: {
+                standalonewindows: { fileSize: 1024, success: true }
+            }
+        });
+    });
+
     it('returns full fetched worlds but mirrors summary fields only', async () => {
         tauriMock.commands.appVrchatWorldGet.mockResolvedValue({
             status: 200,

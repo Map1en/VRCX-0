@@ -1,13 +1,19 @@
 import { Badge } from '@/ui/shadcn/badge';
 
-export function AvatarDialogTagList({ tags, trimPrefix = '' }: any) {
+export function AvatarDialogTagList({
+    tags,
+    trimPrefix = ''
+}: {
+    tags: string[];
+    trimPrefix?: string;
+}) {
     if (!tags.length) {
         return null;
     }
 
     return (
         <div className="flex flex-wrap gap-2">
-            {tags.map((tag: any) => (
+            {tags.map((tag) => (
                 <Badge key={tag} variant="outline">
                     {trimPrefix ? tag.replace(trimPrefix, '') : tag}
                 </Badge>

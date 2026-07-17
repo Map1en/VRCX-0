@@ -47,25 +47,32 @@ vi.mock('@/services/launchService', () => ({
 }));
 
 vi.mock('@/state/launchStore', () => ({
-    useLaunchStore: (selector: any) =>
+    useLaunchStore: <T,>(
+        selector: (state: {
+            showLaunchDialog: typeof mocks.showLaunchDialog;
+        }) => T
+    ) =>
         selector({
             showLaunchDialog: mocks.showLaunchDialog
         })
 }));
 
 vi.mock('@/state/modalStore', () => ({
-    useModalStore: (selector: any) =>
+    useModalStore: <T,>(
+        selector: (state: { confirm: typeof mocks.confirm }) => T
+    ) =>
         selector({
             confirm: mocks.confirm
         })
 }));
 
 vi.mock('@/state/runtimeStore', () => ({
-    useRuntimeStore: (selector: any) => selector(mocks.runtimeState)
+    useRuntimeStore: <T,>(selector: (state: typeof mocks.runtimeState) => T) =>
+        selector(mocks.runtimeState)
 }));
 
 vi.mock('react-i18next', () => {
-    const translations: any = {
+    const translations: Record<string, string> = {
         'dialog.instance.label.android': 'Android:',
         'dialog.instance.label.ios': 'iOS:',
         'dialog.instance.action.launch_instance': 'Launch instance',
@@ -77,7 +84,7 @@ vi.mock('react-i18next', () => {
 
     return {
         useTranslation: () => ({
-            t: (key: any) => translations[key] || key
+            t: (key: string) => translations[key] || key
         })
     };
 });
@@ -98,7 +105,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
     };
 
     return {
-        Tooltip: ({ children }: any) =>
+        Tooltip: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
         TooltipTrigger: ({
             children,
@@ -112,7 +119,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
                 null,
                 renderMockSlot(render, children)
             ),
-        TooltipContent: ({ children }: any) =>
+        TooltipContent: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(
                 'span',
                 { 'data-tooltip-content': true },
@@ -123,7 +130,21 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
 
 import { InstanceActionBar } from './InstanceActionBar';
 
-function renderActionBar(props: any = {}) {
+type ActionBarTestProps = {
+    location?: string;
+    target?: { location: string; shortName?: string; worldName?: string };
+    instance?: Record<string, unknown>;
+    friendCount?: number;
+    playerCount?: number;
+    capacity?: number;
+    showLaunch?: boolean;
+    showInvite?: boolean;
+    showRefresh?: boolean;
+    showHistory?: boolean;
+    historyTooltip?: string;
+};
+
+function renderActionBar(props: ActionBarTestProps = {}) {
     return renderToStaticMarkup(React.createElement(InstanceActionBar, props));
 }
 

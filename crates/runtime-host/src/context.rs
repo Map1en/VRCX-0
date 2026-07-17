@@ -1,17 +1,21 @@
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use serde_json::{json, Map, Value};
 use vrcx_0_application::HostSessionRuntime;
 use vrcx_0_application::ImageCache;
+use vrcx_0_application::LoginSessionRuntime;
 use vrcx_0_application::MutualGraphFetchRuntime;
 use vrcx_0_application::OverlayActivityDelivery;
 use vrcx_0_application::OverlayActivityFilters;
 use vrcx_0_application::OverlayActivityRuntime;
 use vrcx_0_application::OverlayActivitySink;
 use vrcx_0_application::OverlayActivitySnapshot;
+use vrcx_0_application::OverlayActivitySurface;
 use vrcx_0_application::OverlayActivitySurfaceFilters;
 use vrcx_0_application::PrintCleanupQueue;
+use vrcx_0_application::RealtimeHostRuntime;
 use vrcx_0_application::RuntimeAuthScope;
 use vrcx_0_application::RuntimeBackgroundJobs;
 use vrcx_0_application::RuntimeDiagnostics;
@@ -22,16 +26,23 @@ use vrcx_0_application::RuntimeSyncEngine;
 use vrcx_0_application::TaskSupervisor;
 use vrcx_0_application::WebClient;
 use vrcx_0_application::WorldCache;
+use vrcx_0_host::tts::{SystemTtsEngine, TtsEngine};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::host_actions::RuntimeHost;
+use crate::notification::image_file::{
+    extract_file_id, extract_file_version, fallback_file_version,
+};
+use crate::notification::user_image::normalize_avatar_image_url_128;
 use crate::notification::{
     DesktopNotifier, DesktopNotifierSlot, NotificationDispatcher, NotificationDispatcherDeps,
+    RealtimeUserImageResolverSlot,
 };
 
 const WORLD_CACHE_WORKING_CAPACITY: u64 = 512;
 const WORLD_CACHE_WORKING_TTL: Duration = Duration::from_secs(30 * 60);
+const AVATAR_PREFETCH_MAX_PATCHES: usize = 8;
 
 #[derive(Clone)]
 struct OverlayActivityRuntimeEventSink {
@@ -84,10 +95,13 @@ pub struct RuntimeHostContext {
     pub auth_scope: RuntimeAuthScope,
     pub print_cleanup: PrintCleanupQueue,
     pub mutual_graph_fetch: MutualGraphFetchRuntime,
+    pub login_session: LoginSessionRuntime,
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,
     pub config: ConfigRepository,
+    pub tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
+    realtime_user_image_resolver: RealtimeUserImageResolverSlot,
     overlay_activity_extra_sinks: Arc<Mutex<Vec<Arc<dyn OverlayActivitySink>>>>,
     game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
     now_playing: Arc<Mutex<Value>>,
@@ -110,7 +124,9 @@ impl RuntimeHostContext {
             WORLD_CACHE_WORKING_CAPACITY,
             WORLD_CACHE_WORKING_TTL,
         ));
+        let tts: Arc<dyn TtsEngine> = Arc::new(SystemTtsEngine::new());
         let notification_desktop_notifier = DesktopNotifierSlot::default();
+        let realtime_user_image_resolver = RealtimeUserImageResolverSlot::default();
         let notification_sink: Arc<dyn OverlayActivitySink> =
             Arc::new(NotificationDispatcher::new(NotificationDispatcherDeps {
                 session: session.clone(),
@@ -119,8 +135,9 @@ impl RuntimeHostContext {
                 image_cache: Arc::clone(&image_cache),
                 web: Arc::clone(&web),
                 world_cache: Arc::clone(&world_cache),
+                realtime_user_image_resolver: realtime_user_image_resolver.clone(),
                 desktop: Arc::new(notification_desktop_notifier.clone()),
-                event_bus: event_bus.clone(),
+                tts: Arc::clone(&tts),
                 diagnostics: diagnostics.clone(),
                 tasks: tasks.clone(),
             }));
@@ -146,10 +163,13 @@ impl RuntimeHostContext {
             auth_scope: RuntimeAuthScope::new(),
             print_cleanup: PrintCleanupQueue::new(),
             mutual_graph_fetch: MutualGraphFetchRuntime::new(),
+            login_session: LoginSessionRuntime::new(),
             overlay_activity,
             world_cache,
             config,
+            tts,
             notification_desktop_notifier,
+            realtime_user_image_resolver,
             overlay_activity_extra_sinks: Arc::new(Mutex::new(vec![notification_sink])),
             game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
             now_playing: Arc::new(Mutex::new(default_now_playing_value())),
@@ -177,6 +197,10 @@ impl RuntimeHostContext {
 
     pub fn set_notification_desktop_notifier(&self, desktop: Arc<dyn DesktopNotifier>) {
         self.notification_desktop_notifier.set(desktop);
+    }
+
+    pub fn set_realtime_user_image_resolver(&self, realtime_runtime: Arc<RealtimeHostRuntime>) {
+        self.realtime_user_image_resolver.set(realtime_runtime);
     }
 
     fn refresh_overlay_activity_sinks(&self) {
@@ -215,10 +239,14 @@ impl RuntimeHostContext {
     }
 
     pub fn observe_runtime_event(&self, event: &str, payload: &Value) {
-        if event != "gameLogSideEffect" {
-            return;
+        match event {
+            "gameLogSideEffect" => self.observe_game_log_side_effect(payload),
+            "realtimeFriendProjection" => self.prefetch_online_friend_avatars(payload),
+            _ => {}
         }
+    }
 
+    fn observe_game_log_side_effect(&self, payload: &Value) {
         let kind = payload
             .get("kind")
             .and_then(Value::as_str)
@@ -255,6 +283,63 @@ impl RuntimeHostContext {
             _ => {}
         }
     }
+
+    fn prefetch_online_friend_avatars(&self, payload: &Value) {
+        let Some(patches) = payload.get("patches").and_then(Value::as_array) else {
+            return;
+        };
+        if patches.len() > AVATAR_PREFETCH_MAX_PATCHES {
+            return;
+        }
+        let Some(endpoint) = self
+            .session
+            .snapshot()
+            .realtime_context
+            .map(|context| context.endpoint)
+            .filter(|endpoint| !endpoint.is_empty())
+        else {
+            return;
+        };
+        let allow_user_icon = self
+            .config
+            .get_bool("displayVRCPlusIconsAsAvatar", true)
+            .unwrap_or(true);
+        for patch in patches {
+            let state_bucket = patch
+                .get("stateBucket")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if state_bucket != "online" {
+                continue;
+            }
+            let user_id = patch
+                .get("userId")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if !user_id.starts_with("usr_") {
+                continue;
+            }
+            let Some(raw_url) =
+                self.realtime_user_image_resolver
+                    .cached_url(&endpoint, user_id, allow_user_icon)
+            else {
+                continue;
+            };
+            let normalized = normalize_avatar_image_url_128(&raw_url, &endpoint);
+            let Some(file_id) = extract_file_id(&normalized) else {
+                continue;
+            };
+            let version = extract_file_version(&normalized, &file_id)
+                .unwrap_or_else(|| fallback_file_version(&normalized));
+            if version.is_empty() {
+                continue;
+            }
+            let image_cache = Arc::clone(&self.image_cache);
+            self.tasks.spawn(async move {
+                let _ = image_cache.get_image(&normalized, &file_id, &version).await;
+            });
+        }
+    }
 }
 
 fn default_now_playing_map() -> Map<String, Value> {
@@ -284,13 +369,13 @@ fn load_overlay_activity_filters(config: &ConfigRepository, runtime: &OverlayAct
             Ok(value) if OverlayActivityFilters::has_persisted_rules(&value) => {
                 OverlayActivityFilters::from_json(value)
             }
-            Ok(_) => load_legacy_overlay_activity_filters(config),
+            Ok(_) => OverlayActivityFilters::default(),
             Err(error) => {
                 tracing::warn!("failed to parse overlay activity filters: {error}");
-                load_legacy_overlay_activity_filters(config)
+                OverlayActivityFilters::default()
             }
         },
-        Ok(None) => load_legacy_overlay_activity_filters(config),
+        Ok(None) => OverlayActivityFilters::default(),
         Err(error) => {
             tracing::warn!("failed to load overlay activity filters: {error}");
             OverlayActivityFilters::default()
@@ -309,7 +394,42 @@ fn load_overlay_activity_filters(config: &ConfigRepository, runtime: &OverlayAct
     if let Some(webhook) = load_types_key_surface(config, "webhookActivityFilters") {
         filters.webhook = webhook;
     }
+    if let Some(tts) = load_types_key_surface(config, "ttsNotificationActivityFilters") {
+        filters.tts = tts;
+    } else {
+        filters.tts = seed_tts_notification_activity_filters(config, &filters);
+    }
     runtime.set_filters(filters);
+}
+
+fn seed_tts_notification_activity_filters(
+    config: &ConfigRepository,
+    filters: &OverlayActivityFilters,
+) -> OverlayActivitySurfaceFilters {
+    let mut seeded = filters.desktop.clone();
+    let activity_types = filters
+        .desktop
+        .types
+        .keys()
+        .chain(filters.vr.types.keys())
+        .collect::<BTreeSet<_>>();
+    for activity_type in activity_types {
+        let desktop_rule = filters.rule_for(OverlayActivitySurface::Desktop, activity_type);
+        if desktop_rule.scope == vrcx_0_application::OverlayActivityScope::Off {
+            let vr_rule = filters.rule_for(OverlayActivitySurface::Vr, activity_type);
+            if vr_rule.scope != vrcx_0_application::OverlayActivityScope::Off {
+                seeded.types.insert(activity_type.clone(), vr_rule);
+            }
+        } else {
+            seeded.types.insert(activity_type.clone(), desktop_rule);
+        }
+    }
+    if let Ok(value) = serde_json::to_value(&seeded) {
+        if let Err(error) = config.set_json("ttsNotificationActivityFilters", &value) {
+            tracing::warn!("failed to persist seeded TTS activity filters: {error}");
+        }
+    }
+    seeded
 }
 
 fn load_types_key_surface(
@@ -324,198 +444,5 @@ fn load_types_key_surface(
         .then(|| OverlayActivitySurfaceFilters::from_types_json(&value))
 }
 
-fn load_legacy_overlay_activity_filters(config: &ConfigRepository) -> OverlayActivityFilters {
-    match config.get_json("sharedFeedFilters", json!({})) {
-        Ok(value) => {
-            let filters = OverlayActivityFilters::from_legacy_shared_feed_filters(value.clone());
-            if has_legacy_shared_wrist_filters(&value) {
-                persist_migrated_overlay_activity_filters(config, &filters);
-            }
-            filters
-        }
-        Err(error) => {
-            tracing::warn!("failed to load legacy shared feed filters: {error}");
-            OverlayActivityFilters::default()
-        }
-    }
-}
-
-fn has_legacy_shared_wrist_filters(value: &Value) -> bool {
-    value.get("wrist").and_then(Value::as_object).is_some()
-}
-
-fn persist_migrated_overlay_activity_filters(
-    config: &ConfigRepository,
-    filters: &OverlayActivityFilters,
-) {
-    let Ok(value) = serde_json::to_value(filters) else {
-        return;
-    };
-    if let Err(error) = config.set_json("overlayActivityFilters", &value) {
-        tracing::warn!("failed to persist migrated overlay activity filters: {error}");
-    }
-}
-
 #[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
-    use std::sync::Arc;
-
-    use vrcx_0_application::{OverlayActivityScope, OverlayActivitySurface};
-    use vrcx_0_persistence::DatabaseService;
-
-    use super::*;
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-runtime-host-{name}-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    #[test]
-    fn backend_load_migrates_legacy_shared_wrist_filters() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let dir = TestDir::new("overlay-activity-config");
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        let config = ConfigRepository::new(db);
-        config.set_json(
-            "sharedFeedFilters",
-            &json!({
-                "noty": {
-                    "Online": "Off"
-                },
-                "wrist": {
-                    "invite": "VIP",
-                    "friendRequest": "Off"
-                }
-            }),
-        )?;
-        let runtime = OverlayActivityRuntime::new();
-
-        load_overlay_activity_filters(&config, &runtime);
-
-        let saved = config.get_json("overlayActivityFilters", json!({}))?;
-        let filters = OverlayActivityFilters::from_json(saved);
-        assert_eq!(
-            filters
-                .rule_for(OverlayActivitySurface::Wrist, "invite")
-                .scope,
-            OverlayActivityScope::AllFavorites
-        );
-        assert_eq!(
-            filters
-                .rule_for(OverlayActivitySurface::Wrist, "friendRequest")
-                .scope,
-            OverlayActivityScope::Off
-        );
-        assert_eq!(
-            config.get_json("sharedFeedFilters", json!({}))?,
-            json!({
-                "noty": {
-                    "Online": "Off"
-                },
-                "wrist": {
-                    "invite": "VIP",
-                    "friendRequest": "Off"
-                }
-            })
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn backend_load_reads_three_independent_surface_keys() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let dir = TestDir::new("overlay-activity-three-keys");
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        let config = ConfigRepository::new(db);
-        config.set_string(
-            "overlayActivityFilters",
-            &serde_json::to_string(&json!({
-                "version": 1,
-                "wrist": { "types": { "invite": { "scope": "on" } } }
-            }))?,
-        )?;
-        config.set_string(
-            "desktopNotificationActivityFilters",
-            &serde_json::to_string(&json!({
-                "version": 1,
-                "types": { "invite": { "scope": "allFavorites" } }
-            }))?,
-        )?;
-        config.set_string(
-            "vrNotificationActivityFilters",
-            &serde_json::to_string(&json!({
-                "version": 1,
-                "types": { "invite": { "scope": "off" } }
-            }))?,
-        )?;
-        let runtime = OverlayActivityRuntime::new();
-
-        load_overlay_activity_filters(&config, &runtime);
-
-        let filters = runtime.filters();
-        assert_eq!(
-            filters
-                .rule_for(OverlayActivitySurface::Wrist, "invite")
-                .scope,
-            OverlayActivityScope::On
-        );
-        assert_eq!(
-            filters
-                .rule_for(OverlayActivitySurface::Desktop, "invite")
-                .scope,
-            OverlayActivityScope::AllFavorites
-        );
-        assert_eq!(
-            filters.rule_for(OverlayActivitySurface::Vr, "invite").scope,
-            OverlayActivityScope::Off
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn backend_load_reads_webhook_surface_key() -> Result<(), Box<dyn std::error::Error>> {
-        let dir = TestDir::new("overlay-activity-webhook-key");
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        let config = ConfigRepository::new(db);
-        config.set_string(
-            "webhookActivityFilters",
-            &serde_json::to_string(&json!({
-                "version": 1,
-                "types": { "invite": { "scope": "on" } }
-            }))?,
-        )?;
-        let runtime = OverlayActivityRuntime::new();
-
-        load_overlay_activity_filters(&config, &runtime);
-
-        let filters = runtime.filters();
-        assert_eq!(
-            filters
-                .rule_for(OverlayActivitySurface::Webhook, "invite")
-                .scope,
-            OverlayActivityScope::On
-        );
-        Ok(())
-    }
-}
+mod tests;

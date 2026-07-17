@@ -17,11 +17,14 @@ type PreviousInstanceLocation = Record<string, unknown> & {
 
 type PreviousInstanceRow = Record<string, unknown> & {
     $location?: PreviousInstanceLocation | null;
+    count?: unknown;
     created_at?: unknown;
     createdAt?: unknown;
     duration?: unknown;
     groupName?: unknown;
     id?: unknown;
+    left_at?: unknown;
+    leftAt?: unknown;
     location?: unknown;
     ownerDisplayName?: unknown;
     ownerId?: unknown;
@@ -63,6 +66,11 @@ function dateInputValue(value: unknown): string | number {
         return value;
     }
     return value === null || value === undefined ? 0 : String(value);
+}
+
+function timestampMs(value: unknown) {
+    const timestamp = new Date(dateInputValue(value)).getTime();
+    return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
 }
 
 export function formatPreviousInstanceCount(count: unknown) {
@@ -156,6 +164,34 @@ export function rowDuration(row: PreviousInstanceRow | null | undefined) {
 export function rowDurationValue(row: PreviousInstanceRow | null | undefined) {
     const value = Number(row?.time || row?.duration || 0);
     return Number.isFinite(value) ? value : 0;
+}
+
+export function playerJoinMs(
+    row: PreviousInstancePlayerRow | null | undefined
+) {
+    const joinedMs = timestampMs(row?.created_at || row?.createdAt || 0);
+    const leftMs = timestampMs(row?.left_at || row?.leftAt || 0);
+    const durationMs = Math.max(0, rowDurationValue(row));
+    const joinCount = Number(row?.count || 0);
+
+    if (joinCount <= 0 && leftMs && durationMs > 0) {
+        return Math.max(0, leftMs - durationMs);
+    }
+
+    return joinedMs;
+}
+
+export function playerLeaveMs(
+    row: PreviousInstancePlayerRow | null | undefined
+) {
+    const leftMs = timestampMs(row?.left_at || row?.leftAt || 0);
+    if (leftMs) {
+        return leftMs;
+    }
+
+    const joinedMs = playerJoinMs(row);
+    const durationMs = Math.max(0, rowDurationValue(row));
+    return joinedMs && durationMs > 0 ? joinedMs + durationMs : 0;
 }
 
 export function rowInstanceText(row: PreviousInstanceRow | null | undefined) {

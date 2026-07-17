@@ -3,13 +3,11 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use vrcx_0_core::log_watcher::LogLocationSnapshot;
 use vrcx_0_persistence::config::{self as config_store, ConfigRepository};
-use vrcx_0_persistence::game_log::{
-    write_batch, GameLogEventEntry, GameLogExternalEntry, GameLogWriteBatch,
-};
+use vrcx_0_persistence::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
 use vrcx_0_persistence::DatabaseService;
 
 use crate::event_bus::RuntimeEventBus;
-use crate::game_client::actions::GameClientActions;
+use crate::game_client::actions::{GameClientActions, GameClientDebugLoggingActions};
 use crate::game_client::lifecycle::{plan_crash_relaunch, CrashRelaunchConfig, CrashRelaunchPlan};
 use crate::session::HostSessionRuntime;
 use crate::task_supervisor::TaskSupervisor;
@@ -28,6 +26,24 @@ pub trait GameClientWindowActions: Send + Sync {
 
 pub trait GameClientCacheActions: Send + Sync {
     fn sweep_vrchat_cache(&self) -> Vec<String>;
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum DebugLoggingOutcomeKind {
+    Disabled,
+    Unavailable,
+    Enabled,
+    Repaired,
+    NeedsUserAction,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DebugLoggingOutcome {
+    pub check_id: u64,
+    pub kind: DebugLoggingOutcomeKind,
+    pub error: Option<String>,
 }
 
 #[derive(Default)]
@@ -57,44 +73,25 @@ pub struct GameClientProcessorDeps {
     pub cache_actions: Arc<dyn GameClientCacheActions>,
     pub location_source: Arc<dyn GameClientLocationSource>,
     pub window_actions: Arc<dyn GameClientWindowActions>,
+    pub debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
 }
 
 #[derive(Default)]
 pub struct GameClientState {
-    pub external_notifier_version: i64,
     pub last_crash_at_ms: Option<i64>,
-    pub session_active: bool,
     pub current_location: String,
+    pub debug_logging_outcome: Option<DebugLoggingOutcome>,
+    pub debug_logging_check_id: u64,
+    pub debug_logging_generation: u64,
 }
 
 #[derive(Clone)]
 pub enum GameClientJob {
-    VrcxNoty {
-        message: String,
-        fallback_packet: String,
-    },
-    VrcxExternal {
-        message: String,
-        display_name: String,
-        user_id: String,
-        notify: bool,
-        fallback_packet: String,
-    },
     GameStopped,
-}
-
-impl GameClientJob {
-    fn fallback_packet(&self) -> Option<&str> {
-        match self {
-            GameClientJob::VrcxNoty {
-                fallback_packet, ..
-            }
-            | GameClientJob::VrcxExternal {
-                fallback_packet, ..
-            } => Some(fallback_packet),
-            GameClientJob::GameStopped => None,
-        }
-    }
+    DebugLoggingCheck {
+        delay: std::time::Duration,
+        game_generation: Option<u64>,
+    },
 }
 
 #[derive(Clone)]
@@ -111,16 +108,7 @@ impl GameClientProcessor {
     pub fn handle_jobs(&self, jobs: Vec<GameClientJob>) -> Result<()> {
         let mut first_error = None;
         for job in jobs {
-            let fallback_packet = job.fallback_packet().map(ToOwned::to_owned);
             match job {
-                GameClientJob::VrcxNoty { .. } | GameClientJob::VrcxExternal { .. } => {
-                    if let Err(error) = self.handle_ipc_job(job) {
-                        if let Some(packet) = fallback_packet {
-                            self.deps.event_bus.emit_ipc_event(&packet);
-                        }
-                        remember_error(&mut first_error, error);
-                    }
-                }
                 GameClientJob::GameStopped => match self.prepare_game_stopped() {
                     Ok(Some(plan)) => {
                         let processor = self.clone();
@@ -142,103 +130,53 @@ impl GameClientProcessor {
                         remember_error(&mut first_error, error);
                     }
                 },
+                GameClientJob::DebugLoggingCheck {
+                    delay,
+                    game_generation,
+                } => {
+                    if !delay.is_zero() {
+                        std::thread::sleep(delay);
+                    }
+                    if self.should_run_debug_logging_check(game_generation) {
+                        self.check_debug_logging();
+                    }
+                }
             }
         }
         first_error.map_or(Ok(()), Err)
     }
 
-    fn handle_ipc_job(&self, job: GameClientJob) -> Result<()> {
-        match job {
-            GameClientJob::VrcxNoty { message, .. } => self.handle_vrcx_noty(&message),
-            GameClientJob::VrcxExternal {
-                message,
-                display_name,
-                user_id,
-                notify,
-                ..
-            } => self.handle_vrcx_external(&message, &display_name, &user_id, notify),
-            GameClientJob::GameStopped => Ok(()),
-        }
-    }
-
-    fn handle_vrcx_noty(&self, message: &str) -> Result<()> {
-        let version = self.lock_state()?.external_notifier_version;
-        if version > 21 {
-            return Ok(());
-        }
-
-        let created_at = now_iso();
-        let affected_count = write_batch(
-            &self.deps.db,
-            &GameLogWriteBatch {
-                events: vec![GameLogEventEntry {
-                    created_at: created_at.clone(),
-                    data: message.to_string(),
-                }],
-                ..Default::default()
-            },
-        )?;
-        self.deps.event_bus.emit_game_log_persisted(affected_count);
-        self.deps.event_bus.emit_runtime_game_log_event(vec![
-            "runtime-ipc".into(),
-            created_at,
-            "event".into(),
-            message.to_string(),
-        ]);
-        self.deps.event_bus.emit_game_client_event(
-            "notification",
-            serde_json::json!({
-                "level": "info",
-                "title": "External notifier",
-                "message": message,
-            }),
+    fn check_debug_logging(&self) {
+        let (kind, error) = resolve_debug_logging_outcome(
+            config_store::get_bool(&self.deps.db, "gameLogDisabled", false).map_err(Into::into),
+            self.deps.debug_logging_actions.as_ref(),
         );
-        Ok(())
+        let mut outcome = DebugLoggingOutcome {
+            check_id: 0,
+            kind,
+            error,
+        };
+        if let Ok(mut state) = self.state.lock() {
+            state.debug_logging_check_id = state.debug_logging_check_id.saturating_add(1);
+            outcome.check_id = state.debug_logging_check_id;
+            state.debug_logging_outcome = Some(outcome.clone());
+        }
+        self.deps.event_bus.emit_game_client_event(
+            "debugLoggingOutcome",
+            serde_json::to_value(outcome).unwrap_or_default(),
+        );
     }
 
-    fn handle_vrcx_external(
-        &self,
-        message: &str,
-        display_name: &str,
-        user_id: &str,
-        notify: bool,
-    ) -> Result<()> {
-        let created_at = now_iso();
-        let location = self.current_location();
-        let affected_count = write_batch(
-            &self.deps.db,
-            &GameLogWriteBatch {
-                externals: vec![GameLogExternalEntry {
-                    created_at: created_at.clone(),
-                    message: message.to_string(),
-                    display_name: display_name.to_string(),
-                    user_id: user_id.to_string(),
-                    location: location.clone(),
-                }],
-                ..Default::default()
-            },
-        )?;
-        self.deps.event_bus.emit_game_log_persisted(affected_count);
-        self.deps.event_bus.emit_runtime_game_log_event(vec![
-            "runtime-ipc".into(),
-            created_at,
-            "external".into(),
-            message.to_string(),
-            display_name.to_string(),
-            user_id.to_string(),
-            location,
-        ]);
-        if notify {
-            self.deps.event_bus.emit_game_client_event(
-                "notification",
-                serde_json::json!({
-                    "level": "info",
-                    "title": if display_name.is_empty() { "External" } else { display_name },
-                    "message": message,
-                }),
-            );
-        }
-        Ok(())
+    fn should_run_debug_logging_check(&self, game_generation: Option<u64>) -> bool {
+        let Some(expected_generation) = game_generation else {
+            return true;
+        };
+        let generation_matches = self
+            .state
+            .lock()
+            .map(|state| state.debug_logging_generation == expected_generation)
+            .unwrap_or(false);
+        generation_matches && self.is_game_running()
     }
 
     fn prepare_game_stopped(&self) -> Result<Option<CrashRelaunchPlan>> {
@@ -431,6 +369,35 @@ impl GameClientProcessor {
     }
 }
 
+fn resolve_debug_logging_outcome(
+    game_log_disabled: Result<bool>,
+    actions: &dyn GameClientDebugLoggingActions,
+) -> (DebugLoggingOutcomeKind, Option<String>) {
+    match game_log_disabled {
+        Ok(true) => (DebugLoggingOutcomeKind::Disabled, None),
+        Err(error) => (
+            DebugLoggingOutcomeKind::Unavailable,
+            Some(error.to_string()),
+        ),
+        Ok(false) => match actions.read_debug_logging_enabled() {
+            Ok(None) => (DebugLoggingOutcomeKind::Unavailable, None),
+            Ok(Some(true)) => (DebugLoggingOutcomeKind::Enabled, None),
+            Ok(Some(false)) => match actions.enable_debug_logging() {
+                Ok(true) => (DebugLoggingOutcomeKind::Repaired, None),
+                Ok(false) => (DebugLoggingOutcomeKind::NeedsUserAction, None),
+                Err(error) => (
+                    DebugLoggingOutcomeKind::NeedsUserAction,
+                    Some(error.to_string()),
+                ),
+            },
+            Err(error) => (
+                DebugLoggingOutcomeKind::Unavailable,
+                Some(error.to_string()),
+            ),
+        },
+    }
+}
+
 fn remember_error(first_error: &mut Option<Error>, error: Error) {
     if first_error.is_none() {
         *first_error = Some(error);
@@ -445,202 +412,54 @@ fn now_iso() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
-    use serde_json::Value;
-    use vrcx_0_persistence::game_log::get_game_log_events;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
 
-    struct TestDir {
-        path: PathBuf,
+    struct FakeDebugLoggingActions {
+        enabled: Option<bool>,
+        repair_succeeds: bool,
+        repair_attempts: AtomicUsize,
     }
 
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!("vrcx-0-game-client-{name}-{nonce}"));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
+    impl GameClientDebugLoggingActions for FakeDebugLoggingActions {
+        fn read_debug_logging_enabled(&self) -> Result<Option<bool>> {
+            Ok(self.enabled)
         }
-    }
 
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
+        fn enable_debug_logging(&self) -> Result<bool> {
+            self.repair_attempts.fetch_add(1, Ordering::AcqRel);
+            Ok(self.repair_succeeds)
         }
     }
 
-    fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
-        let dir = TestDir::new(name);
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-        (dir, db)
-    }
-
-    struct FakeActions;
-
-    impl GameClientActions for FakeActions {
-        fn is_game_running(&self) -> bool {
-            false
-        }
-        fn is_steamvr_running(&self) -> bool {
-            false
-        }
-        fn start_game(&self, _arguments: &str) -> Result<bool> {
-            Ok(true)
-        }
-        fn start_game_from_path(&self, _path: &str, _arguments: &str) -> Result<bool> {
-            Ok(true)
-        }
-    }
-
-    struct FakeLocation(Option<String>);
-
-    impl GameClientLocationSource for FakeLocation {
-        fn vrc_closed_gracefully(&self) -> bool {
-            true
-        }
-        fn current_location_snapshot(&self) -> Option<LogLocationSnapshot> {
-            self.0.clone().map(|location| LogLocationSnapshot {
-                location,
-                world_name: String::new(),
-                created_at: String::new(),
-                file_name: String::new(),
-            })
-        }
-    }
-
-    fn processor(
-        db: Arc<DatabaseService>,
-        location: Option<String>,
-    ) -> (
-        GameClientProcessor,
-        RuntimeEventBus,
-        Arc<Mutex<GameClientState>>,
-    ) {
-        let event_bus = RuntimeEventBus::new();
-        let state = Arc::new(Mutex::new(GameClientState::default()));
-        let deps = GameClientProcessorDeps {
-            db: Arc::clone(&db),
-            config: ConfigRepository::new(Arc::clone(&db)),
-            event_bus: event_bus.clone(),
-            tasks: TaskSupervisor::new(),
-            session: HostSessionRuntime::new(),
-            actions: Arc::new(FakeActions),
-            cache_actions: Arc::new(NoopGameClientCacheActions),
-            location_source: Arc::new(FakeLocation(location)),
-            window_actions: Arc::new(NoopGameClientWindowActions),
+    #[test]
+    fn debug_logging_disabled_game_log_skips_registry_repair() {
+        let actions = FakeDebugLoggingActions {
+            enabled: Some(false),
+            repair_succeeds: true,
+            repair_attempts: AtomicUsize::new(0),
         };
-        (
-            GameClientProcessor::new(deps, Arc::clone(&state)),
-            event_bus,
-            state,
-        )
-    }
 
-    fn find_notification(events: &[crate::event_bus::RuntimeEventForTest]) -> Option<&Value> {
-        events.iter().find_map(|event| {
-            if event.name == "gameClientEvent" && event.payload.get("kind")? == "notification" {
-                event.payload.get("payload")
-            } else {
-                None
-            }
-        })
-    }
+        let (kind, error) = resolve_debug_logging_outcome(Ok(true), &actions);
 
-    fn find_runtime_game_log(
-        events: &[crate::event_bus::RuntimeEventForTest],
-    ) -> Option<&Vec<Value>> {
-        events.iter().find_map(|event| {
-            if event.name == "runtimeGameLogEvent" {
-                event.payload.get("raw")?.as_array()
-            } else {
-                None
-            }
-        })
+        assert_eq!(kind, DebugLoggingOutcomeKind::Disabled);
+        assert_eq!(error, None);
+        assert_eq!(actions.repair_attempts.load(Ordering::Acquire), 0);
     }
 
     #[test]
-    fn vrcx_noty_skips_when_notifier_version_exhausted() {
-        let (_dir, db) = test_db("noty-skip");
-        let (proc, bus, state) = processor(Arc::clone(&db), None);
-        state.lock().unwrap().external_notifier_version = 22;
+    fn debug_logging_disabled_registry_value_is_repaired_once() {
+        let actions = FakeDebugLoggingActions {
+            enabled: Some(false),
+            repair_succeeds: true,
+            repair_attempts: AtomicUsize::new(0),
+        };
 
-        proc.handle_jobs(vec![GameClientJob::VrcxNoty {
-            message: "hi".into(),
-            fallback_packet: "{}".into(),
-        }])
-        .unwrap();
+        let (kind, error) = resolve_debug_logging_outcome(Ok(false), &actions);
 
-        assert!(bus.take_events_for_test().is_empty());
-        assert!(get_game_log_events(&db).unwrap().is_empty());
-    }
-
-    #[test]
-    fn vrcx_noty_persists_and_emits_notification() {
-        let (_dir, db) = test_db("noty-emit");
-        let (proc, bus, _state) = processor(Arc::clone(&db), None);
-
-        proc.handle_jobs(vec![GameClientJob::VrcxNoty {
-            message: "hello".into(),
-            fallback_packet: "{}".into(),
-        }])
-        .unwrap();
-
-        let stored = get_game_log_events(&db).unwrap();
-        assert_eq!(stored.len(), 1);
-        assert_eq!(stored[0].data, "hello");
-
-        let events = bus.take_events_for_test();
-        let raw = find_runtime_game_log(&events).expect("runtime game log event");
-        assert_eq!(raw[2], "event");
-        assert_eq!(raw[3], "hello");
-        let notification = find_notification(&events).expect("notification");
-        assert_eq!(notification["title"], "External notifier");
-        assert_eq!(notification["message"], "hello");
-    }
-
-    #[test]
-    fn vrcx_external_falls_back_title_and_injects_location() {
-        let (_dir, db) = test_db("external-title");
-        let (proc, bus, _state) = processor(Arc::clone(&db), Some("wrld_x:1".into()));
-
-        proc.handle_jobs(vec![GameClientJob::VrcxExternal {
-            message: "m".into(),
-            display_name: String::new(),
-            user_id: "usr_x".into(),
-            notify: true,
-            fallback_packet: "{}".into(),
-        }])
-        .unwrap();
-
-        let events = bus.take_events_for_test();
-        let raw = find_runtime_game_log(&events).expect("runtime game log event");
-        assert_eq!(raw[2], "external");
-        assert_eq!(raw.last().unwrap(), "wrld_x:1");
-        let notification = find_notification(&events).expect("notification");
-        assert_eq!(notification["title"], "External");
-    }
-
-    #[test]
-    fn vrcx_external_skips_notification_when_notify_false() {
-        let (_dir, db) = test_db("external-silent");
-        let (proc, bus, _state) = processor(Arc::clone(&db), Some("wrld_y:2".into()));
-
-        proc.handle_jobs(vec![GameClientJob::VrcxExternal {
-            message: "m".into(),
-            display_name: "Friend".into(),
-            user_id: "usr_y".into(),
-            notify: false,
-            fallback_packet: "{}".into(),
-        }])
-        .unwrap();
-
-        let events = bus.take_events_for_test();
-        assert!(find_runtime_game_log(&events).is_some());
-        assert!(find_notification(&events).is_none());
+        assert_eq!(kind, DebugLoggingOutcomeKind::Repaired);
+        assert_eq!(error, None);
+        assert_eq!(actions.repair_attempts.load(Ordering::Acquire), 1);
     }
 }

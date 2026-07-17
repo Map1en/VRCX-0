@@ -4,9 +4,15 @@ import {
     EyeIcon,
     ImageIcon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type {
+    GroupDialogJson,
+    GroupProfileRecord,
+    UserProfileEntity
+} from '@/domain/entities/profileEntities';
 import { formatDateFilter } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
@@ -32,6 +38,10 @@ import {
 } from '../EntityDialogScaffold';
 import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
 import { GroupEventsTab, GroupEventSummary } from './GroupDialogEvents';
+import type {
+    GroupDialogTabCommands,
+    GroupDialogTabModel
+} from './groupDialogTypes';
 import {
     announcementRoleNames,
     announcementTimestamp,
@@ -55,7 +65,15 @@ function GroupBannerFallback() {
     );
 }
 
-function GroupOverviewSection({ title, action = null, children }: any) {
+function GroupOverviewSection({
+    title,
+    action = null,
+    children
+}: {
+    title: ReactNode;
+    action?: ReactNode;
+    children?: ReactNode;
+}) {
     return (
         <section className="bg-card/40 flex min-w-0 flex-col gap-2 rounded-md border p-3">
             <div className="flex min-w-0 items-center justify-between gap-2">
@@ -67,7 +85,19 @@ function GroupOverviewSection({ title, action = null, children }: any) {
     );
 }
 
-function GroupAnnouncementPanel({ group, onPreviewImage, onOpenUser }: any) {
+function GroupAnnouncementPanel({
+    group,
+    onPreviewImage,
+    onOpenUser
+}: {
+    group: GroupProfileRecord;
+    onPreviewImage: (url: string, title: string) => void;
+    onOpenUser: (
+        userId: string,
+        title?: string,
+        seedData?: UserProfileEntity | null
+    ) => void;
+}) {
     const { t } = useTranslation();
 
     const announcement = group.announcement;
@@ -88,7 +118,11 @@ function GroupAnnouncementPanel({ group, onPreviewImage, onOpenUser }: any) {
                         type="button"
                         variant="ghost"
                         className="h-auto shrink-0 p-0"
-                        aria-label={`Preview ${announcement.title || 'announcement'} image`}
+                        aria-label={t('accessibility.preview_image', {
+                            item:
+                                announcement.title ||
+                                t('accessibility.announcement')
+                        })}
                         onClick={() =>
                             onPreviewImage(
                                 convertFileUrlToImageUrl(
@@ -100,7 +134,7 @@ function GroupAnnouncementPanel({ group, onPreviewImage, onOpenUser }: any) {
                             )
                         }
                     >
-                        <img
+                        <FadeInImage
                             src={convertFileUrlToImageUrl(
                                 announcement.imageUrl,
                                 128
@@ -219,10 +253,14 @@ function GroupAnnouncementPanel({ group, onPreviewImage, onOpenUser }: any) {
     );
 }
 
-export function GroupDialogTabPanels(props: any) {
+export function GroupDialogTabPanels({
+    tabModel: model,
+    tabCommands: commands
+}: {
+    tabModel: GroupDialogTabModel;
+    tabCommands: GroupDialogTabCommands;
+}) {
     const { t } = useTranslation();
-    const model = props?.tabModel || props || {};
-    const commands = props?.tabCommands || props || {};
 
     const {
         activeInstances,
@@ -303,7 +341,7 @@ export function GroupDialogTabPanels(props: any) {
                         })}
                         onClick={() => onPreviewImage(bannerUrl, groupTitle)}
                     >
-                        <img
+                        <FadeInImage
                             src={bannerUrl}
                             alt={group.name || 'Group banner'}
                             className="aspect-[6/1] w-full object-cover"
@@ -432,7 +470,7 @@ export function GroupDialogTabPanels(props: any) {
                                 full
                             >
                                 <div className="flex flex-wrap gap-1.5">
-                                    {links.map((link: any) => (
+                                    {links.map((link) => (
                                         <Button
                                             key={link}
                                             type="button"
@@ -477,7 +515,7 @@ export function GroupDialogTabPanels(props: any) {
                                 full
                             >
                                 <div className="flex flex-wrap gap-1.5">
-                                    {tags.map((tag: any) => (
+                                    {tags.map((tag) => (
                                         <Badge key={tag} variant="outline">
                                             {tag}
                                         </Badge>
@@ -491,7 +529,7 @@ export function GroupDialogTabPanels(props: any) {
                                 full
                             >
                                 <div className="flex flex-wrap gap-1.5">
-                                    {roles.map((role: any) => (
+                                    {roles.map((role) => (
                                         <Badge
                                             key={role.id || role.name}
                                             variant="outline"
@@ -673,7 +711,7 @@ export function GroupDialogTabPanels(props: any) {
                                 <SelectItem value="all">
                                     {t('dialog.group.label.all_roles')}
                                 </SelectItem>
-                                {roles.map((role: any) => (
+                                {roles.map((role) => (
                                     <SelectItem
                                         key={role.id || role.name}
                                         value={role.id || role.name}
@@ -716,16 +754,18 @@ export function GroupDialogTabPanels(props: any) {
             </EntityDialogTabContent>
             <EntityDialogTabContent value="json">
                 <EntityRawJson
-                    value={{
-                        group,
-                        posts,
-                        events: groupEvents,
-                        instances: activeInstances,
-                        members,
-                        galleries: firstArray(group.galleries),
-                        photos,
-                        activeInstances
-                    }}
+                    value={
+                        {
+                            group,
+                            posts,
+                            events: groupEvents,
+                            instances: activeInstances,
+                            members,
+                            galleries: firstArray(group.galleries),
+                            photos,
+                            activeInstances
+                        } satisfies GroupDialogJson
+                    }
                 />
             </EntityDialogTabContent>
         </EntityDialogTabs>

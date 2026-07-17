@@ -1,7 +1,10 @@
 import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
 import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { Button } from '@/ui/shadcn/button';
@@ -27,6 +30,11 @@ import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import { getGroupRowImage, getGroupRowLabel } from './groupDialogUtils';
 import { GroupListState } from './GroupListState';
+import type { GroupPostForm } from './useGroupDialogPosts';
+
+function text(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+}
 
 export function GroupPostEditorDialog({
     open,
@@ -37,7 +45,16 @@ export function GroupPostEditorDialog({
     endpoint = '',
     submitting = false,
     onSubmit
-}: any) {
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    form: GroupPostForm | null;
+    onFormChange: Dispatch<SetStateAction<GroupPostForm | null>>;
+    group: GroupProfileRecord;
+    endpoint?: string;
+    submitting?: boolean;
+    onSubmit: (form: GroupPostForm) => void;
+}) {
     const { t } = useTranslation();
 
     const [galleryRows, setGalleryRows] = useState<
@@ -99,21 +116,23 @@ export function GroupPostEditorDialog({
     const roleIds = Array.isArray(form.roleIds) ? form.roleIds : [];
     const isEdit = form.mode === 'edit';
     const galleryOptions = galleryRows
-        .map((row: any) => ({
-            id: row?.id || row?.fileId || row?.file_id || '',
+        .map((row) => ({
+            id: text(row?.id || row?.fileId || row?.file_id),
             label: getGroupRowLabel(row),
             image: getGroupRowImage(row, 'gallery')
         }))
-        .filter((option: any) => option.id);
+        .filter((option) => option.id);
 
-    function updateForm(patch: any) {
-        onFormChange?.({ ...form, ...patch });
+    function updateForm(patch: Partial<GroupPostForm>) {
+        onFormChange((current) =>
+            current ? { ...current, ...patch } : current
+        );
     }
 
-    function toggleRole(roleId: any, checked: any) {
+    function toggleRole(roleId: string, checked: boolean) {
         const nextRoleIds = checked
             ? Array.from(new Set([...roleIds, roleId]))
-            : roleIds.filter((id: any) => id !== roleId);
+            : roleIds.filter((id) => id !== roleId);
         updateForm({ roleIds: nextRoleIds });
     }
 
@@ -193,7 +212,7 @@ export function GroupPostEditorDialog({
                             }}
                             disabled={submitting}
                         >
-                            {['public', 'group'].map((visibility: any) => (
+                            {['public', 'group'].map((visibility) => (
                                 <ToggleGroupItem
                                     key={visibility}
                                     value={visibility}
@@ -215,7 +234,7 @@ export function GroupPostEditorDialog({
                                     data-slot="checkbox-group"
                                     className="grid max-h-48 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2"
                                 >
-                                    {roles.map((role: any) => (
+                                    {roles.map((role) => (
                                         <Field
                                             key={role.id || role.name}
                                             orientation="horizontal"
@@ -225,20 +244,24 @@ export function GroupPostEditorDialog({
                                         >
                                             <Checkbox
                                                 id={`group-post-role-${role.id || role.name}`}
-                                                checked={roleIds.includes(
+                                                checked={
                                                     role.id
-                                                )}
+                                                        ? roleIds.includes(
+                                                              role.id
+                                                          )
+                                                        : false
+                                                }
                                                 disabled={
                                                     submitting || !role.id
                                                 }
-                                                onCheckedChange={(
-                                                    checked: any
-                                                ) =>
-                                                    toggleRole(
-                                                        role.id,
-                                                        checked === true
-                                                    )
-                                                }
+                                                onCheckedChange={(checked) => {
+                                                    if (role.id) {
+                                                        toggleRole(
+                                                            role.id,
+                                                            checked === true
+                                                        );
+                                                    }
+                                                }}
                                             />
                                             <FieldLabel
                                                 htmlFor={`group-post-role-${role.id || role.name}`}
@@ -298,7 +321,7 @@ export function GroupPostEditorDialog({
                         </InputGroup>
                         {galleryOptions.length ? (
                             <div className="grid max-h-56 gap-2 overflow-auto rounded-md border p-2 sm:grid-cols-2">
-                                {galleryOptions.map((option: any) => (
+                                {galleryOptions.map((option) => (
                                     <Button
                                         key={option.id}
                                         type="button"
@@ -314,7 +337,7 @@ export function GroupPostEditorDialog({
                                         }
                                     >
                                         {option.image ? (
-                                            <img
+                                            <FadeInImage
                                                 src={option.image}
                                                 alt=""
                                                 className="size-12 shrink-0 rounded object-cover"
@@ -355,14 +378,14 @@ export function GroupPostEditorDialog({
                         type="button"
                         variant="secondary"
                         disabled={submitting}
-                        onClick={() => onOpenChange?.(false)}
+                        onClick={() => onOpenChange(false)}
                     >
                         {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"
                         disabled={submitting}
-                        onClick={() => onSubmit?.(form)}
+                        onClick={() => onSubmit(form)}
                     >
                         {isEdit ? 'Edit Post' : 'Create Post'}
                     </Button>

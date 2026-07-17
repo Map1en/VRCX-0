@@ -1,4 +1,8 @@
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AutoLoginOutcome,
+    type LoginSessionState
+} from '@/platform/tauri/bindings';
 import {
     DEFAULT_VRCHAT_API_ENDPOINT,
     normalizeVrchatEndpoint
@@ -57,15 +61,6 @@ interface EndpointOptions {
     endpoint?: string;
 }
 
-interface BasicAuthInput extends EndpointOptions {
-    username?: unknown;
-    password?: unknown;
-}
-
-interface AuthCodeInput extends EndpointOptions {
-    code?: unknown;
-}
-
 interface FileAnalysisInput extends EndpointOptions {
     fileId?: unknown;
     version?: unknown;
@@ -97,85 +92,91 @@ async function getAuthSession({ endpoint = '' }: EndpointOptions = {}) {
     return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth', endpoint);
 }
 
-async function restoreCookieSession({ endpoint = '' }: EndpointOptions = {}) {
-    const response = await commands.appVrchatAuthCookieSessionRestore({
-        endpoint: normalizeVrchatEndpoint(endpoint)
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(
-        response,
-        'auth/user',
-        endpoint
-    );
+interface StartBasicLoginSessionInput extends EndpointOptions {
+    mode: 'basic';
+    username?: unknown;
+    password?: unknown;
+    saveCredentials?: boolean;
 }
 
-async function loginWithBasicAuth({
-    username,
-    password,
-    endpoint = ''
-}: BasicAuthInput) {
-    const response = await commands.appVrchatAuthLoginBasicStart({
-        endpoint: normalizeVrchatEndpoint(endpoint),
-        username:
-            typeof username === 'string' ? username : String(username ?? ''),
-        password:
-            typeof password === 'string' ? password : String(password ?? '')
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(
-        response,
-        'auth/user',
-        endpoint
-    );
+interface StartSavedCredentialLoginSessionInput extends EndpointOptions {
+    mode: 'savedCredential';
+    userId?: unknown;
 }
 
-async function loginWithSavedCredential({
-    userId,
-    endpoint = ''
-}: EndpointOptions & { userId?: unknown }) {
-    const response = await commands.appVrchatAuthSavedCredentialLoginStart({
-        endpoint: normalizeVrchatEndpoint(endpoint),
-        userId: typeof userId === 'string' ? userId : String(userId ?? '')
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(
-        response,
-        'auth/user',
-        endpoint
-    );
+interface StartCookieRestoreLoginSessionInput extends EndpointOptions {
+    mode: 'cookieRestore';
 }
 
-async function verifyTOTP({ code, endpoint = '' }: AuthCodeInput) {
-    const response = await commands.appVrchatAuthTotpVerify({
-        endpoint: normalizeVrchatEndpoint(endpoint),
-        code: typeof code === 'string' ? code : String(code ?? '')
-    });
-    return unwrapVrchatAuthResponse(
-        response,
-        'auth/twofactorauth/totp/verify',
-        endpoint
-    );
+type StartLoginSessionInput =
+    | StartBasicLoginSessionInput
+    | StartSavedCredentialLoginSessionInput
+    | StartCookieRestoreLoginSessionInput;
+
+function normalizeString(value: unknown): string {
+    return typeof value === 'string' ? value : String(value ?? '');
 }
 
-async function verifyOTP({ code, endpoint = '' }: AuthCodeInput) {
-    const response = await commands.appVrchatAuthOtpVerify({
-        endpoint: normalizeVrchatEndpoint(endpoint),
-        code: typeof code === 'string' ? code : String(code ?? '')
-    });
-    return unwrapVrchatAuthResponse(
-        response,
-        'auth/twofactorauth/otp/verify',
-        endpoint
-    );
+async function startLoginSession(
+    input: StartLoginSessionInput
+): Promise<LoginSessionState> {
+    const endpoint = normalizeVrchatEndpoint(input.endpoint ?? '');
+    switch (input.mode) {
+        case 'basic':
+            return commands.appVrchatAuthSessionStart({
+                mode: 'basic',
+                endpoint,
+                username: normalizeString(input.username),
+                password: normalizeString(input.password),
+                saveCredentials: input.saveCredentials === true
+            });
+        case 'savedCredential':
+            return commands.appVrchatAuthSessionStart({
+                mode: 'savedCredential',
+                endpoint,
+                userId: normalizeString(input.userId)
+            });
+        default:
+            return commands.appVrchatAuthSessionStart({
+                mode: 'cookieRestore',
+                endpoint
+            });
+    }
 }
 
-async function verifyEmailOTP({ code, endpoint = '' }: AuthCodeInput) {
-    const response = await commands.appVrchatAuthEmailOtpVerify({
-        endpoint: normalizeVrchatEndpoint(endpoint),
-        code: typeof code === 'string' ? code : String(code ?? '')
+async function respondLoginSession({
+    method,
+    code
+}: {
+    method?: unknown;
+    code?: unknown;
+}): Promise<LoginSessionState> {
+    return commands.appVrchatAuthSessionRespond({
+        method: normalizeString(method),
+        code: normalizeString(code)
     });
-    return unwrapVrchatAuthResponse(
-        response,
-        'auth/twofactorauth/emailotp/verify',
-        endpoint
-    );
+}
+
+async function cancelLoginSession(): Promise<LoginSessionState> {
+    return commands.appVrchatAuthSessionCancel();
+}
+
+interface AutoLoginStartInput extends EndpointOptions {
+    userId?: unknown;
+}
+
+async function autoLoginStart({
+    endpoint = '',
+    userId
+}: AutoLoginStartInput): Promise<AutoLoginOutcome> {
+    return commands.appVrchatAuthAutoLoginStart({
+        endpoint: normalizeVrchatEndpoint(endpoint),
+        userId: normalizeString(userId)
+    });
+}
+
+async function resetAutoLoginThrottle(): Promise<void> {
+    await commands.appVrchatAuthAutoLoginThrottleReset();
 }
 
 async function getOnlineVisits({ endpoint = '' }: EndpointOptions = {}) {
@@ -208,12 +209,11 @@ const vrchatAuthRepository = Object.freeze({
     getConfig,
     getCurrentUser,
     getAuthSession,
-    restoreCookieSession,
-    loginWithBasicAuth,
-    loginWithSavedCredential,
-    verifyTOTP,
-    verifyOTP,
-    verifyEmailOTP,
+    startLoginSession,
+    respondLoginSession,
+    cancelLoginSession,
+    autoLoginStart,
+    resetAutoLoginThrottle,
     getOnlineVisits,
     getFileAnalysis
 });
@@ -222,13 +222,13 @@ export {
     getConfig,
     getCurrentUser,
     getAuthSession,
-    restoreCookieSession,
-    loginWithBasicAuth,
-    loginWithSavedCredential,
-    verifyTOTP,
-    verifyOTP,
-    verifyEmailOTP,
+    startLoginSession,
+    respondLoginSession,
+    cancelLoginSession,
+    autoLoginStart,
+    resetAutoLoginThrottle,
     getOnlineVisits,
     getFileAnalysis
 };
+export type { StartLoginSessionInput };
 export default vrchatAuthRepository;

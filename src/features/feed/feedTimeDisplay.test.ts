@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useShellStore } from '@/state/shellStore';
@@ -9,6 +10,7 @@ import {
 } from './feedTimeDisplay';
 
 const BASE_TIME = new Date('2026-06-04T09:20:02').getTime();
+const translate = ((key: string) => key) as TFunction;
 
 describe('feedTimeDisplay', () => {
     beforeEach(() => {
@@ -22,11 +24,7 @@ describe('feedTimeDisplay', () => {
 
     it('formats relative feed time with the app locale', () => {
         expect(
-            formatFeedRelativeTime(
-                '2026-06-04T07:20:02',
-                BASE_TIME,
-                (() => '') as any
-            )
+            formatFeedRelativeTime('2026-06-04T07:20:02', BASE_TIME, translate)
         ).toBe(
             new Intl.RelativeTimeFormat('zh-CN', {
                 numeric: 'auto',
@@ -48,7 +46,7 @@ describe('feedTimeDisplay', () => {
             resolveFeedColumnTimeDisplay({
                 mode: 'exact',
                 nowMs: BASE_TIME,
-                t: (() => '') as any,
+                t: translate,
                 value
             }).label
         ).toBe('6月4日 7:20');

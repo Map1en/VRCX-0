@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
@@ -9,7 +10,9 @@ import {
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-export function EntityListEmptyTitle(kind: any, t: any) {
+import type { UserDialogEntityKind } from './userDialogEntityImages';
+
+export function EntityListEmptyTitle(kind: UserDialogEntityKind, t: TFunction) {
     if (kind === 'user') {
         return t('dialog.user.empty.no_users');
     }
@@ -25,7 +28,15 @@ export function EntityListEmptyTitle(kind: any, t: any) {
     return t('dialog.user.empty.no_results');
 }
 
-export function EntityListState({ kind, loading = false, error = '' }: any) {
+export function EntityListState({
+    kind,
+    loading = false,
+    error = ''
+}: {
+    kind: UserDialogEntityKind;
+    loading?: boolean;
+    error?: string;
+}) {
     const { t } = useTranslation();
 
     if (loading) {

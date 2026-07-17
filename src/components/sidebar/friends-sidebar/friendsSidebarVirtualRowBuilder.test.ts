@@ -23,7 +23,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             t
         });
 
-        expect(rows.map((row: any) => row.type)).toEqual([
+        expect(rows.map((row) => row.type)).toEqual([
             'skeleton',
             'skeleton',
             'skeleton',
@@ -82,7 +82,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             t
         });
 
-        expect(rows.map((row: any) => row.key)).toEqual([
+        expect(rows.map((row) => row.key)).toEqual([
             'section:me',
             'friend:me:usr_me',
             'section:sameInstance',

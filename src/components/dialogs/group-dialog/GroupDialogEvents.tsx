@@ -1,4 +1,5 @@
 import { CalendarIcon, RefreshCwIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { GroupEventCard } from '@/components/hosts/tools-dialogs/GroupEventCard';
@@ -6,7 +7,10 @@ import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
 import { formatDateTime } from '@/lib/dateTime';
+import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,16 +22,16 @@ import {
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-function eventTimeMs(value: any) {
+function eventTimeMs(value: string | null | undefined) {
     const time = Date.parse(value || '');
     return Number.isFinite(time) ? time : 0;
 }
 
-function eventEndTimeMs(event: any) {
+function eventEndTimeMs(event: GroupCalendarEventRecord) {
     return eventTimeMs(event?.endsAt || event?.startsAt);
 }
 
-function splitGroupEvents(events: any) {
+function splitGroupEvents(events: GroupCalendarEventRecord[]) {
     const now = Date.now();
     const rows = Array.isArray(events) ? events : [];
     const upcoming = [];
@@ -42,22 +46,23 @@ function splitGroupEvents(events: any) {
     }
 
     upcoming.sort(
-        (left: any, right: any) =>
+        (left, right) =>
             eventTimeMs(left?.startsAt) - eventTimeMs(right?.startsAt)
     );
-    past.sort(
-        (left: any, right: any) => eventEndTimeMs(right) - eventEndTimeMs(left)
-    );
+    past.sort((left, right) => eventEndTimeMs(right) - eventEndTimeMs(left));
 
     return { upcoming, past };
 }
 
-function summaryEventRows(events: any) {
+function summaryEventRows(events: GroupCalendarEventRecord[]) {
     const { upcoming, past } = splitGroupEvents(events);
     return [...upcoming, ...past].slice(0, 3);
 }
 
-function eventBannerUrl(event: any, group: any) {
+function eventBannerUrl(
+    event: GroupCalendarEventRecord,
+    group: GroupProfileRecord
+) {
     return convertFileUrlToImageUrl(
         event?.imageUrl ||
             event?.thumbnailImageUrl ||
@@ -68,7 +73,7 @@ function eventBannerUrl(event: any, group: any) {
     );
 }
 
-function eventTimeLabel(event: any) {
+function eventTimeLabel(event: GroupCalendarEventRecord) {
     if (!event?.startsAt) {
         return '';
     }
@@ -96,7 +101,13 @@ function eventTimeLabel(event: any) {
     return end ? `${start} - ${end}` : start;
 }
 
-function GroupEventsEmpty({ title, description = '' }: any) {
+function GroupEventsEmpty({
+    title,
+    description = ''
+}: {
+    title: ReactNode;
+    description?: ReactNode;
+}) {
     return (
         <Empty className="min-h-32 border">
             <EmptyHeader>
@@ -118,13 +129,19 @@ function GroupEventsSection({
     emptyTitle,
     group,
     onToggleFollow
-}: any) {
+}: {
+    title: ReactNode;
+    events: GroupCalendarEventRecord[];
+    emptyTitle: ReactNode;
+    group: GroupProfileRecord;
+    onToggleFollow: (event: GroupCalendarEventRecord) => void;
+}) {
     return (
         <section className="flex min-w-0 flex-col gap-2">
             <div className="text-sm font-medium">{title}</div>
             {events.length ? (
                 <div className="grid gap-3 md:grid-cols-2">
-                    {events.map((event: any, index: any) => (
+                    {events.map((event, index) => (
                         <GroupEventCard
                             key={`${getEventId(event) || 'event'}:${index}`}
                             event={event}
@@ -151,7 +168,13 @@ export function GroupEventSummary({
     error,
     group,
     onOpenEvents
-}: any) {
+}: {
+    events: GroupCalendarEventRecord[];
+    status: string;
+    error: string;
+    group: GroupProfileRecord;
+    onOpenEvents: () => void;
+}) {
     const { t } = useTranslation();
     const rows = summaryEventRows(events);
 
@@ -182,7 +205,7 @@ export function GroupEventSummary({
 
     return (
         <div className="flex flex-col gap-2">
-            {rows.map((event: any, index: any) => {
+            {rows.map((event, index) => {
                 const bannerUrl = eventBannerUrl(event, group);
                 return (
                     <Button
@@ -194,7 +217,7 @@ export function GroupEventSummary({
                     >
                         <span className="bg-muted flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
                             {bannerUrl ? (
-                                <img
+                                <FadeInImage
                                     src={bannerUrl}
                                     alt=""
                                     className="size-full object-cover"
@@ -228,7 +251,14 @@ export function GroupEventsTab({
     group,
     onRefresh,
     onToggleFollow
-}: any) {
+}: {
+    events: GroupCalendarEventRecord[];
+    status: string;
+    error: string;
+    group: GroupProfileRecord;
+    onRefresh: () => void;
+    onToggleFollow: (event: GroupCalendarEventRecord) => void;
+}) {
     const { t } = useTranslation();
     const rows = Array.isArray(events) ? events : [];
     const { upcoming, past } = splitGroupEvents(rows);

@@ -34,14 +34,18 @@ vi.mock('@/services/dialogService', () => ({
 }));
 
 vi.mock('@/state/launchStore', () => ({
-    useLaunchStore: (selector: any) =>
+    useLaunchStore: <T,>(
+        selector: (state: {
+            showLaunchDialog: typeof mocks.showLaunchDialog;
+        }) => T
+    ) =>
         selector({
             showLaunchDialog: mocks.showLaunchDialog
         })
 }));
 
 vi.mock('react-i18next', () => {
-    const translations: any = {
+    const translations: Record<string, string> = {
         'component.region_code_badge.dynamic.region_value': 'Region',
         'dialog.new_instance.access_type_friend_plus': 'Friends+',
         'dialog.new_instance.access_type_group': 'Group',
@@ -57,7 +61,7 @@ vi.mock('react-i18next', () => {
 
     return {
         useTranslation: () => ({
-            t: (key: any) => translations[key] || key
+            t: (key: string) => translations[key] || key
         })
     };
 });
@@ -66,7 +70,11 @@ vi.mock('@/ui/shadcn/button', async () => {
     const React = await import('react');
 
     return {
-        Button: ({ children, variant: _variant, ...props }: any) =>
+        Button: ({
+            children,
+            variant: _variant,
+            ...props
+        }: React.ComponentProps<'button'> & { variant?: unknown }) =>
             React.createElement('button', props, children)
     };
 });
@@ -87,7 +95,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
     };
 
     return {
-        Tooltip: ({ children }: any) =>
+        Tooltip: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
         TooltipTrigger: ({
             children,
@@ -101,7 +109,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
                 null,
                 renderMockSlot(render, children)
             ),
-        TooltipContent: ({ children }: any) =>
+        TooltipContent: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(
                 'span',
                 { 'data-tooltip-content': true },
@@ -112,7 +120,15 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
 
 import { LocationWorld } from './LocationWorld';
 
-function renderLocationWorld(props: any = {}) {
+type LocationWorldTestProps = {
+    locationObject?: string | Record<string, unknown>;
+    instanceOwnerName?: string;
+    currentUserId?: string;
+    worldDialogShortName?: string;
+    interactive?: boolean;
+};
+
+function renderLocationWorld(props: LocationWorldTestProps = {}) {
     return renderToStaticMarkup(React.createElement(LocationWorld, props));
 }
 

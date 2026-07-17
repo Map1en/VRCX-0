@@ -38,7 +38,7 @@ vi.mock('@/components/location/LocationContextMenu', async () => {
     const React = await import('react');
 
     return {
-        LocationContextMenu: ({ children }: any) =>
+        LocationContextMenu: ({ children }: React.PropsWithChildren) =>
             React.createElement(React.Fragment, null, children)
     };
 });
@@ -81,18 +81,24 @@ vi.mock('@/services/launchService', () => ({
 }));
 
 vi.mock('@/state/launchStore', () => ({
-    useLaunchStore: (selector: any) =>
+    useLaunchStore: <T,>(
+        selector: (state: {
+            showLaunchDialog: typeof mocks.showLaunchDialog;
+        }) => T
+    ) =>
         selector({
             showLaunchDialog: mocks.showLaunchDialog
         })
 }));
 
 vi.mock('@/state/preferencesStore', () => ({
-    usePreferencesStore: (selector: any) => selector(mocks.preferencesState)
+    usePreferencesStore: <T,>(
+        selector: (state: typeof mocks.preferencesState) => T
+    ) => selector(mocks.preferencesState)
 }));
 
 vi.mock('react-i18next', () => {
-    const translations: any = {
+    const translations: Record<string, string> = {
         'component.location.toast.failed_to_send_self_invite':
             'Failed to send self invite',
         'component.region_code_badge.dynamic.region_value': 'Region',
@@ -112,7 +118,7 @@ vi.mock('react-i18next', () => {
 
     return {
         useTranslation: () => ({
-            t: (key: any) => translations[key] || key
+            t: (key: string) => translations[key] || key
         })
     };
 });
@@ -121,7 +127,11 @@ vi.mock('@/ui/shadcn/button', async () => {
     const React = await import('react');
 
     return {
-        Button: ({ children, variant: _variant, ...props }: any) =>
+        Button: ({
+            children,
+            variant: _variant,
+            ...props
+        }: React.ComponentProps<'button'> & { variant?: unknown }) =>
             React.createElement('button', props, children)
     };
 });
@@ -130,7 +140,8 @@ vi.mock('@/ui/shadcn/spinner', async () => {
     const React = await import('react');
 
     return {
-        Spinner: (props: any) => React.createElement('span', props, 'loading')
+        Spinner: (props: React.ComponentProps<'span'>) =>
+            React.createElement('span', props, 'loading')
     };
 });
 
@@ -150,7 +161,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
     };
 
     return {
-        Tooltip: ({ children }: any) =>
+        Tooltip: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
         TooltipTrigger: ({
             children,
@@ -164,7 +175,7 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
                 null,
                 renderMockSlot(render, children)
             ),
-        TooltipContent: ({ children }: any) =>
+        TooltipContent: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement(
                 'span',
                 { 'data-tooltip-content': true },
@@ -175,7 +186,13 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
 
 import { Location } from './Location';
 
-function renderLocation(props: any = {}) {
+type LocationTestProps = {
+    location?: string;
+    traveling?: string;
+    showGroupLink?: boolean;
+};
+
+function renderLocation(props: LocationTestProps = {}) {
     return renderToStaticMarkup(React.createElement(Location, props));
 }
 

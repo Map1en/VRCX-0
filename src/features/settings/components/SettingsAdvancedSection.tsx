@@ -1,5 +1,3 @@
-import { useTranslation } from 'react-i18next';
-
 import type { SettingsPageStateSections } from '../settingsPageStateSections';
 import { normalizeCheckedState } from '../settingsValues';
 import { SettingsAdvancedTab } from './settings-tabs/SettingsAdvancedTab';
@@ -11,50 +9,35 @@ type SettingsAdvancedSectionProps = {
 export function SettingsAdvancedSection({
     advanced
 }: SettingsAdvancedSectionProps) {
-    const { t } = useTranslation();
     const {
         prefs,
-        cacheStats,
-        cacheStatsVisible,
         avatarAutoCleanupOptions,
         sqliteTableSizes,
         sqliteTableSizeRows,
         onlineVisitCount,
         configTreeData,
         appDataDirState,
-        tauriAppSnapshot,
         saveBoolPreference,
-        clearVrcxCache,
-        promptAutoClearVrcxCacheFrequency,
-        refreshCacheSize,
         handleGameLogDisabledChange,
         saveStringPreference,
         setPurgeDialogOpen,
         refreshSqliteTableSizes,
         refreshOnlineVisits,
         refreshConfigTreeData,
-        refreshRuntimeAppSnapshot,
         openAppDataDirSelector,
         resetAppDataDir,
-        restartForAppDataDir,
         setConfigTreeData,
         migrateLegacyVrcxData
     } = advanced;
 
     const advancedTab = {
         prefs,
-        cacheStats,
-        cacheStatsVisible,
         avatarAutoCleanupOptions,
         sqliteTableSizes,
         sqliteTableSizeRows,
         onlineVisitCount,
         configTreeData,
         appDataDirState,
-        tauriAppSnapshot,
-        gameLogDisabledLabel: t(
-            'view.settings.advanced.advanced.cache_debug.disable_gamelog'
-        ),
         onRelaunchVRChatAfterCrashChange: (checked: unknown) => {
             const enabled = normalizeCheckedState(checked);
             saveBoolPreference(
@@ -108,23 +91,6 @@ export function SettingsAdvancedSection({
                 value
             );
         },
-        onShowConfirmationOnSwitchAvatarChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            saveBoolPreference(
-                'showConfirmationOnSwitchAvatar',
-                'showConfirmationOnSwitchAvatar',
-                enabled
-            );
-        },
-        onClearVrcxCache: () => {
-            clearVrcxCache();
-        },
-        onPromptAutoClearVrcxCacheFrequency: () => {
-            promptAutoClearVrcxCacheFrequency();
-        },
-        onRefreshCacheSize: () => {
-            refreshCacheSize();
-        },
         onGameLogDisabledChange: (checked: unknown) => {
             handleGameLogDisabledChange(normalizeCheckedState(checked));
         },
@@ -136,30 +102,12 @@ export function SettingsAdvancedSection({
             );
         },
         onOpenPurgeDialog: () => setPurgeDialogOpen(true),
-        onMigrateLegacyVrcxData: () => {
-            migrateLegacyVrcxData();
-        },
-        onRefreshSqliteTableSizes: () => {
-            refreshSqliteTableSizes();
-        },
-        onRefreshOnlineVisits: () => {
-            refreshOnlineVisits();
-        },
-        onRefreshConfigTreeData: () => {
-            refreshConfigTreeData();
-        },
-        onRefreshRuntimeAppSnapshot: () => {
-            refreshRuntimeAppSnapshot();
-        },
-        onOpenAppDataDirSelector: () => {
-            openAppDataDirSelector();
-        },
-        onResetAppDataDir: () => {
-            resetAppDataDir();
-        },
-        onRestartForAppDataDir: () => {
-            restartForAppDataDir();
-        },
+        onMigrateLegacyVrcxData: migrateLegacyVrcxData,
+        onRefreshSqliteTableSizes: refreshSqliteTableSizes,
+        onRefreshOnlineVisits: refreshOnlineVisits,
+        onRefreshConfigTreeData: refreshConfigTreeData,
+        onOpenAppDataDirSelector: openAppDataDirSelector,
+        onResetAppDataDir: resetAppDataDir,
         onClearConfigTreeData: () => setConfigTreeData({})
     };
 

@@ -1,23 +1,27 @@
 #![allow(non_snake_case)]
 
+use std::sync::Arc;
+
 use serde_json::Value;
 use tauri::State;
 use vrcx_0_application::vrchat_api::auth::{
-    config_get_input, current_user_get_input, email_otp_verify_input, file_analysis_get_input,
-    login_basic_input, otp_verify_input, session_get_input, totp_verify_input, visits_get_input,
+    config_get_input, current_user_get_input, file_analysis_get_input, session_get_input,
+    visits_get_input,
 };
 
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 use vrcx_0_application::{
-    LoginSuccessRecordInput, LogoutRecordInput, SavedCredentialLoginStartInput,
+    AutoLoginOutcome, AutoLoginStartInput, LoginSessionStartBasicInput,
+    LoginSessionStartCookieRestoreInput, LoginSessionStartSavedCredentialInput, LoginSessionState,
+    LogoutRecordInput,
 };
 
 use super::types::{
-    VrchatAuthCodeInput, VrchatAuthEndpointInput, VrchatAuthFileAnalysisInput,
-    VrchatAuthLoginBasicInput, VrchatAuthLoginSuccessRecordInput, VrchatAuthLogoutRecordInput,
-    VrchatAuthSavedCredentialDeleteInput, VrchatAuthSavedCredentialLoginStartInput,
+    VrchatAuthAutoLoginStartInput, VrchatAuthEndpointInput, VrchatAuthFileAnalysisInput,
+    VrchatAuthLogoutRecordInput, VrchatAuthSavedCredentialDeleteInput,
+    VrchatAuthSessionRespondInput, VrchatAuthSessionStartInput,
 };
 
 async fn execute_auth_api(
@@ -46,69 +50,143 @@ pub fn app__vrchat_auth_saved_snapshot_get(state: State<'_, AppState>) -> Result
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__vrchat_auth_session_start(
+    state: State<'_, AppState>,
+    input: VrchatAuthSessionStartInput,
+) -> Result<LoginSessionState, AppError> {
+    let diagnostics = state.runtime_context.diagnostics.clone();
+    diagnostics.record_command(
+        "app__vrchat_auth_session_start",
+        "running",
+        "Starting a VRChat login session.",
+    );
+    state.clear_backend_frontend_session();
+    let web = Arc::clone(&state.web);
+    let db = Arc::clone(&state.db);
+    let config = state.runtime_context.config.clone();
+    let login_session = state.runtime_context.login_session.clone();
+    let result = match input {
+        VrchatAuthSessionStartInput::Basic {
+            endpoint,
+            username,
+            password,
+            save_credentials,
+        } => {
+            login_session
+                .start_basic(
+                    web,
+                    db,
+                    &config,
+                    LoginSessionStartBasicInput {
+                        endpoint,
+                        username,
+                        password,
+                        save_credentials,
+                    },
+                )
+                .await
+        }
+        VrchatAuthSessionStartInput::SavedCredential { endpoint, user_id } => {
+            login_session
+                .start_saved_credential(
+                    web,
+                    db,
+                    &config,
+                    LoginSessionStartSavedCredentialInput { endpoint, user_id },
+                )
+                .await
+        }
+        VrchatAuthSessionStartInput::CookieRestore { endpoint } => {
+            login_session
+                .start_cookie_restore(
+                    web,
+                    db,
+                    &config,
+                    LoginSessionStartCookieRestoreInput { endpoint },
+                )
+                .await
+        }
+    };
+    diagnostics.record_command(
+        "app__vrchat_auth_session_start",
+        "ok",
+        format!("status={result:?}"),
+    );
+    Ok(result)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_auth_auto_login_start(
+    state: State<'_, AppState>,
+    input: VrchatAuthAutoLoginStartInput,
+) -> Result<AutoLoginOutcome, AppError> {
+    let diagnostics = state.runtime_context.diagnostics.clone();
+    diagnostics.record_command(
+        "app__vrchat_auth_auto_login_start",
+        "running",
+        "Starting an automatic VRChat login attempt.",
+    );
+    let web = Arc::clone(&state.web);
+    let db = Arc::clone(&state.db);
+    let config = state.runtime_context.config.clone();
+    let login_session = state.runtime_context.login_session.clone();
+    let result = login_session
+        .auto_login_start(
+            web,
+            db,
+            &config,
+            AutoLoginStartInput {
+                endpoint: input.endpoint,
+                user_id: input.user_id,
+            },
+        )
+        .await
+        .map_err(|error| {
+            diagnostics.record_command(
+                "app__vrchat_auth_auto_login_start",
+                "error",
+                error.to_string(),
+            );
+            AppError::from(error)
+        })?;
+    diagnostics.record_command(
+        "app__vrchat_auth_auto_login_start",
+        "ok",
+        format!("status={result:?}"),
+    );
+    Ok(result)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_auth_session_respond(
+    state: State<'_, AppState>,
+    input: VrchatAuthSessionRespondInput,
+) -> Result<LoginSessionState, AppError> {
+    let config = state.runtime_context.config.clone();
+    let result = state
+        .runtime_context
+        .login_session
+        .respond(input.method, input.code, state.web.as_ref(), &config)
+        .await;
+    Ok(result)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__vrchat_auth_session_cancel(state: State<'_, AppState>) -> LoginSessionState {
+    state.runtime_context.login_session.cancel()
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn app__vrchat_auth_saved_credential_delete(
     state: State<'_, AppState>,
     input: VrchatAuthSavedCredentialDeleteInput,
 ) -> Result<Value, AppError> {
     vrcx_0_application::delete_saved_credential(&state.runtime_context.config, input.user_id)
         .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_saved_credential_login_start(
-    state: State<'_, AppState>,
-    input: VrchatAuthSavedCredentialLoginStartInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(
-        "app__vrchat_auth_saved_credential_login_start",
-        "running",
-        format!("Logging in saved credential {}.", input.user_id),
-    );
-    let result = vrcx_0_application::saved_credential_login_start(
-        &state.runtime_context.config,
-        state.web.as_ref(),
-        state.db.as_ref(),
-        SavedCredentialLoginStartInput {
-            user_id: input.user_id,
-            endpoint: input.endpoint,
-        },
-    )
-    .await
-    .map_err(AppError::from);
-    match &result {
-        Ok(response) => diagnostics.record_command(
-            "app__vrchat_auth_saved_credential_login_start",
-            "ok",
-            format!("status={}", response.status),
-        ),
-        Err(error) => diagnostics.record_command(
-            "app__vrchat_auth_saved_credential_login_start",
-            "error",
-            error.to_string(),
-        ),
-    }
-    result
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__vrchat_auth_login_success_record(
-    state: State<'_, AppState>,
-    input: VrchatAuthLoginSuccessRecordInput,
-) -> Result<Value, AppError> {
-    vrcx_0_application::record_login_success(
-        &state.runtime_context.config,
-        state.web.as_ref(),
-        LoginSuccessRecordInput {
-            user: input.user,
-            login_params: input.login_params,
-            stored_login_params: input.stored_login_params,
-            save_credentials: input.save_credentials,
-        },
-    )
-    .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -127,6 +205,15 @@ pub fn app__vrchat_auth_logout_record(
         },
     )
     .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__vrchat_auth_auto_login_throttle_reset(state: State<'_, AppState>) {
+    state
+        .runtime_context
+        .login_session
+        .reset_auto_login_throttle();
 }
 
 #[tauri::command]
@@ -170,133 +257,6 @@ pub async fn app__vrchat_auth_session_get(
         "app__vrchat_auth_session_get",
         "Getting VRChat auth session.",
         session_get_input(input.endpoint),
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_login_basic(
-    state: State<'_, AppState>,
-    input: VrchatAuthLoginBasicInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let (username, request) = login_basic_input(
-        input.endpoint,
-        input.username,
-        input.password,
-        "VrchatAuthLoginBasic requires username.",
-        "VrchatAuthLoginBasic requires password.",
-    )?;
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_login_basic",
-        format!("Logging in {username}."),
-        request,
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_cookie_session_restore(
-    state: State<'_, AppState>,
-    input: VrchatAuthEndpointInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint;
-    let config_response = execute_auth_api(
-        state.clone(),
-        "app__vrchat_auth_cookie_session_restore_config",
-        "Preparing VRChat config before cookie session restore.",
-        config_get_input(endpoint.clone()),
-    )
-    .await?;
-    if config_response.status == 403 {
-        return Ok(config_response);
-    }
-
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_cookie_session_restore",
-        "Restoring current VRChat user from cookies.",
-        current_user_get_input(endpoint),
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_login_basic_start(
-    state: State<'_, AppState>,
-    input: VrchatAuthLoginBasicInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint;
-    let (username, request) = login_basic_input(
-        endpoint.clone(),
-        input.username,
-        input.password,
-        "VrchatAuthLoginBasicStart requires username.",
-        "VrchatAuthLoginBasicStart requires password.",
-    )?;
-    let config_response = execute_auth_api(
-        state.clone(),
-        "app__vrchat_auth_login_basic_start_config",
-        "Preparing VRChat config before basic login.",
-        config_get_input(endpoint.clone()),
-    )
-    .await?;
-    if config_response.status == 403 {
-        return Ok(config_response);
-    }
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_login_basic_start",
-        format!("Logging in {username}."),
-        request,
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_totp_verify(
-    state: State<'_, AppState>,
-    input: VrchatAuthCodeInput,
-) -> Result<VrchatApiResponse, AppError> {
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_totp_verify",
-        "Verifying VRChat TOTP.",
-        totp_verify_input(input.endpoint, input.code),
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_otp_verify(
-    state: State<'_, AppState>,
-    input: VrchatAuthCodeInput,
-) -> Result<VrchatApiResponse, AppError> {
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_otp_verify",
-        "Verifying VRChat OTP.",
-        otp_verify_input(input.endpoint, input.code),
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_auth_email_otp_verify(
-    state: State<'_, AppState>,
-    input: VrchatAuthCodeInput,
-) -> Result<VrchatApiResponse, AppError> {
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_email_otp_verify",
-        "Verifying VRChat email OTP.",
-        email_otp_verify_input(input.endpoint, input.code),
     )
     .await
 }

@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 
+import {
+    commands,
+    type NotificationMarkSeenBatchItem
+} from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { DAY_MS } from '@/shared/constants/time';
-import { windowDelay } from '@/shared/utils/delays';
 import {
     getNotificationCategory,
     getNotificationTs
@@ -52,10 +55,6 @@ function normalizeNotificationId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function isNonEmptyString(value: unknown): value is string {
-    return typeof value === 'string' && value.trim() !== '';
 }
 
 function normalizeNotificationIds(value: unknown | unknown[]): string[] {
@@ -151,14 +150,18 @@ function isUnseenNotification(notification?: NotificationRow | null): boolean {
     );
 }
 
-function shouldMarkSeenOnCenterClose(
-    notification?: NotificationRow | null
-): boolean {
+function shouldBulkMarkSeen(notification?: NotificationRow | null): boolean {
     const version = Number(notification?.version ?? 1);
     const type = String(notification?.type || '');
+    return !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type));
+}
+
+function shouldMarkSeenRemotely(
+    notification?: NotificationRow | null
+): boolean {
     return (
-        getNotificationLifecycleBucket(type) !== 'system' &&
-        !(version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type))
+        shouldBulkMarkSeen(notification) &&
+        getNotificationLifecycleBucket(notification?.type) !== 'system'
     );
 }
 
@@ -427,47 +430,65 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 return;
             }
 
-            const markableRows = unseenRows.filter(shouldMarkSeenOnCenterClose);
-            const ids = markableRows
-                .map((notification) => notification.id)
-                .filter(isNonEmptyString);
+            const markableRows = unseenRows.filter(shouldBulkMarkSeen);
+            const items = markableRows.flatMap<NotificationMarkSeenBatchItem>(
+                (notification) => {
+                    const id = normalizeNotificationId(notification.id);
+                    const version = Number(notification.version) || 1;
+                    const remote = shouldMarkSeenRemotely(notification);
+                    if (!id || (!remote && version !== 2)) {
+                        return [];
+                    }
+                    return [
+                        {
+                            id,
+                            version,
+                            location: remote ? 'remote' : 'local'
+                        }
+                    ];
+                }
+            );
+            const ids = items.map((item) => item.id);
             if (!ids.length) {
                 return;
             }
-            const localV2Ids = markableRows
-                .filter((notification) => Number(notification.version) === 2)
-                .map((notification) => notification.id)
-                .filter(isNonEmptyString);
             for (const id of ids) {
                 pendingSeenIds.add(id);
             }
             get().markNotificationsSeen(ids);
+            let failedCount = 0;
             try {
-                await notificationPersistenceRepository.markSeenLocalBulk({
-                    userId: auth.currentUserId,
-                    ids: localV2Ids
+                const result = await commands.appNotificationMarkSeenBatch({
+                    items
                 });
-                for (const notification of markableRows) {
-                    await notificationPersistenceRepository
-                        .markSeen({
-                            userId: auth.currentUserId,
-                            id: notification.id,
-                            version: notification.version,
-                            endpoint: auth.currentUserEndpoint
-                        })
-                        .catch((error: unknown) => {
-                            console.warn(
-                                'Failed to mark VRChat notification as seen:',
-                                error
-                            );
-                        });
-                    await windowDelay(250);
+                failedCount = result.failed;
+                for (const item of result.items) {
+                    if (item.state === 'failed') {
+                        pendingSeenIds.delete(item.id);
+                        console.warn(
+                            'Failed to mark VRChat notification as seen:',
+                            item.message
+                        );
+                    }
                 }
                 await get().loadForCurrentUser();
+            } catch (error) {
+                for (const id of ids) {
+                    pendingSeenIds.delete(id);
+                }
+                await get()
+                    .loadForCurrentUser()
+                    .catch(() => {});
+                throw error;
             } finally {
                 for (const id of ids) {
                     pendingSeenIds.delete(id);
                 }
+            }
+            if (failedCount > 0) {
+                throw new Error(
+                    `Failed to mark ${failedCount} notification(s) as seen.`
+                );
             }
         },
         resetVrcNotificationState() {

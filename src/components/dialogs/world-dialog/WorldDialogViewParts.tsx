@@ -1,6 +1,12 @@
 import { MonitorIcon, RectangleGogglesIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import type {
+    EntityRecord,
+    PlatformFileAnalysis,
+    WorldProfileRecord
+} from '@/domain/entities/profileEntities';
+import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -18,6 +24,7 @@ import {
     isGroupId,
     normalizeInstanceUsers
 } from './WorldDialogInstanceUsers';
+import type { WorldInstanceRecord } from './worldInstances';
 
 export {
     firstText,
@@ -27,7 +34,43 @@ export {
     normalizeInstanceUsers
 } from './WorldDialogInstanceUsers';
 
-export function PlatformBadge({ name, fileSize = '' }: any) {
+export type InstanceGroupRecord = EntityRecord & {
+    displayName: string;
+    groupId: string;
+    iconUrl: string;
+    id: string;
+    imageUrl: string;
+    name: string;
+    thumbnailImageUrl: string;
+};
+
+export type WorldDialogInstanceRow = WorldInstanceRecord & {
+    creatorGroup: InstanceGroupRecord | null;
+    creatorGroupId: string;
+    creatorUser: unknown;
+    creatorUserId: string;
+    id: string;
+    location: string;
+    users: InstanceRosterRow[];
+};
+
+type WorldLocationSource = EntityRecord & { id: string };
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
+function record(value: unknown): EntityRecord {
+    return isRecord(value) ? value : {};
+}
+
+export function PlatformBadge({
+    name,
+    fileSize = ''
+}: {
+    name: string;
+    fileSize?: string;
+}) {
     const normalized = String(name || '').toLowerCase();
     const Icon =
         normalized === 'pc'
@@ -65,7 +108,10 @@ export function WorldInstancesEmptyState() {
     );
 }
 
-export function fileAnalysisSizeForPlatform(fileAnalysis: any, platform: any) {
+export function fileAnalysisSizeForPlatform(
+    fileAnalysis: PlatformFileAnalysis | null | undefined,
+    platform: string
+) {
     if (platform === 'PC') {
         return fileAnalysis?.standalonewindows?._fileSize || '';
     }
@@ -78,28 +124,50 @@ export function fileAnalysisSizeForPlatform(fileAnalysis: any, platform: any) {
     return '';
 }
 
-export function groupSeed(value: any) {
-    if (!value || typeof value !== 'object') {
+export function groupSeed(value: unknown) {
+    if (!isRecord(value)) {
         return null;
     }
     const groupId = firstText(value.groupId, value.group_id, value.id);
     return isGroupId(groupId) ? value : null;
 }
 
-export function normalizeInstanceGroup(value: any, fallbackId: any = '') {
+export function normalizeInstanceGroup(
+    value: unknown,
+    fallbackId: unknown = ''
+): InstanceGroupRecord | null {
     if (!value) {
         const groupId = firstText(fallbackId);
-        return groupId ? { id: groupId, groupId, name: groupId } : null;
+        return groupId
+            ? {
+                  id: groupId,
+                  groupId,
+                  name: groupId,
+                  displayName: groupId,
+                  iconUrl: '',
+                  thumbnailImageUrl: '',
+                  imageUrl: ''
+              }
+            : null;
     }
     if (typeof value === 'string') {
         const groupId = firstText(value);
-        return groupId ? { id: groupId, groupId, name: groupId } : null;
+        return groupId
+            ? {
+                  id: groupId,
+                  groupId,
+                  name: groupId,
+                  displayName: groupId,
+                  iconUrl: '',
+                  thumbnailImageUrl: '',
+                  imageUrl: ''
+              }
+            : null;
     }
-    if (typeof value !== 'object') {
+    if (!isRecord(value)) {
         return null;
     }
-    const nestedGroup =
-        value.group && typeof value.group === 'object' ? value.group : {};
+    const nestedGroup = record(value.group);
     const groupId = firstText(
         value.groupId,
         value.group_id,
@@ -130,29 +198,32 @@ export function normalizeInstanceGroup(value: any, fallbackId: any = '') {
         id: groupId,
         groupId,
         name,
-        displayName: value.displayName || value.display_name || name,
-        iconUrl:
+        displayName: firstText(value.displayName, value.display_name, name),
+        iconUrl: firstText(
             value.iconUrl ||
-            value.icon_url ||
-            nestedGroup.iconUrl ||
-            nestedGroup.icon_url ||
-            '',
-        thumbnailImageUrl:
+                value.icon_url ||
+                nestedGroup.iconUrl ||
+                nestedGroup.icon_url ||
+                ''
+        ),
+        thumbnailImageUrl: firstText(
             value.thumbnailImageUrl ||
-            value.thumbnail_image_url ||
-            nestedGroup.thumbnailImageUrl ||
-            nestedGroup.thumbnail_image_url ||
-            '',
-        imageUrl:
+                value.thumbnail_image_url ||
+                nestedGroup.thumbnailImageUrl ||
+                nestedGroup.thumbnail_image_url ||
+                ''
+        ),
+        imageUrl: firstText(
             value.imageUrl ||
-            value.image_url ||
-            nestedGroup.imageUrl ||
-            nestedGroup.image_url ||
-            ''
+                value.image_url ||
+                nestedGroup.imageUrl ||
+                nestedGroup.image_url ||
+                ''
+        )
     };
 }
 
-function instanceLocationForId(world: any, instanceId: any) {
+function instanceLocationForId(world: WorldProfileRecord, instanceId: unknown) {
     const normalizedId = firstText(instanceId);
     if (!normalizedId) {
         return '';
@@ -163,18 +234,20 @@ function instanceLocationForId(world: any, instanceId: any) {
     return world?.id ? `${world.id}:${normalizedId}` : normalizedId;
 }
 
-function parsedGroupForInstanceLocation(location: any) {
+function parsedGroupForInstanceLocation(location: unknown) {
     const parsedLocation = parseLocation(location);
     return parsedLocation.groupId || '';
 }
 
-export function resolveInstanceRows(world: any) {
-    if (!Array.isArray(world?.instances)) {
+export function resolveInstanceRows(
+    world: WorldProfileRecord
+): WorldDialogInstanceRow[] {
+    if (!Array.isArray(world.instances)) {
         return [];
     }
 
     return world.instances
-        .map((entry: any) => {
+        .map((entry): WorldDialogInstanceRow => {
             if (Array.isArray(entry)) {
                 const id = String(entry[0] || '').trim();
                 const location = instanceLocationForId(world, id);
@@ -192,24 +265,33 @@ export function resolveInstanceRows(world: any) {
                         : null
                 };
             }
-            if (entry && typeof entry === 'object') {
-                const entryLocation =
+            if (isRecord(entry)) {
+                const locationData = record(entry.$location);
+                const locationGroup = record(locationData.group);
+                const ownerUser = record(entry.ownerUser);
+                const owner = record(entry.owner);
+                const creatorUser = record(entry.creatorUser);
+                const user = record(entry.user);
+                const group = record(entry.group);
+                const ref = record(entry.ref);
+                const entryLocation = firstText(
                     entry.location ||
-                    entry.tag ||
-                    instanceLocationForId(
-                        world,
-                        entry.id || entry.instanceId || ''
-                    );
+                        entry.tag ||
+                        instanceLocationForId(
+                            world,
+                            entry.id || entry.instanceId || ''
+                        )
+                );
                 const parsedEntryLocation = parseLocation(entryLocation);
                 const creatorId = firstText(
-                    entry.$location?.userId,
-                    entry.$location?.user_id,
-                    entry.$location?.ownerUserId,
-                    entry.$location?.owner_user_id,
-                    entry.$location?.ownerId,
-                    entry.$location?.owner_id,
-                    entry.$location?.creatorUserId,
-                    entry.$location?.creator_user_id,
+                    locationData.userId,
+                    locationData.user_id,
+                    locationData.ownerUserId,
+                    locationData.owner_user_id,
+                    locationData.ownerId,
+                    locationData.owner_id,
+                    locationData.creatorUserId,
+                    locationData.creator_user_id,
                     entry.ownerUserId,
                     entry.owner_user_id,
                     entry.userId,
@@ -222,29 +304,29 @@ export function resolveInstanceRows(world: any) {
                     entry.creator_id,
                     entry.instanceOwnerId,
                     entry.instance_owner_id,
-                    entry.ownerUser?.id,
-                    entry.ownerUser?.userId,
-                    entry.owner?.id,
-                    entry.owner?.userId,
-                    entry.creatorUser?.id,
-                    entry.creatorUser?.userId,
-                    entry.user?.id,
-                    entry.user?.userId,
-                    entry.$location?.groupId,
-                    entry.$location?.group_id,
-                    entry.$location?.group?.id,
+                    ownerUser.id,
+                    ownerUser.userId,
+                    owner.id,
+                    owner.userId,
+                    creatorUser.id,
+                    creatorUser.userId,
+                    user.id,
+                    user.userId,
+                    locationData.groupId,
+                    locationData.group_id,
+                    locationGroup.id,
                     entry.groupId,
                     entry.group_id,
-                    entry.group?.id,
-                    entry.group?.groupId,
+                    group.id,
+                    group.groupId,
                     parsedEntryLocation.groupId
                 );
                 const creatorIsGroup = isGroupId(creatorId);
                 const creatorEntity =
-                    entry.$location?.ownerUser ||
-                    entry.$location?.owner ||
-                    entry.$location?.creatorUser ||
-                    entry.$location?.user ||
+                    locationData.ownerUser ||
+                    locationData.owner ||
+                    locationData.creatorUser ||
+                    locationData.user ||
                     entry.creatorUser ||
                     entry.creator_user ||
                     entry.ownerUser ||
@@ -252,9 +334,9 @@ export function resolveInstanceRows(world: any) {
                     entry.user ||
                     null;
                 const creatorGroupEntity =
-                    entry.$location?.group ||
-                    entry.$location?.ownerGroup ||
-                    entry.$location?.owner_group ||
+                    locationData.group ||
+                    locationData.ownerGroup ||
+                    locationData.owner_group ||
                     entry.group ||
                     entry.ownerGroup ||
                     entry.owner_group ||
@@ -271,8 +353,8 @@ export function resolveInstanceRows(world: any) {
                         entry.userList,
                         entry.userIds,
                         entry.usersById,
-                        entry.ref?.users,
-                        entry.ref?.players
+                        ref.users,
+                        ref.players
                     ),
                     creatorUserId: creatorIsGroup ? '' : creatorId,
                     creatorUser: creatorIsGroup ? null : creatorEntity,
@@ -296,11 +378,14 @@ export function resolveInstanceRows(world: any) {
                 creatorGroup: groupId ? normalizeInstanceGroup(groupId) : null
             };
         })
-        .filter((entry: any) => entry.id);
+        .filter((entry) => entry.id);
 }
 
-export function resolveLaunchLocation(world: any, instance: any) {
-    if (typeof instance?.location === 'string' && instance.location.trim()) {
+export function resolveLaunchLocation(
+    world: WorldLocationSource,
+    instance: WorldInstanceRecord
+) {
+    if (typeof instance.location === 'string' && instance.location.trim()) {
         return instance.location.trim();
     }
     const instanceId = String(
@@ -312,7 +397,11 @@ export function resolveLaunchLocation(world: any, instance: any) {
     return world?.id && instanceId ? `${world.id}:${instanceId}` : '';
 }
 
-export function sameInstanceLocation(world: any, instance: any, location: any) {
+export function sameInstanceLocation(
+    world: WorldLocationSource,
+    instance: WorldInstanceRecord,
+    location: unknown
+) {
     const normalizedLocation = firstText(location);
     if (!normalizedLocation) {
         return false;
@@ -329,7 +418,7 @@ export function sameInstanceLocation(world: any, instance: any, location: any) {
     );
 }
 
-export function sameLocationTag(left: any, right: any) {
+export function sameLocationTag(left: unknown, right: unknown) {
     const leftLocation = firstText(left);
     const rightLocation = firstText(right);
     if (!leftLocation || !rightLocation) {
@@ -350,7 +439,7 @@ export function sameLocationTag(left: any, right: any) {
     );
 }
 
-export function friendIsInInstance(friend: any, location: any) {
+export function friendIsInInstance(friend: unknown, location: unknown) {
     return sameLocationTag(
         resolveFriendPresenceLocation(friend, { requireInstance: true }),
         location

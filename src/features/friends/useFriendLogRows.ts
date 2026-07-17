@@ -90,7 +90,11 @@ export function useFriendLogRows({
 
         const result: FriendLogRow[] = [];
         for (const row of rows) {
-            if (hideUnfriends && row?.type === 'Unfriend') {
+            if (
+                hideUnfriends &&
+                !activeTypeSet?.has('Unfriend') &&
+                row?.type === 'Unfriend'
+            ) {
                 continue;
             }
             if (activeTypeSet && !activeTypeSet.has(row?.type)) {

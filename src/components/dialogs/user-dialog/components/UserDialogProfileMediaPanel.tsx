@@ -12,13 +12,32 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
-const MEDIA_SECTIONS = [
+import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
+
+type ProfileMediaFieldName = 'profilePicOverride' | 'userIcon';
+type MediaFile = Awaited<
+    ReturnType<typeof mediaRepository.getFileList>
+>['json'][number];
+
+interface MediaSection {
+    key: string;
+    fieldName: ProfileMediaFieldName;
+    fileTag: string;
+    assetKey: string;
+    titleKey: string;
+    clearKey: string;
+    useKey: string;
+    cardClass: string;
+}
+
+const MEDIA_SECTIONS: MediaSection[] = [
     {
         key: 'banner',
         fieldName: 'profilePicOverride',
@@ -41,12 +60,19 @@ const MEDIA_SECTIONS = [
     }
 ];
 
-function getLatestFileUrl(file: any) {
+function getLatestFileUrl(file: MediaFile) {
     const versions = Array.isArray(file?.versions) ? file.versions : [];
-    return versions.at(-1)?.file?.url ?? '';
+    const latestVersion = versions.at(-1);
+    const versionFile =
+        latestVersion?.file && typeof latestVersion.file === 'object'
+            ? latestVersion.file
+            : null;
+    return versionFile && 'url' in versionFile
+        ? String(versionFile.url || '')
+        : '';
 }
 
-function getUsefulDisplayName(file: any) {
+function getUsefulDisplayName(file: MediaFile) {
     const displayName = String(file?.displayName || '').trim();
     const name = String(file?.name || '').trim();
     const id = String(file?.id || '').trim();
@@ -70,7 +96,14 @@ function ProfileMediaThumbnail({
     disabled,
     mutatingKey,
     onUse
-}: any) {
+}: {
+    file: MediaFile;
+    section: MediaSection;
+    currentFileId: string;
+    disabled: boolean;
+    mutatingKey: string;
+    onUse: (fieldName: ProfileMediaFieldName, fileId: string) => void;
+}) {
     const { t } = useTranslation();
     const imageUrl = getLatestFileUrl(file);
     const displayName = getUsefulDisplayName(file);
@@ -95,7 +128,7 @@ function ProfileMediaThumbnail({
         >
             <div className="bg-muted text-muted-foreground flex size-full items-center justify-center overflow-hidden">
                 {imageUrl ? (
-                    <img
+                    <FadeInImage
                         src={imageUrl}
                         alt={displayName || file.id}
                         loading="lazy"
@@ -127,9 +160,21 @@ function ProfileMediaSection({
     mutatingKey,
     onUse,
     onClear
-}: any) {
+}: {
+    section: MediaSection;
+    files: MediaFile[];
+    loading: boolean;
+    profile: UserDialogProfileRecord;
+    isVrcPlusSupporter: boolean;
+    busy: boolean;
+    mutatingKey: string;
+    onUse: (fieldName: ProfileMediaFieldName, fileId: string) => void;
+    onClear: (fieldName: ProfileMediaFieldName) => void;
+}) {
     const { t } = useTranslation();
-    const currentValue = profile?.[section.fieldName] || '';
+    const rawCurrentValue = profile?.[section.fieldName];
+    const currentValue =
+        typeof rawCurrentValue === 'string' ? rawCurrentValue : '';
     const currentFileId = extractFileId(currentValue);
 
     return (
@@ -155,7 +200,7 @@ function ProfileMediaSection({
                 <LoadingState className="min-h-32" />
             ) : files.length ? (
                 <div className="flex flex-wrap gap-2">
-                    {files.map((file: any) => (
+                    {files.map((file) => (
                         <ProfileMediaThumbnail
                             key={file.id}
                             file={file}
@@ -192,7 +237,17 @@ export function UserDialogProfileMediaPanel({
     actionStatus,
     onBack,
     onSetProfileMediaField
-}: any) {
+}: {
+    profile: UserDialogProfileRecord;
+    endpoint: string;
+    isVrcPlusSupporter: boolean;
+    actionStatus: string;
+    onBack: () => void;
+    onSetProfileMediaField: (
+        fieldName: ProfileMediaFieldName,
+        fileId: string
+    ) => void | Promise<void>;
+}) {
     const { t } = useTranslation();
     const [filesBySection, setFilesBySection] = useState<
         Record<
@@ -203,12 +258,14 @@ export function UserDialogProfileMediaPanel({
         gallery: [],
         icons: []
     });
-    const [loadingBySection, setLoadingBySection] = useState<any>({});
+    const [loadingBySection, setLoadingBySection] = useState<
+        Record<string, boolean>
+    >({});
     const [mutatingKey, setMutatingKey] = useState('');
     const busy = actionStatus !== 'idle';
 
-    async function refreshSection(section: any) {
-        setLoadingBySection((current: any) => ({
+    async function refreshSection(section: MediaSection) {
+        setLoadingBySection((current) => ({
             ...current,
             [section.assetKey]: true
         }));
@@ -222,7 +279,7 @@ export function UserDialogProfileMediaPanel({
                     endpoint
                 }
             );
-            setFilesBySection((current: any) => ({
+            setFilesBySection((current) => ({
                 ...current,
                 [section.assetKey]: Array.isArray(json)
                     ? [...json].reverse()
@@ -237,7 +294,7 @@ export function UserDialogProfileMediaPanel({
                       })
             );
         } finally {
-            setLoadingBySection((current: any) => ({
+            setLoadingBySection((current) => ({
                 ...current,
                 [section.assetKey]: false
             }));
@@ -250,23 +307,26 @@ export function UserDialogProfileMediaPanel({
         }
     }, [endpoint, profile?.id]);
 
-    async function useProfileMedia(fieldName: any, fileId: any) {
+    async function useProfileMedia(
+        fieldName: ProfileMediaFieldName,
+        fileId: string
+    ) {
         const key = `${fieldName}:${fileId}`;
         setMutatingKey(key);
         try {
             await onSetProfileMediaField(fieldName, fileId);
         } finally {
-            setMutatingKey((current: any) => (current === key ? '' : current));
+            setMutatingKey((current) => (current === key ? '' : current));
         }
     }
 
-    async function clearProfileMedia(fieldName: any) {
+    async function clearProfileMedia(fieldName: ProfileMediaFieldName) {
         const key = `${fieldName}:clear`;
         setMutatingKey(key);
         try {
             await onSetProfileMediaField(fieldName, '');
         } finally {
-            setMutatingKey((current: any) => (current === key ? '' : current));
+            setMutatingKey((current) => (current === key ? '' : current));
         }
     }
 
@@ -287,7 +347,7 @@ export function UserDialogProfileMediaPanel({
             </PageToolbar>
             <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <div className="flex flex-col gap-3">
-                    {MEDIA_SECTIONS.map((section: any) => (
+                    {MEDIA_SECTIONS.map((section) => (
                         <ProfileMediaSection
                             key={section.key}
                             section={section}
@@ -297,10 +357,10 @@ export function UserDialogProfileMediaPanel({
                             isVrcPlusSupporter={isVrcPlusSupporter}
                             busy={busy}
                             mutatingKey={mutatingKey}
-                            onUse={(fieldName: any, fileId: any) => {
+                            onUse={(fieldName, fileId) => {
                                 useProfileMedia(fieldName, fileId);
                             }}
-                            onClear={(fieldName: any) => {
+                            onClear={(fieldName) => {
                                 clearProfileMedia(fieldName);
                             }}
                         />

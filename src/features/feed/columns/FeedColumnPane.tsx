@@ -32,7 +32,7 @@ import { FeedColumnItem } from './FeedColumnItem';
 import { useFeedColumnRows } from './useFeedColumnRows';
 
 const OVERSCAN = 8;
-const NEW_ROW_ANIMATION_MS = 1700;
+const NEW_ROW_FEEDBACK_MS = 180;
 const NEW_ROW_ANIMATION_LIMIT = 6;
 
 type FeedColumnPaneProps = {
@@ -214,7 +214,7 @@ function useNewTopRowKeys(rows: FeedRow[], resetKey: string) {
         clearTimerRef.current = window.setTimeout(() => {
             clearTimerRef.current = null;
             setNewRowKeys(new Set());
-        }, NEW_ROW_ANIMATION_MS);
+        }, NEW_ROW_FEEDBACK_MS);
     }, [resetKey, rows]);
 
     useEffect(

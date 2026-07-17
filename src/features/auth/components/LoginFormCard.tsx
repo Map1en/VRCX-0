@@ -1,3 +1,5 @@
+import { ArrowLeftIcon } from 'lucide-react';
+import type { Dispatch, FormEventHandler, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
@@ -6,6 +8,32 @@ import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+
+type LoginFormState = {
+    password: string;
+    saveCredentials: boolean;
+    username: string;
+};
+
+type LoginErrors = {
+    password: string;
+    username: string;
+};
+
+type LoginFormCardProps = {
+    busy: boolean;
+    loginErrors: LoginErrors;
+    loginForm: LoginFormState;
+    onBackToSavedAccounts: () => void;
+    onCancelAutoLogin: () => void;
+    onOpenForgotPassword: () => void;
+    onOpenRegister: () => void;
+    onSubmit: FormEventHandler<HTMLFormElement>;
+    setLoginErrors: Dispatch<SetStateAction<LoginErrors>>;
+    setLoginForm: Dispatch<SetStateAction<LoginFormState>>;
+    showBackToSavedAccounts: boolean;
+    submitting: boolean;
+};
 
 export function LoginFormCard({
     busy,
@@ -16,14 +44,27 @@ export function LoginFormCard({
     setLoginErrors,
     onSubmit,
     onCancelAutoLogin,
+    onBackToSavedAccounts,
     onOpenRegister,
-    onOpenForgotPassword
-}: any) {
+    onOpenForgotPassword,
+    showBackToSavedAccounts
+}: LoginFormCardProps) {
     const { t } = useTranslation();
 
     return (
-        <Card className="flex flex-1 flex-col">
+        <Card className="flex flex-1 flex-col gap-3 pt-2">
             <CardHeader>
+                {showBackToSavedAccounts ? (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="text-muted-foreground h-auto w-fit p-0 text-xs"
+                        onClick={onBackToSavedAccounts}
+                    >
+                        <ArrowLeftIcon data-icon="inline-start" />
+                        {t('view.login.backToSavedAccounts')}
+                    </Button>
+                ) : null}
                 <CardTitle className="text-center">
                     {t('view.login.login')}
                 </CardTitle>
@@ -50,17 +91,13 @@ export function LoginFormCard({
                                 )}
                                 value={loginForm.username}
                                 onChange={(event) => {
-                                    onCancelAutoLogin(
-                                        t(
-                                            'view.auth.auto_login.skipped_form_changed'
-                                        )
-                                    );
-                                    setLoginForm((current: any) => ({
+                                    onCancelAutoLogin();
+                                    setLoginForm((current) => ({
                                         ...current,
                                         username: event.target.value
                                     }));
                                     if (loginErrors.username) {
-                                        setLoginErrors((current: any) => ({
+                                        setLoginErrors((current) => ({
                                             ...current,
                                             username: ''
                                         }));
@@ -86,17 +123,13 @@ export function LoginFormCard({
                                 )}
                                 value={loginForm.password}
                                 onChange={(event) => {
-                                    onCancelAutoLogin(
-                                        t(
-                                            'view.auth.auto_login.skipped_form_changed'
-                                        )
-                                    );
-                                    setLoginForm((current: any) => ({
+                                    onCancelAutoLogin();
+                                    setLoginForm((current) => ({
                                         ...current,
                                         password: event.target.value
                                     }));
                                     if (loginErrors.password) {
-                                        setLoginErrors((current: any) => ({
+                                        setLoginErrors((current) => ({
                                             ...current,
                                             password: ''
                                         }));
@@ -114,12 +147,8 @@ export function LoginFormCard({
                                 checked={loginForm.saveCredentials}
                                 disabled={busy}
                                 onCheckedChange={(checked) => {
-                                    onCancelAutoLogin(
-                                        t(
-                                            'view.auth.auto_login.skipped_form_changed'
-                                        )
-                                    );
-                                    setLoginForm((current: any) => ({
+                                    onCancelAutoLogin();
+                                    setLoginForm((current) => ({
                                         ...current,
                                         saveCredentials: checked === true
                                     }));
@@ -147,23 +176,25 @@ export function LoginFormCard({
                         )}
                     </Button>
                 </form>
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="lg"
-                    className="w-full"
-                    onClick={onOpenRegister}
-                >
-                    {t('view.login.register')}
-                </Button>
-                <Button
-                    type="button"
-                    variant="link"
-                    className="text-muted-foreground h-auto p-0 text-xs"
-                    onClick={onOpenForgotPassword}
-                >
-                    {t('view.login.forgotPassword')}
-                </Button>
+                <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="text-muted-foreground h-auto p-0 text-xs"
+                        onClick={onOpenRegister}
+                    >
+                        {t('view.login.register')}
+                    </Button>
+                    <span aria-hidden="true">·</span>
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="text-muted-foreground h-auto p-0 text-xs"
+                        onClick={onOpenForgotPassword}
+                    >
+                        {t('view.login.forgotPassword')}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

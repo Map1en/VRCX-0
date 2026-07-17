@@ -23,7 +23,13 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
     estimateSize: (row: T, index: number) => unknown,
     options: VirtualSidebarOptions = {}
 ) {
-    const viewportRef = useRef<HTMLDivElement | null>(null);
+    const viewportElementRef = useRef<HTMLDivElement | null>(null);
+    const [viewportElement, setViewportElement] =
+        useState<HTMLDivElement | null>(null);
+    const viewportRef = useCallback((node: HTMLDivElement | null) => {
+        viewportElementRef.current = node;
+        setViewportElement(node);
+    }, []);
     const measuredSizesRef = useRef(new Map<unknown, number>());
     const rowObserversRef = useRef(new Map<unknown, ResizeObserver>());
     const rowRefCallbacksRef = useRef(new Map<unknown, RowRefCallback>());
@@ -148,7 +154,7 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
     }, []);
 
     useEffect(() => {
-        const element = viewportRef.current;
+        const element = viewportElement;
         if (!element) {
             return undefined;
         }
@@ -192,10 +198,10 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
                 window.removeEventListener('resize', updateViewport);
             }
         };
-    }, []);
+    }, [viewportElement]);
 
     useEffect(() => {
-        const element = viewportRef.current;
+        const element = viewportElementRef.current;
         if (!element) {
             return;
         }
@@ -208,9 +214,9 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
         );
     }, [rows.length, rowMetrics.totalSize]);
 
-    const virtualItems = useMemo(() => {
+    const visibleWindow = useMemo(() => {
         if (!rows.length) {
-            return [];
+            return { firstIndex: 0, lastIndex: 0 };
         }
 
         const { offsets, sizes } = rowMetrics;
@@ -229,8 +235,20 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             lastIndex += 1;
         }
 
-        const startIndex = Math.max(0, firstIndex - overscan);
-        const endIndex = Math.min(rows.length, lastIndex + overscan);
+        return { firstIndex, lastIndex };
+    }, [rowMetrics, rows, viewport.height, viewport.scrollTop]);
+
+    const virtualItems = useMemo(() => {
+        if (!rows.length) {
+            return [];
+        }
+
+        const { offsets, sizes } = rowMetrics;
+        const startIndex = Math.max(0, visibleWindow.firstIndex - overscan);
+        const endIndex = Math.min(
+            rows.length,
+            visibleWindow.lastIndex + overscan
+        );
 
         return rows.slice(startIndex, endIndex).map((row, offset) => {
             const index = startIndex + offset;
@@ -242,12 +260,42 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
                 start: offsets[index]
             };
         });
-    }, [overscan, rowMetrics, rows, viewport.height, viewport.scrollTop]);
+    }, [overscan, rowMetrics, rows, visibleWindow]);
+
+    const scrollKeyToView = useCallback(
+        (key: unknown, topInset = 0) => {
+            const element = viewportElementRef.current;
+            if (!element) {
+                return;
+            }
+            const index = rows.findIndex(
+                (row, idx) => (row?.key ?? idx) === key
+            );
+            if (index < 0) {
+                return;
+            }
+            const offset = rowMetrics.offsets[index];
+            const size = rowMetrics.sizes[index];
+            if (!Number.isFinite(offset) || !Number.isFinite(size)) {
+                return;
+            }
+            const viewTop = element.scrollTop;
+            const viewBottom = viewTop + element.clientHeight;
+            if (offset < viewTop + topInset) {
+                element.scrollTop = Math.max(0, offset - topInset);
+            } else if (offset + size > viewBottom) {
+                element.scrollTop = offset + size - element.clientHeight;
+            }
+        },
+        [rowMetrics, rows]
+    );
 
     return {
         getRowRef,
         viewportRef,
         virtualItems,
-        totalSize: rowMetrics.totalSize
+        totalSize: rowMetrics.totalSize,
+        firstVisibleIndex: visibleWindow.firstIndex,
+        scrollKeyToView
     };
 }

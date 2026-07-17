@@ -35,7 +35,11 @@ vi.mock('@/ui/shadcn/button', async () => {
     const React = await import('react');
 
     return {
-        Button: ({ children, variant, ...props }: any) =>
+        Button: ({
+            children,
+            variant,
+            ...props
+        }: React.ComponentProps<'button'> & { variant?: string }) =>
             React.createElement(
                 'button',
                 { ...props, 'data-variant': variant },
@@ -60,9 +64,9 @@ vi.mock('@/ui/shadcn/hover-card', async () => {
     };
 
     return {
-        HoverCard: ({ children }: any) =>
+        HoverCard: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('div', null, children),
-        HoverCardContent: ({ children }: any) =>
+        HoverCardContent: ({ children }: React.PropsWithChildren) =>
             ReactRuntime.createElement('div', null, children),
         HoverCardTrigger: ({
             children,
@@ -80,7 +84,13 @@ vi.mock('@/ui/shadcn/hover-card', async () => {
 });
 
 vi.mock('@/state/runtimeStore', () => ({
-    useRuntimeStore: (selector: any) =>
+    useRuntimeStore: <T,>(
+        selector: (state: {
+            updateLoop: typeof mocks.updateLoop & {
+                latestUpdaterRelease: typeof mocks.latestUpdaterRelease;
+            };
+        }) => T
+    ) =>
         selector({
             updateLoop: {
                 latestUpdaterRelease: mocks.latestUpdaterRelease,

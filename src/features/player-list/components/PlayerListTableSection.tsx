@@ -4,15 +4,21 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 import type { TFunction } from 'i18next';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { LoadingState } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 
+import {
+    countPlayerListScopes,
+    filterPlayerListRows,
+    type PlayerListFilterScope
+} from '../playerListFilters';
 import type { PlayerListRow, PlayerListSourceRow } from '../playerListTypes';
 import { usePlayerListTableState } from '../usePlayerListTableState';
 import { usePlayerListColumns } from './PlayerListColumns';
+import { PlayerListToolbar } from './PlayerListToolbar';
 import {
     PlayerListEmptyState,
     PlayerListRows,
@@ -98,6 +104,7 @@ function resolvePlayerListEmptyCopy({
 
 export function PlayerListTableSection({
     detail,
+    filterContextKey,
     filteredRows,
     gameLogDisabled,
     isGameRunning,
@@ -108,6 +115,7 @@ export function PlayerListTableSection({
     playerSourceRows
 }: {
     detail?: string;
+    filterContextKey: string;
     filteredRows: PlayerListRow[];
     gameLogDisabled: boolean;
     isGameRunning: boolean;
@@ -120,8 +128,25 @@ export function PlayerListTableSection({
     const { t } = useTranslation();
     const tableState = usePlayerListTableState();
     const tableColumns = usePlayerListColumns();
+    const [query, setQuery] = useState('');
+    const [filterScope, setFilterScope] =
+        useState<PlayerListFilterScope>('all');
+
+    useEffect(() => {
+        setQuery('');
+        setFilterScope('all');
+    }, [filterContextKey]);
+
+    const scopeCounts = useMemo(
+        () => countPlayerListScopes(filteredRows),
+        [filteredRows]
+    );
+    const visibleRows = useMemo(
+        () => filterPlayerListRows(filteredRows, query, filterScope),
+        [filterScope, filteredRows, query]
+    );
     const table = useReactTable<PlayerListRow>({
-        data: filteredRows,
+        data: visibleRows,
         columns: tableColumns,
         state: {
             columnOrder: tableState.columnOrder,
@@ -145,7 +170,8 @@ export function PlayerListTableSection({
         }
     });
 
-    const hasRows = filteredRows.length > 0;
+    const hasSourceRows = filteredRows.length > 0;
+    const hasVisibleRows = visibleRows.length > 0;
     const isLoading = loadStatus === 'running' && playerSourceRows.length === 0;
     const isError = loadStatus === 'error' && playerSourceRows.length === 0;
     const emptyCopy = resolvePlayerListEmptyCopy({
@@ -174,7 +200,7 @@ export function PlayerListTableSection({
                         'Current players could not be rebuilt for the current instance.'
                     )}
                 />
-            ) : !hasRows ? (
+            ) : !hasSourceRows ? (
                 <PlayerListEmptyState
                     title={emptyCopy.title}
                     description={emptyCopy.description}
@@ -182,19 +208,23 @@ export function PlayerListTableSection({
                 />
             ) : (
                 <>
-                    <div className="mb-2 flex justify-end">
-                        <TableColumnVisibilityMenu
-                            table={table}
-                            onResetLayout={tableState.resetLayout}
-                        />
-                    </div>
+                    <PlayerListToolbar
+                        counts={scopeCounts}
+                        onQueryChange={setQuery}
+                        onResetLayout={tableState.resetLayout}
+                        onScopeChange={setFilterScope}
+                        query={query}
+                        scope={filterScope}
+                        table={table}
+                    />
                     <PlayerListTableShell
                         table={table}
                         onResetLayout={tableState.resetLayout}
                     >
                         <PlayerListRows
                             table={table}
-                            hasRows={hasRows}
+                            hasRows={hasVisibleRows}
+                            emptyTitle={t('common.no_matching_records')}
                             onOpenPlayer={onOpenPlayer}
                         />
                     </PlayerListTableShell>

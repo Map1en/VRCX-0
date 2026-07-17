@@ -176,7 +176,8 @@ export function formatDateTimeWithPreferences(
     if (
         typeof formatOptions.hour !== 'undefined' ||
         typeof formatOptions.minute !== 'undefined' ||
-        typeof formatOptions.second !== 'undefined'
+        typeof formatOptions.second !== 'undefined' ||
+        typeof formatOptions.timeStyle !== 'undefined'
     ) {
         formatOptions.hour12 = hour12;
     }

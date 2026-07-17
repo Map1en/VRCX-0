@@ -1,9 +1,7 @@
 export function resolveTabValue(
-    tabs: any,
-    preferred: any,
-    fallback: any = 'info'
+    tabs: ReadonlyArray<{ value: string }>,
+    preferred: string,
+    fallback = 'info'
 ) {
-    return tabs.some((tab: any) => tab.value === preferred)
-        ? preferred
-        : fallback;
+    return tabs.some((tab) => tab.value === preferred) ? preferred : fallback;
 }

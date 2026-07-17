@@ -27,6 +27,8 @@ export type UserActivityTopWorld = Record<string, unknown> & {
     thumbnailImageUrl?: string;
     worldId?: string;
     worldName?: string;
+    visitCount?: number;
+    totalTime?: number;
 };
 
 export const VALID_ACTIVITY_PERIODS = new Set(['7', '30', '90']);

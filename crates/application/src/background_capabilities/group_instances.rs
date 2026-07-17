@@ -312,3 +312,6 @@ fn string_field_value(value: Option<&Value>) -> Option<String> {
         .filter(|value| !value.is_empty())
         .map(str::to_string)
 }
+
+#[cfg(test)]
+mod tests;

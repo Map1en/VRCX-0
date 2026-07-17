@@ -1,9 +1,9 @@
 import { commands } from '@/platform/tauri/bindings';
-import configRepository from '@/repositories/configRepository';
 import userSessionRepository from '@/repositories/userSessionRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import { applyAuthenticatedRuntimePhaseSnapshot } from './authenticatedRuntimeService';
 import { isHostCapabilityAvailable } from './hostCapabilityService';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 import { syncStartupServicesTask } from './startupServicesStatus';
@@ -24,40 +24,6 @@ function normalizeBootstrapError(error: unknown): Error {
     return error instanceof Error ? error : new Error(String(error));
 }
 
-async function runAvatarAutoCleanup(userId: string): Promise<boolean> {
-    const cleanupSetting = await configRepository.getString(
-        'VRCX_avatarAutoCleanup',
-        'Off'
-    );
-    if (cleanupSetting === 'Off') {
-        return false;
-    }
-
-    const days = Number.parseInt(cleanupSetting, 10);
-    if (Number.isNaN(days) || days <= 0) {
-        return false;
-    }
-
-    const configKey = `lastAvatarCleanupDate_${userId}`;
-    const lastCleanupStr = await configRepository.getString(configKey, '');
-    const now = new Date();
-
-    if (lastCleanupStr) {
-        const lastCleanup = new Date(lastCleanupStr);
-        const daysSinceLastCleanup =
-            (now.getTime() - lastCleanup.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceLastCleanup < 7) {
-            return false;
-        }
-    }
-
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    await userSessionRepository.purgeAvatarFeedData(userId, cutoff.toJSON());
-    await configRepository.setString(configKey, now.toJSON());
-    return true;
-}
-
 async function requestGameRunningStateRefresh(): Promise<boolean> {
     if (!isHostCapabilityAvailable('gameProcessMonitor')) {
         return false;
@@ -75,23 +41,17 @@ async function requestGameRunningStateRefresh(): Promise<boolean> {
     }
 }
 
-async function syncBackendFrontendSession(userId: string): Promise<void> {
+async function startBackendAuthenticatedRuntime(userId: string): Promise<void> {
     const auth = useRuntimeStore.getState().auth;
     const currentUserSnapshot = auth.currentUserSnapshot || { id: userId };
-    try {
-        await commands.appSyncFrontendAuthenticatedSession(
+    applyAuthenticatedRuntimePhaseSnapshot(
+        await commands.appAuthenticatedRuntimeSessionStart(
             userId,
             String(auth.currentUserEndpoint || ''),
             String(auth.currentUserWebsocket || ''),
             currentUserSnapshot
-        );
-    } catch (error) {
-        console.warn(
-            'Backend frontend session sync failed during session bootstrap:',
-            error
-        );
-        return;
-    }
+        )
+    );
     try {
         await commands.appRuntimeGroupInstancesRefresh();
     } catch (error) {
@@ -136,8 +96,8 @@ export async function bootstrapAuthenticatedSession(
             'running',
             `Per-user tables are ready for ${displayName}. Applying startup maintenance.`
         );
-
-        const avatarCleanupRan = await runAvatarAutoCleanup(userId);
+        const maintenance =
+            await commands.appAuthenticatedSessionMaintenanceRun();
 
         runtimeStore.setStartupTask(
             'services',
@@ -153,13 +113,13 @@ export async function bootstrapAuthenticatedSession(
             isFavoritesLoaded: false,
             sessionPhase: 'ready'
         });
-        await syncBackendFrontendSession(userId);
+        await startBackendAuthenticatedRuntime(userId);
         if (gameStateRestored) {
             await requestGameRunningStateRefresh();
         }
         syncStartupServicesTask([
             `Authenticated session is ready for ${displayName}.`,
-            avatarCleanupRan
+            maintenance.avatarCleanup.state === 'ran'
                 ? 'Avatar cleanup ran.'
                 : 'Avatar cleanup was not needed.',
             gameStateRestored

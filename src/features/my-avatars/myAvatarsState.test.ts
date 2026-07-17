@@ -21,21 +21,24 @@ import {
 
 const STORAGE_KEY = 'vrcx-0:table:my-avatars';
 
-function installLocalStorage(initial: any = {}) {
+function installLocalStorage(initial: Record<string, unknown> = {}) {
     const store = new Map(
-        Object.entries(initial).map(([key, value]: any) => [key, String(value)])
+        Object.entries(initial).map(([key, value]) => [key, String(value)])
     );
 
-    globalThis.window = {
-        localStorage: {
-            getItem(key: any) {
-                return store.has(key) ? store.get(key) : null;
-            },
-            setItem(key: any, value: any) {
-                store.set(key, String(value));
+    Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: {
+            localStorage: {
+                getItem(key: string) {
+                    return store.has(key) ? store.get(key) : null;
+                },
+                setItem(key: string, value: string) {
+                    store.set(key, String(value));
+                }
             }
         }
-    } as any;
+    });
 
     return store;
 }
@@ -81,16 +84,19 @@ describe('myAvatarsState', () => {
 
         expect(readPersistedMyAvatarsState()).toEqual({});
 
-        globalThis.window = {
-            localStorage: {
-                getItem() {
-                    throw new Error('storage blocked');
-                },
-                setItem() {
-                    throw new Error('storage blocked');
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                localStorage: {
+                    getItem() {
+                        throw new Error('storage blocked');
+                    },
+                    setItem() {
+                        throw new Error('storage blocked');
+                    }
                 }
             }
-        } as any;
+        });
         expect(readPersistedMyAvatarsState()).toEqual({});
         expect(() =>
             writePersistedMyAvatarsState({ pageSize: 10 })
@@ -163,7 +169,7 @@ describe('myAvatarsState', () => {
             'actions',
             'name',
             ...MY_AVATARS_COLUMN_IDS.filter(
-                (columnId: any) => columnId !== 'actions' && columnId !== 'name'
+                (columnId) => columnId !== 'actions' && columnId !== 'name'
             )
         ]);
 

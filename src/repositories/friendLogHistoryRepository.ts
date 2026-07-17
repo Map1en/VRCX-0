@@ -133,32 +133,6 @@ async function getFriendLogHistory(
         .filter((row) => typeof row.userId === 'string' && row.userId.trim());
 }
 
-async function addFriendLogHistory(
-    userId: unknown,
-    entry: FriendLogHistoryEntry | null | undefined
-) {
-    await commands.appFriendLogHistoryAdd(
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim(),
-        [normalizeFriendLogHistoryEntryForRuntime(entry)]
-    );
-}
-
-async function addFriendLogHistoryArray(
-    userId: unknown,
-    entries: FriendLogHistoryEntry[] = []
-) {
-    await commands.appFriendLogHistoryAdd(
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim(),
-        (Array.isArray(entries) ? entries : []).map(
-            normalizeFriendLogHistoryEntryForRuntime
-        )
-    );
-}
-
 async function deleteFriendLogHistory(
     userId: unknown,
     entry: FriendLogHistoryEntry | null | undefined
@@ -172,17 +146,9 @@ async function deleteFriendLogHistory(
 }
 
 const friendLogHistoryRepository = {
-    addFriendLogHistory,
-    addFriendLogHistoryArray,
     getFriendLogHistory,
     deleteFriendLogHistory
 };
 
-export {
-    FRIEND_LOG_TYPES,
-    addFriendLogHistory,
-    addFriendLogHistoryArray,
-    deleteFriendLogHistory,
-    getFriendLogHistory
-};
+export { FRIEND_LOG_TYPES, deleteFriendLogHistory, getFriendLogHistory };
 export default friendLogHistoryRepository;

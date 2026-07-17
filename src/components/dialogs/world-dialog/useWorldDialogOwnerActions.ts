@@ -1,8 +1,38 @@
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+
+import type { WorldDetailsDraft } from '../WorldOwnerEditDialogs';
+import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
+
+type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
+type WorldPatch = Record<string, unknown>;
+type CapacityField = 'capacity' | 'recommendedCapacity';
+
+interface SaveWorldPatchMessages {
+    successMessage: string;
+    errorMessage: string;
+}
+
+interface UseWorldDialogOwnerActionsInput {
+    actionStatusRef: MutableRefObject<string>;
+    canManageWorld: boolean;
+    closeDialog: RuntimeState['closeDialog'];
+    confirm: RuntimeState['confirm'];
+    currentEndpoint: string;
+    currentUserId: string | null;
+    isCurrentWorldTarget: (worldId: unknown, endpoint: string) => boolean;
+    prompt: RuntimeState['prompt'];
+    setActionStatus: Dispatch<SetStateAction<string>>;
+    setHasPersistData: Dispatch<SetStateAction<boolean>>;
+    setOwnerEditor: Dispatch<SetStateAction<string>>;
+    setWorld: Dispatch<SetStateAction<WorldProfileRecord | null>>;
+    world: WorldProfileRecord | null;
+}
 
 export function useWorldDialogOwnerActions({
     actionStatusRef,
@@ -18,13 +48,13 @@ export function useWorldDialogOwnerActions({
     setOwnerEditor,
     setWorld,
     world
-}: any) {
+}: UseWorldDialogOwnerActionsInput) {
     const { t } = useTranslation();
     const worldNameOrId = world?.name || world?.id || '';
 
     async function saveWorldPatch(
-        patch: any,
-        { successMessage, errorMessage }: any
+        patch: WorldPatch,
+        { successMessage, errorMessage }: SaveWorldPatchMessages
     ) {
         if (
             !world?.id ||
@@ -50,7 +80,7 @@ export function useWorldDialogOwnerActions({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return false;
             }
-            setWorld((currentWorld: any) =>
+            setWorld((currentWorld) =>
                 currentWorld
                     ? worldProfileRepository.normalize(
                           response.json && typeof response.json === 'object'
@@ -73,7 +103,7 @@ export function useWorldDialogOwnerActions({
         }
     }
 
-    function processWorldYouTubePreview(value: any) {
+    function processWorldYouTubePreview(value: unknown) {
         let processedValue = String(value || '').trim();
         if (processedValue.length > 11) {
             try {
@@ -99,7 +129,11 @@ export function useWorldDialogOwnerActions({
         return processedValue;
     }
 
-    function readChangedTextField(patch: any, field: any, value: any) {
+    function readChangedTextField(
+        patch: WorldPatch,
+        field: 'name' | 'description',
+        value: unknown
+    ) {
         const nextValue = String(value || '');
         if (nextValue !== String(world?.[field] || '')) {
             patch[field] = nextValue;
@@ -107,10 +141,10 @@ export function useWorldDialogOwnerActions({
     }
 
     function readChangedCapacityField(
-        patch: any,
-        field: any,
-        value: any,
-        label: any
+        patch: WorldPatch,
+        field: CapacityField,
+        value: unknown,
+        label: string
     ) {
         const rawValue = String(value ?? '').trim();
         if (rawValue === String(world?.[field] ?? '')) {
@@ -130,8 +164,8 @@ export function useWorldDialogOwnerActions({
         return true;
     }
 
-    async function saveWorldDetails(draft: any) {
-        const patch: any = {};
+    async function saveWorldDetails(draft: WorldDetailsDraft) {
+        const patch: WorldPatch = {};
         readChangedTextField(patch, 'name', draft?.name);
         readChangedTextField(patch, 'description', draft?.description);
         if (
@@ -223,7 +257,7 @@ export function useWorldDialogOwnerActions({
         }
     }
 
-    async function changeWorldCapacity(field: any, label: any) {
+    async function changeWorldCapacity(field: CapacityField, label: string) {
         const result = await prompt({
             title: t('dialog.world.dynamic.change_value', {
                 value: label
@@ -236,7 +270,7 @@ export function useWorldDialogOwnerActions({
         if (!result.ok) {
             return;
         }
-        const value = Number.parseInt(result.value, 10);
+        const value = Number.parseInt(String(result.value ?? ''), 10);
         if (!Number.isFinite(value) || value < 1) {
             toast.error(
                 t('dialog.world.dynamic.value_must_be_a_positive_number', {
@@ -292,7 +326,7 @@ export function useWorldDialogOwnerActions({
         setOwnerEditor('tags');
     }
 
-    async function saveWorldTags(tags: any) {
+    async function saveWorldTags(tags: string[]) {
         const saved = await saveWorldPatch(
             { tags },
             {
@@ -311,7 +345,7 @@ export function useWorldDialogOwnerActions({
         setOwnerEditor('allowed-domains');
     }
 
-    async function saveWorldAllowedDomains(urlList: any) {
+    async function saveWorldAllowedDomains(urlList: string[]) {
         const saved = await saveWorldPatch(
             { urlList },
             {
@@ -328,7 +362,7 @@ export function useWorldDialogOwnerActions({
         }
     }
 
-    async function updateWorldPublication(nextPublished: any) {
+    async function updateWorldPublication(nextPublished: boolean) {
         if (
             !world?.id ||
             !canManageWorld ||
@@ -369,7 +403,7 @@ export function useWorldDialogOwnerActions({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            setWorld((currentWorld: any) =>
+            setWorld((currentWorld) =>
                 currentWorld
                     ? worldProfileRepository.normalize(
                           response.json && typeof response.json === 'object'
@@ -431,7 +465,7 @@ export function useWorldDialogOwnerActions({
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            setWorld((currentWorld: any) =>
+            setWorld((currentWorld) =>
                 currentWorld
                     ? { ...currentWorld, hasPersistData: false }
                     : currentWorld

@@ -14,9 +14,12 @@ import {
 
 describe('userProfileFields', () => {
     it('prepares supported self-status values for saving', () => {
-        expect(
-            selfStatusBaseOptions.map((option: any) => option.value)
-        ).toEqual(['join me', 'active', 'ask me', 'busy']);
+        expect(selfStatusBaseOptions.map((option) => option.value)).toEqual([
+            'join me',
+            'active',
+            'ask me',
+            'busy'
+        ]);
         expect(normalizeSelfStatusInput('joinme')).toBe('join me');
         expect(normalizeSelfStatusInput('AskMe')).toBe('ask me');
         expect(normalizeSelfStatusInput(' BUSY ')).toBe('busy');
@@ -135,10 +138,7 @@ describe('userProfileFields', () => {
             { status: 'At the mirror' },
             { statusDescription: 'World hopping' },
             '',
-            ...Array.from(
-                { length: 12 },
-                (_: any, index: any) => `Preset ${index}`
-            )
+            ...Array.from({ length: 12 }, (_, index) => `Preset ${index}`)
         ];
 
         expect(

@@ -19,7 +19,7 @@ describe('themeService CJK font locale routing', () => {
     it('uses the system CJK font for non-core CJK app locales', () => {
         expect(supportsConfigurableCjkFontPack('en')).toBe(false);
         expect(supportsConfigurableCjkFontPack('fr')).toBe(false);
-        expect(supportsConfigurableCjkFontPack('vi')).toBe(false);
+        expect(supportsConfigurableCjkFontPack('de')).toBe(false);
         expect(resolveAppCjkFontPackForLocale('noto', 'en')).toBe('system');
         expect(resolveAppCjkFontPackForLocale('puhuiti', 'fr')).toBe('system');
     });

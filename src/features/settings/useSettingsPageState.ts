@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
+import type { AppDataDirState, TtsVoice } from '@/platform/tauri/bindings';
 import {
     setAccessibleStatusIndicatorsPreference,
     setAppLanguagePreference,
@@ -24,7 +25,6 @@ import {
     setYoutubeApiEnabledPreference,
     setZoomLevelPreference
 } from '@/services/preferencesService';
-import { feedFiltersOptions } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT
@@ -41,7 +41,6 @@ import { useShellStore } from '@/state/shellStore';
 import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import { buildFavoriteFriendGroupOptions } from './settingsFavoriteGroupOptions';
 import { buildSettingsPageStateSections } from './settingsPageStateSections';
-import { normalizeSharedFeedFilters } from './settingsValues';
 import {
     useAvatarProviderConfig,
     type AvatarProviderConfig
@@ -54,25 +53,11 @@ import {
     type SettingsIntegrationPrefs
 } from './useSettingsIntegrations';
 
-const FEED_FILTER_OPTIONS = feedFiltersOptions();
 const SETTINGS_PREFERENCE_KEYS = Object.keys(DEFAULT_PREFERENCES) as Array<
     keyof PreferencesSnapshot
 >;
 
 type SettingsSqliteTableSizes = Record<string, unknown>;
-type SettingsAppDataDirState = Record<string, unknown> | null;
-type SettingsCacheStats = {
-    queryCache: number;
-    userCache: number;
-    worldCache: number;
-    avatarCache: number;
-    groupCache: number;
-    avatarNameCache: number;
-    instanceCache: number;
-    favoriteDetailsCache: number;
-    favoriteDetailsPending: number;
-    assetBundleCacheSize: string;
-};
 type SettingsConfigTreeData = Record<string, unknown>;
 type SettingsTableLimitsDraft = {
     maxTableSize: string;
@@ -111,20 +96,7 @@ export function useSettingsPageState() {
     const [sqliteTableSizes, setSqliteTableSizes] =
         useState<SettingsSqliteTableSizes>({});
     const [appDataDirState, setAppDataDirState] =
-        useState<SettingsAppDataDirState>(null);
-    const [cacheStatsVisible, setCacheStatsVisible] = useState(false);
-    const [cacheStats, setCacheStats] = useState<SettingsCacheStats>({
-        queryCache: 0,
-        userCache: 0,
-        worldCache: 0,
-        avatarCache: 0,
-        groupCache: 0,
-        avatarNameCache: 0,
-        instanceCache: 0,
-        favoriteDetailsCache: 0,
-        favoriteDetailsPending: 0,
-        assetBundleCacheSize: ''
-    });
+        useState<AppDataDirState | null>(null);
     const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
     const [purgePeriod, setPurgePeriod] = useState('180');
     const [purgeInProgress, setPurgeInProgress] = useState(false);
@@ -133,11 +105,10 @@ export function useSettingsPageState() {
     );
     const [configTreeData, setConfigTreeData] =
         useState<SettingsConfigTreeData>({});
-    const [tauriAppSnapshot, setRuntimeAppSnapshot] = useState<unknown>(null);
     const [localFavoriteFriendsGroups, setLocalFavoriteFriendsGroups] =
         useState<string[]>([]);
     const [zoomInput, setZoomInput] = useState('100');
-    const [ttsVoices, setTtsVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [ttsVoices, setTtsVoices] = useState<TtsVoice[]>([]);
     const [notificationTtsTest, setNotificationTtsTest] = useState('');
     const [customFontDialogOpen, setCustomFontDialogOpen] = useState(false);
     const [customFontDraft, setCustomFontDraft] = useState({
@@ -150,8 +121,6 @@ export function useSettingsPageState() {
         useState(false);
     const [loading, setLoading] = useState(true);
     const [activeSettingsTab, setActiveSettingsTab] = useState('system');
-    const feedFilterMode = 'noty';
-    const [feedFilterDialogOpen, setFeedFilterDialogOpen] = useState(false);
     const [
         wristFeedNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen
@@ -164,9 +133,8 @@ export function useSettingsPageState() {
         useState(false);
     const [webhookNotificationsDialogOpen, setWebhookNotificationsDialogOpen] =
         useState(false);
-    const [sharedFeedFilters, setSharedFeedFilters] = useState(() =>
-        normalizeSharedFeedFilters()
-    );
+    const [ttsNotificationsDialogOpen, setTtsNotificationsDialogOpen] =
+        useState(false);
     const [notificationTtsTestVisible, setNotificationTtsTestVisible] =
         useState(false);
     const [tablePageSizesDialogOpen, setTablePageSizesDialogOpen] =
@@ -243,10 +211,8 @@ export function useSettingsPageState() {
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
         deleteAllScreenshotMetadata,
-        refreshCacheSize,
-        clearVrcxCache,
-        promptAutoClearVrcxCacheFrequency,
         promptAutoLoginDelaySeconds,
+        promptBackgroundModeDelayMinutes,
         resetUgcFolder,
         purgeAvatarFeedData,
         openUgcFolderSelector,
@@ -256,17 +222,14 @@ export function useSettingsPageState() {
         openAppDataDirSelector,
         resetAppDataDir,
         removeFeedHiddenUser,
-        restartForAppDataDir,
-        updateSharedFeedFilter,
-        resetSharedFeedFilters,
         saveOverlayActivityFilters,
         saveVrNotificationActivityFilters,
         saveHmdNotificationActivityFilters,
         saveDesktopNotificationActivityFilters,
         saveWebhookActivityFilters,
+        saveTtsNotificationActivityFilters,
         saveWristOverlayEnabled,
         setProxyEnabledPreference: saveProxyEnabledPreference,
-        refreshRuntimeAppSnapshot,
         searchLimitError,
         tableLimitsSaveDisabled,
         tableMaxSizeError
@@ -276,8 +239,6 @@ export function useSettingsPageState() {
         localFavoriteFriendsGroups,
         prefs,
         purgePeriod,
-        setCacheStats,
-        setCacheStatsVisible,
         setAppDataDirState,
         setConfigTreeData,
         setCustomFontDialogOpen,
@@ -291,13 +252,10 @@ export function useSettingsPageState() {
         setPrefs,
         setPurgeDialogOpen,
         setPurgeInProgress,
-        setRuntimeAppSnapshot,
-        setSharedFeedFilters,
         setSqliteTableSizes,
         setTableLimitsDialogOpen,
         setTableLimitsDraft,
         setTablePageSizesDialogOpen,
-        sharedFeedFilters,
         tableLimitsDraft
     });
     useSettingsEffects({
@@ -312,9 +270,6 @@ export function useSettingsPageState() {
         sidebarOpen,
         zoomLevel
     });
-    const feedFilterOptions = FEED_FILTER_OPTIONS;
-    const currentSharedFeedFilterOptions =
-        feedFilterOptions.notyFeedFiltersOptions;
     const {
         favoriteFriendGroupOptions,
         localFavoriteFriendGroupOptions,
@@ -388,12 +343,8 @@ export function useSettingsPageState() {
         avatarProviderConfig,
         avatarProviderConfigRef,
         avatarProviderDialogOpen,
-        cacheStats,
-        cacheStatsVisible,
-        clearVrcxCache,
         commit,
         configTreeData,
-        currentSharedFeedFilterOptions,
         customFontDialogOpen,
         customFontDraft,
         customFontOptions,
@@ -402,8 +353,6 @@ export function useSettingsPageState() {
         desktopNotificationsDialogOpen,
         discordPrefs,
         favoriteFriendGroupOptions,
-        feedFilterDialogOpen,
-        feedFilterMode,
         fetchTranslationModels,
         handleCropInstancePrintsChange,
         handleGameLogDisabledChange,
@@ -428,46 +377,43 @@ export function useSettingsPageState() {
         openUgcFolderSelector,
         openYoutubeApiDialog,
         prefs,
-        promptAutoClearVrcxCacheFrequency,
         promptAutoLoginDelaySeconds,
+        promptBackgroundModeDelayMinutes,
         purgeAvatarFeedData,
         purgeDialogOpen,
         purgeInProgress,
         purgePeriod,
-        refreshCacheSize,
         refreshConfigTreeData,
         refreshOnlineVisits,
-        refreshRuntimeAppSnapshot,
         refreshSqliteTableSizes,
         remoteFavoriteFriendGroupOptions,
         removeFeedHiddenUser,
         removeAvatarProvider,
         resetAppDataDir,
-        resetSharedFeedFilters,
         resetTrustColors,
         resetUgcFolder,
-        restartForAppDataDir,
         saveAvatarProviderConfig,
         saveAvatarProviderEnabled,
         saveAvatarProviderField,
         saveBoolPreference,
         saveCustomFontFamily,
-        saveDesktopNotificationActivityFilters,
         saveDiscordBoolPreference,
         saveFontFamilyPreference,
         saveIntegrationBoolPreference,
         saveInterfaceZoomLevel,
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
-        saveOverlayActivityFilters,
         savePreferenceValue,
-        saveHmdNotificationActivityFilters,
         saveStringPreference,
         saveTableLimitsDialog,
         saveTranslationApiConfig,
         saveTrustColor,
+        saveOverlayActivityFilters,
         saveVrNotificationActivityFilters,
+        saveHmdNotificationActivityFilters,
+        saveDesktopNotificationActivityFilters,
         saveWebhookActivityFilters,
+        saveTtsNotificationActivityFilters,
         saveWristOverlayEnabled,
         saveYoutubeApiKey,
         searchLimitError,
@@ -484,7 +430,6 @@ export function useSettingsPageState() {
         setDataTableStripedPreference,
         setDesktopNotificationsDialogOpen,
         setHmdNotificationsDialogOpen,
-        setFeedFilterDialogOpen,
         setIntConfigPreference,
         setIntegrationValue,
         setNotificationLayoutPreference,
@@ -512,6 +457,7 @@ export function useSettingsPageState() {
         setTranslationApiDialogOpen,
         setTranslationDraftValue,
         setTranslationApiEnabledPreference,
+        setTtsNotificationsDialogOpen,
         setVrNotificationsDialogOpen,
         setWebhookNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen,
@@ -520,7 +466,6 @@ export function useSettingsPageState() {
         setYoutubeApiKeyDraft,
         setZoomInput,
         setZoomLevelPreference,
-        sharedFeedFilters,
         sqliteTableSizes,
         speakNotificationTts,
         tableLimitsDialogOpen,
@@ -528,14 +473,13 @@ export function useSettingsPageState() {
         tableLimitsSaveDisabled,
         tableMaxSizeError,
         tablePageSizesDialogOpen,
-        tauriAppSnapshot,
         testTranslationApiConfig,
         translationApiDialogOpen,
         translationDraft,
         ttsVoices,
+        ttsNotificationsDialogOpen,
         toggleLocalFavoriteFriendsGroup,
         updateAvatarProvider,
-        updateSharedFeedFilter,
         vrNotificationsDialogOpen,
         webhookNotificationsDialogOpen,
         wristFeedNotificationsDialogOpen,

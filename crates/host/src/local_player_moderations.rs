@@ -1,10 +1,19 @@
 use std::collections::HashMap;
+use std::path::{Component, Path};
 
 use crate::{vrchat_paths, Error};
 
 // VRChat stores per-user Hide Avatar / Show Avatar overrides in this local file.
 pub fn get_vrchat_moderations(current_user_id: &str) -> Result<HashMap<String, i16>, Error> {
-    let path = vrchat_paths::vrchat_app_data()
+    get_vrchat_moderations_from_root(&vrchat_paths::vrchat_app_data(), current_user_id)
+}
+
+fn get_vrchat_moderations_from_root(
+    root: &Path,
+    current_user_id: &str,
+) -> Result<HashMap<String, i16>, Error> {
+    validate_current_user_id(current_user_id)?;
+    let path = root
         .join("LocalPlayerModerations")
         .join(format!("{current_user_id}-show-hide-user.vrcset"));
 
@@ -35,7 +44,24 @@ pub fn set_vrchat_user_moderation(
     user_id: &str,
     moderation_type: i32,
 ) -> Result<bool, Error> {
-    let dir = vrchat_paths::vrchat_app_data().join("LocalPlayerModerations");
+    set_vrchat_user_moderation_from_root(
+        &vrchat_paths::vrchat_app_data(),
+        current_user_id,
+        user_id,
+        moderation_type,
+    )
+}
+
+fn set_vrchat_user_moderation_from_root(
+    root: &Path,
+    current_user_id: &str,
+    user_id: &str,
+    moderation_type: i32,
+) -> Result<bool, Error> {
+    validate_current_user_id(current_user_id)?;
+    let moderation_type = i16::try_from(moderation_type)
+        .map_err(|_| Error::Custom("moderation type is outside the i16 range".into()))?;
+    let dir = root.join("LocalPlayerModerations");
     std::fs::create_dir_all(&dir)?;
     let path = dir.join(format!("{current_user_id}-show-hide-user.vrcset"));
 
@@ -60,3 +86,17 @@ pub fn set_vrchat_user_moderation(
     std::fs::write(&path, lines.join("\n"))?;
     Ok(true)
 }
+
+fn validate_current_user_id(current_user_id: &str) -> Result<(), Error> {
+    if current_user_id.contains('/') || current_user_id.contains('\\') {
+        return Err(Error::Custom("invalid current user id".into()));
+    }
+    let mut components = Path::new(current_user_id).components();
+    if matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none() {
+        return Ok(());
+    }
+    Err(Error::Custom("invalid current user id".into()))
+}
+
+#[cfg(test)]
+mod tests;

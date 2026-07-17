@@ -36,6 +36,7 @@ export function useVrcNotificationPageController() {
         currentInviteLocation: runtime.currentInviteLocation,
         currentUserId: runtime.currentUserId ?? undefined,
         endpoint: runtime.endpoint,
+        notificationTypeLabel,
         reload: rowsState.reload,
         setBoopReplyRequest: dialogs.setBoopReplyRequest,
         setInviteResponseRequest: dialogs.setInviteResponseRequest

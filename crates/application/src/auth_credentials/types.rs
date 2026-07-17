@@ -17,3 +17,9 @@ pub struct SavedCredentialLoginStartInput {
     pub user_id: String,
     pub endpoint: String,
 }
+
+pub struct SavedCredentialSessionData {
+    pub endpoint: String,
+    pub websocket: String,
+    pub cookies: Option<String>,
+}

@@ -1,4 +1,5 @@
 import { BookmarkIcon, HistoryIcon, PlusIcon, XIcon } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
@@ -53,12 +54,23 @@ import {
     normalizeLanguageKey,
     normalizeSelfStatusInput
 } from './userProfileFields';
+import type { SocialStatusDraft } from './useSelfStatusPresets';
+import type { ProfileDetailsDraft } from './useUserDialogSelfActions';
 
-function normalizeLanguageComboboxValues(values: any) {
-    const nextKeys = [];
-    const seen = new Set();
+type LanguageOption = { key: string; value: string };
+type StatusOption = { value: string; label: string };
 
-    for (const value of values ?? []) {
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+function normalizeLanguageComboboxValues(values: unknown) {
+    const nextKeys: string[] = [];
+    const seen = new Set<string>();
+
+    for (const value of Array.isArray(values) ? values : []) {
         const key = normalizeLanguageKey(value);
         if (!key || seen.has(key)) {
             continue;
@@ -87,7 +99,21 @@ export function UserSocialStatusDialog({
     onRemovePreset,
     onCancel,
     onSave
-}: any) {
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    actionStatus: string;
+    draft: SocialStatusDraft;
+    setDraft: Dispatch<SetStateAction<SocialStatusDraft>>;
+    statusHistoryRows: string[];
+    statusOptions: StatusOption[];
+    statusPresets: unknown[];
+    statusLabelByValue: ReadonlyMap<string, string>;
+    onSavePreset: () => void;
+    onRemovePreset: (index: number) => void;
+    onCancel: () => void;
+    onSave: () => void;
+}) {
     const { t } = useTranslation();
 
     const busy = actionStatus !== 'idle';
@@ -120,7 +146,7 @@ export function UserSocialStatusDialog({
                                 )}
                                 disabled={busy}
                                 onChange={(event) => {
-                                    setDraft((current: any) => ({
+                                    setDraft((current) => ({
                                         ...current,
                                         statusDescription:
                                             event.target.value.slice(0, 32)
@@ -136,7 +162,7 @@ export function UserSocialStatusDialog({
                                             'dialog.user.description.clear_status_description'
                                         )}
                                         onClick={() => {
-                                            setDraft((current: any) => ({
+                                            setDraft((current) => ({
                                                 ...current,
                                                 statusDescription: ''
                                             }));
@@ -166,16 +192,13 @@ export function UserSocialStatusDialog({
                                         <DropdownMenuGroup>
                                             {statusHistoryRows.length ? (
                                                 statusHistoryRows.map(
-                                                    (
-                                                        status: any,
-                                                        index: any
-                                                    ) => (
+                                                    (status, index) => (
                                                         <DropdownMenuItem
                                                             key={`${status}:${index}`}
                                                             onClick={() => {
                                                                 setDraft(
                                                                     (
-                                                                        current: any
+                                                                        current
                                                                     ) => ({
                                                                         ...current,
                                                                         statusDescription:
@@ -224,13 +247,13 @@ export function UserSocialStatusDialog({
                                 if (!nextStatus) {
                                     return;
                                 }
-                                setDraft((current: any) => ({
+                                setDraft((current) => ({
                                     ...current,
                                     status: nextStatus
                                 }));
                             }}
                         >
-                            {statusOptions.map((option: any) => {
+                            {statusOptions.map((option) => {
                                 return (
                                     <ToggleGroupItem
                                         key={option.value}
@@ -274,72 +297,74 @@ export function UserSocialStatusDialog({
                         </div>
                         {statusPresets.length ? (
                             <div className="flex flex-wrap gap-2">
-                                {statusPresets.map(
-                                    (preset: any, index: any) => {
-                                        const presetStatus =
-                                            normalizeSelfStatusInput(
-                                                preset?.status
-                                            ) || 'active';
-                                        const presetDescription = String(
-                                            preset?.statusDescription || ''
-                                        ).slice(0, 32);
-                                        const label =
-                                            presetDescription ||
-                                            statusLabelByValue.get(
-                                                presetStatus
-                                            ) ||
-                                            presetStatus;
-                                        return (
-                                            <div
-                                                key={`${presetStatus}:${presetDescription}:${index}`}
-                                                className="inline-flex max-w-52 items-center"
+                                {statusPresets.map((preset, index) => {
+                                    const presetRecord = record(preset);
+                                    const presetStatus =
+                                        normalizeSelfStatusInput(
+                                            presetRecord.status
+                                        ) || 'active';
+                                    const presetDescription = String(
+                                        presetRecord.statusDescription || ''
+                                    ).slice(0, 32);
+                                    const label =
+                                        presetDescription ||
+                                        statusLabelByValue.get(presetStatus) ||
+                                        presetStatus;
+                                    return (
+                                        <div
+                                            key={`${presetStatus}:${presetDescription}:${index}`}
+                                            className="inline-flex max-w-52 items-center"
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="xs"
+                                                className="min-w-0 justify-start rounded-r-none border-r-0"
+                                                disabled={busy}
+                                                aria-label={t(
+                                                    'accessibility.apply_status_preset',
+                                                    { preset: label }
+                                                )}
+                                                onClick={() => {
+                                                    setDraft({
+                                                        status: presetStatus,
+                                                        statusDescription:
+                                                            presetDescription
+                                                    });
+                                                }}
                                             >
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="xs"
-                                                    className="min-w-0 justify-start rounded-r-none border-r-0"
-                                                    disabled={busy}
-                                                    aria-label={`Apply status preset ${label}`}
-                                                    onClick={() => {
-                                                        setDraft({
-                                                            status: presetStatus,
-                                                            statusDescription:
-                                                                presetDescription
-                                                        });
-                                                    }}
-                                                >
-                                                    <i
-                                                        className={userStatusIndicatorClassName(
-                                                            presetStatus,
-                                                            {
-                                                                showOffline: true,
-                                                                className:
-                                                                    'shrink-0'
-                                                            }
-                                                        )}
-                                                    />
-                                                    <span className="min-w-0 truncate">
-                                                        {label}
-                                                    </span>
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon-xs"
-                                                    className="shrink-0 rounded-l-none"
-                                                    disabled={busy}
-                                                    aria-label="Remove status preset"
-                                                    onClick={() =>
-                                                        onRemovePreset(index)
-                                                    }
-                                                >
-                                                    <XIcon data-icon="inline-start" />
-                                                </Button>
-                                            </div>
-                                        );
-                                    }
-                                )}
+                                                <i
+                                                    className={userStatusIndicatorClassName(
+                                                        presetStatus,
+                                                        {
+                                                            showOffline: true,
+                                                            className:
+                                                                'shrink-0'
+                                                        }
+                                                    )}
+                                                />
+                                                <span className="min-w-0 truncate">
+                                                    {label}
+                                                </span>
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon-xs"
+                                                className="shrink-0 rounded-l-none"
+                                                disabled={busy}
+                                                aria-label={t(
+                                                    'accessibility.remove_status_preset'
+                                                )}
+                                                onClick={() =>
+                                                    onRemovePreset(index)
+                                                }
+                                            >
+                                                <XIcon data-icon="inline-start" />
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : null}
                     </Field>
@@ -373,7 +398,18 @@ export function UserProfileDetailsDialog({
     languageOptionsStatus,
     onCancel,
     onSave
-}: any) {
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    actionStatus: string;
+    draft: ProfileDetailsDraft;
+    setDraft: Dispatch<SetStateAction<ProfileDetailsDraft>>;
+    languageRows: LanguageOption[];
+    availableLanguageOptions: LanguageOption[];
+    languageOptionsStatus: string;
+    onCancel: () => void;
+    onSave: () => void;
+}) {
     const { t } = useTranslation();
     const languageComboboxAnchor = useComboboxAnchor();
 
@@ -381,11 +417,9 @@ export function UserProfileDetailsDialog({
     const bioLinks = draft.bioLinks?.length ? draft.bioLinks : [''];
     const bioLength = String(draft.bio || '').length;
     const pronounsLength = String(draft.pronouns || '').length;
-    const selectedLanguageKeys = languageRows.map(
-        (language: any) => language.key
-    );
+    const selectedLanguageKeys = languageRows.map((language) => language.key);
     const languageLabelByKey = new Map(
-        [...languageRows, ...availableLanguageOptions].map((language: any) => [
+        [...languageRows, ...availableLanguageOptions].map((language) => [
             language.key,
             languageOptionLabel(language)
         ])
@@ -393,7 +427,7 @@ export function UserProfileDetailsDialog({
     const selectableLanguageKeys =
         selectedLanguageKeys.length >= 3
             ? []
-            : availableLanguageOptions.map((option: any) => option.key);
+            : availableLanguageOptions.map((option) => option.key);
     const languageInputDisabled =
         busy ||
         languageOptionsStatus === 'running' ||
@@ -404,8 +438,8 @@ export function UserProfileDetailsDialog({
             ? t('dialog.user.loading.loading_languages')
             : t('dialog.user.action.select_language');
 
-    function handleLanguageValueChange(values: any) {
-        setDraft((current: any) => ({
+    function handleLanguageValueChange(values: string[]) {
+        setDraft((current) => ({
             ...current,
             languageKeys: normalizeLanguageComboboxValues(values)
         }));
@@ -441,7 +475,7 @@ export function UserProfileDetailsDialog({
                                     autoHighlight
                                     items={selectableLanguageKeys}
                                     value={selectedLanguageKeys}
-                                    itemToStringLabel={(key: any) =>
+                                    itemToStringLabel={(key) =>
                                         languageLabelByKey.get(key) || key
                                     }
                                     onValueChange={handleLanguageValueChange}
@@ -451,24 +485,20 @@ export function UserProfileDetailsDialog({
                                         className="w-full"
                                     >
                                         <ComboboxValue>
-                                            {(values: any) => (
+                                            {(values: string[]) => (
                                                 <>
-                                                    {values.map(
-                                                        (value: any) => (
-                                                            <ComboboxChip
-                                                                key={value}
-                                                                showRemove={
-                                                                    !busy
-                                                                }
-                                                            >
-                                                                <span className="max-w-36 truncate">
-                                                                    {languageLabelByKey.get(
-                                                                        value
-                                                                    ) || value}
-                                                                </span>
-                                                            </ComboboxChip>
-                                                        )
-                                                    )}
+                                                    {values.map((value) => (
+                                                        <ComboboxChip
+                                                            key={value}
+                                                            showRemove={!busy}
+                                                        >
+                                                            <span className="max-w-36 truncate">
+                                                                {languageLabelByKey.get(
+                                                                    value
+                                                                ) || value}
+                                                            </span>
+                                                        </ComboboxChip>
+                                                    ))}
                                                     <ComboboxChipsInput
                                                         disabled={
                                                             languageInputDisabled
@@ -493,7 +523,7 @@ export function UserProfileDetailsDialog({
                                             {t('dialog.user.empty.no_results')}
                                         </ComboboxEmpty>
                                         <ComboboxList>
-                                            {(key: any) => (
+                                            {(key) => (
                                                 <ComboboxItem
                                                     key={key}
                                                     value={key}
@@ -532,7 +562,7 @@ export function UserProfileDetailsDialog({
                                     maxLength={32}
                                     disabled={busy}
                                     onChange={(event) => {
-                                        setDraft((current: any) => ({
+                                        setDraft((current) => ({
                                             ...current,
                                             pronouns: event.target.value.slice(
                                                 0,
@@ -560,7 +590,7 @@ export function UserProfileDetailsDialog({
                                             size="xs"
                                             disabled={busy}
                                             onClick={() => {
-                                                setDraft((current: any) => ({
+                                                setDraft((current) => ({
                                                     ...current,
                                                     bioLinks: [
                                                         ...(current.bioLinks
@@ -581,7 +611,7 @@ export function UserProfileDetailsDialog({
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">
-                                {bioLinks.map((link: any, index: any) => (
+                                {bioLinks.map((link, index) => (
                                     <InputGroup key={index}>
                                         <InputGroupInput
                                             value={link}
@@ -594,7 +624,7 @@ export function UserProfileDetailsDialog({
                                                         0,
                                                         1000
                                                     );
-                                                setDraft((current: any) => {
+                                                setDraft((current) => {
                                                     const nextBioLinks = [
                                                         ...(current.bioLinks
                                                             ?.length
@@ -625,7 +655,7 @@ export function UserProfileDetailsDialog({
                                                     'dialog.user.action.remove_bio_link'
                                                 )}
                                                 onClick={() => {
-                                                    setDraft((current: any) => {
+                                                    setDraft((current) => {
                                                         const nextBioLinks = [
                                                             ...(current.bioLinks
                                                                 ?.length
@@ -672,7 +702,7 @@ export function UserProfileDetailsDialog({
                                 disabled={busy}
                                 className="field-sizing-fixed max-h-56 min-h-36 resize-y overflow-y-auto"
                                 onChange={(event) => {
-                                    setDraft((current: any) => ({
+                                    setDraft((current) => ({
                                         ...current,
                                         bio: event.target.value.slice(0, 512)
                                     }));

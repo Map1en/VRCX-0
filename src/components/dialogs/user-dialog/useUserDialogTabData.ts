@@ -1,5 +1,8 @@
+import type { TFunction } from 'i18next';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
@@ -16,9 +19,11 @@ import {
     isUserDialogDataTab,
     loadUserDialogTabData,
     loadUserDialogTabCounts,
-    userDialogDataKeyForTab
+    userDialogDataKeyForTab,
+    type UserDialogDataTab
 } from './userDialogTabService';
 import { buildUserDialogListViewData } from './userDialogViewData';
+import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
 const userDialogTabServiceRepositories = Object.freeze({
     avatarSearchProviderRepository,
@@ -53,14 +58,60 @@ const emptyUserDialogSearch = Object.freeze({
 const USER_DIALOG_AVATAR_SORT_CONFIG_KEY = 'UserDialogAvatarSort';
 const userDialogAvatarSortValues = new Set(['name', 'update', 'createdAt']);
 
-function normalizeUserDialogAvatarSort(value: any) {
+type UserDialogRemoteData = {
+    groups: readonly EntityRecord[];
+    mutual: readonly EntityRecord[];
+    worlds: readonly EntityRecord[];
+    favoriteWorldGroups: readonly EntityRecord[];
+    favoriteWorlds: readonly EntityRecord[];
+    avatars: readonly EntityRecord[];
+};
+
+type UserDialogLoadContext = {
+    endpoint: string;
+    userId: string;
+    reloadToken: number;
+    tab?: UserDialogDataTab;
+    worldSort?: string;
+    worldOrder?: string;
+    avatarSort?: string;
+    avatarReleaseStatus?: string;
+    currentAvatarId?: string;
+    previousAvatarSwapTime?: number;
+};
+
+type UserDialogCountContext = UserDialogLoadContext & {
+    currentUserId: string;
+    currentAvatarId: string;
+    previousAvatarSwapTime: number;
+    avatarReleaseStatus: string;
+};
+
+interface UseUserDialogTabDataInput {
+    profile: UserDialogProfileRecord;
+    reloadToken: number;
+    isCurrentUser: boolean;
+    currentEndpoint: string;
+    currentUserId: string | null;
+    currentAvatarId?: string;
+    previousAvatarSwapTime?: number;
+    currentUserHasSharedConnectionsOptOut: boolean;
+    friendsById: FriendRosterById;
+    inGameGroupOrder: readonly unknown[];
+    selectedGroupIds: Set<string>;
+    t: TFunction;
+}
+
+function normalizeUserDialogAvatarSort(value: unknown) {
     const normalizedValue = String(value ?? '').trim();
     return userDialogAvatarSortValues.has(normalizedValue)
         ? normalizedValue
         : 'name';
 }
 
-function emptyDataPatchForTab(tab: any): Record<string, unknown[]> {
+function emptyDataPatchForTab(
+    tab: UserDialogDataTab
+): Partial<UserDialogRemoteData> {
     const dataKey = userDialogDataKeyForTab(tab);
     if (!dataKey) {
         return {};
@@ -71,8 +122,8 @@ function emptyDataPatchForTab(tab: any): Record<string, unknown[]> {
     };
 }
 
-function visibleTabs(tabs: any) {
-    return tabs.filter((tab: any) => !tab.hidden);
+function visibleTabs<T extends { hidden?: boolean }>(tabs: T[]) {
+    return tabs.filter((tab) => !tab.hidden);
 }
 
 export function useUserDialogTabData({
@@ -88,15 +139,15 @@ export function useUserDialogTabData({
     inGameGroupOrder,
     selectedGroupIds,
     t
-}: any) {
+}: UseUserDialogTabDataInput) {
     const [activeTab, setActiveTab] = useState('info');
-    const [remoteData, setRemoteData] = useState<
-        Record<string, readonly unknown[]>
-    >(emptyUserDialogRemoteData);
-    const [remoteStatus, setRemoteStatus] = useState<any>(
+    const [remoteData, setRemoteData] = useState<UserDialogRemoteData>(
+        emptyUserDialogRemoteData
+    );
+    const [remoteStatus, setRemoteStatus] = useState<Record<string, string>>(
         emptyUserDialogStatus
     );
-    const [remoteErrors, setRemoteErrors] = useState<any>(
+    const [remoteErrors, setRemoteErrors] = useState<Record<string, string>>(
         emptyUserDialogStatus
     );
     const [remoteTabCounts, setRemoteTabCounts] = useState<{
@@ -114,21 +165,20 @@ export function useUserDialogTabData({
     const [groupSort, setGroupSort] = useState(
         isCurrentUser ? 'inGame' : 'alphabetical'
     );
-    const [vrchatConfigConstants, setVrchatConfigConstants] = useState<Record<
-        string,
-        unknown
-    > | null>(null);
+    const [vrchatConfigConstants, setVrchatConfigConstants] =
+        useState<unknown>(null);
+    const profileUserId = typeof profile.id === 'string' ? profile.id : '';
     const effectiveAvatarReleaseStatus =
-        profile.id === currentUserId ? avatarReleaseStatus : 'all';
-    const loadContextRef = useRef<any>({
+        profileUserId === currentUserId ? avatarReleaseStatus : 'all';
+    const loadContextRef = useRef<UserDialogLoadContext>({
         endpoint: currentEndpoint,
-        userId: profile.id,
+        userId: profileUserId,
         reloadToken
     });
-    const countContextRef = useRef<any>({
+    const countContextRef = useRef<UserDialogCountContext>({
         endpoint: currentEndpoint,
-        userId: profile.id,
-        currentUserId,
+        userId: profileUserId,
+        currentUserId: currentUserId || '',
         currentAvatarId,
         previousAvatarSwapTime,
         avatarReleaseStatus: effectiveAvatarReleaseStatus,
@@ -139,8 +189,8 @@ export function useUserDialogTabData({
     const handledCountReloadTokenRef = useRef(reloadToken);
     countContextRef.current = {
         endpoint: currentEndpoint,
-        userId: profile.id,
-        currentUserId,
+        userId: profileUserId,
+        currentUserId: currentUserId || '',
         currentAvatarId,
         previousAvatarSwapTime,
         avatarReleaseStatus: effectiveAvatarReleaseStatus,
@@ -186,7 +236,7 @@ export function useUserDialogTabData({
     useEffect(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
-            userId: profile.id,
+            userId: profileUserId,
             reloadToken,
             worldSort,
             worldOrder,
@@ -208,7 +258,7 @@ export function useUserDialogTabData({
         currentEndpoint,
         currentUserHasSharedConnectionsOptOut,
         isCurrentUser,
-        profile.id,
+        profileUserId,
         reloadToken
     ]);
 
@@ -221,7 +271,7 @@ export function useUserDialogTabData({
             avatarReleaseStatus: 'all'
         };
 
-        if (profile.id !== currentUserId) {
+        if (profileUserId !== currentUserId) {
             loadContextRef.current = {
                 ...loadContextRef.current,
                 avatarSort: 'name'
@@ -230,10 +280,10 @@ export function useUserDialogTabData({
             return;
         }
 
-        setAvatarSort((current: any) => normalizeUserDialogAvatarSort(current));
+        setAvatarSort((current) => normalizeUserDialogAvatarSort(current));
         configRepository
             .getString(USER_DIALOG_AVATAR_SORT_CONFIG_KEY, 'name')
-            .then((value: any) => {
+            .then((value) => {
                 if (avatarSortLoadVersionRef.current !== loadVersion) {
                     return;
                 }
@@ -254,9 +304,9 @@ export function useUserDialogTabData({
                 };
                 setAvatarSort('name');
             });
-    }, [currentUserId, profile.id]);
+    }, [currentUserId, profileUserId]);
 
-    function isCurrentLoadContext(context: any) {
+    function isCurrentLoadContext(context: UserDialogLoadContext) {
         return (
             loadContextRef.current.endpoint === context.endpoint &&
             loadContextRef.current.userId === context.userId &&
@@ -273,7 +323,7 @@ export function useUserDialogTabData({
         );
     }
 
-    function isCurrentCountContext(context: any) {
+    function isCurrentCountContext(context: UserDialogCountContext) {
         return (
             countContextRef.current.endpoint === context.endpoint &&
             countContextRef.current.userId === context.userId &&
@@ -288,15 +338,15 @@ export function useUserDialogTabData({
         );
     }
 
-    async function loadTabCounts({ force = false }: any = {}) {
-        if (!profile.id) {
+    async function loadTabCounts({ force = false }: { force?: boolean } = {}) {
+        if (!profileUserId) {
             return;
         }
 
-        const countContext: any = {
+        const countContext: UserDialogCountContext = {
             endpoint: currentEndpoint,
-            userId: profile.id,
-            currentUserId,
+            userId: profileUserId,
+            currentUserId: currentUserId || '',
             currentAvatarId,
             previousAvatarSwapTime,
             avatarReleaseStatus: effectiveAvatarReleaseStatus,
@@ -304,9 +354,9 @@ export function useUserDialogTabData({
         };
         try {
             const counts = await loadUserDialogTabCounts({
-                userId: profile.id,
+                userId: profileUserId,
                 endpoint: currentEndpoint,
-                currentUserId,
+                currentUserId: currentUserId || '',
                 currentAvatarId,
                 previousAvatarSwapTime,
                 effectiveAvatarReleaseStatus,
@@ -324,22 +374,24 @@ export function useUserDialogTabData({
         }
     }
 
-    async function loadTab(tab: any, { force = false }: any = {}) {
+    async function loadTab(
+        tab: string,
+        { force = false }: { force?: boolean } = {}
+    ) {
+        if (!isUserDialogDataTab(tab)) {
+            return;
+        }
         if (
-            !profile.id ||
+            !profileUserId ||
             (!force &&
                 (remoteStatus[tab] === 'running' ||
                     remoteStatus[tab] === 'ready'))
         ) {
             return;
         }
-        if (!isUserDialogDataTab(tab)) {
-            return;
-        }
-
-        const loadContext: any = {
+        const loadContext: UserDialogLoadContext = {
             endpoint: currentEndpoint,
-            userId: profile.id,
+            userId: profileUserId,
             reloadToken,
             tab,
             worldSort,
@@ -349,14 +401,14 @@ export function useUserDialogTabData({
             previousAvatarSwapTime,
             avatarReleaseStatus: effectiveAvatarReleaseStatus
         };
-        setRemoteStatus((current: any) => ({ ...current, [tab]: 'running' }));
-        setRemoteErrors((current: any) => ({ ...current, [tab]: '' }));
+        setRemoteStatus((current) => ({ ...current, [tab]: 'running' }));
+        setRemoteErrors((current) => ({ ...current, [tab]: '' }));
         try {
             const { rows, favoriteWorldGroups } = await loadUserDialogTabData({
                 tab,
-                userId: profile.id,
+                userId: profileUserId,
                 endpoint: currentEndpoint,
-                currentUserId,
+                currentUserId: currentUserId || '',
                 currentAvatarId,
                 previousAvatarSwapTime,
                 worldSort,
@@ -368,7 +420,7 @@ export function useUserDialogTabData({
                 return;
             }
             const dataKey = userDialogDataKeyForTab(tab);
-            setRemoteData((current: any) => ({
+            setRemoteData((current) => ({
                 ...current,
                 [dataKey]: rows,
                 ...(tab === 'favorite-worlds'
@@ -377,13 +429,13 @@ export function useUserDialogTabData({
                       }
                     : {})
             }));
-            setRemoteStatus((current: any) => ({ ...current, [tab]: 'ready' }));
+            setRemoteStatus((current) => ({ ...current, [tab]: 'ready' }));
         } catch (error) {
             if (!isCurrentLoadContext(loadContext)) {
                 return;
             }
-            setRemoteStatus((current: any) => ({ ...current, [tab]: 'error' }));
-            setRemoteErrors((current: any) => ({
+            setRemoteStatus((current) => ({ ...current, [tab]: 'error' }));
+            setRemoteErrors((current) => ({
                 ...current,
                 [tab]:
                     error instanceof Error
@@ -393,7 +445,7 @@ export function useUserDialogTabData({
         }
     }
 
-    function changeTab(tab: any, { allowHidden = false }: any = {}) {
+    function changeTab(tab: string, { allowHidden = false } = {}) {
         const nextTab = allowHidden
             ? tab
             : resolveTabValue(visibleTabs(viewData.tabs), tab);
@@ -403,25 +455,25 @@ export function useUserDialogTabData({
         setActiveTab(nextTab);
     }
 
-    function changeWorldSort(value: any) {
+    function changeWorldSort(value: string) {
         loadContextRef.current = {
             ...loadContextRef.current,
             worldSort: value
         };
         setWorldSort(value);
-        setRemoteStatus((current: any) => ({ ...current, worlds: '' }));
+        setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
-    function changeWorldOrder(value: any) {
+    function changeWorldOrder(value: string) {
         loadContextRef.current = {
             ...loadContextRef.current,
             worldOrder: value
         };
         setWorldOrder(value);
-        setRemoteStatus((current: any) => ({ ...current, worlds: '' }));
+        setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
-    function changeAvatarSort(value: any) {
+    function changeAvatarSort(value: unknown) {
         const nextSort = normalizeUserDialogAvatarSort(value);
         avatarSortLoadVersionRef.current += 1;
         loadContextRef.current = {
@@ -429,29 +481,29 @@ export function useUserDialogTabData({
             avatarSort: nextSort
         };
         setAvatarSort(nextSort);
-        if (profile.id === currentUserId) {
+        if (profileUserId === currentUserId) {
             configRepository.setString(
                 USER_DIALOG_AVATAR_SORT_CONFIG_KEY,
                 nextSort
             );
-            setRemoteStatus((current: any) => ({ ...current, avatars: '' }));
+            setRemoteStatus((current) => ({ ...current, avatars: '' }));
         }
     }
 
-    function changeAvatarReleaseStatus(value: any) {
+    function changeAvatarReleaseStatus(value: string) {
         loadContextRef.current = {
             ...loadContextRef.current,
             avatarReleaseStatus: value
         };
         setAvatarReleaseStatus(value);
-        if (profile.id === currentUserId) {
-            setRemoteStatus((current: any) => ({ ...current, avatars: '' }));
+        if (profileUserId === currentUserId) {
+            setRemoteStatus((current) => ({ ...current, avatars: '' }));
         }
     }
 
-    async function refreshTab(tab: any) {
-        setRemoteStatus((current: any) => ({ ...current, [tab]: '' }));
-        setRemoteData((current: any) => ({
+    async function refreshTab(tab: UserDialogDataTab) {
+        setRemoteStatus((current) => ({ ...current, [tab]: '' }));
+        setRemoteData((current) => ({
             ...current,
             ...emptyDataPatchForTab(tab)
         }));
@@ -471,7 +523,7 @@ export function useUserDialogTabData({
         currentEndpoint,
         currentUserId,
         previousAvatarSwapTime,
-        profile.id,
+        profileUserId,
         reloadToken
     ]);
 
@@ -489,7 +541,7 @@ export function useUserDialogTabData({
         currentUserId,
         effectiveAvatarReleaseStatus,
         previousAvatarSwapTime,
-        profile.id,
+        profileUserId,
         reloadToken
     ]);
 
@@ -497,7 +549,7 @@ export function useUserDialogTabData({
         let active = true;
         vrchatAuthRepository
             .getConfig({ endpoint: currentEndpoint })
-            .then((response: any) => {
+            .then((response) => {
                 if (active) {
                     setVrchatConfigConstants(response?.json?.constants || null);
                 }
@@ -519,7 +571,7 @@ export function useUserDialogTabData({
     }, [worldOrder, worldSort]);
 
     useEffect(() => {
-        if (activeTab === 'avatars' && profile.id === currentUserId) {
+        if (activeTab === 'avatars' && profileUserId === currentUserId) {
             loadTab('avatars', { force: true });
         }
     }, [
@@ -532,19 +584,19 @@ export function useUserDialogTabData({
     useEffect(
         () =>
             onPreferenceChanged(AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS, () => {
-                if (profile.id === currentUserId) {
+                if (profileUserId === currentUserId) {
                     return;
                 }
-                setRemoteData((current: any) => ({ ...current, avatars: [] }));
-                setRemoteStatus((current: any) => ({
+                setRemoteData((current) => ({ ...current, avatars: [] }));
+                setRemoteStatus((current) => ({
                     ...current,
                     avatars: ''
                 }));
-                setRemoteErrors((current: any) => ({
+                setRemoteErrors((current) => ({
                     ...current,
                     avatars: ''
                 }));
-                setRemoteTabCounts((current: any) => ({
+                setRemoteTabCounts((current) => ({
                     ...current,
                     avatars: undefined
                 }));
@@ -559,14 +611,14 @@ export function useUserDialogTabData({
             avatarSort,
             currentEndpoint,
             currentUserId,
-            profile.id
+            profileUserId
         ]
     );
 
     useEffect(() => {
         setMutualSort('alphabetical');
         setGroupSort(isCurrentUser ? 'inGame' : 'alphabetical');
-    }, [currentUserId, isCurrentUser, profile.id]);
+    }, [currentUserId, isCurrentUser, profileUserId]);
 
     return {
         ...viewData,

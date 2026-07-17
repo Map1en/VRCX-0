@@ -1,9 +1,8 @@
-import { UserIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
-import { UserStatusDot } from '@/components/UserStatusDot';
+import { UserDetailContent } from '@/components/UserDetailTile';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/utils/trustColors';
 import { buttonVariants } from '@/ui/shadcn/button';
@@ -185,35 +184,13 @@ export function FriendRow({
                             })}
                             onClick={onOpen}
                         >
-                            <span className="relative flex size-9 shrink-0 items-center justify-center overflow-visible">
-                                <span className="bg-muted relative z-0 flex size-full items-center justify-center overflow-hidden rounded-full border">
-                                    {imageUrl ? (
-                                        <img
-                                            src={imageUrl}
-                                            alt=""
-                                            className="size-full object-cover"
-                                        />
-                                    ) : (
-                                        <UserIcon
-                                            data-icon="inline-start"
-                                            className="text-muted-foreground"
-                                        />
-                                    )}
-                                </span>
-                                <UserStatusDot
-                                    statusDotClassName={statusDotClassName}
-                                    className="absolute -right-0.5 -bottom-0.5 z-10 size-3.75"
-                                />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                                <span
-                                    className="block truncate leading-5 font-medium"
-                                    style={nameStyle}
-                                >
-                                    {displayName}
-                                </span>
-                                <span className="text-muted-foreground block truncate text-xs">
-                                    {groupByInstanceTimerVisible ? (
+                            <UserDetailContent
+                                imageUrl={imageUrl}
+                                statusDotClassName={statusDotClassName}
+                                displayName={displayName}
+                                nameStyle={nameStyle}
+                                subline={
+                                    groupByInstanceTimerVisible ? (
                                         <FriendInstanceTimer
                                             epoch={groupByInstanceEpoch}
                                             traveling={isTraveling}
@@ -234,9 +211,9 @@ export function FriendRow({
                                         />
                                     ) : (
                                         subline
-                                    )}
-                                </span>
-                            </span>
+                                    )
+                                }
+                            />
                         </button>
                     }
                 />

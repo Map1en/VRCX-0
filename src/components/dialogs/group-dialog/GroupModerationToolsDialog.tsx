@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type {
+    EntityRecord,
+    GroupProfileRecord
+} from '@/domain/entities/profileEntities';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { useModalStore } from '@/state/modalStore';
 import {
@@ -18,22 +22,34 @@ import {
     getGroupModerationTabs,
     moderationRowLabel,
     moderationRowUserId,
-    resolveGroupModerationActiveTab
+    resolveGroupModerationActiveTab,
+    type GroupModerationAction
 } from './groupModerationRows';
 import { GroupModerationTabPanel } from './GroupModerationTabPanel';
+
+function isEntityRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object');
+}
 
 export function GroupModerationToolsDialog({
     open,
     onOpenChange,
     group,
     endpoint
-}: any) {
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    group: GroupProfileRecord;
+    endpoint: string;
+}) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const [activeTab, setActiveTab] = useState('members');
-    const [rowsByTab, setRowsByTab] = useState<Record<string, unknown[]>>({});
-    const [statusByTab, setStatusByTab] = useState<any>({});
-    const [errorsByTab, setErrorsByTab] = useState<any>({});
+    const [rowsByTab, setRowsByTab] = useState<Record<string, EntityRecord[]>>(
+        {}
+    );
+    const [statusByTab, setStatusByTab] = useState<Record<string, string>>({});
+    const [errorsByTab, setErrorsByTab] = useState<Record<string, string>>({});
     const [search, setSearch] = useState('');
     const [pageSize, setPageSize] = useState(25);
     const [pageIndex, setPageIndex] = useState(0);
@@ -85,11 +101,11 @@ export function GroupModerationToolsDialog({
         }
 
         let active = true;
-        setStatusByTab((current: any) => ({
+        setStatusByTab((current) => ({
             ...current,
             [activeTab]: 'running'
         }));
-        setErrorsByTab((current: any) => ({ ...current, [activeTab]: '' }));
+        setErrorsByTab((current) => ({ ...current, [activeTab]: '' }));
 
         const request =
             activeTab === 'members'
@@ -120,28 +136,30 @@ export function GroupModerationToolsDialog({
                         });
 
         request
-            .then((nextRows: any) => {
+            .then((nextRows) => {
                 if (!active) {
                     return;
                 }
-                setRowsByTab((current: any) => ({
+                setRowsByTab((current) => ({
                     ...current,
-                    [activeTab]: Array.isArray(nextRows) ? nextRows : []
+                    [activeTab]: Array.isArray(nextRows)
+                        ? nextRows.filter(isEntityRecord)
+                        : []
                 }));
-                setStatusByTab((current: any) => ({
+                setStatusByTab((current) => ({
                     ...current,
                     [activeTab]: 'ready'
                 }));
             })
-            .catch((requestError: any) => {
+            .catch((requestError: unknown) => {
                 if (!active) {
                     return;
                 }
-                setStatusByTab((current: any) => ({
+                setStatusByTab((current) => ({
                     ...current,
                     [activeTab]: 'error'
                 }));
-                setErrorsByTab((current: any) => ({
+                setErrorsByTab((current) => ({
                     ...current,
                     [activeTab]:
                         requestError instanceof Error
@@ -155,7 +173,10 @@ export function GroupModerationToolsDialog({
         };
     }, [activeTab, endpoint, group.id, open, reloadToken]);
 
-    async function runModerationAction(action: any, row: any) {
+    async function runModerationAction(
+        action: GroupModerationAction,
+        row: EntityRecord
+    ) {
         const userId = moderationRowUserId(row);
         if (!userId || actionKey) {
             return;
@@ -230,17 +251,17 @@ export function GroupModerationToolsDialog({
                     endpoint
                 });
             }
-            setRowsByTab((current: any) => ({
+            setRowsByTab((current) => ({
                 ...current,
                 [activeTab]: (current[activeTab] || []).filter(
-                    (item: any) => moderationRowUserId(item) !== userId
+                    (item) => moderationRowUserId(item) !== userId
                 )
             }));
-            setStatusByTab((current: any) => ({
+            setStatusByTab((current) => ({
                 ...current,
                 [activeTab]: 'ready'
             }));
-            setErrorsByTab((current: any) => ({ ...current, [activeTab]: '' }));
+            setErrorsByTab((current) => ({ ...current, [activeTab]: '' }));
             toast.success(
                 t('dialog.group.dynamic.value_completed', {
                     value: action.label
@@ -308,15 +329,15 @@ export function GroupModerationToolsDialog({
                                 group={group}
                                 loading={loading}
                                 onPageIndexChange={setPageIndex}
-                                onPageSizeChange={(nextPageSize: any) => {
+                                onPageSizeChange={(nextPageSize: number) => {
                                     setPageSize(nextPageSize);
                                     setPageIndex(0);
                                 }}
                                 onReload={() =>
-                                    setReloadToken((value: any) => value + 1)
+                                    setReloadToken((value) => value + 1)
                                 }
                                 onRunAction={runModerationAction}
-                                onSearchChange={(nextSearch: any) => {
+                                onSearchChange={(nextSearch: string) => {
                                     setSearch(nextSearch);
                                     setPageIndex(0);
                                 }}

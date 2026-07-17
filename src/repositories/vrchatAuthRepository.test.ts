@@ -4,12 +4,10 @@ const commandMocks = vi.hoisted(() => ({
     appVrchatAuthConfigGet: vi.fn(),
     appVrchatAuthCurrentUserGet: vi.fn(),
     appVrchatAuthSessionGet: vi.fn(),
-    appVrchatAuthCookieSessionRestore: vi.fn(),
-    appVrchatAuthLoginBasicStart: vi.fn(),
-    appVrchatAuthSavedCredentialLoginStart: vi.fn(),
-    appVrchatAuthTotpVerify: vi.fn(),
-    appVrchatAuthOtpVerify: vi.fn(),
-    appVrchatAuthEmailOtpVerify: vi.fn(),
+    appVrchatAuthSessionStart: vi.fn(),
+    appVrchatAuthSessionRespond: vi.fn(),
+    appVrchatAuthSessionCancel: vi.fn(),
+    appVrchatAuthAutoLoginThrottleReset: vi.fn(),
     appVrchatAuthVisitsGet: vi.fn(),
     appVrchatAuthFileAnalysisGet: vi.fn()
 }));
@@ -19,15 +17,14 @@ vi.mock('@/platform/tauri/bindings', () => ({
 }));
 
 import {
+    cancelLoginSession,
     DEFAULT_ENDPOINT_DOMAIN,
     getConfig,
     getCurrentUser,
     getFileAnalysis,
-    loginWithBasicAuth,
-    loginWithSavedCredential,
-    verifyEmailOTP,
-    verifyOTP,
-    verifyTOTP
+    resetAutoLoginThrottle,
+    respondLoginSession,
+    startLoginSession
 } from './vrchatAuthRepository';
 import { setVrchatAuthFailureHandler } from './vrchatRequest';
 
@@ -41,12 +38,25 @@ function response(status = 200, data: unknown = { id: 'usr_1' }) {
     };
 }
 
+function cancelledState() {
+    return { status: 'cancelled' };
+}
+
 describe('vrchatAuthRepository', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         for (const command of Object.values(commandMocks)) {
             command.mockResolvedValue(response());
         }
+        commandMocks.appVrchatAuthSessionStart.mockResolvedValue(
+            cancelledState()
+        );
+        commandMocks.appVrchatAuthSessionRespond.mockResolvedValue(
+            cancelledState()
+        );
+        commandMocks.appVrchatAuthSessionCancel.mockResolvedValue(
+            cancelledState()
+        );
         setVrchatAuthFailureHandler(null);
     });
 
@@ -67,43 +77,71 @@ describe('vrchatAuthRepository', () => {
         });
     });
 
-    it('passes normalized auth command payloads to the Tauri bridge', async () => {
-        await loginWithBasicAuth({
+    it('passes normalized login-session payloads to the Tauri bridge', async () => {
+        await startLoginSession({
+            mode: 'basic',
             username: 'user@example.test',
             password: 123,
+            saveCredentials: true,
             endpoint: ' https://api.example.test/api/1 '
         });
-        await loginWithSavedCredential({
+        await startLoginSession({
+            mode: 'savedCredential',
             userId: 456,
             endpoint: ''
         });
-        await verifyTOTP({ code: 111111 });
-        await verifyOTP({ code: null });
-        await verifyEmailOTP({ code: '222222' });
+        await startLoginSession({ mode: 'cookieRestore' });
+        await respondLoginSession({ method: 'totp', code: 111111 });
+        await cancelLoginSession();
 
-        expect(commandMocks.appVrchatAuthLoginBasicStart).toHaveBeenCalledWith({
+        expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
+            mode: 'basic',
             endpoint: 'https://api.example.test/api/1',
             username: 'user@example.test',
-            password: '123'
+            password: '123',
+            saveCredentials: true
         });
-        expect(
-            commandMocks.appVrchatAuthSavedCredentialLoginStart
-        ).toHaveBeenCalledWith({
+        expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
+            mode: 'savedCredential',
             endpoint: DEFAULT_ENDPOINT_DOMAIN,
             userId: '456'
         });
-        expect(commandMocks.appVrchatAuthTotpVerify).toHaveBeenCalledWith({
-            endpoint: DEFAULT_ENDPOINT_DOMAIN,
+        expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
+            mode: 'cookieRestore',
+            endpoint: DEFAULT_ENDPOINT_DOMAIN
+        });
+        expect(commandMocks.appVrchatAuthSessionRespond).toHaveBeenCalledWith({
+            method: 'totp',
             code: '111111'
         });
-        expect(commandMocks.appVrchatAuthOtpVerify).toHaveBeenCalledWith({
-            endpoint: DEFAULT_ENDPOINT_DOMAIN,
-            code: ''
-        });
-        expect(commandMocks.appVrchatAuthEmailOtpVerify).toHaveBeenCalledWith({
-            endpoint: DEFAULT_ENDPOINT_DOMAIN,
-            code: '222222'
-        });
+        expect(commandMocks.appVrchatAuthSessionCancel).toHaveBeenCalledTimes(
+            1
+        );
+    });
+
+    it('returns login-session states untouched instead of unwrapping them', async () => {
+        const failed = {
+            status: 'failed',
+            reason: 'Invalid Username/Email or Password',
+            kind: 'invalidCredentials'
+        };
+        commandMocks.appVrchatAuthSessionStart.mockResolvedValueOnce(failed);
+
+        await expect(
+            startLoginSession({
+                mode: 'basic',
+                username: 'user@example.test',
+                password: 'secret'
+            })
+        ).resolves.toBe(failed);
+    });
+
+    it('resets the backend auto-login throttle through its dedicated command', async () => {
+        await resetAutoLoginThrottle();
+
+        expect(
+            commandMocks.appVrchatAuthAutoLoginThrottleReset
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('builds file-analysis requests with numeric versions and encoded error endpoints', async () => {

@@ -14,7 +14,6 @@ import { useFriendListRowActions } from './useFriendListRowActions';
 import { useFriendListRows } from './useFriendListRows';
 import { useFriendListSelection } from './useFriendListSelection';
 import { useFriendListTableState } from './useFriendListTableState';
-import { useFriendListUserLoadDialog } from './useFriendListUserLoadDialog';
 
 export function useFriendListPageController() {
     const filters = useFriendListFilters();
@@ -32,7 +31,6 @@ export function useFriendListPageController() {
     const selection = useFriendListSelection({
         filteredRows: rows.filteredRows
     });
-    const userLoad = useFriendListUserLoadDialog();
     const [mutualProgress, setMutualProgress] = useState({
         current: 0,
         total: 0
@@ -41,18 +39,14 @@ export function useFriendListPageController() {
         (state) => state.randomUserColours
     );
     const actions = useFriendListRowActions({
-        cancelUserLoadRef: userLoad.cancelUserLoadRef,
         filteredRows: rows.filteredRows,
-        isLoadingUserDetails: userLoad.isLoadingUserDetails,
         resetTableLayout: tableState.resetTableLayout,
         rosterRows: rows.rosterRows,
         selectedFriendIds: selection.selectedFriendIds,
         setDeletingFriendIds: selection.setDeletingFriendIds,
         setIsBulkDeleting: selection.setIsBulkDeleting,
-        setIsLoadingUserDetails: userLoad.setIsLoadingUserDetails,
         setMutualProgress,
-        setSelectedFriendIds: selection.setSelectedFriendIds,
-        setUserLoadProgress: userLoad.setUserLoadProgress
+        setSelectedFriendIds: selection.setSelectedFriendIds
     });
     const columns = useFriendListColumns({
         bulkUnfriendMode: selection.bulkUnfriendMode,
@@ -113,7 +107,6 @@ export function useFriendListPageController() {
         rows,
         selection,
         table,
-        tableState,
-        userLoad
+        tableState
     };
 }

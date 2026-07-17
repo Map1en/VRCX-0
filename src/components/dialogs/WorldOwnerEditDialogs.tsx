@@ -2,6 +2,7 @@ import { Trash2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -35,7 +36,7 @@ const CONTENT_TAGS = [
     ['contentViolence', 'content_violence', 'Violence'],
     ['contentAdult', 'content_adult', 'Adult'],
     ['contentSex', 'content_sex', 'Sex']
-];
+] as const;
 
 const FEATURE_TAGS = [
     ['emoji', 'feature_emoji_disabled', 'Emoji'],
@@ -45,17 +46,45 @@ const FEATURE_TAGS = [
     ['drones', 'feature_drones_disabled', 'Drones'],
     ['props', 'feature_props_disabled', 'Items'],
     ['thirdPerson', 'feature_third_person_view_disabled', 'Third Person']
-];
+] as const;
+
+type ContentTagKey = (typeof CONTENT_TAGS)[number][0];
+type FeatureTagKey = (typeof FEATURE_TAGS)[number][0];
+type ManagedTagKey = ContentTagKey | FeatureTagKey;
+
+export interface WorldDetailsDraft {
+    name: string;
+    description: string;
+    capacity: string | number;
+    recommendedCapacity: string | number;
+    previewYoutubeId: string;
+}
+
+export type WorldTagsDraft = Record<ManagedTagKey, boolean> & {
+    authorTags: string;
+    contentTags: string;
+    debugAllowed: boolean;
+    avatarScalingDisabled: boolean;
+    focusViewDisabled: boolean;
+};
+
+interface WorldEditorDialogProps<T> {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    world: WorldProfileRecord | null;
+    saving?: boolean;
+    onSave: (value: T) => void;
+}
 
 const EXPLICIT_TAGS = new Set([
     'debug_allowed',
     'feature_avatar_scaling_disabled',
     'feature_focus_view_disabled',
-    ...CONTENT_TAGS.map(([, tag]: any) => tag),
-    ...FEATURE_TAGS.map(([, tag]: any) => tag)
+    ...CONTENT_TAGS.map(([, tag]) => tag),
+    ...FEATURE_TAGS.map(([, tag]) => tag)
 ]);
 
-function isManagedWorldTag(tag: any) {
+function isManagedWorldTag(tag: string) {
     return (
         tag.startsWith('author_tag_') ||
         tag.startsWith('content_') ||
@@ -63,15 +92,15 @@ function isManagedWorldTag(tag: any) {
     );
 }
 
-function pushUnique(tags: any, tag: any) {
+function pushUnique(tags: string[], tag: string) {
     if (tag && !tags.includes(tag)) {
         tags.push(tag);
     }
 }
 
-function createWorldTagsDraft(tags: any[] = []) {
+function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
     const values = Array.isArray(tags) ? tags.map(String) : [];
-    const draft: any = {
+    const draft: WorldTagsDraft = {
         authorTags: '',
         contentTags: '',
         debugAllowed: values.includes('debug_allowed'),
@@ -93,35 +122,36 @@ function createWorldTagsDraft(tags: any[] = []) {
         thirdPerson: !values.includes('feature_third_person_view_disabled')
     };
     draft.authorTags = values
-        .filter((tag: any) => tag.startsWith('author_tag_'))
-        .map((tag: any) => tag.slice('author_tag_'.length))
+        .filter((tag) => tag.startsWith('author_tag_'))
+        .map((tag) => tag.slice('author_tag_'.length))
         .join(',');
     draft.contentTags = values
         .filter(
-            (tag: any) =>
+            (tag) =>
                 tag.startsWith('content_') &&
-                !CONTENT_TAGS.some(([, fixedTag]: any) => fixedTag === tag)
+                !CONTENT_TAGS.some(([, fixedTag]) => fixedTag === tag)
         )
-        .map((tag: any) => tag.slice('content_'.length))
+        .map((tag) => tag.slice('content_'.length))
         .join(',');
     return draft;
 }
 
-function buildWorldTags(draft: any, baseTags: any[] = []) {
+function buildWorldTags(
+    draft: WorldTagsDraft,
+    baseTags: readonly string[] = []
+) {
     const tags = Array.isArray(baseTags)
-        ? baseTags
-              .map(String)
-              .filter((tag: any) => tag && !isManagedWorldTag(tag))
+        ? baseTags.map(String).filter((tag) => tag && !isManagedWorldTag(tag))
         : [];
     for (const tag of String(draft.authorTags || '')
         .split(',')
-        .map((value: any) => value.trim())
+        .map((value) => value.trim())
         .filter(Boolean)) {
         pushUnique(tags, `author_tag_${tag}`);
     }
     for (const tag of String(draft.contentTags || '')
         .split(',')
-        .map((value: any) => value.trim())
+        .map((value) => value.trim())
         .filter(Boolean)) {
         if (!['horror', 'gore', 'violence', 'adult', 'sex'].includes(tag)) {
             pushUnique(tags, `content_${tag}`);
@@ -149,7 +179,9 @@ function buildWorldTags(draft: any, baseTags: any[] = []) {
     return tags;
 }
 
-function createWorldDetailsDraft(world: any) {
+function createWorldDetailsDraft(
+    world: WorldProfileRecord | null
+): WorldDetailsDraft {
     return {
         name: world?.name || '',
         description: world?.description || '',
@@ -165,7 +197,7 @@ function WorldDetailsDialog({
     world,
     saving = false,
     onSave
-}: any) {
+}: WorldEditorDialogProps<WorldDetailsDraft>) {
     const { t } = useTranslation();
 
     const [draft, setDraft] = useState(() => createWorldDetailsDraft(world));
@@ -176,8 +208,8 @@ function WorldDetailsDialog({
         }
     }, [open, world]);
 
-    function updateDraft(patch: any) {
-        setDraft((current: any) => ({ ...current, ...patch }));
+    function updateDraft(patch: Partial<WorldDetailsDraft>) {
+        setDraft((current) => ({ ...current, ...patch }));
     }
 
     return (
@@ -311,7 +343,7 @@ function WorldTagsDialog({
     world,
     saving = false,
     onSave
-}: any) {
+}: WorldEditorDialogProps<string[]>) {
     const { t } = useTranslation();
 
     const [draft, setDraft] = useState(() => createWorldTagsDraft(world?.tags));
@@ -322,8 +354,8 @@ function WorldTagsDialog({
         }
     }, [open, world?.id, world?.tags]);
 
-    function updateDraft(patch: any) {
-        setDraft((current: any) => ({ ...current, ...patch }));
+    function updateDraft(patch: Partial<WorldTagsDraft>) {
+        setDraft((current) => ({ ...current, ...patch }));
     }
 
     return (
@@ -406,7 +438,7 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {CONTENT_TAGS.map(([key, , label]: any) => (
+                            {CONTENT_TAGS.map(([key, , label]) => (
                                 <Field key={key} orientation="horizontal">
                                     <Checkbox
                                         id={`world-content-tag-${key}`}
@@ -455,7 +487,7 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {FEATURE_TAGS.map(([key, , label]: any) => (
+                            {FEATURE_TAGS.map(([key, , label]) => (
                                 <Field key={key} orientation="horizontal">
                                     <Checkbox
                                         id={`world-feature-tag-${key}`}
@@ -507,10 +539,10 @@ function WorldAllowedDomainsDialog({
     world,
     saving = false,
     onSave
-}: any) {
+}: WorldEditorDialogProps<string[]>) {
     const { t } = useTranslation();
 
-    const [urlList, setUrlList] = useState<any[]>([]);
+    const [urlList, setUrlList] = useState<string[]>([]);
 
     useEffect(() => {
         if (open) {
@@ -518,9 +550,9 @@ function WorldAllowedDomainsDialog({
         }
     }, [open, world?.id, world?.urlList]);
 
-    function updateDomain(index: any, value: any) {
-        setUrlList((current: any) =>
-            current.map((domain: any, currentIndex: any) =>
+    function updateDomain(index: number, value: string) {
+        setUrlList((current) =>
+            current.map((domain, currentIndex) =>
                 currentIndex === index ? value : domain
             )
         );
@@ -540,7 +572,7 @@ function WorldAllowedDomainsDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup className="gap-2">
-                    {urlList.map((domain: any, index: any) => (
+                    {urlList.map((domain, index) => (
                         <Field key={index}>
                             <FieldLabel
                                 htmlFor={`world-allowed-domain-${index}`}
@@ -563,14 +595,15 @@ function WorldAllowedDomainsDialog({
                                         type="button"
                                         size="icon-xs"
                                         disabled={saving}
-                                        aria-label={`Remove domain ${index + 1}`}
+                                        aria-label={t(
+                                            'accessibility.remove_domain',
+                                            { number: index + 1 }
+                                        )}
                                         onClick={() =>
-                                            setUrlList((current: any) =>
+                                            setUrlList((current) =>
                                                 current.filter(
-                                                    (
-                                                        _: any,
-                                                        currentIndex: any
-                                                    ) => currentIndex !== index
+                                                    (_, currentIndex) =>
+                                                        currentIndex !== index
                                                 )
                                             )
                                         }
@@ -587,7 +620,7 @@ function WorldAllowedDomainsDialog({
                         variant="outline"
                         disabled={saving}
                         onClick={() =>
-                            setUrlList((current: any) => [...current, ''])
+                            setUrlList((current) => [...current, ''])
                         }
                     >
                         {t('dialog.world.action.add_domain')}
@@ -600,7 +633,7 @@ function WorldAllowedDomainsDialog({
                         onClick={() =>
                             onSave?.(
                                 urlList
-                                    .map((value: any) => value.trim())
+                                    .map((value) => value.trim())
                                     .filter(Boolean)
                             )
                         }

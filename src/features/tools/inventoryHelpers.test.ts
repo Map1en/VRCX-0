@@ -97,7 +97,7 @@ describe('inventory helpers', () => {
     });
 
     it('resolves inventory display fallbacks from nested item, template, and metadata fields', () => {
-        const item: any = {
+        const item = {
             id: 'inv_1',
             item: {
                 name: 'Nested Item',

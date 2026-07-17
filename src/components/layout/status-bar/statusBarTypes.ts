@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
+import type { ProfileBackupStatus } from '@/services/profileBackupService';
 import type { VrcStatusState } from '@/state/runtimeStore';
 
 export type StatusBarVisibilityKey =
@@ -45,6 +46,23 @@ export type StatusBarMutualGraph = {
     totalFriends?: unknown;
 };
 
+export type StatusBarFriendProfileLoad = {
+    processedFriends?: unknown;
+    status?: unknown;
+    totalFriends?: unknown;
+};
+
+export type StatusBarWorldCollectionImport = {
+    active: boolean;
+    progress: number;
+    total: number;
+};
+
+export type StatusBarProfileBackup = {
+    status: ProfileBackupStatus;
+    onOpenDetails: () => unknown;
+};
+
 export type StatusBarNowPlaying = {
     length?: unknown;
     name?: string | null;
@@ -87,6 +105,7 @@ export type StatusBarFooterModel = {
     instanceQueue: StatusBarInstanceQueue;
     isGameRunning: boolean | null;
     isSteamVRRunning: boolean | null;
+    friendProfileLoad: StatusBarFriendProfileLoad;
     mutualGraph: StatusBarMutualGraph;
     nowPlaying: StatusBarNowPlaying;
     onOpenMediaLink: () => unknown;
@@ -103,6 +122,7 @@ export type StatusBarFooterModel = {
     onStepZoomLevel: (delta: number) => unknown;
     onUpdateClockTimezone: (index: number, offsetValue: unknown) => unknown;
     proxyEditor: StatusBarProxyEditorState;
+    profileBackup: StatusBarProfileBackup;
     proxyEnabled: boolean;
     proxyServer: string;
     runtimeGameState: StatusBarRuntimeGameState;
@@ -110,6 +130,7 @@ export type StatusBarFooterModel = {
     timezoneOptions: StatusBarTimezoneOption[];
     visibility: StatusBarVisibility;
     visibleClocks: StatusBarClock[];
+    worldCollectionImport: StatusBarWorldCollectionImport;
     vrcStatus: Pick<
         VrcStatusState,
         'summary' | 'status' | 'refreshing' | 'error' | 'lastFetchedAt'

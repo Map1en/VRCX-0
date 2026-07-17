@@ -73,11 +73,61 @@ describe('worldDialogInstanceRows', () => {
             }
         });
         expect(
-            result.displayInstanceRows[0].users.map((user: any) => user.id)
+            result.displayInstanceRows[0].users.map((user) => user.id)
         ).toEqual(['usr_inside', 'usr_friend']);
         expect(result.displayInstanceRows[1]).toMatchObject({
             id: 'public',
             location: 'wrld_test:public'
+        });
+    });
+
+    it('dedupes a player snapshot row against a friend row for the same user', () => {
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {
+                location:
+                    'wrld_test:live~group(grp_live)~groupAccessType(public)',
+                instance: {
+                    id: 'live~group(grp_live)~groupAccessType(public)',
+                    userCount: 1,
+                    capacity: 12,
+                    groupId: 'grp_live'
+                },
+                playerSnapshot: {
+                    context: { playerCount: 1 },
+                    players: [
+                        {
+                            id: 'id:usr_dup',
+                            userId: 'usr_dup',
+                            displayName: 'Dup',
+                            joinedAt: '2024-01-01T00:00:00Z'
+                        }
+                    ]
+                }
+            },
+            friendsById: {
+                usr_dup: {
+                    id: 'usr_dup',
+                    displayName: 'Dup',
+                    location:
+                        'wrld_test:live~group(grp_live)~groupAccessType(public)'
+                }
+            },
+            instanceRows: [],
+            isInstanceLocation: true,
+            normalizedWorldId:
+                'wrld_test:live~group(grp_live)~groupAccessType(public)',
+            world: {
+                id: 'wrld_test',
+                capacity: 40
+            }
+        });
+
+        const users = result.displayInstanceRows[0].users;
+        expect(users).toHaveLength(1);
+        expect(users[0]).toMatchObject({
+            id: 'usr_dup',
+            userId: 'usr_dup'
         });
     });
 });

@@ -1,7 +1,7 @@
 mod auth_webhook;
 mod discord;
 mod dispatcher;
-mod image_file;
+pub(crate) mod image_file;
 mod rendered;
 pub(crate) mod user_image;
 mod webhook;
@@ -14,5 +14,5 @@ pub use dispatcher::{
     decide_notification_plan, filter_generic_webhook_payload, parse_webhook_fields,
     webhook_local_time_string, DesktopNotifier, DesktopNotifierSlot, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences, NotificationDispatcher,
-    NotificationDispatcherDeps,
+    NotificationDispatcherDeps, RealtimeUserImageResolverSlot,
 };

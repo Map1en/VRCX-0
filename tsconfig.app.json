@@ -6,7 +6,6 @@
         "types": ["vite/client"],
         "resolveJsonModule": true,
         "strict": true,
-        "checkJs": false,
         "composite": false,
         "incremental": false
     },

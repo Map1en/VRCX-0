@@ -1,21 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
-
 import { settingsTabs } from './settingsOptions';
 import {
     buildOpenAiModelsEndpoint,
     buildTablePageSizeOptions,
     composeCustomFontFamily,
+    createEffectiveCustomFontDraft,
     createCustomFontDraftFromPrefs,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_TRANSLATION_ENDPOINT,
     filterTablePageSizeOptions,
     formatByteSize,
     isValidFontFamilyList,
-    migrateLegacySharedFeedWristFilters,
     normalizeOverlayActivityFilters,
-    normalizeSharedFeedFilters,
     normalizeTablePageSizes,
     overlayActivityTypeLabelKey,
     OVERLAY_ACTIVITY_TYPE_DEFINITIONS,
@@ -54,24 +51,11 @@ describe('settingsValues', () => {
 
         expect(options).toContain(12);
         expect(options).toContain(1000);
-        expect(options.filter((size: any) => size === 50)).toHaveLength(1);
+        expect(options.filter((size) => size === 50)).toHaveLength(1);
         expect(filterTablePageSizeOptions(options, '5')).toEqual(
-            options.filter((size: any) => String(size).includes('5'))
+            options.filter((size) => String(size).includes('5'))
         );
         expect(filterTablePageSizeOptions(options, '')).toEqual(options);
-    });
-
-    it('keeps shared feed filters complete while preserving saved overrides', () => {
-        const filters = normalizeSharedFeedFilters({
-            noty: { displayName: 'Never' },
-            wrist: 'invalid'
-        });
-
-        expect(filters.noty).toEqual({
-            ...sharedFeedFiltersDefaults.noty,
-            displayName: 'Never'
-        });
-        expect((filters as any).wrist).toBeUndefined();
     });
 
     it('normalizes wrist activity filters with type-specific scopes', () => {
@@ -240,36 +224,6 @@ describe('settingsValues', () => {
         expect(filters.wrist.types.PortalSpawn).toBeUndefined();
     });
 
-    it('migrates legacy shared wrist feed filters into wrist activity filters', () => {
-        const filters = migrateLegacySharedFeedWristFilters({
-            wrist: {
-                invite: 'VIP',
-                OnPlayerJoined: 'Everyone',
-                friendRequest: 'Off',
-                'group.queueReady': 'Friends',
-                Location: 'On'
-            }
-        });
-
-        expect(filters.wrist.types.invite).toEqual({
-            scope: 'allFavorites',
-            favoriteGroupKeys: 'all'
-        });
-        expect(filters.wrist.types.OnPlayerJoined).toEqual({
-            scope: 'everyoneInInstance',
-            favoriteGroupKeys: 'all'
-        });
-        expect(filters.wrist.types.friendRequest).toEqual({
-            scope: 'off',
-            favoriteGroupKeys: 'all'
-        });
-        expect(filters.wrist.types['group.queueReady']).toEqual({
-            scope: 'on',
-            favoriteGroupKeys: 'all'
-        });
-        expect((filters.wrist.types as any).Location).toBeUndefined();
-    });
-
     it('maps wrist activity raw type keys to locale-safe label keys', () => {
         expect(overlayActivityTypeLabelKey('group.queueReady')).toBe(
             'group_queueReady'
@@ -321,6 +275,25 @@ describe('settingsValues', () => {
         );
         expect(quoteCssFontFamilyName('system-ui')).toBe('system-ui');
         expect(quoteCssFontFamilyName("Map's Font")).toBe("'Map\\'s Font'");
+    });
+
+    it('keeps only the values owned by the active custom font mode', () => {
+        const draft = {
+            primary: ' Segoe UI ',
+            secondary: ' Noto Sans JP ',
+            override: " 'Manual Font', serif "
+        };
+
+        expect(createEffectiveCustomFontDraft(draft, 'installed')).toEqual({
+            primary: 'Segoe UI',
+            secondary: 'Noto Sans JP',
+            override: ''
+        });
+        expect(createEffectiveCustomFontDraft(draft, 'css')).toEqual({
+            primary: '',
+            secondary: '',
+            override: "'Manual Font', serif"
+        });
     });
 
     it('composes selected custom font slots into the effective stack', () => {

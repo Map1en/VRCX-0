@@ -5,7 +5,6 @@ import {
     type DiscordPreferenceKey
 } from '@/state/preferencesStore';
 
-import { refreshDiscordPresence } from '../discordPresenceService';
 import {
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
@@ -111,9 +110,9 @@ export async function setDiscordBoolPreference(
     }
     patchPreferences({ [key]: enabled });
     publishPreferenceChanged(key, enabled);
-    refreshDiscordPresence({ force: true }).catch((error: unknown) => {
+    commands.appRuntimeDiscordReconcileRequest().catch((error: unknown) => {
         console.warn(
-            'Failed to refresh Discord Rich Presence after setting change:',
+            'Failed to reconcile Discord Rich Presence after setting change:',
             error
         );
     });

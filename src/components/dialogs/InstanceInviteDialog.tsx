@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { userImage } from '@/services/entityMediaService';
 import { sendInviteToLocation } from '@/services/inviteDeliveryService';
@@ -493,7 +494,7 @@ export function InstanceInviteDialog({
                                             className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal"
                                         >
                                             {imageUrl ? (
-                                                <img
+                                                <FadeInImage
                                                     src={imageUrl}
                                                     alt=""
                                                     loading="lazy"

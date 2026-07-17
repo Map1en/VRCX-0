@@ -19,11 +19,16 @@ import type {
     FavoriteGroupMap
 } from '@/state/favoriteStoreTypes';
 
-import { FRIENDS_LOCATIONS_SEGMENTS as SEGMENTS } from './friendsLocationsConfig';
-import { getFriendsLocationsDensityConfig } from './friendsLocationsDensity';
+import { buildFriendsLocationsSegmentOptions } from './friendsLocationsConfig';
+import {
+    getFriendsLocationsCardRowHeight,
+    getFriendsLocationsDensityConfig,
+    type FriendsLocationsCardContentMode
+} from './friendsLocationsDensity';
 import {
     buildSameInstanceGroups,
     normalizeFriendsLocationId as normalizeId,
+    partitionFriendsByPrivateLocation,
     resolveFriendsLocationsCurrentInviteLocation as resolveCurrentInviteLocation,
     uniqueFriendsById
 } from './friendsLocationsRows';
@@ -81,6 +86,7 @@ export type FriendsLocationsSection = {
     collapsed?: boolean;
     topDivider?: boolean;
     displayInstanceInfo?: boolean;
+    cardContentMode?: FriendsLocationsCardContentMode;
 };
 
 type FriendsLocationsSameInstanceGroup = {
@@ -110,6 +116,7 @@ export type FriendsLocationsVirtualRow =
           key: string;
           height: number;
           topGap: number;
+          gridRowHeight: number;
           section: FriendsLocationsSection;
           friends: FriendRecord[];
       };
@@ -117,7 +124,7 @@ export type FriendsLocationsVirtualRow =
 type FriendsLocationsPageDerivedStateInput = {
     activeIds: string[];
     activeSegment: FriendsLocationsSegment;
-    collapsedFavoriteGroups: Set<string>;
+    collapsedGroups: Set<string>;
     currentUserId?: string | null;
     currentUserSnapshot?: FriendsLocationsCurrentUserSnapshot | null;
     deferredSearchQuery: string;
@@ -145,7 +152,7 @@ function isPresent<T>(value: T | null | undefined): value is T {
 export function useFriendsLocationsPageDerivedState({
     activeIds,
     activeSegment,
-    collapsedFavoriteGroups,
+    collapsedGroups,
     currentUserId,
     currentUserSnapshot,
     deferredSearchQuery,
@@ -337,7 +344,6 @@ export function useFriendsLocationsPageDerivedState({
             ),
         [onlineNonFavoriteFriends, sameInstanceFriendIds]
     );
-    const segmentOptions = SEGMENTS;
     const segmentMap = useMemo<Record<string, FriendRecord[]>>(
         () => ({
             online: onlineFriends,
@@ -354,6 +360,26 @@ export function useFriendsLocationsPageDerivedState({
             onlineFriends,
             onlineNonFavoriteFriends,
             sameInstanceFriends
+        ]
+    );
+    const segmentOptions = useMemo(
+        () =>
+            buildFriendsLocationsSegmentOptions({
+                online:
+                    onlineWithoutSameInstanceFriends.length +
+                    (showSameInstanceInOnline ? sameInstanceFriends.length : 0),
+                favorite: favoriteFriends.length,
+                'same-instance': sameInstanceFriends.length,
+                active: activeFriends.length,
+                offline: offlineFriends.length
+            }),
+        [
+            activeFriends.length,
+            favoriteFriends.length,
+            offlineFriends.length,
+            onlineWithoutSameInstanceFriends.length,
+            sameInstanceFriends.length,
+            showSameInstanceInOnline
         ]
     );
     const visibleFriends = useMemo<FriendRecord[]>(() => {
@@ -464,7 +490,7 @@ export function useFriendsLocationsPageDerivedState({
                 ),
                 worldId: '',
                 groupId: '',
-                collapsed: collapsedFavoriteGroups.has(group.key)
+                collapsed: collapsedGroups.has(group.key)
             });
         }
         for (const group of orderedLocalGroups) {
@@ -490,7 +516,7 @@ export function useFriendsLocationsPageDerivedState({
                 ),
                 worldId: '',
                 groupId: '',
-                collapsed: collapsedFavoriteGroups.has(group.key)
+                collapsed: collapsedGroups.has(group.key)
             });
         }
         const ungrouped = favoriteFriends.filter(
@@ -509,13 +535,13 @@ export function useFriendsLocationsPageDerivedState({
                 ),
                 worldId: '',
                 groupId: '',
-                collapsed: collapsedFavoriteGroups.has('ungrouped')
+                collapsed: collapsedGroups.has('ungrouped')
             });
         }
         return sections;
     }, [
         activeSegment,
-        collapsedFavoriteGroups,
+        collapsedGroups,
         deferredSearchQuery,
         favoriteFriendGroups,
         favoriteFriends,
@@ -551,40 +577,97 @@ export function useFriendsLocationsPageDerivedState({
                 favoriteIds,
                 favoriteGroupLabelsByFriendId,
                 t
-            });
-        }
-        if (
-            !deferredSearchQuery.trim() &&
-            activeSegment === 'online' &&
-            showSameInstanceInOnline &&
-            sameInstanceFriends.length
-        ) {
-            const sameInstanceSections = buildSameInstanceSections({
-                sameInstanceGroups,
-                displayInstanceInfo: false,
-                favoriteIds,
-                favoriteGroupLabelsByFriendId,
-                t
-            });
-            const otherFriends = onlineWithoutSameInstanceFriends.filter(
-                (friend) =>
-                    matchesSearch(friend, deferredSearchQuery, favoriteIds)
+            }).map(
+                (section): FriendsLocationsSection => ({
+                    ...section,
+                    cardContentMode: 'status'
+                })
             );
+        }
+        if (!deferredSearchQuery.trim() && activeSegment === 'online') {
+            const sameInstanceSections =
+                showSameInstanceInOnline && sameInstanceFriends.length
+                    ? buildSameInstanceSections({
+                          sameInstanceGroups,
+                          displayInstanceInfo: false,
+                          favoriteIds,
+                          favoriteGroupLabelsByFriendId,
+                          t
+                      }).map(
+                          (section): FriendsLocationsSection => ({
+                              ...section,
+                              cardContentMode: 'status'
+                          })
+                      )
+                    : [];
+            const remainingFriends = showSameInstanceInOnline
+                ? onlineWithoutSameInstanceFriends
+                : visibleFriends;
+            const {
+                visibleLocation: availableFriends,
+                privateLocation: privateFriends
+            } = partitionFriendsByPrivateLocation(remainingFriends);
+            const privateSections: FriendsLocationsSection[] =
+                privateFriends.length
+                    ? [
+                          {
+                              key: 'online:private-location',
+                              type: 'collapsibleGroup',
+                              groupKey: 'private-location',
+                              title: t('location.private'),
+                              description: '',
+                              friends: privateFriends,
+                              worldId: '',
+                              groupId: '',
+                              displayInstanceInfo: false,
+                              cardContentMode: 'status',
+                              collapsed: collapsedGroups.has('private-location')
+                          }
+                      ]
+                    : [];
             return [
                 ...sameInstanceSections,
-                ...(otherFriends.length
+                ...(availableFriends.length
                     ? [
                           {
                               key: 'online:remaining',
-                              title: t('view.friends_locations.online'),
+                              title: t('view.friends_locations.other_online'),
                               description: '',
-                              friends: otherFriends,
+                              friends: availableFriends,
                               worldId: '',
-                              groupId: '',
-                              topDivider: true
+                              groupId: ''
                           }
                       ]
-                    : [])
+                    : []),
+                ...privateSections
+            ];
+        }
+        if (!deferredSearchQuery.trim() && activeSegment === 'active') {
+            return [
+                {
+                    key: 'flat',
+                    title: '',
+                    description: '',
+                    friends: visibleFriends,
+                    worldId: '',
+                    groupId: '',
+                    displayInstanceInfo: false,
+                    cardContentMode: 'status'
+                }
+            ];
+        }
+        if (!deferredSearchQuery.trim() && activeSegment === 'offline') {
+            return [
+                {
+                    key: 'flat',
+                    title: '',
+                    description: '',
+                    friends: visibleFriends,
+                    worldId: '',
+                    groupId: '',
+                    displayInstanceInfo: false,
+                    cardContentMode: 'identity'
+                }
             ];
         }
         return buildFriendSections({
@@ -596,6 +679,7 @@ export function useFriendsLocationsPageDerivedState({
         });
     }, [
         activeSegment,
+        collapsedGroups,
         deferredSearchQuery,
         favoriteGroupLabelsByFriendId,
         favoriteGroupSections,
@@ -633,8 +717,6 @@ export function useFriendsLocationsPageDerivedState({
                 (cardGridMinWidth + cardGridGap)
         ) || 1
     );
-    const cardGridRowHeight = densityConfig.rowHeight;
-    const cardRowHeight = cardGridRowHeight + cardGridGap;
     const sectionHeaderGap = cardGridGap;
     const virtualRows = useMemo<FriendsLocationsVirtualRow[]>(() => {
         const rows: FriendsLocationsVirtualRow[] = [];
@@ -645,7 +727,10 @@ export function useFriendsLocationsPageDerivedState({
             if (!friends.length) {
                 continue;
             }
-            if (section.type === 'favoriteGroup') {
+            const isCollapsibleGroup =
+                section.type === 'favoriteGroup' ||
+                section.type === 'collapsibleGroup';
+            if (isCollapsibleGroup) {
                 rows.push({
                     type: 'group-header',
                     key: `group-header:${section.key}`,
@@ -663,10 +748,7 @@ export function useFriendsLocationsPageDerivedState({
                     height: Math.max(12, cardGridGap * 2)
                 });
             }
-            const showHeader =
-                section.type !== 'favoriteGroup' &&
-                section.key !== 'flat' &&
-                section.key !== 'online:remaining';
+            const showHeader = !isCollapsibleGroup && section.key !== 'flat';
             if (showHeader) {
                 rows.push({
                     type: 'header',
@@ -675,6 +757,10 @@ export function useFriendsLocationsPageDerivedState({
                     section
                 });
             }
+            const gridRowHeight = getFriendsLocationsCardRowHeight(
+                densityConfig,
+                section.cardContentMode
+            );
             for (
                 let index = 0;
                 index < friends.length;
@@ -684,15 +770,22 @@ export function useFriendsLocationsPageDerivedState({
                 rows.push({
                     type: 'cards',
                     key: `cards:${section.key}:${index}`,
-                    height: cardRowHeight + topGap,
+                    height: gridRowHeight + cardGridGap + topGap,
                     topGap,
+                    gridRowHeight,
                     section,
                     friends: friends.slice(index, index + cardGridColumns)
                 });
             }
         }
         return rows;
-    }, [cardGridColumns, cardRowHeight, sectionHeaderGap, visibleSections]);
+    }, [
+        cardGridColumns,
+        cardGridGap,
+        densityConfig,
+        sectionHeaderGap,
+        visibleSections
+    ]);
     const positionedRows = useMemo(() => {
         return positionKnownSizeRows(virtualRows);
     }, [virtualRows]);
@@ -715,7 +808,6 @@ export function useFriendsLocationsPageDerivedState({
         cardGridColumns,
         cardGridGap,
         cardGridMinWidth,
-        cardGridRowHeight,
         canInviteFromCurrentLocation,
         canSendInvite,
         currentInviteLocation,

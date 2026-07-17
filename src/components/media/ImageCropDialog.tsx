@@ -54,9 +54,8 @@ const ZOOM_MAX = 5;
 const ZOOM_DEFAULT = 1;
 const ZOOM_FACTOR = 1.2;
 const LOG_ZOOM_MAX = Math.log(ZOOM_MAX);
-const CONTAINER_STYLE = {
-    containerStyle: { borderRadius: '0.5rem' }
-} as const;
+const TRANSFORM_TRANSITION_MS = 180;
+const TRANSFORM_TRANSITION = `transform 150ms cubic-bezier(0.23, 1, 0.32, 1)`;
 
 const ASPECT_PRESETS: ReadonlyArray<readonly [number, number]> = [
     [1, 1],
@@ -75,6 +74,51 @@ function formatAspect(aspect: number): string {
     return aspect.toFixed(2);
 }
 
+function normalizeRotation(rotation: number): number {
+    return ((rotation % 360) + 360) % 360;
+}
+
+function prefersReducedMotion(): boolean {
+    if (
+        typeof window === 'undefined' ||
+        typeof window.matchMedia !== 'function'
+    ) {
+        return false;
+    }
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+export interface ImageCropDialogNoteField {
+    label: string;
+    placeholder?: string;
+    maxLength?: number;
+}
+
+export interface ImageCropDialogCropWhiteBorderField {
+    label: string;
+    defaultChecked?: boolean;
+}
+
+export interface ImageCropDialogConfirmOptions {
+    note?: string;
+    cropWhiteBorder?: boolean;
+}
+
+export interface ImageCropDialogProps {
+    open: boolean;
+    title?: string;
+    description?: string;
+    file: File | null;
+    aspectRatio?: number;
+    noteField?: ImageCropDialogNoteField;
+    cropWhiteBorderField?: ImageCropDialogCropWhiteBorderField;
+    onOpenChange?: (open: boolean) => void;
+    onConfirm?: (
+        blob: Blob,
+        options?: ImageCropDialogConfirmOptions
+    ) => void | Promise<void>;
+}
+
 export function ImageCropDialog({
     open,
     title,
@@ -85,7 +129,7 @@ export function ImageCropDialog({
     cropWhiteBorderField,
     onOpenChange,
     onConfirm
-}: any) {
+}: ImageCropDialogProps) {
     const { t } = useTranslation();
 
     const originalImgRef = useRef<HTMLImageElement | null>(null);
@@ -93,6 +137,7 @@ export function ImageCropDialog({
     const cropWrapperRef = useRef<HTMLDivElement | null>(null);
 
     const [previewSrc, setPreviewSrc] = useState<string>('');
+    const [previewPending, setPreviewPending] = useState(false);
     const [cropperReady, setCropperReady] = useState(false);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -107,6 +152,10 @@ export function ImageCropDialog({
     const [note, setNote] = useState('');
     const [cropWhiteBorder, setCropWhiteBorder] = useState(true);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [transformAnimating, setTransformAnimating] = useState(false);
+    const transformAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    );
 
     const resolvedTitle = title || t('message.image.label.crop_image');
     const resolvedDescription =
@@ -138,21 +187,26 @@ export function ImageCropDialog({
         setCroppedAreaPixels(null);
         if (!open || !file || !validateImageUploadFile(file).ok) {
             setPreviewSrc('');
+            setPreviewPending(false);
             originalImgRef.current = null;
             previewScaleRef.current = 1;
             return;
         }
 
         let cancelled = false;
+        setPreviewPending(true);
         prepareImage(file)
             .then(({ img, previewSrc: src, previewScale }) => {
                 if (cancelled) return;
                 originalImgRef.current = img;
                 previewScaleRef.current = previewScale;
                 setPreviewSrc(src);
+                setPreviewPending(false);
             })
             .catch(() => {
-                if (!cancelled) setPreviewSrc('');
+                if (cancelled) return;
+                setPreviewSrc('');
+                setPreviewPending(false);
             });
 
         return () => {
@@ -204,15 +258,46 @@ export function ImageCropDialog({
         setCroppedAreaPixels(pixels);
     }, []);
 
+    useEffect(() => {
+        return () => {
+            if (transformAnimTimerRef.current) {
+                clearTimeout(transformAnimTimerRef.current);
+            }
+        };
+    }, []);
+
+    const triggerTransformAnim = useCallback(() => {
+        if (prefersReducedMotion()) return;
+        if (transformAnimTimerRef.current) {
+            clearTimeout(transformAnimTimerRef.current);
+        }
+        setTransformAnimating(true);
+        transformAnimTimerRef.current = setTimeout(() => {
+            setTransformAnimating(false);
+            transformAnimTimerRef.current = null;
+        }, TRANSFORM_TRANSITION_MS);
+    }, []);
+
     const rotateBy = useCallback(
-        (delta: number) =>
-            setRotation((r) => (((r + delta) % 360) + 360) % 360),
+        (delta: number) => setRotation((r) => r + delta),
         []
     );
-    const rotateLeft = useCallback(() => rotateBy(-90), [rotateBy]);
-    const rotateRight = useCallback(() => rotateBy(90), [rotateBy]);
-    const doFlipH = useCallback(() => setFlipH((v) => !v), []);
-    const doFlipV = useCallback(() => setFlipV((v) => !v), []);
+    const rotateLeft = useCallback(() => {
+        triggerTransformAnim();
+        rotateBy(-90);
+    }, [rotateBy, triggerTransformAnim]);
+    const rotateRight = useCallback(() => {
+        triggerTransformAnim();
+        rotateBy(90);
+    }, [rotateBy, triggerTransformAnim]);
+    const doFlipH = useCallback(() => {
+        triggerTransformAnim();
+        setFlipH((v) => !v);
+    }, [triggerTransformAnim]);
+    const doFlipV = useCallback(() => {
+        triggerTransformAnim();
+        setFlipV((v) => !v);
+    }, [triggerTransformAnim]);
     const zoomIn = useCallback(
         () => setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_FACTOR)),
         []
@@ -258,13 +343,13 @@ export function ImageCropDialog({
                 img,
                 previewScaleRef.current,
                 pixels,
-                rotation,
+                normalizeRotation(rotation),
                 flipH,
                 flipV,
                 file
             );
 
-            const opts: Record<string, unknown> = {};
+            const opts: ImageCropDialogConfirmOptions = {};
             if (noteEnabled) opts.note = note.slice(0, noteMaxLength);
             if (cropWhiteBorderEnabled) opts.cropWhiteBorder = cropWhiteBorder;
 
@@ -282,6 +367,16 @@ export function ImageCropDialog({
         [crop.x, crop.y, rotation, flipH, flipV, zoom]
     );
 
+    const cropperStyle = useMemo(
+        () => ({
+            containerStyle: { borderRadius: '0.5rem' },
+            ...(transformAnimating
+                ? { mediaStyle: { transition: TRANSFORM_TRANSITION } }
+                : {})
+        }),
+        [transformAnimating]
+    );
+
     const fitLabel = t(
         fitWhole ? 'dialog.image_crop.mode_fit' : 'dialog.image_crop.mode_free'
     );
@@ -290,8 +385,9 @@ export function ImageCropDialog({
         ((Math.log(zoom) - logZoomMin) / (LOG_ZOOM_MAX - logZoomMin)) * 100;
     const zoomPercent = Math.round(zoom * 100);
     const aspectLabel = formatAspect(aspect);
+    const rotationDisplay = normalizeRotation(rotation);
     const hudExtras = [
-        rotation !== 0 ? `${rotation}°` : null,
+        rotationDisplay !== 0 ? `${rotationDisplay}°` : null,
         flipH || flipV ? `${flipH ? 'H' : ''}${flipV ? 'V' : ''}` : null
     ].filter(Boolean);
 
@@ -333,7 +429,7 @@ export function ImageCropDialog({
                     <DialogDescription>{resolvedDescription}</DialogDescription>
                 </DialogHeader>
 
-                <TooltipProvider>
+                <TooltipProvider delay={400}>
                     <div className="flex flex-col gap-4">
                         <div
                             ref={cropWrapperRef}
@@ -342,7 +438,7 @@ export function ImageCropDialog({
                         >
                             {previewSrc && cropperReady ? (
                                 <div
-                                    className="bg-background/60 relative overflow-hidden rounded-lg"
+                                    className="bg-background/60 animate-in fade-in-0 zoom-in-[0.98] relative overflow-hidden rounded-lg duration-200 ease-out motion-reduce:animate-none"
                                     style={{
                                         aspectRatio: String(aspect),
                                         width: `min(100%, calc(50vh * ${aspect}))`
@@ -366,25 +462,30 @@ export function ImageCropDialog({
                                         onZoomChange={setZoom}
                                         onCropComplete={onCropComplete}
                                         transform={mediaTransform}
-                                        style={CONTAINER_STYLE}
+                                        style={cropperStyle}
                                     />
 
                                     <span className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 left-2 z-10 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none ring-1 backdrop-blur-sm">
                                         {aspectLabel}
                                     </span>
-                                    <div className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none tabular-nums ring-1 backdrop-blur-sm">
-                                        <span className="text-foreground">
-                                            {zoomPercent}%
-                                        </span>
-                                        {hudExtras.map((seg) => (
-                                            <Fragment key={seg}>
-                                                <span className="opacity-30">
-                                                    ·
-                                                </span>
-                                                <span>{seg}</span>
-                                            </Fragment>
-                                        ))}
-                                    </div>
+                                    {hudExtras.length > 0 ? (
+                                        <div className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none tabular-nums ring-1 backdrop-blur-sm">
+                                            {hudExtras.map((seg, index) => (
+                                                <Fragment key={seg}>
+                                                    {index > 0 ? (
+                                                        <span className="opacity-30">
+                                                            ·
+                                                        </span>
+                                                    ) : null}
+                                                    <span>{seg}</span>
+                                                </Fragment>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : previewPending || previewSrc ? (
+                                <div className="flex items-center justify-center">
+                                    <Spinner />
                                 </div>
                             ) : null}
                         </div>
@@ -431,16 +532,19 @@ export function ImageCropDialog({
                                     t('dialog.image_crop.zoom_out'),
                                     <ZoomOut />
                                 )}
-                                <Slider
-                                    className="w-24 sm:w-36"
-                                    min={0}
-                                    max={100}
-                                    step={1}
-                                    value={[zoomSliderValue]}
-                                    disabled={toolsDisabled}
-                                    onValueChange={onZoomSlider}
-                                    aria-label={t('dialog.image_crop.zoom_in')}
-                                />
+                                <div className="w-24 sm:w-36">
+                                    <Slider
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        value={[zoomSliderValue]}
+                                        disabled={toolsDisabled}
+                                        onValueChange={onZoomSlider}
+                                        aria-label={t(
+                                            'dialog.image_crop.zoom_level'
+                                        )}
+                                    />
+                                </div>
                                 <span className="text-muted-foreground w-10 text-right font-mono text-xs tabular-nums">
                                     {zoomPercent}%
                                 </span>
@@ -469,7 +573,7 @@ export function ImageCropDialog({
                         {noteEnabled ? (
                             <Field>
                                 <FieldLabel htmlFor="image-crop-upload-note">
-                                    {noteField.label}
+                                    {noteField?.label}
                                 </FieldLabel>
                                 <Input
                                     id="image-crop-upload-note"
@@ -483,7 +587,7 @@ export function ImageCropDialog({
                                             )
                                         )
                                     }
-                                    placeholder={noteField.placeholder}
+                                    placeholder={noteField?.placeholder}
                                 />
                             </Field>
                         ) : null}
@@ -500,7 +604,7 @@ export function ImageCropDialog({
                                     }
                                 />
                                 <FieldLabel htmlFor="image-crop-white-border">
-                                    {cropWhiteBorderField.label}
+                                    {cropWhiteBorderField?.label}
                                 </FieldLabel>
                             </Field>
                         ) : null}

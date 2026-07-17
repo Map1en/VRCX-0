@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildFeedFavoriteIdSet,
+    canExpandFeedRow,
     canRequestInviteFromFeedFriend,
     getFeedRowId,
     isUserIdLike,
@@ -160,5 +161,47 @@ describe('feed row helpers', () => {
             label: 'Offline',
             className: ''
         });
+    });
+
+    it('determines which feed row types can expand based on whether they carry new information', () => {
+        expect(canExpandFeedRow({ type: 'GPS', previousLocation: '' })).toBe(
+            false
+        );
+        expect(
+            canExpandFeedRow({ type: 'GPS', previousLocation: 'wrld_1:1' })
+        ).toBe(true);
+        expect(
+            canExpandFeedRow({ type: 'Online', previousLocation: 'wrld_1:1' })
+        ).toBe(false);
+        expect(canExpandFeedRow({ type: 'Offline', time: 0 })).toBe(false);
+        expect(canExpandFeedRow({ type: 'Offline', time: 42 })).toBe(false);
+        expect(
+            canExpandFeedRow({
+                type: 'Status',
+                statusDescription: 'Busy',
+                previousStatusDescription: 'Busy'
+            })
+        ).toBe(false);
+        expect(
+            canExpandFeedRow({
+                type: 'Status',
+                statusDescription: 'Busy',
+                previousStatusDescription: 'Ask me'
+            })
+        ).toBe(true);
+        expect(canExpandFeedRow({ type: 'Avatar' })).toBe(false);
+        expect(
+            canExpandFeedRow({
+                type: 'Avatar',
+                currentAvatarThumbnailImageUrl: 'https://example.com/a.png'
+            })
+        ).toBe(true);
+        expect(
+            canExpandFeedRow({ type: 'Bio', bio: '', previousBio: '' })
+        ).toBe(false);
+        expect(
+            canExpandFeedRow({ type: 'Bio', bio: 'Hello', previousBio: '' })
+        ).toBe(true);
+        expect(canExpandFeedRow({ type: 'Friend' })).toBe(false);
     });
 });

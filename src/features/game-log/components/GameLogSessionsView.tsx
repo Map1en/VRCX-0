@@ -144,8 +144,7 @@ function sessionStartValue(session: any) {
     return session?.created_at || session?.createdAt || '';
 }
 
-function sessionDayKey(session: any) {
-    const value = sessionStartValue(session);
+function localDayKey(value: string | number) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
         return String(value || '').slice(0, 10);
@@ -155,6 +154,10 @@ function sessionDayKey(session: any) {
         String(date.getMonth() + 1).padStart(2, '0'),
         String(date.getDate()).padStart(2, '0')
     ].join('-');
+}
+
+function sessionDayKey(session: any) {
+    return localDayKey(sessionStartValue(session));
 }
 
 function SessionDayDivider({ session }: any) {
@@ -175,9 +178,12 @@ function formatSessionEventRange(summary: any, fallbackCreatedAt: any) {
     const firstEventAt = summary?.firstEventAt;
     const lastEventAt = summary?.lastEventAt;
     if (firstEventAt && lastEventAt && firstEventAt !== lastEventAt) {
-        return `${formatDateFilter(firstEventAt, 'short')} - ${formatDateFilter(lastEventAt, 'short')}`;
+        const firstDay = localDayKey(firstEventAt);
+        const lastDay = localDayKey(lastEventAt);
+        const format = firstDay && firstDay === lastDay ? 'time' : 'short';
+        return `${formatDateFilter(firstEventAt, format)} – ${formatDateFilter(lastEventAt, format)}`;
     }
-    return formatDateFilter(firstEventAt || fallbackCreatedAt, 'long');
+    return formatDateFilter(firstEventAt || fallbackCreatedAt, 'time');
 }
 
 function buildSessionSummary(events: any[] = []) {
@@ -362,7 +368,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
             onOpenChange={handleOpenChange}
             className={cn('border-border border-b', isLast && 'border-b-0')}
         >
-            <div className="border-border bg-muted/80 sticky top-0 z-[5] border-b transition-colors">
+            <div className="border-border bg-muted sticky top-0 z-[5] border-b">
                 <div className="flex min-h-9 w-full items-center gap-2 px-3 py-1.5 text-left">
                     <CollapsibleTrigger
                         render={
@@ -557,7 +563,7 @@ export function GameLogSessionsView({
     return (
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border">
             {sessions.length ? (
-                <div className="border-border flex shrink-0 items-center justify-end border-b px-2 py-1">
+                <div className="border-border/70 flex shrink-0 items-center justify-end border-b px-2 py-0.5">
                     <Button
                         type="button"
                         variant="ghost"

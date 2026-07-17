@@ -24,26 +24,34 @@ export {
     normalizeProfileLanguageRows
 } from '@/shared/utils/userLanguage';
 
-export function normalizeUserId(value: any) {
+function record(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+export function normalizeUserId(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
 export function buildFavoriteIdSet(
-    remoteFavoriteIds: any,
-    localFriendFavorites: any
+    remoteFavoriteIds: unknown,
+    localFriendFavorites: unknown
 ) {
-    const set = new Set();
+    const set = new Set<string>();
 
-    for (const id of remoteFavoriteIds ?? []) {
+    for (const id of Array.isArray(remoteFavoriteIds)
+        ? remoteFavoriteIds
+        : []) {
         const normalized = normalizeUserId(id);
         if (normalized) {
             set.add(normalized);
         }
     }
 
-    for (const values of Object.values(localFriendFavorites ?? {})) {
+    for (const values of Object.values(record(localFriendFavorites))) {
         if (!Array.isArray(values)) {
             continue;
         }
@@ -59,7 +67,7 @@ export function buildFavoriteIdSet(
     return set;
 }
 
-export function normalizeSelfStatusInput(value: any) {
+export function normalizeSelfStatusInput(value: unknown) {
     const normalized = normalizeUserId(value).toLowerCase();
     if (normalized === 'joinme') {
         return 'join me';
@@ -74,24 +82,27 @@ export function normalizeSelfStatusInput(value: any) {
 }
 
 export function normalizeStatusHistoryRows(
-    profile: any,
-    currentUserSnapshot: any
+    profileSource: unknown,
+    currentUserSnapshotSource: unknown
 ) {
-    const source = Array.isArray(profile?.statusHistory)
+    const profile = record(profileSource);
+    const currentUserSnapshot = record(currentUserSnapshotSource);
+    const source = Array.isArray(profile.statusHistory)
         ? profile.statusHistory
-        : Array.isArray(currentUserSnapshot?.statusHistory)
+        : Array.isArray(currentUserSnapshot.statusHistory)
           ? currentUserSnapshot.statusHistory
           : [];
     const seen = new Set();
     return source
-        .map((item: any) =>
-            normalizeUserId(
+        .map((item) => {
+            const statusEntry = record(item);
+            return normalizeUserId(
                 typeof item === 'string'
                     ? item
-                    : item?.status || item?.statusDescription
-            )
-        )
-        .filter((status: any) => {
+                    : statusEntry.status || statusEntry.statusDescription
+            );
+        })
+        .filter((status) => {
             if (!status || seen.has(status)) {
                 return false;
             }

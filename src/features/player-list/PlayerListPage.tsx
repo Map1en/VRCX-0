@@ -39,6 +39,7 @@ export function PlayerListPage({
 
             <PlayerListTableSection
                 detail={detail}
+                filterContextKey={playerListLocation}
                 filteredRows={viewData.filteredRows}
                 gameLogDisabled={gameLogDisabled}
                 isGameRunning={isGameRunning}

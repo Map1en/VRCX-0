@@ -1,7 +1,6 @@
 pub mod application;
 pub mod asset_bundle;
 pub mod database;
-pub mod discord;
 pub mod host;
 pub mod integrations;
 pub mod local;

@@ -26,7 +26,7 @@ describe('favoriteAvatarCacheService', () => {
     });
 
     it('normalizes avatar details before writing the cache DB', async () => {
-        const avatar: any = {
+        const avatar = {
             id: ' avtr_cache ',
             name: 'Cached Avatar',
             releaseStatus: 'public',
@@ -109,7 +109,7 @@ describe('favoriteAvatarCacheService', () => {
     });
 
     it('refreshes DB cache automatically for local favorite avatars', async () => {
-        const avatar: any = {
+        const avatar = {
             id: 'avtr_cached',
             name: 'Cached Local Avatar',
             releaseStatus: 'public',
@@ -131,7 +131,7 @@ describe('favoriteAvatarCacheService', () => {
     });
 
     it('refreshes DB cache automatically for remote favorite avatars', async () => {
-        const avatar: any = {
+        const avatar = {
             id: 'avtr_remote_cached',
             name: 'Cached Remote Avatar',
             releaseStatus: 'public',

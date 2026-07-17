@@ -1,7 +1,16 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+    useEffect,
+    useRef,
+    useState,
+    type ChangeEvent,
+    type Dispatch,
+    type MutableRefObject,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import mediaRepository from '@/repositories/mediaRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import {
@@ -11,6 +20,21 @@ import {
 } from '@/shared/utils/imageUpload';
 
 import { normalizeEntityId } from './worldInstances';
+
+interface UseWorldImageUploadInput {
+    world: WorldProfileRecord | null;
+    canManageWorld: boolean;
+    currentEndpoint: string;
+    profileWorldId: string;
+    actionStatusRef: MutableRefObject<string>;
+    setActionStatus: Dispatch<SetStateAction<string>>;
+    activeWorldTargetRef: MutableRefObject<{
+        worldId: string;
+        endpoint: string;
+    }>;
+    setWorld: Dispatch<SetStateAction<WorldProfileRecord | null>>;
+    setDetail: Dispatch<SetStateAction<string>>;
+}
 
 export function useWorldImageUpload({
     world,
@@ -22,14 +46,14 @@ export function useWorldImageUpload({
     activeWorldTargetRef,
     setWorld,
     setDetail
-}: any) {
+}: UseWorldImageUploadInput) {
     const { t } = useTranslation();
     const [imageCropRequest, setImageCropRequest] = useState<{
-        file: any;
-        world: any;
+        file: File;
+        world: WorldProfileRecord;
     } | null>(null);
     const imageUploadInputRef = useRef<HTMLInputElement | null>(null);
-    const imageUploadWorldRef = useRef<unknown>(null);
+    const imageUploadWorldRef = useRef<WorldProfileRecord | null>(null);
 
     useEffect(() => {
         imageUploadWorldRef.current = null;
@@ -75,6 +99,9 @@ export function useWorldImageUpload({
         const request = imageCropRequest;
         const selectedWorld =
             request?.world || imageUploadWorldRef.current || world;
+        if (!selectedWorld) {
+            return;
+        }
         const selectedWorldId = normalizeEntityId(selectedWorld?.id);
         const requestEndpoint = currentEndpoint;
         if (!blob || !selectedWorldId) {

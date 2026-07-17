@@ -1,4 +1,6 @@
+import { commands } from '@/platform/tauri/bindings';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
@@ -89,6 +91,34 @@ const CURRENT_USER_LOCAL_AUTHORITY_FIELDS = [
     '$previousLocation',
     '$previousLocation_at'
 ];
+
+async function syncRuntimeCurrentUserSnapshot(
+    snapshot: Record<string, unknown>,
+    overlayPatch: Record<string, unknown> | null
+): Promise<void> {
+    const auth = getRuntimeAuth();
+    const phase = await commands.appAuthenticatedRuntimePhaseSnapshotGet();
+    const generation = Number(phase.realtimeTransport?.generation);
+    if (
+        phase.userId !== auth.currentUserId ||
+        normalizeVrchatEndpointKey(phase.endpoint) !==
+            normalizeVrchatEndpointKey(auth.currentUserEndpoint) ||
+        phase.websocket !== auth.currentUserWebsocket ||
+        !Number.isFinite(generation) ||
+        generation <= 0
+    ) {
+        return;
+    }
+
+    await commands.appSyncRealtimeCurrentUserSnapshot(
+        phase.userId,
+        phase.endpoint,
+        phase.websocket,
+        generation,
+        snapshot,
+        overlayPatch
+    );
+}
 const CURRENT_USER_FRIEND_ARRAY_FIELDS = new Set([
     'friends',
     'onlineFriends',
@@ -302,16 +332,14 @@ async function refreshCurrentUserForTarget({
         overlayPatch: record.overlayPatch
     });
 
-    import('./realtimeTransportService')
-        .then(({ syncRuntimeRealtimeCurrentUserSnapshot }) =>
-            syncRuntimeRealtimeCurrentUserSnapshot(user, record.overlayPatch)
-        )
-        .catch((error: unknown) => {
+    syncRuntimeCurrentUserSnapshot(user, record.overlayPatch).catch(
+        (error: unknown) => {
             console.warn(
                 'Failed to sync current user snapshot to runtime:',
                 error
             );
-        });
+        }
+    );
 
     const { snapshot } = buildAvatarWearSnapshotUpdate({
         previousSnapshot: runtimeStore.auth.currentUserSnapshot,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { applyFactDerivedFields } from '@/domain/friends/friendRosterFacts';
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import mutualGraphPersistenceRepository from '@/repositories/mutualGraphPersistenceRepository';
@@ -21,6 +21,8 @@ import {
     type FriendNoteRow,
     normalizeFriendListId as normalizeId
 } from './friendListRows';
+
+const STATS_HYDRATION_DEBOUNCE_MS = 400;
 
 function isPresent<T>(value: T | null | undefined): value is T {
     return value != null;
@@ -190,94 +192,102 @@ export function useFriendListRows({
         let active = true;
         const requestId = statsHydrationRequestRef.current + 1;
         statsHydrationRequestRef.current = requestId;
-        const userIds = rosterRows
-            .map((friend) => normalizeId(friend?.id))
-            .filter(Boolean);
-        const displayNames = rosterRows
-            .map((friend) => String(friend?.displayName || '').trim())
-            .filter(Boolean);
-        const mutualSnapshotPromise = currentUserId
-            ? mutualGraphPersistenceRepository
-                  .getSnapshot(currentUserId)
-                  .then(({ snapshot, meta }) => {
-                      const countMap = new Map<string, number>();
-                      for (const [friendId, mutualIds] of snapshot) {
-                          countMap.set(friendId, mutualIds.length);
-                      }
-                      return [countMap, meta];
-                  })
-            : Promise.resolve([new Map(), new Map()]);
-        Promise.all([
-            gameLogRepository.getAllUserStats({
-                userIds,
-                displayNames
-            }),
-            mutualSnapshotPromise
-        ])
-            .then(([statsRows, [mutualCountMap, mutualMetaMap]]) => {
-                if (!active || statsHydrationRequestRef.current !== requestId) {
-                    return;
-                }
-                const normalizedStatsRows = normalizeStatsRows(statsRows);
-                const statsById = buildUserStatsById(
-                    normalizedStatsRows,
-                    rosterRows
-                );
-                const patches: FriendListStatsPatch[] = [];
-                for (const friend of rosterRows) {
-                    const friendId = normalizeId(friend?.id);
-                    if (!friendId) {
-                        continue;
-                    }
-                    const stats = statsById.get(friendId);
-                    const mutualCount =
-                        Number.parseInt(
-                            String(mutualCountMap.get(friendId) ?? 0),
-                            10
-                        ) || 0;
-                    const mutualOptedOut = Boolean(
-                        readMutualOptedOut(mutualMetaMap.get(friendId))
-                    );
-                    const patch: FriendListStatsPatch['patch'] = {
-                        $mutualCount: mutualCount,
-                        $mutualOptedOut: mutualOptedOut
-                    };
-                    if (stats) {
-                        patch.$joinCount = stats.joinCount;
-                        patch.$lastSeen = stats.lastSeen;
-                        patch.$timeSpent = stats.timeSpent;
-                    }
+        const timer = setTimeout(() => {
+            const userIds = rosterRows
+                .map((friend) => normalizeId(friend?.id))
+                .filter(Boolean);
+            const displayNames = rosterRows
+                .map((friend) => String(friend?.displayName || '').trim())
+                .filter(Boolean);
+            const mutualSnapshotPromise = currentUserId
+                ? mutualGraphPersistenceRepository
+                      .getSnapshot(currentUserId)
+                      .then(({ snapshot, meta }) => {
+                          const countMap = new Map<string, number>();
+                          for (const [friendId, mutualIds] of snapshot) {
+                              countMap.set(friendId, mutualIds.length);
+                          }
+                          return [countMap, meta];
+                      })
+                : Promise.resolve([new Map(), new Map()]);
+            Promise.all([
+                gameLogRepository.getAllUserStats({
+                    userIds,
+                    displayNames
+                }),
+                mutualSnapshotPromise
+            ])
+                .then(([statsRows, [mutualCountMap, mutualMetaMap]]) => {
                     if (
-                        (stats &&
-                            (friend.$joinCount !== patch.$joinCount ||
-                                friend.$lastSeen !== patch.$lastSeen ||
-                                friend.$timeSpent !== patch.$timeSpent)) ||
-                        (Number.parseInt(
-                            String(friend.$mutualCount ?? 0),
-                            10
-                        ) || 0) !== mutualCount ||
-                        Boolean(friend.$mutualOptedOut) !== mutualOptedOut
+                        !active ||
+                        statsHydrationRequestRef.current !== requestId
                     ) {
-                        patches.push({
-                            userId: friendId,
-                            patch,
-                            stateBucket:
-                                friend.stateBucket || friend.state || 'offline'
-                        });
+                        return;
                     }
-                }
-                if (patches.length) {
-                    applyFriendPatches(patches);
-                }
-            })
-            .catch((error: unknown) => {
-                console.warn(
-                    '[FriendListPage] Failed to hydrate friend stats',
-                    error
-                );
-            });
+                    const normalizedStatsRows = normalizeStatsRows(statsRows);
+                    const statsById = buildUserStatsById(
+                        normalizedStatsRows,
+                        rosterRows
+                    );
+                    const patches: FriendListStatsPatch[] = [];
+                    for (const friend of rosterRows) {
+                        const friendId = normalizeId(friend?.id);
+                        if (!friendId) {
+                            continue;
+                        }
+                        const stats = statsById.get(friendId);
+                        const mutualCount =
+                            Number.parseInt(
+                                String(mutualCountMap.get(friendId) ?? 0),
+                                10
+                            ) || 0;
+                        const mutualOptedOut = Boolean(
+                            readMutualOptedOut(mutualMetaMap.get(friendId))
+                        );
+                        const patch: FriendListStatsPatch['patch'] = {
+                            $mutualCount: mutualCount,
+                            $mutualOptedOut: mutualOptedOut
+                        };
+                        if (stats) {
+                            patch.$joinCount = stats.joinCount;
+                            patch.$lastSeen = stats.lastSeen;
+                            patch.$timeSpent = stats.timeSpent;
+                        }
+                        if (
+                            (stats &&
+                                (friend.$joinCount !== patch.$joinCount ||
+                                    friend.$lastSeen !== patch.$lastSeen ||
+                                    friend.$timeSpent !== patch.$timeSpent)) ||
+                            (Number.parseInt(
+                                String(friend.$mutualCount ?? 0),
+                                10
+                            ) || 0) !== mutualCount ||
+                            Boolean(friend.$mutualOptedOut) !== mutualOptedOut
+                        ) {
+                            patches.push({
+                                userId: friendId,
+                                patch,
+                                stateBucket:
+                                    friend.stateBucket ||
+                                    friend.state ||
+                                    'offline'
+                            });
+                        }
+                    }
+                    if (patches.length) {
+                        applyFriendPatches(patches);
+                    }
+                })
+                .catch((error: unknown) => {
+                    console.warn(
+                        '[FriendListPage] Failed to hydrate friend stats',
+                        error
+                    );
+                });
+        }, STATS_HYDRATION_DEBOUNCE_MS);
         return () => {
             active = false;
+            clearTimeout(timer);
         };
     }, [applyFriendPatches, currentUserId, rosterStatsKey]);
 

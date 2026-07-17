@@ -6,7 +6,7 @@ use tauri_plugin_autostart::ManagerExt as _;
 use crate::state::AppState;
 
 use super::shared::db_config_bool;
-use super::start_background_mode_for_current_session;
+use super::{arm_background_delay, start_background_mode_for_current_session};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum AutostartWindowAction {
@@ -83,6 +83,9 @@ pub(super) fn apply_autostart_window_state_if_needed(app: &tauri::App, state: &A
                     let Some(state) = app_handle.try_state::<AppState>() else {
                         return;
                     };
+                    if arm_background_delay(&app_handle, &state) {
+                        return;
+                    }
                     if let Err(error) =
                         start_background_mode_for_current_session(&app_handle, &state).await
                     {

@@ -21,11 +21,15 @@ pub use projection::{
     FriendProjection, FriendProjectionPatch, RealtimeCurrentUserProjection,
     RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
     RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeNotificationUpsert,
+    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeProjectionSource,
 };
 pub use runtime_types::{
-    FriendBaselineResult, PendingOfflineTimerAction, RealtimeCurrentUserAuthority,
-    RealtimeFriendApplyResult, RealtimeFriendSnapshot, RealtimeSessionContext,
-    RealtimeTransportStartResult, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
+    FriendBaselineCausalWatermark, FriendBaselineResult, FriendBaselineSyncOutcome,
+    PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeFriendApplyResult,
+    RealtimeFriendSnapshot, RealtimeSessionContext, RealtimeTransportStartResult,
+    RealtimeWsMessagePayload, RealtimeWsStatusPayload,
 };
-pub use service::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
+pub use service::{
+    FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, RealtimeHostRuntime,
+    RealtimeHostRuntimeDeps, RealtimeStopRequest, SyntheticFriendEventOutcome,
+};

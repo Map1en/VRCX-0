@@ -1,7 +1,9 @@
+import type { TFunction } from 'i18next';
 import { EyeIcon, TagIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
@@ -11,7 +13,7 @@ import { groupDisplayName } from '../userDialogRows';
 import { rowImage } from './userDialogEntityImages';
 import { openRow } from './userDialogEntityNavigation';
 
-function visibilityLabel(visibility: any, t: any) {
+function visibilityLabel(visibility: string, t: TFunction) {
     if (visibility === 'friends') {
         return t('dialog.user.label.visibility_friends');
     }
@@ -21,7 +23,13 @@ function visibilityLabel(visibility: any, t: any) {
     return t('dialog.user.label.visibility_everyone');
 }
 
-export function UserGroupCard({ group, currentEndpoint }: any) {
+export function UserGroupCard({
+    group,
+    currentEndpoint
+}: {
+    group: EntityRecord;
+    currentEndpoint: string;
+}) {
     const { t } = useTranslation();
 
     const groupId = groupIdForRow(group);
@@ -45,7 +53,7 @@ export function UserGroupCard({ group, currentEndpoint }: any) {
                 endpoint: currentEndpoint,
                 includeRoles: false
             })
-            .then((groupProfile: any) => {
+            .then((groupProfile) => {
                 if (active) {
                     setProfile(groupProfile);
                 }

@@ -1,5 +1,5 @@
-import { ChevronDownIcon } from 'lucide-react';
-import { useState } from 'react';
+import type { TFunction } from 'i18next';
+import { ChevronDownIcon, Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getLanguageName, languageCodes } from '@/localization/index';
@@ -33,7 +33,50 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SegmentedPreference, SettingsGroup } from '../SettingsField';
 
-const fontFamilyLabelKeys: any = {
+type SettingsOption = readonly [value: string, labelKey: string];
+type SettingsOptionItem = {
+    label: string;
+    value: string;
+};
+
+type FontPreferencePrefs = {
+    appFontFamily: string;
+    appCjkFontPack: string;
+    customFontFamily?: string;
+    customFontPrimary?: string;
+    customFontSecondary?: string;
+    customFontOverride?: string;
+};
+
+type AppearancePrefs = FontPreferencePrefs & {
+    notificationLayout: string;
+    notificationIconDot: boolean;
+    tableDensity: string;
+    dataTableStriped: boolean;
+    reducedMotionAndBlur: boolean;
+    accessibleStatusIndicators: boolean;
+};
+
+type SettingsInterfaceAppearanceCardProps = {
+    locale: string;
+    prefs: AppearancePrefs;
+    zoomInput: string;
+    hideFontControls: boolean;
+    onLanguageChange: (value: string | null) => void;
+    onFontFamilyChange: (value: string) => void;
+    onCjkFontPackChange: (value: string) => void;
+    onZoomInputChange: (value: string) => void;
+    onZoomBlur: () => void;
+    notificationLayoutOptions: readonly SettingsOption[];
+    onNotificationLayoutChange: (value: string) => void;
+    onNotificationIconDotChange: (value: boolean) => void;
+    onTableDensityChange: (value: string) => void;
+    onDataTableStripedChange: (value: boolean) => void;
+    onAccessibleStatusIndicatorsChange: (value: boolean) => void;
+    onReducedMotionAndBlurChange: (value: boolean) => void;
+};
+
+const fontFamilyLabelKeys: Record<string, string> = {
     inter: 'view.settings.appearance.appearance.font_family_inter',
     noto_sans: 'view.settings.appearance.appearance.font_family_noto_sans',
     geist: 'view.settings.appearance.appearance.font_family_geist',
@@ -48,25 +91,47 @@ const fontFamilyLabelKeys: any = {
     custom: 'view.settings.appearance.appearance.font_family_custom'
 };
 
-const cjkFontPackLabelKeys: any = {
+const cjkFontPackLabelKeys: Record<string, string> = {
     noto: 'view.settings.appearance.appearance.cjk_font_pack_noto',
     puhuiti: 'view.settings.appearance.appearance.cjk_font_pack_puhuiti',
     system: 'view.settings.appearance.appearance.font_family_system_ui'
 };
 
-const westernFontDropdownOptions = APP_FONT_FAMILIES.map((value: any) => [
-    value,
-    fontFamilyLabelKeys[value]
-]).filter(([value]: any) => value !== 'custom' && value !== 'system_ui');
+const westernFontDropdownOptions: SettingsOption[] = APP_FONT_FAMILIES.filter(
+    (value) => value !== 'custom' && value !== 'system_ui'
+).map((value) => [value, fontFamilyLabelKeys[value]] as const);
 
-const cjkFontPackOptions = APP_CJK_FONT_PACKS.map((value: any) => [
-    value,
-    cjkFontPackLabelKeys[value]
-]);
+const cjkFontPackOptions: SettingsOption[] = APP_CJK_FONT_PACKS.map(
+    (value) => [value, cjkFontPackLabelKeys[value]] as const
+);
 
-function getFontDropdownDisplayText(t: any, prefs: any, showCjkFontPack: any) {
+function getCustomFontDisplayText(t: TFunction, prefs: FontPreferencePrefs) {
+    const override = (prefs.customFontOverride ?? '').trim();
+    if (override) {
+        return override;
+    }
+
+    const selectedFonts = [
+        (prefs.customFontPrimary ?? '').trim(),
+        (prefs.customFontSecondary ?? '').trim()
+    ].filter(Boolean);
+    if (selectedFonts.length) {
+        return selectedFonts.join(' / ');
+    }
+
+    return (
+        (prefs.customFontFamily ?? '').trim() ||
+        t('view.settings.appearance.appearance.font_family_custom')
+    );
+}
+
+function getFontDropdownDisplayText(
+    t: TFunction,
+    prefs: FontPreferencePrefs,
+    showCjkFontPack: boolean
+) {
     if (prefs.appFontFamily === 'custom') {
-        return t('view.settings.appearance.appearance.font_family_custom');
+        return getCustomFontDisplayText(t, prefs);
     }
 
     const fontLabel =
@@ -88,106 +153,102 @@ function FontFamilyPreferenceField({
     prefs,
     onFontFamilyChange,
     onCjkFontPackChange
-}: any) {
+}: {
+    t: TFunction;
+    locale: string;
+    prefs: FontPreferencePrefs;
+    onFontFamilyChange: (value: string) => void;
+    onCjkFontPackChange: (value: string) => void;
+}) {
     const showCjkFontPack = supportsConfigurableCjkFontPack(locale);
-    const [fontMenuOpen, setFontMenuOpen] = useState(false);
-
-    function openCustomFontDialogAfterMenuClose() {
-        setFontMenuOpen(false);
-        window.setTimeout(() => onFontFamilyChange('custom'), 0);
-    }
-
-    function handleFontFamilyChange(value: any) {
-        if (value === 'custom') {
-            openCustomFontDialogAfterMenuClose();
-            return;
-        }
-        onFontFamilyChange(value);
-    }
+    const customActive = prefs.appFontFamily === 'custom';
 
     return (
-        <Field label={t('view.settings.appearance.appearance.font_family')}>
-            <DropdownMenu open={fontMenuOpen} onOpenChange={setFontMenuOpen}>
-                <DropdownMenuTrigger
-                    render={
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="min-w-44 justify-between font-normal"
-                        >
-                            <span className="truncate">
-                                {getFontDropdownDisplayText(
-                                    t,
-                                    prefs,
-                                    showCjkFontPack
-                                )}
-                            </span>
-                            <ChevronDownIcon
-                                data-icon="inline-end"
-                                className="opacity-50"
-                            />
-                        </Button>
-                    }
-                />
-                <DropdownMenuContent align="end">
-                    <DropdownMenuGroup>
-                        <DropdownMenuRadioGroup
-                            value={prefs.appFontFamily}
-                            onValueChange={handleFontFamilyChange}
-                        >
-                            {westernFontDropdownOptions.map(
-                                ([value, labelKey]: any) => (
-                                    <DropdownMenuRadioItem
-                                        key={value}
-                                        value={value}
-                                    >
-                                        {t(labelKey)}
-                                    </DropdownMenuRadioItem>
-                                )
-                            )}
-                            <DropdownMenuRadioItem
-                                value="custom"
-                                onClick={() => {
-                                    if (prefs.appFontFamily === 'custom') {
-                                        openCustomFontDialogAfterMenuClose();
-                                    }
-                                }}
+        <Field
+            label={t('view.settings.appearance.appearance.font_family')}
+            description={t(
+                'view.settings.appearance.appearance.font_family_description'
+            )}
+            className="lg:grid-cols-[minmax(0,1fr)_320px]"
+        >
+            <div className="flex w-full items-center gap-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="min-w-0 flex-1 justify-between font-normal"
                             >
-                                {t(
-                                    'view.settings.appearance.appearance.font_family_custom'
-                                )}
-                            </DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                    </DropdownMenuGroup>
-                    {showCjkFontPack ? (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuRadioGroup
-                                    value={
-                                        prefs.appFontFamily === 'custom'
-                                            ? ''
-                                            : prefs.appCjkFontPack
-                                    }
-                                    onValueChange={onCjkFontPackChange}
-                                >
-                                    {cjkFontPackOptions.map(
-                                        ([value, labelKey]: any) => (
-                                            <DropdownMenuRadioItem
-                                                key={value}
-                                                value={value}
-                                            >
-                                                {t(labelKey)}
-                                            </DropdownMenuRadioItem>
-                                        )
+                                <span className="truncate">
+                                    {getFontDropdownDisplayText(
+                                        t,
+                                        prefs,
+                                        showCjkFontPack
                                     )}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuGroup>
-                        </>
-                    ) : null}
-                </DropdownMenuContent>
-            </DropdownMenu>
+                                </span>
+                                <ChevronDownIcon
+                                    data-icon="inline-end"
+                                    className="opacity-50"
+                                />
+                            </Button>
+                        }
+                    />
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuGroup>
+                            <DropdownMenuRadioGroup
+                                value={customActive ? '' : prefs.appFontFamily}
+                                onValueChange={onFontFamilyChange}
+                            >
+                                {westernFontDropdownOptions.map(
+                                    ([value, labelKey]) => (
+                                        <DropdownMenuRadioItem
+                                            key={value}
+                                            value={value}
+                                        >
+                                            {t(labelKey)}
+                                        </DropdownMenuRadioItem>
+                                    )
+                                )}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuGroup>
+                        {showCjkFontPack && !customActive ? (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuRadioGroup
+                                        value={prefs.appCjkFontPack}
+                                        onValueChange={onCjkFontPackChange}
+                                    >
+                                        {cjkFontPackOptions.map(
+                                            ([value, labelKey]) => (
+                                                <DropdownMenuRadioItem
+                                                    key={value}
+                                                    value={value}
+                                                >
+                                                    {t(labelKey)}
+                                                </DropdownMenuRadioItem>
+                                            )
+                                        )}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuGroup>
+                            </>
+                        ) : null}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                    type="button"
+                    variant={customActive ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={() => onFontFamilyChange('custom')}
+                >
+                    <Settings2Icon data-icon="inline-start" />
+                    {t(
+                        'view.settings.appearance.appearance.font_family_custom'
+                    )}
+                </Button>
+            </div>
         </Field>
     );
 }
@@ -202,12 +263,20 @@ export function SettingsInterfaceAppearanceCard({
     onCjkFontPackChange,
     onZoomInputChange,
     onZoomBlur,
+    notificationLayoutOptions,
+    onNotificationLayoutChange,
+    onNotificationIconDotChange,
     onTableDensityChange,
     onDataTableStripedChange,
     onAccessibleStatusIndicatorsChange,
     onReducedMotionAndBlurChange
-}: any) {
+}: SettingsInterfaceAppearanceCardProps) {
     const { t } = useTranslation();
+    const notificationLayoutItems: SettingsOptionItem[] =
+        notificationLayoutOptions.map(([value, labelKey]: SettingsOption) => ({
+            value,
+            label: t(labelKey)
+        }));
 
     return (
         <SettingsGroup title={t('view.settings.appearance.appearance.header')}>
@@ -223,7 +292,7 @@ export function SettingsInterfaceAppearanceCard({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            {languageCodes.map((code: any) => (
+                            {languageCodes.map((code) => (
                                 <SelectItem key={code} value={code}>
                                     {getLanguageName(code)}
                                 </SelectItem>
@@ -264,6 +333,46 @@ export function SettingsInterfaceAppearanceCard({
                         onBlur={onZoomBlur}
                     />
                 </div>
+            </Field>
+
+            <Field
+                label={t('view.settings.notifications.notifications.layout')}
+                controlId="settings-notification-layout"
+            >
+                <Select
+                    value={prefs.notificationLayout}
+                    items={notificationLayoutItems}
+                    onValueChange={(value) =>
+                        onNotificationLayoutChange(value ?? '')
+                    }
+                >
+                    <SelectTrigger
+                        id="settings-notification-layout"
+                        className="w-56"
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {notificationLayoutItems.map(({ value, label }) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </Field>
+
+            <Field
+                label={t(
+                    'view.settings.appearance.appearance.show_notification_icon_dot'
+                )}
+            >
+                <Switch
+                    checked={prefs.notificationIconDot}
+                    onCheckedChange={onNotificationIconDotChange}
+                />
             </Field>
 
             <Field

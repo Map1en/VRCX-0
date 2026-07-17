@@ -3,9 +3,12 @@ use super::*;
 impl RuntimeHostState {
     pub fn stop_backend_runtime(&self, reason: impl Into<String>) -> BackendRuntimeSnapshot {
         let reason = reason.into();
+        self.favorite_import.cancel();
+        self.shared_collection_import.cancel();
+        self.note_export.cancel();
         self.backend_runtime
             .set_phase(BackendRuntimePhase::Stopping);
-        self.realtime_runtime.stop(RealtimeStopRequest::default());
+        self.authenticated_runtime.stop();
         self.vr_overlay_runtime.stop();
         self.process_monitor.stop();
         self.log_watcher.stop();
@@ -57,6 +60,9 @@ impl RuntimeHostState {
         &self,
         reason: impl Into<String>,
     ) -> BackendRuntimeSnapshot {
+        self.favorite_import.cancel();
+        self.shared_collection_import.cancel();
+        self.note_export.cancel();
         self.clear_backend_frontend_session();
         let snapshot = self.backend_runtime.clear_authentication();
         self.emit_backend_runtime_telemetry_snapshot("authCleared", reason, snapshot.clone());
@@ -148,13 +154,16 @@ impl RuntimeHostState {
         &self,
         session: AuthenticatedRuntimeSession,
     ) -> Result<BackendRuntimeSnapshot> {
-        self.runtime_context
+        let auth_scope = self
+            .runtime_context
             .auth_scope
             .set(&session.user_id, &session.endpoint);
+        let activity_warmup_user_id = session.user_id.clone();
         vrcx_0_persistence::maintenance::user_tables_ensure(
             self.db.as_ref(),
             session.user_id.clone(),
         )?;
+        self.run_authenticated_session_maintenance_for_user(&session.user_id)?;
         let snapshot = self
             .backend_runtime
             .set_auth_success(session.user_id.clone(), session.display_name.clone());
@@ -164,36 +173,12 @@ impl RuntimeHostState {
             snapshot,
         );
 
-        let social_baseline = match self.build_backend_social_baseline(&session).await {
-            Ok(social_baseline) => social_baseline,
-            Err(error) => {
-                tracing::warn!(error = %error, "failed to build backend social baseline");
-                BackendSocialBaseline::default()
-            }
-        };
         self.set_backend_frontend_session(&session);
-        if let Some(snapshot) = &social_baseline.favorite_groups_snapshot {
-            self.vr_overlay_runtime
-                .update_friends_panel_favorite_groups_from_baseline(snapshot);
-        }
-        self.runtime_context
-            .overlay_activity
-            .set_favorite_groups(OverlayFavoriteGroups::from_map(
-                social_baseline.favorite_groups,
-            ));
         let print_cleanup_trigger = PrintCleanupTrigger {
             user_id: session.user_id.clone(),
             endpoint: session.endpoint.clone(),
             reason: "baseline".to_string(),
         };
-        self.realtime_runtime.start(
-            session.user_id,
-            session.endpoint,
-            session.websocket,
-            0,
-            session.current_user,
-            social_baseline.friends_by_id,
-        )?;
         self.runtime_context.print_cleanup.schedule(
             &self.runtime_context.tasks,
             PrintCleanupDeps {
@@ -204,6 +189,8 @@ impl RuntimeHostState {
             print_cleanup_trigger,
         );
         self.backend_runtime.set_phase(BackendRuntimePhase::Running);
+        self.authenticated_runtime.start(session)?;
+        self.schedule_activity_warmup(activity_warmup_user_id, auth_scope.generation);
         if self.backend_runtime.snapshot().mode == BackendRuntimeMode::Background {
             self.start_gui_background_registry_backup_loop();
         }

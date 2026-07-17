@@ -18,23 +18,11 @@ export const commands = {
     async storageGetAll(): Promise<Partial<{ [key in string]: string }>> {
         return await TAURI_INVOKE('storage__get_all');
     },
-    async sqliteBeginUpgrade(
-        fromVersion: number,
-        toVersion: number
-    ): Promise<null> {
-        return await TAURI_INVOKE('sqlite__begin_upgrade', {
-            fromVersion,
-            toVersion
-        });
+    async appDatabaseUpgradePreflight(): Promise<DatabaseUpgradePreflight> {
+        return await TAURI_INVOKE('app__database_upgrade_preflight');
     },
-    async sqliteCommitUpgrade(): Promise<null> {
-        return await TAURI_INVOKE('sqlite__commit_upgrade');
-    },
-    async sqliteFailUpgrade(reason: string): Promise<null> {
-        return await TAURI_INVOKE('sqlite__fail_upgrade', { reason });
-    },
-    async sqliteGetFailedUpgrade(): Promise<DatabaseUpgradeStatus | null> {
-        return await TAURI_INVOKE('sqlite__get_failed_upgrade');
+    async appDatabaseUpgradeRun(): Promise<DatabaseUpgradeRunResult> {
+        return await TAURI_INVOKE('app__database_upgrade_run');
     },
     async webClearCookies(): Promise<null> {
         return await TAURI_INVOKE('web__clear_cookies');
@@ -115,12 +103,8 @@ export const commands = {
     async appIsSteamvrRunning(): Promise<boolean> {
         return await TAURI_INVOKE('app__is_steamvr_running');
     },
-    async appSetGameClientRuntimeState(
-        sessionActive: boolean,
-        currentLocation: string
-    ): Promise<void> {
+    async appSetGameClientRuntimeState(currentLocation: string): Promise<void> {
         await TAURI_INVOKE('app__set_game_client_runtime_state', {
-            sessionActive,
             currentLocation
         });
     },
@@ -139,49 +123,23 @@ export const commands = {
             launchArguments
         });
     },
-    async appStartRealtimeTransport(
-        userId: string,
-        endpoint: string,
-        websocket: string,
-        clientRunId: number,
-        currentUserSnapshot: JsonValue,
-        friendsById: Partial<{ [key in string]: FriendRecord }>
-    ): Promise<RealtimeTransportStartResult> {
-        return await TAURI_INVOKE('app__start_realtime_transport', {
-            userId,
-            endpoint,
-            websocket,
-            clientRunId,
-            currentUserSnapshot,
-            friendsById
-        });
+    async appHostTtsVoices(): Promise<TtsVoice[]> {
+        return await TAURI_INVOKE('app__host_tts_voices');
     },
-    async appSyncFrontendAuthenticatedSession(
+    async appHostTtsSpeak(text: string, voiceId: string | null): Promise<null> {
+        return await TAURI_INVOKE('app__host_tts_speak', { text, voiceId });
+    },
+    async appAuthenticatedRuntimeSessionStart(
         userId: string,
         endpoint: string,
         websocket: string,
         currentUserSnapshot: JsonValue
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__sync_frontend_authenticated_session', {
+    ): Promise<AuthenticatedRuntimePhaseSnapshot> {
+        return await TAURI_INVOKE('app__authenticated_runtime_session_start', {
             userId,
             endpoint,
             websocket,
             currentUserSnapshot
-        });
-    },
-    async appSyncRealtimeFriendSnapshot(
-        userId: string,
-        endpoint: string,
-        websocket: string,
-        generation: number | null,
-        friendsById: Partial<{ [key in string]: FriendRecord }>
-    ): Promise<FriendBaselineResult> {
-        return await TAURI_INVOKE('app__sync_realtime_friend_snapshot', {
-            userId,
-            endpoint,
-            websocket,
-            generation,
-            friendsById
         });
     },
     async appSyncRealtimeCurrentUserSnapshot(
@@ -210,23 +168,25 @@ export const commands = {
             notificationId
         });
     },
-    async appStopRealtimeTransport(
-        userId: string | null,
-        endpoint: string | null,
-        websocket: string | null,
-        clientRunId: number | null,
-        generation: number | null
-    ): Promise<void> {
-        await TAURI_INVOKE('app__stop_realtime_transport', {
-            userId,
-            endpoint,
-            websocket,
-            clientRunId,
-            generation
-        });
-    },
     async appIngestUserFacts(entries: JsonValue[]): Promise<null> {
         return await TAURI_INVOKE('app__ingest_user_facts', { entries });
+    },
+    async appFriendProfileLoadStart(): Promise<FriendProfileLoadStatusPayload> {
+        return await TAURI_INVOKE('app__friend_profile_load_start');
+    },
+    async appFriendProfileLoadCancel(): Promise<FriendProfileLoadStatusPayload> {
+        return await TAURI_INVOKE('app__friend_profile_load_cancel');
+    },
+    async appGameClientDebugLoggingStatus(): Promise<DebugLoggingOutcome | null> {
+        return await TAURI_INVOKE('app__game_client_debug_logging_status');
+    },
+    async appAuthenticatedSessionMaintenanceRun(): Promise<AuthenticatedSessionMaintenanceOutcome> {
+        return await TAURI_INVOKE('app__authenticated_session_maintenance_run');
+    },
+    async appAuthenticatedRuntimePhaseSnapshotGet(): Promise<AuthenticatedRuntimePhaseSnapshot> {
+        return await TAURI_INVOKE(
+            'app__authenticated_runtime_phase_snapshot_get'
+        );
     },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
@@ -246,6 +206,83 @@ export const commands = {
     },
     async appEnsureMainWindow(): Promise<null> {
         return await TAURI_INVOKE('app__ensure_main_window');
+    },
+    async appDrainPendingDeepLinks(): Promise<DeepLinkAction[]> {
+        return await TAURI_INVOKE('app__drain_pending_deep_links');
+    },
+    async appDeepLinkRegistrationStatus(): Promise<boolean | null> {
+        return await TAURI_INVOKE('app__deep_link_registration_status');
+    },
+    async appDeepLinkRegistrationRepair(): Promise<boolean | null> {
+        return await TAURI_INVOKE('app__deep_link_registration_repair');
+    },
+    async appShareCollectionCreate(
+        input: ShareCollectionCreateInput
+    ): Promise<ShareCollectionCreateResult> {
+        return await TAURI_INVOKE('app__share_collection_create', { input });
+    },
+    async appShareCollectionOpenManage(): Promise<null> {
+        return await TAURI_INVOKE('app__share_collection_open_manage');
+    },
+    async appShareCollectionPreview(id: string): Promise<ImportPreview> {
+        return await TAURI_INVOKE('app__share_collection_preview', { id });
+    },
+    async appSharedCollectionImportStart(
+        input: SharedCollectionImportStartInput
+    ): Promise<SharedCollectionImportStatus> {
+        return await TAURI_INVOKE('app__shared_collection_import_start', {
+            input
+        });
+    },
+    async appSharedCollectionImportStatus(): Promise<SharedCollectionImportStatus> {
+        return await TAURI_INVOKE('app__shared_collection_import_status');
+    },
+    async appSharedCollectionImportCancel(): Promise<SharedCollectionImportStatus> {
+        return await TAURI_INVOKE('app__shared_collection_import_cancel');
+    },
+    async appFavoriteImportStart(
+        input: FavoriteImportStartInput
+    ): Promise<FavoriteImportStatus> {
+        return await TAURI_INVOKE('app__favorite_import_start', { input });
+    },
+    async appFavoriteImportStatus(): Promise<FavoriteImportStatus> {
+        return await TAURI_INVOKE('app__favorite_import_status');
+    },
+    async appFavoriteImportCancel(): Promise<FavoriteImportStatus> {
+        return await TAURI_INVOKE('app__favorite_import_cancel');
+    },
+    async appAvatarContentTagsBatch(
+        input: AvatarContentTagsBatchInput
+    ): Promise<BatchMutationResult> {
+        return await TAURI_INVOKE('app__avatar_content_tags_batch', { input });
+    },
+    async appGroupVisibilityBatch(
+        input: GroupVisibilityBatchInput
+    ): Promise<BatchMutationResult> {
+        return await TAURI_INVOKE('app__group_visibility_batch', { input });
+    },
+    async appGroupLeaveBatch(
+        input: GroupLeaveBatchInput
+    ): Promise<BatchMutationResult> {
+        return await TAURI_INVOKE('app__group_leave_batch', { input });
+    },
+    async appNotificationMarkSeenBatch(
+        input: NotificationMarkSeenBatchInput
+    ): Promise<NotificationMarkSeenBatchResult> {
+        return await TAURI_INVOKE('app__notification_mark_seen_batch', {
+            input
+        });
+    },
+    async appNoteExportStart(
+        input: NoteExportStartInput
+    ): Promise<NoteExportStatus> {
+        return await TAURI_INVOKE('app__note_export_start', { input });
+    },
+    async appNoteExportStatus(): Promise<NoteExportStatus> {
+        return await TAURI_INVOKE('app__note_export_status');
+    },
+    async appNoteExportCancel(): Promise<NoteExportStatus> {
+        return await TAURI_INVOKE('app__note_export_cancel');
     },
     async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
         return await TAURI_INVOKE('app__telemetry_record_event', { event });
@@ -425,6 +462,59 @@ export const commands = {
         return await TAURI_INVOKE('app__registry_backup_maintenance_run', {
             reason
         });
+    },
+    async appProfileBackupGetSettings(): Promise<ProfileBackupSettings> {
+        return await TAURI_INVOKE('app__profile_backup_get_settings');
+    },
+    async appProfileBackupSetSettings(
+        settings: ProfileBackupSettings
+    ): Promise<ProfileBackupSettings> {
+        return await TAURI_INVOKE('app__profile_backup_set_settings', {
+            settings
+        });
+    },
+    async appProfileBackupRunManual(
+        targetPath: string
+    ): Promise<ProfileBackupActionOutcome> {
+        return await TAURI_INVOKE('app__profile_backup_run_manual', {
+            targetPath
+        });
+    },
+    async appProfileBackupRetryDelivery(): Promise<ProfileBackupActionOutcome> {
+        return await TAURI_INVOKE('app__profile_backup_retry_delivery');
+    },
+    async appProfileBackupDiscardPending(): Promise<ProfileBackupActionOutcome> {
+        return await TAURI_INVOKE('app__profile_backup_discard_pending');
+    },
+    async appProfileBackupDismissError(): Promise<ProfileBackupStatus> {
+        return await TAURI_INVOKE('app__profile_backup_dismiss_error');
+    },
+    async appProfileBackupCurrentStatus(): Promise<ProfileBackupStatus> {
+        return await TAURI_INVOKE('app__profile_backup_current_status');
+    },
+    async appProfileRestoreValidate(
+        path: string
+    ): Promise<ProfileRestoreValidationOutcome> {
+        return await TAURI_INVOKE('app__profile_restore_validate', { path });
+    },
+    async appProfileRestoreRequest(
+        expectedSha256: string
+    ): Promise<ProfileRestoreValidationOutcome> {
+        return await TAURI_INVOKE('app__profile_restore_request', {
+            expectedSha256
+        });
+    },
+    async appProfileRestoreDiscardStaged(): Promise<null> {
+        return await TAURI_INVOKE('app__profile_restore_discard_staged');
+    },
+    async appProfileRestoreTakeLastResult(): Promise<ProfileRestoreResult | null> {
+        return await TAURI_INVOKE('app__profile_restore_take_last_result');
+    },
+    async appProfileRestoreRollbackState(): Promise<ProfileRestoreRollbackState> {
+        return await TAURI_INVOKE('app__profile_restore_rollback_state');
+    },
+    async appProfileRestoreClearRollback(): Promise<ProfileRestoreRollbackCleanupOutcome> {
+        return await TAURI_INVOKE('app__profile_restore_clear_rollback');
     },
     async appConfigSetValues(entries: ConfigWriteEntry[]): Promise<null> {
         return await TAURI_INVOKE('app__config_set_values', { entries });
@@ -933,39 +1023,6 @@ export const commands = {
     ): Promise<FriendLogHistoryOutput[]> {
         return await TAURI_INVOKE('app__friend_log_history_query', { query });
     },
-    async appFriendLogReplaceCurrent(
-        userId: string,
-        entries: FriendLogCurrentEntryInput[],
-        options: FriendLogReplaceOptionsInput
-    ): Promise<FriendLogMutationResult> {
-        return await TAURI_INVOKE('app__friend_log_replace_current', {
-            userId,
-            entries,
-            options
-        });
-    },
-    async appFriendLogDeleteCurrentArray(
-        userId: string,
-        targetUserIds: string[],
-        options: FriendLogDeleteOptionsInput
-    ): Promise<FriendLogMutationResult> {
-        return await TAURI_INVOKE('app__friend_log_delete_current_array', {
-            userId,
-            targetUserIds,
-            options
-        });
-    },
-    async appFriendLogUpsertCurrent(
-        userId: string,
-        entry: FriendLogCurrentEntryInput,
-        options: FriendLogUpsertOptionsInput
-    ): Promise<FriendLogMutationResult> {
-        return await TAURI_INVOKE('app__friend_log_upsert_current', {
-            userId,
-            entry,
-            options
-        });
-    },
     async appFriendLogDeleteCurrent(
         userId: string,
         targetUserId: string
@@ -973,15 +1030,6 @@ export const commands = {
         return await TAURI_INVOKE('app__friend_log_delete_current', {
             userId,
             targetUserId
-        });
-    },
-    async appFriendLogHistoryAdd(
-        userId: string,
-        entries: FriendLogHistoryEntryInput[]
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__friend_log_history_add', {
-            userId,
-            entries
         });
     },
     async appFriendLogHistoryDelete(
@@ -1099,14 +1147,6 @@ export const commands = {
     async appClearAppDataDir(): Promise<AppDataDirState> {
         return await TAURI_INVOKE('app__clear_app_data_dir');
     },
-    async appRuntimeAppSnapshotGet(): Promise<RuntimeAppSnapshot> {
-        return await TAURI_INVOKE('app__runtime_app_snapshot_get');
-    },
-    async appRuntimeFrontendScheduleDueJobsGet(): Promise<string[]> {
-        return await TAURI_INVOKE(
-            'app__runtime_frontend_schedule_due_jobs_get'
-        );
-    },
     async appRuntimeFrontendScheduleJobDueClaim(
         input: RuntimeFrontendScheduleJobDueClaimInput
     ): Promise<boolean> {
@@ -1122,30 +1162,16 @@ export const commands = {
             input
         });
     },
-    async appRuntimeFrontendScheduleSchedulesReset(): Promise<void> {
-        await TAURI_INVOKE('app__runtime_frontend_schedule_schedules_reset');
-    },
     async appRuntimeGroupInstancesRefresh(): Promise<null> {
         return await TAURI_INVOKE('app__runtime_group_instances_refresh');
+    },
+    async appRuntimeDiscordReconcileRequest(): Promise<number> {
+        return await TAURI_INVOKE('app__runtime_discord_reconcile_request');
     },
     async appRuntimeBackgroundJobRecord(
         input: RuntimeJobRecordInput
     ): Promise<void> {
         await TAURI_INVOKE('app__runtime_background_job_record', { input });
-    },
-    async appRuntimeBackgroundJobsSnapshotGet(): Promise<
-        RuntimeBackgroundJobSnapshot[]
-    > {
-        return await TAURI_INVOKE('app__runtime_background_jobs_snapshot_get');
-    },
-    async appRuntimeDiagnosticsGet(): Promise<RuntimeDiagnosticsSnapshot> {
-        return await TAURI_INVOKE('app__runtime_diagnostics_get');
-    },
-    async appRuntimeLifecycleSnapshotGet(): Promise<RuntimeLifecycleSnapshot> {
-        return await TAURI_INVOKE('app__runtime_lifecycle_snapshot_get');
-    },
-    async appRuntimeSyncSnapshotGet(): Promise<RuntimeSyncSnapshot> {
-        return await TAURI_INVOKE('app__runtime_sync_snapshot_get');
     },
     async appExternalApiAvatarSearchGet(
         input: ExternalApiAvatarSearchInput
@@ -1210,24 +1236,20 @@ export const commands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_auth_config_get', { input });
     },
-    async appVrchatAuthCookieSessionRestore(
-        input: VrchatAuthEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_cookie_session_restore', {
+    async appVrchatAuthAutoLoginStart(
+        input: VrchatAuthAutoLoginStartInput
+    ): Promise<AutoLoginOutcome> {
+        return await TAURI_INVOKE('app__vrchat_auth_auto_login_start', {
             input
         });
+    },
+    async appVrchatAuthAutoLoginThrottleReset(): Promise<void> {
+        await TAURI_INVOKE('app__vrchat_auth_auto_login_throttle_reset');
     },
     async appVrchatAuthCurrentUserGet(
         input: VrchatAuthEndpointInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_auth_current_user_get', {
-            input
-        });
-    },
-    async appVrchatAuthEmailOtpVerify(
-        input: VrchatAuthCodeInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_email_otp_verify', {
             input
         });
     },
@@ -1238,34 +1260,10 @@ export const commands = {
             input
         });
     },
-    async appVrchatAuthLoginSuccessRecord(
-        input: VrchatAuthLoginSuccessRecordInput
-    ): Promise<JsonValue> {
-        return await TAURI_INVOKE('app__vrchat_auth_login_success_record', {
-            input
-        });
-    },
-    async appVrchatAuthLoginBasic(
-        input: VrchatAuthLoginBasicInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_login_basic', { input });
-    },
-    async appVrchatAuthLoginBasicStart(
-        input: VrchatAuthLoginBasicInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_login_basic_start', {
-            input
-        });
-    },
     async appVrchatAuthLogoutRecord(
         input: VrchatAuthLogoutRecordInput
     ): Promise<JsonValue> {
         return await TAURI_INVOKE('app__vrchat_auth_logout_record', { input });
-    },
-    async appVrchatAuthOtpVerify(
-        input: VrchatAuthCodeInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_otp_verify', { input });
     },
     async appVrchatAuthSavedCredentialDelete(
         input: VrchatAuthSavedCredentialDeleteInput
@@ -1274,26 +1272,28 @@ export const commands = {
             input
         });
     },
-    async appVrchatAuthSavedCredentialLoginStart(
-        input: VrchatAuthSavedCredentialLoginStartInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE(
-            'app__vrchat_auth_saved_credential_login_start',
-            { input }
-        );
-    },
     async appVrchatAuthSavedSnapshotGet(): Promise<JsonValue> {
         return await TAURI_INVOKE('app__vrchat_auth_saved_snapshot_get');
+    },
+    async appVrchatAuthSessionCancel(): Promise<LoginSessionState> {
+        return await TAURI_INVOKE('app__vrchat_auth_session_cancel');
     },
     async appVrchatAuthSessionGet(
         input: VrchatAuthEndpointInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_auth_session_get', { input });
     },
-    async appVrchatAuthTotpVerify(
-        input: VrchatAuthCodeInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_totp_verify', { input });
+    async appVrchatAuthSessionRespond(
+        input: VrchatAuthSessionRespondInput
+    ): Promise<LoginSessionState> {
+        return await TAURI_INVOKE('app__vrchat_auth_session_respond', {
+            input
+        });
+    },
+    async appVrchatAuthSessionStart(
+        input: VrchatAuthSessionStartInput
+    ): Promise<LoginSessionState> {
+        return await TAURI_INVOKE('app__vrchat_auth_session_start', { input });
     },
     async appVrchatAuthVisitsGet(
         input: VrchatAuthEndpointInput
@@ -1464,23 +1464,6 @@ export const commands = {
         input: VrchatFriendUserInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_friend_status_get', { input });
-    },
-    async appVrchatFriendDelete(
-        input: VrchatFriendUserInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_friend_delete', { input });
-    },
-    async appVrchatFriendRequestCancel(
-        input: VrchatFriendCancelRequestInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_friend_request_cancel', {
-            input
-        });
-    },
-    async appVrchatFriendRequestSend(
-        input: VrchatFriendUserInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_friend_request_send', { input });
     },
     async appVrchatFriendsGet(
         input: VrchatFriendsGetInput
@@ -1994,6 +1977,30 @@ export const commands = {
             input
         });
     },
+    async appSocialFriendRequestAccept(
+        input: SocialFriendRequestAcceptInput
+    ): Promise<SocialFriendMutationOutcome> {
+        return await TAURI_INVOKE('app__social_friend_request_accept', {
+            input
+        });
+    },
+    async appSocialFriendRequestCancel(
+        input: SocialFriendRequestCancelInput
+    ): Promise<SocialFriendMutationOutcome> {
+        return await TAURI_INVOKE('app__social_friend_request_cancel', {
+            input
+        });
+    },
+    async appSocialFriendRequestSend(
+        input: SocialFriendMutationInput
+    ): Promise<SocialFriendMutationOutcome> {
+        return await TAURI_INVOKE('app__social_friend_request_send', { input });
+    },
+    async appSocialUnfriend(
+        input: SocialFriendMutationInput
+    ): Promise<SocialFriendMutationOutcome> {
+        return await TAURI_INVOKE('app__social_unfriend', { input });
+    },
     async appVrchatToolsCalendarsGet(
         input: VrchatToolsCalendarListInput
     ): Promise<HttpApiExecuteResponse> {
@@ -2172,12 +2179,6 @@ export const commands = {
     async appOpenDiscordProfile(discordId: string): Promise<null> {
         return await TAURI_INVOKE('app__open_discord_profile', { discordId });
     },
-    async discordSetActive(active: boolean): Promise<boolean> {
-        return await TAURI_INVOKE('discord__set_active', { active });
-    },
-    async discordSetAssets(payload: JsonValue): Promise<boolean> {
-        return await TAURI_INVOKE('discord__set_assets', { payload });
-    },
     async appGetFileBase64(path: string): Promise<string> {
         return await TAURI_INVOKE('app__get_file_base64', { path });
     },
@@ -2274,6 +2275,19 @@ export const commands = {
             defaultFilter
         });
     },
+    async appSaveFileSelectorDialog(
+        defaultPath: string | null,
+        defaultName: string | null,
+        defaultExt: string | null,
+        defaultFilter: string | null
+    ): Promise<string> {
+        return await TAURI_INVOKE('app__save_file_selector_dialog', {
+            defaultPath,
+            defaultName,
+            defaultExt,
+            defaultFilter
+        });
+    },
     async appOpenFolderSelectorDialog(
         defaultPath: string | null
     ): Promise<string> {
@@ -2302,6 +2316,9 @@ export const commands = {
     },
     async appDevkitReadFile(filePath: string): Promise<string> {
         return await TAURI_INVOKE('app__devkit_read_file', { filePath });
+    },
+    async appDevkitPanic(message: string | null): Promise<null> {
+        return await TAURI_INVOKE('app__devkit_panic', { message });
     },
     async appFocusWindow(): Promise<null> {
         return await TAURI_INVOKE('app__focus_window');
@@ -2333,60 +2350,29 @@ export const commands = {
     async appExitApplication(): Promise<null> {
         return await TAURI_INVOKE('app__exit_application');
     },
-    async appCheckTauriUpdate(
-        manifestUrl: string,
-        target: string,
-        allowDowngrades: boolean,
-        proxy: string | null
-    ): Promise<TauriUpdateMetadata | null> {
-        return await TAURI_INVOKE('app__check_tauri_update', {
-            manifestUrl,
-            target,
-            allowDowngrades,
-            proxy
-        });
+    async appAppUpdateStatusGet(): Promise<AppUpdateStatusSnapshot> {
+        return await TAURI_INVOKE('app__app_update_status_get');
     },
-    async appDownloadTauriUpdate(
-        version: string,
-        manifestUrl: string,
-        target: string,
-        allowDowngrades: boolean,
-        proxy: string | null,
-        onEvent: TAURI_CHANNEL<TauriDownloadEvent>
-    ): Promise<TauriUpdateMetadata | null> {
-        return await TAURI_INVOKE('app__download_tauri_update', {
-            version,
-            manifestUrl,
-            target,
-            allowDowngrades,
-            proxy,
-            onEvent
-        });
+    async appAppUpdateCheckRun(): Promise<AppUpdateStatusSnapshot> {
+        return await TAURI_INVOKE('app__app_update_check_run');
     },
-    async appInstallPendingTauriUpdate(
+    async appAppUpdateDownloadStatusGet(): Promise<AppUpdateDownloadStatusSnapshot> {
+        return await TAURI_INVOKE('app__app_update_download_status_get');
+    },
+    async appAppUpdateInstallConfirm(
         version: string
-    ): Promise<TauriUpdateMetadata> {
-        return await TAURI_INVOKE('app__install_pending_tauri_update', {
+    ): Promise<UpdaterMetadata> {
+        return await TAURI_INVOKE('app__app_update_install_confirm', {
             version
         });
     },
-    async appDiscardPendingTauriUpdate(): Promise<null> {
-        return await TAURI_INVOKE('app__discard_pending_tauri_update');
-    },
-    async appDownloadAndInstallTauriUpdate(
-        manifestUrl: string,
-        target: string,
-        allowDowngrades: boolean,
-        proxy: string | null,
-        onEvent: TAURI_CHANNEL<TauriDownloadEvent>
-    ): Promise<TauriUpdateMetadata | null> {
-        return await TAURI_INVOKE('app__download_and_install_tauri_update', {
-            manifestUrl,
-            target,
-            allowDowngrades,
-            proxy,
-            onEvent
-        });
+    async appAppUpdateBackgroundDownloadPreferenceChanged(
+        enabled: boolean
+    ): Promise<null> {
+        return await TAURI_INVOKE(
+            'app__app_update_background_download_preference_changed',
+            { enabled }
+        );
     },
     async appCheckLegacyVrcxAvailable(): Promise<boolean> {
         return await TAURI_INVOKE('app__check_legacy_vrcx_available');
@@ -2505,12 +2491,6 @@ export const commands = {
             userId,
             moderationType
         });
-    },
-    async appIpcAnnounceStart(): Promise<null> {
-        return await TAURI_INVOKE('app__ipc_announce_start');
-    },
-    async appSendIpc(typeName: string, data: string): Promise<null> {
-        return await TAURI_INVOKE('app__send_ipc', { typeName, data });
     },
     async appTryOpenInstanceInVrc(launchUrl: string): Promise<boolean> {
         return await TAURI_INVOKE('app__try_open_instance_in_vrc', {
@@ -2903,6 +2883,34 @@ export type AppLauncherSnapshot = {
     testRuns: AppLauncherRun[];
 };
 export type AppLauncherStopPolicy = 'keepRunning' | 'closeByVrcx';
+export type AppUpdateDownloadStatusSnapshot = {
+    phase: string;
+    version: string | null;
+    downloadedBytes: number;
+    totalBytes: number;
+    percent: number;
+    error: string | null;
+};
+export type AppUpdateReleaseSnapshot = {
+    displayName: string;
+    tagName: string;
+    htmlUrl: string;
+    publishedAt: string;
+    body: string;
+    canonicalVersion: string;
+    displayVersion: string;
+    manifestUrl: string;
+    target: string;
+    updaterType: string;
+};
+export type AppUpdateStatusSnapshot = {
+    hasAvailableUpdate: boolean;
+    checkedAt: string;
+    detail: string;
+    error: string | null;
+    release: AppUpdateReleaseSnapshot | null;
+    shouldNotify: boolean;
+};
 export type AssistantDeltaEvent = {
     sessionId: string;
     turnId: string;
@@ -2945,7 +2953,74 @@ export type AssistantTurnEntitiesEvent = {
     turnId: string;
     entities: Entity[];
 };
+export type AuthenticatedRuntimePhase =
+    | 'idle'
+    | 'starting'
+    | 'ready'
+    | 'stopped';
+export type AuthenticatedRuntimePhaseSnapshot = {
+    runId: number;
+    authScopeGeneration: number;
+    userId: string;
+    endpoint: string;
+    websocket: string;
+    phase: AuthenticatedRuntimePhase;
+    friends: AuthenticatedRuntimeStepSnapshot;
+    favorites: AuthenticatedRuntimeStepSnapshot;
+    realtime: AuthenticatedRuntimeStepSnapshot;
+    friendBaseline: SocialFriendRosterBaselineOutput | null;
+    favoritesBaseline: SocialFavoritesBaselineOutput | null;
+    realtimeTransport: RealtimeTransportStartResult | null;
+    updatedAt: string;
+};
+export type AuthenticatedRuntimeSession = {
+    userId: string;
+    displayName: string;
+    endpoint: string;
+    websocket: string;
+    currentUser: JsonValue;
+};
+export type AuthenticatedRuntimeStepSnapshot = {
+    status: AuthenticatedRuntimeStepStatus;
+    attempt: number;
+    retryDelaySeconds: number | null;
+    detail: string;
+    lastError: string | null;
+};
+export type AuthenticatedRuntimeStepStatus =
+    | 'pending'
+    | 'running'
+    | 'retryWaiting'
+    | 'ready';
+export type AuthenticatedSessionMaintenanceOutcome = {
+    userId: string;
+    avatarCleanup: AvatarAutoCleanupOutcome;
+};
 export type AuthorDetail = { id?: string; displayName?: string | null };
+export type AutoLoginOutcome =
+    | { status: 'throttled'; snapshot: JsonValue }
+    | { status: 'authenticated'; session: AuthenticatedRuntimeSession }
+    | {
+          status: 'challenge';
+          methods: string[];
+          mode: string;
+          error: string | null;
+      }
+    | { status: 'expired'; snapshot: JsonValue }
+    | {
+          status: 'failed';
+          reason: string;
+          kind: LoginFailureKind;
+          snapshot: JsonValue;
+      };
+export type AvatarAutoCleanupOutcome = {
+    state: AvatarAutoCleanupState;
+    retentionDays: number | null;
+    removedCount: number;
+    cutoff: string | null;
+    completedAt: string | null;
+};
+export type AvatarAutoCleanupState = 'disabled' | 'notDue' | 'ran';
 export type AvatarCacheOutput = {
     id: string;
     authorId: string;
@@ -2958,6 +3033,10 @@ export type AvatarCacheOutput = {
     thumbnailImageUrl: string;
     updated_at: string;
     version: number;
+};
+export type AvatarContentTagsBatchInput = {
+    avatarIds?: string[];
+    contentTags?: string[];
 };
 export type AvatarMemoOutput = {
     avatarId: string;
@@ -3005,6 +3084,7 @@ export type BackendRuntimeSnapshot = {
     gameLogPersistedCount: number;
     lastError: string | null;
     updatedAt: string;
+    friendProfileLoad: FriendProfileLoadStatusPayload;
 };
 export type BackendRuntimeTelemetry = {
     kind: string;
@@ -3014,6 +3094,29 @@ export type BackendRuntimeTelemetry = {
 export type BackgroundImageFilesResolveInput = {
     paths: string[] | null;
     folderPath: string | null;
+};
+export type BatchMutationItemResult = {
+    id: string;
+    state: BatchMutationItemState;
+    message: string;
+    entity: RawJson | null;
+};
+export type BatchMutationItemState =
+    | 'updated'
+    | 'left'
+    | 'rolledBack'
+    | 'rollbackFailed'
+    | 'failed'
+    | 'notAttempted';
+export type BatchMutationResult = {
+    total: number;
+    succeeded: number;
+    failed: number;
+    appliedBeforeFailure: number;
+    rolledBack: number;
+    rollbackFailed: number;
+    items: BatchMutationItemResult[];
+    lastError: string | null;
 };
 export type BrokenGameLogDisplayNameOutput = {
     id: JsonValue;
@@ -3069,6 +3172,46 @@ export type CommunityThemeDebugLocalThemeOutput = {
 };
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
+export type DatabaseUpgradePreflight = {
+    status: DatabaseUpgradePreflightStatus;
+    fromVersion: number;
+    toVersion: number;
+    stage?: DatabaseUpgradeStage | null;
+    result?: DatabaseUpgradeRunResult | null;
+    failedUpgrade?: DatabaseUpgradeStatus | null;
+};
+export type DatabaseUpgradePreflightStatus =
+    | 'current'
+    | 'upgradeRequired'
+    | 'running'
+    | 'finished'
+    | 'blocked'
+    | 'newerSchema';
+export type DatabaseUpgradeRunResult = {
+    status: DatabaseUpgradeRunStatus;
+    fromVersion: number;
+    toVersion: number;
+    failedStage?: DatabaseUpgradeStage | null;
+    error?: string | null;
+    failedUpgrade?: DatabaseUpgradeStatus | null;
+    repairWarning?: string | null;
+};
+export type DatabaseUpgradeRunStatus =
+    | 'current'
+    | 'upgraded'
+    | 'blocked'
+    | 'newerSchema'
+    | 'failed';
+export type DatabaseUpgradeStage =
+    | 'preflight'
+    | 'initializeSchema'
+    | 'createWorkCopy'
+    | 'legacyDataCleanup'
+    | 'legacySchemaMigration'
+    | 'performanceIndexes'
+    | 'optimize'
+    | 'writeVersion'
+    | 'commit';
 export type DatabaseUpgradeStatus = {
     fromVersion: number;
     toVersion: number;
@@ -3077,6 +3220,20 @@ export type DatabaseUpgradeStatus = {
     failedAt?: string | null;
     reason?: string | null;
 };
+export type DebugLoggingOutcome = {
+    checkId: number;
+    kind: DebugLoggingOutcomeKind;
+    error: string | null;
+};
+export type DebugLoggingOutcomeKind =
+    | 'disabled'
+    | 'unavailable'
+    | 'enabled'
+    | 'repaired'
+    | 'needsUserAction';
+export type DeepLinkAction =
+    | { type: 'openWorld'; worldId: string }
+    | { type: 'importCollection'; collectionId: string };
 export type Entity = { kind: string; id: string; displayName: string };
 export type ExternalApiAvatarSearchInput = { url?: string; vrcxId?: string };
 export type ExternalApiExecuteResponse = {
@@ -3100,9 +3257,54 @@ export type ExternalApiYoutubeVideoInput = {
     videoId?: string;
     apiKey?: string;
 };
+export type FavoriteImportItemResult = {
+    id: string;
+    state: FavoriteImportItemState;
+    message: string;
+    entity: RawJson | null;
+};
+export type FavoriteImportItemState = 'succeeded' | 'failed';
+export type FavoriteImportKind = 'avatar' | 'world' | 'friend';
+export type FavoriteImportLocation = 'remote' | 'local';
+export type FavoriteImportOperation = 'hydrate' | 'import';
+export type FavoriteImportStartInput = {
+    kind: FavoriteImportKind;
+    operation: FavoriteImportOperation;
+    ids?: string[];
+    target: FavoriteImportTarget | null;
+};
+export type FavoriteImportState =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+export type FavoriteImportStatus = {
+    runId: string;
+    status: FavoriteImportState;
+    operation: FavoriteImportOperation;
+    kind: FavoriteImportKind;
+    authScopeGeneration: number;
+    total: number;
+    processed: number;
+    succeeded: number;
+    failed: number;
+    cancelRequested: boolean;
+    items: FavoriteImportItemResult[];
+    startedAt: string | null;
+    finishedAt: string | null;
+    lastError: string | null;
+};
+export type FavoriteImportTarget = {
+    location: FavoriteImportLocation;
+    group?: string;
+    favoriteType?: string;
+};
 export type FavoriteTransferInput = {
     endpoint?: string;
     kind?: string;
+    mode: FavoriteTransferMode;
     source: FavoriteTransferSource;
     target: FavoriteTransferTarget;
     items?: FavoriteTransferItem[];
@@ -3121,13 +3323,22 @@ export type FavoriteTransferItemResult = {
     remoteFavorite: RawJson | null;
     localAffected: number;
 };
-export type FavoriteTransferItemStatus = 'moved' | 'copied' | 'failed';
+export type FavoriteTransferItemStatus =
+    | 'moved'
+    | 'copied'
+    | 'skippedAlreadyPresent'
+    | 'restoredToSource'
+    | 'savedToLocalFallback'
+    | 'targetAddedSourceDeleteFailed'
+    | 'failed';
 export type FavoriteTransferLocation = 'remote' | 'local';
+export type FavoriteTransferMode = 'move' | 'copy';
 export type FavoriteTransferResult = {
     total: number;
     succeeded: number;
     failed: number;
     localChanged: boolean;
+    remoteChanged: boolean;
     items: FavoriteTransferItemResult[];
 };
 export type FavoriteTransferSource = {
@@ -3139,7 +3350,10 @@ export type FavoriteTransferStage =
     | 'deleteRemote'
     | 'addRemote'
     | 'addLocal'
-    | 'moveLocal';
+    | 'deleteLocal'
+    | 'moveLocal'
+    | 'restoreRemoteToSource'
+    | 'saveLocalFallback';
 export type FavoriteTransferTarget = {
     location: FavoriteTransferLocation;
     group?: string;
@@ -3220,26 +3434,11 @@ export type FeedRowsQueryInput = {
     dateTo?: string;
     cursor?: FeedCursorInput | null;
 };
-export type FriendBaselineResult = {
-    accepted: boolean;
-    generation: number;
-    baselineRevision: number;
-    friendCount: number;
-};
-export type FriendLogCurrentEntryInput = {
-    userId?: string;
-    displayName?: string;
-    trustLevel?: string | null;
-    friendNumber?: JsonValue;
-};
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
     trustLevel: string;
     friendNumber: number;
-};
-export type FriendLogDeleteOptionsInput = {
-    historyEntries?: FriendLogHistoryEntryInput[];
 };
 export type FriendLogHistoryEntryInput = {
     rowId?: JsonValue;
@@ -3268,24 +3467,28 @@ export type FriendLogHistoryQueryInput = {
     targetUserId?: string;
     types?: string[];
 };
-export type FriendLogMutationResult = {
-    userId: string;
-    targetUserId: string;
-    count: number;
-    inserted?: boolean | null;
-    historyCount: number;
-};
-export type FriendLogReplaceOptionsInput = {
-    historyEntries?: FriendLogHistoryEntryInput[];
-    addedHistoryEntries?: FriendLogHistoryEntryInput[];
-};
-export type FriendLogUpsertOptionsInput = {
-    historyEntry?: FriendLogHistoryEntryInput | null;
-    forceHistory?: boolean;
+export type FriendProfileBulkLoadStatus =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+export type FriendProfileLoadStatusPayload = {
+    runId: number;
+    status: FriendProfileBulkLoadStatus;
+    total: number;
+    processed: number;
+    loaded: number;
+    failed: number;
+    startedAt: string;
+    finishedAt: string | null;
+    lastError: string | null;
 };
 export type FriendProjection = {
     generation: number;
     baselineRevision: number;
+    source?: RealtimeProjectionSource | null;
     patches?: FriendProjectionPatch[];
     removals?: string[];
     feedEntries?: JsonValue[];
@@ -3296,33 +3499,6 @@ export type FriendProjectionPatch = {
     patch: JsonValue;
     stateBucket: string;
     stateBucketAuthority?: string | null;
-};
-export type FriendRecord = Partial<{
-    [key in string]:
-        | null
-        | boolean
-        | number
-        | string
-        | JsonValue[]
-        | Partial<{ [key in string]: JsonValue }>;
-}> & {
-    id?: string;
-    displayName?: string;
-    username?: string;
-    state?: string;
-    stateBucket?: string;
-    location?: string;
-    travelingToLocation?: string;
-    worldId?: string;
-    platform?: string;
-    lastPlatform?: string;
-    status?: string;
-    statusDescription?: string;
-    bio?: string;
-    currentAvatarImageUrl?: string;
-    currentAvatarThumbnailImageUrl?: string;
-    currentAvatarAuthorId?: string;
-    currentAvatarName?: string;
 };
 export type GameLogProjection = {
     currentLocation: string;
@@ -3336,12 +3512,6 @@ export type GameLogProjection = {
     lastGameLogType: string;
 };
 export type GameLogQueryInput = { kind: string; params?: RawJson };
-export type GameLogRuntimeSnapshotDto = {
-    location: string;
-    worldName: string;
-    destination: string;
-    players: PlayerState[];
-};
 export type GameLogSessionDto = {
     id?: number | null;
     created_at: string;
@@ -3383,6 +3553,7 @@ export type GameLogSessionsQueryInput = {
     maxTableSize?: number;
     searchLimit?: number;
 };
+export type GroupLeaveBatchInput = { groupIds?: string[] };
 export type GroupQuickModerationActionInput = {
     currentUserId?: string;
     targetUserId?: string;
@@ -3418,6 +3589,11 @@ export type GroupQuickModerationOutput = {
     banGroups: GroupQuickModerationGroup[];
     membershipErrorCount: number;
 };
+export type GroupVisibility = 'visible' | 'friends' | 'hidden';
+export type GroupVisibilityBatchInput = {
+    groupIds?: string[];
+    visibility: GroupVisibility;
+};
 export type HostCapabilities = {
     platform: string;
     arch: string;
@@ -3435,7 +3611,6 @@ export type HostCapabilities = {
     steamRuntimeIntegration: CapabilityStatus;
     registryPrefs: CapabilityStatus;
     gameLaunch: CapabilityStatus;
-    ipc: CapabilityStatus;
     vrchatLaunchPipe: CapabilityStatus;
     screenshotCache: CapabilityStatus;
 };
@@ -3454,6 +3629,7 @@ export type HttpApiExecuteResponse = {
     data: string;
     raw: JsonValue;
 };
+export type ImportPreview = { title: string; worldIds: string[] };
 export type InstanceActivityRowOutput = {
     id: number;
     createdAt: string;
@@ -3535,6 +3711,23 @@ export type LogLocationSnapshot = {
     createdAt: string;
     fileName: string;
 };
+export type LoginFailureKind =
+    | 'invalidCredentials'
+    | 'missingCredentials'
+    | 'sessionInvalidated'
+    | 'twoFactorUnavailable'
+    | 'network'
+    | 'other';
+export type LoginSessionState =
+    | { status: 'authenticated'; session: AuthenticatedRuntimeSession }
+    | {
+          status: 'challenge';
+          methods: string[];
+          mode: string;
+          error: string | null;
+      }
+    | { status: 'failed'; reason: string; kind: LoginFailureKind }
+    | { status: 'cancelled' };
 export type MaintenanceTableSizesOutput = {
     gps: number;
     status: number;
@@ -3638,6 +3831,44 @@ export type MutualGraphSnapshotOutput = {
     links: MutualGraphLinkOutput[];
     meta: MutualGraphMetaOutput[];
 };
+export type NoteExportItemInput = {
+    userId: string;
+    displayName: string;
+    note: string;
+};
+export type NoteExportItemState =
+    | 'pending'
+    | 'succeeded'
+    | 'failed'
+    | 'notAttempted'
+    | 'cancelled';
+export type NoteExportItemStatus = {
+    userId: string;
+    displayName: string;
+    note: string;
+    state: NoteExportItemState;
+    error: string | null;
+};
+export type NoteExportStartInput = { items: NoteExportItemInput[] };
+export type NoteExportState =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+export type NoteExportStatus = {
+    runId: string;
+    status: NoteExportState;
+    total: number;
+    processed: number;
+    succeeded: number;
+    failed: number;
+    items: NoteExportItemStatus[];
+    startedAt: string | null;
+    finishedAt: string | null;
+    lastError: string | null;
+};
 export type NotificationListItemOutput = {
     id: string;
     version: number;
@@ -3668,6 +3899,29 @@ export type NotificationListQueryInput = {
     limit?: number;
     includeUnseen?: boolean;
 };
+export type NotificationMarkSeenBatchInput = {
+    items?: NotificationMarkSeenBatchItem[];
+};
+export type NotificationMarkSeenBatchItem = {
+    id: string;
+    version: number;
+    location: NotificationMarkSeenLocation;
+};
+export type NotificationMarkSeenBatchResult = {
+    total: number;
+    succeeded: number;
+    failed: number;
+    items: NotificationMarkSeenItemResult[];
+    lastError: string | null;
+};
+export type NotificationMarkSeenItemResult = {
+    id: string;
+    state: NotificationMarkSeenItemState;
+    attempts: number;
+    message: string;
+};
+export type NotificationMarkSeenItemState = 'succeeded' | 'failed';
+export type NotificationMarkSeenLocation = 'remote' | 'local';
 export type NotificationRowsOutput = {
     v1Rows: NotificationV1RowOutput[];
     v2Rows: NotificationV2RowOutput[];
@@ -3758,11 +4012,9 @@ export type OverlayActivityScope =
     | 'allFavorites'
     | 'everyoneInInstance';
 export type OverlayActivitySnapshot = { entries: OverlayActivityEntry[] };
-export type OverlayActivityText = {
-    key: string;
-    fallback: string;
-    params?: JsonValue;
-};
+export type OverlayActivityText =
+    | { kind: 'message'; value: OverlayMessage }
+    | { kind: 'literal'; value: string };
 export type OverlayActivityTypeDefinition = {
     key: string;
     category: OverlayActivityCategory;
@@ -3771,6 +4023,88 @@ export type OverlayActivityTypeDefinition = {
     hmdDefaultScope: OverlayActivityScope;
     aliases: string[];
 };
+export type OverlayMessage = {
+    key: OverlayMessageKey;
+    params: Partial<{ [key in string]: string }>;
+};
+export type OverlayMessageKey =
+    | 'notifications.has_joined'
+    | 'notifications.has_left'
+    | 'notifications.joined_with_others'
+    | 'notifications.left_with_others'
+    | 'notifications.is_joining'
+    | 'notifications.gps'
+    | 'notifications.online'
+    | 'notifications.online_location'
+    | 'notifications.offline'
+    | 'notifications.status_update'
+    | 'notifications.avatar_change'
+    | 'notifications.friend'
+    | 'notifications.unfriend'
+    | 'notifications.display_name'
+    | 'notifications.trust_level'
+    | 'notifications.bio'
+    | 'notifications.invite'
+    | 'notifications.request_invite'
+    | 'notifications.invite_response'
+    | 'notifications.request_invite_response'
+    | 'notifications.friend_request'
+    | 'notifications.group_announcement_title'
+    | 'notifications.group_informative_title'
+    | 'notifications.group_invite_title'
+    | 'notifications.group_join_request_title'
+    | 'notifications.group_transfer_request_title'
+    | 'notifications.group_queue_ready_title'
+    | 'notifications.instance_closed_title'
+    | 'notifications.event_title'
+    | 'notifications.external_title'
+    | 'notifications.video_play_title'
+    | 'notifications.blocked'
+    | 'notifications.unblocked'
+    | 'notifications.muted'
+    | 'notifications.unmuted'
+    | 'notifications.blocked_player_joined'
+    | 'notifications.blocked_player_left'
+    | 'notifications.muted_player_joined'
+    | 'notifications.muted_player_left'
+    | 'overlay.footer.players'
+    | 'overlay.footer.instance_duration'
+    | 'overlay.generic_instance_location'
+    | 'overlay.friends_panel.title'
+    | 'overlay.friends_panel.all'
+    | 'overlay.friends_panel.empty'
+    | 'overlay.friends_panel.note'
+    | 'overlay.friends_panel.memo'
+    | 'overlay.friends_panel.open'
+    | 'overlay.friends_panel.request'
+    | 'overlay.friends_panel.invite'
+    | 'overlay.friends_panel.favorites_online'
+    | 'overlay.friends_panel.same_instance'
+    | 'overlay.friends_panel.local_favorites'
+    | 'overlay.friends_panel.traveling'
+    | 'overlay.friends_panel.private'
+    | 'overlay.friends_panel.offline'
+    | 'overlay.access.public'
+    | 'overlay.access.invite'
+    | 'overlay.access.invite_plus'
+    | 'overlay.access.friends'
+    | 'overlay.access.friends_plus'
+    | 'overlay.access.group'
+    | 'overlay.access.group_public'
+    | 'overlay.access.group_plus'
+    | 'overlay.status.active'
+    | 'overlay.status.join_me'
+    | 'overlay.status.ask_me'
+    | 'overlay.status.busy'
+    | 'overlay.discord.title.invite'
+    | 'overlay.discord.title.request_invite'
+    | 'overlay.discord.title.invite_response'
+    | 'overlay.discord.title.request_invite_response'
+    | 'overlay.discord.title.gps'
+    | 'overlay.discord.title.status'
+    | 'overlay.discord.title.avatar_change'
+    | 'overlay.discord.title.online'
+    | 'overlay.discord.title.offline';
 export type ParsedLocation = {
     tag: string;
     isOffline: boolean;
@@ -3854,6 +4188,136 @@ export type PrintFavoriteState = {
     maxFavorites: number;
     warning: CleanupWarning | null;
 };
+export type ProfileBackupActionOutcome = {
+    accepted: boolean;
+    status: ProfileBackupStatus;
+    error: ProfileBackupError | null;
+};
+export type ProfileBackupError = {
+    code: ProfileBackupErrorCode;
+    path: string | null;
+};
+export type ProfileBackupErrorCode =
+    | 'operationBusy'
+    | 'deliveryPending'
+    | 'pendingRestore'
+    | 'directoryUnavailable'
+    | 'permissionDenied'
+    | 'localDiskFull'
+    | 'targetDiskFull'
+    | 'deviceRemoved'
+    | 'alreadyExists'
+    | 'artifactMissing'
+    | 'snapshotFailed'
+    | 'packageFailed'
+    | 'io';
+export type ProfileBackupKind = 'auto' | 'manual';
+export type ProfileBackupOutcome = {
+    revision: number;
+    kind: ProfileBackupKind;
+    succeeded: boolean;
+    fileName: string | null;
+    errorCode: ProfileBackupErrorCode | null;
+};
+export type ProfileBackupPhase = 'snapshot' | 'package' | 'deliver';
+export type ProfileBackupSettings = {
+    autoEnabled: boolean;
+    autoIntervalDays: number;
+    autoRetainExtra: number;
+    autoTargetDir: string;
+    lastAutoAt: string | null;
+};
+export type ProfileBackupState = 'idle' | 'running' | 'retryable' | 'error';
+export type ProfileBackupStatus = {
+    revision: number;
+    state: ProfileBackupState;
+    kind: ProfileBackupKind | null;
+    phase: ProfileBackupPhase | null;
+    percent: number | null;
+    error: ProfileBackupError | null;
+    lastOutcome: ProfileBackupOutcome | null;
+};
+export type ProfileRestoreAppVersionCheck = 'compatible';
+export type ProfileRestoreArchiveCheck = 'valid';
+export type ProfileRestoreDataDisposition =
+    | 'replaced'
+    | 'rolledBack'
+    | 'unchanged';
+export type ProfileRestoreDatabaseCheck = 'valid';
+export type ProfileRestoreDatabaseVersionCheck = 'compatible';
+export type ProfileRestoreFailure = {
+    code: ProfileRestoreFailureCode;
+    path?: string | null;
+};
+export type ProfileRestoreFailureCode =
+    | 'operationBusy'
+    | 'pendingRestore'
+    | 'invalidArchive'
+    | 'invalidEntries'
+    | 'unsupportedManifestVersion'
+    | 'invalidAppVersion'
+    | 'newerAppVersion'
+    | 'newerDatabaseVersion'
+    | 'contentSizeMismatch'
+    | 'contentHashMismatch'
+    | 'validationExpired'
+    | 'databaseCheckFailed'
+    | 'notProfileDatabase'
+    | 'databaseVersionMismatch'
+    | 'stagingCorrupted'
+    | 'databaseOpenFailed'
+    | 'io';
+export type ProfileRestoreManifestSummary = {
+    appVersion: string;
+    dbVersion: number;
+    createdAt: string;
+    platform: string;
+    kind: ProfileBackupKind;
+};
+export type ProfileRestoreProgress = {
+    revision: number;
+    operation: ProfileRestoreProgressOperation;
+    phase: ProfileRestoreProgressPhase;
+    processedBytes: number;
+    totalBytes: number | null;
+    percent: number | null;
+};
+export type ProfileRestoreProgressOperation = 'validate' | 'prepare';
+export type ProfileRestoreProgressPhase =
+    | 'copyArchive'
+    | 'extractDatabase'
+    | 'checkDatabase'
+    | 'verifyStaging';
+export type ProfileRestoreResult = {
+    status: ProfileRestoreResultStatus;
+    dataDisposition: ProfileRestoreDataDisposition;
+    sourceFileName: string;
+    failure?: ProfileRestoreFailure | null;
+};
+export type ProfileRestoreResultStatus = 'succeeded' | 'failed';
+export type ProfileRestoreRollbackCleanupOutcome = {
+    accepted: boolean;
+    state: ProfileRestoreRollbackState;
+    error: ProfileBackupError | null;
+};
+export type ProfileRestoreRollbackState = {
+    count: number;
+    cleanupAllowed: boolean;
+};
+export type ProfileRestoreValidation = {
+    manifest: ProfileRestoreManifestSummary;
+    sourceFileName: string;
+    stagedSha256: string;
+    stagedBytes: number;
+    archive: ProfileRestoreArchiveCheck;
+    appVersion: ProfileRestoreAppVersionCheck;
+    databaseVersion: ProfileRestoreDatabaseVersionCheck;
+    database: ProfileRestoreDatabaseCheck;
+};
+export type ProfileRestoreValidationOutcome = {
+    validation?: ProfileRestoreValidation | null;
+    failure?: ProfileRestoreFailure | null;
+};
 export type ProxySettingsTestInput = { proxy?: string };
 export type ProxySettingsTestResult = {
     normalizedProxy: string | null;
@@ -3906,6 +4370,7 @@ export type RealtimeNotificationUpsert = {
     deliverRuntime: boolean;
     runAutomation: boolean;
 };
+export type RealtimeProjectionSource = 'friendProfileBulkLoad';
 export type RealtimeTransportStartResult = {
     generation: number;
     clientRunId: number;
@@ -3944,50 +4409,12 @@ export type RemoteModerationRow = {
     created: string;
 };
 export type Role = 'user' | 'assistant';
-export type RuntimeAppSnapshot = {
-    runtime: RuntimeLifecycleSnapshot;
-    backgroundJobs: RuntimeBackgroundJobSnapshot[];
-    sync: RuntimeSyncSnapshot;
-    diagnostics: RuntimeDiagnosticsSnapshot;
-    gameLog: GameLogRuntimeSnapshotDto;
-};
 export type RuntimeAuthScopeSetInput = { userId?: string; endpoint?: string };
 export type RuntimeAuthScopeSnapshot = {
     currentUserId: string;
     endpoint: string;
     generation: number;
     active: boolean;
-};
-export type RuntimeBackgroundJobSnapshot = {
-    name: string;
-    owner: string;
-    status: string;
-    cadenceSeconds: number | null;
-    lastStartedAt: string | null;
-    lastFinishedAt: string | null;
-    nextRunAt: string | null;
-    lastDetail: string;
-    lastError: string | null;
-    failureCount: number;
-};
-export type RuntimeCommandGroupSnapshot = {
-    name: string;
-    boundary: string;
-    commandCount: number;
-    examples: string[];
-};
-export type RuntimeCommandObservation = {
-    command: string;
-    status: string;
-    detail: string;
-    observedAt: string;
-};
-export type RuntimeDiagnosticsSnapshot = {
-    genericSqlEnabled: boolean;
-    frontendWsParsingEnabled: boolean;
-    commandGroups: RuntimeCommandGroupSnapshot[];
-    recentCommands: RuntimeCommandObservation[];
-    notes: string[];
 };
 export type RuntimeFrontendScheduleJobDeferInput = {
     name: string;
@@ -4005,27 +4432,6 @@ export type RuntimeJobRecordInput = {
     status: string;
     detail?: string;
 };
-export type RuntimeLifecycleSnapshot = {
-    startedAt: string;
-    hostServicesStarted: boolean;
-    phases: RuntimePhaseSnapshot[];
-};
-export type RuntimePhaseSnapshot = {
-    name: string;
-    status: string;
-    detail: string;
-    updatedAt: string;
-};
-export type RuntimeSyncDomainSnapshot = {
-    domain: string;
-    status: string;
-    detail: string;
-    updatedAt: string;
-    revision: number;
-    pendingCount: number;
-    failureCount: number;
-};
-export type RuntimeSyncSnapshot = { domains: RuntimeSyncDomainSnapshot[] };
 export type ScreenshotFolderInfo = {
     path: string;
     parentPath: string | null;
@@ -4096,6 +4502,42 @@ export type SessionSummary = {
     busy: boolean;
     updatedAt: string;
 };
+export type ShareCollectionCreateInput = {
+    title: string;
+    listed: boolean;
+    includeNotes: boolean;
+    worldIds: string[];
+};
+export type ShareCollectionCreateResult = {
+    id: string;
+    url: string;
+    worldCount: number;
+    skippedWorlds: ShareCollectionSkippedWorld[];
+};
+export type ShareCollectionSkippedWorld = { worldId: string; name: string };
+export type SharedCollectionImportStartInput = {
+    worldIds: string[];
+    groupName: string;
+};
+export type SharedCollectionImportState =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+export type SharedCollectionImportStatus = {
+    runId: string;
+    status: SharedCollectionImportState;
+    total: number;
+    processed: number;
+    imported: number;
+    failed: number;
+    groupName: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    lastError: string | null;
+};
 export type SocialFavoritesBaselineInput = {
     userId?: string;
     endpoint?: string;
@@ -4107,6 +4549,32 @@ export type SocialFavoritesBaselineOutput = {
     stale: boolean;
     count: number;
     snapshot: RawJson | null;
+};
+export type SocialFriendMutationInput = {
+    ownerUserId: string;
+    endpoint?: string;
+    targetUserId: string;
+    targetDisplayName?: string;
+};
+export type SocialFriendMutationOutcome = {
+    status: SocialFriendMutationStatus;
+    targetUserId: string;
+    localError?: string | null;
+};
+export type SocialFriendMutationStatus = 'applied' | 'remoteOkLocalFailed';
+export type SocialFriendRequestAcceptInput = {
+    ownerUserId: string;
+    endpoint?: string;
+    notificationId: string;
+    targetUserId: string;
+    targetDisplayName?: string;
+};
+export type SocialFriendRequestCancelInput = {
+    ownerUserId: string;
+    endpoint?: string;
+    targetUserId: string;
+    targetDisplayName?: string;
+    notificationId?: string;
 };
 export type SocialFriendRosterBaselineInput = {
     userId?: string;
@@ -4123,17 +4591,6 @@ export type SocialFriendRosterBaselineOutput = {
     snapshot: RawJson | null;
     friendLogChanged: boolean;
 };
-export type TauriDownloadEvent =
-    | { event: 'Started'; data: { contentLength: number | null } }
-    | { event: 'Progress'; data: { chunkLength: number } }
-    | { event: 'Finished' };
-export type TauriUpdateMetadata = {
-    currentVersion: string;
-    version: string;
-    date: string | null;
-    body: string | null;
-    rawJson: JsonValue;
-};
 export type TelemetryClientEvent =
     | { type: 'pageVisit'; route: string }
     | {
@@ -4143,15 +4600,20 @@ export type TelemetryClientEvent =
           summary: string | null;
       }
     | { type: 'viewModeSwitch'; dimension: string; value: string }
-    | { type: 'assistantOpen' }
-    | { type: 'assistantApiKeyConfigured' }
     | {
           type: 'assistantToolError';
           source: string | null;
           summary: string | null;
       }
     | { type: 'assistantTurnError'; code: string; summary: string | null };
+export type TtsVoice = { id: string; name: string; language: string };
 export type TurnStatus = 'running' | 'done' | 'error' | 'cancelled';
+export type UpdaterMetadata = {
+    currentVersion: string;
+    version: string;
+    date: string | null;
+    body: string | null;
+};
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserNoteOutput = {
     userId: string;
@@ -4168,7 +4630,10 @@ export type VrOverlayRuntimeSnapshot = {
     steamvrRunning: boolean;
     activeBackend: string | null;
 };
-export type VrchatAuthCodeInput = { endpoint?: string; code?: string };
+export type VrchatAuthAutoLoginStartInput = {
+    endpoint?: string;
+    userId?: string;
+};
 export type VrchatAuthEndpointInput = { endpoint?: string };
 export type VrchatAuthFileAnalysisInput = {
     endpoint?: string;
@@ -4176,27 +4641,23 @@ export type VrchatAuthFileAnalysisInput = {
     version?: number;
     variant?: string;
 };
-export type VrchatAuthLoginBasicInput = {
-    endpoint?: string;
-    username?: string;
-    password?: string;
-};
-export type VrchatAuthLoginSuccessRecordInput = {
-    user?: JsonValue;
-    loginParams?: JsonValue;
-    storedLoginParams?: JsonValue | null;
-    saveCredentials?: boolean;
-};
 export type VrchatAuthLogoutRecordInput = {
     userOrUserId?: JsonValue;
     clearLastUserLoggedIn?: boolean | null;
     cookies?: JsonValue | null;
 };
 export type VrchatAuthSavedCredentialDeleteInput = { userId?: string };
-export type VrchatAuthSavedCredentialLoginStartInput = {
-    userId?: string;
-    endpoint?: string;
-};
+export type VrchatAuthSessionRespondInput = { method?: string; code?: string };
+export type VrchatAuthSessionStartInput =
+    | {
+          mode: 'basic';
+          endpoint?: string;
+          username?: string;
+          password?: string;
+          saveCredentials?: boolean;
+      }
+    | { mode: 'savedCredential'; endpoint?: string; userId?: string }
+    | { mode: 'cookieRestore'; endpoint?: string };
 export type VrchatAvatarEndpointInput = { endpoint?: string };
 export type VrchatAvatarFileInput = { endpoint?: string; fileId?: string };
 export type VrchatAvatarIdInput = { endpoint?: string; avatarId?: string };
@@ -4296,11 +4757,6 @@ export type VrchatFavoriteWorldsInput = {
     ownerId?: string;
     userId?: string;
     tag?: string;
-};
-export type VrchatFriendCancelRequestInput = {
-    userId?: string;
-    notificationId?: string;
-    endpoint?: string;
 };
 export type VrchatFriendUserInput = { userId?: string; endpoint?: string };
 export type VrchatFriendsGetInput = {

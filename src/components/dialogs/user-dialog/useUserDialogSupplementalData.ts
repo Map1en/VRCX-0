@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type SetStateAction } from 'react';
 
 import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -9,16 +9,27 @@ import {
     cacheUserStats,
     DEFAULT_USER_STATS,
     readCachedPreviousInstances,
-    readCachedUserStats
+    readCachedUserStats,
+    type UserDialogStats
 } from './userDialogCache';
 import {
     isSameLocationTag,
     resolvePresenceLocation
 } from './userDialogContentHelpers';
 import { normalizeUserId } from './userProfileFields';
+import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
-function normalizeMutualFriendCount(value: any) {
-    const source = value && typeof value === 'object' ? value : {};
+type DialogRecord = Record<string, unknown>;
+type SupplementalStats = UserDialogStats & { mutualFriendCount?: number };
+
+function record(value: unknown): DialogRecord {
+    return value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value))
+        : {};
+}
+
+function normalizeMutualFriendCount(value: unknown) {
+    const source = record(value);
     return (
         Number(
             source.friends ??
@@ -29,22 +40,47 @@ function normalizeMutualFriendCount(value: any) {
     );
 }
 
-function resolveFriendedAtFromHistoryRows(rows: any) {
+function resolveFriendedAtFromHistoryRows(rows: unknown) {
     const latestRelationshipRow = Array.isArray(rows)
-        ? rows.find(
-              (row: any) => row?.type === 'Friend' || row?.type === 'Unfriend'
-          )
+        ? rows
+              .map(record)
+              .find((row) => row.type === 'Friend' || row.type === 'Unfriend')
         : null;
     return latestRelationshipRow?.type === 'Friend'
-        ? latestRelationshipRow.created_at || ''
+        ? normalizeUserId(latestRelationshipRow.created_at)
         : '';
 }
 
 type RepresentedGroupState = {
     endpoint: unknown;
-    group: unknown;
+    group: Awaited<
+        ReturnType<
+            typeof import('@/repositories/userProfileRepository').getRepresentedGroup
+        >
+    >;
     status: string;
     userId: unknown;
+};
+
+type UseUserDialogSupplementalDataInput = {
+    activeUserTargetRef: {
+        current: {
+            endpoint?: string;
+            userId?: string;
+        };
+    };
+    currentEndpoint: string;
+    currentGameDestination: unknown;
+    currentGameLocation: unknown;
+    currentSnapshotLocation: unknown;
+    currentUserId: unknown;
+    currentUserSnapshot: DialogRecord | null;
+    isTargetCurrentUser: boolean;
+    normalizedUserId: string;
+    openNonce: unknown;
+    profile: UserDialogProfileRecord | null;
+    reloadToken: number;
+    targetKey: string;
 };
 
 export function useUserDialogSupplementalData({
@@ -61,14 +97,17 @@ export function useUserDialogSupplementalData({
     profile,
     reloadToken,
     targetKey
-}: any) {
+}: UseUserDialogSupplementalDataInput) {
     const [previousInstancesState, setPreviousInstancesState] = useState(
         () => ({
             targetKey,
             rows: readCachedPreviousInstances(targetKey)
         })
     );
-    const [userStatsState, setUserStatsState] = useState(() => ({
+    const [userStatsState, setUserStatsState] = useState<{
+        targetKey: string;
+        stats: SupplementalStats;
+    }>(() => ({
         targetKey,
         stats: readCachedUserStats(targetKey)
     }));
@@ -100,8 +139,8 @@ export function useUserDialogSupplementalData({
           : 'idle';
 
     const setPreviousInstances = useCallback(
-        (nextValue: any) => {
-            setPreviousInstancesState((currentState: any) => {
+        (nextValue: SetStateAction<unknown[]>) => {
+            setPreviousInstancesState((currentState) => {
                 const currentRows =
                     currentState.targetKey === targetKey
                         ? currentState.rows
@@ -122,8 +161,8 @@ export function useUserDialogSupplementalData({
     );
 
     const setUserStatsForTarget = useCallback(
-        (nextValue: any) => {
-            setUserStatsState((currentState: any) => {
+        (nextValue: SetStateAction<SupplementalStats>) => {
+            setUserStatsState((currentState) => {
                 const currentStats =
                     currentState.targetKey === targetKey
                         ? currentState.stats
@@ -173,7 +212,7 @@ export function useUserDialogSupplementalData({
                 endpoint: targetEndpoint,
                 force: reloadToken > 0
             })
-            .then((group: any) => {
+            .then((group) => {
                 if (
                     !active ||
                     activeUserTargetRef.current.userId !== targetUserId ||
@@ -226,7 +265,7 @@ export function useUserDialogSupplementalData({
             .getPreviousInstancesByUserId({
                 id: profile.id
             })
-            .then((rows: any) => {
+            .then((rows) => {
                 if (!active) {
                     return;
                 }
@@ -287,7 +326,7 @@ export function useUserDialogSupplementalData({
                 },
                 inCurrentWorld
             )
-            .then((stats: any) => {
+            .then((stats) => {
                 if (!active) {
                     return;
                 }
@@ -295,22 +334,22 @@ export function useUserDialogSupplementalData({
                     stats?.previousDisplayNames instanceof Map
                         ? Array.from(
                               stats.previousDisplayNames,
-                              ([displayName, updated_at]: any) => ({
-                                  displayName,
-                                  updated_at
+                              ([displayName, updated_at]) => ({
+                                  displayName: normalizeUserId(displayName),
+                                  updated_at: normalizeUserId(updated_at)
                               })
                           )
                         : Array.isArray(stats?.previousDisplayNames)
                           ? stats.previousDisplayNames
                           : [];
-                const nextStats: any = {
+                const nextStats = {
                     timeSpent: Number(stats?.timeSpent) || 0,
-                    lastSeen: stats?.lastSeen || '',
+                    lastSeen: normalizeUserId(stats?.lastSeen),
                     joinCount: Number(stats?.joinCount) || 0,
                     previousDisplayNames
                 };
-                setUserStatsForTarget((current: any) => {
-                    const mergedStats: any = {
+                setUserStatsForTarget((current) => {
+                    const mergedStats = {
                         ...current,
                         ...nextStats
                     };
@@ -355,13 +394,13 @@ export function useUserDialogSupplementalData({
                 userId: profile.id,
                 endpoint: currentEndpoint
             })
-            .then((counts: any) => {
+            .then((counts) => {
                 if (!active) {
                     return;
                 }
                 const mutualFriendCount = normalizeMutualFriendCount(counts);
-                setUserStatsForTarget((current: any) => {
-                    const nextStats: any = {
+                setUserStatsForTarget((current) => {
+                    const nextStats = {
                         ...current,
                         mutualFriendCount
                     };
@@ -394,7 +433,7 @@ export function useUserDialogSupplementalData({
         const targetUserId = normalizeUserId(profile?.id);
 
         if (!ownerUserId || !targetUserId || isTargetCurrentUser) {
-            setUserStatsForTarget((current: any) => ({
+            setUserStatsForTarget((current) => ({
                 ...current,
                 friendedAt: ''
             }));
@@ -408,12 +447,14 @@ export function useUserDialogSupplementalData({
                 targetUserId,
                 types: ['Friend', 'Unfriend']
             })
-            .then((rows: any) => {
+            .then((rows) => {
                 if (!active) {
                     return;
                 }
-                const friendedAt = resolveFriendedAtFromHistoryRows(rows);
-                setUserStatsForTarget((current: any) => ({
+                const friendedAt = normalizeUserId(
+                    resolveFriendedAtFromHistoryRows(rows)
+                );
+                setUserStatsForTarget((current) => ({
                     ...current,
                     friendedAt
                 }));

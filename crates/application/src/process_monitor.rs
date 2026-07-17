@@ -6,6 +6,8 @@ use std::time::Duration;
 use crate::log_watcher::LogWatcher;
 pub use vrcx_0_core::game_process::GameProcessEvent;
 
+const GAME_STOP_CONFIRMATION_POLLS: u8 = 3;
+
 pub trait GameProcessEventSink: Send + Sync {
     fn on_game_process_event(&self, event: GameProcessEvent) -> crate::Result<()>;
 }
@@ -71,15 +73,21 @@ impl ProcessMonitor {
         let handle = std::thread::spawn(move || {
             let mut actions = actions;
             let mut first_poll = true;
+            let mut consecutive_game_misses = 0;
 
             while !stop_requested.load(Ordering::Acquire)
                 && current_generation.load(Ordering::Acquire) == generation
             {
                 let status = actions.detect();
-                let game_found = status.is_game_running;
+                let prev_game = game.load(Ordering::Relaxed);
+                let game_found = resolve_debounced_game_running(
+                    status.is_game_running,
+                    prev_game,
+                    &mut consecutive_game_misses,
+                );
                 let steamvr_found = status.is_steamvr_running;
 
-                let prev_game = game.swap(game_found, Ordering::Relaxed);
+                game.store(game_found, Ordering::Relaxed);
                 let prev_steamvr = steamvr.swap(steamvr_found, Ordering::Relaxed);
                 let game_changed = prev_game != game_found;
                 let steamvr_changed = prev_steamvr != steamvr_found;
@@ -150,6 +158,24 @@ impl ProcessMonitor {
     pub fn is_steamvr_running(&self) -> bool {
         self.steamvr_running.load(Ordering::Relaxed)
     }
+}
+
+fn resolve_debounced_game_running(
+    detected_running: bool,
+    committed_running: bool,
+    consecutive_misses: &mut u8,
+) -> bool {
+    if detected_running {
+        *consecutive_misses = 0;
+        return true;
+    }
+    if !committed_running {
+        *consecutive_misses = 0;
+        return false;
+    }
+
+    *consecutive_misses = consecutive_misses.saturating_add(1);
+    *consecutive_misses < GAME_STOP_CONFIRMATION_POLLS
 }
 
 fn dispatch_process_monitor_actions(
@@ -239,5 +265,62 @@ mod tests {
         dispatch_process_monitor_actions(&mut actions, false, false, true, true, true);
 
         assert_eq!(actions.events, vec!["steamvr:true"]);
+    }
+
+    #[test]
+    fn game_stop_requires_consecutive_misses() {
+        let mut consecutive_misses = 0;
+
+        for _ in 1..GAME_STOP_CONFIRMATION_POLLS {
+            assert!(resolve_debounced_game_running(
+                false,
+                true,
+                &mut consecutive_misses
+            ));
+        }
+        assert!(!resolve_debounced_game_running(
+            false,
+            true,
+            &mut consecutive_misses
+        ));
+    }
+
+    #[test]
+    fn detected_game_resets_pending_stop() {
+        let mut consecutive_misses = 0;
+
+        assert!(resolve_debounced_game_running(
+            false,
+            true,
+            &mut consecutive_misses
+        ));
+        assert!(resolve_debounced_game_running(
+            true,
+            true,
+            &mut consecutive_misses
+        ));
+        assert_eq!(consecutive_misses, 0);
+        assert!(resolve_debounced_game_running(
+            false,
+            true,
+            &mut consecutive_misses
+        ));
+    }
+
+    #[test]
+    fn stopped_game_does_not_delay_start_or_remain_pending() {
+        let mut consecutive_misses = GAME_STOP_CONFIRMATION_POLLS - 1;
+
+        assert!(!resolve_debounced_game_running(
+            false,
+            false,
+            &mut consecutive_misses
+        ));
+        assert_eq!(consecutive_misses, 0);
+        assert!(resolve_debounced_game_running(
+            true,
+            false,
+            &mut consecutive_misses
+        ));
     }
 }

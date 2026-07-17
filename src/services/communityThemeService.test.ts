@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { CommunityThemeManifest } from '@/features/themes/communityThemeTypes';
+
 const CATALOG_URL = 'https://themes.example.test/index.json';
 const CSS_FILE_NAME = 'theme.css';
 
@@ -22,6 +24,7 @@ const mocks = vi.hoisted(() => ({
     disableBackgroundImage: vi.fn(),
     isBackgroundImageActive: vi.fn(),
     migrateLegacyNasaApodCommunityTheme: vi.fn(),
+    registerCommunityThemeAppearanceHandlers: vi.fn(),
     applyThemeColor: vi.fn(),
     resolveThemeMode: vi.fn(),
     clearThemeColorInlineProperties: vi.fn(),
@@ -72,7 +75,8 @@ vi.mock('./appearanceConflictCoordinator', () => ({
     isBackgroundImageAppearanceActive: mocks.isBackgroundImageActive,
     migrateLegacyNasaApodCommunityThemeForBackgroundImage:
         mocks.migrateLegacyNasaApodCommunityTheme,
-    registerCommunityThemeAppearanceHandlers: vi.fn()
+    registerCommunityThemeAppearanceHandlers:
+        mocks.registerCommunityThemeAppearanceHandlers
 }));
 
 vi.mock('./themeService', () => ({
@@ -83,7 +87,7 @@ vi.mock('./themeService', () => ({
     setCommunityThemeAppearanceControl: mocks.setCommunityThemeAppearanceControl
 }));
 
-vi.mock('./vrcxCssLayerService', () => ({
+vi.mock('./vrcx0CssLayerService', () => ({
     setVrcxCssLayers: mocks.setVrcxCssLayers
 }));
 
@@ -107,21 +111,30 @@ function themeRecord(
     };
 }
 
-function manifest(id = 'theme-a', patch: Record<string, unknown> = {}) {
+function manifest(
+    id = 'theme-a',
+    patch: Partial<CommunityThemeManifest> = {}
+): CommunityThemeManifest {
     return {
         id,
         name: `${id} name`,
         version: '1.0.0',
         tags: [],
-        author: 'Tester',
+        author: { name: 'Tester', github: 'tester' },
         description: '',
+        testedWith: '2.7.0',
+        remoteAssets: false,
+        darkMode: true,
+        accentMode: true,
+        previewUrl: '',
+        readmeUrl: '',
         ...patch
-    } as any;
+    };
 }
 
 function installBrowserStubs() {
     const attributes = new Map<string, string>();
-    globalThis.document = {
+    vi.stubGlobal('document', {
         documentElement: {
             setAttribute: vi.fn((key: string, value: string) => {
                 attributes.set(key, value);
@@ -136,15 +149,15 @@ function installBrowserStubs() {
                 removeProperty: vi.fn()
             }
         }
-    } as any;
-    globalThis.window = {
+    });
+    vi.stubGlobal('window', {
         setInterval: vi.fn((handler: TimerHandler, timeout?: number) =>
             globalThis.setInterval(handler, timeout)
         ),
         clearInterval: vi.fn((timer: ReturnType<typeof setInterval>) => {
             globalThis.clearInterval(timer);
         })
-    } as any;
+    });
 }
 
 async function loadCommunityThemeService() {
@@ -214,8 +227,37 @@ describe('communityThemeService characterization', () => {
 
     afterEach(() => {
         vi.useRealTimers();
-        delete (globalThis as any).document;
-        delete (globalThis as any).window;
+        vi.unstubAllGlobals();
+    });
+
+    it('keeps the public facade and registers the appearance handlers', async () => {
+        const { service } = await loadCommunityThemeService();
+
+        expect(Object.keys(service).sort()).toEqual([
+            'clearCommunityThemeOverrideCss',
+            'deleteInstalledCommunityTheme',
+            'disableCommunityThemeOverrideCss',
+            'disableInstalledCommunityTheme',
+            'enableInstalledCommunityTheme',
+            'getCommunityThemeOverrideCssSnapshot',
+            'initializeCommunityThemes',
+            'installCommunityTheme',
+            'isCommunityThemeAccentControlled',
+            'loadCatalog',
+            'loadLocalCommunityThemePreview',
+            'saveCommunityThemeOverrideCss',
+            'startLocalCommunityThemePreviewWatch',
+            'stopLocalCommunityThemePreview',
+            'stopLocalCommunityThemePreviewWatch'
+        ]);
+        expect(
+            mocks.registerCommunityThemeAppearanceHandlers
+        ).toHaveBeenCalledWith({
+            disableInstalledCommunityTheme:
+                service.disableInstalledCommunityTheme,
+            stopLocalCommunityThemePreview:
+                service.stopLocalCommunityThemePreview
+        });
     });
 
     it('loads the community theme catalog and records catalog failures', async () => {

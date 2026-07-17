@@ -36,8 +36,10 @@ import {
     SECONDS_PER_MINUTE
 } from '@/shared/constants/time';
 import { usePreferencesStore } from '@/state/preferencesStore';
+import { useProfileBackupStore } from '@/state/profileBackupStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
+import { useWorldCollectionImportStore } from '@/state/worldCollectionImportStore';
 import { ContextMenu, ContextMenuTrigger } from '@/ui/shadcn/context-menu';
 
 import { StatusBarContextMenuContent } from './status-bar/StatusBarContextMenuContent';
@@ -228,6 +230,15 @@ export function AppStatusBar() {
         (state) => state.nowPlaying.length
     );
     const instanceQueue = useRuntimeStore((state) => state.instanceQueue);
+    const friendProfileLoadStatus = useRuntimeStore(
+        (state) => state.friendProfileLoad.status
+    );
+    const friendProfileLoadProcessedFriends = useRuntimeStore(
+        (state) => state.friendProfileLoad.processedFriends
+    );
+    const friendProfileLoadTotalFriends = useRuntimeStore(
+        (state) => state.friendProfileLoad.totalFriends
+    );
     const mutualGraphRunId = useRuntimeStore(
         (state) => state.mutualGraph.runId
     );
@@ -275,6 +286,19 @@ export function AppStatusBar() {
     const proxyEnabled = usePreferencesStore((state) => state.proxyEnabled);
     const proxyServer = usePreferencesStore((state) => state.proxyServer);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
+    const worldCollectionImportActive = useWorldCollectionImportStore(
+        (state) => state.active
+    );
+    const worldCollectionImportProgress = useWorldCollectionImportStore(
+        (state) => state.progress
+    );
+    const worldCollectionImportTotal = useWorldCollectionImportStore(
+        (state) => state.total
+    );
+    const profileBackupStatus = useProfileBackupStore((state) => state.status);
+    const setSystemHostOpen = useRuntimeStore(
+        (state) => state.setSystemHostOpen
+    );
     const [proxyEditorOpen, setProxyEditorOpen] = useState(false);
     const [proxyDraftEnabled, setProxyDraftEnabled] = useState(proxyEnabled);
     const [proxyDraftServer, setProxyDraftServer] = useState(proxyServer);
@@ -343,6 +367,37 @@ export function AppStatusBar() {
             mutualGraphStatus,
             mutualGraphTotalFriends
         ]
+    );
+    const friendProfileLoad = useMemo(
+        () => ({
+            status: friendProfileLoadStatus,
+            processedFriends: friendProfileLoadProcessedFriends,
+            totalFriends: friendProfileLoadTotalFriends
+        }),
+        [
+            friendProfileLoadProcessedFriends,
+            friendProfileLoadStatus,
+            friendProfileLoadTotalFriends
+        ]
+    );
+    const worldCollectionImport = useMemo(
+        () => ({
+            active: worldCollectionImportActive,
+            progress: worldCollectionImportProgress,
+            total: worldCollectionImportTotal
+        }),
+        [
+            worldCollectionImportActive,
+            worldCollectionImportProgress,
+            worldCollectionImportTotal
+        ]
+    );
+    const profileBackup = useMemo(
+        () => ({
+            status: profileBackupStatus,
+            onOpenDetails: () => setSystemHostOpen('profileBackupOpen', true)
+        }),
+        [profileBackupStatus, setSystemHostOpen]
     );
     const vrcStatus = useMemo(
         () => ({
@@ -721,6 +776,7 @@ export function AppStatusBar() {
         formatClock,
         formatDuration,
         formatStatusDate,
+        friendProfileLoad,
         gameStartedAt,
         isGameRunning,
         isSteamVRRunning,
@@ -734,6 +790,7 @@ export function AppStatusBar() {
             server: proxyDraftServer,
             testing: proxyTesting
         },
+        profileBackup,
         proxyEnabled,
         proxyServer,
         runtimeGameState,
@@ -741,6 +798,7 @@ export function AppStatusBar() {
         timezoneOptions,
         visibility,
         visibleClocks,
+        worldCollectionImport,
         vrcStatus,
         zoomLabel: formatZoomPercentage(currentZoomLevel),
         zoomLevel: currentZoomLevel,

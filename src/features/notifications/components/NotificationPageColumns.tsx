@@ -3,6 +3,7 @@ import { CheckIcon, SendIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useMemo, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import type { NotificationResponse } from '@/repositories/notificationPersistenceRepository';
@@ -297,7 +298,7 @@ export function useNotificationColumns({
                                             )
                                         }
                                     >
-                                        <img
+                                        <FadeInImage
                                             src={convertFileUrlToImageUrl(
                                                 imageUrl,
                                                 64

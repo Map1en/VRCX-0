@@ -56,16 +56,16 @@ describe('favorite item helpers', () => {
             { id: 'c', title: 'Alpha', orderIndex: 3, playerCount: 2 }
         ];
 
+        expect(sortFavoriteItems(items, 'date').map((item) => item.id)).toEqual(
+            ['a', 'b', 'c']
+        );
+        expect(sortFavoriteItems(items, 'name').map((item) => item.id)).toEqual(
+            ['a', 'c', 'b']
+        );
         expect(
-            sortFavoriteItems(items, 'date').map((item: any) => item.id)
+            sortFavoriteItems(items, 'players').map((item) => item.id)
         ).toEqual(['a', 'b', 'c']);
-        expect(
-            sortFavoriteItems(items, 'name').map((item: any) => item.id)
-        ).toEqual(['a', 'c', 'b']);
-        expect(
-            sortFavoriteItems(items, 'players').map((item: any) => item.id)
-        ).toEqual(['a', 'b', 'c']);
-        expect(items.map((item: any) => item.id)).toEqual(['b', 'a', 'c']);
+        expect(items.map((item) => item.id)).toEqual(['b', 'a', 'c']);
     });
 
     it('shrinks direct image URLs from 256 to 128 when possible', () => {

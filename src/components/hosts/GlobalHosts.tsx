@@ -5,6 +5,7 @@ import { BackgroundRouteResumeHost } from './BackgroundRouteResumeHost';
 import { CommunityThemeSafetyHost } from './CommunityThemeSafetyHost';
 import { DialogHost } from './DialogHost';
 import { FavoriteImportHost } from './FavoriteImportHost';
+import { FriendProfileLoadHost } from './FriendProfileLoadHost';
 import { LaunchDialogHost } from './LaunchDialogHost';
 import { ModalHost } from './ModalHost';
 import { NotificationHost } from './NotificationHost';
@@ -22,6 +23,7 @@ export function GlobalHosts() {
             <ModalHost />
             <DialogHost />
             <FavoriteImportHost />
+            <FriendProfileLoadHost />
             <NotificationHost />
             <VrcNotificationCenterHost />
             <PostUpdateChangelogToastHost />

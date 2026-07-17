@@ -60,9 +60,9 @@ export function useFriendsLocationsPageController() {
     const roster = useFriendsLocationsRosterState();
     const [activeSegment, setActiveSegment] = useState('online');
     const [searchQuery, setSearchQuery] = useState('');
-    const [collapsedFavoriteGroups, setCollapsedFavoriteGroups] = useState<
-        Set<string>
-    >(() => new Set<string>());
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+        () => new Set<string>()
+    );
     const {
         changeDensityPreference,
         changeShowSameInstanceInOnline,
@@ -91,7 +91,7 @@ export function useFriendsLocationsPageController() {
     const derived = useFriendsLocationsPageDerivedState({
         activeIds: roster.activeIds,
         activeSegment,
-        collapsedFavoriteGroups,
+        collapsedGroups,
         currentUserId: runtime.currentUserId,
         currentUserSnapshot: runtime.currentUserSnapshot,
         deferredSearchQuery,
@@ -148,7 +148,7 @@ export function useFriendsLocationsPageController() {
         currentEndpoint: runtime.currentEndpoint,
         currentInviteLocation: derived.currentInviteLocation,
         currentUserId: runtime.currentUserId ?? '',
-        setCollapsedFavoriteGroups,
+        setCollapsedGroups,
         instanceActionGatesByLocation
     });
     const isError = roster.rosterStatus === 'error';

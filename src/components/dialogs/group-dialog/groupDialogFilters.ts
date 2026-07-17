@@ -1,4 +1,13 @@
-export function getGroupDialogTabs(t: any) {
+import type { TFunction } from 'i18next';
+
+import type {
+    EntityRecord,
+    GroupMemberRow
+} from '@/domain/entities/profileEntities';
+
+import type { EntityDialogTab } from '../EntityDialogScaffold';
+
+export function getGroupDialogTabs(t: TFunction): EntityDialogTab[] {
     return [
         { value: 'overview', label: t('dialog.group.overview.header') },
         { value: 'events', label: t('dialog.group.events.header') },
@@ -13,13 +22,13 @@ export function getGroupDialogTabs(t: any) {
     ];
 }
 
-export function filterGroupPosts(posts: any, queryValue: any) {
+export function filterGroupPosts(posts: EntityRecord[], queryValue: string) {
     const query = queryValue.trim().toLowerCase();
     if (!query) {
         return posts;
     }
-    return posts.filter((post: any) =>
-        [post?.title, post?.text, post?.authorId].some((value: any) =>
+    return posts.filter((post) =>
+        [post.title, post.text, post.authorId].some((value) =>
             String(value || '')
                 .toLowerCase()
                 .includes(query)
@@ -27,18 +36,21 @@ export function filterGroupPosts(posts: any, queryValue: any) {
     );
 }
 
-export function filterGroupMembers(members: any, queryValue: any) {
+export function filterGroupMembers(
+    members: GroupMemberRow[],
+    queryValue: string
+) {
     const query = queryValue.trim().toLowerCase();
     if (!query) {
         return members;
     }
-    return members.filter((member: any) =>
+    return members.filter((member) =>
         [
             member?.user?.displayName,
             member?.displayName,
             member?.userId,
             member?.user?.id
-        ].some((value: any) =>
+        ].some((value) =>
             String(value || '')
                 .toLowerCase()
                 .includes(query)

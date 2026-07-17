@@ -1,26 +1,31 @@
-import { Spinner } from '@/ui/shadcn/spinner';
+import type { ReactNode } from 'react';
 
-function FavoritesEmptyState({ title, description }: any) {
+import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
+
+function FavoritesEmptyState({
+    title,
+    description
+}: {
+    title?: ReactNode;
+    description?: ReactNode;
+}) {
     return (
-        <div className="flex h-full min-h-60 items-center justify-center p-6 text-center">
-            <div className="flex max-w-sm flex-col gap-2">
-                <div className="text-sm font-medium">{title}</div>
-                <div className="text-muted-foreground text-sm">
-                    {description}
-                </div>
-            </div>
-        </div>
+        <EmptyState
+            variant="panel"
+            title={title}
+            description={description}
+            className="h-full min-h-60 border-0 p-6"
+        />
     );
 }
 
-function FavoritesLoadingState({ title }: any) {
+function FavoritesLoadingState({ title }: { title?: ReactNode }) {
     return (
-        <div className="flex h-full min-h-60 items-center justify-center">
-            <div className="text-muted-foreground flex items-center gap-3 text-sm">
-                <Spinner />
-                <span>{title}</span>
-            </div>
-        </div>
+        <LoadingState
+            variant="panel"
+            label={title}
+            className="h-full min-h-60 border-0 p-6"
+        />
     );
 }
 

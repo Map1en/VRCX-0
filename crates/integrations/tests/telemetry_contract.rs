@@ -5,6 +5,12 @@ use vrcx_0_integrations::telemetry::{
     TelemetryContext, TelemetryRuntimeMode,
 };
 
+const SYNTHETIC_PROVIDER_ORG_ID: &str = "org_TESTPROVIDER123456789";
+const SYNTHETIC_PROVIDER_REQUEST_ID: &str = "req_TESTREQUEST123";
+const SYNTHETIC_PROVIDER_KEY_ID: &str = "key_TESTKEYabcdef";
+const SYNTHETIC_PROVIDER_SK_ID: &str = "sk-TESTKEYabcdef";
+const SYNTHETIC_PROVIDER_LONG_TOKEN: &str = "fakeToken0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef";
+
 #[test]
 fn config_snapshot_matches_worker_contract_fields() {
     let snapshot = TelemetryConfigSnapshot {
@@ -13,8 +19,8 @@ fn config_snapshot_matches_worker_contract_fields() {
         xs_notifications: true,
         ovrt_hud_notifications: true,
         ovrt_wrist_notifications: false,
+        hmd_notifications_enabled: true,
         discord_active: false,
-        mcp_server_enabled: false,
         webhook_enabled: false,
         auto_state_change_enabled: false,
         auto_accept_invite_requests: "off".into(),
@@ -36,7 +42,7 @@ fn config_snapshot_matches_worker_contract_fields() {
         "avatarAutoCleanup",
         "backgroundModeEnabled",
         "discordActive",
-        "mcpServerEnabled",
+        "hmdNotificationsEnabled",
         "ovrtHudNotifications",
         "ovrtWristNotifications",
         "themeMode",
@@ -117,7 +123,7 @@ fn error_summary_and_signature_match_existing_contract() {
         Some("read_user_note"),
         None,
         None,
-        Some("args=<text>; result=<text>"),
+        Some("args=<text>; result=timeout"),
         None,
     );
 
@@ -125,8 +131,33 @@ fn error_summary_and_signature_match_existing_contract() {
     assert_eq!(detail.source.as_deref(), Some("read_user_note"));
     assert_eq!(
         detail.summary.as_deref(),
-        Some("args=<text>; result=<text>")
+        Some("args=<text>; result=timeout")
     );
-    assert_eq!(detail.signature, "tool_error:e45b6a94");
+    assert_eq!(detail.signature, "tool_error:00d540ca");
     assert_eq!(detail.count, 1);
+}
+
+#[test]
+fn error_summary_redacts_provider_ids_tokens_and_line_timestamps() {
+    let summary = sanitize_error_summary(format!(
+        "2026-07-07T12:34:56.789Z LLM failed for {SYNTHETIC_PROVIDER_ORG_ID} {SYNTHETIC_PROVIDER_REQUEST_ID} {SYNTHETIC_PROVIDER_SK_ID} {SYNTHETIC_PROVIDER_LONG_TOKEN}"
+    ));
+
+    assert_eq!(summary, "LLM failed for <id> <id> <id> <token>");
+}
+
+#[test]
+fn error_summary_redacts_provider_id_variants() {
+    for raw in [
+        SYNTHETIC_PROVIDER_ORG_ID,
+        "req-TESTREQUEST123",
+        SYNTHETIC_PROVIDER_KEY_ID,
+        SYNTHETIC_PROVIDER_SK_ID,
+        "sk_TESTKEYabcdef",
+    ] {
+        assert_eq!(
+            sanitize_error_summary(format!("provider rejected {raw}")),
+            "provider rejected <id>"
+        );
+    }
 }

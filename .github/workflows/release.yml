@@ -1,4 +1,4 @@
-name: Package
+name: Release
 
 on:
     workflow_dispatch:
@@ -8,11 +8,11 @@ concurrency:
     cancel-in-progress: true
 
 permissions:
-    contents: write
+    contents: read
 
 jobs:
     prepare:
-        name: Prepare release metadata
+        name: Prepare Release Metadata
         runs-on: ubuntu-24.04
         outputs:
             base_version: ${{ steps.version.outputs.base_version }}
@@ -20,7 +20,7 @@ jobs:
             display_version: ${{ steps.version.outputs.display_version }}
             tag: ${{ steps.version.outputs.tag }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - uses: actions/setup-node@v6
               with:
@@ -52,7 +52,6 @@ jobs:
                     - label: Linux Packages
                       os: ubuntu-24.04
                       rust_target: ''
-                      build_command: npm run tauri:build -- --config src-tauri/tauri.linux.conf.json --bundles appimage,deb,rpm
                       artifact_name: linux-packages
                       artifact_path: |
                           target/release/bundle/appimage/*.AppImage
@@ -68,6 +67,7 @@ jobs:
                       dmg_asset_arch: macos_aarch64
                       updater_target: macos-aarch64-stable
                       updater_asset_name: update_macos_aarch64.app.tar.gz
+                      webkit_build_target: safari18.2
                       build_command: npm run tauri:build -- --target aarch64-apple-darwin --bundles app,dmg
                       artifact_name: macos-aarch64-dmg
                       artifact_path: |
@@ -80,6 +80,7 @@ jobs:
                       dmg_asset_arch: macos_x86_64
                       updater_target: macos-x86_64-stable
                       updater_asset_name: update_macos_x86_64.app.tar.gz
+                      webkit_build_target: safari18.2
                       build_command: npm run tauri:build -- --target x86_64-apple-darwin --bundles app,dmg
                       artifact_name: macos-x86_64-dmg
                       artifact_path: |
@@ -87,7 +88,7 @@ jobs:
                           target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
                           target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - uses: dtolnay/rust-toolchain@stable
 
@@ -95,46 +96,13 @@ jobs:
               if: matrix.rust_target != ''
               run: rustup target add "${{ matrix.rust_target }}"
 
-            - uses: actions/setup-node@v6
-              with:
-                  node-version: 24.x
-                  cache: npm
+            - uses: ./.github/actions/setup-node
 
-            # - uses: Swatinem/rust-cache@v2
-            #   with:
-            #       workspaces: . -> target
-
-            - name: Install Linux dependencies
+            - name: Install Linux package dependencies
               if: runner.os == 'Linux'
-              run: |
-                  webkitgtk_version="2.44.0-2"
-
-                  sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends \
-                      build-essential \
-                      clang \
-                      cmake \
-                      curl \
-                      file \
-                      g++ \
-                      libayatana-appindicator3-dev \
-                      libclang-dev \
-                      libssl-dev \
-                      libxdo-dev \
-                      librsvg2-dev \
-                      patchelf \
-                      rpm \
-                      wget
-                  sudo apt-get install -y --no-install-recommends \
-                      libgtk-3-dev \
-                      libwebkit2gtk-4.1-0="$webkitgtk_version" \
-                      libwebkit2gtk-4.1-dev="$webkitgtk_version" \
-                      libjavascriptcoregtk-4.1-0="$webkitgtk_version" \
-                      libjavascriptcoregtk-4.1-dev="$webkitgtk_version" \
-                      gir1.2-javascriptcoregtk-4.1="$webkitgtk_version" \
-                      gir1.2-webkit2-4.1="$webkitgtk_version"
-
-            - run: npm ci
+              uses: ./.github/actions/setup-linux-tauri
+              with:
+                  mode: package
 
             - name: Inject updater public key
               env:
@@ -151,7 +119,20 @@ jobs:
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY_PASSWORD }}
                   TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-              run: ${{ matrix.build_command }}
+                  VRCX_0_WEBKIT_BUILD_TARGET: ${{ matrix.webkit_build_target }}
+              run: |
+                  if [[ "$RUNNER_OS" == "Linux" ]]; then
+                      VRCX_0_WEBKIT_BUILD_TARGET=safari17 \
+                          npm run tauri:build -- \
+                          --config src-tauri/tauri.linux.conf.json \
+                          --bundles appimage
+                      VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
+                          npm run tauri:build -- \
+                          --config src-tauri/tauri.linux.conf.json \
+                          --bundles deb,rpm
+                      exit 0
+                  fi
+                  ${{ matrix.build_command }}
 
             - name: Prepare Linux release and updater assets
               if: runner.os == 'Linux'
@@ -273,19 +254,21 @@ jobs:
                   if-no-files-found: error
 
     publish-draft:
-        name: Upload draft release assets
+        name: Publish Draft Release
         needs:
             - prepare
             - package
         runs-on: ubuntu-24.04
+        permissions:
+            contents: write
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - uses: actions/setup-node@v6
               with:
                   node-version: 24.x
 
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   path: release-assets
                   merge-multiple: true

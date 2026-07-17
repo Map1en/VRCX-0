@@ -70,6 +70,22 @@ pub fn compute_user_platform(platform: &str, last_platform: &str) -> String {
     last_platform.to_string()
 }
 
+pub fn trust_level_differs(previous: &str, next: &str) -> bool {
+    let previous = previous.trim();
+    let next = next.trim();
+    !previous.is_empty() && !next.is_empty() && previous != next
+}
+
+pub fn trust_level_changed(previous: &str, next: &str) -> bool {
+    let previous = previous.trim();
+    let next = next.trim();
+    trust_level_differs(previous, next)
+        && !matches!(
+            (previous, next),
+            ("Trusted User", "Veteran User") | ("Veteran User", "Trusted User")
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,5 +138,15 @@ mod tests {
         assert_eq!(compute_user_platform("web", "android"), "android");
         assert_eq!(compute_user_platform("offline", "android"), "android");
         assert_eq!(compute_user_platform("", "android"), "android");
+    }
+
+    #[test]
+    fn legacy_trusted_and_veteran_labels_are_equivalent() {
+        assert!(trust_level_differs("Trusted User", "Veteran User"));
+        assert!(!trust_level_changed("Trusted User", "Veteran User"));
+        assert!(!trust_level_changed("Veteran User", "Trusted User"));
+        assert!(!trust_level_differs("", "Known User"));
+        assert!(!trust_level_changed("", "Known User"));
+        assert!(trust_level_changed("Known User", "Trusted User"));
     }
 }

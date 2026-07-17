@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import * as friendsLocationsRows from './friendsLocationsRows';
 import {
     buildFavoriteGroupLabelsByFriendId,
     buildSameInstanceGroups,
     compareFavoriteGroups,
+    isFriendInPrivateLocation,
     isOnlineFriend,
     normalizeDisplayText,
     normalizeFriendsLocationId,
+    partitionFriendsByPrivateLocation,
     resolveDisplayWorldName,
     resolveFavoriteGroupLabels,
     resolveFriendsLocationsCurrentInviteLocation,
@@ -21,6 +24,38 @@ import {
 } from './friendsLocationsSearch';
 
 describe('friends locations row helpers', () => {
+    it('keeps the public helper facade stable', () => {
+        expect(Object.keys(friendsLocationsRows).sort()).toEqual([
+            'buildFavoriteGroupLabelsByFriendId',
+            'buildFriendSections',
+            'buildSameInstanceGroups',
+            'buildSameInstanceSections',
+            'compareFavoriteGroups',
+            'isFriendInPrivateLocation',
+            'isOnlineFriend',
+            'isRawWorldReference',
+            'isSentinelLocationValue',
+            'isShareableInstanceLocation',
+            'normalizeDisplayText',
+            'normalizeFriendsLocationId',
+            'partitionFriendsByPrivateLocation',
+            'resolveDisplayWorldName',
+            'resolveFavoriteGroupLabels',
+            'resolveFriendGroupName',
+            'resolveFriendTravelingWorldId',
+            'resolveFriendTravelingWorldName',
+            'resolveFriendWorldName',
+            'resolveFriendsLocationsCurrentInviteLocation',
+            'resolveInstanceSectionDescriptor',
+            'resolveLocationSummary',
+            'resolveLocationTarget',
+            'resolvePresenceLocation',
+            'resolveWorldDialogTarget',
+            'resolveWorldIdCandidate',
+            'uniqueFriendsById'
+        ]);
+    });
+
     it('normalizes ids and display text from strings and location-like objects', () => {
         expect(normalizeFriendsLocationId('  usr_1  ')).toBe('usr_1');
         expect(normalizeFriendsLocationId({ tag: 'wrld_1:123' })).toBe(
@@ -51,9 +86,9 @@ describe('friends locations row helpers', () => {
     });
 
     it('deduplicates friends by id while keeping anonymous rows', () => {
-        const first: any = { id: 'usr_1', displayName: 'First' };
-        const duplicate: any = { id: 'usr_1', displayName: 'Duplicate' };
-        const anonymous: any = { displayName: 'Anonymous' };
+        const first = { id: 'usr_1', displayName: 'First' };
+        const duplicate = { id: 'usr_1', displayName: 'Duplicate' };
+        const anonymous = { displayName: 'Anonymous' };
 
         expect(uniqueFriendsById([first, duplicate, anonymous])).toEqual([
             first,
@@ -115,17 +150,17 @@ describe('friends locations row helpers', () => {
     it('groups friends who share the same concrete instance location', () => {
         const sharedLocation = 'wrld_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:123';
         const soloLocation = 'wrld_bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb:456';
-        const first: any = {
+        const first = {
             id: 'usr_1',
             displayName: 'First',
             location: sharedLocation
         };
-        const second: any = {
+        const second = {
             id: 'usr_2',
             displayName: 'Second',
             location: sharedLocation
         };
-        const solo: any = {
+        const solo = {
             id: 'usr_3',
             displayName: 'Solo',
             location: soloLocation
@@ -141,7 +176,7 @@ describe('friends locations row helpers', () => {
 
     it('matches search text against friend and location summary fields', () => {
         const favoriteIds = new Set(['usr_1']);
-        const friend: any = {
+        const friend = {
             id: 'usr_1',
             displayName: 'Maple',
             username: 'maple_user',
@@ -182,6 +217,25 @@ describe('friends locations row helpers', () => {
         );
     });
 
+    it('separates private locations from visible or unknown locations', () => {
+        expect(isFriendInPrivateLocation({ location: 'private' })).toBe(true);
+        expect(isFriendInPrivateLocation({ stateBucket: 'online' })).toBe(
+            false
+        );
+        expect(isFriendInPrivateLocation({ location: 'wrld_123:456' })).toBe(
+            false
+        );
+
+        const visible = { id: 'usr_visible', location: 'wrld_123:456' };
+        const privateFriend = { id: 'usr_private', location: 'private' };
+        expect(
+            partitionFriendsByPrivateLocation([privateFriend, visible])
+        ).toEqual({
+            visibleLocation: [visible],
+            privateLocation: [privateFriend]
+        });
+    });
+
     it('sorts favorite groups by configured order before display label', () => {
         const rows = [
             { key: 'group_b', label: 'Beta' },
@@ -191,10 +245,10 @@ describe('friends locations row helpers', () => {
 
         expect(
             [...rows]
-                .sort((left: any, right: any) =>
+                .sort((left, right) =>
                     compareFavoriteGroups(left, right, ['group_b'])
                 )
-                .map((row: any) => row.key)
+                .map((row) => row.key)
         ).toEqual(['group_b', 'group_c', 'group_a']);
     });
 });

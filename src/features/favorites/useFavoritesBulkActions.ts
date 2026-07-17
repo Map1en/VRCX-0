@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type {
+    FavoriteTransferItemResult,
+    FavoriteTransferMode
+} from '@/platform/tauri/bindings';
 import favoriteTransferRepository from '@/repositories/favoriteTransferRepository';
+import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 
 import type {
@@ -12,10 +17,15 @@ import type {
     FavoriteSource
 } from './favoritesTypes';
 import {
+    buildFavoriteCopyTargets,
+    buildFavoriteMoveTargets,
     buildFavoriteTransferFailureDescription,
     buildFavoriteTransferInput,
     buildFavoriteTransferSuccessfulKeys,
-    buildFavoriteTransferTargets
+    FAVORITE_TRANSFER_RECOVERED_GROUP_NAME,
+    groupFavoriteItemsBySourceGroup,
+    resolveFavoriteSourceGroup,
+    summarizeFavoriteTransferStatuses
 } from './favoriteTransfer';
 
 export function useFavoritesBulkActions({
@@ -25,12 +35,11 @@ export function useFavoritesBulkActions({
     kind,
     localGroups,
     refreshFavorites,
+    remoteFavoritesByObjectId,
     remoteGroups,
-    selectedGroup,
     selectedContentItems,
     selectedGroupKey,
     selectedSource,
-    setEditMode,
     setSelectedKeys
 }: {
     currentEndpoint: string;
@@ -45,25 +54,52 @@ export function useFavoritesBulkActions({
     kind: FavoriteKind;
     localGroups: FavoriteGroup[];
     refreshFavorites(options?: { silent?: boolean }): Promise<void>;
+    remoteFavoritesByObjectId: Record<string, FavoriteRecord | undefined>;
     remoteGroups: FavoriteGroup[];
-    selectedGroup: FavoriteGroup | null;
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setEditMode(value: boolean): void;
     setSelectedKeys(value: string[] | ((current: string[]) => string[])): void;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const moveTargets = useMemo(
         () =>
-            buildFavoriteTransferTargets({
+            buildFavoriteMoveTargets({
                 remoteGroups,
                 localGroups,
                 selectedSource,
-                selectedGroupKey
+                selectedGroupKey,
+                selectedItems: selectedContentItems,
+                remoteFavoritesByObjectId
             }),
-        [localGroups, remoteGroups, selectedGroupKey, selectedSource]
+        [
+            localGroups,
+            remoteFavoritesByObjectId,
+            remoteGroups,
+            selectedContentItems,
+            selectedGroupKey,
+            selectedSource
+        ]
+    );
+    const copyTargets = useMemo(
+        () =>
+            buildFavoriteCopyTargets({
+                remoteGroups,
+                localGroups,
+                selectedSource,
+                selectedGroupKey,
+                selectedItems: selectedContentItems,
+                remoteFavoritesByObjectId
+            }),
+        [
+            localGroups,
+            remoteFavoritesByObjectId,
+            remoteGroups,
+            selectedContentItems,
+            selectedGroupKey,
+            selectedSource
+        ]
     );
 
     async function bulkRemoveSelection() {
@@ -111,7 +147,6 @@ export function useFavoritesBulkActions({
             );
         }
         if (failedCount === 0) {
-            setEditMode(false);
             toast.success(
                 t('view.favorite.success.selected_favorites_removed')
             );
@@ -125,68 +160,164 @@ export function useFavoritesBulkActions({
         );
     }
 
-    async function bulkMoveSelection(targetGroup: FavoriteGroup) {
-        if (!selectedContentItems.length || !selectedGroup) {
-            return;
+    function describeFavoriteTransferNotices(
+        summary: ReturnType<typeof summarizeFavoriteTransferStatuses>
+    ): string[] {
+        const notices: string[] = [];
+        if (summary.restoredToSource > 0) {
+            notices.push(
+                t(
+                    'view.favorites.dynamic.restored_value_to_source_after_failed_move',
+                    { value: summary.restoredToSource }
+                )
+            );
         }
-        try {
-            const result = await favoriteTransferRepository.transferFavorites(
-                buildFavoriteTransferInput({
-                    endpoint: currentEndpoint,
-                    kind,
-                    sourceGroup: selectedGroup,
-                    targetGroup,
-                    selectedItems: selectedContentItems
+        if (summary.savedToLocalFallback > 0) {
+            notices.push(
+                t(
+                    'view.favorites.dynamic.saved_value_to_local_fallback_group',
+                    {
+                        value: summary.savedToLocalFallback,
+                        value2: FAVORITE_TRANSFER_RECOVERED_GROUP_NAME
+                    }
+                )
+            );
+        }
+        if (summary.targetAddedSourceDeleteFailed > 0) {
+            notices.push(
+                t(
+                    'view.favorites.dynamic.target_added_value_source_delete_failed',
+                    { value: summary.targetAddedSourceDeleteFailed }
+                )
+            );
+        }
+        if (summary.skippedAlreadyPresent > 0) {
+            notices.push(
+                t('view.favorites.dynamic.skipped_value_already_present', {
+                    value: summary.skippedAlreadyPresent
                 })
             );
-            const successfulKeys = buildFavoriteTransferSuccessfulKeys(
-                result.items
-            );
-            if (result.succeeded > 0) {
-                await refreshFavorites({ silent: true });
-                setSelectedKeys((current) =>
-                    current.filter((key) => !successfulKeys.has(key))
-                );
-            }
-            if (result.failed === 0) {
-                const successMessage =
-                    selectedGroup.source === 'local' &&
-                    targetGroup.source === 'remote'
-                        ? t('view.favorite.success.selected_favorites_copied')
-                        : t('view.favorite.success.selected_favorites_moved');
-                setEditMode(false);
-                toast.success(successMessage);
-                return;
-            }
-            const fallbackMessage = t(
-                'view.favorites.toast.failed_to_move_selected_favorites'
-            );
-            const description = buildFavoriteTransferFailureDescription({
-                results: result.items,
-                selectedItems: selectedContentItems,
-                fallbackMessage
+        }
+        return notices;
+    }
+
+    async function bulkTransferSelection(
+        targetGroup: FavoriteGroup,
+        mode: FavoriteTransferMode
+    ) {
+        if (!selectedContentItems.length) {
+            return;
+        }
+        const batches = groupFavoriteItemsBySourceGroup(selectedContentItems);
+        let succeeded = 0;
+        let failed = 0;
+        const successfulKeys = new Set<string>();
+        const allResults: FavoriteTransferItemResult[] = [];
+        let thrownErrorMessage = '';
+
+        for (const batchItems of batches) {
+            const sourceGroup = resolveFavoriteSourceGroup({
+                item: batchItems[0],
+                remoteGroups,
+                localGroups
             });
-            toast.error(
-                t('view.favorites.dynamic.transferred_value_value_failed', {
-                    value: result.succeeded,
-                    value2: result.failed
-                }),
-                description ? { description } : undefined
-            );
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_move_selected_favorites'
-                      )
+            try {
+                const result =
+                    await favoriteTransferRepository.transferFavorites(
+                        buildFavoriteTransferInput({
+                            endpoint: currentEndpoint,
+                            kind,
+                            mode,
+                            sourceGroup,
+                            targetGroup,
+                            selectedItems: batchItems
+                        })
+                    );
+                succeeded += result.succeeded;
+                failed += result.failed;
+                for (const key of buildFavoriteTransferSuccessfulKeys(
+                    result.items
+                )) {
+                    successfulKeys.add(key);
+                }
+                allResults.push(...result.items);
+            } catch (error) {
+                failed += batchItems.length;
+                if (!thrownErrorMessage && error instanceof Error) {
+                    thrownErrorMessage = error.message;
+                }
+            }
+        }
+
+        if (succeeded > 0) {
+            await refreshFavorites({ silent: true });
+            setSelectedKeys((current) =>
+                current.filter((key) => !successfulKeys.has(key))
             );
         }
+
+        const summary = summarizeFavoriteTransferStatuses(allResults);
+        const notices = describeFavoriteTransferNotices(summary);
+        const noticeDescription = notices.join('\n');
+        const successMessage =
+            mode === 'copy'
+                ? t('view.favorites.dynamic.copied_value_favorites', {
+                      value: summary.succeeded
+                  })
+                : t('view.favorites.dynamic.moved_value_favorites', {
+                      value: summary.succeeded
+                  });
+
+        if (failed === 0 && notices.length === 0) {
+            toast.success(successMessage);
+            return;
+        }
+
+        if (failed === 0) {
+            toast.warning(
+                successMessage,
+                noticeDescription
+                    ? { description: noticeDescription }
+                    : undefined
+            );
+            return;
+        }
+
+        const fallbackMessage =
+            thrownErrorMessage ||
+            t('view.favorites.toast.failed_to_move_selected_favorites');
+        const failureDescription = buildFavoriteTransferFailureDescription({
+            results: allResults.filter((item) => item.status === 'failed'),
+            selectedItems: selectedContentItems,
+            fallbackMessage
+        });
+        const combinedDescription = [noticeDescription, failureDescription]
+            .filter(Boolean)
+            .join('\n');
+        toast.error(
+            t('view.favorites.dynamic.transferred_value_value_failed', {
+                value: succeeded,
+                value2: failed
+            }),
+            combinedDescription
+                ? { description: combinedDescription }
+                : undefined
+        );
+    }
+
+    function bulkMoveSelection(targetGroup: FavoriteGroup) {
+        return bulkTransferSelection(targetGroup, 'move');
+    }
+
+    function bulkCopySelection(targetGroup: FavoriteGroup) {
+        return bulkTransferSelection(targetGroup, 'copy');
     }
 
     return {
+        bulkCopySelection,
         bulkMoveSelection,
         bulkRemoveSelection,
+        copyTargets,
         moveTargets
     };
 }

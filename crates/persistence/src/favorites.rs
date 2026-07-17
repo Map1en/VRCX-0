@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use crate::common::{normalize_text, now_iso, row_json, ParamsBuilder};
 use crate::config::{ensure_config_table, resolve_config_key};
 use crate::database::schema::ensure_global_store_tables;
-use crate::database::DatabaseService;
+use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::Error;
 
 const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
@@ -51,7 +51,7 @@ pub fn favorite_add(
     ensure_global_store_tables(db)?;
     let (table, column, entity_param) = normalize_kind(&kind)?;
     db.execute_non_query(
-        &format!("INSERT OR REPLACE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
+        &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
         &ParamsBuilder::new()
             .set(entity_param, normalize_text(entity_id))
             .set("group_name", normalize_text(group_name))
@@ -112,7 +112,7 @@ pub fn favorite_move(
             ));
         }
         let added = tx.execute_non_query(
-            &format!("INSERT OR REPLACE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
+            &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
             &ParamsBuilder::new()
                 .set(entity_param, normalized_entity_id)
                 .set("group_name", normalized_target_group_name)
@@ -130,12 +130,44 @@ pub fn favorite_group_rename(
     new_group_name: String,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
-    let (table, _, _) = normalize_kind(&kind)?;
-    db.execute_non_query(
-        &format!("UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name"),
+    let (table, column, _) = normalize_kind(&kind)?;
+    let normalized_group_name = normalize_text(group_name);
+    let normalized_new_group_name = normalize_text(new_group_name);
+    db.write_transaction(|tx| {
+        let deduped = delete_rows_already_in_group(
+            tx,
+            table,
+            column,
+            &normalized_group_name,
+            &normalized_new_group_name,
+        )?;
+        let renamed = tx.execute_non_query(
+            &format!(
+                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name"
+            ),
+            &ParamsBuilder::new()
+                .set("new_group_name", normalized_new_group_name)
+                .set("group_name", normalized_group_name)
+                .build(),
+        )?;
+        Ok(deduped + renamed)
+    })
+}
+
+fn delete_rows_already_in_group(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    table: &str,
+    column: &str,
+    group_name: &str,
+    new_group_name: &str,
+) -> Result<i64, Error> {
+    tx.execute_non_query(
+        &format!(
+            "DELETE FROM {table} WHERE group_name = @group_name AND {column} IN (SELECT {column} FROM {table} WHERE group_name = @new_group_name)"
+        ),
         &ParamsBuilder::new()
-            .set("new_group_name", normalize_text(new_group_name))
-            .set("group_name", normalize_text(group_name))
+            .set("group_name", group_name.to_string())
+            .set("new_group_name", new_group_name.to_string())
             .build(),
     )
 }
@@ -165,17 +197,26 @@ pub fn favorite_group_rename_with_config(
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
     ensure_config_table(db)?;
-    let (table, _, _) = normalize_kind(kind)?;
+    let (table, column, _) = normalize_kind(kind)?;
     let stored_key = resolve_config_key(config_key);
     let config_value = json!(config_groups).to_string();
+    let normalized_group_name = normalize_text(group_name);
+    let normalized_new_group_name = normalize_text(new_group_name);
     db.write_transaction(|tx| {
+        delete_rows_already_in_group(
+            tx,
+            table,
+            column,
+            &normalized_group_name,
+            &normalized_new_group_name,
+        )?;
         let affected = tx.execute_non_query(
             &format!(
                 "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name"
             ),
             &ParamsBuilder::new()
-                .set("new_group_name", normalize_text(new_group_name))
-                .set("group_name", normalize_text(group_name))
+                .set("new_group_name", normalized_new_group_name.clone())
+                .set("group_name", normalized_group_name.clone())
                 .build(),
         )?;
         tx.execute_non_query(
@@ -317,6 +358,43 @@ mod tests {
     }
 
     #[test]
+    fn rename_merges_into_existing_group_despite_unique_index() {
+        let (_dir, db) = test_db("favorite-rename-merge");
+        favorite_add(&db, "world".into(), "wrld_1".into(), "a".into()).unwrap();
+        favorite_add(&db, "world".into(), "wrld_1".into(), "b".into()).unwrap();
+        favorite_add(&db, "world".into(), "wrld_2".into(), "a".into()).unwrap();
+
+        favorite_group_rename(&db, "world".into(), "a".into(), "b".into()).unwrap();
+
+        let mut groups = group_names(&db, "world");
+        groups.sort();
+        assert_eq!(groups, vec!["b".to_string(), "b".to_string()]);
+    }
+
+    #[test]
+    fn rename_with_config_merges_into_existing_group_despite_unique_index() {
+        let (_dir, db) = test_db("favorite-rename-merge-with-config");
+        favorite_add(&db, "friend".into(), "usr_1".into(), "a".into()).unwrap();
+        favorite_add(&db, "friend".into(), "usr_1".into(), "b".into()).unwrap();
+
+        favorite_group_rename_with_config(
+            &db,
+            "friend",
+            "localFavoriteFriendGroups",
+            "a",
+            "b",
+            &["b".to_string()],
+        )
+        .unwrap();
+
+        assert_eq!(group_names(&db, "friend"), vec!["b".to_string()]);
+        assert_eq!(
+            config_array(&db, "localFavoriteFriendGroups"),
+            vec!["b".to_string()]
+        );
+    }
+
+    #[test]
     fn write_transaction_rolls_back_favorite_write_on_error() {
         let (_dir, db) = test_db("favorite-tx-rollback");
         favorite_add(&db, "friend".into(), "usr_1".into(), "keep".into()).unwrap();
@@ -352,5 +430,47 @@ mod tests {
 
         assert!(group_names(&db, "friend").is_empty());
         assert!(config_array(&db, "localFavoriteFriendGroups").is_empty());
+    }
+
+    #[test]
+    fn favorite_add_is_idempotent_for_same_entity_and_group() {
+        let (_dir, db) = test_db("favorite-add-idempotent");
+
+        let first = favorite_add(&db, "world".into(), "wrld_1".into(), "group".into()).unwrap();
+        let second = favorite_add(&db, "world".into(), "wrld_1".into(), "group".into()).unwrap();
+
+        assert_eq!(first, 1);
+        assert_eq!(second, 0);
+        assert_eq!(favorite_list(&db, "world".into()).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn ensure_global_store_tables_dedupes_duplicate_favorite_rows_before_indexing() {
+        let (_dir, db) = test_db("favorite-unique-index-dedupe");
+        db.execute_non_query(
+            "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
+            &Default::default(),
+        )
+        .unwrap();
+        db.execute_non_query(
+            "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-01T00:00:00.000Z', 'wrld_1', 'group')",
+            &Default::default(),
+        )
+        .unwrap();
+        db.execute_non_query(
+            "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-02T00:00:00.000Z', 'wrld_1', 'group')",
+            &Default::default(),
+        )
+        .unwrap();
+
+        ensure_global_store_tables(&db).unwrap();
+
+        assert_eq!(favorite_list(&db, "world".into()).unwrap().len(), 1);
+
+        let duplicate_insert = db.execute_non_query(
+            "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-03T00:00:00.000Z', 'wrld_1', 'group')",
+            &Default::default(),
+        );
+        assert!(duplicate_insert.is_err());
     }
 }

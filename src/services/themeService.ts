@@ -32,12 +32,9 @@ const COMMUNITY_THEME_APPEARANCE_ATTR =
 export const APP_FONT_DEFAULT_KEY = 'geist';
 export const APP_CJK_FONT_PACK_DEFAULT_KEY = 'noto';
 const GOOGLE_NOTO_CJK_FONT_IMPORT =
-    "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap');";
-const LOCAL_NOTO_SANS_SC_FONTS = Object.freeze([
-    "'Noto Sans SC Variable'",
-    "'Noto Sans SC'"
-]);
+    "@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap');";
 const GOOGLE_NOTO_SANS_JP_FONTS = Object.freeze(["'Noto Sans JP'"]);
+const GOOGLE_NOTO_SANS_SC_FONTS = Object.freeze(["'Noto Sans SC'"]);
 const GOOGLE_NOTO_SANS_TC_FONTS = Object.freeze(["'Noto Sans TC'"]);
 const GOOGLE_NOTO_SANS_KR_FONTS = Object.freeze(["'Noto Sans KR'"]);
 const MACOS_SYSTEM_CJK_FONT_STACKS = Object.freeze({
@@ -374,7 +371,7 @@ function resolveNotoCjkFontConfig(locale: string): {
         };
     }
 
-    if (!VRCX_0_BUNDLED_CJK_FONTS_ENABLED) {
+    if (VRCX_0_MACOS_SYSTEM_FONTS_ENABLED) {
         return {
             cssNames: getMacosSystemCjkFonts(locale),
             cssImport: null,
@@ -404,9 +401,9 @@ function resolveNotoCjkFontConfig(locale: string): {
         case 'zh-CN':
         default:
             return {
-                cssNames: LOCAL_NOTO_SANS_SC_FONTS,
-                cssImport: null,
-                styleKey: 'noto:local:sc'
+                cssNames: GOOGLE_NOTO_SANS_SC_FONTS,
+                cssImport: GOOGLE_NOTO_CJK_FONT_IMPORT,
+                styleKey: 'noto:google:zh-CN'
             };
     }
 }

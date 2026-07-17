@@ -16,6 +16,19 @@ use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
 
 const BACKGROUND_IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp"];
 
+fn with_fixed_extension(mut path: PathBuf, extension: Option<&str>) -> PathBuf {
+    let Some(extension) = extension
+        .map(|value| value.trim_start_matches('.'))
+        .filter(|value| !value.is_empty())
+    else {
+        return path;
+    };
+    if path.extension().and_then(|value| value.to_str()) != Some(extension) {
+        path.set_extension(extension);
+    }
+    path
+}
+
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BackgroundImageFilesResolveInput {
@@ -242,6 +255,70 @@ pub async fn app__open_file_selector_dialog(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__save_file_selector_dialog(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    default_path: Option<String>,
+    default_name: Option<String>,
+    default_ext: Option<String>,
+    default_filter: Option<String>,
+) -> Result<String, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app_handle.dialog().file();
+
+    if let Some(ref path) = default_path {
+        let p = PathBuf::from(path);
+        if p.is_dir() {
+            builder = builder.set_directory(p);
+        } else if let Some(parent) = p.parent() {
+            if parent.is_dir() {
+                builder = builder.set_directory(parent);
+            }
+        }
+    }
+
+    if let Some(ref name) = default_name {
+        if !name.trim().is_empty() {
+            builder = builder.set_file_name(name);
+        }
+    }
+
+    if let Some(ref filter) = default_filter {
+        for pair in filter.split('|').collect::<Vec<_>>().chunks(2) {
+            if pair.len() == 2 {
+                let name = pair[0].trim();
+                let exts: Vec<&str> = pair[1]
+                    .split(';')
+                    .map(|e| e.trim().trim_start_matches("*."))
+                    .collect();
+                builder = builder.add_filter(name, &exts);
+            }
+        }
+    } else if let Some(ref ext) = default_ext {
+        let ext_clean = ext.trim_start_matches('.');
+        builder = builder.add_filter(ext_clean, &[ext_clean]);
+    }
+
+    let result = builder.blocking_save_file();
+
+    match result {
+        Some(file_path) => {
+            let path = match file_path {
+                tauri_plugin_dialog::FilePath::Path(p) => p,
+                other => PathBuf::from(other.to_string()),
+            };
+            let path = with_fixed_extension(path, default_ext.as_deref());
+            let path_str = path.to_string_lossy().to_string();
+            state.host_file_access.register_path(&path_str);
+            Ok(path_str)
+        }
+        None => Ok(String::new()),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__open_background_image_files_selector_dialog(
     state: State<'_, AppState>,
     app_handle: AppHandle,
@@ -387,5 +464,26 @@ pub async fn app__save_vrc_reg_json_file(
             Ok(path.to_string_lossy().to_string())
         }
         None => Ok(String::new()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::with_fixed_extension;
+    use std::path::PathBuf;
+
+    #[test]
+    fn save_path_keeps_the_name_and_forces_the_selected_extension() {
+        assert_eq!(
+            with_fixed_extension(PathBuf::from("Custom name.zip"), Some(".vrcx0backup")),
+            PathBuf::from("Custom name.vrcx0backup")
+        );
+        assert_eq!(
+            with_fixed_extension(
+                PathBuf::from("Custom name.vrcx0backup"),
+                Some(".vrcx0backup")
+            ),
+            PathBuf::from("Custom name.vrcx0backup")
+        );
     }
 }

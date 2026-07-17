@@ -1,4 +1,4 @@
-import { isValidElement } from 'react';
+import { isValidElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
@@ -11,11 +11,16 @@ import {
     EntityInfoGrid,
     EntityMemoTextarea
 } from '../../EntityDialogScaffold';
+import type {
+    AvatarPlatformInfo,
+    AvatarTagGroups,
+    AvatarViewRecord
+} from '../avatarDialogTypes';
 import { AvatarDialogTagList } from './AvatarDialogTagList';
 
 const EMPTY_VALUE = '\u2014';
 
-function getPlatformSummary(platformInfo: any) {
+function getPlatformSummary(platformInfo: AvatarPlatformInfo): string {
     return [
         platformInfo?.pc?.platform
             ? `PC ${platformInfo.pc.performanceRating || ''}`
@@ -39,7 +44,15 @@ export function AvatarDialogInfoTab({
     platformInfo,
     onOpenAuthor,
     onSaveMemo
-}: any) {
+}: {
+    avatar: AvatarViewRecord;
+    memo: string;
+    detail: ReactNode;
+    tags: AvatarTagGroups;
+    platformInfo: AvatarPlatformInfo;
+    onOpenAuthor(): void;
+    onSaveMemo(value: string): void | Promise<void>;
+}) {
     const { t } = useTranslation();
 
     const { localTags, contentTags, authorTags, otherTags } = tags;
@@ -121,7 +134,7 @@ export function AvatarDialogInfoTab({
                         full
                     >
                         <AvatarDialogTagList
-                            tags={localTags.map((entry: any) => entry.tag)}
+                            tags={localTags.map((entry) => entry.tag)}
                         />
                     </EntityInfoBlock>
                 ) : null}

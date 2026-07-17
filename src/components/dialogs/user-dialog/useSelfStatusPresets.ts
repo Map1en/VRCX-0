@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -9,15 +10,26 @@ import {
     statusPresetsConfigKey
 } from './userProfileFields';
 
-export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
+export type SocialStatusDraft = {
+    status: string;
+    statusDescription: string;
+};
+
+export function useSelfStatusPresets({
+    socialStatusDraft,
+    t
+}: {
+    socialStatusDraft: SocialStatusDraft;
+    t: TFunction;
+}) {
     const [statusPresets, setStatusPresets] = useState<unknown[]>([]);
 
     useEffect(() => {
         let active = true;
 
         configRepository
-            .getArray(statusPresetsConfigKey, [])
-            .then((presets: any) => {
+            .getArray<unknown>(statusPresetsConfigKey, [])
+            .then((presets) => {
                 if (active) {
                     setStatusPresets(Array.isArray(presets) ? presets : []);
                 }
@@ -42,19 +54,24 @@ export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
             return;
         }
 
-        const nextPreset: any = {
+        const nextPreset: SocialStatusDraft = {
             status: nextStatus,
             statusDescription: String(
                 socialStatusDraft.statusDescription || ''
             ).slice(0, 32)
         };
         if (
-            statusPresets.some(
-                (preset: any) =>
-                    preset?.status === nextPreset.status &&
-                    String(preset?.statusDescription || '') ===
+            statusPresets.some((preset) => {
+                const presetRecord =
+                    preset && typeof preset === 'object'
+                        ? Object.fromEntries(Object.entries(preset))
+                        : {};
+                return (
+                    presetRecord.status === nextPreset.status &&
+                    String(presetRecord.statusDescription || '') ===
                         nextPreset.statusDescription
-            )
+                );
+            })
         ) {
             toast.info(t('dialog.user.label.status_preset_already_exists'));
             return;
@@ -87,10 +104,10 @@ export function useSelfStatusPresets({ socialStatusDraft, t }: any) {
         }
     }
 
-    async function removeSelfStatusPreset(index: any) {
+    async function removeSelfStatusPreset(index: number) {
         const previousPresets = statusPresets;
         const nextPresets = previousPresets.filter(
-            (_: any, presetIndex: any) => presetIndex !== index
+            (_, presetIndex) => presetIndex !== index
         );
         setStatusPresets(nextPresets);
         try {

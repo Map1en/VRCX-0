@@ -12,18 +12,12 @@ export type SavedCredentialsMap = Record<string, SavedCredentialRecord>;
 export type SavedAuthSnapshot = Record<string, unknown> & {
     lastUserLoggedIn: unknown;
     savedCredentialCount: unknown;
+    savedCredentials?: SavedCredentialsMap;
     autoLoginStatus: string;
     autoLoginReason: string;
     autoLoginDelayEnabled: unknown;
     autoLoginDelaySeconds: unknown;
 };
-
-interface RecordLoginSuccessInput {
-    user?: GenericRecord;
-    loginParams?: GenericRecord;
-    storedLoginParams?: GenericRecord | null;
-    saveCredentials?: boolean;
-}
 
 interface RecordLogoutOptions {
     clearLastUserLoggedIn?: unknown;
@@ -134,26 +128,6 @@ async function deleteSavedCredential(
     );
 }
 
-async function recordLoginSuccess({
-    user,
-    loginParams = {},
-    storedLoginParams = null,
-    saveCredentials = false
-}: RecordLoginSuccessInput): Promise<SavedAuthSnapshot> {
-    return runAuthSavedCommand(
-        async () =>
-            normalizeSavedAuthSnapshot(
-                await commands.appVrchatAuthLoginSuccessRecord({
-                    user,
-                    loginParams,
-                    storedLoginParams,
-                    saveCredentials
-                })
-            ),
-        'Login success record failed'
-    );
-}
-
 async function recordLogout(
     userOrUserId: GenericRecord | string | null,
     options: RecordLogoutOptions = {}
@@ -178,7 +152,6 @@ const authRepository = Object.freeze({
     getSavedCredentialsMap,
     getSavedCredential,
     deleteSavedCredential,
-    recordLoginSuccess,
     recordLogout,
     getSavedAuthSnapshot
 });
@@ -187,7 +160,6 @@ export {
     getSavedCredentialsMap,
     getSavedCredential,
     deleteSavedCredential,
-    recordLoginSuccess,
     recordLogout,
     getSavedAuthSnapshot
 };

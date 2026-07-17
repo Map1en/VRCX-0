@@ -192,11 +192,21 @@ pub fn format_display_location(
     world_name: &str,
     group_name: &str,
 ) -> String {
+    format_display_location_with_instance(parsed, world_name, group_name, false)
+}
+
+pub fn format_display_location_with_instance(
+    parsed: &ParsedLocation,
+    world_name: &str,
+    group_name: &str,
+    show_instance_id: bool,
+) -> String {
     format_display_location_parts(
         parsed,
         world_name,
         group_name,
         parsed.access_type_name.as_str(),
+        show_instance_id,
     )
 }
 
@@ -217,11 +227,22 @@ pub fn format_display_location_with_labels(
     group_name: &str,
     labels: &DisplayLocationLabels<'_>,
 ) -> String {
+    format_display_location_with_labels_and_instance(parsed, world_name, group_name, labels, false)
+}
+
+pub fn format_display_location_with_labels_and_instance(
+    parsed: &ParsedLocation,
+    world_name: &str,
+    group_name: &str,
+    labels: &DisplayLocationLabels<'_>,
+    show_instance_id: bool,
+) -> String {
     format_display_location_parts(
         parsed,
         world_name,
         group_name,
         access_type_label(parsed, labels),
+        show_instance_id,
     )
 }
 
@@ -266,6 +287,7 @@ fn format_display_location_parts(
     world_name: &str,
     group_name: &str,
     access_type_name: &str,
+    show_instance_id: bool,
 ) -> String {
     if parsed.is_offline {
         return "Offline".to_string();
@@ -278,14 +300,19 @@ fn format_display_location_parts(
     }
     let world_name = readable_location_part(world_name);
     let group_name = readable_location_part(group_name);
+    let instance_suffix = if show_instance_id && !parsed.instance_name.is_empty() {
+        format!(" #{}", parsed.instance_name)
+    } else {
+        String::new()
+    };
     if !parsed.world_id.is_empty() {
         if !group_name.is_empty() {
-            return format!("{world_name} {access_type_name}({group_name})")
+            return format!("{world_name} {access_type_name}({group_name}){instance_suffix}")
                 .trim()
                 .to_string();
         }
         if !parsed.instance_id.is_empty() {
-            return format!("{world_name} {access_type_name}")
+            return format!("{world_name} {access_type_name}{instance_suffix}")
                 .trim()
                 .to_string();
         }
@@ -312,5 +339,4 @@ fn readable_location_part(value: &str) -> &str {
 }
 
 #[cfg(test)]
-#[path = "../tests/location_tests.rs"]
 mod tests;

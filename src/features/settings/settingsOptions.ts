@@ -48,6 +48,21 @@ export const notificationTtsOptions = [
     ['Always', 'view.settings.notifications.notifications.conditions.always']
 ] as const;
 
+export const notificationTtsNameModeOptions = [
+    [
+        'username',
+        'view.settings.notifications.notifications.text_to_speech.name_mode_username'
+    ],
+    [
+        'note',
+        'view.settings.notifications.notifications.text_to_speech.name_mode_note'
+    ],
+    [
+        'usernameAndNote',
+        'view.settings.notifications.notifications.text_to_speech.name_mode_username_and_note'
+    ]
+] as const;
+
 export const avatarAutoCleanupOptions = ['Off', '30', '90', '180', '365'];
 
 export const sqliteTableSizeRows = [

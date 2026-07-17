@@ -16,9 +16,9 @@ use vrcx_0_host::{
     system_theme::current_system_theme_category,
 };
 use vrcx_0_integrations::telemetry::{
-    resolve_endpoint, AssistantHealthPayload, AssistantUsagePayload, ClientErrorPayload,
-    ConfigSnapshotPayload, PageHealthPayload, TelemetryClient, TelemetryConfigSnapshot,
-    TelemetryContext, TelemetryRuntimeMode, ViewModeUsagePayload, VrchatLifecyclePayload,
+    resolve_endpoint, AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload,
+    PageHealthPayload, TelemetryClient, TelemetryConfigSnapshot, TelemetryContext,
+    TelemetryRuntimeMode, VrchatLifecyclePayload,
 };
 use vrcx_0_persistence::config::ConfigRepository;
 
@@ -58,7 +58,9 @@ struct TelemetryRuntimeInner {
     app_version: String,
     app_data: PathBuf,
     state: Mutex<TelemetryState>,
+    flush_lock: tokio::sync::Mutex<()>,
     running: AtomicBool,
+    shutdown_requested: AtomicBool,
     shutdown_flushed: AtomicBool,
 }
 
@@ -69,7 +71,6 @@ struct TelemetryState {
     session_start_attempted_at: Option<Instant>,
     config_snapshot_sent: bool,
     config_snapshot_attempted_at: Option<Instant>,
-    view_modes_seeded: bool,
     last_heartbeat_at: Option<Instant>,
     last_vrchat_check_at: Option<Instant>,
     last_vrchat_running: Option<bool>,
@@ -96,7 +97,9 @@ impl TelemetryRuntime {
                 app_version: normalize_app_version(&deps.app_version),
                 app_data: deps.app_data,
                 state: Mutex::new(TelemetryState::default()),
+                flush_lock: tokio::sync::Mutex::new(()),
                 running: AtomicBool::new(false),
+                shutdown_requested: AtomicBool::new(false),
                 shutdown_flushed: AtomicBool::new(false),
             }),
         }
@@ -106,6 +109,9 @@ impl TelemetryRuntime {
         if self.inner.running.swap(true, Ordering::AcqRel) {
             return;
         }
+        self.inner
+            .shutdown_requested
+            .store(false, Ordering::Release);
         self.inner.shutdown_flushed.store(false, Ordering::Release);
         let runtime = self.clone();
         self.inner
@@ -126,10 +132,16 @@ impl TelemetryRuntime {
     }
 
     pub async fn shutdown_flush(&self) {
+        self.inner.shutdown_requested.store(true, Ordering::Release);
         if self.inner.shutdown_flushed.swap(true, Ordering::AcqRel) {
             return;
         }
-        let _ = tokio::time::timeout(SHUTDOWN_FLUSH_TIMEOUT, self.flush_shutdown_inner()).await;
+        if tokio::time::timeout(SHUTDOWN_FLUSH_TIMEOUT, self.flush_shutdown_inner())
+            .await
+            .is_err()
+        {
+            self.inner.shutdown_flushed.store(false, Ordering::Release);
+        }
     }
 
     async fn run_loop(&self, stop_token: TaskStopToken) {
@@ -152,7 +164,6 @@ impl TelemetryRuntime {
             return;
         };
         self.ensure_session_start(&session).await;
-        self.seed_view_modes_once();
         self.send_config_snapshot_once(&session).await;
         self.send_vrchat_if_changed(&session).await;
         self.send_heartbeat_if_due(&session).await;
@@ -165,6 +176,7 @@ impl TelemetryRuntime {
         let Some(session) = self.ensure_session() else {
             return;
         };
+        let _flush_guard = self.inner.flush_lock.lock().await;
         self.drain_rust_errors();
         let context = self.context(&session, Some(true));
         self.post_debug(
@@ -173,7 +185,7 @@ impl TelemetryRuntime {
             "shutdown heartbeat",
         )
         .await;
-        self.flush_collectors(&session).await;
+        self.flush_collectors_locked(&session).await;
     }
 
     fn ensure_session(&self) -> Option<TelemetrySession> {
@@ -346,72 +358,70 @@ impl TelemetryRuntime {
         if !self.usage_enabled() {
             return;
         }
+        let _flush_guard = self.inner.flush_lock.lock().await;
+        if self.inner.shutdown_requested.load(Ordering::Acquire) {
+            return;
+        }
         self.drain_rust_errors();
         let context = self.context(session, None);
         self.post_debug("/api/v1/telemetry/session/heartbeat", &context, "heartbeat")
             .await;
-        self.flush_collectors(session).await;
+        self.flush_collectors_locked(session).await;
     }
 
-    async fn flush_collectors(&self, session: &TelemetrySession) {
-        let (view_modes, routes, assistant_health, assistant_usage, client_errors) = {
+    async fn flush_collectors_locked(&self, session: &TelemetrySession) {
+        let (routes, assistant_health, client_errors) = {
             let Ok(state) = self.inner.state.lock() else {
                 return;
             };
             (
-                state.acc.view_mode_entries(),
-                state.acc.route_entries(),
-                state.acc.assistant_health_entry(),
-                state.acc.assistant_usage_entry(),
-                state.acc.client_error_entries(),
+                state.acc.route_snapshot(),
+                state.acc.assistant_health_snapshot(),
+                state
+                    .acc
+                    .client_error_snapshot()
+                    .map(|snapshot| (snapshot, state.pending_error_cursor.clone())),
             )
         };
         let context = self.context(session, None);
-        if !view_modes.is_empty() {
-            let payload = ViewModeUsagePayload {
-                context: context.clone(),
-                modes: view_modes,
-            };
-            self.post_debug("/api/v1/telemetry/view-mode", &payload, "view mode")
-                .await;
-        }
-        if !routes.is_empty() {
+        if let Some(routes) = routes {
             let payload = PageHealthPayload {
                 context: context.clone(),
-                routes,
+                routes: routes.entries,
             };
-            self.post_debug("/api/v1/telemetry/page-health", &payload, "page health")
-                .await;
+            if self
+                .post_debug("/api/v1/telemetry/page-health", &payload, "page health")
+                .await
+            {
+                if let Ok(mut state) = self.inner.state.lock() {
+                    state.acc.mark_routes_sent(routes.revision);
+                }
+            }
         }
         if let Some(assistant_health) = assistant_health {
             let payload = AssistantHealthPayload {
                 context: context.clone(),
-                tool_errors: assistant_health.tool_errors,
-                turn_errors: assistant_health.turn_errors,
-                details: assistant_health.details,
+                tool_errors: assistant_health.entry.tool_errors,
+                turn_errors: assistant_health.entry.turn_errors,
+                details: assistant_health.entry.details,
             };
-            self.post_debug(
-                "/api/v1/telemetry/assistant-health",
-                &payload,
-                "assistant health",
-            )
-            .await;
+            if self
+                .post_debug(
+                    "/api/v1/telemetry/assistant-health",
+                    &payload,
+                    "assistant health",
+                )
+                .await
+            {
+                if let Ok(mut state) = self.inner.state.lock() {
+                    state
+                        .acc
+                        .mark_assistant_health_sent(assistant_health.revision);
+                }
+            }
         }
-        if let Some(assistant_usage) = assistant_usage {
-            let payload = AssistantUsagePayload {
-                context: context.clone(),
-                opens: assistant_usage.opens,
-                api_key_configured: assistant_usage.api_key_configured.then_some(true),
-            };
-            self.post_debug(
-                "/api/v1/telemetry/assistant-usage",
-                &payload,
-                "assistant usage",
-            )
-            .await;
-        }
-        if !client_errors.is_empty() {
-            for chunk in client_errors.chunks(MAX_DETAILS_PER_PAYLOAD) {
+        if let Some((client_errors, error_cursor)) = client_errors {
+            for chunk in client_errors.entries.chunks(MAX_DETAILS_PER_PAYLOAD) {
                 let payload = ClientErrorPayload {
                     context: context.clone(),
                     errors: chunk.to_vec(),
@@ -423,7 +433,12 @@ impl TelemetryRuntime {
                     return;
                 }
             }
-            self.advance_pending_error_cursor();
+            if !self.commit_error_cursor(error_cursor.as_deref()) {
+                return;
+            }
+            if let Ok(mut state) = self.inner.state.lock() {
+                state.acc.mark_client_errors_sent(client_errors.revision);
+            }
         }
     }
 
@@ -473,8 +488,8 @@ impl TelemetryRuntime {
             xs_notifications: self.config_bool("xsNotifications", false),
             ovrt_hud_notifications: self.config_bool("ovrtHudNotifications", false),
             ovrt_wrist_notifications: self.config_bool("ovrtWristNotifications", false),
+            hmd_notifications_enabled: self.config_bool("hmdNotificationsEnabled", false),
             discord_active: self.config_bool("discordActive", false),
-            mcp_server_enabled: self.config_bool("mcpServerEnabled", false),
             webhook_enabled: self.config_bool("webhookEnabled", false),
             auto_state_change_enabled: self.config_bool("autoStateChangeEnabled", false),
             auto_accept_invite_requests: normalize_enum_value(
@@ -485,25 +500,6 @@ impl TelemetryRuntime {
             ),
             theme_mode: self.theme_category(),
         }
-    }
-
-    fn seed_view_modes_once(&self) {
-        let mut state = match self.inner.state.lock() {
-            Ok(state) => state,
-            Err(error) => {
-                tracing::debug!("failed to lock telemetry state for view-mode seed: {error}");
-                return;
-            }
-        };
-        if state.view_modes_seeded {
-            return;
-        }
-        for (dimension, key, default_value, allowed) in view_mode_dimensions() {
-            let raw = self.config_string(key, default_value);
-            let value = normalize_allowed_view_mode(&raw, allowed).unwrap_or(default_value);
-            state.acc.seed_view_mode(dimension, value);
-        }
-        state.view_modes_seeded = true;
     }
 
     fn drain_rust_errors(&self) {
@@ -548,23 +544,22 @@ impl TelemetryRuntime {
             .filter(|value| !value.is_empty())
     }
 
-    fn advance_pending_error_cursor(&self) {
-        let cursor = match self.inner.state.lock() {
-            Ok(mut state) => state.pending_error_cursor.take(),
-            Err(error) => {
-                tracing::debug!("failed to lock telemetry state for cursor advance: {error}");
-                None
-            }
+    fn commit_error_cursor(&self, cursor: Option<&str>) -> bool {
+        let Some(cursor) = cursor else {
+            return true;
         };
-        if let Some(cursor) = cursor {
-            if let Err(error) = self
-                .inner
-                .config
-                .set_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, &cursor)
-            {
-                tracing::debug!("failed to advance telemetry client error cursor: {error}");
-            }
+        if let Err(error) = self
+            .inner
+            .config
+            .set_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, cursor)
+        {
+            tracing::debug!("failed to advance telemetry client error cursor: {error}");
+            return false;
         }
+        if let Ok(mut state) = self.inner.state.lock() {
+            clear_committed_error_cursor(&mut state.pending_error_cursor, cursor);
+        }
+        true
     }
 
     fn locale(&self) -> String {
@@ -688,48 +683,6 @@ fn local_weekday_number(weekday: chrono::Weekday) -> u32 {
     weekday.num_days_from_sunday()
 }
 
-fn normalize_allowed_view_mode<'a>(value: &str, allowed: &'a [&'a str]) -> Option<&'a str> {
-    let normalized = value.trim().to_ascii_lowercase();
-    allowed
-        .iter()
-        .copied()
-        .find(|candidate| *candidate == normalized)
-}
-
-fn view_mode_dimensions() -> [(
-    &'static str,
-    &'static str,
-    &'static str,
-    &'static [&'static str],
-); 4] {
-    [
-        (
-            "gameLogViewMode",
-            "gameLogViewMode",
-            "sessions",
-            &["sessions", "table"],
-        ),
-        (
-            "myAvatarsViewMode",
-            "MyAvatarsViewMode",
-            "grid",
-            &["grid", "table"],
-        ),
-        (
-            "feedViewMode",
-            "feedViewMode",
-            "table",
-            &["table", "columns"],
-        ),
-        (
-            "feedTimeDisplayMode",
-            "feedTimeDisplayMode",
-            "relative",
-            &["relative", "exact"],
-        ),
-    ]
-}
-
 fn normalize_enum_value(value: &str) -> String {
     let normalized = value
         .trim()
@@ -782,6 +735,12 @@ fn latest_iso(left: Option<String>, right: String) -> String {
     match left {
         Some(left) if left > right => left,
         _ => right,
+    }
+}
+
+fn clear_committed_error_cursor(pending: &mut Option<String>, committed: &str) {
+    if pending.as_deref() == Some(committed) {
+        *pending = None;
     }
 }
 
@@ -870,13 +829,15 @@ mod tests {
         assert_eq!(normalize_enum_value(""), "unknown");
         assert_eq!(normalize_locale("zh_CN"), "zh-CN");
         assert_eq!(normalize_app_version(""), "unknown");
-        assert_eq!(
-            normalize_allowed_view_mode(" TABLE ", &["sessions", "table"]),
-            Some("table")
-        );
-        assert_eq!(
-            normalize_allowed_view_mode("cards", &["sessions", "table"]),
-            None
-        );
+    }
+
+    #[test]
+    fn cursor_acknowledgement_only_clears_the_matching_snapshot() {
+        let mut pending = Some("2026-07-13T10:00:00Z".to_string());
+        clear_committed_error_cursor(&mut pending, "2026-07-13T09:00:00Z");
+        assert_eq!(pending.as_deref(), Some("2026-07-13T10:00:00Z"));
+
+        clear_committed_error_cursor(&mut pending, "2026-07-13T10:00:00Z");
+        assert!(pending.is_none());
     }
 }

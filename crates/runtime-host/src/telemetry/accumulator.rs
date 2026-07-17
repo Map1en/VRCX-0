@@ -1,12 +1,9 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
-use vrcx_0_integrations::telemetry::{
-    build_error_detail, RouteUsageEntry, TelemetryErrorDetail, ViewModeUsageEntry,
-};
+use vrcx_0_integrations::telemetry::{build_error_detail, RouteUsageEntry, TelemetryErrorDetail};
 
 use super::event::TelemetryClientEvent;
 
-const MAX_DIMENSION_KEYS: usize = 16;
 const MAX_ROUTE_KEYS: usize = 64;
 const MAX_VALUE_LENGTH: usize = 64;
 const MAX_DETAILS_PER_CHANNEL: usize = 64;
@@ -16,17 +13,14 @@ const MAX_COUNT: u32 = 100_000;
 #[derive(Default)]
 pub struct TelemetryAccumulator {
     current_route: Option<String>,
-    view_modes: HashMap<String, ViewModeUsage>,
     routes: HashMap<String, RouteUsage>,
     assistant: AssistantHealthAccumulator,
-    assistant_usage: AssistantUsageEntry,
     client_errors: DetailAccumulator,
-}
-
-#[derive(Default)]
-struct ViewModeUsage {
-    used: BTreeSet<String>,
-    switches: u32,
+    revision: u64,
+    routes_sent_revision: u64,
+    assistant_sent_revision: u64,
+    client_errors_revision: u64,
+    client_errors_sent_revision: u64,
 }
 
 #[derive(Default)]
@@ -35,6 +29,7 @@ struct RouteUsage {
     load_fail: u32,
     render_crash: u32,
     details: DetailAccumulator,
+    revision: u64,
 }
 
 #[derive(Default)]
@@ -42,12 +37,7 @@ struct AssistantHealthAccumulator {
     tool_errors: u32,
     turn_errors: u32,
     details: DetailAccumulator,
-}
-
-#[derive(Default)]
-pub(super) struct AssistantUsageEntry {
-    pub(super) opens: u32,
-    pub(super) api_key_configured: bool,
+    revision: u64,
 }
 
 #[derive(Default)]
@@ -62,6 +52,21 @@ pub struct AssistantHealthEntry {
     pub details: Option<Vec<TelemetryErrorDetail>>,
 }
 
+pub(super) struct RouteSnapshot {
+    pub entries: Vec<RouteUsageEntry>,
+    pub revision: u64,
+}
+
+pub(super) struct AssistantHealthSnapshot {
+    pub entry: AssistantHealthEntry,
+    pub revision: u64,
+}
+
+pub(super) struct ClientErrorSnapshot {
+    pub entries: Vec<TelemetryErrorDetail>,
+    pub revision: u64,
+}
+
 impl TelemetryAccumulator {
     pub fn record(&mut self, event: TelemetryClientEvent) {
         match event {
@@ -71,15 +76,7 @@ impl TelemetryAccumulator {
                 name,
                 summary,
             } => self.record_route_error(error_class, name, summary),
-            TelemetryClientEvent::ViewModeSwitch { dimension, value } => {
-                self.record_view_mode_switch(dimension, value)
-            }
-            TelemetryClientEvent::AssistantOpen => {
-                self.assistant_usage.opens = increment(self.assistant_usage.opens);
-            }
-            TelemetryClientEvent::AssistantApiKeyConfigured => {
-                self.assistant_usage.api_key_configured = true;
-            }
+            TelemetryClientEvent::ViewModeSwitch { .. } => {}
             TelemetryClientEvent::AssistantToolError { source, summary } => {
                 self.assistant.tool_errors = increment(self.assistant.tool_errors);
                 self.assistant.details.record(build_error_detail(
@@ -90,6 +87,8 @@ impl TelemetryAccumulator {
                     summary.as_deref(),
                     None,
                 ));
+                let revision = self.advance_revision();
+                self.assistant.revision = revision;
             }
             TelemetryClientEvent::AssistantTurnError { code, summary } => {
                 if code == "cancelled" {
@@ -104,14 +103,19 @@ impl TelemetryAccumulator {
                     summary.as_deref(),
                     None,
                 ));
+                let revision = self.advance_revision();
+                self.assistant.revision = revision;
             }
         }
     }
 
     pub fn record_rust_error(&mut self, source: &str, app_version: &str, message: &str) {
-        let kind = match source {
-            "rust:panic" => "panic",
-            "rust:tracing" => "rust_error",
+        let (kind, summary) = match source {
+            "rust:panic" => (
+                "panic",
+                vrcx_0_host::error_log::panic_summary_for_telemetry(message),
+            ),
+            "rust:tracing" => ("rust_error", message),
             _ => return,
         };
         let detail = build_error_detail(
@@ -119,23 +123,20 @@ impl TelemetryAccumulator {
             Some(source),
             None,
             None,
-            Some(message),
+            Some(summary),
             Some(app_version),
         );
-        self.client_errors.record(detail);
+        if self.client_errors.record(detail) {
+            let revision = self.advance_revision();
+            self.client_errors_revision = revision;
+        }
     }
 
     pub fn route_entries(&self) -> Vec<RouteUsageEntry> {
         let mut entries = self
             .routes
             .iter()
-            .map(|(route, usage)| RouteUsageEntry {
-                route: route.clone(),
-                visits: usage.visits,
-                load_fail: (usage.load_fail > 0).then_some(usage.load_fail),
-                render_crash: (usage.render_crash > 0).then_some(usage.render_crash),
-                details: usage.details.serialize(),
-            })
+            .map(|(route, usage)| route_usage_entry(route, usage))
             .collect::<Vec<_>>();
         entries.sort_by(|left, right| left.route.cmp(&right.route));
         entries
@@ -158,29 +159,53 @@ impl TelemetryAccumulator {
             .unwrap_or_default()
     }
 
-    pub(super) fn assistant_usage_entry(&self) -> Option<AssistantUsageEntry> {
-        if self.assistant_usage.opens == 0 && !self.assistant_usage.api_key_configured {
+    pub(super) fn route_snapshot(&self) -> Option<RouteSnapshot> {
+        let revision = self.revision;
+        let mut entries = self
+            .routes
+            .iter()
+            .filter(|(_, usage)| usage.revision > self.routes_sent_revision)
+            .map(|(route, usage)| route_usage_entry(route, usage))
+            .collect::<Vec<_>>();
+        if entries.is_empty() {
             return None;
         }
-        Some(AssistantUsageEntry {
-            opens: self.assistant_usage.opens,
-            api_key_configured: self.assistant_usage.api_key_configured,
+        entries.sort_by(|left, right| left.route.cmp(&right.route));
+        Some(RouteSnapshot { entries, revision })
+    }
+
+    pub(super) fn mark_routes_sent(&mut self, revision: u64) {
+        self.routes_sent_revision = self.routes_sent_revision.max(revision);
+    }
+
+    pub(super) fn assistant_health_snapshot(&self) -> Option<AssistantHealthSnapshot> {
+        if self.assistant.revision <= self.assistant_sent_revision {
+            return None;
+        }
+        self.assistant_health_entry()
+            .map(|entry| AssistantHealthSnapshot {
+                entry,
+                revision: self.assistant.revision,
+            })
+    }
+
+    pub(super) fn mark_assistant_health_sent(&mut self, revision: u64) {
+        self.assistant_sent_revision = self.assistant_sent_revision.max(revision);
+    }
+
+    pub(super) fn client_error_snapshot(&self) -> Option<ClientErrorSnapshot> {
+        if self.client_errors_revision <= self.client_errors_sent_revision {
+            return None;
+        }
+        let entries = self.client_error_entries();
+        (!entries.is_empty()).then_some(ClientErrorSnapshot {
+            entries,
+            revision: self.client_errors_revision,
         })
     }
 
-    pub(super) fn view_mode_entries(&self) -> Vec<ViewModeUsageEntry> {
-        let mut entries = self
-            .view_modes
-            .iter()
-            .filter(|(_, usage)| !usage.used.is_empty())
-            .map(|(dimension, usage)| ViewModeUsageEntry {
-                dimension: dimension.clone(),
-                used: usage.used.iter().cloned().collect(),
-                switches: usage.switches,
-            })
-            .collect::<Vec<_>>();
-        entries.sort_by(|left, right| left.dimension.cmp(&right.dimension));
-        entries
+    pub(super) fn mark_client_errors_sent(&mut self, revision: u64) {
+        self.client_errors_sent_revision = self.client_errors_sent_revision.max(revision);
     }
 
     fn record_page_visit(&mut self, route: String) {
@@ -189,10 +214,14 @@ impl TelemetryAccumulator {
             return;
         };
         self.current_route = Some(route.clone());
-        let Some(usage) = ensure_entry(&mut self.routes, route, MAX_ROUTE_KEYS) else {
+        let Some(usage) = ensure_entry(&mut self.routes, route.clone(), MAX_ROUTE_KEYS) else {
             return;
         };
         usage.visits = increment(usage.visits);
+        let revision = self.advance_revision();
+        if let Some(usage) = self.routes.get_mut(&route) {
+            usage.revision = revision;
+        }
     }
 
     fn record_route_error(
@@ -204,56 +233,42 @@ impl TelemetryAccumulator {
         let Some(route) = self.current_route.clone() else {
             return;
         };
-        let Some(usage) = self.routes.get_mut(&route) else {
-            return;
-        };
-        match error_class.as_str() {
-            "load_fail" => usage.load_fail = increment(usage.load_fail),
-            "render_crash" => usage.render_crash = increment(usage.render_crash),
-            _ => return,
+        {
+            let Some(usage) = self.routes.get_mut(&route) else {
+                return;
+            };
+            match error_class.as_str() {
+                "load_fail" => usage.load_fail = increment(usage.load_fail),
+                "render_crash" => usage.render_crash = increment(usage.render_crash),
+                _ => return,
+            }
+            usage.details.record(build_error_detail(
+                &error_class,
+                None,
+                None,
+                name.as_deref(),
+                summary.as_deref(),
+                None,
+            ));
         }
-        usage.details.record(build_error_detail(
-            &error_class,
-            None,
-            None,
-            name.as_deref(),
-            summary.as_deref(),
-            None,
-        ));
+        let revision = self.advance_revision();
+        if let Some(usage) = self.routes.get_mut(&route) {
+            usage.revision = revision;
+        }
     }
 
-    fn record_view_mode_switch(&mut self, dimension: String, value: String) {
-        let Some(dimension) = sanitize_dimension_value(dimension) else {
-            return;
-        };
-        let Some(value) = sanitize_dimension_value(value) else {
-            return;
-        };
-        let Some(usage) = ensure_entry(&mut self.view_modes, dimension, MAX_DIMENSION_KEYS) else {
-            return;
-        };
-        usage.used.insert(value);
-        usage.switches = increment(usage.switches);
-    }
-
-    pub(super) fn seed_view_mode(&mut self, dimension: &str, value: &str) {
-        let Some(usage) = ensure_entry(
-            &mut self.view_modes,
-            dimension.to_string(),
-            MAX_DIMENSION_KEYS,
-        ) else {
-            return;
-        };
-        usage.used.insert(value.to_string());
+    fn advance_revision(&mut self) -> u64 {
+        self.revision = self.revision.saturating_add(1);
+        self.revision
     }
 }
 
 impl DetailAccumulator {
-    fn record(&mut self, detail: TelemetryErrorDetail) {
+    fn record(&mut self, detail: TelemetryErrorDetail) -> bool {
         let key = detail_key(&detail);
         if !self.details.contains_key(&key) && self.details.len() >= MAX_DETAILS_PER_CHANNEL {
             tracing::debug!("telemetry detail cap reached; dropping detail");
-            return;
+            return false;
         }
         match self.details.get_mut(&key) {
             Some(existing) => existing.count = increment(existing.count),
@@ -261,6 +276,7 @@ impl DetailAccumulator {
                 self.details.insert(key, detail);
             }
         }
+        true
     }
 
     fn serialize(&self) -> Option<Vec<TelemetryErrorDetail>> {
@@ -280,6 +296,16 @@ impl DetailAccumulator {
         });
         details.truncate(limit);
         Some(details)
+    }
+}
+
+fn route_usage_entry(route: &str, usage: &RouteUsage) -> RouteUsageEntry {
+    RouteUsageEntry {
+        route: route.to_string(),
+        visits: usage.visits,
+        load_fail: (usage.load_fail > 0).then_some(usage.load_fail),
+        render_crash: (usage.render_crash > 0).then_some(usage.render_crash),
+        details: usage.details.serialize(),
     }
 }
 
@@ -316,6 +342,30 @@ fn increment(value: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn panic_backtrace_addresses_do_not_split_telemetry_identity() {
+        let mut acc = TelemetryAccumulator::default();
+        acc.record_rust_error(
+            "rust:panic",
+            "2.9.2",
+            "panicked at crates/runtime.rs:42\n[backtrace]\n0: 0x1111",
+        );
+        acc.record_rust_error(
+            "rust:panic",
+            "2.9.2",
+            "panicked at crates/runtime.rs:42\n[backtrace]\n0: 0x2222",
+        );
+
+        let entries = acc.client_error_entries();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].summary.as_deref(),
+            Some("panicked at crates/runtime.rs:42")
+        );
+        assert_eq!(entries[0].count, 2);
+    }
+
     #[test]
     fn accumulator_caps_routes_and_error_details() {
         let mut acc = TelemetryAccumulator::default();
@@ -343,5 +393,44 @@ mod tests {
             .as_ref()
             .expect("details should be serialized");
         assert_eq!(details.len(), MAX_DETAILS_PER_PAYLOAD);
+    }
+
+    #[test]
+    fn collector_snapshots_only_include_changes_after_acknowledgement() {
+        let mut acc = TelemetryAccumulator::default();
+        acc.record(TelemetryClientEvent::PageVisit {
+            route: "game_log".into(),
+        });
+
+        let first = acc.route_snapshot().expect("route should be dirty");
+        assert_eq!(first.entries[0].visits, 1);
+        acc.mark_routes_sent(first.revision);
+        assert!(acc.route_snapshot().is_none());
+
+        acc.record(TelemetryClientEvent::PageVisit {
+            route: "game_log".into(),
+        });
+        let second = acc.route_snapshot().expect("new visit should be dirty");
+        assert_eq!(second.entries[0].visits, 2);
+    }
+
+    #[test]
+    fn collector_snapshot_remains_dirty_until_acknowledged() {
+        let mut acc = TelemetryAccumulator::default();
+        acc.record(TelemetryClientEvent::AssistantTurnError {
+            code: "provider_error".into(),
+            summary: Some("request failed".into()),
+        });
+
+        let first = acc
+            .assistant_health_snapshot()
+            .expect("assistant health should be dirty");
+        let retry = acc
+            .assistant_health_snapshot()
+            .expect("failed send must remain dirty");
+        assert_eq!(retry.entry.turn_errors, first.entry.turn_errors);
+
+        acc.mark_assistant_health_sent(first.revision);
+        assert!(acc.assistant_health_snapshot().is_none());
     }
 }

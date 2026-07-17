@@ -130,6 +130,7 @@ export type FriendRosterState = FriendRosterSnapshot & {
 
 export type FriendRosterStore = FriendRosterState & {
     setRosterLoading(currentUserId: unknown, detail?: string): void;
+    setRosterReady(detail?: string): void;
     setRosterSeedSnapshot(snapshot: FriendRosterSeedSnapshot): void;
     setRosterSnapshot(snapshot: FriendRosterSnapshotInput): void;
     setRosterError(detail: string): void;

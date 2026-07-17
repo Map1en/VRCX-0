@@ -1,43 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    setTrayIconNotification: vi.fn(),
-    bootstrapActivityCache: vi.fn(),
     startRuntimeAuthFailureRecovery: vi.fn(),
-    bootstrapFavorites: vi.fn(),
-    bootstrapFriendRoster: vi.fn(),
     startRuntimeGameClientSync: vi.fn(),
     stopGameStateService: vi.fn(),
     getTimeUnitLabels: vi.fn(),
     setI18nLanguage: vi.fn(),
-    startRealtimeTransport: vi.fn(),
-    stopRealtimeTransport: vi.fn(),
     bindRuntimeEvents: vi.fn(),
     initializeReactRuntime: vi.fn(),
-    syncStartupServicesTask: vi.fn(),
     applyThemeMode: vi.fn(),
     startRuntimeUpdateLoop: vi.fn(),
     startVrcStatusPolling: vi.fn()
 }));
 
-vi.mock('@/services/shellIntegrationService', () => ({
-    setTrayIconNotification: mocks.setTrayIconNotification
-}));
-
-vi.mock('./activityCacheService', () => ({
-    bootstrapActivityCache: mocks.bootstrapActivityCache
-}));
-
 vi.mock('./authSessionRecoveryService', () => ({
     startRuntimeAuthFailureRecovery: mocks.startRuntimeAuthFailureRecovery
-}));
-
-vi.mock('./favoriteBootstrapService', () => ({
-    bootstrapFavorites: mocks.bootstrapFavorites
-}));
-
-vi.mock('./friendBootstrapService', () => ({
-    bootstrapFriendRoster: mocks.bootstrapFriendRoster
 }));
 
 vi.mock('./gameClientLifecycle', () => ({
@@ -53,21 +30,12 @@ vi.mock('./i18nService', () => ({
     setI18nLanguage: mocks.setI18nLanguage
 }));
 
-vi.mock('./realtimeTransportService', () => ({
-    startRealtimeTransport: mocks.startRealtimeTransport,
-    stopRealtimeTransport: mocks.stopRealtimeTransport
-}));
-
 vi.mock('./runtimeEventBridgeService', () => ({
     bindRuntimeEvents: mocks.bindRuntimeEvents
 }));
 
 vi.mock('./startupService', () => ({
     initializeReactRuntime: mocks.initializeReactRuntime
-}));
-
-vi.mock('./startupServicesStatus', () => ({
-    syncStartupServicesTask: mocks.syncStartupServicesTask
 }));
 
 vi.mock('./themeService', () => ({
@@ -82,17 +50,27 @@ vi.mock('./vrcStatusService', () => ({
     startVrcStatusPolling: mocks.startVrcStatusPolling
 }));
 
-import { useNotificationStore } from '@/state/notificationStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
-import { useSessionStore } from '@/state/sessionStore';
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
 
 import {
-    startAuthenticatedRuntimeServices,
-    startI18nLanguageSync
+    startI18nLanguageSync,
+    startReactRuntimeServices
 } from './runtimeBootstrapService';
 
-function installDocumentStub() {
+type Deferred<T> = {
+    promise: Promise<T>;
+    resolve: (value: T) => void;
+};
+
+function deferred<T>(): Deferred<T> {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((promiseResolve) => {
+        resolve = promiseResolve;
+    });
+    return { promise, resolve };
+}
+
+function installDocumentStub(): void {
     globalThis.document = {
         documentElement: {
             setAttribute: vi.fn()
@@ -100,29 +78,14 @@ function installDocumentStub() {
     } as unknown as Document;
 }
 
-function installWindowStub() {
-    globalThis.window = {
-        setTimeout: globalThis.setTimeout,
-        clearTimeout: globalThis.clearTimeout
-    } as unknown as Window & typeof globalThis;
-}
-
-function resetShellStore() {
-    useShellStore.setState({
-        locale: 'en',
-        timeUnitLabels: DEFAULT_TIME_UNIT_LABELS
-    });
-}
-
 describe('runtimeBootstrapService', () => {
     beforeEach(() => {
         installDocumentStub();
-        installWindowStub();
         vi.clearAllMocks();
-        useRuntimeStore.getState().resetRuntimeState();
-        useSessionStore.getState().resetSessionState();
-        useNotificationStore.getState().resetNotificationState();
-        resetShellStore();
+        useShellStore.setState({
+            locale: 'en',
+            timeUnitLabels: DEFAULT_TIME_UNIT_LABELS
+        });
         mocks.getTimeUnitLabels.mockImplementation(
             (locale: string, fallback: typeof DEFAULT_TIME_UNIT_LABELS) => ({
                 ...fallback,
@@ -130,16 +93,15 @@ describe('runtimeBootstrapService', () => {
             })
         );
         mocks.setI18nLanguage.mockResolvedValue(undefined);
-        mocks.bootstrapFriendRoster.mockResolvedValue(undefined);
-        mocks.bootstrapFavorites.mockResolvedValue(undefined);
-        mocks.bootstrapActivityCache.mockResolvedValue({
-            userId: 'usr_self',
-            stale: false
-        });
-        mocks.startRealtimeTransport.mockResolvedValue(undefined);
+        mocks.initializeReactRuntime.mockResolvedValue(undefined);
+        mocks.bindRuntimeEvents.mockResolvedValue(undefined);
+        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(undefined);
+        mocks.startRuntimeGameClientSync.mockReturnValue(undefined);
+        mocks.startRuntimeUpdateLoop.mockReturnValue(undefined);
+        mocks.startVrcStatusPolling.mockReturnValue(undefined);
     });
 
-    it('normalizes locale changes into document lang, time labels, and i18n service state', () => {
+    it('syncs normalized locale state', () => {
         useShellStore.getState().setLocale('zh_Hant_TW');
 
         const cleanup = startI18nLanguageSync();
@@ -165,52 +127,55 @@ describe('runtimeBootstrapService', () => {
         expect(mocks.setI18nLanguage).toHaveBeenCalledTimes(2);
     });
 
-    it('starts authenticated bootstraps before realtime and opens realtime only after friends are loaded', () => {
-        const currentUserSnapshot = {
-            id: 'usr_self',
-            displayName: 'Current User'
-        };
-        useSessionStore.getState().setSessionState({
-            sessionPhase: 'ready',
-            isLoggedIn: true,
-            isFriendsLoaded: false,
-            isFavoritesLoaded: false
-        });
-        useRuntimeStore.getState().setAuthBootstrap({
-            currentUserId: 'usr_self',
-            currentUserEndpoint: 'https://api.example',
-            currentUserWebsocket: 'wss://ws.example',
-            currentUserSnapshot
-        });
+    it('shares React runtime startup across consumers', async () => {
+        const initialization = deferred<void>();
+        const authCleanup = vi.fn();
+        const eventCleanup = vi.fn();
+        const gameClientCleanup = vi.fn();
+        const updateLoopCleanup = vi.fn();
+        const statusCleanup = vi.fn();
+        mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
+        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(authCleanup);
+        mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
+        mocks.startRuntimeGameClientSync.mockReturnValue(gameClientCleanup);
+        mocks.startRuntimeUpdateLoop.mockReturnValue(updateLoopCleanup);
+        mocks.startVrcStatusPolling.mockReturnValue(statusCleanup);
 
-        const cleanup = startAuthenticatedRuntimeServices();
+        const cleanupFirst = startReactRuntimeServices();
+        const cleanupSecond = startReactRuntimeServices();
+        expect(mocks.initializeReactRuntime).toHaveBeenCalledTimes(1);
 
-        expect(mocks.bootstrapFriendRoster).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            endpoint: 'https://api.example',
-            currentUserSnapshot
-        });
-        expect(mocks.bootstrapFavorites).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            endpoint: 'https://api.example',
-            currentUserSnapshot
-        });
-        expect(mocks.bootstrapActivityCache).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            currentUserSnapshot
-        });
-        expect(mocks.startRealtimeTransport).not.toHaveBeenCalled();
+        initialization.resolve();
+        await vi.waitFor(() =>
+            expect(mocks.bindRuntimeEvents).toHaveBeenCalled()
+        );
 
-        useSessionStore.getState().setFriendsLoaded(true);
+        cleanupFirst();
+        expect(authCleanup).not.toHaveBeenCalled();
+        cleanupSecond();
 
-        expect(mocks.startRealtimeTransport).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            endpoint: 'https://api.example',
-            websocket: 'wss://ws.example',
-            currentUserSnapshot
-        });
+        expect(authCleanup).toHaveBeenCalledTimes(1);
+        expect(eventCleanup).toHaveBeenCalledTimes(1);
+        expect(gameClientCleanup).toHaveBeenCalledTimes(1);
+        expect(updateLoopCleanup).toHaveBeenCalledTimes(1);
+        expect(statusCleanup).toHaveBeenCalledTimes(1);
+        expect(mocks.stopGameStateService).toHaveBeenCalledTimes(1);
+    });
 
+    it('cleans up runtime startup after its consumer leaves', async () => {
+        const initialization = deferred<void>();
+        const authCleanup = vi.fn();
+        const eventCleanup = vi.fn();
+        mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
+        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(authCleanup);
+        mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
+
+        const cleanup = startReactRuntimeServices();
         cleanup();
-        expect(mocks.stopRealtimeTransport.mock.calls.at(-1)).toEqual([]);
+        initialization.resolve();
+
+        await vi.waitFor(() => expect(eventCleanup).toHaveBeenCalledTimes(1));
+        expect(authCleanup).toHaveBeenCalledTimes(1);
+        expect(mocks.stopGameStateService).toHaveBeenCalledTimes(1);
     });
 });

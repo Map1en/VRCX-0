@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
+import { commands } from '@/platform/tauri/bindings';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
@@ -80,6 +82,7 @@ function mergeAvatars(currentAvatar: any, rows: any) {
 }
 
 function AvatarOwnerRow({ avatar, selected, onToggle }: any) {
+    const { t } = useTranslation();
     const imageUrl = convertFileUrlToImageUrl(
         avatar.thumbnailImageUrl || avatar.imageUrl,
         128
@@ -102,7 +105,7 @@ function AvatarOwnerRow({ avatar, selected, onToggle }: any) {
                 onClick={onToggle}
             >
                 {imageUrl ? (
-                    <img
+                    <FadeInImage
                         src={imageUrl}
                         alt=""
                         className="mr-2.5 size-9 shrink-0 rounded-full object-cover"
@@ -130,7 +133,10 @@ function AvatarOwnerRow({ avatar, selected, onToggle }: any) {
             <Checkbox
                 checked={selected}
                 className="mx-2 shrink-0"
-                aria-label={`Select ${avatar.name || avatar.id || 'avatar'}`}
+                aria-label={t('accessibility.select_avatar', {
+                    avatar:
+                        avatar.name || avatar.id || t('accessibility.avatar')
+                })}
                 onCheckedChange={onToggle}
             />
         </div>
@@ -234,105 +240,66 @@ export function AvatarContentTagsDialog({
             return;
         }
 
-        const avatarsById = new Map(
-            ownAvatars.map((entry: any) => [entry.id, entry])
+        const avatarIds = selectedAvatarIds.filter(
+            (avatarId): avatarId is string => typeof avatarId === 'string'
         );
-        const originalTagsById = new Map();
-        const savedAvatarIds = [];
         setSaving(true);
         try {
-            for (const avatarId of selectedAvatarIds) {
-                const targetAvatar = avatarsById.get(avatarId);
-                if (!targetAvatar) {
-                    continue;
-                }
-                const originalTags = Array.isArray(targetAvatar.tags)
-                    ? targetAvatar.tags.slice()
-                    : [];
-                originalTagsById.set(avatarId, originalTags);
-                const remainingTags = Array.isArray(targetAvatar.tags)
-                    ? targetAvatar.tags.filter(
-                          (tag: any) => !tag.startsWith('content_')
-                      )
-                    : [];
-                const nextTags = [...remainingTags, ...selectedTags];
-                const response = await avatarProfileRepository.saveAvatar({
-                    avatarId,
-                    endpoint,
-                    params: {
-                        id: avatarId,
-                        tags: nextTags
-                    }
-                });
-                savedAvatarIds.push(avatarId);
-                if (avatarId === avatar.id) {
-                    onSavedCurrentAvatar?.(
-                        response.json && typeof response.json === 'object'
-                            ? response.json
-                            : { ...targetAvatar, tags: nextTags }
+            const result = await commands.appAvatarContentTagsBatch({
+                avatarIds,
+                contentTags: selectedTags
+            });
+            const currentAvatarResult = result.items.find(
+                (item) => item.id === avatar.id
+            );
+            if (
+                currentAvatarResult?.entity &&
+                typeof currentAvatarResult.entity === 'object'
+            ) {
+                onSavedCurrentAvatar?.(currentAvatarResult.entity);
+            }
+            if (result.failed) {
+                const baseMessage =
+                    result.lastError || 'Failed to update avatar content tags.';
+                if (
+                    result.appliedBeforeFailure > 0 &&
+                    result.rollbackFailed > 0
+                ) {
+                    toast.error(
+                        t(
+                            'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s_but_value_rollback',
+                            {
+                                value: baseMessage,
+                                value2: result.rolledBack,
+                                value3: result.rollbackFailed
+                            }
+                        )
                     );
+                } else if (result.appliedBeforeFailure > 0) {
+                    toast.error(
+                        t(
+                            'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s',
+                            {
+                                value: baseMessage,
+                                value2: result.rolledBack
+                            }
+                        )
+                    );
+                } else {
+                    toast.error(baseMessage);
                 }
+                return;
             }
             toast.success(
                 t('dialog.avatar.success.avatar_content_tags_updated')
             );
             onOpenChange(false);
         } catch (error) {
-            const rollbackFailures = [];
-            for (
-                let index = savedAvatarIds.length - 1;
-                index >= 0;
-                index -= 1
-            ) {
-                const avatarId = savedAvatarIds[index];
-                const targetAvatar = avatarsById.get(avatarId);
-                const originalTags = originalTagsById.get(avatarId) || [];
-                try {
-                    const response = await avatarProfileRepository.saveAvatar({
-                        avatarId,
-                        endpoint,
-                        params: {
-                            id: avatarId,
-                            tags: originalTags
-                        }
-                    });
-                    if (avatarId === avatar.id) {
-                        onSavedCurrentAvatar?.(
-                            response.json && typeof response.json === 'object'
-                                ? response.json
-                                : { ...targetAvatar, tags: originalTags }
-                        );
-                    }
-                } catch {
-                    rollbackFailures.push(avatarId);
-                }
-            }
-            const baseMessage =
+            toast.error(
                 error instanceof Error
                     ? error.message
-                    : 'Failed to update avatar content tags.';
-            if (savedAvatarIds.length && rollbackFailures.length) {
-                toast.error(
-                    t(
-                        'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s_but_value_rollback',
-                        {
-                            value: baseMessage,
-                            value2:
-                                savedAvatarIds.length - rollbackFailures.length,
-                            value3: rollbackFailures.length
-                        }
-                    )
-                );
-            } else if (savedAvatarIds.length) {
-                toast.error(
-                    t(
-                        'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s',
-                        { value: baseMessage, value2: savedAvatarIds.length }
-                    )
-                );
-            } else {
-                toast.error(baseMessage);
-            }
+                    : 'Failed to update avatar content tags.'
+            );
         } finally {
             setSaving(false);
         }

@@ -1,42 +1,8 @@
 #![allow(non_snake_case)]
 
-use tauri::State;
-
-use crate::adapters::ipc::IpcPacket;
 use crate::error::AppError;
-use crate::state::AppState;
 
 use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__ipc_announce_start(state: State<'_, AppState>) -> Result<(), AppError> {
-    require_host_capability(HostCapability::Ipc)?;
-    let packet = IpcPacket {
-        type_field: "N/A".into(),
-        data: Some("Start".into()),
-        msg_type: Some("N/A".into()),
-    };
-    state.ipc.send(&packet);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__send_ipc(
-    state: State<'_, AppState>,
-    type_name: String,
-    data: String,
-) -> Result<(), AppError> {
-    require_host_capability(HostCapability::Ipc)?;
-    let packet = IpcPacket {
-        type_field: type_name,
-        data: Some(data),
-        msg_type: None,
-    };
-    state.ipc.send(&packet);
-    Ok(())
-}
 
 #[tauri::command]
 #[specta::specta]

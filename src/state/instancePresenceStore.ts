@@ -3,30 +3,30 @@ import { create } from 'zustand';
 import {
     buildInstancePresenceFact,
     instancePresenceKey,
+    sameInstancePresenceFact,
     type InstancePresenceFact,
     type InstancePresenceFactInput
 } from '@/domain/presence/instancePresence';
+import { evictOverflow } from '@/state/storeEviction';
 
 interface InstancePresenceStoreState {
     version: number;
     presenceByKey: Record<string, InstancePresenceFact>;
-    locationsByEndpoint: Record<string, string[]>;
+    order: string[];
     upsertInstancePresence: (input: InstancePresenceFactInput) => void;
     resetInstancePresence: () => void;
 }
 
+const INSTANCE_PRESENCE_CAPACITY = 256;
+
 const initialState: Pick<
     InstancePresenceStoreState,
-    'version' | 'presenceByKey' | 'locationsByEndpoint'
+    'version' | 'presenceByKey' | 'order'
 > = {
     version: 0,
     presenceByKey: {},
-    locationsByEndpoint: {}
+    order: []
 };
-
-function endpointFromKey(key: string): string {
-    return key.split('::')[0] || 'default';
-}
 
 export const useInstancePresenceStore = create<InstancePresenceStoreState>(
     (set) => ({
@@ -39,33 +39,21 @@ export const useInstancePresenceStore = create<InstancePresenceStoreState>(
                     return state;
                 }
                 const existing = state.presenceByKey[key];
-                if (
-                    existing &&
-                    JSON.stringify(existing) === JSON.stringify(fact)
-                ) {
+                if (existing && sameInstancePresenceFact(existing, fact)) {
                     return state;
                 }
-                const endpoint = endpointFromKey(key);
-                const currentLocations =
-                    state.locationsByEndpoint[endpoint] || [];
-                const nextLocations = currentLocations.includes(
-                    fact.locationKey
-                )
-                    ? currentLocations
-                    : [...currentLocations, fact.locationKey];
+                const presenceByKey = { ...state.presenceByKey, [key]: fact };
+                const order = existing ? state.order : [...state.order, key];
+                for (const evictedKey of evictOverflow(
+                    order,
+                    INSTANCE_PRESENCE_CAPACITY
+                )) {
+                    delete presenceByKey[evictedKey];
+                }
                 return {
                     version: state.version + 1,
-                    presenceByKey: {
-                        ...state.presenceByKey,
-                        [key]: fact
-                    },
-                    locationsByEndpoint:
-                        nextLocations === currentLocations
-                            ? state.locationsByEndpoint
-                            : {
-                                  ...state.locationsByEndpoint,
-                                  [endpoint]: nextLocations
-                              }
+                    presenceByKey,
+                    order
                 };
             });
         },

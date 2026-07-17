@@ -233,5 +233,4 @@ fn discord_legacy_embed(
 }
 
 #[cfg(test)]
-#[path = "../../../tests/notification/discord/payload_tests.rs"]
 mod tests;

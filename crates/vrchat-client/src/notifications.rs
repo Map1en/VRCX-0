@@ -286,3 +286,6 @@ pub fn boop_send_input(
         ),
     ))
 }
+
+#[cfg(test)]
+mod tests;

@@ -2,6 +2,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -36,6 +37,12 @@ import {
     prependInstanceDialogDisplayNamePreset
 } from './worldInstanceDisplayNamePresets';
 import { buildLegacyCreatedInstance } from './worldInstances';
+import type {
+    CreatedWorldInstance,
+    InstanceGroupOption,
+    WorldNewInstanceForm,
+    WorldNewInstanceRequest
+} from './worldNewInstanceTypes';
 
 const accessTypeOptions = [
     { value: 'public', labelKey: 'dialog.new_instance.access_type_public' },
@@ -70,14 +77,7 @@ const groupAccessTypeOptions = [
     }
 ];
 
-type InstanceGroupOption = {
-    displayName?: unknown;
-    groupId?: unknown;
-    id?: unknown;
-    name?: unknown;
-};
-
-function normalizeText(value: any) {
+function normalizeText(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
@@ -92,7 +92,7 @@ function groupLabel(group?: InstanceGroupOption | null) {
     return normalizeText(group?.name || group?.displayName) || groupId;
 }
 
-function newInstanceDialogTitleKey(request: any) {
+function newInstanceDialogTitleKey(request: WorldNewInstanceRequest | null) {
     if (request?.afterCreateAction === 'openInGame') {
         return 'dialog.world.actions.new_instance_and_open_ingame';
     }
@@ -100,6 +100,25 @@ function newInstanceDialogTitleKey(request: any) {
         return 'dialog.world.actions.new_instance_and_self_invite';
     }
     return 'dialog.new_instance.header';
+}
+
+interface WorldNewInstanceDialogProps {
+    open: boolean;
+    request: WorldNewInstanceRequest | null;
+    world: WorldProfileRecord;
+    currentUserId?: string | null;
+    isGameRunning?: boolean;
+    groupOptions?: InstanceGroupOption[];
+    submitting: boolean;
+    onOpenChange: (open: boolean) => void;
+    onChange?: (form: WorldNewInstanceForm) => void;
+    onCommitDisplayName?: (value: string) => void;
+    onSubmit: (form: WorldNewInstanceForm) => void;
+    onCopy: (created: CreatedWorldInstance) => void;
+    onSelfInvite: (created: CreatedWorldInstance) => void;
+    onInvite: (created: CreatedWorldInstance) => void;
+    onLaunch: (created: CreatedWorldInstance) => void;
+    onOpenInGame: (created: CreatedWorldInstance) => void;
 }
 
 export function WorldNewInstanceDialog({
@@ -119,10 +138,10 @@ export function WorldNewInstanceDialog({
     onInvite,
     onLaunch,
     onOpenInGame
-}: any) {
+}: WorldNewInstanceDialogProps) {
     const { t } = useTranslation();
 
-    const [form, setForm] = useState<any>({
+    const [form, setForm] = useState<WorldNewInstanceForm>({
         selectedTab: 'Normal',
         accessType: 'public',
         region: 'US West',
@@ -148,6 +167,15 @@ export function WorldNewInstanceDialog({
             );
             setForm({
                 selectedTab: 'Normal',
+                accessType: 'public',
+                region: 'US West',
+                groupId: '',
+                groupAccessType: 'plus',
+                queueEnabled: true,
+                ageGate: false,
+                displayName: '',
+                displayNamePresets: [],
+                roleIds: '',
                 instanceName: '',
                 legacyUserId: currentUserId || '',
                 strict: false,
@@ -156,9 +184,9 @@ export function WorldNewInstanceDialog({
         }
     }, [currentUserId, open, request]);
 
-    function patchForm(patch: any) {
-        setForm((current: any) => {
-            const next: any = { ...current, ...patch };
+    function patchForm(patch: Partial<WorldNewInstanceForm>) {
+        setForm((current) => {
+            const next: WorldNewInstanceForm = { ...current, ...patch };
             onChange?.(next);
             return next;
         });
@@ -169,7 +197,7 @@ export function WorldNewInstanceDialog({
             ? buildLegacyCreatedInstance({
                   worldId: world.id,
                   form,
-                  currentUserId,
+                  currentUserId: currentUserId || '',
                   legacySeed
               })
             : null;
@@ -178,7 +206,7 @@ export function WorldNewInstanceDialog({
     const activeOwnerId = activeCreated?.ownerId || currentUserId;
     const selectedGroup =
         groupOptions.find(
-            (group: any) => groupIdForOption(group) === form.groupId
+            (group) => groupIdForOption(group) === form.groupId
         ) || null;
     const missingSelectedGroup =
         form.groupId && !selectedGroup
@@ -198,13 +226,14 @@ export function WorldNewInstanceDialog({
         activeOwnerId !== currentUserId
     );
 
-    function patchGroupId(groupId: any) {
+    function patchGroupId(groupId: string | null) {
+        const normalizedGroupId = groupId || '';
         const group = groupOptions.find(
-            (option: any) => groupIdForOption(option) === groupId
+            (option) => groupIdForOption(option) === normalizedGroupId
         );
         patchForm({
-            groupId,
-            groupName: groupLabel(group) || groupId,
+            groupId: normalizedGroupId,
+            groupName: groupLabel(group) || normalizedGroupId,
             roleIds: ''
         });
     }
@@ -213,13 +242,13 @@ export function WorldNewInstanceDialog({
         ? form.displayNamePresets
         : [];
 
-    function patchDisplayName(value: any) {
+    function patchDisplayName(value: string) {
         patchForm({
             displayName: String(value ?? '')
         });
     }
 
-    function commitDisplayNamePreset(value: any = form.displayName) {
+    function commitDisplayNamePreset(value: unknown = form.displayName) {
         if (form.selectedTab !== 'Normal') {
             return;
         }
@@ -240,12 +269,12 @@ export function WorldNewInstanceDialog({
         onCommitDisplayName?.(displayName);
     }
 
-    function selectDisplayNamePreset(value: any) {
+    function selectDisplayNamePreset(value: string) {
         commitDisplayNamePreset(value);
         setDisplayNamePresetsOpen(false);
     }
 
-    function renderGroupPicker(inputId: any, disabled: any = false) {
+    function renderGroupPicker(inputId: string, disabled = false) {
         if (!visibleGroupOptions.length) {
             return (
                 <Input
@@ -282,7 +311,7 @@ export function WorldNewInstanceDialog({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        {visibleGroupOptions.map((group: any) => {
+                        {visibleGroupOptions.map((group) => {
                             const groupId = groupIdForOption(group);
                             return (
                                 <SelectItem key={groupId} value={groupId}>
@@ -335,7 +364,7 @@ export function WorldNewInstanceDialog({
                                     }))}
                                     disabled={Boolean(request?.created)}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value })
+                                        patchForm({ accessType: value || '' })
                                     }
                                 >
                                     <SelectTrigger>
@@ -343,16 +372,14 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {accessTypeOptions.map(
-                                                (option: any) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {t(option.labelKey)}
-                                                    </SelectItem>
-                                                )
-                                            )}
+                                            {accessTypeOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {t(option.labelKey)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -369,7 +396,7 @@ export function WorldNewInstanceDialog({
                                     }))}
                                     disabled={Boolean(request?.created)}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value })
+                                        patchForm({ region: value || '' })
                                     }
                                 >
                                     <SelectTrigger>
@@ -377,16 +404,14 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {regionOptions.map(
-                                                (region: any) => (
-                                                    <SelectItem
-                                                        key={region.value}
-                                                        value={region.value}
-                                                    >
-                                                        {t(region.labelKey)}
-                                                    </SelectItem>
-                                                )
-                                            )}
+                                            {regionOptions.map((region) => (
+                                                <SelectItem
+                                                    key={region.value}
+                                                    value={region.value}
+                                                >
+                                                    {t(region.labelKey)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -419,7 +444,7 @@ export function WorldNewInstanceDialog({
                                             disabled={Boolean(request?.created)}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value
+                                                    groupAccessType: value || ''
                                                 })
                                             }
                                         >
@@ -429,7 +454,7 @@ export function WorldNewInstanceDialog({
                                             <SelectContent>
                                                 <SelectGroup>
                                                     {groupAccessTypeOptions.map(
-                                                        (option: any) => (
+                                                        (option) => (
                                                             <SelectItem
                                                                 key={
                                                                     option.value
@@ -570,7 +595,7 @@ export function WorldNewInstanceDialog({
                                         >
                                             <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
                                                 {displayNamePresets.map(
-                                                    (name: any) => (
+                                                    (name) => (
                                                         <Button
                                                             key={name}
                                                             type="button"
@@ -608,7 +633,7 @@ export function WorldNewInstanceDialog({
                                         label: t(option.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value })
+                                        patchForm({ accessType: value || '' })
                                     }
                                 >
                                     <SelectTrigger>
@@ -616,16 +641,14 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {accessTypeOptions.map(
-                                                (option: any) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {t(option.labelKey)}
-                                                    </SelectItem>
-                                                )
-                                            )}
+                                            {accessTypeOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {t(option.labelKey)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -641,7 +664,7 @@ export function WorldNewInstanceDialog({
                                         label: t(region.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value })
+                                        patchForm({ region: value || '' })
                                     }
                                 >
                                     <SelectTrigger>
@@ -649,16 +672,14 @@ export function WorldNewInstanceDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            {regionOptions.map(
-                                                (region: any) => (
-                                                    <SelectItem
-                                                        key={region.value}
-                                                        value={region.value}
-                                                    >
-                                                        {t(region.labelKey)}
-                                                    </SelectItem>
-                                                )
-                                            )}
+                                            {regionOptions.map((region) => (
+                                                <SelectItem
+                                                    key={region.value}
+                                                    value={region.value}
+                                                >
+                                                    {t(region.labelKey)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
@@ -726,7 +747,7 @@ export function WorldNewInstanceDialog({
                                             )}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value
+                                                    groupAccessType: value || ''
                                                 })
                                             }
                                         >
@@ -736,7 +757,7 @@ export function WorldNewInstanceDialog({
                                             <SelectContent>
                                                 <SelectGroup>
                                                     {groupAccessTypeOptions.map(
-                                                        (option: any) => (
+                                                        (option) => (
                                                             <SelectItem
                                                                 key={
                                                                     option.value

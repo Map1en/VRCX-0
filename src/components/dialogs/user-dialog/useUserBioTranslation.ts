@@ -2,16 +2,27 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { UserProfileEntity } from '@/domain/entities/profileEntities';
 import {
     getTranslationConfig,
     translateText
 } from '@/services/translationService';
 
-export function useUserBioTranslation({ profile }: any) {
+type BioTranslation = {
+    userId: string;
+    source: string;
+    text: string;
+};
+
+export function useUserBioTranslation({
+    profile
+}: {
+    profile: UserProfileEntity | null;
+}) {
     const { t } = useTranslation();
     const userId = profile?.id || '';
     const source = profile?.bio || '';
-    const [bioTranslation, setBioTranslation] = useState<any>({
+    const [bioTranslation, setBioTranslation] = useState<BioTranslation>({
         userId,
         source,
         text: ''

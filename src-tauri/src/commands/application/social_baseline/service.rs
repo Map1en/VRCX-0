@@ -2,7 +2,8 @@
 
 use tauri::State;
 use vrcx_0_application::{
-    build_favorites_baseline, build_friend_roster_baseline, SocialBaselineDeps,
+    apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
+    build_friend_roster_baseline_deferred, SocialBaselineDeps,
 };
 use vrcx_0_core::friends::FriendRecord;
 
@@ -23,6 +24,13 @@ fn social_baseline_deps(state: &State<'_, AppState>) -> SocialBaselineDeps {
     }
 }
 
+fn mark_friend_roster_output_stale(output: &mut SocialFriendRosterBaselineOutput, detail: &str) {
+    output.stale = true;
+    output.snapshot = None;
+    output.friend_log_changed = false;
+    output.detail = detail.into();
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn app__social_favorites_baseline_get(
@@ -39,6 +47,9 @@ pub async fn app__social_favorites_baseline_get(
         .map_err(AppError::from);
     match &result {
         Ok(output) => {
+            state
+                .authenticated_runtime
+                .update_favorites_baseline(output.clone());
             let status = if output.stale { "stale" } else { "ok" };
             let sync_status = if output.stale { "stale" } else { "ready" };
             diagnostics.record_command(
@@ -83,44 +94,74 @@ pub async fn app__social_friend_roster_baseline_get(
     let sync = state.runtime_context.sync.clone();
     let input_endpoint = input.endpoint.clone();
     let input_websocket = input.websocket.clone();
+    let baseline_watermark = state
+        .realtime_runtime
+        .capture_friend_baseline_watermark()
+        .map_err(AppError::from)?;
     diagnostics.record_command(command, "running", "Friend roster baseline started.");
 
-    let result = build_friend_roster_baseline(social_baseline_deps(&state), input)
+    let mut result = build_friend_roster_baseline_deferred(social_baseline_deps(&state), input)
         .await
         .map_err(AppError::from);
-    match &result {
-        Ok(output) => {
-            if !output.stale {
-                if let Some(snapshot) = output.snapshot.as_ref() {
-                    let friends_value = snapshot
-                        .as_value()
-                        .get("friendsById")
-                        .cloned()
-                        .unwrap_or_else(|| serde_json::json!({}));
-                    match serde_json::from_value::<std::collections::HashMap<String, FriendRecord>>(
-                        friends_value,
+    if let Ok(output) = result.as_mut() {
+        if !output.stale {
+            let friends_by_id = output.snapshot.as_ref().and_then(|snapshot| {
+                snapshot
+                    .as_value()
+                    .get("friendsById")
+                    .cloned()
+                    .and_then(|friends_value| {
+                        serde_json::from_value::<std::collections::HashMap<String, FriendRecord>>(
+                            friends_value,
+                        )
+                        .ok()
+                    })
+            });
+            match friends_by_id {
+                Some(friends_by_id) => {
+                    match state.realtime_runtime.sync_friend_snapshot_with_watermark(
+                        output.user_id.clone(),
+                        input_endpoint.clone(),
+                        input_websocket.clone(),
+                        baseline_watermark,
+                        friends_by_id,
                     ) {
-                        Ok(friends_by_id) => {
-                            if let Err(error) = state.realtime_runtime.sync_friend_snapshot(
-                                output.user_id.clone(),
-                                input_endpoint.clone(),
-                                input_websocket.clone(),
-                                None,
-                                friends_by_id,
-                            ) {
+                        Ok(sync_outcome) => {
+                            if let Err(error) =
+                                apply_friend_roster_baseline_sync_outcome(output, sync_outcome)
+                            {
                                 tracing::warn!(
-                                    "Friend roster baseline realtime cache sync failed: {error}"
+                                    "Friend roster canonical snapshot encode failed: {error}"
+                                );
+                                mark_friend_roster_output_stale(
+                                    output,
+                                    "Friend roster canonical snapshot encode failed.",
                                 );
                             }
                         }
                         Err(error) => {
                             tracing::warn!(
-                                "Friend roster baseline friendsById decode failed: {error}"
+                                "Friend roster baseline realtime cache sync failed: {error}"
+                            );
+                            mark_friend_roster_output_stale(
+                                output,
+                                "Friend roster realtime sync failed.",
                             );
                         }
                     }
                 }
+                None => {
+                    tracing::warn!("Friend roster baseline friendsById decode failed");
+                    mark_friend_roster_output_stale(
+                        output,
+                        "Friend roster baseline friendsById decode failed.",
+                    );
+                }
             }
+        }
+    }
+    match &result {
+        Ok(output) => {
             let status = if output.stale { "stale" } else { "ok" };
             let sync_status = if output.stale { "stale" } else { "ready" };
             diagnostics.record_command(

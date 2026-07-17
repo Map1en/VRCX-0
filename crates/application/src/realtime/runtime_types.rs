@@ -27,6 +27,21 @@ pub struct FriendBaselineResult {
     pub friend_count: usize,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct FriendBaselineCausalWatermark {
+    pub generation: Option<u64>,
+    pub baseline_revision: Option<u64>,
+    pub friend_state_sequence: u64,
+    pub friend_log_sequence: u64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FriendBaselineSyncOutcome {
+    pub result: FriendBaselineResult,
+    pub snapshot: Option<RealtimeFriendSnapshot>,
+    pub friend_log_changed: bool,
+}
+
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeTransportStartResult {

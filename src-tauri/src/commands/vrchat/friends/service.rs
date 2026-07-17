@@ -1,16 +1,13 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::friends::{
-    friend_delete_input, friend_request_cancel_input, friend_request_send_input,
-    friend_status_get_input, friends_get_input,
-};
+use vrcx_0_application::vrchat_api::friends::{friend_status_get_input, friends_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
-use super::types::{VrchatFriendCancelRequestInput, VrchatFriendUserInput, VrchatFriendsGetInput};
+use super::types::{VrchatFriendUserInput, VrchatFriendsGetInput};
 
 async fn execute_friend_api(
     state: State<'_, AppState>,
@@ -56,55 +53,6 @@ pub async fn app__vrchat_friend_status_get(
         state,
         "app__vrchat_friend_status_get",
         format!("Getting friend status for {user_id}."),
-        request,
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_friend_delete(
-    state: State<'_, AppState>,
-    input: VrchatFriendUserInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = friend_delete_input(input.endpoint, input.user_id)?;
-    execute_friend_api(
-        state,
-        "app__vrchat_friend_delete",
-        format!("Deleting friend {user_id}."),
-        request,
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_friend_request_send(
-    state: State<'_, AppState>,
-    input: VrchatFriendUserInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = friend_request_send_input(input.endpoint, input.user_id)?;
-    execute_friend_api(
-        state,
-        "app__vrchat_friend_request_send",
-        format!("Sending friend request to {user_id}."),
-        request,
-    )
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_friend_request_cancel(
-    state: State<'_, AppState>,
-    input: VrchatFriendCancelRequestInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) =
-        friend_request_cancel_input(input.endpoint, input.user_id, input.notification_id)?;
-    execute_friend_api(
-        state,
-        "app__vrchat_friend_request_cancel",
-        format!("Cancelling friend request for {user_id}."),
         request,
     )
     .await

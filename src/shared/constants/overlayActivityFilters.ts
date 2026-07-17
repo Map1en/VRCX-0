@@ -3,7 +3,8 @@ export type OverlayActivitySurface =
     | 'desktop'
     | 'vr'
     | 'hmd'
-    | 'webhook';
+    | 'webhook'
+    | 'tts';
 
 export type OverlayActivityCategory =
     | 'actionRequired'
@@ -351,6 +352,9 @@ export const DEFAULT_OVERLAY_ACTIVITY_FILTERS: OverlayActivityFiltersPreference 
 export const DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS =
     DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE;
 
+export const DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS =
+    DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE;
+
 export const DEFAULT_WEBHOOK_ACTIVITY_FILTERS: OverlayActivityFilterProfilePreference =
     {
         version: 1,
@@ -437,6 +441,18 @@ export function hmdDefaultOverlayActivityFilterProfileFromDefinitions(
         version: 1,
         types: cloneOverlayActivityTypeRules(
             hmdDefaultOverlayActivityTypeRulesFromDefinitions(definitions),
+            definitions
+        )
+    };
+}
+
+export function disabledOverlayActivityFilterProfileFromDefinitions(
+    definitions: OverlayActivityTypeDefinition[]
+): OverlayActivityFilterProfilePreference {
+    return {
+        version: 1,
+        types: cloneOverlayActivityTypeRules(
+            disabledOverlayActivityTypeRules(definitions),
             definitions
         )
     };
@@ -602,39 +618,6 @@ function normalizeUnknownTypeRule(value: unknown): OverlayActivityRule | null {
             ? normalizeFavoriteGroupKeys(value.favoriteGroupKeys)
             : 'all'
     };
-}
-
-function sharedFeedFilterScope(
-    value: unknown,
-    definition: OverlayActivityTypeDefinition
-): OverlayActivityScope | null {
-    const allowedScopes = definition.allowedScopes;
-    switch (value) {
-        case 'Off':
-            return 'off';
-        case 'VIP':
-            if (allowedScopes.includes('allFavorites')) {
-                return 'allFavorites';
-            }
-            if (allowedScopes.includes('selectedFavorites')) {
-                return 'selectedFavorites';
-            }
-            return allowedScopes.includes('on') ? 'on' : null;
-        case 'Friends':
-            if (allowedScopes.includes('friends')) {
-                return 'friends';
-            }
-            return allowedScopes.includes('on') ? 'on' : null;
-        case 'Everyone':
-            if (allowedScopes.includes('everyoneInInstance')) {
-                return 'everyoneInInstance';
-            }
-            return allowedScopes.includes('on') ? 'on' : null;
-        case 'On':
-            return allowedScopes.includes('on') ? 'on' : null;
-        default:
-            return null;
-    }
 }
 
 function getTypeCandidate(
@@ -807,47 +790,6 @@ export function normalizeOverlayActivityFiltersWithDefinitions(
             types: hmdProfile.types
         }
     };
-}
-
-export function migrateLegacySharedFeedWristFilters(
-    value: unknown = {}
-): OverlayActivityFiltersPreference {
-    if (typeof value === 'string') {
-        try {
-            return migrateLegacySharedFeedWristFilters(JSON.parse(value));
-        } catch {
-            return normalizeOverlayActivityFilters();
-        }
-    }
-    const source = isRecord(value) ? value : {};
-    const wrist = isRecord(source.wrist) ? source.wrist : {};
-    const types = Object.fromEntries(
-        OVERLAY_ACTIVITY_TYPE_DEFINITIONS.flatMap((definition) => {
-            const keys = [definition.key, ...(definition.aliases || [])];
-            const legacyValue = keys
-                .map((key) => wrist[key])
-                .find((candidate) => candidate !== undefined);
-            const scope = sharedFeedFilterScope(legacyValue, definition);
-            if (!scope) {
-                return [];
-            }
-            return [
-                [
-                    definition.key,
-                    {
-                        scope,
-                        favoriteGroupKeys: 'all'
-                    }
-                ]
-            ];
-        })
-    );
-    return normalizeOverlayActivityFilters({
-        version: 1,
-        wrist: {
-            types
-        }
-    });
 }
 
 export function parseOverlayActivityFilters(

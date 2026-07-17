@@ -1,23 +1,18 @@
 node_modules/
-build/
 dist/
 .idea/
 *.log
 
 # Tauri / Rust
 target/
-src-tauri/target/
 src-tauri/gen/
 docs/
 src-tauri/resources/licenses/THIRD_PARTY_NOTICES.txt
 
 # Misc
-.env.sentry-build-plugin
 AGENTS.md
-AI_GUIDE.md
 CLAUDE.md
 coverage/
-src/plugins/interopApi.js
 bun.lock
 .codex
 scripts/package-windows-release.ps1

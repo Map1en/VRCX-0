@@ -211,42 +211,36 @@ describe('preferenceGenericSetters', () => {
         );
     });
 
-    it('reloads the VR overlay runtime when saving the interactive panel switch', async () => {
+    it('does not persist the hidden interactive panel switch', async () => {
         await setBoolConfigPreference('vrOverlayPanelEnabled', false);
 
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'vrOverlayPanelEnabled',
-            false
-        );
+        expect(mocks.setBool).not.toHaveBeenCalled();
         expect(usePreferencesStore.getState().vrOverlayPanelEnabled).toBe(
             false
         );
-        expect(mocks.publishPreferenceChanged).toHaveBeenCalledWith(
+        expect(mocks.publishPreferenceChanged).not.toHaveBeenCalledWith(
             'vrOverlayPanelEnabled',
-            false
+            expect.anything()
         );
-        expect(mocks.appVrOverlayConfigReload).toHaveBeenCalledTimes(1);
+        expect(mocks.appVrOverlayConfigReload).not.toHaveBeenCalled();
     });
 
-    it('reloads the VR overlay runtime when saving the interactive panel all-friends setting', async () => {
+    it('does not persist the hidden interactive panel all-friends setting', async () => {
         await setBoolConfigPreference(
             'vrOverlayPanelAllFriendsIncludesFavorites',
             false
         );
 
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'vrOverlayPanelAllFriendsIncludesFavorites',
-            false
-        );
+        expect(mocks.setBool).not.toHaveBeenCalled();
         expect(
             usePreferencesStore.getState()
                 .vrOverlayPanelAllFriendsIncludesFavorites
         ).toBe(false);
-        expect(mocks.publishPreferenceChanged).toHaveBeenCalledWith(
+        expect(mocks.publishPreferenceChanged).not.toHaveBeenCalledWith(
             'vrOverlayPanelAllFriendsIncludesFavorites',
-            false
+            expect.anything()
         );
-        expect(mocks.appVrOverlayConfigReload).toHaveBeenCalledTimes(1);
+        expect(mocks.appVrOverlayConfigReload).not.toHaveBeenCalled();
     });
 
     it('adds and removes hidden feed users through the normalized JSON preference', async () => {

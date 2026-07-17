@@ -1,7 +1,46 @@
-import { useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { toast } from 'sonner';
 
+import type {
+    EntityRecord,
+    GroupProfileRecord
+} from '@/domain/entities/profileEntities';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+
+import type { GroupRemoteData, GroupRemoteStatus } from './groupDialogTypes';
+
+export type GroupPostForm = {
+    mode: 'create' | 'edit';
+    post: EntityRecord | null;
+    title: string;
+    text: string;
+    sendNotification: boolean;
+    visibility: string;
+    roleIds: string[];
+    imageId: string;
+};
+
+function text(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+}
+
+interface UseGroupDialogPostsInput {
+    confirm: (options: {
+        title: string;
+        description: string;
+        confirmText: string;
+        cancelText: string;
+        destructive: boolean;
+    }) => Promise<{ ok: boolean }>;
+    currentEndpoint: string;
+    group: GroupProfileRecord;
+    loadTab: (tab: string, options?: { force?: boolean }) => Promise<void>;
+    onPostsSaved: () => void;
+    setRemoteData: Dispatch<SetStateAction<GroupRemoteData>>;
+    setRemoteStatus: Dispatch<SetStateAction<GroupRemoteStatus>>;
+    t: TFunction;
+}
 
 export function useGroupDialogPosts({
     confirm,
@@ -12,8 +51,8 @@ export function useGroupDialogPosts({
     setRemoteData,
     setRemoteStatus,
     t
-}: any) {
-    const [postEditor, setPostEditor] = useState<any>(null);
+}: UseGroupDialogPostsInput) {
+    const [postEditor, setPostEditor] = useState<GroupPostForm | null>(null);
     const [postEditorSubmitting, setPostEditorSubmitting] = useState(false);
 
     function createGroupPost() {
@@ -29,7 +68,7 @@ export function useGroupDialogPosts({
         });
     }
 
-    async function submitGroupPost(form: any) {
+    async function submitGroupPost(form: GroupPostForm) {
         if (!form || postEditorSubmitting) {
             return;
         }
@@ -74,7 +113,7 @@ export function useGroupDialogPosts({
                     }
                 });
             }
-            setRemoteStatus((current: any) => ({ ...current, posts: '' }));
+            setRemoteStatus((current) => ({ ...current, posts: '' }));
             await loadTab('posts', { force: true });
             onPostsSaved?.();
             setPostEditor(null);
@@ -94,23 +133,27 @@ export function useGroupDialogPosts({
         }
     }
 
-    function editGroupPost(post: any) {
+    function editGroupPost(post: EntityRecord) {
         setPostEditor({
             mode: 'edit',
             post,
-            title: post?.title || '',
-            text: post?.text || '',
+            title: text(post.title),
+            text: text(post.text),
             sendNotification: Boolean(post?.sendNotification),
-            visibility: post?.visibility || 'group',
-            roleIds: Array.isArray(post?.roleIds) ? post.roleIds : [],
-            imageId: post?.imageId || ''
+            visibility: text(post.visibility) || 'group',
+            roleIds: Array.isArray(post.roleIds)
+                ? post.roleIds.filter(
+                      (roleId): roleId is string => typeof roleId === 'string'
+                  )
+                : [],
+            imageId: text(post.imageId)
         });
     }
 
-    async function deleteGroupPost(post: any) {
+    async function deleteGroupPost(post: EntityRecord) {
         const result = await confirm({
             title: t('dialog.group.modal.delete_group_post'),
-            description: post?.title || group.name || 'Group',
+            description: text(post.title) || group.name || 'Group',
             confirmText: t('common.actions.delete'),
             cancelText: t('common.actions.cancel'),
             destructive: true
@@ -124,9 +167,9 @@ export function useGroupDialogPosts({
                 postId: post.id,
                 endpoint: currentEndpoint
             });
-            setRemoteData((current: any) => ({
+            setRemoteData((current) => ({
                 ...current,
-                posts: current.posts.filter((row: any) => row.id !== post.id)
+                posts: current.posts.filter((row) => row.id !== post.id)
             }));
             toast.success(t('dialog.group.success.group_post_deleted'));
         } catch (error) {

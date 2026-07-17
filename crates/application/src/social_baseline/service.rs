@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde_json::{json, Map, Number, Value};
 use std::sync::Arc;
+use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
@@ -11,6 +12,7 @@ use vrcx_0_vrchat_client::http_api::{
 use vrcx_0_vrchat_client::{favorites as remote_favorites, friends as remote_friends};
 
 use crate::auth_scope::RuntimeAuthScope;
+use crate::realtime::FriendBaselineSyncOutcome;
 use crate::session::HostSessionRuntime;
 use crate::web_client::WebClient;
 use crate::{Error, Result};
@@ -149,15 +151,16 @@ fn stale_friend_output(user_id: String, detail: String) -> SocialFriendRosterBas
     }
 }
 
-#[path = "favorites.rs"]
 mod favorites;
-#[path = "friends/mod.rs"]
 mod friends;
-#[path = "remote.rs"]
 mod remote;
 
 pub use favorites::build_favorites_baseline;
 use favorites::CurrentUserSnapshotView;
-pub use friends::build_friend_roster_baseline;
+pub use friends::{
+    apply_friend_roster_baseline_sync_outcome, build_friend_roster_baseline,
+    build_friend_roster_baseline_deferred,
+};
 use friends::{build_friend_state_map, build_snapshot_friend_ids};
+pub(crate) use friends::{reconcile_friend_roster_records, FriendRosterReconcileOutcome};
 use remote::{execute_vrchat_json_request, fetch_paged_array, refetch_users_concurrent};

@@ -1,10 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import type { TFunction } from 'i18next';
+import {
+    useEffect,
+    useRef,
+    useState,
+    type Dispatch,
+    type RefObject,
+    type SetStateAction
+} from 'react';
 import { toast } from 'sonner';
 
+import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import { normalizeUserId } from './userProfileFields';
+import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
 function createMemoDialogState() {
     return {
@@ -20,6 +31,22 @@ function createMemoDialogState() {
     };
 }
 
+type MemoDialogState = ReturnType<typeof createMemoDialogState>;
+
+type UseUserDialogMemoStateProps = {
+    activeUserTargetRef: RefObject<{ userId: string; endpoint?: string }>;
+    applyFriendPatch: ReturnType<
+        typeof useFriendRosterStore.getState
+    >['applyFriendPatch'];
+    currentEndpoint: string;
+    friendsById: FriendRosterById;
+    isCurrentUser: boolean;
+    normalizedUserId: string;
+    profile: UserDialogProfileRecord | null;
+    setBaseProfile: Dispatch<SetStateAction<UserDialogProfileRecord | null>>;
+    t: TFunction;
+};
+
 export function useUserDialogMemoState({
     activeUserTargetRef,
     applyFriendPatch,
@@ -30,7 +57,7 @@ export function useUserDialogMemoState({
     profile,
     setBaseProfile,
     t
-}: any) {
+}: UseUserDialogMemoStateProps) {
     const [memo, setMemo] = useState('');
     const [memoDialog, setMemoDialog] = useState(createMemoDialogState);
     const memoRevisionRef = useRef(0);
@@ -49,7 +76,7 @@ export function useUserDialogMemoState({
         const revision = memoRevisionRef.current;
         memoPersistenceRepository
             .getUserMemo(normalizedUserId)
-            .then((entry: any) => {
+            .then((entry) => {
                 if (active && memoRevisionRef.current === revision) {
                     setMemo(entry?.memo || '');
                 }
@@ -72,13 +99,13 @@ export function useUserDialogMemoState({
             return;
         }
 
-        const originalNote = String(targetProfile.note || '').slice(0, 256);
+        const originalNote = String(targetProfile?.note || '').slice(0, 256);
         setMemoDialog({
             ...createMemoDialogState(),
             open: true,
             targetUserId,
             targetEndpoint: currentEndpoint,
-            targetLabel: targetProfile.displayName || targetProfile.id || '',
+            targetLabel: targetProfile?.displayName || targetProfile?.id || '',
             editingCurrentUser: Boolean(isCurrentUser),
             originalNote,
             note: originalNote,
@@ -101,7 +128,7 @@ export function useUserDialogMemoState({
             : nextNote;
 
         memoRevisionRef.current += 1;
-        setMemoDialog((current: any) => ({
+        setMemoDialog((current: MemoDialogState) => ({
             ...current,
             saving: true
         }));
@@ -132,7 +159,7 @@ export function useUserDialogMemoState({
             const nextMemo = String(nextEntry.memo || '');
             const rosterUserId = targetUserId;
             setMemo(nextMemo);
-            setBaseProfile((currentProfile: any) =>
+            setBaseProfile((currentProfile) =>
                 normalizeUserId(currentProfile?.id) === targetUserId
                     ? {
                           ...currentProfile,
@@ -166,7 +193,7 @@ export function useUserDialogMemoState({
                     ? error.message
                     : t('dialog.user.toast.failed_to_save_memo')
             );
-            setMemoDialog((current: any) => ({
+            setMemoDialog((current: MemoDialogState) => ({
                 ...current,
                 saving: false
             }));
@@ -189,13 +216,13 @@ export function useUserDialogMemoState({
                 }
             },
             onMemoChange(nextMemo: string) {
-                setMemoDialog((current: any) => ({
+                setMemoDialog((current: MemoDialogState) => ({
                     ...current,
                     memo: nextMemo
                 }));
             },
             onNoteChange(nextNote: string) {
-                setMemoDialog((current: any) => ({
+                setMemoDialog((current: MemoDialogState) => ({
                     ...current,
                     note: nextNote.slice(0, 256)
                 }));

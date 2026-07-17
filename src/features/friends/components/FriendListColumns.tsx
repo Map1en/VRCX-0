@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
@@ -144,7 +145,7 @@ export function useFriendListColumns({
                 cell: ({ row }) => {
                     const imageUrl = userImage(row.original, true);
                     return imageUrl ? (
-                        <img
+                        <FadeInImage
                             src={imageUrl}
                             alt={
                                 row.original?.displayName ||
@@ -153,6 +154,11 @@ export function useFriendListColumns({
                             }
                             loading="lazy"
                             className="size-6 rounded-full object-cover"
+                            fallback={
+                                <div className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded-full">
+                                    <UserIcon className="size-3" />
+                                </div>
+                            }
                         />
                     ) : (
                         <div className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded-full">
@@ -326,11 +332,12 @@ export function useFriendListColumns({
                                                     openExternalLink(link);
                                                 }}
                                             >
-                                                <img
+                                                <FadeInImage
                                                     src={getFaviconUrl(link)}
                                                     alt=""
                                                     className="size-4"
                                                     loading="lazy"
+                                                    fallback={null}
                                                 />
                                             </Button>
                                         }

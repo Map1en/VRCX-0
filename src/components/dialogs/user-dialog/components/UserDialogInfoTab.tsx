@@ -9,13 +9,18 @@ import { useTranslation } from 'react-i18next';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
+import { FadeInImage } from '@/components/media/FadeInImage';
+import type {
+    EntityRecord,
+    UserProfileEntity
+} from '@/domain/entities/profileEntities';
 import { AvatarInfoLine } from '@/features/feed/components/FeedAvatarInfoLine';
+import { formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
-import { formatDateTimeValue } from '@/shared/utils/dateTimeFormatters';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
@@ -27,41 +32,82 @@ import { formatStatsDuration } from '../userDialogRows';
 import { EntityList } from '../UserDialogViewParts';
 import { useUserBioTranslation } from '../useUserBioTranslation';
 
-type DialogRecord = Record<string, any>;
-type DialogAction = (...args: unknown[]) => void;
+type OpenAvatarDialog =
+    (typeof import('@/services/dialogService'))['openAvatarDialog'];
+type OpenGroupDialog =
+    (typeof import('@/services/dialogService'))['openGroupDialog'];
+type UserDialogInfoProfile = UserProfileEntity & {
+    $location?: { groupName?: string; shortName?: string };
+};
+type PresenceModel = {
+    visiblePresenceLocation?: string;
+    locationInstance?: EntityRecord & {
+        capacity?: number;
+        groupName?: string;
+        recommendedCapacity?: number;
+        shortName?: string;
+    };
+    locationOwnerId?: string;
+    locationPlayerCount?: number;
+    currentUserId?: string;
+    currentEndpoint?: string;
+    locationWorldTitle?: string;
+    locationFriendCount?: number;
+    previousInstances?: unknown[];
+    locationInstanceUsers?: EntityRecord[];
+};
+type RepresentedGroup = NonNullable<
+    Awaited<
+        ReturnType<
+            typeof import('@/repositories/userProfileRepository').getRepresentedGroup
+        >
+    >
+> & {
+    id?: string;
+    name?: string;
+    iconUrl?: string;
+    ownerId?: string;
+    memberCount?: number;
+    myMember?: EntityRecord;
+    isRepresenting?: boolean;
+    isSubscribedToAnnouncements?: boolean;
+    visibility?: string;
+    memberVisibility?: string;
+    membershipStatus?: string;
+};
 
 export type UserDialogPresenceSectionProps = {
-    presence: DialogRecord;
+    presence: PresenceModel;
     actions: {
-        onRefreshLocation?: DialogAction;
-        onShowInstanceHistory?: DialogAction;
+        onRefreshLocation?: (requestLocation: unknown) => unknown;
+        onShowInstanceHistory?: () => void;
     };
-    profile: DialogRecord;
+    profile: UserDialogInfoProfile;
 };
 
 export type UserDialogNotesSectionProps = {
-    profile: DialogRecord;
+    profile: UserDialogInfoProfile;
     hideUserNotes: boolean;
-    memo: string | undefined;
+    memo: string;
     hideUserMemos: boolean;
     onEditMemo?: () => void;
 };
 
 export type UserDialogBioSectionProps = {
-    profile: DialogRecord;
+    profile: UserDialogInfoProfile;
     bioLinks: string[];
 };
 
 export type UserDialogProfileLinksSectionProps = {
     currentAvatarTarget: string;
-    currentAvatarDialogArgs: unknown;
+    currentAvatarDialogArgs: Parameters<OpenAvatarDialog>[0];
     currentAvatarDisplayName: string;
     isCurrentUser: boolean;
-    openAvatarDialog: DialogAction;
+    openAvatarDialog: OpenAvatarDialog;
     representedGroupStatus: string;
-    representedGroup: DialogRecord | null;
-    openGroupDialog: DialogAction;
-    profile: DialogRecord;
+    representedGroup: RepresentedGroup | null;
+    openGroupDialog: OpenGroupDialog;
+    profile: UserDialogInfoProfile;
     visibleHomeLocationTarget: string;
 };
 
@@ -71,7 +117,7 @@ export type UserDialogActivitySummarySectionProps = {
     lastSeen: string | null | undefined;
     onOpenInstanceHistory?: () => void;
     presenceActivityAt: string | null | undefined;
-    profile: DialogRecord;
+    profile: UserDialogInfoProfile;
     userTimeSpent: number | null | undefined;
     userJoinCount: number | null | undefined;
     previousInstances: unknown[];
@@ -197,21 +243,14 @@ function formatLocalizedActivityDate(
     locale: string | null | undefined,
     dateOnly = false
 ) {
-    if (!value) {
-        return '\u2014';
-    }
-    const date = new Date(value as string | number | Date);
-    if (Number.isNaN(date.getTime())) {
-        return '\u2014';
-    }
-    return formatDateTimeValue(
-        date,
+    return formatDateTime(
+        value,
         {
             dateStyle: 'medium',
             ...(dateOnly ? {} : { timeStyle: 'medium' })
         },
         {
-            locale: locale || undefined,
+            appLocale: locale || undefined,
             fallback: '\u2014'
         }
     );
@@ -339,7 +378,11 @@ function UserDialogPresenceSection({
                             )}
                             disableTooltip
                             showHistory={Boolean(previousInstances.length)}
-                            onRefresh={actions?.onRefreshLocation}
+                            onRefresh={() =>
+                                actions?.onRefreshLocation?.(
+                                    visiblePresenceLocation
+                                )
+                            }
                             onHistory={actions?.onShowInstanceHistory}
                         />
                     </>
@@ -414,7 +457,7 @@ function UserDialogNotesPanel({
     );
 }
 
-function buildRepresentedGroupSeedData(representedGroup: DialogRecord) {
+function buildRepresentedGroupSeedData(representedGroup: RepresentedGroup) {
     return {
         ...representedGroup,
         $memberId: representedGroup.id,
@@ -494,7 +537,7 @@ function UserDialogProfileLinksPanel({
                         }
                     >
                         {representedGroup.iconUrl ? (
-                            <img
+                            <FadeInImage
                                 src={convertFileUrlToImageUrl(
                                     representedGroup.iconUrl,
                                     128
@@ -603,7 +646,7 @@ function UserDialogBioPanel({
                             onClick={() => openExternalLink(link)}
                         >
                             {getFaviconUrl(link) ? (
-                                <img
+                                <FadeInImage
                                     src={getFaviconUrl(link)}
                                     alt=""
                                     className="size-4"

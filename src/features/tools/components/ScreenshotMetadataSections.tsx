@@ -18,6 +18,7 @@ import {
     PageToolbarRow,
     PageTitle
 } from '@/components/layout/PageScaffold';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -410,7 +411,7 @@ export function ScreenshotMetadataPreviewCard({
                         className="h-auto w-full p-0"
                         onClick={onImagePreview}
                     >
-                        <img
+                        <FadeInImage
                             src={imageUrl}
                             alt={metadata?.fileName || 'Screenshot preview'}
                             className="max-h-[70vh] w-full rounded-lg object-contain"

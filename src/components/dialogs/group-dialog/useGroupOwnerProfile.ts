@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 
+import type {
+    GroupProfileRecord,
+    UserProfileRecord
+} from '@/domain/entities/profileEntities';
+import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
 import userProfileRepository from '@/repositories/userProfileRepository';
 
 import { normalizeEntityId } from './groupInstances';
@@ -8,8 +13,14 @@ export function useGroupOwnerProfile({
     currentEndpoint,
     friendsById,
     group
-}: any) {
-    const [ownerProfile, setOwnerProfile] = useState(null);
+}: {
+    currentEndpoint: string;
+    friendsById: FriendRosterById;
+    group: GroupProfileRecord | null;
+}) {
+    const [ownerProfile, setOwnerProfile] = useState<UserProfileRecord | null>(
+        null
+    );
 
     useEffect(() => {
         let active = true;
@@ -27,7 +38,7 @@ export function useGroupOwnerProfile({
                 userId: ownerId,
                 endpoint: currentEndpoint
             })
-            .then((profile: any) => {
+            .then((profile) => {
                 if (active) {
                     setOwnerProfile(profile);
                 }

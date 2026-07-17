@@ -24,13 +24,3 @@ export const TELEMETRY_ROUTE_KEYS = [
 ] as const;
 
 export type TelemetryPageRouteKey = (typeof TELEMETRY_ROUTE_KEYS)[number];
-
-export const TELEMETRY_VIEW_MODE_DIMENSIONS = {
-    gameLogViewMode: ['sessions', 'table'],
-    myAvatarsViewMode: ['grid', 'table'],
-    feedViewMode: ['table', 'columns'],
-    feedTimeDisplayMode: ['relative', 'exact']
-} as const;
-
-export type TelemetryViewModeDimension =
-    keyof typeof TELEMETRY_VIEW_MODE_DIMENSIONS;

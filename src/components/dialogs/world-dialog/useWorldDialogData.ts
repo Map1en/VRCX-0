@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -21,39 +22,24 @@ type WorldDialogNewInstanceGroups = Awaited<
     ReturnType<typeof groupProfileRepository.getUserGroups>
 >;
 
-type WorldPreviousInstances = Array<{
-    created_at: string;
-    groupName: string;
-    id: number;
-    location: string;
-    time: number;
-    worldName: string;
-}>;
+export type WorldPreviousInstances = Awaited<
+    ReturnType<typeof gameLogRepository.getPreviousInstancesByWorldId>
+>;
 
-type WorldDialogFileAnalysisPlatform = {
-    created_at: string;
-    encryptionKey: string;
-    fileSize: number;
-    success: boolean;
-    uncompressedSize: number;
-    worldSignature: string;
-    _fileSize: string;
-    _uncompressedSize: string;
+export type WorldWorldSideData = {
+    cache: Awaited<ReturnType<typeof readWorldCacheInfo>>;
+    fileAnalysis: Awaited<ReturnType<typeof getFileAnalysisForUnityPackages>>;
 };
 
-type WorldWorldSideData = {
-    cache: {
-        inCache: boolean;
-        cacheSize: string;
-        cacheLocked: boolean;
-        cachePath: string;
-    };
-    fileAnalysis: {
-        android?: WorldDialogFileAnalysisPlatform;
-        standalonewindows?: WorldDialogFileAnalysisPlatform;
-        ios?: WorldDialogFileAnalysisPlatform;
-    };
-};
+interface UseWorldDialogDataInput {
+    normalizedWorldId: string;
+    profileWorldId: string;
+    seedData: EntityRecord | null;
+    currentEndpoint: string;
+    currentUserId: string | null;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
+    memoRevisionRef: MutableRefObject<number>;
+}
 
 export function useWorldDialogData({
     normalizedWorldId,
@@ -63,7 +49,7 @@ export function useWorldDialogData({
     currentUserId,
     isCurrentWorldTarget,
     memoRevisionRef
-}: any) {
+}: UseWorldDialogDataInput) {
     const { t } = useTranslation();
     const [world, setWorld] = useState(() =>
         seedData ? worldProfileRepository.normalize(seedData) : null
@@ -105,14 +91,14 @@ export function useWorldDialogData({
                 userId: currentUserId,
                 endpoint: currentEndpoint
             })
-            .then((groups: any) => {
+            .then((groups) => {
                 if (!active) {
                     return;
                 }
                 setNewInstanceGroups(
                     (Array.isArray(groups) ? groups : [])
-                        .filter((group: any) => groupOptionId(group))
-                        .sort((left: any, right: any) =>
+                        .filter((group) => groupOptionId(group))
+                        .sort((left, right) =>
                             normalizeEntityId(left?.name).localeCompare(
                                 normalizeEntityId(right?.name)
                             )
@@ -145,7 +131,7 @@ export function useWorldDialogData({
         vrchatAuthRepository
             .getConfig({ endpoint: targetEndpoint })
             .catch((): null => null)
-            .then((configResponse: any) =>
+            .then((configResponse) =>
                 Promise.allSettled([
                     readWorldCacheInfo(world, targetEndpoint),
                     getFileAnalysisForUnityPackages({
@@ -157,7 +143,7 @@ export function useWorldDialogData({
                     })
                 ])
             )
-            .then(([cacheResult, fileAnalysisResult]: any) => {
+            .then(([cacheResult, fileAnalysisResult]) => {
                 if (
                     active &&
                     isCurrentWorldTarget(targetWorldId, targetEndpoint)
@@ -212,7 +198,7 @@ export function useWorldDialogData({
                 endpoint: currentEndpoint,
                 dialog: true
             })
-            .then((nextWorld: any) => {
+            .then((nextWorld) => {
                 if (!active) {
                     return;
                 }
@@ -271,7 +257,7 @@ export function useWorldDialogData({
         const revision = memoRevisionRef.current;
         memoPersistenceRepository
             .getWorldMemo(profileWorldId)
-            .then((entry: any) => {
+            .then((entry) => {
                 if (active && memoRevisionRef.current === revision) {
                     setMemo(entry?.memo || '');
                 }
@@ -310,7 +296,7 @@ export function useWorldDialogData({
                 worldId: profileWorldId,
                 endpoint: currentEndpoint
             })
-            .then((exists: any) => {
+            .then((exists) => {
                 if (active) {
                     setHasPersistData(exists);
                 }
@@ -338,7 +324,7 @@ export function useWorldDialogData({
 
         gameLogRepository
             .getPreviousInstancesByWorldId({ worldId: profileWorldId })
-            .then((rows: any) => {
+            .then((rows) => {
                 if (!active) {
                     return;
                 }

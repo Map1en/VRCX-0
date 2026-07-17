@@ -2,6 +2,7 @@ import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
 import {
+    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile
@@ -9,12 +10,13 @@ import {
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { normalizeTrustColors } from '@/shared/utils/trustColors';
 import {
-    DEFAULT_PREFERENCES,
     normalizeAutoDeletePrintsLimit,
+    normalizeBackgroundModeDelayMinutes,
     normalizeDefaultLaunchMode,
     normalizeFeedTimeDisplayMode,
     normalizeFeedHiddenUsers,
     normalizeHmdNotificationPosition,
+    normalizeNotificationTtsNameMode,
     normalizeOverlayStartMode,
     normalizeTableLimits,
     normalizeTablePageSize,
@@ -26,7 +28,6 @@ import {
     normalizeWristOverlaySize,
     normalizeWristOverlayStartMode,
     parseOverlayActivityFiltersPreference,
-    parseSharedFeedFilters,
     type PreferencesSnapshot,
     usePreferencesStore
 } from '@/state/preferencesStore';
@@ -132,7 +133,8 @@ export async function loadPreferenceSnapshot() {
         desktopNotificationSound,
         notificationTTS,
         notificationTTSNickName,
-        notificationTTSVoice,
+        notificationTTSNameMode,
+        notificationTTSVoiceNative,
         xsNotifications,
         ovrtHudNotifications,
         ovrtWristNotifications,
@@ -148,8 +150,6 @@ export async function loadPreferenceSnapshot() {
         webhookAuthEventsEnabled,
         webhookUrl,
         webhookFormat,
-        vrOverlayPanelEnabled,
-        vrOverlayPanelAllFriendsIncludesFavorites,
         wristOverlayEnabled,
         wristOverlayStartMode,
         wristOverlayButton,
@@ -162,7 +162,6 @@ export async function loadPreferenceSnapshot() {
         relaunchVRChatAfterCrash,
         vrcQuitFix,
         autoSweepVRChatCache,
-        showConfirmationOnSwitchAvatar,
         gameLogDisabled,
         avatarAutoCleanup,
         defaultLaunchMode,
@@ -172,6 +171,8 @@ export async function loadPreferenceSnapshot() {
         autoLoginDelayEnabled,
         autoLoginDelaySeconds,
         backgroundModeEnabled,
+        backgroundModeDelayEnabled,
+        backgroundModeDelayMinutes,
         isStartAtWindowsStartup,
         isStartAsMinimizedState,
         isCloseToTray,
@@ -187,12 +188,12 @@ export async function loadPreferenceSnapshot() {
         searchLimit,
         localFavoriteFriendsGroups,
         feedHiddenUsers,
-        sharedFeedFilters,
         overlayActivityFilters,
         vrNotificationActivityFilters,
         hmdNotificationActivityFilters,
         desktopNotificationActivityFilters,
         webhookActivityFilters,
+        ttsNotificationActivityFilters,
         feedTimeDisplayMode,
         youtubeAPI,
         translationAPI,
@@ -257,7 +258,8 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('desktopNotificationSound', false),
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
-        configRepository.getString('notificationTTSVoice', '0'),
+        configRepository.getString('notificationTTSNameMode', ''),
+        configRepository.getString('notificationTTSVoiceNative', ''),
         getBoolConfigWithLegacy('xsNotifications', false),
         getBoolConfigWithLegacy('ovrtHudNotifications', false),
         getBoolConfigWithLegacy('ovrtWristNotifications', false),
@@ -273,11 +275,6 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('webhookAuthEventsEnabled', true),
         configRepository.getString('webhookUrl', ''),
         configRepository.getString('webhookFormat', 'generic'),
-        configRepository.getBool('vrOverlayPanelEnabled', true),
-        configRepository.getBool(
-            'vrOverlayPanelAllFriendsIncludesFavorites',
-            true
-        ),
         configRepository.getBool('wristOverlayEnabled', false),
         configRepository.getString('wristOverlayStartMode', 'vrchatVrMode'),
         configRepository.getString('wristOverlayButton', 'grip'),
@@ -290,7 +287,6 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('relaunchVRChatAfterCrash', false),
         configRepository.getBool('vrcQuitFix', true),
         configRepository.getBool('autoSweepVRChatCache', false),
-        configRepository.getBool('showConfirmationOnSwitchAvatar', true),
         configRepository.getBool('gameLogDisabled', false),
         configRepository.getString('avatarAutoCleanup', 'Off'),
         configRepository.getString('defaultLaunchMode', 'vr'),
@@ -300,6 +296,8 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('autoLoginDelayEnabled', false),
         configRepository.getInt('autoLoginDelaySeconds', 0),
         configRepository.getBool('backgroundModeEnabled', false),
+        configRepository.getBool('backgroundModeDelayEnabled', false),
+        configRepository.getInt('backgroundModeDelayMinutes', 60),
         configRepository.getBool('StartAtWindowsStartup', false),
         storageRepository.getString('VRCX_StartAsMinimizedState', 'false'),
         storageRepository.getString('VRCX_CloseToTray', 'false'),
@@ -324,15 +322,12 @@ export async function loadPreferenceSnapshot() {
         ),
         configRepository.getArray('localFavoriteFriendsGroups', []),
         configRepository.getString('feedHiddenUsers', '[]'),
-        configRepository.getString(
-            'sharedFeedFilters',
-            JSON.stringify(DEFAULT_PREFERENCES.sharedFeedFilters)
-        ),
         configRepository.getString('overlayActivityFilters', ''),
         configRepository.getString('vrNotificationActivityFilters', ''),
         configRepository.getString('hmdNotificationActivityFilters', ''),
         configRepository.getString('desktopNotificationActivityFilters', ''),
         configRepository.getString('webhookActivityFilters', ''),
+        configRepository.getString('ttsNotificationActivityFilters', ''),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
         configRepository.getBool('youtubeAPI', false),
         configRepository.getBool('translationAPI', false),
@@ -405,7 +400,6 @@ export async function loadPreferenceSnapshot() {
         );
     }
 
-    const parsedSharedFeedFilters = parseSharedFeedFilters(sharedFeedFilters);
     const snapshot: PreferencesSnapshot = {
         notificationLayout: notificationLayout || DEFAULT_NOTIFICATION_LAYOUT,
         dataTableStriped: Boolean(dataTableStriped),
@@ -447,7 +441,11 @@ export async function loadPreferenceSnapshot() {
         desktopNotificationSound: Boolean(desktopNotificationSound),
         notificationTTS: notificationTTS || 'Never',
         notificationTTSNickName: Boolean(notificationTTSNickName),
-        notificationTTSVoice: notificationTTSVoice || '0',
+        notificationTTSNameMode: normalizeNotificationTtsNameMode(
+            notificationTTSNameMode,
+            notificationTTSNickName
+        ),
+        notificationTTSVoiceNative: String(notificationTTSVoiceNative || ''),
         xsNotifications: Boolean(xsNotifications),
         ovrtHudNotifications: Boolean(ovrtHudNotifications),
         ovrtWristNotifications: Boolean(ovrtWristNotifications),
@@ -475,10 +473,8 @@ export async function loadPreferenceSnapshot() {
         webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
-        vrOverlayPanelEnabled: Boolean(vrOverlayPanelEnabled),
-        vrOverlayPanelAllFriendsIncludesFavorites: Boolean(
-            vrOverlayPanelAllFriendsIncludesFavorites
-        ),
+        vrOverlayPanelEnabled: false,
+        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             wristOverlayStartMode
@@ -493,7 +489,6 @@ export async function loadPreferenceSnapshot() {
         relaunchVRChatAfterCrash: Boolean(relaunchVRChatAfterCrash),
         vrcQuitFix: Boolean(vrcQuitFix),
         autoSweepVRChatCache: Boolean(autoSweepVRChatCache),
-        showConfirmationOnSwitchAvatar: Boolean(showConfirmationOnSwitchAvatar),
         gameLogDisabled: Boolean(gameLogDisabled),
         avatarAutoCleanup: avatarAutoCleanup || 'Off',
         defaultLaunchMode: normalizeDefaultLaunchMode(defaultLaunchMode),
@@ -505,6 +500,10 @@ export async function loadPreferenceSnapshot() {
             ? autoLoginDelaySeconds
             : 0,
         backgroundModeEnabled: Boolean(backgroundModeEnabled),
+        backgroundModeDelayEnabled: Boolean(backgroundModeDelayEnabled),
+        backgroundModeDelayMinutes: normalizeBackgroundModeDelayMinutes(
+            backgroundModeDelayMinutes
+        ),
         isStartAtWindowsStartup: Boolean(isStartAtWindowsStartup),
         isStartAsMinimizedState: isStartAsMinimizedState === 'true',
         isCloseToTray: isCloseToTray === 'true',
@@ -522,10 +521,8 @@ export async function loadPreferenceSnapshot() {
             localFavoriteFriendsGroups
         ),
         feedHiddenUsers: normalizeFeedHiddenUsers(feedHiddenUsers),
-        sharedFeedFilters: parsedSharedFeedFilters,
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
-            overlayActivityFilters,
-            sharedFeedFilters
+            overlayActivityFilters
         ),
         vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
             vrNotificationActivityFilters
@@ -538,6 +535,10 @@ export async function loadPreferenceSnapshot() {
         ),
         webhookActivityFilters: parseOverlayActivityFilterProfile(
             webhookActivityFilters || DEFAULT_WEBHOOK_ACTIVITY_FILTERS
+        ),
+        ttsNotificationActivityFilters: parseOverlayActivityFilterProfile(
+            ttsNotificationActivityFilters ||
+                DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS
         ),
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),

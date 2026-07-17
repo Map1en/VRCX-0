@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { commands } from '@/platform/tauri/bindings';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
 import { loadPreferenceSnapshot } from '@/services/preferencesService';
@@ -142,24 +143,21 @@ export function useSettingsEffects({
         }));
     }, [sidebarOpen]);
     useEffect(() => {
-        if (typeof window === 'undefined' || !window.speechSynthesis) {
-            return undefined;
-        }
-        const updateVoices = () => {
-            setTtsVoices(window.speechSynthesis.getVoices());
-        };
-        updateVoices();
-        window.speechSynthesis.addEventListener?.(
-            'voiceschanged',
-            updateVoices
-        );
-        const timeoutId = window.setTimeout(updateVoices, 5000);
+        let active = true;
+        commands
+            .appHostTtsVoices()
+            .then((voices) => {
+                if (active) {
+                    setTtsVoices(voices);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setTtsVoices([]);
+                }
+            });
         return () => {
-            window.speechSynthesis.removeEventListener?.(
-                'voiceschanged',
-                updateVoices
-            );
-            window.clearTimeout(timeoutId);
+            active = false;
         };
     }, []);
 }

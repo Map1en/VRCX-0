@@ -1,0 +1,23 @@
+name: Dev Kit
+
+on:
+    workflow_run:
+        workflows: ['Release']
+        types:
+            - completed
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.ref }}-devkit
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    package:
+        name: Package Dev Kit
+        if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+        uses: ./.github/workflows/_package-variant.yml
+        with:
+            variant: devkit

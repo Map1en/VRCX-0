@@ -12,9 +12,9 @@ import type {
     ModerationState
 } from './useUserDialogModerationState';
 
-type ModerationType = 'block' | 'mute';
-type ExtendedModerationType = 'interactOff' | 'muteChat';
-type AvatarOverrideType = 'hideAvatar' | 'showAvatar';
+export type ModerationType = 'block' | 'mute';
+export type ExtendedModerationType = 'interactOff' | 'muteChat';
+export type AvatarOverrideType = 'hideAvatar' | 'showAvatar';
 type UserModerationProfile = Record<string, unknown> & {
     $isModerator?: boolean;
     displayName?: string;

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
@@ -80,7 +81,7 @@ export function useMyAvatarsColumns({
                             className="h-6 w-10 p-0"
                             onClick={() => openAvatarDetails(row.original)}
                         >
-                            <img
+                            <FadeInImage
                                 src={row.original.thumbnailImageUrl}
                                 alt={
                                     row.original?.name ||
@@ -88,6 +89,9 @@ export function useMyAvatarsColumns({
                                 }
                                 className="h-6 w-10 rounded-sm object-cover"
                                 loading="lazy"
+                                fallback={
+                                    <PersonStandingIcon data-icon="inline-start" />
+                                }
                             />
                         </Button>
                     ) : (

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_integrations::llm::{ChatMessage, LlmClient, ToolDefinition};
+use vrcx_0_integrations::llm::{ChatMessage, LlmClient, LlmError, ToolDefinition};
 use vrcx_0_mcp::{InProcessMcpTools, ToolCallOutcome};
 
 use crate::entities::{extract_entities, surfaced_entities, Entity};
@@ -23,6 +23,9 @@ const FINAL_ANSWER_PROMPT: &str = "\
 Stop calling tools now and write the final answer using only the tool results already \
 in this conversation. If the data is incomplete, say so briefly and answer with the \
 best supported facts.";
+const EMPTY_TOOL_FALLBACK_ANSWER: &str = "\
+I used the available tools, but they did not return enough detail to write a reliable \
+answer. Try narrowing the question or asking again.";
 
 pub const SYSTEM_PROMPT: &str = "\
 You are the VRCX-0 social assistant. Answer questions about the signed-in user's \
@@ -130,7 +133,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
         let turn = match turn {
             Ok(turn) => turn,
-            Err(error) => return finish_error(&ctx, "llm", &error.to_string()),
+            Err(error) => return finish_llm_error(&ctx, &error),
         };
 
         if turn.tool_calls.is_empty() {
@@ -200,7 +203,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
             Ok(turn) => {
                 final_answer = turn.content;
             }
-            Err(error) => return finish_error(&ctx, "llm", &error.to_string()),
+            Err(error) => return finish_llm_error(&ctx, &error),
         }
     }
 
@@ -210,7 +213,9 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
     if final_answer.trim().is_empty() {
         let fallback_summary = last_success_tool_summary.or(last_error_tool_summary);
-        if apply_tool_summary_fallback(&mut final_answer, fallback_summary) {
+        if apply_tool_summary_fallback(&mut final_answer, fallback_summary)
+            || apply_empty_tool_answer_fallback(&mut final_answer, used_tools)
+        {
             ctx.emitter.delta(&final_answer);
         }
     }
@@ -257,6 +262,18 @@ fn finish_cancelled(ctx: &TurnContext) {
     ctx.emitter.error("cancelled", "Turn cancelled.");
 }
 
+fn finish_llm_error(ctx: &TurnContext, error: &LlmError) {
+    let message = llm_error_summary(error);
+    finish_error(ctx, "llm", &message);
+}
+
+fn llm_error_summary(error: &LlmError) -> String {
+    match error {
+        LlmError::Api { status, .. } => format!("LLM API error ({status})"),
+        _ => error.to_string(),
+    }
+}
+
 fn finish_error(ctx: &TurnContext, code: &str, message: &str) {
     if !ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id) {
         return;
@@ -269,6 +286,14 @@ fn finish_error(ctx: &TurnContext, code: &str, message: &str) {
         }),
     );
     ctx.emitter.error(code, message);
+}
+
+fn apply_empty_tool_answer_fallback(final_answer: &mut String, used_tools: bool) -> bool {
+    if !used_tools || !final_answer.trim().is_empty() {
+        return false;
+    }
+    *final_answer = EMPTY_TOOL_FALLBACK_ANSWER.to_string();
+    true
 }
 
 struct ResolvedTool {
@@ -473,5 +498,32 @@ mod tests {
             resolved.fallback_summary
         ));
         assert_eq!(final_answer, "tool error: db unavailable");
+    }
+
+    #[test]
+    fn llm_api_error_summary_omits_provider_response_body() {
+        let error = LlmError::Api {
+            status: 429,
+            message: "rate limited for org_TESTPROVIDER123456789 req_TESTREQUEST123 model qwen"
+                .into(),
+        };
+
+        assert_eq!(llm_error_summary(&error), "LLM API error (429)");
+    }
+
+    #[test]
+    fn empty_final_answer_after_tools_uses_generic_fallback_when_summary_is_missing() {
+        let mut final_answer = String::new();
+
+        assert!(apply_empty_tool_answer_fallback(&mut final_answer, true));
+        assert_eq!(final_answer, EMPTY_TOOL_FALLBACK_ANSWER);
+    }
+
+    #[test]
+    fn empty_final_answer_without_tools_still_allows_no_answer_error() {
+        let mut final_answer = String::new();
+
+        assert!(!apply_empty_tool_answer_fallback(&mut final_answer, false));
+        assert!(final_answer.is_empty());
     }
 }

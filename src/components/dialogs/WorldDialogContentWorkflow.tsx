@@ -1,10 +1,11 @@
 import { CopyIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
@@ -28,12 +29,37 @@ import {
     WorldTagsDialog
 } from './WorldOwnerEditDialogs';
 
+export interface WorldDialogWorkflowProps {
+    worldId?: unknown;
+    seedData?: unknown;
+    initialAction?: unknown;
+    openNonce?: unknown;
+    initialActionNonce?: unknown;
+    initialNewInstanceDefaults?: unknown;
+}
+
+type NewInstanceDialogProps = ComponentProps<typeof WorldNewInstanceDialog>;
+type WorldDetailsDialogProps = ComponentProps<typeof WorldDetailsDialog>;
+type WorldTagsDialogProps = ComponentProps<typeof WorldTagsDialog>;
+type WorldAllowedDomainsDialogProps = ComponentProps<
+    typeof WorldAllowedDomainsDialog
+>;
+
+function isRecord(value: unknown): value is EntityRecord {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
 function WorldDialogEmptyState({
     title,
     description,
     loading = false,
     children
-}: any) {
+}: Pick<
+    ComponentProps<typeof AppEmptyState>,
+    'title' | 'description' | 'children'
+> & {
+    loading?: boolean;
+}) {
     return (
         <AppEmptyState
             className="min-h-56"
@@ -53,11 +79,15 @@ export function WorldDialogContentWorkflow({
     openNonce = 0,
     initialActionNonce = 0,
     initialNewInstanceDefaults = null
-}: any) {
+}: WorldDialogWorkflowProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedSeedData = isRecord(seedData) ? seedData : null;
+    const normalizedOpenNonce = typeof openNonce === 'number' ? openNonce : 0;
+    const normalizedInitialActionNonce =
+        typeof initialActionNonce === 'number' ? initialActionNonce : 0;
     const profileWorldId = normalizedWorldId.split(':')[0] || normalizedWorldId;
     const {
         closeDialog,
@@ -76,13 +106,19 @@ export function WorldDialogContentWorkflow({
     const [ownerEditor, setOwnerEditor] = useState('');
     const actionStatusRef = useRef('idle');
     const memoRevisionRef = useRef(0);
-    const activeWorldTargetRef = useRef<any>({
+    const activeWorldTargetRef = useRef<{
+        worldId: string;
+        endpoint: string;
+    }>({
         worldId: profileWorldId,
         endpoint: currentEndpoint
     });
     const handledInitialActionRef = useRef('');
 
-    function isCurrentWorldTarget(targetWorldId: any, targetEndpoint: any) {
+    function isCurrentWorldTarget(
+        targetWorldId: unknown,
+        targetEndpoint: string
+    ) {
         return (
             activeWorldTargetRef.current.worldId ===
                 normalizeEntityId(targetWorldId) &&
@@ -108,7 +144,7 @@ export function WorldDialogContentWorkflow({
     } = useWorldDialogData({
         normalizedWorldId,
         profileWorldId,
-        seedData,
+        seedData: normalizedSeedData,
         currentEndpoint,
         currentUserId,
         isCurrentWorldTarget,
@@ -216,7 +252,7 @@ export function WorldDialogContentWorkflow({
 
     useEffect(() => {
         const normalizedInitialAction = normalizeEntityId(initialAction);
-        const actionKey = `${profileWorldId}:${normalizedInitialAction}:${initialActionNonce}`;
+        const actionKey = `${profileWorldId}:${normalizedInitialAction}:${normalizedInitialActionNonce}`;
         if (
             !world?.id ||
             !normalizedInitialAction ||
@@ -246,7 +282,7 @@ export function WorldDialogContentWorkflow({
         world?.id
     ]);
 
-    function openScreenshotMetadata(path: any) {
+    function openScreenshotMetadata(path: string) {
         if (!path) {
             return;
         }
@@ -300,7 +336,7 @@ export function WorldDialogContentWorkflow({
         world.imageUrl || world.thumbnailImageUrl,
         512
     );
-    const worldForView: any = {
+    const worldForView = {
         ...world,
         $isCached: worldSideData.cache.inCache,
         $cacheSize: worldSideData.cache.cacheSize,
@@ -319,7 +355,7 @@ export function WorldDialogContentWorkflow({
                     imageUrl,
                     actionStatus,
                     normalizedWorldId,
-                    openNonce,
+                    openNonce: normalizedOpenNonce,
                     previousInstances
                 }}
                 permissions={{
@@ -335,16 +371,10 @@ export function WorldDialogContentWorkflow({
                     onRefresh: () => {
                         worldActions.refreshWorldProfile();
                     },
-                    onLaunch: () => {
-                        worldActions.launchInstance();
-                    },
                     onHome: () => {
                         worldActions.updateHomeLocation();
                     },
-                    onEditMemo: () => {
-                        worldActions.editMemo();
-                    },
-                    onSaveMemo: (nextMemo: any) =>
+                    onSaveMemo: (nextMemo: string) =>
                         worldActions.saveMemo(nextMemo),
                     onOpenCache: () => {
                         worldActions.openWorldCacheFolder();
@@ -368,7 +398,7 @@ export function WorldDialogContentWorkflow({
                     onNewInstanceSelfInvite: () => {
                         instanceActions.openNewInstanceDialog(true);
                     },
-                    onPublication: (nextPublished: any) => {
+                    onPublication: (nextPublished: boolean) => {
                         ownerActions.updateWorldPublication(nextPublished);
                     },
                     onDeletePersistentData: () => {
@@ -389,7 +419,7 @@ export function WorldDialogContentWorkflow({
                 isGameRunning={isGameRunning}
                 groupOptions={newInstanceGroups}
                 submitting={actionStatus === 'new-instance'}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open && actionStatus !== 'new-instance') {
                         instanceActions.setNewInstanceRequest(null);
                     }
@@ -398,18 +428,30 @@ export function WorldDialogContentWorkflow({
                 onCommitDisplayName={
                     instanceActions.saveNewInstanceDisplayNamePreset
                 }
-                onSubmit={(form: any) => {
+                onSubmit={(
+                    form: Parameters<NewInstanceDialogProps['onSubmit']>[0]
+                ) => {
                     instanceActions.createWorldInstance(form);
                 }}
-                onCopy={(created: any) => {
+                onCopy={(
+                    created: Parameters<NewInstanceDialogProps['onCopy']>[0]
+                ) => {
                     instanceActions.copyCreatedInstance(created);
                 }}
-                onSelfInvite={(created: any) => {
+                onSelfInvite={(
+                    created: Parameters<
+                        NewInstanceDialogProps['onSelfInvite']
+                    >[0]
+                ) => {
                     instanceActions.selfInviteCreatedInstance(created);
                 }}
                 onInvite={instanceActions.inviteCreatedInstance}
                 onLaunch={instanceActions.launchCreatedInstance}
-                onOpenInGame={(created: any) => {
+                onOpenInGame={(
+                    created: Parameters<
+                        NewInstanceDialogProps['onOpenInGame']
+                    >[0]
+                ) => {
                     instanceActions.openCreatedInstanceInGame(created);
                 }}
             />
@@ -423,7 +465,7 @@ export function WorldDialogContentWorkflow({
                     ''
                 }
                 endpoint={currentEndpoint}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         instanceActions.setInviteRequest(null);
                     }
@@ -441,52 +483,60 @@ export function WorldDialogContentWorkflow({
                 file={imageUpload.imageCropRequest?.file || null}
                 aspectRatio={4 / 3}
                 title={t('dialog.world.action.change_world_image')}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         imageUpload.setImageCropRequest(null);
                         imageUpload.imageUploadWorldRef.current = null;
                     }
                 }}
-                onConfirm={(blob: any) =>
+                onConfirm={(blob: Blob) =>
                     imageUpload.confirmWorldImageUpload(blob)
                 }
             />
             <WorldDetailsDialog
                 open={ownerEditor === 'details'}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         setOwnerEditor('');
                     }
                 }}
                 world={world}
                 saving={actionStatus === 'save-world'}
-                onSave={(draft: any) => {
+                onSave={(
+                    draft: Parameters<WorldDetailsDialogProps['onSave']>[0]
+                ) => {
                     ownerActions.saveWorldDetails(draft);
                 }}
             />
             <WorldTagsDialog
                 open={ownerEditor === 'tags'}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         setOwnerEditor('');
                     }
                 }}
                 world={world}
                 saving={actionStatus === 'save-world'}
-                onSave={(tags: any) => {
+                onSave={(
+                    tags: Parameters<WorldTagsDialogProps['onSave']>[0]
+                ) => {
                     ownerActions.saveWorldTags(tags);
                 }}
             />
             <WorldAllowedDomainsDialog
                 open={ownerEditor === 'allowed-domains'}
-                onOpenChange={(open: any) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         setOwnerEditor('');
                     }
                 }}
                 world={world}
                 saving={actionStatus === 'save-world'}
-                onSave={(urlList: any) => {
+                onSave={(
+                    urlList: Parameters<
+                        WorldAllowedDomainsDialogProps['onSave']
+                    >[0]
+                ) => {
                     ownerActions.saveWorldAllowedDomains(urlList);
                 }}
             />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { useKnownUserFacts } from '@/domain/users/useKnownUser';
+import { useKnownUserFacts } from '@/lib/useKnownUser';
 import avatarCacheRepository from '@/repositories/avatarCacheRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';

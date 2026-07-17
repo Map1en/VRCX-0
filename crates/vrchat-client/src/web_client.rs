@@ -220,12 +220,15 @@ impl WebClient {
 
         let mut builder = Client::builder()
             .cookie_provider(jar.clone())
-            .user_agent(BASE_USER_AGENT)
+            .user_agent(&user_agent)
             .gzip(true)
             .brotli(true)
             .deflate(true)
             .pool_max_idle_per_host(10)
-            .pool_idle_timeout(std::time::Duration::from_secs(300));
+            .pool_idle_timeout(std::time::Duration::from_secs(300))
+            .tcp_keepalive(std::time::Duration::from_secs(60))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .read_timeout(std::time::Duration::from_secs(30));
 
         if let Some(ref url) = proxy_url {
             builder = builder
@@ -650,6 +653,25 @@ mod tests {
         let cookie = RawCookie::parse("auth=token; Domain=vrchat.com; Path=/").unwrap();
         store.insert_raw(&cookie, &url).unwrap();
         assert!(validate_cookie_store_domains(&store).is_ok());
+    }
+
+    #[test]
+    fn builds_user_agent_with_version() {
+        assert_eq!(build_vrcx_user_agent("2.9.2"), "VRCX-0/2.9.2");
+        assert_eq!(build_vrcx_user_agent("  2.9.2  "), "VRCX-0/2.9.2");
+    }
+
+    #[test]
+    fn builds_user_agent_without_version_when_empty() {
+        assert_eq!(build_vrcx_user_agent(""), "VRCX-0");
+        assert_eq!(build_vrcx_user_agent("   "), "VRCX-0");
+    }
+
+    #[test]
+    fn web_client_exposes_versioned_user_agent() -> Result<()> {
+        let web = WebClient::new(None, None, "2.9.2")?;
+        assert_eq!(web.user_agent(), "VRCX-0/2.9.2");
+        Ok(())
     }
 
     #[test]

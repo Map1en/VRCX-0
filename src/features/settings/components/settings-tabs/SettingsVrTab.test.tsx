@@ -91,8 +91,6 @@ const handlers = {
     onOpenWristFeedNotificationsDialog: noop,
     onOvrtHudNotificationsChange: noop,
     onOvrtWristNotificationsChange: noop,
-    onVrOverlayPanelAllFriendsIncludesFavoritesChange: noop,
-    onVrOverlayPanelEnabledChange: noop,
     onWristOverlayButtonChange: noop,
     onWristOverlayDarkBackgroundChange: noop,
     onWristOverlayEnabledChange: noop,
@@ -106,7 +104,7 @@ const handlers = {
 };
 
 describe('SettingsVrTab', () => {
-    it('renders the interactive panel switch with fixed grip summon copy', () => {
+    it('hides the interactive friends panel settings', () => {
         const html = renderToStaticMarkup(
             <SettingsVrTab
                 prefs={{
@@ -118,17 +116,18 @@ describe('SettingsVrTab', () => {
             />
         );
 
-        expect(html).toContain('view.settings.vr.interactive_panel.header');
-        expect(html).toContain('view.settings.vr.interactive_panel.enabled');
-        expect(html).toContain(
+        expect(html).not.toContain('view.settings.vr.interactive_panel.header');
+        expect(html).not.toContain(
+            'view.settings.vr.interactive_panel.enabled'
+        );
+        expect(html).not.toContain(
             'view.settings.vr.interactive_panel.all_friends_include_favorites'
         );
-        expect(html).toContain(
+        expect(html).not.toContain(
             'view.settings.vr.interactive_panel.summon_hint'
         );
-        expect(html).toContain(
+        expect(html).not.toContain(
             'view.settings.vr.interactive_panel.openvr_required'
         );
-        expect(html).toContain('data-checked="true"');
     });
 });

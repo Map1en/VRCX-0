@@ -4,10 +4,8 @@ import {
     DEFAULT_PREFERENCES,
     normalizeOverlayActivityFilters,
     normalizePreferenceSnapshot,
-    normalizeSharedFeedFilters,
     normalizeTableLimits,
-    normalizeTablePageSizes,
-    parseSharedFeedFilters
+    normalizeTablePageSizes
 } from './preferencesStore';
 
 describe('preferencesStore normalizers', () => {
@@ -33,6 +31,34 @@ describe('preferencesStore normalizers', () => {
                 autoBackgroundDownloadUpdates: true
             }).autoBackgroundDownloadUpdates
         ).toBe(true);
+    });
+
+    it('keeps background mode delay disabled with a bounded minute default', () => {
+        expect(DEFAULT_PREFERENCES.backgroundModeDelayEnabled).toBe(false);
+        expect(DEFAULT_PREFERENCES.backgroundModeDelayMinutes).toBe(60);
+        expect(normalizePreferenceSnapshot({})).toMatchObject({
+            backgroundModeDelayEnabled: false,
+            backgroundModeDelayMinutes: 60
+        });
+        expect(
+            normalizePreferenceSnapshot({
+                backgroundModeDelayEnabled: 'true',
+                backgroundModeDelayMinutes: '5'
+            })
+        ).toMatchObject({
+            backgroundModeDelayEnabled: true,
+            backgroundModeDelayMinutes: 10
+        });
+        expect(
+            normalizePreferenceSnapshot({
+                backgroundModeDelayMinutes: '9999'
+            }).backgroundModeDelayMinutes
+        ).toBe(600);
+        expect(
+            normalizePreferenceSnapshot({
+                backgroundModeDelayMinutes: 'bad'
+            }).backgroundModeDelayMinutes
+        ).toBe(60);
     });
 
     it('keeps auth recovery webhook events enabled by default', () => {
@@ -136,30 +162,6 @@ describe('preferencesStore normalizers', () => {
         ).toEqual(DEFAULT_PREFERENCES.tableLimits);
     });
 
-    it('merges shared feed filters from objects and JSON strings', () => {
-        expect(
-            normalizeSharedFeedFilters({
-                noty: {
-                    GPS: 'Friends'
-                }
-            }).noty.GPS
-        ).toBe('Friends');
-
-        expect(
-            parseSharedFeedFilters(
-                JSON.stringify({
-                    wrist: {
-                        AvatarChange: 'VIP'
-                    }
-                })
-            )
-        ).toEqual(DEFAULT_PREFERENCES.sharedFeedFilters);
-
-        expect(parseSharedFeedFilters('{bad json')).toEqual(
-            DEFAULT_PREFERENCES.sharedFeedFilters
-        );
-    });
-
     it('normalizes overlay activity filters from persisted snapshots', () => {
         const filters = normalizeOverlayActivityFilters({
             wrist: {
@@ -237,7 +239,7 @@ describe('preferencesStore normalizers', () => {
         }
     });
 
-    it('migrates legacy shared wrist filters when overlay activity filters are missing', () => {
+    it('uses default wrist filters when overlay activity filters are missing', () => {
         const snapshot = normalizePreferenceSnapshot({
             sharedFeedFilters: JSON.stringify({
                 wrist: {
@@ -249,7 +251,7 @@ describe('preferencesStore normalizers', () => {
         });
 
         expect(snapshot.overlayActivityFilters.wrist.types.invite).toEqual({
-            scope: 'allFavorites',
+            scope: 'friends',
             favoriteGroupKeys: 'all'
         });
         expect(
@@ -261,7 +263,7 @@ describe('preferencesStore normalizers', () => {
         expect(
             snapshot.overlayActivityFilters.wrist.types.friendRequest
         ).toEqual({
-            scope: 'off',
+            scope: 'on',
             favoriteGroupKeys: 'all'
         });
     });
@@ -278,7 +280,8 @@ describe('preferencesStore normalizers', () => {
             navPanelWidth: 9999,
             tablePageSizes: ['25', '10', '25'],
             wristOverlayStartMode: 'steamvr',
-            vrOverlayPanelAllFriendsIncludesFavorites: 'false',
+            vrOverlayPanelEnabled: 'true',
+            vrOverlayPanelAllFriendsIncludesFavorites: 'true',
             wristOverlayButton: 'menu',
             wristOverlayHand: 'both',
             wristOverlaySize: 'large',
@@ -296,11 +299,6 @@ describe('preferencesStore normalizers', () => {
                 searchLimit: 999999
             },
             localFavoriteFriendsGroups: ['VIP', '', null],
-            sharedFeedFilters: JSON.stringify({
-                noty: {
-                    Online: 'Friends'
-                }
-            }),
             overlayActivityFilters: JSON.stringify({
                 wrist: {
                     favoriteGroupKeys: ['group_1'],
@@ -347,6 +345,7 @@ describe('preferencesStore normalizers', () => {
                 searchLimit: 100000
             },
             localFavoriteFriendsGroups: ['VIP'],
+            vrOverlayPanelEnabled: false,
             vrOverlayPanelAllFriendsIncludesFavorites: false,
             wristOverlayStartMode: 'steamvr',
             wristOverlayButton: 'menu',
@@ -366,7 +365,6 @@ describe('preferencesStore normalizers', () => {
             translationAPIModel: DEFAULT_PREFERENCES.translationAPIModel,
             translationAPIPrompt: ''
         });
-        expect(snapshot.sharedFeedFilters.noty.Online).toBe('Friends');
         expect(snapshot.overlayActivityFilters.wrist).toMatchObject({
             types: {
                 DisplayName: {
@@ -385,7 +383,7 @@ describe('preferencesStore normalizers', () => {
         });
         expect(snapshot.trustColor.basic).toBe('#ABCDEF');
         expect(snapshot.trustColor.known).toBe(
-            (DEFAULT_PREFERENCES.trustColor as any).known
+            normalizePreferenceSnapshot(DEFAULT_PREFERENCES).trustColor.known
         );
     });
 

@@ -7,14 +7,14 @@ const mocks = vi.hoisted(() => ({
     toastDismiss: vi.fn(),
     appFlashWindow: vi.fn(),
     appAuthFailureNotificationShow: vi.fn(),
-    recordLogout: vi.fn(),
-    clearAuthCookies: vi.fn(),
-    resetActivityCacheState: vi.fn(),
-    canAttemptReactAutoLogin: vi.fn(),
-    recordReactAutoLoginAttempt: vi.fn(),
-    executeCookieSessionRestore: vi.fn(),
-    executeSavedCredentialLogin: vi.fn(),
+    autoLoginStart: vi.fn(),
+    cancelLoginSession: vi.fn(),
+    startLoginSession: vi.fn(),
+    resolveLoginSessionState: vi.fn(),
+    finalizeSuccessfulLogin: vi.fn(),
+    toAuthUserRecord: vi.fn(),
     applySavedAuthSnapshot: vi.fn(),
+    refreshSavedAuthSnapshot: vi.fn(),
     t: vi.fn()
 }));
 
@@ -34,35 +34,23 @@ vi.mock('@/platform/tauri/bindings', () => ({
     }
 }));
 
-vi.mock('@/repositories/authRepository', () => ({
+vi.mock('@/repositories/vrchatAuthRepository', () => ({
     default: {
-        recordLogout: mocks.recordLogout
+        autoLoginStart: mocks.autoLoginStart,
+        cancelLoginSession: mocks.cancelLoginSession,
+        startLoginSession: mocks.startLoginSession
     }
-}));
-
-vi.mock('@/repositories/webRepository', () => ({
-    default: {
-        clearAuthCookies: mocks.clearAuthCookies
-    }
-}));
-
-vi.mock('./activityCacheService', () => ({
-    resetActivityCacheState: mocks.resetActivityCacheState
-}));
-
-vi.mock('./authAutoLoginState', () => ({
-    AUTO_LOGIN_MAX_ATTEMPTS: 3,
-    canAttemptReactAutoLogin: mocks.canAttemptReactAutoLogin,
-    recordReactAutoLoginAttempt: mocks.recordReactAutoLoginAttempt
 }));
 
 vi.mock('./authExecutionService', () => ({
-    executeCookieSessionRestore: mocks.executeCookieSessionRestore,
-    executeSavedCredentialLogin: mocks.executeSavedCredentialLogin
+    resolveLoginSessionState: mocks.resolveLoginSessionState,
+    finalizeSuccessfulLogin: mocks.finalizeSuccessfulLogin,
+    toAuthUserRecord: mocks.toAuthUserRecord
 }));
 
 vi.mock('./authSnapshotService', () => ({
-    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot
+    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot,
+    refreshSavedAuthSnapshot: mocks.refreshSavedAuthSnapshot
 }));
 
 vi.mock('./i18nService', () => ({
@@ -76,19 +64,6 @@ import { useSessionStore } from '@/state/sessionStore';
 
 import { executeReactAutoLogin } from './authAutoLoginService';
 
-function savedCredential() {
-    return {
-        user: {
-            id: 'usr_1',
-            displayName: 'User One'
-        },
-        loginParams: {
-            username: 'user@example.test'
-        },
-        hasLoginCredentials: true
-    };
-}
-
 function snapshot(patch: Record<string, unknown> = {}) {
     return {
         lastUserLoggedIn: 'usr_1',
@@ -99,11 +74,28 @@ function snapshot(patch: Record<string, unknown> = {}) {
         autoLoginThrottleKey: 'usr_1',
         cookieRestoreEligible: true,
         savedCredentialFallbackAvailable: true,
-        autoLoginTarget: savedCredential(),
         autoLoginDelayEnabled: false,
         autoLoginDelaySeconds: 0,
         ...patch
     };
+}
+
+function authenticatedSession() {
+    return {
+        userId: 'usr_1',
+        displayName: 'User One',
+        endpoint: '',
+        websocket: '',
+        currentUser: { id: 'usr_1', displayName: 'User One' }
+    };
+}
+
+function createDeferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((resolvePromise) => {
+        resolve = resolvePromise;
+    });
+    return { promise, resolve };
 }
 
 describe('authAutoLoginService', () => {
@@ -111,26 +103,25 @@ describe('authAutoLoginService', () => {
         vi.resetAllMocks();
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
-        mocks.canAttemptReactAutoLogin.mockReturnValue(true);
-        mocks.executeCookieSessionRestore.mockResolvedValue(
-            snapshot({
-                status: 'restored'
-            })
+        mocks.autoLoginStart.mockResolvedValue({
+            status: 'authenticated',
+            session: authenticatedSession()
+        });
+        mocks.resolveLoginSessionState.mockImplementation(
+            async (outcome: { status: string; session?: unknown }) =>
+                outcome.status === 'authenticated'
+                    ? outcome.session
+                    : authenticatedSession()
         );
-        mocks.executeSavedCredentialLogin.mockResolvedValue(
-            snapshot({
-                status: 'saved'
-            })
+        mocks.toAuthUserRecord.mockImplementation(
+            (session: { currentUser: unknown }) => session.currentUser
         );
-        mocks.recordLogout.mockResolvedValue(
-            snapshot({
-                lastUserLoggedIn: null,
-                autoLoginTarget: null
-            })
+        mocks.refreshSavedAuthSnapshot.mockResolvedValue(
+            snapshot({ status: 'refreshed' })
         );
-        mocks.clearAuthCookies.mockResolvedValue(undefined);
-        mocks.appFlashWindow.mockResolvedValue(undefined);
-        mocks.appAuthFailureNotificationShow.mockResolvedValue(undefined);
+        mocks.finalizeSuccessfulLogin.mockResolvedValue(
+            snapshot({ status: 'finalized' })
+        );
         mocks.applySavedAuthSnapshot.mockImplementation(
             (value: unknown) => value
         );
@@ -150,67 +141,68 @@ describe('authAutoLoginService', () => {
             executeReactAutoLogin(
                 snapshot({
                     cookieRestoreEligible: false,
-                    savedCredentialFallbackAvailable: false,
-                    autoLoginTarget: null
+                    savedCredentialFallbackAvailable: false
                 })
             )
         ).resolves.toMatchObject({
             status: 'skipped'
         });
 
-        expect(mocks.executeCookieSessionRestore).not.toHaveBeenCalled();
-        expect(mocks.executeSavedCredentialLogin).not.toHaveBeenCalled();
+        expect(mocks.autoLoginStart).not.toHaveBeenCalled();
     });
 
-    it('restores an eligible cookie session and reports success', async () => {
+    it('reports success once the backend orchestration authenticates (cookie restore or saved-credential fallback)', async () => {
         await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
             status: 'success',
-            snapshot: expect.objectContaining({
-                status: 'restored'
-            })
+            snapshot: expect.objectContaining({ status: 'finalized' })
         });
 
-        expect(mocks.recordReactAutoLoginAttempt).toHaveBeenCalledWith('usr_1');
-        expect(mocks.executeCookieSessionRestore).toHaveBeenCalledTimes(1);
-        expect(mocks.executeSavedCredentialLogin).not.toHaveBeenCalled();
+        expect(mocks.autoLoginStart).toHaveBeenCalledWith({
+            endpoint: '',
+            userId: 'usr_1'
+        });
+        expect(mocks.finalizeSuccessfulLogin).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'refreshed' }),
+            'Authenticated automatically.',
+            authenticatedSession().currentUser,
+            { endpoint: '', websocket: '' }
+        );
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.auto_login_success'
         );
     });
 
-    it('falls back to saved credentials after a missing-cookie session', async () => {
-        mocks.executeCookieSessionRestore.mockRejectedValueOnce(
-            Object.assign(new Error('Missing Credentials'), {
-                status: 401
-            })
-        );
-
-        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
-            status: 'success',
-            snapshot: expect.objectContaining({
-                status: 'saved'
-            })
+    it('prompts for a two-factor code when the saved-credential fallback requires it', async () => {
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'challenge',
+            methods: ['totp', 'otp'],
+            mode: 'totp',
+            error: null
         });
 
-        expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
-        expect(mocks.executeSavedCredentialLogin).toHaveBeenCalledWith(
-            savedCredential()
+        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
+            status: 'success'
+        });
+
+        expect(mocks.resolveLoginSessionState).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'challenge', mode: 'totp' }),
+            expect.any(Function)
         );
     });
 
     it('clears the auto-login target and notifies when attempts are throttled', async () => {
-        mocks.canAttemptReactAutoLogin.mockReturnValueOnce(false);
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'throttled',
+            snapshot: snapshot({ lastUserLoggedIn: null })
+        });
 
         await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
             status: 'throttled'
         });
 
-        expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
-        expect(mocks.recordLogout).toHaveBeenCalledWith('usr_1', {
-            clearLastUserLoggedIn: true,
-            cookies: null
-        });
-        expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledTimes(1);
+        expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
+            expect.objectContaining({ lastUserLoggedIn: null })
+        );
         expect(mocks.appFlashWindow).toHaveBeenCalledTimes(1);
         expect(mocks.appAuthFailureNotificationShow).toHaveBeenCalledWith(
             'frontend-auto-login-throttled'
@@ -222,6 +214,22 @@ describe('authAutoLoginService', () => {
             sessionPhase: 'signed_out',
             isLoggedIn: false
         });
+    });
+
+    it('reports expired when there is no cookie session and no saved-credential fallback', async () => {
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'expired',
+            snapshot: snapshot()
+        });
+
+        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
+            status: 'expired'
+        });
+
+        expect(mocks.appAuthFailureNotificationShow).toHaveBeenCalledWith(
+            'frontend-auto-login-expired'
+        );
+        expect(mocks.toastError).not.toHaveBeenCalled();
     });
 
     it('returns a cancelled result when the auto-login delay is aborted before waiting', async () => {
@@ -240,11 +248,39 @@ describe('authAutoLoginService', () => {
             status: 'cancelled'
         });
 
-        expect(mocks.executeCookieSessionRestore).not.toHaveBeenCalled();
+        expect(mocks.autoLoginStart).not.toHaveBeenCalled();
         expect(useRuntimeStore.getState().startup.auth).toMatchObject({
             status: 'completed',
             detail: 'Automatic login countdown was cancelled.'
         });
+    });
+
+    it('ignores a backend outcome that arrives after the auto-login signal is aborted', async () => {
+        const deferred = createDeferred<{
+            status: 'authenticated';
+            session: ReturnType<typeof authenticatedSession>;
+        }>();
+        mocks.autoLoginStart.mockReturnValueOnce(deferred.promise);
+        const controller = new AbortController();
+
+        const resultPromise = executeReactAutoLogin(snapshot(), {
+            signal: controller.signal
+        });
+        await vi.waitFor(() => {
+            expect(mocks.autoLoginStart).toHaveBeenCalledTimes(1);
+        });
+
+        controller.abort();
+        deferred.resolve({
+            status: 'authenticated',
+            session: authenticatedSession()
+        });
+
+        await expect(resultPromise).resolves.toMatchObject({
+            status: 'cancelled'
+        });
+        expect(mocks.resolveLoginSessionState).not.toHaveBeenCalled();
+        expect(mocks.finalizeSuccessfulLogin).not.toHaveBeenCalled();
     });
 
     it('does not show a system auth notification when auto-login fails offline', async () => {
@@ -252,9 +288,12 @@ describe('authAutoLoginService', () => {
             configurable: true,
             value: false
         });
-        mocks.executeCookieSessionRestore.mockRejectedValueOnce(
-            new Error('Network unavailable')
-        );
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'failed',
+            reason: 'Network unavailable',
+            kind: 'network',
+            snapshot: snapshot()
+        });
 
         await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
             status: 'failed'
@@ -265,11 +304,12 @@ describe('authAutoLoginService', () => {
     });
 
     it('shows a system auth notification when saved credentials require manual login', async () => {
-        mocks.executeSavedCredentialLogin.mockRejectedValueOnce(
-            Object.assign(new Error('Saved credentials are no longer valid.'), {
-                code: 'AUTH_SAVED_CREDENTIALS_INVALID'
-            })
-        );
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'failed',
+            reason: 'Saved credentials are no longer valid.',
+            kind: 'invalidCredentials',
+            snapshot: snapshot({ lastUserLoggedIn: null })
+        });
 
         await expect(
             executeReactAutoLogin(
@@ -283,6 +323,9 @@ describe('authAutoLoginService', () => {
 
         expect(mocks.appAuthFailureNotificationShow).toHaveBeenCalledWith(
             'frontend-auto-login-failed'
+        );
+        expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
+            expect.objectContaining({ lastUserLoggedIn: null })
         );
     });
 });

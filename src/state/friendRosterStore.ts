@@ -490,6 +490,16 @@ function friendEntryNeedsOrderingUpdate(
     return compareFriendEntries(existingEntry, nextEntry) !== 0;
 }
 
+function friendEntryIsUnchanged(
+    existingEntry: FriendRecord | null | undefined,
+    nextEntry: FriendRecord
+): boolean {
+    if (!existingEntry) {
+        return false;
+    }
+    return JSON.stringify(existingEntry) === JSON.stringify(nextEntry);
+}
+
 const initialState: FriendRosterState = {
     currentUserId: null,
     loadStatus: 'idle',
@@ -536,6 +546,14 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                 offlineIds: []
             };
         });
+    },
+    setRosterReady(detail = '') {
+        set((state) => ({
+            ...state,
+            loadStatus: 'ready',
+            detail,
+            lastLoadedAt: new Date().toISOString()
+        }));
     },
     setRosterSnapshot({
         currentUserId,
@@ -654,14 +672,20 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                     friendNumber: 0
                 }
             );
-            const friendsById: FriendRosterById = {
-                ...state.friendsById,
-                [normalizedUserId]: normalizedEntry
-            };
             const orderingDirty = friendEntryNeedsOrderingUpdate(
                 existingEntry,
                 normalizedEntry
             );
+            if (
+                !orderingDirty &&
+                friendEntryIsUnchanged(existingEntry, normalizedEntry)
+            ) {
+                return state;
+            }
+            const friendsById: FriendRosterById = {
+                ...state.friendsById,
+                [normalizedUserId]: normalizedEntry
+            };
             const nextState = {
                 ...state,
                 ...(orderingDirty ? buildRosterOrdering(friendsById) : {}),

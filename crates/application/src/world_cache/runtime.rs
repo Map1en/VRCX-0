@@ -89,7 +89,7 @@ impl WorldCache {
         }
     }
 
-    pub(crate) fn sync_favorites_from_db(&self) {
+    pub fn sync_favorites_from_db(&self) {
         let favorite_ids = self.load_favorite_ids().into_iter().collect::<Vec<_>>();
         self.set_favorites(&favorite_ids);
     }

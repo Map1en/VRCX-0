@@ -75,12 +75,42 @@ function summarizeToolArgs(args?: string): string | undefined {
     return entries.length ? entries.join(', ') : undefined;
 }
 
+function classifyToolResult(summary?: string): string | undefined {
+    const normalized = summary?.trim().toLowerCase();
+    if (!normalized) {
+        return undefined;
+    }
+    if (/\b(time(?:d)? out|timeout|deadline|elapsed)\b/.test(normalized)) {
+        return 'timeout';
+    }
+    if (
+        /\b(not found|no match|no matching|notfound|missing)\b/.test(
+            normalized
+        ) ||
+        /\bno\b.{0,48}\bmatched\b/.test(normalized)
+    ) {
+        return 'not_found';
+    }
+    if (
+        /\b(invalid|malformed|bad request|schema|argument|arguments|args)\b/.test(
+            normalized
+        )
+    ) {
+        return 'invalid_args';
+    }
+    if (/\b(database|sqlite|sql|db|connection)\b/.test(normalized)) {
+        return 'db_error';
+    }
+    return 'error';
+}
+
 function buildToolErrorSummary(
     input: AssistantToolErrorInput
 ): string | undefined {
+    const result = classifyToolResult(input.summary);
     const parts = [
         summarizeToolArgs(input.args),
-        input.summary?.trim() ? 'result=<text>' : undefined
+        result ? `result=${result}` : undefined
     ].filter((part): part is string => Boolean(part));
     return parts.length ? parts.join('; ') : undefined;
 }

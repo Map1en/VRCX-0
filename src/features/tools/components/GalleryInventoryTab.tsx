@@ -1,5 +1,6 @@
 import { GiftIcon, ImageIcon, RefreshCwIcon } from 'lucide-react';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter } from '@/lib/dateTime';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -98,11 +99,16 @@ export function GalleryInventoryTab({
                                                     })
                                                 }
                                             >
-                                                <img
+                                                <FadeInImage
                                                     src={item.imageUrl}
                                                     alt={item.name || item.id}
                                                     loading="lazy"
                                                     className="aspect-square w-full object-cover"
+                                                    fallback={
+                                                        <div className="bg-muted text-muted-foreground flex aspect-square w-full items-center justify-center">
+                                                            <ImageIcon className="size-8" />
+                                                        </div>
+                                                    }
                                                 />
                                             </Button>
                                         ) : (

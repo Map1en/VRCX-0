@@ -1,4 +1,5 @@
 import { HistoryIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/ui/shadcn/badge';
@@ -9,17 +10,26 @@ import {
     HoverCardTrigger
 } from '@/ui/shadcn/hover-card';
 
-import { formatStatsDate } from '../userDialogRows';
+import {
+    formatStatsDate,
+    normalizePreviousDisplayNames
+} from '../userDialogRows';
 import { languageOptionLabel } from '../userProfileFields';
 
-export function UserTitleLanguages({ languages }: any) {
+type UserLanguageRow = { key?: unknown; value?: unknown };
+
+export function UserTitleLanguages({
+    languages
+}: {
+    languages: UserLanguageRow[];
+}) {
     if (!languages.length) {
         return null;
     }
 
     return (
         <span className="flex max-w-full min-w-0 flex-wrap items-start gap-1">
-            {languages.map((language: any) => {
+            {languages.map((language) => {
                 const key = String(
                     language?.key || language?.value || ''
                 ).trim();
@@ -39,7 +49,11 @@ export function UserTitleLanguages({ languages }: any) {
     );
 }
 
-export function PreviousDisplayNamesBadge({ names }: any) {
+export function PreviousDisplayNamesBadge({
+    names
+}: {
+    names: ReturnType<typeof normalizePreviousDisplayNames>;
+}) {
     const { t } = useTranslation();
 
     if (!names.length) {
@@ -84,7 +98,7 @@ export function PreviousDisplayNamesBadge({ names }: any) {
                         <Badge variant="secondary">{names.length}</Badge>
                     </div>
                     <div className="flex max-h-64 flex-col overflow-auto p-1">
-                        {names.map((entry: any, index: any) => (
+                        {names.map((entry, index) => (
                             <div
                                 key={`${entry.displayName}:${entry.updated_at || index}`}
                                 className="flex min-w-0 items-center justify-between gap-3 rounded-md px-2 py-1.5"
@@ -111,7 +125,12 @@ export function SelfPreferenceCheckboxItem({
     checked,
     disabled = false,
     onToggle
-}: any) {
+}: {
+    label: ReactNode;
+    checked: boolean;
+    disabled?: boolean;
+    onToggle?: () => void;
+}) {
     return (
         <DropdownMenuCheckboxItem
             checked={checked}
@@ -126,7 +145,7 @@ export function SelfPreferenceCheckboxItem({
     );
 }
 
-export function downloadJsonFile(filename: any, value: any) {
+export function downloadJsonFile(filename: string, value: unknown) {
     const blob = new Blob([JSON.stringify(value, null, 2)], {
         type: 'application/json;charset=utf-8'
     });

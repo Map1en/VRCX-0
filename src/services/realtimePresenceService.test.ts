@@ -18,7 +18,7 @@ vi.mock('./domainIngestionService', () => ({
     recordFriendPatch: serviceMocks.recordFriendPatch
 }));
 
-vi.mock('./sharedFeedFilterService', () => ({
+vi.mock('./sharedFeedNotificationService', () => ({
     pushSharedFeedNotification: serviceMocks.pushSharedFeedNotification
 }));
 

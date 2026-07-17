@@ -396,7 +396,7 @@ pub(super) fn default_rule(definition: &ActivityTypeDefinition) -> OverlayActivi
 }
 
 pub(super) fn has_persisted_filter_rules(value: &Value) -> bool {
-    ["wrist", "desktop", "vr", "hmd", "webhook"]
+    ["wrist", "desktop", "vr", "hmd", "webhook", "tts"]
         .iter()
         .any(|surface| {
             value
@@ -426,6 +426,10 @@ pub(super) fn normalize_filters(value: Value) -> OverlayActivityFilters {
             .get("webhook")
             .map(|surface| normalize_surface(Some(surface)))
             .unwrap_or_else(OverlayActivitySurfaceFilters::disabled_rules),
+        tts: value
+            .get("tts")
+            .map(|surface| normalize_surface(Some(surface)))
+            .unwrap_or_else(OverlayActivitySurfaceFilters::default_rules),
     }
 }
 
@@ -478,27 +482,6 @@ fn hmd_scope_for_definition(definition: &ActivityTypeDefinition) -> OverlayActiv
         "BlockedOnPlayerJoined" => OverlayActivityScope::EveryoneInInstance,
         _ => definition.default_scope,
     }
-}
-
-pub(super) fn migrate_legacy_shared_feed_wrist_filters(value: Value) -> OverlayActivityFilters {
-    let wrist = value.get("wrist").and_then(Value::as_object);
-    let mut normalized = OverlayActivityFilters::default();
-    for definition in ACTIVITY_TYPES {
-        let source = wrist.and_then(|wrist| get_type_candidate(wrist, definition));
-        if let Some(scope) = source
-            .and_then(Value::as_str)
-            .and_then(|value| legacy_shared_feed_scope(value, definition))
-        {
-            normalized.wrist.types.insert(
-                definition.key.to_string(),
-                OverlayActivityRule {
-                    scope,
-                    favorite_group_keys: OverlayActivityFavoriteGroupKeys::All,
-                },
-            );
-        }
-    }
-    normalized
 }
 
 pub(super) fn normalize_id(value: &str) -> String {
@@ -634,70 +617,6 @@ fn parse_scope_for_definition(
         {
             Some(OverlayActivityScope::On)
         }
-        _ => None,
-    }
-}
-
-fn legacy_shared_feed_scope(
-    value: &str,
-    definition: &ActivityTypeDefinition,
-) -> Option<OverlayActivityScope> {
-    match value {
-        "Off" => Some(OverlayActivityScope::Off),
-        "VIP" => {
-            if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::AllFavorites)
-            {
-                Some(OverlayActivityScope::AllFavorites)
-            } else if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::SelectedFavorites)
-            {
-                Some(OverlayActivityScope::SelectedFavorites)
-            } else if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::On)
-            {
-                Some(OverlayActivityScope::On)
-            } else {
-                None
-            }
-        }
-        "Friends" => {
-            if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::Friends)
-            {
-                Some(OverlayActivityScope::Friends)
-            } else if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::On)
-            {
-                Some(OverlayActivityScope::On)
-            } else {
-                None
-            }
-        }
-        "Everyone" => {
-            if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::EveryoneInInstance)
-            {
-                Some(OverlayActivityScope::EveryoneInInstance)
-            } else if definition
-                .allowed_scopes
-                .contains(&OverlayActivityScope::On)
-            {
-                Some(OverlayActivityScope::On)
-            } else {
-                None
-            }
-        }
-        "On" => definition
-            .allowed_scopes
-            .contains(&OverlayActivityScope::On)
-            .then_some(OverlayActivityScope::On),
         _ => None,
     }
 }

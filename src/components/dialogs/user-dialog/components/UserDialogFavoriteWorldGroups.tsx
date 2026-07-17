@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { EntityList } from './UserDialogEntityList';
 
-function favoriteGroupLimit(group: any) {
+interface FavoriteWorldGroupView {
+    capacity?: unknown;
+    maxFavorites?: unknown;
+    max_favorites?: unknown;
+    limit?: unknown;
+    max?: unknown;
+    key: string;
+    label: string;
+    visibility: string;
+    rows: EntityRecord[];
+}
+
+function favoriteGroupLimit(group: FavoriteWorldGroupView) {
     const value =
         group?.capacity ??
         group?.maxFavorites ??
@@ -15,7 +28,7 @@ function favoriteGroupLimit(group: any) {
     return Number.isFinite(limit) && limit > 0 ? limit : 0;
 }
 
-function favoriteGroupCountLabel(group: any) {
+function favoriteGroupCountLabel(group: FavoriteWorldGroupView) {
     const limit = favoriteGroupLimit(group);
     return limit ? `${group.rows.length}/${limit}` : String(group.rows.length);
 }
@@ -27,13 +40,21 @@ export function FavoriteWorldGroups({
     filteredRows,
     loading,
     error
-}: any) {
+}: {
+    groups: readonly EntityRecord[];
+    rows: readonly EntityRecord[];
+    search: string;
+    filteredRows: readonly EntityRecord[];
+    loading: boolean;
+    error: string;
+}) {
     const groupedRows = groups.length
-        ? groups.map((group: any) => ({
-              key: group.name,
-              label: group.displayName || group.name,
-              visibility: group.visibility || '',
-              rows: rows.filter((world: any) => {
+        ? groups.map((group): FavoriteWorldGroupView & EntityRecord => ({
+              ...group,
+              key: String(group.name || ''),
+              label: String(group.displayName || group.name || ''),
+              visibility: String(group.visibility || ''),
+              rows: rows.filter((world) => {
                   const groupLabel = group.displayName || group.name;
                   return (
                       world.$favoriteGroupKey === group.name ||
@@ -43,8 +64,8 @@ export function FavoriteWorldGroups({
           }))
         : Array.from(
               rows
-                  .reduce((map: any, world: any) => {
-                      const key = world.$favoriteGroup || 'Favorites';
+                  .reduce((map, world) => {
+                      const key = String(world.$favoriteGroup || 'Favorites');
                       if (!map.has(key)) {
                           map.set(key, {
                               key,
@@ -53,9 +74,12 @@ export function FavoriteWorldGroups({
                               rows: []
                           });
                       }
-                      map.get(key).rows.push(world);
+                      const group = map.get(key);
+                      if (group) {
+                          group.rows.push(world);
+                      }
                       return map;
-                  }, new Map())
+                  }, new Map<string, FavoriteWorldGroupView>())
                   .values()
           );
     const [activeGroup, setActiveGroup] = useState(groupedRows[0]?.key || '');
@@ -63,7 +87,7 @@ export function FavoriteWorldGroups({
     useEffect(() => {
         if (
             groupedRows.length &&
-            !groupedRows.some((group: any) => group.key === activeGroup)
+            !groupedRows.some((group) => group.key === activeGroup)
         ) {
             setActiveGroup(groupedRows[0].key);
         }
@@ -97,7 +121,7 @@ export function FavoriteWorldGroups({
             className="gap-2"
         >
             <TabsList className="max-w-full justify-start overflow-x-auto overflow-y-hidden">
-                {groupedRows.map((group: any) => (
+                {groupedRows.map((group) => (
                     <TabsTrigger
                         key={group.key}
                         value={group.key}
@@ -115,7 +139,7 @@ export function FavoriteWorldGroups({
                     </TabsTrigger>
                 ))}
             </TabsList>
-            {groupedRows.map((group: any) => (
+            {groupedRows.map((group) => (
                 <TabsContent key={group.key} value={group.key} className="m-0">
                     <EntityList rows={group.rows} kind="world" />
                 </TabsContent>

@@ -38,22 +38,22 @@ describe('avatar utils', () => {
     });
 
     it('keeps the best platform package and ignores unsupported variants', () => {
-        const pcGood: any = {
+        const pcGood = {
             platform: 'standalonewindows',
             performanceRating: 'Good',
             variant: 'standard'
         };
-        const pcNone: any = {
+        const pcNone = {
             platform: 'standalonewindows',
             performanceRating: 'None',
             variant: 'standard'
         };
-        const android: any = {
+        const android = {
             platform: 'android',
             performanceRating: 'Medium',
             variant: 'security'
         };
-        const iosUnsupported: any = {
+        const iosUnsupported = {
             platform: 'ios',
             performanceRating: 'Good',
             variant: 'impostor'

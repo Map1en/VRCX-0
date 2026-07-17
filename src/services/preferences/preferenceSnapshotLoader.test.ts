@@ -246,23 +246,25 @@ describe('preferenceSnapshotLoader', () => {
         );
     });
 
-    it('loads the interactive VR panel switch as a default-on setting', async () => {
+    it('keeps hidden interactive VR panel settings out of the preference load', async () => {
         const snapshot = await loadPreferenceSnapshot();
 
-        expect(mocks.getBool).toHaveBeenCalledWith(
+        expect(mocks.getBool).not.toHaveBeenCalledWith(
             'vrOverlayPanelEnabled',
-            true
+            expect.anything()
         );
-        expect(mocks.getBool).toHaveBeenCalledWith(
+        expect(mocks.getBool).not.toHaveBeenCalledWith(
             'vrOverlayPanelAllFriendsIncludesFavorites',
-            true
+            expect.anything()
         );
-        expect(snapshot.vrOverlayPanelEnabled).toBe(true);
-        expect(snapshot.vrOverlayPanelAllFriendsIncludesFavorites).toBe(true);
-        expect(usePreferencesStore.getState().vrOverlayPanelEnabled).toBe(true);
+        expect(snapshot.vrOverlayPanelEnabled).toBe(false);
+        expect(snapshot.vrOverlayPanelAllFriendsIncludesFavorites).toBe(false);
+        expect(usePreferencesStore.getState().vrOverlayPanelEnabled).toBe(
+            false
+        );
         expect(
             usePreferencesStore.getState()
                 .vrOverlayPanelAllFriendsIncludesFavorites
-        ).toBe(true);
+        ).toBe(false);
     });
 });

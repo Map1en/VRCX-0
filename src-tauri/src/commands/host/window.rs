@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
 
@@ -8,12 +10,64 @@ use crate::state::AppState;
 
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
+static APPLICATION_EXIT_STARTED: AtomicBool = AtomicBool::new(false);
+
+fn request_application_exit_with(
+    exit_started: &AtomicBool,
+    hide_main_window: impl FnOnce(),
+    set_tray_visible: impl FnOnce(bool),
+    start_shutdown: impl FnOnce(),
+) -> bool {
+    if exit_started.swap(true, Ordering::AcqRel) {
+        return false;
+    }
+
+    hide_main_window();
+    set_tray_visible(false);
+    start_shutdown();
+    true
+}
+
+pub(crate) fn request_application_exit(app_handle: &AppHandle) {
+    use tauri::Manager;
+
+    request_application_exit_with(
+        &APPLICATION_EXIT_STARTED,
+        || {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = window.hide();
+                let _ = window.set_skip_taskbar(true);
+            }
+        },
+        |visible| {
+            if let Some(tray) = app_handle.tray_by_id("main") {
+                let _ = tray.set_visible(visible);
+            }
+        },
+        || {
+            let shutdown_app = app_handle.clone();
+            if let Err(error) = std::thread::Builder::new()
+                .name("vrcx-0-shutdown".into())
+                .spawn(move || {
+                    finish_application_exit(&shutdown_app);
+                })
+            {
+                tracing::warn!(error = %error, "failed to spawn shutdown worker; stopping inline");
+                finish_application_exit(app_handle);
+            }
+        },
+    );
+}
+
+fn finish_application_exit(app_handle: &AppHandle) {
+    stop_runtime_services(app_handle);
+    app_handle.exit(0);
+}
 
 pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
     use tauri::Manager;
     if let Some(state) = app_handle.try_state::<AppState>() {
         state.log_watcher_compat_bridge.stop();
-        state.ipc.stop();
         state.stop_backend_runtime("application-exit");
         flush_telemetry_before_task_shutdown(&state);
         state.runtime_context.tasks.stop_all();
@@ -169,8 +223,7 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 #[tauri::command]
 #[specta::specta]
 pub fn app__exit_application(app_handle: AppHandle) -> Result<(), AppError> {
-    stop_runtime_services(&app_handle);
-    app_handle.exit(0);
+    request_application_exit(&app_handle);
     Ok(())
 }
 
@@ -255,5 +308,67 @@ pub(crate) fn default_desktop_notification_sound() -> &'static str {
     #[cfg(not(any(target_os = "windows", target_os = "macos", unix)))]
     {
         "Default"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::{Cell, RefCell};
+    use std::sync::atomic::AtomicBool;
+
+    use super::request_application_exit_with;
+
+    #[test]
+    fn request_application_exit_hides_window_and_tray_before_shutdown() {
+        let exit_started = AtomicBool::new(false);
+        let window_visible = Cell::new(true);
+        let tray_visible = Cell::new(true);
+        let shutdown_started = Cell::new(false);
+        let events = RefCell::new(Vec::new());
+
+        assert!(request_application_exit_with(
+            &exit_started,
+            || {
+                window_visible.set(false);
+                events.borrow_mut().push("window-hidden");
+            },
+            |visible| {
+                tray_visible.set(visible);
+                events.borrow_mut().push("tray-hidden");
+            },
+            || {
+                shutdown_started.set(true);
+                events.borrow_mut().push("shutdown-started");
+            },
+        ));
+
+        assert!(!window_visible.get());
+        assert!(!tray_visible.get());
+        assert!(shutdown_started.get());
+        assert_eq!(
+            events.into_inner(),
+            vec!["window-hidden", "tray-hidden", "shutdown-started"]
+        );
+    }
+
+    #[test]
+    fn request_application_exit_is_idempotent() {
+        let exit_started = AtomicBool::new(false);
+        let calls = Cell::new(0);
+
+        assert!(request_application_exit_with(
+            &exit_started,
+            || calls.set(calls.get() + 1),
+            |_| calls.set(calls.get() + 1),
+            || calls.set(calls.get() + 1),
+        ));
+        assert!(!request_application_exit_with(
+            &exit_started,
+            || calls.set(calls.get() + 1),
+            |_| calls.set(calls.get() + 1),
+            || calls.set(calls.get() + 1),
+        ));
+
+        assert_eq!(calls.get(), 3);
     }
 }

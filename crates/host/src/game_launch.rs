@@ -381,18 +381,14 @@ mod tests {
 
         let command = windows_steam_registry_launch_command(
             &format!(r#""{}" -- "%1""#, steam_exe.display()),
-            "vrchat://launch?ref=vrcx.app&id=wrld_1:123",
+            "vrchat://launch?id=wrld_1:123",
         )
         .unwrap();
 
         assert_eq!(command.program, steam_exe);
         assert_eq!(
             command.args,
-            [
-                "-applaunch",
-                "438100",
-                "vrchat://launch?ref=vrcx.app&id=wrld_1:123"
-            ]
+            ["-applaunch", "438100", "vrchat://launch?id=wrld_1:123"]
         );
     }
 
@@ -404,7 +400,7 @@ mod tests {
 
         let command = windows_steam_registry_launch_command(
             &format!(r#""{}" -- "%1""#, steam_exe.display()),
-            "vrchat://launch?ref=vrcx.app&id=wrld_1:123",
+            "vrchat://launch?id=wrld_1:123",
         );
 
         assert_eq!(command, None);
@@ -419,16 +415,13 @@ mod tests {
 
         let command = windows_vrchat_registry_launch_command(
             &format!(r#""{}" "%1" %*"#, launch_exe.display()),
-            "vrchat://launch?ref=vrcx.app&id=wrld_1:123 --no-vr",
+            "vrchat://launch?id=wrld_1:123 --no-vr",
         )
         .unwrap();
 
         assert_eq!(command.program, launch_exe);
         assert_eq!(command.current_dir, Some(dir.path.clone()));
-        assert_eq!(
-            command.args,
-            ["vrchat://launch?ref=vrcx.app&id=wrld_1:123", "--no-vr"]
-        );
+        assert_eq!(command.args, ["vrchat://launch?id=wrld_1:123", "--no-vr"]);
     }
 
     #[test]
@@ -439,7 +432,7 @@ mod tests {
 
         let command = windows_vrchat_registry_launch_command(
             &format!(r#""{}" "%1" %*"#, launch_exe.display()),
-            "vrchat://launch?ref=vrcx.app&id=wrld_1:123",
+            "vrchat://launch?id=wrld_1:123",
         );
 
         assert_eq!(command, None);

@@ -2,19 +2,16 @@ import {
     commands,
     type SocialFriendRosterBaselineOutput
 } from '@/platform/tauri/bindings';
-import configRepository from '@/repositories/configRepository';
 import friendLogRepository from '@/repositories/friendLogRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
-    buildCurrentEntryFromFriend,
     buildFriendStateMap,
     buildSeedRosterFriendsById,
     getDisplayName,
     hasCompleteFriendStateSnapshot,
-    hasFriendListSnapshot,
     isRecord,
     normalizeFriendsById,
     normalizeStringArray,
@@ -22,23 +19,13 @@ import {
     type FriendBootstrapOptions,
     type FriendBootstrapResult,
     type FriendBootstrapSnapshot,
-    type FriendLogRow,
-    type FriendRecord
+    type FriendLogRow
 } from './friendBootstrapModel';
-import {
-    enqueueFriendLogMutation,
-    getExplicitFriendLogAddIntentUserIds,
-    markExplicitFriendLogAddIntentsHandledByBootstrap,
-    signalFriendLogChanged
-} from './friendLogMutationService';
+import { signalFriendLogChanged } from './friendLogMutationService';
 import { syncStartupServicesTask } from './startupServicesStatus';
 import { notifyRuntimeVrchatAuthFailure } from './vrchatAuthErrorService';
 
 const activeBootstraps = new Map<string, Promise<FriendBootstrapResult>>();
-
-function getFriendLogInitKey(userId: string) {
-    return `friendLogInit_${userId}`;
-}
 
 async function seedFriendRosterFromCurrentUserSnapshot({
     normalizedUserId,
@@ -76,102 +63,6 @@ async function seedFriendRosterFromCurrentUserSnapshot({
         detail
     });
     return true;
-}
-
-async function runFriendLogStartupReconciliation({
-    normalizedUserId,
-    endpoint,
-    websocket,
-    currentUserSnapshot,
-    fastFriendsById
-}: {
-    normalizedUserId: string;
-    endpoint: string;
-    websocket: string;
-    currentUserSnapshot: unknown;
-    fastFriendsById: Record<string, FriendRecord>;
-}) {
-    if (!hasFriendListSnapshot(currentUserSnapshot)) {
-        return;
-    }
-
-    await enqueueFriendLogMutation(normalizedUserId, async () => {
-        const initialized = await configRepository.getBool(
-            getFriendLogInitKey(normalizedUserId),
-            false
-        );
-        if (initialized) {
-            return;
-        }
-        if (!isCurrentBootstrapTarget(normalizedUserId, endpoint, websocket)) {
-            return;
-        }
-
-        const currentFriendIds = currentUserSnapshot.friends
-            .map(normalizeUserId)
-            .filter(Boolean);
-        const currentFriendIdSet = new Set(currentFriendIds);
-        const explicitAddIntentUserIds = new Set(
-            getExplicitFriendLogAddIntentUserIds(normalizedUserId)
-        );
-
-        const entries = currentFriendIds
-            .filter((friendId) => friendId !== normalizedUserId)
-            .map((friendId, index) =>
-                buildCurrentEntryFromFriend({
-                    userId: friendId,
-                    friend: fastFriendsById[friendId] || { id: friendId },
-                    friendNumber: index + 1
-                })
-            );
-        if (!isCurrentBootstrapTarget(normalizedUserId, endpoint, websocket)) {
-            return;
-        }
-        await friendLogRepository.replaceFriendLogCurrent(
-            normalizedUserId,
-            entries,
-            { historyEntries: [], addedHistoryEntries: [] }
-        );
-        for (const friendId of explicitAddIntentUserIds) {
-            if (currentFriendIdSet.has(friendId)) {
-                markExplicitFriendLogAddIntentsHandledByBootstrap(
-                    normalizedUserId,
-                    [friendId]
-                );
-            }
-        }
-        if (!isCurrentBootstrapTarget(normalizedUserId, endpoint, websocket)) {
-            return;
-        }
-        await configRepository.setBool(
-            getFriendLogInitKey(normalizedUserId),
-            true
-        );
-    });
-}
-
-function startFriendRosterBackgroundTasks({
-    normalizedUserId,
-    endpoint,
-    websocket,
-    currentUserSnapshot,
-    fastFriendsById
-}: {
-    normalizedUserId: string;
-    endpoint: string;
-    websocket: string;
-    currentUserSnapshot: unknown;
-    fastFriendsById: Record<string, FriendRecord>;
-}) {
-    void runFriendLogStartupReconciliation({
-        normalizedUserId,
-        endpoint,
-        websocket,
-        currentUserSnapshot,
-        fastFriendsById
-    }).catch((error) => {
-        console.warn('Friend log startup reconciliation failed:', error);
-    });
 }
 
 function bootstrapTargetKey(
@@ -280,9 +171,13 @@ async function runFriendBootstrap({
                 realtimeWebsocket
             )
         ) {
-            throw new Error(
-                `Friend roster baseline was stale for ${normalizedUserId}.`
-            );
+            if (!preserveLoadedState) {
+                throw new Error(
+                    `Friend roster baseline was stale for ${normalizedUserId}.`
+                );
+            }
+            useFriendRosterStore.getState().setRosterReady(detail);
+            syncStartupServicesTask([detail]);
         }
 
         return {
@@ -308,32 +203,25 @@ async function runFriendBootstrap({
         };
     }
 
-    const friendsById = normalizeFriendsById(snapshot.friendsById);
-
-    useFriendRosterStore.getState().setRosterSnapshot({
-        currentUserId: normalizedUserId,
-        friendsById,
-        orderedFriendIds: normalizeStringArray(snapshot.orderedFriendIds),
-        onlineIds: normalizeStringArray(snapshot.onlineIds),
-        activeIds: normalizeStringArray(snapshot.activeIds),
-        offlineIds: normalizeStringArray(snapshot.offlineIds),
-        detail
-    });
+    if (preserveLoadedState) {
+        useFriendRosterStore.getState().setRosterReady(detail);
+    } else {
+        const friendsById = normalizeFriendsById(snapshot.friendsById);
+        useFriendRosterStore.getState().setRosterSnapshot({
+            currentUserId: normalizedUserId,
+            friendsById,
+            orderedFriendIds: normalizeStringArray(snapshot.orderedFriendIds),
+            onlineIds: normalizeStringArray(snapshot.onlineIds),
+            activeIds: normalizeStringArray(snapshot.activeIds),
+            offlineIds: normalizeStringArray(snapshot.offlineIds),
+            detail
+        });
+    }
     useSessionStore.getState().setFriendsLoaded(true);
     syncStartupServicesTask([detail]);
     if (result.friendLogChanged) {
         signalFriendLogChanged();
     }
-    if (!preserveLoadedState) {
-        startFriendRosterBackgroundTasks({
-            normalizedUserId,
-            endpoint: normalizedEndpoint,
-            websocket: realtimeWebsocket,
-            currentUserSnapshot: currentSnapshot,
-            fastFriendsById: friendsById
-        });
-    }
-
     return {
         userId: normalizedUserId,
         count: result.count ?? 0,

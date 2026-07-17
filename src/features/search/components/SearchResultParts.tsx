@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import {
     openAvatarDialog,
@@ -31,13 +32,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 export function SearchEmptyState() {
     const { t } = useTranslation();
 
-    return <EmptyState title={t('common.no_data')} className="min-h-56" />;
+    return <EmptyState variant="panel" title={t('common.no_data')} />;
 }
 
 export function SearchLoadingState() {
     const { t } = useTranslation();
 
-    return <LoadingState label={t('common.loading')} className="min-h-56" />;
+    return <LoadingState variant="panel" label={t('common.loading')} />;
 }
 
 const searchMediaTextStyle: any = {
@@ -61,11 +62,16 @@ function SearchMediaCard({
         >
             <div className="bg-muted relative aspect-[16/10] w-full overflow-hidden">
                 {imageUrl ? (
-                    <img
+                    <FadeInImage
                         src={imageUrl}
                         alt={imageAlt}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-200 group-hover/search-media:scale-[1.02] group-focus-visible/search-media:scale-[1.02]"
+                        className="h-full w-full object-cover"
+                        fallback={
+                            <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-8">
+                                <FallbackIcon />
+                            </div>
+                        }
                     />
                 ) : (
                     <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-8">

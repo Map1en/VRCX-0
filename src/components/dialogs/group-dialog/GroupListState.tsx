@@ -16,7 +16,13 @@ export function GroupListState({
     loading = false,
     error = '',
     className = ''
-}: any) {
+}: {
+    title?: string;
+    description?: string;
+    loading?: boolean;
+    error?: string;
+    className?: string;
+}) {
     const { t } = useTranslation();
 
     if (loading) {

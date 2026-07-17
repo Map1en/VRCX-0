@@ -1,4 +1,14 @@
-export function getLoginErrorMessage(error: any, fallbackMessage: any) {
+type LoginUserRecord = Record<string, unknown>;
+
+function stringField(record: LoginUserRecord | null | undefined, key: string) {
+    const value = record?.[key];
+    return typeof value === 'string' ? value : '';
+}
+
+export function getLoginErrorMessage(
+    error: unknown,
+    fallbackMessage: string
+): string {
     if (error instanceof Error && error.message) {
         return error.message;
     }
@@ -6,34 +16,20 @@ export function getLoginErrorMessage(error: any, fallbackMessage: any) {
     return fallbackMessage;
 }
 
-export function getLoginUserDisplayName(user: any) {
-    return user?.displayName || user?.username || user?.id || 'account';
-}
-
-export function getAutoLoginStateLabel(status: any) {
-    switch (status) {
-        case 'scheduled':
-            return 'Auto-login scheduled';
-        case 'running':
-            return 'Auto-login running';
-        case 'success':
-            return 'Auto-login succeeded';
-        case 'cancelled':
-            return 'Auto-login skipped';
-        case 'throttled':
-            return 'Auto-login throttled';
-        case 'expired':
-            return 'Session expired';
-        case 'failed':
-            return 'Auto-login failed';
-        default:
-            return 'Auto-login idle';
-    }
+export function getLoginUserDisplayName(
+    user: LoginUserRecord | null | undefined
+): string {
+    return (
+        stringField(user, 'displayName') ||
+        stringField(user, 'username') ||
+        stringField(user, 'id') ||
+        'account'
+    );
 }
 
 export function shouldShowLegacyMigrationAction(
-    isLoading: any,
-    savedAccounts: any
-) {
-    return !isLoading && (savedAccounts?.length || 0) === 0;
+    isLoading: boolean,
+    savedAccounts: readonly unknown[]
+): boolean {
+    return !isLoading && savedAccounts.length === 0;
 }

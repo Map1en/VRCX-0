@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -8,7 +8,7 @@ import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-const EMPTY_GROUP_ORDER: any[] = [];
+const EMPTY_GROUP_ORDER: string[] = [];
 
 export function useUserDialogRuntimeState(normalizedUserId: string) {
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -21,8 +21,7 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
             state.auth.currentUserSnapshot?.tags?.includes?.(
                 'system_supporter'
             ) ||
-            (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
-                ?.debugVrcPlus
+            globalThis.$debug?.debugVrcPlus
         )
     );
     const currentEndpoint = useRuntimeStore(
@@ -153,8 +152,7 @@ export function useUserDialogTabbedRuntimeState() {
             state.auth.currentUserSnapshot?.tags?.includes?.(
                 'system_supporter'
             ) ||
-            (globalThis as typeof globalThis & { $debug?: AppDebug })?.$debug
-                ?.debugVrcPlus
+            globalThis.$debug?.debugVrcPlus
         )
     );
     const inGameGroupOrder = useRuntimeStore((state) =>

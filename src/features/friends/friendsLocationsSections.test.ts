@@ -57,10 +57,10 @@ describe('friends locations section helpers', () => {
         });
 
         expect(
-            sections.map((section: any) => ({
+            sections.map((section) => ({
                 key: section.key,
                 title: section.title,
-                friends: section.friends.map((friend: any) => friend.id)
+                friends: section.friends.map((friend) => friend.id)
             }))
         ).toEqual([
             {
@@ -114,7 +114,7 @@ describe('friends locations section helpers', () => {
             favoriteGroupLabelsByFriendId: new Map()
         });
 
-        expect(sections.map((section: any) => section.key)).toEqual([
+        expect(sections.map((section) => section.key)).toEqual([
             'instance:wrld_public:123~group(grp_1)',
             'instance:private:private',
             'instance:offline'
@@ -133,10 +133,7 @@ describe('friends locations section helpers', () => {
             'Sort Alphabetically'
         ]);
 
-        expect(sorted.map((friend: any) => friend.id)).toEqual([
-            'usr_1',
-            'usr_2'
-        ]);
+        expect(sorted.map((friend) => friend.id)).toEqual(['usr_1', 'usr_2']);
         expect(friends.map((friend) => friend.id)).toEqual(['usr_2', 'usr_1']);
     });
 
@@ -151,7 +148,7 @@ describe('friends locations section helpers', () => {
         expect(
             sortActiveFriendsBySidebarPrefs(friends, [
                 'Sort Alphabetically'
-            ]).map((friend: any) => friend.id)
+            ]).map((friend) => friend.id)
         ).toEqual(['usr_join', 'usr_active', 'usr_ask', 'usr_busy']);
     });
 
@@ -164,7 +161,7 @@ describe('friends locations section helpers', () => {
 
         expect(
             [...rows]
-                .sort((left: any, right: any) =>
+                .sort((left, right) =>
                     compareFavoriteGroups(left, right, ['group_b'])
                 )
                 .map((row) => row.key)

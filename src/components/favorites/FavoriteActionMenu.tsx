@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
+import { invalidateFavoriteRemoteDetailsCacheForType } from '@/services/favoriteRemoteDetailsCacheService';
 import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import type {
@@ -225,6 +226,9 @@ export function FavoriteActionMenu({
             } else if (kind === 'avatar' && isRecord(entity)) {
                 persistAvatarDetails(entity, normalizedEntityId);
             }
+            if (kind === 'world' || kind === 'avatar') {
+                invalidateFavoriteRemoteDetailsCacheForType(kind);
+            }
             toast.success(t('view.favorite.label.favorite_added'));
         } catch (error) {
             toast.error(
@@ -403,33 +407,16 @@ export function FavoriteActionMenu({
                 }
             />
             <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>
-                    {t('view.favorite.label.vrchat_favorites')}
-                </DropdownMenuLabel>
-                {remoteFavorite ? (
-                    <>
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem disabled>
-                                {remoteFavoriteGroupLabel}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                variant="destructive"
-                                closeOnClick={false}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    deleteFavorite();
-                                }}
-                            >
-                                {t('view.favorite.action.remove_favorite')}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </>
-                ) : groups.length ? (
-                    <DropdownMenuGroup>
-                        {groups.map((group) => {
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                        {t('view.favorite.label.vrchat_favorites')}
+                    </DropdownMenuLabel>
+                    {remoteFavorite ? (
+                        <DropdownMenuItem disabled>
+                            {remoteFavoriteGroupLabel}
+                        </DropdownMenuItem>
+                    ) : groups.length ? (
+                        groups.map((group) => {
                             const isFull =
                                 Number(group.capacity) > 0 &&
                                 (Number(group.count) || 0) >=
@@ -448,20 +435,35 @@ export function FavoriteActionMenu({
                                     {formatGroupLabel(group)}
                                 </DropdownMenuItem>
                             );
-                        })}
-                    </DropdownMenuGroup>
-                ) : (
-                    <DropdownMenuGroup>
+                        })
+                    ) : (
                         <DropdownMenuItem disabled>
                             {t('view.favorite.empty.no_favorite_groups_loaded')}
                         </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                )}
+                    )}
+                </DropdownMenuGroup>
+                {remoteFavorite ? (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                closeOnClick={false}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    deleteFavorite();
+                                }}
+                            >
+                                {t('view.favorite.action.remove_favorite')}
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </>
+                ) : null}
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>
-                {localGroups.length ? (
-                    <DropdownMenuGroup>
-                        {localGroups.map((groupName) => {
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>
+                    {localGroups.length ? (
+                        localGroups.map((groupName) => {
                             const isLocalFavorite = hasLocalFavorite(
                                 localFavorites,
                                 groupName,
@@ -485,17 +487,15 @@ export function FavoriteActionMenu({
                                     {localGroupLabel(localFavorites, groupName)}
                                 </DropdownMenuCheckboxItem>
                             );
-                        })}
-                    </DropdownMenuGroup>
-                ) : (
-                    <DropdownMenuGroup>
+                        })
+                    ) : (
                         <DropdownMenuItem disabled>
                             {t(
                                 'view.favorite.empty.no_local_favorite_groups_loaded'
                             )}
                         </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                )}
+                    )}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );

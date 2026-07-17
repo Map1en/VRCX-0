@@ -14,8 +14,9 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 use vrcx_0_application::{
     format_runtime_output_event, recommended_tokio_max_blocking_threads,
-    recommended_tokio_worker_threads, BackendRuntimeMode, RuntimeEventSink, RuntimeOutputLevel,
-    RuntimeOutputLine, RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+    recommended_tokio_worker_threads, BackendRuntimeMode, NoopUpdaterPort, RuntimeEventSink,
+    RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor,
+    RuntimeTaskHandle,
 };
 use vrcx_0_host::app_paths::resolve_app_data_dir;
 use vrcx_0_host::error_log::{
@@ -71,6 +72,10 @@ async fn async_main() -> ExitCode {
         launched_from_autostart: false,
         app_data_dir: app_data_dir.clone(),
         app_version: product_app_version(),
+        is_headless: true,
+        app_update_build_label: String::new(),
+        app_update_build_badge: String::new(),
+        updater_port: Arc::new(NoopUpdaterPort),
     }) {
         Ok(state) => state,
         Err(error) => {

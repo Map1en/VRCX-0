@@ -214,13 +214,14 @@ fn friend_feed_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
         string_field(value, "createdAt"),
     ]);
     let user_id = string_field(value, "userId");
+    let current_instance = activity_type == "OnPlayerJoining";
     Some(OverlayActivityCandidate {
         source_id: format!("friend-feed:{activity_type}:{user_id}:{created_at}"),
         activity_type,
         created_at,
         actor_user_id: user_id,
         actor_display_name: string_field(value, "displayName"),
-        current_instance: false,
+        current_instance,
         payload: value.clone(),
     })
 }

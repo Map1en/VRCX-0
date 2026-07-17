@@ -7,7 +7,10 @@ import { openUserDialog } from '@/services/dialogService';
 export function useUserDialogAvatarAuthorAction({
     currentAvatarTarget,
     currentEndpoint
-}: any) {
+}: {
+    currentAvatarTarget: string;
+    currentEndpoint: string;
+}) {
     const { t } = useTranslation();
 
     return async function showAvatarAuthor() {

@@ -10,9 +10,11 @@ import {
 } from '@/services/hostCapabilityService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import { ProfileRestoreResultHost } from './ProfileRestoreResultHost';
 import { ChangelogDialog } from './system-dialogs/ChangelogDialog';
 import { DatabaseUpgradeDialog } from './system-dialogs/DatabaseUpgradeDialog';
 import { LaunchOptionsDialog } from './system-dialogs/LaunchOptionsDialog';
+import { ProfileBackupDialogs } from './system-dialogs/ProfileBackupDialogs';
 import { RegistryBackupDialog } from './system-dialogs/RegistryBackupDialog';
 import { UpdaterDialog } from './system-dialogs/UpdaterDialog';
 import { VRChatConfigDialog } from './system-dialogs/VRChatConfigDialog';
@@ -90,6 +92,7 @@ export function SystemDialogsHost() {
 
     return (
         <>
+            <ProfileRestoreResultHost />
             <UpdateAvailableToastHost />
             <UpdaterDialog
                 open={Boolean(updaterOpen)}
@@ -130,6 +133,7 @@ export function SystemDialogsHost() {
                     databaseUpgradeOpen || systemHostDatabaseUpgradeOpen
                 )}
             />
+            <ProfileBackupDialogs />
             <KeyboardShortcutsDialog
                 open={Boolean(keyboardShortcutsOpen)}
                 onOpenChange={(open: boolean) =>

@@ -5,12 +5,17 @@ import {
     NetworkIcon,
     PlusIcon
 } from 'lucide-react';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ProxySettingsEditor } from '@/components/proxy/ProxySettingsEditor';
 import { cn } from '@/lib/utils';
 import {
+    profileBackupErrorKey,
+    profileBackupPhaseKey
+} from '@/services/profileBackupI18n';
+import {
+    DEFAULT_ZOOM_LEVEL,
     MAX_ZOOM_LEVEL,
     MIN_ZOOM_LEVEL,
     ZOOM_STEP
@@ -33,129 +38,47 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { Slider } from '@/ui/shadcn/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import {
+    AppUptimeValue,
+    ClockValue,
+    DurationValue,
+    NowPlayingProgress
+} from './StatusBarFooterParts';
+import { isFriendProfileLoadStatusVisible } from './statusBarFriendProfileLoad';
 import { StatusDot, StatusSegment } from './StatusBarParts';
 import { resolveProxyIndicatorState } from './statusBarProxy';
 import type {
-    DurationValueProps,
     StatusBarFooterProps,
+    StatusBarFriendProfileLoad,
     StatusBarInstanceQueue,
-    StatusBarMutualGraph,
-    StatusBarNowPlaying
+    StatusBarMutualGraph
 } from './statusBarTypes';
 
-let tickerNowMs = Date.now();
-let tickerTimer: number | null = null;
-const tickerListeners = new Set<(nowMs: number) => void>();
+function formatFriendProfileLoadValue(
+    friendProfileLoad: StatusBarFriendProfileLoad
+) {
+    const processed = Number(friendProfileLoad.processedFriends) || 0;
+    const total = Number(friendProfileLoad.totalFriends) || 0;
+    return total > 0 ? `${processed}/${total}` : '';
+}
 
-function emitTicker() {
-    tickerNowMs = Date.now();
-    for (const listener of tickerListeners) {
-        listener(tickerNowMs);
+function formatFriendProfileLoadTooltip(
+    friendProfileLoad: StatusBarFriendProfileLoad,
+    t: ReturnType<typeof useTranslation>['t']
+) {
+    const status = String(friendProfileLoad.status || 'idle');
+    if (status === 'error') {
+        return t('view.friend_list.error.failed_to_load_friend_details');
     }
-}
-
-function subscribeStatusTicker(listener: (nowMs: number) => void) {
-    tickerListeners.add(listener);
-    if (tickerTimer === null) {
-        tickerTimer = window.setInterval(emitTicker, 1000);
+    if (status === 'cancelled') {
+        return t('view.friend_list.success.friend_detail_loading_cancelled');
     }
-
-    return () => {
-        tickerListeners.delete(listener);
-        if (tickerListeners.size === 0 && tickerTimer !== null) {
-            window.clearInterval(tickerTimer);
-            tickerTimer = null;
-        }
-    };
-}
-
-function useStatusNowMs(active: boolean = true) {
-    const [nowMs, setNowMs] = useState(() => tickerNowMs);
-
-    useEffect(() => {
-        if (!active) {
-            return undefined;
-        }
-        setNowMs(tickerNowMs);
-        return subscribeStatusTicker(setNowMs);
-    }, [active]);
-
-    return nowMs;
-}
-
-function DurationValue({ active, formatter, startAtMs }: DurationValueProps) {
-    const normalizedStartAt = Number(startAtMs);
-    const enabled =
-        Boolean(active) &&
-        Number.isFinite(normalizedStartAt) &&
-        normalizedStartAt > 0;
-    const nowMs = useStatusNowMs(enabled);
-
-    if (!enabled) {
-        return '-';
+    if (status === 'cancelling') {
+        return t('view.friend_list.description.cancelling');
     }
-
-    return formatter(nowMs - normalizedStartAt);
-}
-
-function AppUptimeValue({
-    formatter,
-    startedAtMs
-}: {
-    formatter: (ms: number) => string;
-    startedAtMs: number;
-}) {
-    const nowMs = useStatusNowMs(true);
-    return formatter(nowMs - startedAtMs);
-}
-
-function ClockValue({
-    formatter,
-    offset
-}: {
-    formatter: (nowMs: number, offset: unknown) => string;
-    offset: unknown;
-}) {
-    const nowMs = useStatusNowMs(true);
-    return formatter(nowMs, offset);
-}
-
-function NowPlayingProgress({
-    formatter,
-    nowPlaying
-}: {
-    formatter: (ms: unknown) => string;
-    nowPlaying: StatusBarNowPlaying;
-}) {
-    const hasLength = Boolean(nowPlaying.length);
-    const nowMs = useStatusNowMs(hasLength && Boolean(nowPlaying.startedAt));
-    if (!hasLength) {
-        return null;
-    }
-
-    const lengthSeconds = Math.max(0, Number(nowPlaying.length) || 0);
-    const startedAtMs = nowPlaying.startedAt
-        ? Date.parse(nowPlaying.startedAt)
-        : Number.NaN;
-    const elapsedSeconds = Math.min(
-        lengthSeconds,
-        Math.max(
-            0,
-            Number(nowPlaying.position || 0) +
-                (Number.isFinite(startedAtMs)
-                    ? Math.floor((nowMs - startedAtMs) / 1000)
-                    : 0)
-        )
-    );
-
-    return (
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {`${formatter(elapsedSeconds * 1000)} / ${formatter(lengthSeconds * 1000)}`}
-        </span>
-    );
+    return t('view.friend_list.loading.loading_friend_details');
 }
 
 function formatInstanceQueueValue(
@@ -260,10 +183,12 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             gameStartedAt,
             isGameRunning,
             isSteamVRRunning,
+            friendProfileLoad,
             instanceQueue,
             mutualGraph,
             nowPlaying,
             proxyEditor,
+            profileBackup,
             proxyEnabled,
             proxyServer,
             runtimeGameState,
@@ -271,6 +196,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             timezoneOptions,
             visibility,
             visibleClocks,
+            worldCollectionImport,
             vrcStatus,
             zoomLevel,
             zoomLabel,
@@ -293,12 +219,14 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             onUpdateClockTimezone
         } = footer;
         const { t } = useTranslation();
-        const [zoomPopoverOpen, setZoomPopoverOpen] = useState(false);
         const proxyAnchorRef = useRef<HTMLSpanElement>(null);
         const instanceQueueActive = Boolean(
             instanceQueue?.active && instanceQueue?.instanceLocation
         );
         const mutualGraphStatus = String(mutualGraph?.status || 'idle');
+        const friendProfileLoadVisible = isFriendProfileLoadStatusVisible(
+            friendProfileLoad?.status
+        );
         const mutualGraphVisible = [
             'running',
             'cancelling',
@@ -318,30 +246,6 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             server: proxyServer,
             hasNetworkIssue: Boolean(proxyEnabled && vrcStatus.error)
         });
-
-        useEffect(() => {
-            if (!zoomPopoverOpen) {
-                return undefined;
-            }
-
-            function handleZoomWheel(event: WheelEvent) {
-                if (event.deltaY === 0) {
-                    return;
-                }
-
-                event.preventDefault();
-                onStepZoomLevel(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
-            }
-
-            window.addEventListener('wheel', handleZoomWheel, {
-                passive: false,
-                capture: true
-            });
-
-            return () => {
-                window.removeEventListener('wheel', handleZoomWheel, true);
-            };
-        }, [onStepZoomLevel, zoomPopoverOpen]);
 
         return (
             <footer
@@ -504,7 +408,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 vrcStatus.refreshing && 'animate-pulse',
                                 vrcStatusHasIssue
                                     ? vrcStatusIsMajor
-                                        ? 'bg-destructive'
+                                        ? 'bg-[var(--status-busy)]'
                                         : 'bg-[var(--status-askme)]'
                                     : undefined
                             )}
@@ -565,6 +469,80 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                     </div>
 
                     <div className="text-muted-foreground flex shrink-0 items-center justify-end overflow-hidden">
+                        <StatusSegment
+                            visible={profileBackup.status.state !== 'idle'}
+                            active={profileBackup.status.state === 'running'}
+                            warn={
+                                profileBackup.status.state === 'retryable' ||
+                                profileBackup.status.state === 'error'
+                            }
+                            showDot={false}
+                            label={t(
+                                profileBackup.status.state === 'running'
+                                    ? profileBackupPhaseKey(
+                                          profileBackup.status
+                                      )
+                                    : profileBackup.status.state === 'retryable'
+                                      ? 'profile_backup.retryable_short'
+                                      : 'profile_backup.error_short'
+                            )}
+                            value={
+                                profileBackup.status.state === 'running' &&
+                                profileBackup.status.percent !== null
+                                    ? `${profileBackup.status.percent}%`
+                                    : undefined
+                            }
+                            tooltip={
+                                profileBackup.status.error
+                                    ? t(
+                                          profileBackupErrorKey(
+                                              profileBackup.status.error.code
+                                          )
+                                      )
+                                    : undefined
+                            }
+                            onClick={
+                                profileBackup.status.state === 'retryable' ||
+                                profileBackup.status.state === 'error'
+                                    ? profileBackup.onOpenDetails
+                                    : undefined
+                            }
+                            className="text-muted-foreground -ml-px border-l"
+                            labelClassName={
+                                profileBackup.status.state === 'retryable' ||
+                                profileBackup.status.state === 'error'
+                                    ? 'text-destructive'
+                                    : undefined
+                            }
+                            valueClassName="text-muted-foreground"
+                        />
+                        <StatusSegment
+                            visible={worldCollectionImport.active}
+                            showDot={false}
+                            label={t('status_bar.world_collection_importing', {
+                                progress: worldCollectionImport.progress,
+                                total: worldCollectionImport.total
+                            })}
+                            className="text-muted-foreground -ml-px border-l"
+                        />
+                        <StatusSegment
+                            visible={friendProfileLoadVisible}
+                            showDot={false}
+                            label={t(
+                                friendProfileLoad?.status === 'cancelling'
+                                    ? 'view.friend_list.description.cancelling'
+                                    : 'view.friend_list.loading.loading_friend_details'
+                            )}
+                            value={formatFriendProfileLoadValue(
+                                friendProfileLoad
+                            )}
+                            tooltip={formatFriendProfileLoadTooltip(
+                                friendProfileLoad,
+                                t
+                            )}
+                            className="text-muted-foreground -ml-px border-l"
+                            valueClassName="text-muted-foreground"
+                        />
                         <StatusSegment
                             visible={
                                 visibility.mutualGraph && mutualGraphVisible
@@ -669,10 +647,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                               ))
                             : null}
                         {visibility.zoom ? (
-                            <Popover
-                                open={zoomPopoverOpen}
-                                onOpenChange={setZoomPopoverOpen}
-                            >
+                            <Popover>
                                 <PopoverTrigger
                                     render={
                                         <Button
@@ -712,7 +687,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                             variant="outline"
                                             size="icon"
                                             aria-label={t('app_menu.zoom_out')}
-                                            className="size-7 shrink-0"
+                                            className="size-10 shrink-0"
                                             disabled={
                                                 zoomLevel <= MIN_ZOOM_LEVEL
                                             }
@@ -722,15 +697,32 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                         >
                                             <MinusIcon data-icon="icon" />
                                         </Button>
-                                        <div className="bg-muted/40 flex min-w-16 justify-center rounded-md border px-2 py-1 text-sm font-medium tabular-nums">
-                                            {zoomLabel}
-                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            aria-label={t(
+                                                'app_menu.reset_zoom'
+                                            )}
+                                            className="h-10 min-w-0 flex-1 gap-2 px-3"
+                                            onClick={() =>
+                                                onSetZoomLevel(
+                                                    DEFAULT_ZOOM_LEVEL
+                                                )
+                                            }
+                                        >
+                                            <span className="text-sm font-medium tabular-nums">
+                                                {zoomLabel}
+                                            </span>
+                                            <span className="text-muted-foreground truncate text-xs font-normal">
+                                                {t('app_menu.reset_zoom')}
+                                            </span>
+                                        </Button>
                                         <Button
                                             type="button"
                                             variant="outline"
                                             size="icon"
                                             aria-label={t('app_menu.zoom_in')}
-                                            className="size-7 shrink-0"
+                                            className="size-10 shrink-0"
                                             disabled={
                                                 zoomLevel >= MAX_ZOOM_LEVEL
                                             }
@@ -740,24 +732,6 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                         >
                                             <PlusIcon data-icon="icon" />
                                         </Button>
-                                    </div>
-                                    <Slider
-                                        aria-label={t('status_bar.zoom')}
-                                        min={MIN_ZOOM_LEVEL}
-                                        max={MAX_ZOOM_LEVEL}
-                                        step={ZOOM_STEP}
-                                        value={[zoomLevel]}
-                                        onValueChange={(value) =>
-                                            onSetZoomLevel(
-                                                Array.isArray(value)
-                                                    ? value[0]
-                                                    : value
-                                            )
-                                        }
-                                    />
-                                    <div className="text-muted-foreground flex justify-between text-[11px] tabular-nums">
-                                        <span>{`${MIN_ZOOM_LEVEL}%`}</span>
-                                        <span>{`${MAX_ZOOM_LEVEL}%`}</span>
                                     </div>
                                 </PopoverContent>
                             </Popover>

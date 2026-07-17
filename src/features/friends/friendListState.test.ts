@@ -16,21 +16,24 @@ import {
 
 const STORAGE_KEY = 'vrcx-0:table:friendList';
 
-function installLocalStorage(initial: any = {}) {
+function installLocalStorage(initial: Record<string, unknown> = {}) {
     const store = new Map(
-        Object.entries(initial).map(([key, value]: any) => [key, String(value)])
+        Object.entries(initial).map(([key, value]) => [key, String(value)])
     );
 
-    globalThis.window = {
-        localStorage: {
-            getItem(key: any) {
-                return store.has(key) ? store.get(key) : null;
-            },
-            setItem(key: any, value: any) {
-                store.set(key, String(value));
+    Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: {
+            localStorage: {
+                getItem(key: string) {
+                    return store.has(key) ? store.get(key) : null;
+                },
+                setItem(key: string, value: string) {
+                    store.set(key, String(value));
+                }
             }
         }
-    } as any;
+    });
 
     return store;
 }
@@ -75,16 +78,19 @@ describe('friendListState', () => {
         });
         expect(readPersistedFriendListState()).toEqual({});
 
-        globalThis.window = {
-            localStorage: {
-                getItem() {
-                    throw new Error('storage blocked');
-                },
-                setItem() {
-                    throw new Error('storage blocked');
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                localStorage: {
+                    getItem() {
+                        throw new Error('storage blocked');
+                    },
+                    setItem() {
+                        throw new Error('storage blocked');
+                    }
                 }
             }
-        } as any;
+        });
         expect(readPersistedFriendListState()).toEqual({});
         expect(() =>
             writePersistedFriendListState({ pageSize: 10 })
@@ -138,8 +144,7 @@ describe('friendListState', () => {
             'status',
             'avatar',
             ...FRIEND_LIST_COLUMN_IDS.filter(
-                (columnId: any) =>
-                    columnId !== 'status' && columnId !== 'avatar'
+                (columnId) => columnId !== 'status' && columnId !== 'avatar'
             )
         ]);
 

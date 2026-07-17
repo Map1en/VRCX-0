@@ -8,9 +8,10 @@ import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
+import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
 import type { UserFact } from '@/domain/users/userFacts';
-import { UserPickerRow } from '@/features/charts/components/MutualFriendsViewParts';
 import { userImage } from '@/services/entityMediaService';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -328,11 +329,14 @@ export function SettingsSocialTab({ social }: SettingsSocialTabProps) {
                                         >
                                             <span className="bg-muted flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full">
                                                 {imageUrl ? (
-                                                    <img
+                                                    <FadeInImage
                                                         src={imageUrl}
                                                         alt=""
                                                         loading="lazy"
                                                         className="size-full object-cover"
+                                                        fallback={
+                                                            <UserIcon className="text-muted-foreground size-3" />
+                                                        }
                                                     />
                                                 ) : (
                                                     <UserIcon className="text-muted-foreground size-3" />

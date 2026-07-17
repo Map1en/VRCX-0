@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     setCommunityThemeAppearanceControl: vi.fn(),
     setVrcxCssLayer: vi.fn(),
     setVrcxCssLayersSuppressed: vi.fn(),
+    isBackgroundImageCustomSourceRotating: vi.fn(),
     resolveBackgroundImageCustomSnapshot: vi.fn()
 }));
 
@@ -54,7 +55,7 @@ vi.mock('../themeService', () => ({
     setCommunityThemeAppearanceControl: mocks.setCommunityThemeAppearanceControl
 }));
 
-vi.mock('../vrcxCssLayerService', () => ({
+vi.mock('../vrcx0CssLayerService', () => ({
     setVrcxCssLayer: mocks.setVrcxCssLayer,
     setVrcxCssLayersSuppressed: mocks.setVrcxCssLayersSuppressed
 }));
@@ -78,7 +79,8 @@ vi.mock('./localSourceService', () => ({
         folderPath,
         rotationInterval
     }),
-    isBackgroundImageCustomSourceRotating: () => false,
+    isBackgroundImageCustomSourceRotating:
+        mocks.isBackgroundImageCustomSourceRotating,
     normalizeBackgroundImageCustomSource: (value: unknown) => {
         if (!value || typeof value !== 'object') {
             return null;
@@ -139,10 +141,15 @@ import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { useCommunityThemeStore } from '@/state/communityThemeStore';
 
 import {
+    disableBackgroundImage,
+    enableBackgroundImageCustom,
     initializeBackgroundImage,
     setBackgroundImageMode
 } from './backgroundImageService';
-import type { BackgroundImageSnapshot } from './types';
+import type {
+    BackgroundImageCustomSource,
+    BackgroundImageSnapshot
+} from './types';
 
 const DAILY_SNAPSHOT: BackgroundImageSnapshot = {
     mode: 'daily',
@@ -154,6 +161,27 @@ const DAILY_SNAPSHOT: BackgroundImageSnapshot = {
     source: 'NASA EPIC',
     resolvedAt: '2026-06-08T09:30:00.000Z',
     resolvedForKey: '2026-06-08'
+};
+
+const CUSTOM_SOURCE: BackgroundImageCustomSource = {
+    kind: 'files',
+    paths: ['C:\\images\\one.jpg', 'C:\\images\\two.jpg'],
+    folderPath: '',
+    rotationInterval: 'hourly'
+};
+
+const CUSTOM_SNAPSHOT: BackgroundImageSnapshot = {
+    mode: 'custom',
+    sourceKind: 'files',
+    imageUrl: 'asset://localhost/one.jpg',
+    imagePath: 'C:\\images\\one.jpg',
+    imageCount: 2,
+    title: 'one.jpg',
+    author: 'Custom image source',
+    license: 'Local file',
+    source: '2 selected images',
+    resolvedAt: '2026-06-08T10:00:00.000Z',
+    resolvedForKey: '2026-06-08T10'
 };
 
 function resetStores() {
@@ -228,6 +256,7 @@ describe('backgroundImageService', () => {
         mocks.resolveThemeMode.mockReturnValue('system');
         mocks.resolveThemeColor.mockReturnValue('default');
         mocks.setCommunityThemeAppearanceControl.mockResolvedValue(undefined);
+        mocks.isBackgroundImageCustomSourceRotating.mockReturnValue(false);
     });
 
     afterEach(() => {
@@ -262,6 +291,9 @@ describe('backgroundImageService', () => {
         expect(mocks.setCommunityThemeAppearanceControl).toHaveBeenCalledWith(
             true
         );
+        expect(
+            mocks.setVrcxCssLayer.mock.invocationCallOrder[0]
+        ).toBeGreaterThan(mocks.setBool.mock.invocationCallOrder[0]);
     });
 
     it('keeps custom mode disabled when no custom source is configured', async () => {
@@ -303,5 +335,52 @@ describe('backgroundImageService', () => {
             'system'
         );
         expect(mocks.applyThemeColor).toHaveBeenCalledWith('default');
+    });
+
+    it('does not let a stale custom operation overwrite a newer disabled state', async () => {
+        let resolveSnapshot: (snapshot: BackgroundImageSnapshot) => void = () =>
+            undefined;
+        const pendingSnapshot = new Promise<BackgroundImageSnapshot>(
+            (resolve) => {
+                resolveSnapshot = resolve;
+            }
+        );
+        mocks.resolveBackgroundImageCustomSnapshot.mockReturnValueOnce(
+            pendingSnapshot
+        );
+
+        const enablePromise = enableBackgroundImageCustom(CUSTOM_SOURCE);
+        await vi.waitFor(() => {
+            expect(
+                mocks.resolveBackgroundImageCustomSnapshot
+            ).toHaveBeenCalledOnce();
+        });
+        await disableBackgroundImage();
+        resolveSnapshot(CUSTOM_SNAPSHOT);
+
+        await expect(enablePromise).resolves.toBe(false);
+        expect(useBackgroundImageStore.getState()).toMatchObject({
+            mode: 'off',
+            enabled: false,
+            snapshot: null,
+            loading: false
+        });
+    });
+
+    it('clears the custom rotation timer when the background image is disabled', async () => {
+        mocks.isBackgroundImageCustomSourceRotating.mockReturnValue(true);
+        mocks.resolveBackgroundImageCustomSnapshot.mockResolvedValue(
+            CUSTOM_SNAPSHOT
+        );
+
+        await expect(enableBackgroundImageCustom(CUSTOM_SOURCE)).resolves.toBe(
+            true
+        );
+        expect(vi.getTimerCount()).toBe(1);
+
+        await disableBackgroundImage();
+
+        expect(vi.getTimerCount()).toBe(0);
+        expect(useBackgroundImageStore.getState().enabled).toBe(false);
     });
 });

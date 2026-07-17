@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
+import { cn } from '@/lib/utils';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
@@ -175,12 +176,16 @@ function FeedFilterButtons({
     const { t } = useTranslation();
 
     return (
-        <div className="flex min-w-0 flex-[0_1_auto] flex-nowrap items-center gap-2 overflow-x-auto">
+        <div className="border-border/50 bg-muted/30 flex min-w-0 flex-[0_1_auto] flex-nowrap items-center gap-0.5 overflow-x-auto rounded-lg border p-0.5">
             <Button
                 type="button"
-                variant={activeFilters.length === 0 ? 'secondary' : 'outline'}
+                variant="ghost"
                 size="sm"
-                className="shrink-0"
+                className={cn(
+                    'shrink-0 rounded-md px-3 font-normal',
+                    activeFilters.length === 0 &&
+                        'bg-background text-foreground hover:bg-background shadow-xs'
+                )}
                 onClick={onClearFeedFilters}
             >
                 {t('view.search.avatar.all')}
@@ -191,9 +196,13 @@ function FeedFilterButtons({
                     <Button
                         key={filter}
                         type="button"
-                        variant={active ? 'secondary' : 'outline'}
+                        variant="ghost"
                         size="sm"
-                        className="shrink-0"
+                        className={cn(
+                            'shrink-0 rounded-md px-3 font-normal',
+                            active &&
+                                'bg-background text-foreground hover:bg-background shadow-xs'
+                        )}
                         onClick={() => onToggleFeedFilter(filter)}
                     >
                         {t(`view.feed.filters.${filter}`)}
@@ -317,7 +326,7 @@ export function FeedToolbar({
                                 <Button
                                     type="button"
                                     variant={
-                                        favoritesOnly ? 'secondary' : 'outline'
+                                        favoritesOnly ? 'secondary' : 'ghost'
                                     }
                                     size="icon-sm"
                                     aria-label={favoritesOnlyLabel}

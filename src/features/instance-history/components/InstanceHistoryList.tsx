@@ -7,6 +7,7 @@ import {
     XIcon
 } from 'lucide-react';
 import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -17,6 +18,7 @@ import {
 import { DialogEmptyState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
+import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import type { PreviousInstanceRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
 import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatClock, formatDateFilter } from '@/lib/dateTime';
@@ -35,12 +37,26 @@ import {
 const SORT_FIELDS = ['date', 'location', 'duration'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
 
-function rowKey(row: PreviousInstanceRow, index: number): string {
-    return `${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || index}`;
+const HEADER_ENTRY_HEIGHT = 28;
+const RECORD_ENTRY_HEIGHT = 36;
+
+export function rowKey(
+    row: PreviousInstanceRow,
+    fallback: string | number = ''
+): string {
+    return `${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || fallback}`;
 }
 
 function dayLabel(row: PreviousInstanceRow): string {
     return formatDateFilter(row?.created_at || row?.createdAt, 'date');
+}
+
+type InstanceHistoryEntry =
+    | { key: string; kind: 'header'; label: string }
+    | { key: string; kind: 'row'; row: PreviousInstanceRow; label: string };
+
+function estimateInstanceHistoryEntrySize(entry: InstanceHistoryEntry): number {
+    return entry.kind === 'header' ? HEADER_ENTRY_HEIGHT : RECORD_ENTRY_HEIGHT;
 }
 
 type InstanceHistoryRowProps = {
@@ -96,12 +112,9 @@ function InstanceHistoryRow({
                     '—'
                 )}
             </div>
-            <div className="relative flex shrink-0 items-center justify-end">
-                <span className="text-muted-foreground text-xs tabular-nums group-hover:invisible">
-                    {rowDuration(row)}
-                </span>
+            <div className="relative flex shrink-0 items-center">
                 <div
-                    className="bg-muted invisible absolute right-0 flex items-center gap-1 pl-3 group-hover:visible"
+                    className="bg-muted invisible absolute inset-y-0 right-full z-10 mr-1.5 flex items-center gap-1 rounded-md px-1 group-focus-within:visible group-hover:visible"
                     onClick={(event: MouseEvent<HTMLDivElement>) =>
                         event.stopPropagation()
                     }
@@ -126,6 +139,9 @@ function InstanceHistoryRow({
                         <Trash2Icon data-icon="icon" />
                     </Button>
                 </div>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                    {rowDuration(row)}
+                </span>
             </div>
         </div>
     );
@@ -139,15 +155,9 @@ type InstanceHistoryListProps = {
     selectedRow: PreviousInstanceRow | null;
     search: string;
     onSearchChange: (value: string) => void;
-    pageSize: number;
-    onPageSizeChange: (value: number) => void;
     sortKey: string;
     sortDesc: boolean;
     onSortSelect: (sortKey: SortField, sortDesc: boolean) => void;
-    currentPageIndex: number;
-    totalPages: number;
-    onPreviousPage: () => void;
-    onNextPage: () => void;
     onOpenDetails: (row: PreviousInstanceRow) => void;
     onDeleteRow: (row: PreviousInstanceRow) => void;
     dateRangeControl?: ReactNode;
@@ -164,15 +174,9 @@ export function InstanceHistoryList({
     selectedRow,
     search,
     onSearchChange,
-    pageSize,
-    onPageSizeChange,
     sortKey,
     sortDesc,
     onSortSelect,
-    currentPageIndex,
-    totalPages,
-    onPreviousPage,
-    onNextPage,
     onOpenDetails,
     onDeleteRow,
     dateRangeControl = null,
@@ -196,7 +200,57 @@ export function InstanceHistoryList({
         duration: t('table.previous_instances.time')
     };
 
-    let lastDayLabel = '';
+    const entries = useMemo<InstanceHistoryEntry[]>(() => {
+        const result: InstanceHistoryEntry[] = [];
+        let lastLabel = '';
+        visibleRows.forEach((row, index) => {
+            const label = grouped ? dayLabel(row) : '';
+            if (grouped && label !== lastLabel) {
+                result.push({
+                    key: `header:${label}:${index}`,
+                    kind: 'header',
+                    label
+                });
+                lastLabel = label;
+            }
+            result.push({
+                key: rowKey(row, index),
+                kind: 'row',
+                row,
+                label
+            });
+        });
+        return result;
+    }, [grouped, visibleRows]);
+
+    const {
+        getRowRef,
+        viewportRef,
+        virtualItems,
+        totalSize,
+        firstVisibleIndex,
+        scrollKeyToView
+    } = useVirtualSidebarRows(entries, estimateInstanceHistoryEntrySize);
+
+    const firstVisibleEntry =
+        entries[Math.min(firstVisibleIndex, entries.length - 1)];
+    const pinnedLabel =
+        grouped && firstVisibleEntry && firstVisibleEntry.kind !== 'header'
+            ? firstVisibleEntry.label
+            : '';
+
+    useEffect(() => {
+        if (!selectedRow) {
+            return;
+        }
+        const entry = entries.find(
+            (item) => item.kind === 'row' && item.row === selectedRow
+        );
+        if (!entry) {
+            return;
+        }
+        scrollKeyToView(entry.key, grouped ? HEADER_ENTRY_HEIGHT : 0);
+    }, [entries, grouped, scrollKeyToView, selectedRow]);
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3">
@@ -322,27 +376,42 @@ export function InstanceHistoryList({
             </div>
 
             {visibleRows.length ? (
-                <div className="min-h-0 flex-1 overflow-auto rounded-md border p-1">
-                    {visibleRows.map((row, index) => {
-                        const label = grouped ? dayLabel(row) : '';
-                        const showHeader = grouped && label !== lastDayLabel;
-                        lastDayLabel = label;
-                        return (
-                            <div key={rowKey(row, index)}>
-                                {showHeader ? (
-                                    <div className="bg-background/95 text-muted-foreground sticky top-0 z-10 px-2 pt-2 pb-1 text-[11px] font-semibold tracking-wide uppercase backdrop-blur">
-                                        {label}
-                                    </div>
-                                ) : null}
-                                <InstanceHistoryRow
-                                    row={row}
-                                    selected={selectedRow === row}
-                                    onOpenDetails={onOpenDetails}
-                                    onDeleteRow={onDeleteRow}
-                                />
-                            </div>
-                        );
-                    })}
+                <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border">
+                    {pinnedLabel ? (
+                        <div className="bg-background/95 text-muted-foreground absolute inset-x-0 top-0 z-20 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide uppercase backdrop-blur">
+                            {pinnedLabel}
+                        </div>
+                    ) : null}
+                    <div ref={viewportRef} className="h-full overflow-auto">
+                        <div
+                            className="relative w-full p-1"
+                            style={{ height: `${totalSize}px` }}
+                        >
+                            {virtualItems.map(({ key, start, row: entry }) => (
+                                <div
+                                    key={String(key)}
+                                    ref={getRowRef(key)}
+                                    className="absolute top-1 right-1 left-1"
+                                    style={{
+                                        transform: `translateY(${start}px)`
+                                    }}
+                                >
+                                    {entry.kind === 'header' ? (
+                                        <div className="text-muted-foreground px-2 pt-2 pb-1 text-[11px] font-semibold tracking-wide uppercase">
+                                            {entry.label}
+                                        </div>
+                                    ) : (
+                                        <InstanceHistoryRow
+                                            row={entry.row}
+                                            selected={selectedRow === entry.row}
+                                            onOpenDetails={onOpenDetails}
+                                            onDeleteRow={onDeleteRow}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <DialogEmptyState
@@ -350,66 +419,29 @@ export function InstanceHistoryList({
                         'dialog.previous_instances.empty.no_instance_records'
                     )}
                     description={
-                        searchActive ? t('common.search_no_results') : undefined
+                        anyFilterActive
+                            ? t('common.search_no_results')
+                            : undefined
+                    }
+                    action={
+                        anyFilterActive ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    onSearchChange('');
+                                    onClearDate?.();
+                                }}
+                            >
+                                <ListXIcon data-icon="inline-start" />
+                                {t('common.actions.clear')}
+                            </Button>
+                        ) : undefined
                     }
                     className="min-h-40 flex-none"
                 />
             )}
-
-            {!isDayMode ? (
-                <div className="flex items-center justify-between gap-2">
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <Select
-                            value={String(pageSize)}
-                            onValueChange={(value) =>
-                                onPageSizeChange(
-                                    Number.parseInt(value ?? '', 10) || 10
-                                )
-                            }
-                        >
-                            <SelectTrigger size="sm" className="w-20">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {[10, 25, 50, 100].map((size) => (
-                                        <SelectItem
-                                            key={size}
-                                            value={String(size)}
-                                        >
-                                            {size}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <span>
-                            {t('dialog.previous_instances.label.page')}{' '}
-                            {currentPageIndex + 1} / {totalPages}
-                        </span>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={currentPageIndex <= 0}
-                            onClick={onPreviousPage}
-                        >
-                            {t('table.pagination.previous')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={currentPageIndex >= totalPages - 1}
-                            onClick={onNextPage}
-                        >
-                            {t('table.pagination.next')}
-                        </Button>
-                    </div>
-                </div>
-            ) : null}
         </div>
     );
 }

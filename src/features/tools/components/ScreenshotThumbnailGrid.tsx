@@ -6,6 +6,7 @@ import {
     useLocationMetadataBatch,
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -208,11 +209,21 @@ export function ScreenshotThumbnailCard({
                 className={`bg-muted relative flex ${mediaHeight} items-center justify-center overflow-hidden`}
             >
                 {thumbnailUrl ? (
-                    <img
+                    <FadeInImage
                         src={thumbnailUrl}
                         alt={item.fileName}
                         className="size-full object-cover"
                         loading="lazy"
+                        fallback={
+                            <div className="text-muted-foreground flex flex-col items-center gap-1 text-xs">
+                                <ImageIcon />
+                                <span>
+                                    {t(
+                                        'dialog.screenshot_metadata.thumbnail_failed'
+                                    )}
+                                </span>
+                            </div>
+                        }
                     />
                 ) : loadState === 'error' ? (
                     <div className="text-muted-foreground flex flex-col items-center gap-1 text-xs">

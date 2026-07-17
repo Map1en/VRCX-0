@@ -172,6 +172,47 @@ pub fn memo_get_world(
         }))
 }
 
+pub fn memo_get_worlds_many(
+    db: &DatabaseService,
+    world_ids: &[String],
+) -> Result<Vec<WorldMemoOutput>, Error> {
+    ensure_global_store_tables(db)?;
+    let world_ids = world_ids
+        .iter()
+        .map(normalize_text)
+        .filter(|id| !id.is_empty())
+        .collect::<Vec<_>>();
+    if world_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut params = ParamsBuilder::new();
+    let placeholders = world_ids
+        .iter()
+        .enumerate()
+        .map(|(index, world_id)| {
+            let param = format!("world_id_{index}");
+            params = std::mem::take(&mut params).set(&param, world_id.clone());
+            format!("@{param}")
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    Ok(db
+        .execute(
+            &format!(
+                "SELECT world_id, edited_at, memo FROM world_memos WHERE world_id IN ({placeholders})"
+            ),
+            &params.build(),
+        )?
+        .into_iter()
+        .map(|row| WorldMemoOutput {
+            world_id: row_string(&row, 0),
+            edited_at: row_string(&row, 1),
+            memo: row_string(&row, 2),
+        })
+        .collect())
+}
+
 pub fn memo_get_avatar(
     db: &DatabaseService,
     avatar_id: String,

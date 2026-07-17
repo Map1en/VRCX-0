@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     buildLocalInstanceActionGateMap,
     evaluateLocalInstanceActionGates,
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type { FavoriteKind } from './favoritesTypes';
@@ -18,6 +19,8 @@ import { useFavoritesLayoutPreferences } from './useFavoritesLayoutPreferences';
 import { useFavoritesRuntime } from './useFavoritesRuntime';
 import { useFavoritesSelectionState } from './useFavoritesSelectionState';
 import { useFavoritesViewData } from './useFavoritesViewData';
+
+const FAVORITES_REVISION_DEBOUNCE_MS = 400;
 
 type FavoriteSeedRecord = Record<string, unknown> & {
     state?: unknown;
@@ -116,9 +119,7 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
     );
     const selection = useFavoritesSelectionState({
         contentItems: viewData.contentItems,
-        isSearchActive: viewData.isSearchActive,
-        kind,
-        selectedSource: filters.selectedSource
+        kind
     });
     const actions = useFavoritesActions({
         allItems: viewData.allItems,
@@ -135,7 +136,6 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         newLocalGroupName,
         remoteGroups: viewData.remoteGroups,
         refreshRemoteDetails: collections.actionInputs.refreshRemoteDetails,
-        selectedGroup: viewData.selectedGroup,
         selectedContentItems: selection.selectedContentItems,
         selectedGroupKey: filters.selectedGroupKey,
         selectedSource: filters.selectedSource,
@@ -143,7 +143,6 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         setAvatarHistoryLoading:
             collections.actionInputs.setAvatarHistoryLoading,
         setCreatingLocalGroup,
-        setEditMode: selection.setEditMode,
         setExportDialogOpen,
         setNewLocalGroupName,
         setSelectedGroupKey: filters.setSelectedGroupKey,
@@ -160,6 +159,23 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         setSelectedGroupKey: filters.setSelectedGroupKey,
         setSelectedSource: filters.setSelectedSource
     });
+
+    const favoriteRevision = useFavoriteRevisionStore(
+        (state) => state.revision
+    );
+    const refreshFavoritesRef = useRef(actions.refreshFavorites);
+    refreshFavoritesRef.current = actions.refreshFavorites;
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const pending = useFavoriteRevisionStore
+                .getState()
+                .consumePending();
+            if (pending.remote || pending.unknown) {
+                void refreshFavoritesRef.current({ silent: true });
+            }
+        }, FAVORITES_REVISION_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [favoriteRevision]);
 
     useEffect(() => {
         setExportDialogOpen(false);

@@ -8,6 +8,7 @@ use serde::Serialize;
 const ERROR_LOG_FILE: &str = "error-log.txt";
 pub const HEADLESS_ERROR_LOG_FILE: &str = "error-headless.txt";
 const MAX_ERROR_LOG_BYTES: u64 = 10 * 1024 * 1024;
+const PANIC_BACKTRACE_MARKER: &str = "\n[backtrace]\n";
 static ERROR_LOG_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
 pub fn default_app_data_dir() -> Option<PathBuf> {
@@ -67,6 +68,24 @@ pub fn append_error_log_with_version(
     app_version: &str,
 ) {
     append_error_log_to_file_with_version(app_data, ERROR_LOG_FILE, source, message, app_version);
+}
+
+pub fn append_panic_error_log_with_version(
+    app_data: &Path,
+    panic_info: &std::panic::PanicHookInfo<'_>,
+    app_version: &str,
+) {
+    let message = format!(
+        "{panic_info}{PANIC_BACKTRACE_MARKER}{}",
+        std::backtrace::Backtrace::force_capture()
+    );
+    append_error_log_with_version(app_data, "rust:panic", &message, app_version);
+}
+
+pub fn panic_summary_for_telemetry(message: &str) -> &str {
+    message
+        .rsplit_once(PANIC_BACKTRACE_MARKER)
+        .map_or(message, |(summary, _)| summary)
 }
 
 pub fn append_headless_error_log(app_data: &Path, source: &str, message: &str) {
@@ -397,5 +416,21 @@ mod tests {
         assert_eq!(entries[0].message, "second error");
         assert_eq!(entries[1].ts_iso, "2026-07-01T00:00:00.004Z");
         assert_eq!(entries[1].app_version, None);
+    }
+
+    #[test]
+    fn keeps_panic_backtrace_local_and_excludes_it_from_telemetry_summary() {
+        let dir = test_dir("panic-backtrace");
+        let message = "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed\n[backtrace]\n   0: 0x7ff612340000\n   1: 0x7ff612340123";
+        append_error_log_with_version(&dir, "rust:panic", message, "2.9.2");
+
+        let entries = drain_client_error_log(&dir, None, 10);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].message, message);
+        assert_eq!(
+            panic_summary_for_telemetry(&entries[0].message),
+            "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed"
+        );
     }
 }

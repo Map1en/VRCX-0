@@ -9,18 +9,31 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 
+type FriendListUserLoadDialogProps = {
+    open: boolean;
+    progress: {
+        current: number;
+        total: number;
+        cancelled: boolean;
+    };
+    percent: number;
+    onCancel(): void;
+    onMinimize(): void;
+};
+
 export function FriendListUserLoadDialog({
     open,
     progress,
     percent,
-    onCancel
-}: any) {
+    onCancel,
+    onMinimize
+}: FriendListUserLoadDialogProps) {
     const { t } = useTranslation();
 
     return (
         <Dialog
             open={open}
-            onOpenChange={(nextOpen) => !nextOpen && onCancel()}
+            onOpenChange={(nextOpen) => !nextOpen && onMinimize()}
         >
             <DialogContent showCloseButton={false} className="sm:max-w-md">
                 <DialogHeader>
@@ -47,7 +60,14 @@ export function FriendListUserLoadDialog({
                         {progress.current} / {progress.total}
                     </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="sm:justify-between">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onMinimize}
+                    >
+                        {t('nativeShell.menu.window.minimize')}
+                    </Button>
                     <Button
                         type="button"
                         variant="secondary"

@@ -260,7 +260,9 @@ export function AppMenuBar({
             <Menubar className="h-full border-0 bg-transparent !p-0 shadow-none">
                 <MenubarMenu>
                     <MenubarTrigger className="text-muted-foreground hover:text-foreground aria-expanded:text-foreground h-full rounded-none px-2 !py-0 text-xs">
-                        {t('app_menu.app')}
+                        <span className="vrcx-0-brand">
+                            {t('app_menu.app')}
+                        </span>
                     </MenubarTrigger>
                     <MenubarContent align="start">
                         <MenubarGroup>

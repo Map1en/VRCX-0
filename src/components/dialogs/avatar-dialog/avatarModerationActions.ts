@@ -3,6 +3,11 @@ import { toast } from 'sonner';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
+import type {
+    AvatarImposterAction,
+    AvatarModerationActionDependencies
+} from './avatarDialogTypes';
+
 export function createAvatarModerationActions({
     actionStatusRef,
     avatar,
@@ -15,13 +20,22 @@ export function createAvatarModerationActions({
     setActionStatus,
     setAvatarBlocked,
     t
-}: any) {
-    async function updateAvatarImposter(action: any) {
+}: AvatarModerationActionDependencies) {
+    async function updateAvatarImposter(action: AvatarImposterAction) {
         if (!canManageAvatar || actionStatusRef.current !== 'idle') {
             return;
         }
 
-        const labels: any = {
+        const labels: Record<
+            AvatarImposterAction,
+            {
+                title: string;
+                confirmText: string;
+                success: string;
+                error: string;
+                destructive?: boolean;
+            }
+        > = {
             create: {
                 title: t('dialog.avatar.modal.create_impostor_title'),
                 confirmText: t('dialog.avatar.modal.create'),
@@ -106,7 +120,7 @@ export function createAvatarModerationActions({
         }
     }
 
-    async function setAvatarBlock(enabled: any) {
+    async function setAvatarBlock(enabled: boolean) {
         if (
             !avatar.id ||
             isCurrentAvatar ||

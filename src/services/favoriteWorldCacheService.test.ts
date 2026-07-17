@@ -28,7 +28,7 @@ describe('favoriteWorldCacheService', () => {
     });
 
     it('normalizes world details before writing the cache DB', async () => {
-        const world: any = {
+        const world = {
             id: ' wrld_cache ',
             name: 'Cached World',
             releaseStatus: 'public',
@@ -115,7 +115,7 @@ describe('favoriteWorldCacheService', () => {
     });
 
     it('refreshes DB cache automatically for local favorite worlds', async () => {
-        const world: any = {
+        const world = {
             id: 'wrld_cached',
             name: 'Cached Local World',
             releaseStatus: 'public',
@@ -141,7 +141,7 @@ describe('favoriteWorldCacheService', () => {
     });
 
     it('refreshes DB cache automatically for remote favorite worlds', async () => {
-        const world: any = {
+        const world = {
             id: 'wrld_remote_cached',
             name: 'Cached Remote World',
             releaseStatus: 'public',

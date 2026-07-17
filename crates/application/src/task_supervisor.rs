@@ -18,6 +18,15 @@ pub trait RuntimeTaskExecutor: Send + Sync {
     fn spawn(&self, task: RuntimeTask) -> Box<dyn RuntimeTaskHandle>;
 }
 
+fn wait_until_deadline(deadline: Instant, mut is_finished: impl FnMut() -> bool) {
+    loop {
+        if is_finished() || Instant::now() >= deadline {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
 #[derive(Clone)]
 pub struct TaskStopToken {
     stop_requested: Arc<AtomicBool>,
@@ -168,6 +177,7 @@ impl TaskSupervisor {
 
     pub fn stop_all(&self) {
         const GRACE_PERIOD: Duration = Duration::from_millis(200);
+        let deadline = Instant::now() + GRACE_PERIOD;
 
         match self.stop_tokens.lock() {
             Ok(tokens) => {
@@ -177,8 +187,8 @@ impl TaskSupervisor {
             }
             Err(error) => tracing::warn!("failed to lock runtime task stop tokens: {error}"),
         }
-        self.join_tracked_tasks(GRACE_PERIOD);
-        self.join_fallback_threads(GRACE_PERIOD);
+        self.finish_or_abort_tracked_tasks(deadline);
+        self.join_fallback_threads(deadline);
     }
 
     fn join_finished_task_handles(&self) {
@@ -197,12 +207,24 @@ impl TaskSupervisor {
         *handles = pending;
     }
 
-    fn join_tracked_tasks(&self, timeout: Duration) {
+    fn finish_or_abort_tracked_tasks(&self, deadline: Instant) {
+        wait_until_deadline(deadline, || match self.task_handles.lock() {
+            Ok(handles) => handles.iter().all(|handle| handle.is_finished()),
+            Err(error) => {
+                tracing::warn!("failed to inspect runtime task handles: {error}");
+                true
+            }
+        });
+
         let Ok(mut handles) = self.task_handles.lock() else {
             return;
         };
         for mut handle in handles.drain(..) {
-            handle.join_or_abort(timeout);
+            if handle.is_finished() {
+                handle.join_or_abort(Duration::ZERO);
+            } else {
+                handle.abort();
+            }
         }
     }
 
@@ -224,21 +246,14 @@ impl TaskSupervisor {
         *handles = pending;
     }
 
-    fn join_fallback_threads(&self, grace_period: Duration) {
-        let deadline = Instant::now() + grace_period;
-        loop {
-            let all_finished = match self.fallback_threads.lock() {
-                Ok(handles) => handles.iter().all(std::thread::JoinHandle::is_finished),
-                Err(error) => {
-                    tracing::warn!("failed to inspect runtime fallback threads: {error}");
-                    true
-                }
-            };
-            if all_finished || Instant::now() >= deadline {
-                break;
+    fn join_fallback_threads(&self, deadline: Instant) {
+        wait_until_deadline(deadline, || match self.fallback_threads.lock() {
+            Ok(handles) => handles.iter().all(std::thread::JoinHandle::is_finished),
+            Err(error) => {
+                tracing::warn!("failed to inspect runtime fallback threads: {error}");
+                true
             }
-            std::thread::sleep(Duration::from_millis(10));
-        }
+        });
 
         let Ok(mut handles) = self.fallback_threads.lock() else {
             return;
@@ -303,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn stop_all_joins_or_aborts_tracked_async_tasks() {
+    fn stop_all_aborts_unfinished_tracked_async_tasks() {
         let supervisor = TaskSupervisor::new();
         let executor = TestExecutor::default();
         let joined = Arc::clone(&executor.joined);
@@ -313,7 +328,7 @@ mod tests {
         supervisor.spawn(async {});
         supervisor.stop_all();
 
-        assert!(joined.load(Ordering::Acquire));
+        assert!(!joined.load(Ordering::Acquire));
         assert!(aborted.load(Ordering::Acquire));
     }
 

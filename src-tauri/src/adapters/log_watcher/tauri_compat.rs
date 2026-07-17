@@ -42,7 +42,7 @@ impl LogWatcherCompatBridge {
             if stop_requested.load(Ordering::SeqCst) {
                 break;
             }
-            thread::sleep(Duration::from_millis(250));
+            thread::park_timeout(Duration::from_millis(250));
         });
 
         if let Ok(mut current) = self.handle.lock() {
@@ -56,6 +56,7 @@ impl LogWatcherCompatBridge {
         self.stop_requested.store(true, Ordering::SeqCst);
         if let Ok(mut current) = self.handle.lock() {
             if let Some(handle) = current.take() {
+                handle.thread().unpark();
                 let _ = handle.join();
             }
         }

@@ -7,9 +7,9 @@ import {
     toggleMyAvatarsTagFilter
 } from './myAvatarsFilters';
 
-function avatarWithPlatforms(...platforms: any[]) {
+function avatarWithPlatforms(...platforms: string[]) {
     return {
-        unityPackages: platforms.map((platform: any) => ({
+        unityPackages: platforms.map((platform) => ({
             platform,
             variant: 'standard'
         }))
@@ -62,7 +62,7 @@ describe('myAvatarsFilters', () => {
     });
 
     it('ignores unsupported package variants when filtering by platform', () => {
-        const avatar: any = {
+        const avatar = {
             unityPackages: [
                 {
                     platform: 'standalonewindows',
@@ -129,7 +129,7 @@ describe('myAvatarsFilters', () => {
                 platformFilter: 'android',
                 releaseStatusFilter: 'public',
                 tagFilters: new Set(['favorite'])
-            }).map((avatar: any) => avatar.id)
+            }).map((avatar) => avatar.id)
         ).toEqual(['avtr_public_quest']);
 
         expect(
@@ -139,7 +139,7 @@ describe('myAvatarsFilters', () => {
                 platformFilter: 'all',
                 releaseStatusFilter: 'public',
                 tagFilters: new Set()
-            }).map((avatar: any) => avatar.id)
+            }).map((avatar) => avatar.id)
         ).toEqual(['avtr_public_pc']);
 
         expect(
@@ -149,7 +149,7 @@ describe('myAvatarsFilters', () => {
                 platformFilter: 'pc',
                 releaseStatusFilter: 'all',
                 tagFilters: new Set(['favorite'])
-            }).map((avatar: any) => avatar.id)
+            }).map((avatar) => avatar.id)
         ).toEqual(['avtr_private_pc']);
     });
 });

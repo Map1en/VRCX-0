@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>VRCX-0 Overlay Devtool</title>
+        <style>
+            :root {
+                color-scheme: dark;
+                --bg: #0b1017;
+                --panel: #111923;
+                --panel-2: #172232;
+                --line: #2b3b4f;
+                --text: #edf2f7;
+                --muted: #9aa8ba;
+                --accent: #2dd4bf;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    'Segoe UI',
+                    sans-serif;
+                background: var(--bg);
+                color: var(--text);
+            }
+            .shell {
+                display: grid;
+                grid-template-columns: 320px minmax(0, 1fr);
+                min-height: 100vh;
+            }
+            aside {
+                border-right: 1px solid var(--line);
+                background: var(--panel);
+                padding: 20px;
+            }
+            main {
+                display: grid;
+                place-items: center;
+                padding: 28px;
+                overflow: hidden;
+            }
+            h1 {
+                margin: 0 0 18px;
+                font-size: 20px;
+                line-height: 1.2;
+                letter-spacing: 0;
+            }
+            .group {
+                display: grid;
+                gap: 10px;
+                margin: 18px 0;
+            }
+            .label {
+                color: var(--muted);
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+            select,
+            button {
+                width: 100%;
+                border: 1px solid var(--line);
+                background: var(--panel-2);
+                color: var(--text);
+                border-radius: 6px;
+                min-height: 38px;
+                padding: 0 10px;
+                font: inherit;
+            }
+            button {
+                cursor: pointer;
+            }
+            button:hover,
+            select:hover {
+                border-color: var(--accent);
+            }
+            .row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .check {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+                font-size: 14px;
+            }
+            .check input {
+                width: 16px;
+                height: 16px;
+                accent-color: var(--accent);
+            }
+            .meta {
+                display: grid;
+                gap: 6px;
+                color: var(--muted);
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            .stage {
+                max-width: min(100%, 1180px);
+                width: 100%;
+                display: grid;
+                gap: 12px;
+            }
+            .viewport {
+                background: #05080d;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 18px;
+                display: grid;
+                place-items: center;
+                min-height: 420px;
+            }
+            #frame {
+                max-width: 100%;
+                max-height: calc(100vh - 96px);
+                object-fit: contain;
+                image-rendering: auto;
+                user-select: none;
+                touch-action: none;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            #status {
+                color: var(--muted);
+                font-size: 13px;
+                min-height: 18px;
+            }
+            @media (max-width: 820px) {
+                .shell {
+                    grid-template-columns: 1fr;
+                }
+                aside {
+                    border-right: 0;
+                    border-bottom: 1px solid var(--line);
+                }
+                main {
+                    padding: 16px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="shell">
+            <aside>
+                <h1>VRCX-0 Overlay Devtool</h1>
+                <div class="group">
+                    <div class="label">Surface</div>
+                    <select id="surface">
+                        <option value="friends">Friends panel</option>
+                        <option value="toast">HMD toast</option>
+                        <option value="wrist">Wrist feed</option>
+                    </select>
+                </div>
+                <div class="group">
+                    <div class="label">Scenario</div>
+                    <select id="scenario"></select>
+                </div>
+                <div class="group">
+                    <div class="row">
+                        <button id="reset" type="button">Reset</button>
+                    </div>
+                    <div class="row">
+                        <button id="append-toast" type="button">
+                            Append toast
+                        </button>
+                        <button id="clear-toast" type="button">
+                            Clear toast
+                        </button>
+                    </div>
+                </div>
+                <div class="group">
+                    <label class="check">
+                        <input id="auto-refresh" type="checkbox" />
+                        Auto refresh
+                    </label>
+                </div>
+                <div class="group meta">
+                    <div id="surface-meta"></div>
+                    <div id="input-meta"></div>
+                    <div id="stats-meta"></div>
+                    <div id="mode-meta"></div>
+                </div>
+            </aside>
+            <main>
+                <div class="stage">
+                    <div class="viewport">
+                        <img id="frame" alt="overlay frame" draggable="false" />
+                    </div>
+                    <div id="status"></div>
+                </div>
+            </main>
+        </div>
+        <script>
+            const surfaceSelect = document.getElementById('surface');
+            const scenarioSelect = document.getElementById('scenario');
+            const frame = document.getElementById('frame');
+            const autoRefresh = document.getElementById('auto-refresh');
+            const statusLine = document.getElementById('status');
+            const surfaceMeta = document.getElementById('surface-meta');
+            const inputMeta = document.getElementById('input-meta');
+            const statsMeta = document.getElementById('stats-meta');
+            const modeMeta = document.getElementById('mode-meta');
+            let state = null;
+            let moveTimer = null;
+            let pendingMove = null;
+            let currentObjectUrl = null;
+            let autoRefreshTimer = null;
+
+            async function api(path, body) {
+                const response = await fetch(path, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body ? JSON.stringify(body) : '{}'
+                });
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                return response.json();
+            }
+
+            async function loadState() {
+                const response = await fetch('/api/state', {
+                    cache: 'no-store'
+                });
+                state = await response.json();
+                renderControls();
+                await refreshFrame();
+            }
+
+            function renderControls() {
+                surfaceSelect.value = state.surface;
+                const scenarios = state.scenarios[state.surface] || [];
+                scenarioSelect.replaceChildren(
+                    ...scenarios.map((scenario) => {
+                        const option = document.createElement('option');
+                        option.value = scenario.key;
+                        option.textContent = scenario.label;
+                        return option;
+                    })
+                );
+                scenarioSelect.value = state.scenario;
+                const friends = state.friends || {};
+                const toast = state.toast || {};
+                surfaceMeta.textContent = `scenario=${state.scenario} rows=${friends.rows ?? '-'} toasts=${toast.toasts ?? '-'}`;
+                modeMeta.textContent = state.debug
+                    ? 'debug build; performance numbers need --release'
+                    : 'release build';
+            }
+
+            async function refreshFrame() {
+                const response = await fetch(`/frame.png?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
+                if (!response.ok) {
+                    statusLine.textContent = await response.text();
+                    return;
+                }
+                updateStats(response.headers);
+                const blob = await response.blob();
+                const nextUrl = URL.createObjectURL(blob);
+                frame.onload = () => {
+                    if (currentObjectUrl) {
+                        URL.revokeObjectURL(currentObjectUrl);
+                    }
+                    currentObjectUrl = nextUrl;
+                };
+                frame.src = nextUrl;
+            }
+
+            function updateStats(headers) {
+                const elapsed = headers.get('X-Render-Elapsed-Us');
+                const dirtyArea = headers.get('X-Dirty-Area');
+                const dirtyRects = headers.get('X-Dirty-Rects');
+                if (elapsed === null) {
+                    statsMeta.textContent = 'stats=-';
+                    return;
+                }
+                statsMeta.textContent = `render=${elapsed}us dirty=${dirtyArea} rects=${dirtyRects}`;
+            }
+
+            function pointFromEvent(event) {
+                const rect = frame.getBoundingClientRect();
+                const width = frame.naturalWidth || rect.width || 1;
+                const height = frame.naturalHeight || rect.height || 1;
+                return {
+                    x: Math.max(
+                        0,
+                        Math.min(
+                            width,
+                            ((event.clientX - rect.left) / rect.width) * width
+                        )
+                    ),
+                    y: Math.max(
+                        0,
+                        Math.min(
+                            height,
+                            ((event.clientY - rect.top) / rect.height) * height
+                        )
+                    )
+                };
+            }
+
+            async function sendInput(action, point, extra = {}) {
+                if (!state || state.surface !== 'friends') {
+                    return;
+                }
+                const response = await api('/api/input', {
+                    action,
+                    x: point.x,
+                    y: point.y,
+                    ...extra
+                });
+                state = response.state;
+                renderControls();
+                const result = response.result || {};
+                inputMeta.textContent = `event=${result.event ?? '-'} x=${Math.round(result.x ?? 0)} y=${Math.round(result.y ?? 0)}`;
+                await refreshFrame();
+            }
+
+            function queueMove(event) {
+                pendingMove = pointFromEvent(event);
+                if (moveTimer) {
+                    return;
+                }
+                moveTimer = window.setTimeout(() => {
+                    const point = pendingMove;
+                    pendingMove = null;
+                    moveTimer = null;
+                    sendInput('move', point).catch((error) => {
+                        statusLine.textContent = error.message;
+                    });
+                }, 30);
+            }
+
+            function restartAutoRefresh() {
+                if (autoRefreshTimer) {
+                    window.clearInterval(autoRefreshTimer);
+                    autoRefreshTimer = null;
+                }
+                if (autoRefresh.checked) {
+                    autoRefreshTimer = window.setInterval(() => {
+                        refreshFrame().catch((error) => {
+                            statusLine.textContent = error.message;
+                        });
+                    }, 100);
+                }
+            }
+
+            surfaceSelect.addEventListener('change', async () => {
+                const surface = surfaceSelect.value;
+                const scenario = (state.scenarios[surface] || [])[0]?.key || '';
+                state = await api('/api/select', { surface, scenario });
+                renderControls();
+                await refreshFrame();
+            });
+
+            scenarioSelect.addEventListener('change', async () => {
+                state = await api('/api/select', {
+                    surface: surfaceSelect.value,
+                    scenario: scenarioSelect.value
+                });
+                renderControls();
+                await refreshFrame();
+            });
+
+            document
+                .getElementById('reset')
+                .addEventListener('click', async () => {
+                    state = await api('/api/reset');
+                    renderControls();
+                    await refreshFrame();
+                });
+
+            document
+                .getElementById('append-toast')
+                .addEventListener('click', async () => {
+                    state = await api('/api/toast', { action: 'append' });
+                    renderControls();
+                    await refreshFrame();
+                });
+
+            document
+                .getElementById('clear-toast')
+                .addEventListener('click', async () => {
+                    state = await api('/api/toast', { action: 'clear' });
+                    renderControls();
+                    await refreshFrame();
+                });
+
+            autoRefresh.addEventListener('change', restartAutoRefresh);
+
+            frame.addEventListener('pointerdown', (event) => {
+                if (
+                    event.button !== 0 ||
+                    !state ||
+                    state.surface !== 'friends'
+                ) {
+                    return;
+                }
+                frame.setPointerCapture(event.pointerId);
+                event.preventDefault();
+                sendInput('down', pointFromEvent(event)).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
+            });
+
+            frame.addEventListener('pointermove', (event) => {
+                queueMove(event);
+            });
+
+            frame.addEventListener('pointerup', (event) => {
+                if (
+                    event.button !== 0 ||
+                    !state ||
+                    state.surface !== 'friends'
+                ) {
+                    return;
+                }
+                if (frame.hasPointerCapture(event.pointerId)) {
+                    frame.releasePointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+                sendInput('up', pointFromEvent(event)).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
+            });
+
+            frame.addEventListener('pointercancel', (event) => {
+                if (frame.hasPointerCapture(event.pointerId)) {
+                    frame.releasePointerCapture(event.pointerId);
+                }
+                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
+            });
+
+            frame.addEventListener('mouseleave', () => {
+                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
+                    statusLine.textContent = error.message;
+                });
+            });
+
+            frame.addEventListener(
+                'wheel',
+                (event) => {
+                    event.preventDefault();
+                    sendInput('wheel', pointFromEvent(event), {
+                        delta_x: event.deltaX,
+                        delta_y: event.deltaY
+                    }).catch((error) => {
+                        statusLine.textContent = error.message;
+                    });
+                },
+                { passive: false }
+            );
+
+            loadState().catch((error) => {
+                statusLine.textContent = error.message;
+            });
+        </script>
+    </body>
+</html>

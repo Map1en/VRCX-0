@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    getAutoLoginStateLabel,
     getLoginErrorMessage,
     getLoginUserDisplayName,
     shouldShowLegacyMigrationAction
@@ -34,21 +33,6 @@ describe('login display helpers', () => {
         );
         expect(getLoginUserDisplayName({ id: 'usr_1' })).toBe('usr_1');
         expect(getLoginUserDisplayName(null)).toBe('account');
-    });
-
-    it('maps auto-login states to user-facing labels', () => {
-        expect(getAutoLoginStateLabel('scheduled')).toBe(
-            'Auto-login scheduled'
-        );
-        expect(getAutoLoginStateLabel('running')).toBe('Auto-login running');
-        expect(getAutoLoginStateLabel('success')).toBe('Auto-login succeeded');
-        expect(getAutoLoginStateLabel('cancelled')).toBe('Auto-login skipped');
-        expect(getAutoLoginStateLabel('throttled')).toBe(
-            'Auto-login throttled'
-        );
-        expect(getAutoLoginStateLabel('expired')).toBe('Session expired');
-        expect(getAutoLoginStateLabel('failed')).toBe('Auto-login failed');
-        expect(getAutoLoginStateLabel('idle')).toBe('Auto-login idle');
     });
 
     it('shows the legacy migration action only after loading when there are no saved accounts', () => {

@@ -137,10 +137,13 @@ export function FriendListToolbar({
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-9"
-                        disabled={isLoadingUserDetails || !currentUserId}
+                        className="h-9 gap-2"
+                        disabled={!currentUserId}
                         onClick={onLoadFriendUserDetails}
                     >
+                        {isLoadingUserDetails ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : null}
                         {t('view.friend_list.load')}
                     </Button>
                     <TableColumnVisibilityMenu

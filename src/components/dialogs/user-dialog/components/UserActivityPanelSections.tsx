@@ -15,7 +15,10 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import {
     OVERLAP_RENDER_DELAY_MS,
-    USER_ACTIVITY_HOUR_LABELS
+    USER_ACTIVITY_HOUR_LABELS,
+    type ActivityHeatmapData,
+    type TopWorldsSort,
+    type UserActivityTopWorld
 } from '../userActivityPanelModel';
 import { HeatmapChart, TopWorldRows } from './UserActivityPanelParts';
 
@@ -37,7 +40,25 @@ export function UserActivityOverlapSection({
     overlapPercent,
     overlapScaleColors,
     weekStartsOn
-}: any) {
+}: {
+    bestOverlapTime: string;
+    changeExcludeHours: (value: unknown) => void;
+    changeExcludeRange: (kind: 'start' | 'end', value: string) => void;
+    dayLabels: string[];
+    emptyColor: string;
+    excludeEndHour: string;
+    excludeHoursEnabled: boolean;
+    excludeStartHour: string;
+    hasOverlapData: boolean;
+    isDarkMode: boolean;
+    onOverlapChartRightClick?: () => void;
+    overlapHeatmap: ActivityHeatmapData;
+    overlapLoading: boolean;
+    overlapLoadingVisible: boolean;
+    overlapPercent: number;
+    overlapScaleColors: string[];
+    weekStartsOn: number;
+}) {
     const { t } = useTranslation();
 
     return (
@@ -66,7 +87,7 @@ export function UserActivityOverlapSection({
                         <Select
                             value={excludeStartHour}
                             onValueChange={(value) => {
-                                changeExcludeRange('start', value);
+                                changeExcludeRange('start', value || '');
                             }}
                             items={USER_ACTIVITY_HOUR_LABELS.map(
                                 (label, index) => ({
@@ -84,7 +105,7 @@ export function UserActivityOverlapSection({
                             <SelectContent>
                                 <SelectGroup>
                                     {USER_ACTIVITY_HOUR_LABELS.map(
-                                        (label: any, index: any) => (
+                                        (label, index) => (
                                             <SelectItem
                                                 key={label}
                                                 value={String(index)}
@@ -100,7 +121,7 @@ export function UserActivityOverlapSection({
                         <Select
                             value={excludeEndHour}
                             onValueChange={(value) => {
-                                changeExcludeRange('end', value);
+                                changeExcludeRange('end', value || '');
                             }}
                             items={USER_ACTIVITY_HOUR_LABELS.map(
                                 (label, index) => ({
@@ -118,7 +139,7 @@ export function UserActivityOverlapSection({
                             <SelectContent>
                                 <SelectGroup>
                                     {USER_ACTIVITY_HOUR_LABELS.map(
-                                        (label: any, index: any) => (
+                                        (label, index) => (
                                             <SelectItem
                                                 key={label}
                                                 value={String(index)}
@@ -148,7 +169,7 @@ export function UserActivityOverlapSection({
                         </span>
                         <span className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
                             <span
-                                className="block h-full rounded-full transition-all duration-500"
+                                className="block h-full rounded-full transition-[width,background-color] duration-200 ease-out motion-reduce:transition-[background-color]"
                                 style={{
                                     width: `${overlapPercent}%`,
                                     backgroundColor: isDarkMode
@@ -205,7 +226,17 @@ export function UserActivityTopWorldsSection({
     topWorldsLoading,
     topWorldsLoadingVisible,
     topWorldsSortBy
-}: any) {
+}: {
+    changeExcludeHomeWorld: (value: unknown) => void;
+    changeTopWorldsSort: (value: unknown) => void;
+    currentHomeWorldId: string;
+    excludeHomeWorldEnabled: boolean;
+    loading: boolean;
+    topWorlds: UserActivityTopWorld[];
+    topWorldsLoading: boolean;
+    topWorldsLoadingVisible: boolean;
+    topWorldsSortBy: TopWorldsSort;
+}) {
     const { t } = useTranslation();
 
     return (

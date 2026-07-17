@@ -27,7 +27,7 @@ describe('userDialogViewData', () => {
             currentUserHasSharedConnectionsOptOut: false
         });
 
-        expect(otherUserTabs.map((tab: any) => tab.value)).toEqual([
+        expect(otherUserTabs.map((tab) => tab.value)).toEqual([
             'info',
             'instance-history',
             'mutual',
@@ -38,7 +38,7 @@ describe('userDialogViewData', () => {
             'activity',
             'json'
         ]);
-        expect(currentUserTabs.map((tab: any) => tab.value)).toEqual([
+        expect(currentUserTabs.map((tab) => tab.value)).toEqual([
             'info',
             'instance-history',
             'groups',
@@ -114,35 +114,34 @@ describe('userDialogViewData', () => {
         });
 
         expect(viewData.effectiveGroupSort).toBe('alphabetical');
+        expect(viewData.sortedProfileGroups.map((group) => group.id)).toEqual([
+            'grp_alpha',
+            'grp_beta'
+        ]);
+        expect(viewData.filteredProfileGroups.map((group) => group.id)).toEqual(
+            ['grp_beta']
+        );
+        expect(viewData.selectedUserGroups.map((group) => group.id)).toEqual([
+            'grp_beta'
+        ]);
         expect(
-            viewData.sortedProfileGroups.map((group: any) => group.id)
-        ).toEqual(['grp_alpha', 'grp_beta']);
-        expect(
-            viewData.filteredProfileGroups.map((group: any) => group.id)
-        ).toEqual(['grp_beta']);
-        expect(
-            viewData.selectedUserGroups.map((group: any) => group.id)
-        ).toEqual(['grp_beta']);
-        expect(
-            viewData.visibleMutualFriends.map(
-                (friend: any) => friend.displayName
-            )
+            viewData.visibleMutualFriends.map((friend) => friend.displayName)
         ).toEqual(['Alice']);
+        expect(viewData.filteredProfileWorlds.map((world) => world.id)).toEqual(
+            ['wrld_tree']
+        );
         expect(
-            viewData.filteredProfileWorlds.map((world: any) => world.id)
-        ).toEqual(['wrld_tree']);
-        expect(
-            viewData.filteredFavoriteWorlds.map((world: any) => world.id)
+            viewData.filteredFavoriteWorlds.map((world) => world.id)
         ).toEqual(['wrld_remote_fav']);
         expect(
-            viewData.visibleProfileAvatars.map((avatar: any) => avatar.id)
+            viewData.visibleProfileAvatars.map((avatar) => avatar.id)
         ).toEqual(['avtr_a', 'avtr_b']);
         expect(viewData.bioLinks).toEqual(['https://example.test/profile']);
         expect(viewData.groupSearchActive).toBe(true);
     });
 
     it('keeps current-user avatar release filters predictable for all and private views', () => {
-        const buildAvatarView = (effectiveAvatarReleaseStatus: any) =>
+        const buildAvatarView = (effectiveAvatarReleaseStatus: string) =>
             buildUserDialogListViewData({
                 profile: {},
                 remoteData: {
@@ -182,12 +181,12 @@ describe('userDialogViewData', () => {
 
         expect(
             buildAvatarView('all').visibleProfileAvatars.map(
-                (avatar: any) => avatar.id
+                (avatar) => avatar.id
             )
         ).toEqual(['avtr_private', 'avtr_public']);
         expect(
             buildAvatarView('private').visibleProfileAvatars.map(
-                (avatar: any) => avatar.id
+                (avatar) => avatar.id
             )
         ).toEqual(['avtr_private']);
     });
@@ -202,6 +201,7 @@ describe('userDialogViewData', () => {
                 tags: ['language_jpn'],
                 $friendNumber: 42,
                 mutualFriendCount: 4,
+                last_activity: '2026-01-03T04:05:06',
                 timeSpent: 2000,
                 joinCount: 8
             },
@@ -244,13 +244,11 @@ describe('userDialogViewData', () => {
         );
         expect(summary.statusStateText).toBe('active / join me');
         expect(
-            summary.userGroupSections.ownGroups.map((group: any) => group.id)
+            summary.userGroupSections.ownGroups.map((group) => group.id)
         ).toEqual(['grp_owned']);
         expect(summary.userGroupSections.mutualGroups).toEqual([]);
         expect(
-            summary.userGroupSections.remainingGroups.map(
-                (group: any) => group.id
-            )
+            summary.userGroupSections.remainingGroups.map((group) => group.id)
         ).toEqual(['grp_mutual', 'grp_regular']);
         expect(summary.selectedGroupCount).toBe(2);
         expect(summary.ownGroupCountText).toBe('1/3');
@@ -263,5 +261,6 @@ describe('userDialogViewData', () => {
         ]);
         expect(summary.mutualFriendCount).toBe(4);
         expect(summary.friendNumber).toBe(42);
+        expect(summary.presenceActivityAt).toBe('2026-01-03T04:05:06');
     });
 });

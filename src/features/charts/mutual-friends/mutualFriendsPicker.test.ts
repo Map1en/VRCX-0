@@ -27,7 +27,7 @@ describe('mutualFriendsPicker', () => {
             }
         );
 
-        expect(options.map((option: any) => option.displayLabel)).toEqual([
+        expect(options.map((option) => option?.displayLabel)).toEqual([
             'Ava (3)',
             'ben_user (1)'
         ]);
@@ -77,7 +77,7 @@ describe('mutualFriendsPicker', () => {
             new Set(['usr_c'])
         );
 
-        expect(options.map((option: any) => option.value)).toEqual([
+        expect(options.map((option) => option.value)).toEqual([
             'usr_c',
             'usr_a'
         ]);
@@ -96,14 +96,11 @@ describe('mutualFriendsPicker', () => {
             'usr_self'
         );
 
-        expect(options.map((option: any) => option.value)).toEqual([
+        expect(options.map((option) => option.value)).toEqual([
             'usr_a',
             'usr_b'
         ]);
-        expect(options.map((option: any) => option.label)).toEqual([
-            'Ava',
-            'Ben'
-        ]);
+        expect(options.map((option) => option.label)).toEqual(['Ava', 'Ben']);
     });
 
     it('keeps long graph labels compact for node rendering', () => {

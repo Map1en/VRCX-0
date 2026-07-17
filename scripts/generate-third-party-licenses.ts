@@ -19,10 +19,7 @@ const tauriResourceNoticePath = path.join(
     tauriLicenseResourceDir,
     'THIRD_PARTY_NOTICES.txt'
 );
-const bundledFontPackages = Object.freeze([
-    '@fontsource-variable/geist',
-    '@fontsource-variable/noto-sans-sc'
-]);
+const bundledFontPackages = Object.freeze(['@fontsource-variable/geist']);
 
 function normalizeWhitespace(value) {
     return String(value ?? '')

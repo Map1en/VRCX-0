@@ -249,3 +249,6 @@ pub(crate) fn delete_local_moderation_row(
     )?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

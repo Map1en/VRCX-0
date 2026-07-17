@@ -149,6 +149,30 @@ describe('dateTime utils', () => {
         );
     });
 
+    it('applies hour preferences when using timeStyle', () => {
+        const date = new Date(LOCAL_DATE);
+
+        expect(
+            formatDateTimeWithPreferences(
+                LOCAL_DATE,
+                {
+                    dateStyle: 'medium',
+                    timeStyle: 'medium'
+                },
+                {
+                    appLocale: 'en',
+                    dateHour12: false
+                }
+            )
+        ).toBe(
+            new Intl.DateTimeFormat('en', {
+                dateStyle: 'medium',
+                timeStyle: 'medium',
+                hour12: false
+            }).format(date)
+        );
+    });
+
     it('returns fallbacks for empty and invalid dates', () => {
         expect(formatDateFilterWithPreferences('', 'long')).toBe('-');
         expect(formatDateFilterWithPreferences('not-a-date', 'long')).toBe('-');

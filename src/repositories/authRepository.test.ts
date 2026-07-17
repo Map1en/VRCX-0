@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const commandMocks = vi.hoisted(() => ({
     appVrchatAuthSavedSnapshotGet: vi.fn(),
     appVrchatAuthSavedCredentialDelete: vi.fn(),
-    appVrchatAuthLoginSuccessRecord: vi.fn(),
     appVrchatAuthLogoutRecord: vi.fn()
 }));
 
@@ -15,7 +14,6 @@ import authRepository, {
     deleteSavedCredential,
     getSavedCredential,
     getSavedCredentialsMap,
-    recordLoginSuccess,
     recordLogout
 } from './authRepository';
 
@@ -51,9 +49,6 @@ describe('authRepository', () => {
         );
         commandMocks.appVrchatAuthSavedCredentialDelete.mockResolvedValue(
             savedSnapshot({ lastUserLoggedIn: null, savedCredentialCount: 0 })
-        );
-        commandMocks.appVrchatAuthLoginSuccessRecord.mockResolvedValue(
-            savedSnapshot()
         );
         commandMocks.appVrchatAuthLogoutRecord.mockResolvedValue(
             savedSnapshot({ lastUserLoggedIn: null })
@@ -97,28 +92,6 @@ describe('authRepository', () => {
             commandMocks.appVrchatAuthSavedCredentialDelete
         ).toHaveBeenCalledWith({
             userId: 'usr_2'
-        });
-    });
-
-    it('records login success with default persistence options', async () => {
-        const user = {
-            id: 'usr_1',
-            displayName: 'User One'
-        };
-        const loginParams = {
-            username: 'user@example.test',
-            password: 'secret'
-        };
-
-        await recordLoginSuccess({ user, loginParams });
-
-        expect(
-            commandMocks.appVrchatAuthLoginSuccessRecord
-        ).toHaveBeenCalledWith({
-            user,
-            loginParams,
-            storedLoginParams: null,
-            saveCredentials: false
         });
     });
 

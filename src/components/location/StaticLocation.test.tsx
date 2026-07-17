@@ -2,6 +2,18 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+type LocationDisplayTestProps = {
+    asButton?: boolean;
+    disableTooltip?: boolean;
+    instanceName?: string;
+    isLocationLink?: boolean;
+    onOpenGroup: () => void;
+    region?: string;
+    showGroupLink?: boolean;
+    text?: string;
+    worldName?: string;
+};
+
 const mocks = vi.hoisted(() => ({
     metadata: {
         currentEndpoint: 'https://api.example.test/api/1',
@@ -18,14 +30,14 @@ const mocks = vi.hoisted(() => ({
         showInstanceIdInLocation: false
     },
     openGroupDialog: vi.fn(),
-    locationDisplayProps: null as any
+    locationDisplayProps: null as LocationDisplayTestProps | null
 }));
 
 vi.mock('@/components/location/LocationDisplay', async () => {
     const React = await import('react');
 
     return {
-        LocationDisplay: (props: any) => {
+        LocationDisplay: (props: LocationDisplayTestProps) => {
             mocks.locationDisplayProps = props;
             return React.createElement('span', null, props.text);
         }
@@ -48,25 +60,33 @@ vi.mock('@/services/dialogService', () => ({
 }));
 
 vi.mock('@/state/preferencesStore', () => ({
-    usePreferencesStore: (selector: any) => selector(mocks.preferencesState)
+    usePreferencesStore: <T,>(
+        selector: (state: typeof mocks.preferencesState) => T
+    ) => selector(mocks.preferencesState)
 }));
 
 vi.mock('react-i18next', () => {
-    const translations: any = {
+    const translations: Record<string, string> = {
         'dialog.new_instance.access_type_public': 'Public',
         'dialog.new_instance.instance_id': 'Instance ID'
     };
 
     return {
         useTranslation: () => ({
-            t: (key: any) => translations[key] || key
+            t: (key: string) => translations[key] || key
         })
     };
 });
 
 import { StaticLocation } from './StaticLocation';
 
-function renderStaticLocation(props: any = {}) {
+type StaticLocationTestProps = {
+    location?: string;
+    showGroupLink?: boolean;
+    disableTooltip?: boolean;
+};
+
+function renderStaticLocation(props: StaticLocationTestProps = {}) {
     return renderToStaticMarkup(React.createElement(StaticLocation, props));
 }
 
@@ -91,7 +111,7 @@ describe('StaticLocation', () => {
             location: 'wrld_test:12345~region(jp)'
         });
 
-        const props = mocks.locationDisplayProps;
+        const props = mocks.locationDisplayProps!;
         expect(props.asButton).toBe(false);
         expect(props.isLocationLink).toBe(false);
         expect(props.region).toBe('jp');
@@ -107,7 +127,7 @@ describe('StaticLocation', () => {
             location: 'wrld_test:12345~region(jp)~group(grp_test)'
         });
 
-        const props = mocks.locationDisplayProps;
+        const props = mocks.locationDisplayProps!;
         expect(props.showGroupLink).toBe(true);
         expect(typeof props.onOpenGroup).toBe('function');
 
@@ -123,7 +143,7 @@ describe('StaticLocation', () => {
             location: 'wrld_test:12345~region(jp)'
         });
 
-        mocks.locationDisplayProps.onOpenGroup();
+        mocks.locationDisplayProps!.onOpenGroup();
         expect(mocks.openGroupDialog).not.toHaveBeenCalled();
     });
 
@@ -134,7 +154,7 @@ describe('StaticLocation', () => {
             disableTooltip: true
         });
 
-        const props = mocks.locationDisplayProps;
+        const props = mocks.locationDisplayProps!;
         expect(props.showGroupLink).toBe(false);
         expect(props.disableTooltip).toBe(true);
     });

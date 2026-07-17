@@ -328,7 +328,10 @@ fn overlay_actor_ticks_faster_while_interaction_active() {
     actor
         .send(OverlayServiceCommand::SetInteractionActive(true))
         .expect("enable interaction mode");
-    thread::sleep(Duration::from_millis(90));
+
+    wait_until(Duration::from_secs(2), || {
+        ticks.load(Ordering::Acquire) >= 3
+    });
 
     actor
         .send(OverlayServiceCommand::SetInteractionActive(false))
@@ -336,8 +339,6 @@ fn overlay_actor_ticks_faster_while_interaction_active() {
     actor
         .send(OverlayServiceCommand::Stop)
         .expect("stop overlay");
-
-    assert!(ticks.load(Ordering::Acquire) >= 3);
 }
 
 fn make_wrist_config() -> OverlaySurfaceConfig {

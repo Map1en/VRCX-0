@@ -1,0 +1,15 @@
+[package]
+name = "vrcx-0-overlay-devtool"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "vrcx-0-overlay-devtool"
+path = "src/main.rs"
+
+[dependencies]
+image.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tiny_http = "0.12"
+vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-ui"] }

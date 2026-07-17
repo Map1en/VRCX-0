@@ -1,3 +1,4 @@
+import type { AvatarGalleryFile } from '@/repositories/avatarProfileRepository';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import {
     extractFileId,
@@ -5,17 +6,7 @@ import {
     extractVariantVersion
 } from '@/shared/utils/fileUtils';
 
-type AvatarSideData = {
-    galleryRows: unknown[];
-    galleryImages: unknown[];
-    fileAnalysis: Record<string, unknown>;
-    cache: {
-        inCache: boolean;
-        cacheSize: string;
-        cacheLocked: boolean;
-        cachePath: string;
-    };
-};
+import type { AvatarSideData } from './avatarDialogTypes';
 
 export function defaultAvatarSideData(): AvatarSideData {
     return {
@@ -31,23 +22,36 @@ export function defaultAvatarSideData(): AvatarSideData {
     };
 }
 
-export function avatarGalleryImageUrl(file: any) {
-    const versions = Array.isArray(file?.versions) ? file.versions : [];
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+export function avatarGalleryImageUrl(file: unknown): string {
+    if (!isRecord(file)) {
+        return '';
+    }
+    const typedFile: AvatarGalleryFile = file;
+    const versions = Array.isArray(typedFile.versions)
+        ? typedFile.versions
+        : [];
     const latestVersion = versions[versions.length - 1];
     return (
         latestVersion?.file?.url ||
-        file?.url ||
-        file?.fileUrl ||
-        file?.imageUrl ||
+        typedFile.url ||
+        typedFile.fileUrl ||
+        typedFile.imageUrl ||
         ''
     );
 }
 
 export function isCacheCandidatePackage(
-    unityPackage: any,
-    sdkUnityVersion: any = ''
-) {
-    if (!unityPackage || unityPackage.platform !== 'standalonewindows') {
+    unityPackage: unknown,
+    sdkUnityVersion = ''
+): boolean {
+    if (!isRecord(unityPackage)) {
+        return false;
+    }
+    if (unityPackage.platform !== 'standalonewindows') {
         return false;
     }
     if (
@@ -60,35 +64,39 @@ export function isCacheCandidatePackage(
     if (
         sdkUnityVersion &&
         unityPackage.unitySortNumber &&
-        !compareUnityVersion(unityPackage.unitySortNumber, sdkUnityVersion)
+        !compareUnityVersion(
+            String(unityPackage.unitySortNumber),
+            sdkUnityVersion
+        )
     ) {
         return false;
     }
     return true;
 }
 
-export function resolveAssetBundleArgs(avatar: any, sdkUnityVersion: any = '') {
-    const unityPackages = Array.isArray(avatar?.unityPackages)
-        ? avatar.unityPackages
+export function resolveAssetBundleArgs(avatar: unknown, sdkUnityVersion = '') {
+    const source = isRecord(avatar) ? avatar : {};
+    const unityPackages = Array.isArray(source.unityPackages)
+        ? source.unityPackages
         : [];
-    let selectedPackage = null;
+    let selectedPackage: Record<string, unknown> | null = null;
     for (let index = unityPackages.length - 1; index >= 0; index -= 1) {
         const unityPackage = unityPackages[index];
         if (isCacheCandidatePackage(unityPackage, sdkUnityVersion)) {
-            selectedPackage = unityPackage;
+            selectedPackage = isRecord(unityPackage) ? unityPackage : null;
             break;
         }
     }
     if (!selectedPackage && sdkUnityVersion) {
         return resolveAssetBundleArgs(avatar, '');
     }
-    const assetUrl = selectedPackage?.assetUrl || avatar?.assetUrl || '';
+    const assetUrl = String(selectedPackage?.assetUrl || source.assetUrl || '');
     const fileId = extractFileId(assetUrl);
     const fileVersion = Number.parseInt(extractFileVersion(assetUrl), 10);
     const variant =
         !selectedPackage?.variant || selectedPackage.variant === 'standard'
             ? 'security'
-            : selectedPackage.variant;
+            : String(selectedPackage.variant);
     const variantVersion =
         Number.parseInt(extractVariantVersion(assetUrl), 10) || 0;
     if (!fileId || !Number.isFinite(fileVersion)) {

@@ -21,6 +21,7 @@ import {
     loadPreferenceSnapshot,
     setAppLanguagePreference
 } from '@/services/preferencesService';
+import { selectProfileBackupToRestore } from '@/services/profileRestoreSelectionService';
 import {
     proxySettingsErrorMessage,
     saveProxySettingsPreferences,
@@ -49,6 +50,16 @@ type LoginErrors = {
     username: string;
 };
 
+function getAuthSnapshotFromError(error: unknown): SavedAuthSnapshot | null {
+    if (!error || typeof error !== 'object' || !('authSnapshot' in error)) {
+        return null;
+    }
+    const candidate = error.authSnapshot;
+    return candidate && typeof candidate === 'object'
+        ? (candidate as SavedAuthSnapshot)
+        : null;
+}
+
 export function useLoginPageState() {
     const { t } = useTranslation();
     const locale = useShellStore((state) => state.locale);
@@ -71,6 +82,7 @@ export function useLoginPageState() {
     const [proxyInput, setProxyInput] = useState('');
     const [isSavingProxySettings, setIsSavingProxySettings] = useState(false);
     const [isTestingProxySettings, setIsTestingProxySettings] = useState(false);
+    const [isValidatingRestore, setIsValidatingRestore] = useState(false);
     const isSavingProxySettingsRef = useRef(false);
     const [activeSavedUserId, setActiveSavedUserId] = useState('');
     const [loginForm, setLoginForm] = useState<LoginFormState>({
@@ -88,20 +100,11 @@ export function useLoginPageState() {
         setProxyInput(proxyServer || '');
     }, [proxyEnabled, proxyServer]);
 
-    function applySnapshot(nextSnapshot: any) {
+    function applySnapshot(nextSnapshot: SavedAuthSnapshot): void {
         setSnapshot(nextSnapshot);
-        return nextSnapshot;
     }
 
-    const {
-        autoLoginAlertVariant,
-        autoLoginState,
-        autoLoginTarget,
-        cancelPendingAutoLogin,
-        isAutoLoginActive,
-        retryAutoLogin,
-        shouldShowAutoLogin
-    } = useLoginAutoLogin({
+    const { cancelPendingAutoLogin } = useLoginAutoLogin({
         activeSavedUserId,
         applySnapshot,
         databaseReady,
@@ -115,7 +118,6 @@ export function useLoginPageState() {
         isDatabaseBlocked ||
         isSubmitting ||
         Boolean(activeSavedUserId) ||
-        isAutoLoginActive ||
         sessionPhase === 'authenticating' ||
         sessionPhase === 'bootstrapping';
 
@@ -123,7 +125,7 @@ export function useLoginPageState() {
         let active = true;
 
         refreshSavedAuthSnapshot()
-            .then((nextSnapshot: any) => {
+            .then((nextSnapshot) => {
                 if (active) {
                     applySnapshot(nextSnapshot);
                 }
@@ -148,7 +150,8 @@ export function useLoginPageState() {
         };
     }, []);
 
-    async function handleLanguageChange(nextLanguage: any) {
+    async function handleLanguageChange(nextLanguage: string) {
+        cancelPendingAutoLogin();
         try {
             await setAppLanguagePreference(nextLanguage);
         } catch (error) {
@@ -161,6 +164,7 @@ export function useLoginPageState() {
     }
 
     async function openProxyDialog() {
+        cancelPendingAutoLogin();
         if (!preferencesHydrated) {
             try {
                 await loadPreferenceSnapshot();
@@ -178,7 +182,21 @@ export function useLoginPageState() {
     }
 
     async function migrateLegacyVrcxData() {
+        cancelPendingAutoLogin();
         await promptLegacyVrcxForceMigration({ confirm, t, toast });
+    }
+
+    async function restoreProfileBackup() {
+        if (isValidatingRestore || isAuthBusy) {
+            return;
+        }
+        cancelPendingAutoLogin();
+        setIsValidatingRestore(true);
+        try {
+            await selectProfileBackupToRestore();
+        } finally {
+            setIsValidatingRestore(false);
+        }
     }
 
     async function saveProxySettings(restart: boolean = true) {
@@ -283,9 +301,7 @@ export function useLoginPageState() {
             return;
         }
 
-        cancelPendingAutoLogin(
-            t('view.auth.auto_login.skipped_manual_started')
-        );
+        cancelPendingAutoLogin();
         setIsSubmitting(true);
         try {
             const nextSnapshot = await executeManualLogin({
@@ -298,10 +314,9 @@ export function useLoginPageState() {
                 t('common.label.authenticated_and_prepared_the_session')
             );
         } catch (error) {
-            const snapshot = (error as { authSnapshot?: unknown })
-                ?.authSnapshot;
-            if (snapshot) {
-                applySnapshot(snapshot);
+            const failureSnapshot = getAuthSnapshotFromError(error);
+            if (failureSnapshot) {
+                applySnapshot(failureSnapshot);
             }
             toast.error(
                 getErrorMessage(
@@ -314,8 +329,8 @@ export function useLoginPageState() {
         }
     }
 
-    async function handleSavedCredentialLogin(entry: any) {
-        const userId = entry?.user?.id;
+    async function handleSavedCredentialLogin(entry: SavedCredentialRecord) {
+        const userId = typeof entry.user?.id === 'string' ? entry.user.id : '';
         if (!userId) {
             return;
         }
@@ -327,9 +342,7 @@ export function useLoginPageState() {
             return;
         }
 
-        cancelPendingAutoLogin(
-            t('view.auth.auto_login.skipped_saved_account_selected')
-        );
+        cancelPendingAutoLogin();
         setActiveSavedUserId(userId);
         try {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
@@ -341,10 +354,9 @@ export function useLoginPageState() {
                 )
             );
         } catch (error) {
-            const snapshot = (error as { authSnapshot?: unknown })
-                ?.authSnapshot;
-            if (snapshot) {
-                applySnapshot(snapshot);
+            const failureSnapshot = getAuthSnapshotFromError(error);
+            if (failureSnapshot) {
+                applySnapshot(failureSnapshot);
             }
             toast.error(
                 getErrorMessage(
@@ -357,6 +369,22 @@ export function useLoginPageState() {
         }
     }
 
+    function prepareSavedAccountLogin(entry: SavedCredentialRecord) {
+        const loginUsername =
+            typeof entry.loginParams?.username === 'string'
+                ? entry.loginParams.username
+                : '';
+        const profileUsername =
+            typeof entry.user?.username === 'string' ? entry.user.username : '';
+        const username = loginUsername || profileUsername;
+        setLoginForm((current) => ({
+            ...current,
+            password: '',
+            username: username || current.username
+        }));
+        setLoginErrors({ password: '', username: '' });
+    }
+
     const savedAccounts = Array.isArray(snapshot?.savedCredentialsList)
         ? snapshot.savedCredentialsList
         : [];
@@ -366,18 +394,8 @@ export function useLoginPageState() {
         savedAccounts
     );
 
-    function cancelAutoLoginCountdownFinished() {
-        cancelPendingAutoLogin(
-            t('view.auth.auto_login.skipped_countdown_finished')
-        );
-    }
-
     return {
         activeSavedUserId,
-        autoLoginAlertVariant,
-        autoLoginState,
-        autoLoginTarget,
-        cancelAutoLoginCountdownFinished,
         cancelPendingAutoLogin,
         deleteTarget,
         handleDeleteSavedAccount,
@@ -391,15 +409,17 @@ export function useLoginPageState() {
         isSavingProxySettings,
         isTestingProxySettings,
         isSubmitting,
+        isValidatingRestore,
         locale,
         loginErrors,
         loginForm,
         migrateLegacyVrcxData,
         openExternalLink,
         openProxyDialog,
+        prepareSavedAccountLogin,
         proxyEnabledInput,
         proxyInput,
-        retryAutoLogin,
+        restoreProfileBackup,
         saveProxySettings,
         savedAccounts,
         setDeleteTarget,
@@ -409,7 +429,6 @@ export function useLoginPageState() {
         setProxyEnabledInput,
         setProxyInput,
         testProxySettings,
-        shouldShowAutoLogin,
         showLegacyMigrationAction
     };
 }

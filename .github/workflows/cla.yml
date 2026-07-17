@@ -1,4 +1,4 @@
-name: 'CLA Assistant'
+name: CLA Assistant
 
 on:
     issue_comment:

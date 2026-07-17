@@ -26,6 +26,9 @@ pub fn app__runtime_auth_scope_set(
         .runtime_context
         .auth_scope
         .set(input.user_id, input.endpoint);
+    state.favorite_import.cancel_if_scope_mismatch();
+    state.shared_collection_import.cancel_if_scope_mismatch();
+    state.note_export.cancel_if_scope_mismatch();
     if !snapshot.active {
         state.clear_backend_authenticated_session("Runtime auth scope changed.");
     } else if previous.current_user_id != snapshot.current_user_id

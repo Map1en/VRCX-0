@@ -1,9 +1,19 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { links } from '@/shared/constants/link';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useLoginPageState } from './useLoginPageState';
 
 export function useLoginPageController() {
     const page = useLoginPageState();
+    const serverStatus = useRuntimeStore(
+        useShallow((state) => ({
+            indicator: state.vrcStatus.indicator,
+            status: state.vrcStatus.status,
+            summary: state.vrcStatus.summary
+        }))
+    );
 
     return {
         actions: {
@@ -13,19 +23,11 @@ export function useLoginPageController() {
             openGithub: () => page.openExternalLink(links.github),
             openRegister: () => page.openExternalLink(links.vrchatRegister)
         },
-        autoLogin: {
-            autoLoginState: page.autoLoginState,
-            onCancel: page.cancelAutoLoginCountdownFinished,
-            onRetry: page.retryAutoLogin,
-            target: page.autoLoginTarget,
-            variant: page.autoLoginAlertVariant,
-            visible: page.shouldShowAutoLogin
-        },
         deleteDialog: {
             deleteTarget: page.deleteTarget,
             isDeleting: page.isDeleting,
             onConfirm: page.handleDeleteSavedAccount,
-            onOpenChange: (open: any) => {
+            onOpenChange: (open: boolean) => {
                 if (!open) {
                     page.setDeleteTarget(null);
                 }
@@ -36,21 +38,23 @@ export function useLoginPageController() {
             loginErrors: page.loginErrors,
             loginForm: page.loginForm,
             onCancelAutoLogin: page.cancelPendingAutoLogin,
+            onPrepareSavedAccount: page.prepareSavedAccountLogin,
             onSubmit: page.handleManualLoginSubmit,
             setLoginErrors: page.setLoginErrors,
             setLoginForm: page.setLoginForm,
             submitting: page.isSubmitting
         },
         header: {
-            disabled: page.isAuthBusy,
             locale: page.locale,
-            onLanguageChange: page.handleLanguageChange,
+            onLanguageChange: page.handleLanguageChange
+        },
+        utilities: {
+            disabled: page.isAuthBusy,
+            isValidatingRestore: page.isValidatingRestore,
             onMigrateLegacyVrcxData: page.migrateLegacyVrcxData,
             onOpenProxyDialog: page.openProxyDialog,
+            onRestoreProfileBackup: page.restoreProfileBackup,
             showLegacyMigration: page.showLegacyMigrationAction
-        },
-        layout: {
-            hasSavedAccounts: page.hasSavedAccounts
         },
         proxyDialog: {
             enabled: page.proxyEnabledInput,
@@ -74,6 +78,10 @@ export function useLoginPageController() {
             onDeleteStart: page.setDeleteTarget,
             onLogin: page.handleSavedCredentialLogin,
             visible: page.hasSavedAccounts
+        },
+        serverStatus: {
+            ...serverStatus,
+            onOpenStatusPage: () => page.openExternalLink(links.vrchatStatus)
         }
     };
 }

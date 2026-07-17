@@ -15,13 +15,16 @@ pub fn app__favorite_add(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let is_world = kind.trim() == "world";
-    let affected =
-        vrcx_0_persistence::favorites::favorite_add(state.db.as_ref(), kind, entity_id, group_name)
-            .map_err(AppError::from)?;
-    if is_world {
-        state.realtime_runtime.sync_world_cache_favorites_from_db();
-    }
+    let affected = vrcx_0_persistence::favorites::favorite_add(
+        state.db.as_ref(),
+        kind.clone(),
+        entity_id,
+        group_name,
+    )
+    .map_err(AppError::from)?;
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
     Ok(affected)
 }
 
@@ -32,13 +35,15 @@ pub fn app__favorite_group_delete(
     kind: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let is_world = kind.trim() == "world";
-    let affected =
-        vrcx_0_persistence::favorites::favorite_group_delete(state.db.as_ref(), kind, group_name)
-            .map_err(AppError::from)?;
-    if is_world {
-        state.realtime_runtime.sync_world_cache_favorites_from_db();
-    }
+    let affected = vrcx_0_persistence::favorites::favorite_group_delete(
+        state.db.as_ref(),
+        kind.clone(),
+        group_name,
+    )
+    .map_err(AppError::from)?;
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
     Ok(affected)
 }
 
@@ -50,13 +55,17 @@ pub fn app__favorite_group_rename(
     group_name: String,
     new_group_name: String,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::favorites::favorite_group_rename(
+    let affected = vrcx_0_persistence::favorites::favorite_group_rename(
         state.db.as_ref(),
-        kind,
+        kind.clone(),
         group_name,
         new_group_name,
     )
-    .map_err(AppError::from)
+    .map_err(AppError::from)?;
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
+    Ok(affected)
 }
 
 #[tauri::command]
@@ -76,16 +85,15 @@ pub fn app__favorite_remove(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let is_world = kind.trim() == "world";
     let affected = vrcx_0_persistence::favorites::favorite_remove(
         state.db.as_ref(),
-        kind,
+        kind.clone(),
         entity_id,
         group_name,
     )
     .map_err(AppError::from)?;
-    if is_world {
-        state.realtime_runtime.sync_world_cache_favorites_from_db();
-    }
+    state
+        .realtime_runtime
+        .notify_favorites_changed(&kind, true, false);
     Ok(affected)
 }

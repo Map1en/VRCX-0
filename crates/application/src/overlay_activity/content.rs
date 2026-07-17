@@ -1,5 +1,6 @@
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_core::location::{format_display_location, parse_location};
+use vrcx_0_i18n::OverlayMessage;
 
 use super::types::{
     OverlayActivityCandidate, OverlayActivityCategory, OverlayActivityContent, OverlayActivityText,
@@ -45,47 +46,37 @@ pub(super) fn build_activity_content(
         "OnPlayerJoining" => titled_body(
             "instance",
             &title_name,
-            text("notifications.is_joining", json!({}), "is joining"),
+            OverlayActivityText::message(OverlayMessage::notifications_is_joining()),
         ),
         "OnPlayerJoined" => titled_body(
             "instance",
             &title_name,
-            text("notifications.has_joined", json!({}), "has joined"),
+            OverlayActivityText::message(OverlayMessage::notifications_has_joined()),
         ),
         "OnPlayerLeft" => titled_body(
             "instance",
             &title_name,
-            text("notifications.has_left", json!({}), "has left"),
+            OverlayActivityText::message(OverlayMessage::notifications_has_left()),
         ),
         "GPS" => titled_body(
             "location",
             &title_name,
-            text(
-                "notifications.gps",
-                json!({ "location": display_location }),
-                if display_location.is_empty() {
-                    "is in an instance".to_string()
-                } else {
-                    format!("is in {display_location}")
-                },
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_gps(&display_location)),
         ),
         "Online" => {
             let body = if readable_name(&world_name).is_empty() {
-                text("notifications.online", json!({}), "online")
+                OverlayActivityText::message(OverlayMessage::notifications_online())
             } else {
-                text(
-                    "notifications.online_location",
-                    json!({ "location": display_location }),
-                    format!("online in {display_location}"),
-                )
+                OverlayActivityText::message(OverlayMessage::notifications_online_location(
+                    &display_location,
+                ))
             };
             titled_body("status-online", &title_name, body)
         }
         "Offline" => titled_body(
             "status-offline",
             &title_name,
-            text("notifications.offline", json!({}), "offline"),
+            OverlayActivityText::message(OverlayMessage::notifications_offline()),
         ),
         "Status" => {
             let status = string_field(payload, "status");
@@ -93,14 +84,10 @@ pub(super) fn build_activity_content(
             titled_body(
                 status_icon(&status),
                 &title_name,
-                text(
-                    "notifications.status_update",
-                    json!({
-                        "status": status,
-                        "description": description,
-                    }),
-                    status_fallback(&status, &description),
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_status_update(
+                    &status,
+                    &description,
+                )),
             )
         }
         "AvatarChange" => {
@@ -111,31 +98,23 @@ pub(super) fn build_activity_content(
             titled_body(
                 "avatar",
                 &title_name,
-                text(
-                    "notifications.avatar_change",
-                    json!({ "avatar": avatar }),
-                    if avatar.is_empty() {
-                        "changed avatar".to_string()
-                    } else {
-                        format!("changed avatar to {avatar}")
-                    },
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_avatar_change(&avatar)),
             )
         }
         "Bio" => titled_body(
             "bio",
             &title_name,
-            text("dashboard.widget.feed_bio", json!({}), "updated bio"),
+            OverlayActivityText::message(OverlayMessage::notifications_bio()),
         ),
         "Friend" => titled_body(
             "friend",
             &title_name,
-            text("notifications.friend", json!({}), "friend"),
+            OverlayActivityText::message(OverlayMessage::notifications_friend()),
         ),
         "Unfriend" => titled_body(
             "friend",
             &title_name,
-            text("notifications.unfriend", json!({}), "unfriend"),
+            OverlayActivityText::message(OverlayMessage::notifications_unfriend()),
         ),
         "DisplayName" => {
             let display_name = string_field(payload, "displayName");
@@ -143,15 +122,9 @@ pub(super) fn build_activity_content(
             titled_body(
                 "profile",
                 &title,
-                text(
-                    "notifications.display_name",
-                    json!({ "displayName": display_name }),
-                    if display_name.is_empty() {
-                        "changed display name".to_string()
-                    } else {
-                        format!("changed display name to {display_name}")
-                    },
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_display_name(
+                    &display_name,
+                )),
             )
         }
         "TrustLevel" => {
@@ -159,28 +132,20 @@ pub(super) fn build_activity_content(
             titled_body(
                 "profile",
                 &title_name,
-                text(
-                    "notifications.trust_level",
-                    json!({ "trustLevel": trust_level }),
-                    if trust_level.is_empty() {
-                        "trust level changed".to_string()
-                    } else {
-                        format!("trust level {trust_level}")
-                    },
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_trust_level(
+                    &trust_level,
+                )),
             )
         }
         "invite" => {
             let message = detail_message(payload);
-            let fallback = join_non_empty(["has invited you to", &display_location, &message]);
             titled_body(
                 "invite",
                 &title_name,
-                text(
-                    "notifications.invite",
-                    json!({ "location": display_location, "message": message }),
-                    fallback,
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_invite(
+                    &display_location,
+                    &message,
+                )),
             )
         }
         "requestInvite" => {
@@ -188,11 +153,9 @@ pub(super) fn build_activity_content(
             titled_body(
                 "request",
                 &title_name,
-                text(
-                    "notifications.request_invite",
-                    json!({ "message": message }),
-                    join_non_empty(["request invite", &message]),
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_request_invite(
+                    &message,
+                )),
             )
         }
         "inviteResponse" => {
@@ -200,11 +163,9 @@ pub(super) fn build_activity_content(
             titled_body(
                 "invite",
                 &title_name,
-                text(
-                    "notifications.invite_response",
-                    json!({ "message": message }),
-                    join_non_empty(["invite response", &message]),
-                ),
+                OverlayActivityText::message(OverlayMessage::notifications_invite_response(
+                    &message,
+                )),
             )
         }
         "requestInviteResponse" => {
@@ -212,17 +173,15 @@ pub(super) fn build_activity_content(
             titled_body(
                 "request",
                 &title_name,
-                text(
-                    "notifications.request_invite_response",
-                    json!({ "message": message }),
-                    join_non_empty(["request invite response", &message]),
+                OverlayActivityText::message(
+                    OverlayMessage::notifications_request_invite_response(&message),
                 ),
             )
         }
         "friendRequest" => titled_body(
             "friend",
             &title_name,
-            text("notifications.friend_request", json!({}), "friend request"),
+            OverlayActivityText::message(OverlayMessage::notifications_friend_request()),
         ),
         "boop" | "groupChange" => titled_body(
             group_or_direct_icon(activity_type),
@@ -230,118 +189,90 @@ pub(super) fn build_activity_content(
             literal_body(string_field(payload, "message")),
         ),
         "group.announcement" => group_message(
-            "notifications.group_announcement_title",
-            "Group announcement",
+            OverlayMessage::notifications_group_announcement_title(),
             payload,
         ),
         "group.informative" => group_message(
-            "notifications.group_informative_title",
-            "Group informative",
+            OverlayMessage::notifications_group_informative_title(),
             payload,
         ),
         "group.invite" => {
-            group_message("notifications.group_invite_title", "Group invite", payload)
+            group_message(OverlayMessage::notifications_group_invite_title(), payload)
         }
         "group.joinRequest" => group_message(
-            "notifications.group_join_request_title",
-            "Group join request",
+            OverlayMessage::notifications_group_join_request_title(),
             payload,
         ),
         "group.transfer" => group_message(
-            "notifications.group_transfer_request_title",
-            "Group transfer request",
+            OverlayMessage::notifications_group_transfer_request_title(),
             payload,
         ),
         "group.queueReady" => activity_content(
             "group",
-            text(
-                "notifications.group_queue_ready_title",
-                json!({}),
-                "Group queue ready",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_group_queue_ready_title()),
             literal_body(string_field(payload, "message")),
         ),
         "instance.closed" => activity_content(
             "instance",
-            text(
-                "notifications.instance_closed_title",
-                json!({}),
-                "Instance closed",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_instance_closed_title()),
             literal_body(string_field(payload, "message")),
         ),
-        "Event" => titled_body(
+        "Event" => keyed_title_body(
             "system",
-            "Event",
+            OverlayMessage::notifications_event_title(),
             literal_body(first_non_empty([
                 string_field(payload, "data"),
                 string_field(payload, "message"),
             ])),
         ),
-        "External" => titled_body(
+        "External" => keyed_title_body(
             "system",
-            "External",
+            OverlayMessage::notifications_external_title(),
             literal_body(string_field(payload, "message")),
         ),
         "Blocked" => titled_body(
             "shield",
             &title_name,
-            text("notifications.blocked", json!({}), "blocked"),
+            OverlayActivityText::message(OverlayMessage::notifications_blocked()),
         ),
         "Unblocked" => titled_body(
             "shield",
             &title_name,
-            text("notifications.unblocked", json!({}), "unblocked"),
+            OverlayActivityText::message(OverlayMessage::notifications_unblocked()),
         ),
         "Muted" => titled_body(
             "shield",
             &title_name,
-            text("notifications.muted", json!({}), "muted"),
+            OverlayActivityText::message(OverlayMessage::notifications_muted()),
         ),
         "Unmuted" => titled_body(
             "shield",
             &title_name,
-            text("notifications.unmuted", json!({}), "unmuted"),
+            OverlayActivityText::message(OverlayMessage::notifications_unmuted()),
         ),
         "BlockedOnPlayerJoined" => titled_body(
             "shield",
             &title_name,
-            text(
-                "notifications.blocked_player_joined",
-                json!({}),
-                "blocked user joined",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_blocked_player_joined()),
         ),
         "BlockedOnPlayerLeft" => titled_body(
             "shield",
             &title_name,
-            text(
-                "notifications.blocked_player_left",
-                json!({}),
-                "blocked user left",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_blocked_player_left()),
         ),
         "MutedOnPlayerJoined" => titled_body(
             "shield",
             &title_name,
-            text(
-                "notifications.muted_player_joined",
-                json!({}),
-                "muted user joined",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_muted_player_joined()),
         ),
         "MutedOnPlayerLeft" => titled_body(
             "shield",
             &title_name,
-            text(
-                "notifications.muted_player_left",
-                json!({}),
-                "muted user left",
-            ),
+            OverlayActivityText::message(OverlayMessage::notifications_muted_player_left()),
         ),
-        "VideoPlay" => titled_body(
+        "VideoPlay" => keyed_title_body(
             "media",
-            "Now playing",
+            OverlayMessage::notifications_video_play_title(),
             literal_body(first_non_empty([
                 string_field(payload, "videoName"),
                 string_field(payload, "notyName"),
@@ -378,7 +309,7 @@ pub(super) fn build_activity_content(
         content.avatar_name.clone(),
         display_location,
     ]);
-    content.summary = summary(&content.title.fallback, &content.body.fallback);
+    content.summary = summary(&content.title.source_text(), &content.body.source_text());
     content
 }
 
@@ -407,16 +338,24 @@ fn category_content(
     )
 }
 
-fn group_message(key: &str, fallback: &str, payload: &Value) -> OverlayActivityContent {
+fn group_message(message: OverlayMessage, payload: &Value) -> OverlayActivityContent {
     activity_content(
         "group",
-        text(key, json!({}), fallback),
+        OverlayActivityText::message(message),
         literal_body(string_field(payload, "message")),
     )
 }
 
 fn titled_body(icon: &str, title: &str, body: OverlayActivityText) -> OverlayActivityContent {
     activity_content(icon, literal_title(title), body)
+}
+
+fn keyed_title_body(
+    icon: &str,
+    title: OverlayMessage,
+    body: OverlayActivityText,
+) -> OverlayActivityContent {
+    activity_content(icon, OverlayActivityText::message(title), body)
 }
 
 fn activity_content(
@@ -432,20 +371,12 @@ fn activity_content(
     }
 }
 
-fn text(key: &str, params: Value, fallback: impl Into<String>) -> OverlayActivityText {
-    OverlayActivityText {
-        key: key.to_string(),
-        fallback: fallback.into(),
-        params,
-    }
-}
-
 fn literal_title(value: &str) -> OverlayActivityText {
-    text("", json!({}), value.trim())
+    OverlayActivityText::literal(value.trim())
 }
 
 fn literal_body(value: String) -> OverlayActivityText {
-    text("", json!({}), value.trim())
+    OverlayActivityText::literal(value.trim())
 }
 
 fn summary(title: &str, body: &str) -> String {
@@ -454,19 +385,6 @@ fn summary(title: &str, body: &str) -> String {
         (true, false) => title.trim().to_string(),
         (false, true) => body.trim().to_string(),
         (false, false) => String::new(),
-    }
-}
-
-fn status_fallback(status: &str, description: &str) -> String {
-    let values = [status, description]
-        .into_iter()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .collect::<Vec<_>>();
-    if values.is_empty() {
-        "status update".to_string()
-    } else {
-        format!("status: {}", values.join(" - "))
     }
 }
 
@@ -543,13 +461,4 @@ fn first_non_empty<const N: usize>(values: [String; N]) -> String {
         .into_iter()
         .find(|value| !value.trim().is_empty())
         .unwrap_or_default()
-}
-
-fn join_non_empty<const N: usize>(values: [&str; N]) -> String {
-    values
-        .into_iter()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .collect::<Vec<_>>()
-        .join(" ")
 }

@@ -1,3 +1,4 @@
+import { commands } from '@/platform/tauri/bindings';
 import type {
     BoolConfigPreferenceKey,
     StringConfigPreferenceKey
@@ -41,10 +42,17 @@ export type SettingsActionPrefs = Record<string, unknown> & {
     customFontOverride: unknown;
     customFontPrimary: unknown;
     customFontSecondary: unknown;
+    desktopNotificationActivityFilters: PreferencesSnapshot['desktopNotificationActivityFilters'];
+    hmdNotificationActivityFilters: PreferencesSnapshot['hmdNotificationActivityFilters'];
     notificationTTS: unknown;
-    notificationTTSVoice: string;
+    notificationTTSNameMode: string;
+    notificationTTSVoiceNative: string;
+    overlayActivityFilters: PreferencesSnapshot['overlayActivityFilters'];
     proxyServer: string;
+    ttsNotificationActivityFilters: PreferencesSnapshot['ttsNotificationActivityFilters'];
     userGeneratedContentPath: string;
+    vrNotificationActivityFilters: PreferencesSnapshot['vrNotificationActivityFilters'];
+    webhookActivityFilters: PreferencesSnapshot['webhookActivityFilters'];
     wristOverlayEnabled: boolean;
 };
 type SettingsPrefs = SettingsActionPrefs;
@@ -104,15 +112,8 @@ type SettingsPreferenceActionsDeps = {
         value: unknown
     ) => Promise<string[]>;
     setOnlineVisitCount: (value: number) => void;
-    setOverlayActivityFiltersPreference: (
-        value: unknown,
-        definitions?: OverlayActivityTypeDefinition[]
-    ) => Promise<PreferencesSnapshot['overlayActivityFilters']>;
     setPrefs: StateSetter<SettingsPrefs>;
     setProxyEnabledPreference: (value: boolean) => Promise<boolean>;
-    setSharedFeedFilters: (
-        value: PreferencesSnapshot['sharedFeedFilters']
-    ) => void;
     setSqliteTableSizes: (value: Record<string, unknown>) => void;
     setStringConfigPreference: (
         key: StringConfigPreferenceKey,
@@ -132,6 +133,10 @@ type SettingsPreferenceActionsDeps = {
         key: TrustColorKey,
         value: unknown
     ) => Promise<PreferencesSnapshot['trustColor']>;
+    setOverlayActivityFiltersPreference: (
+        value: unknown,
+        definitions?: OverlayActivityTypeDefinition[]
+    ) => Promise<PreferencesSnapshot['overlayActivityFilters']>;
     setVrNotificationActivityFiltersPreference: (
         value: unknown
     ) => Promise<PreferencesSnapshot['vrNotificationActivityFilters']>;
@@ -144,6 +149,9 @@ type SettingsPreferenceActionsDeps = {
     setWebhookActivityFiltersPreference: (
         value: unknown
     ) => Promise<PreferencesSnapshot['webhookActivityFilters']>;
+    setTtsNotificationActivityFiltersPreference: (
+        value: unknown
+    ) => Promise<PreferencesSnapshot['ttsNotificationActivityFilters']>;
     setWristOverlayEnabledPreference: (value: boolean) => Promise<boolean>;
     t: (key: string) => string;
     tableLimitsDraft: {
@@ -174,13 +182,16 @@ type FontPreferencesInput = Partial<{
 }>;
 
 type ActivityFilterSurfaceField =
+    | 'overlayActivityFilters'
     | 'vrNotificationActivityFilters'
     | 'hmdNotificationActivityFilters'
     | 'desktopNotificationActivityFilters'
-    | 'webhookActivityFilters';
+    | 'webhookActivityFilters'
+    | 'ttsNotificationActivityFilters';
 
 type ActivityFilterSurfaceSetter<Field extends ActivityFilterSurfaceField> = (
-    value: unknown
+    value: unknown,
+    definitions?: OverlayActivityTypeDefinition[]
 ) => Promise<PreferencesSnapshot[Field]>;
 
 function readCustomFontDraft(value: unknown): Partial<CustomFontDraft> {
@@ -218,11 +229,9 @@ export function useSettingsPreferenceActions({
     setIntegrationPrefs,
     setLocalFavoriteFriendsGroups,
     setLocalFavoriteFriendsGroupsPreference,
-    setOverlayActivityFiltersPreference,
     setOnlineVisitCount,
     setPrefs,
     setProxyEnabledPreference,
-    setSharedFeedFilters,
     setSqliteTableSizes,
     setStringConfigPreference,
     setTableLimitsDialogOpen,
@@ -230,10 +239,12 @@ export function useSettingsPreferenceActions({
     setTableLimitsPreference,
     setTablePageSizesDialogOpen,
     setTrustColorPreference,
+    setOverlayActivityFiltersPreference,
     setVrNotificationActivityFiltersPreference,
     setHmdNotificationActivityFiltersPreference,
     setDesktopNotificationActivityFiltersPreference,
     setWebhookActivityFiltersPreference,
+    setTtsNotificationActivityFiltersPreference,
     setWristOverlayEnabledPreference,
     t,
     tableLimitsDraft,
@@ -274,7 +285,6 @@ export function useSettingsPreferenceActions({
             discordWorldNameAsDiscordStatus:
                 normalizedSnapshot.discordWorldNameAsDiscordStatus
         });
-        setSharedFeedFilters(normalizedSnapshot.sharedFeedFilters);
         setLocalFavoriteFriendsGroups(
             normalizedSnapshot.localFavoriteFriendsGroups
         );
@@ -614,54 +624,18 @@ export function useSettingsPreferenceActions({
             }
         );
     }
-    async function saveOverlayActivityFilters(
-        value: unknown,
-        definitions?: OverlayActivityTypeDefinition[]
-    ) {
-        let savedFilters:
-            | Awaited<ReturnType<typeof setOverlayActivityFiltersPreference>>
-            | undefined;
-        const previousFilters = prefs.overlayActivityFilters;
-        const saved = await commit(
-            async () => {
-                savedFilters = await setOverlayActivityFiltersPreference(
-                    value,
-                    definitions
-                );
-            },
-            () => {
-                setPrefs((current) => ({
-                    ...current,
-                    overlayActivityFilters:
-                        value as PreferencesSnapshot['overlayActivityFilters']
-                }));
-                return () =>
-                    setPrefs((current) => ({
-                        ...current,
-                        overlayActivityFilters: previousFilters
-                    }));
-            }
-        );
-        if (!saved) {
-            return null;
-        }
-        setPrefs((current) => ({
-            ...current,
-            overlayActivityFilters:
-                savedFilters as PreferencesSnapshot['overlayActivityFilters']
-        }));
-        toast.success(t('common.settings_saved'));
-        return savedFilters;
-    }
     function makeSaveActivityFilterSurface<
         Field extends ActivityFilterSurfaceField
     >(field: Field, setPreference: ActivityFilterSurfaceSetter<Field>) {
-        return async function saveActivityFilterSurface(value: unknown) {
+        return async function saveActivityFilterSurface(
+            value: unknown,
+            definitions?: OverlayActivityTypeDefinition[]
+        ) {
             let savedFilters: PreferencesSnapshot[Field] | undefined;
             const previousFilters = prefs[field];
             const saved = await commit(
                 async () => {
-                    savedFilters = await setPreference(value);
+                    savedFilters = await setPreference(value, definitions);
                 },
                 () => {
                     setPrefs((current) => ({
@@ -686,6 +660,10 @@ export function useSettingsPreferenceActions({
             return savedFilters;
         };
     }
+    const saveOverlayActivityFilters = makeSaveActivityFilterSurface(
+        'overlayActivityFilters',
+        setOverlayActivityFiltersPreference
+    );
     const saveVrNotificationActivityFilters = makeSaveActivityFilterSurface(
         'vrNotificationActivityFilters',
         setVrNotificationActivityFiltersPreference
@@ -702,6 +680,10 @@ export function useSettingsPreferenceActions({
     const saveWebhookActivityFilters = makeSaveActivityFilterSurface(
         'webhookActivityFilters',
         setWebhookActivityFiltersPreference
+    );
+    const saveTtsNotificationActivityFilters = makeSaveActivityFilterSurface(
+        'ttsNotificationActivityFilters',
+        setTtsNotificationActivityFiltersPreference
     );
     async function saveWristOverlayEnabled(value: boolean) {
         let savedValue = value === true;
@@ -733,29 +715,18 @@ export function useSettingsPreferenceActions({
     }
     function speakNotificationTts(
         text: string,
-        voiceIndex: number = Number.parseInt(prefs.notificationTTSVoice, 10) ||
-            0
+        voiceId: string = prefs.notificationTTSVoiceNative
     ) {
-        if (
-            typeof window === 'undefined' ||
-            !window.speechSynthesis ||
-            !window.SpeechSynthesisUtterance
-        ) {
-            return;
-        }
-        const voices = window.speechSynthesis.getVoices();
-        if (!voices.length) {
-            toast.warning(
-                t('view.settings.empty.no_text_to_speech_voices_are_available')
-            );
-            return;
-        }
-        const utterance = new window.SpeechSynthesisUtterance();
-        utterance.voice =
-            voices[Math.min(Math.max(voiceIndex, 0), voices.length - 1)];
-        utterance.text = text || 'Notification text-to-speech test';
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+        commands
+            .appHostTtsSpeak(text, voiceId || null)
+            .catch((error: unknown) => {
+                console.warn('Failed to play notification TTS', error);
+                toast.warning(
+                    t(
+                        'view.settings.notifications.notifications.text_to_speech.tts_test_failed'
+                    )
+                );
+            });
     }
     return {
         applyPreferenceSnapshotToLocalState,
@@ -782,6 +753,7 @@ export function useSettingsPreferenceActions({
         saveHmdNotificationActivityFilters,
         saveDesktopNotificationActivityFilters,
         saveWebhookActivityFilters,
+        saveTtsNotificationActivityFilters,
         saveWristOverlayEnabled,
         speakNotificationTts
     };

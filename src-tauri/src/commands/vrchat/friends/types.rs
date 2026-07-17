@@ -21,14 +21,3 @@ pub struct VrchatFriendUserInput {
     #[serde(default)]
     pub(crate) endpoint: String,
 }
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatFriendCancelRequestInput {
-    #[serde(default)]
-    pub(crate) user_id: String,
-    #[serde(default)]
-    pub(crate) notification_id: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
-}

@@ -44,6 +44,7 @@ const navIconEntries: Array<readonly [NavIconKey, string]> = [
     ['lucide:Camera', 'Camera'],
     ['lucide:Images', 'Images'],
     ['lucide:Database', 'Database'],
+    ['lucide:DatabaseBackup', 'Database Backup'],
     ['lucide:ServerCog', 'Server'],
     ['lucide:Archive', 'Archive'],
     ['lucide:Package', 'Package'],

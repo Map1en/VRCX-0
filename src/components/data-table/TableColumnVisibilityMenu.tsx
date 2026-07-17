@@ -84,10 +84,10 @@ export function TableColumnVisibilityMenu<TData extends RowData>({
                 align="end"
                 className="max-h-96 w-72 overflow-y-auto"
             >
-                <DropdownMenuLabel>
-                    {t('table.label.table_layout')}
-                </DropdownMenuLabel>
                 <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                        {t('table.label.table_layout')}
+                    </DropdownMenuLabel>
                     <DropdownMenuItem
                         closeOnClick={false}
                         onClick={(event) => {

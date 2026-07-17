@@ -14,12 +14,14 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
         locale,
         prefs,
         zoomInput,
-        zoomLevel,
         onLanguageChange,
         onFontFamilyChange,
         onCjkFontPackChange,
         onZoomInputChange,
         onZoomBlur,
+        notificationLayoutOptions,
+        onNotificationLayoutChange,
+        onNotificationIconDotChange,
         onTableDensityChange,
         onDataTableStripedChange,
         onAccessibleStatusIndicatorsChange,
@@ -48,13 +50,15 @@ export function SettingsInterfaceTab({ settingsInterface }: any) {
                 locale={locale}
                 prefs={prefs}
                 zoomInput={zoomInput}
-                zoomLevel={zoomLevel}
                 hideFontControls={isMacHost}
                 onLanguageChange={onLanguageChange}
                 onFontFamilyChange={onFontFamilyChange}
                 onCjkFontPackChange={onCjkFontPackChange}
                 onZoomInputChange={onZoomInputChange}
                 onZoomBlur={onZoomBlur}
+                notificationLayoutOptions={notificationLayoutOptions}
+                onNotificationLayoutChange={onNotificationLayoutChange}
+                onNotificationIconDotChange={onNotificationIconDotChange}
                 onTableDensityChange={onTableDensityChange}
                 onDataTableStripedChange={onDataTableStripedChange}
                 onAccessibleStatusIndicatorsChange={

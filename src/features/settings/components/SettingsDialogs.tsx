@@ -1,14 +1,14 @@
 import { AvatarProviderDialog } from './settings-dialogs/AvatarProviderDialog';
 import { CustomFontDialog } from './settings-dialogs/CustomFontDialog';
-import { FeedFilterDialog } from './settings-dialogs/FeedFilterDialog';
 import { PurgeConfirmDialog } from './settings-dialogs/PurgeConfirmDialog';
 import { TableLimitsDialog } from './settings-dialogs/TableLimitsDialog';
 import { TranslationApiDialog } from './settings-dialogs/TranslationApiDialog';
 import {
     DesktopNotificationsDialog,
     HmdNotificationsDialog,
-    WebhookNotificationsDialog,
+    TtsNotificationsDialog,
     VrNotificationsDialog,
+    WebhookNotificationsDialog,
     WristFeedNotificationsDialog
 } from './settings-dialogs/WristFeedNotificationsDialog';
 import { YoutubeApiDialog } from './settings-dialogs/YoutubeApiDialog';
@@ -22,12 +22,12 @@ export function SettingsDialogs({
     tableLimits,
     avatarProvider,
     purge,
-    feedFilter,
     wristFeedNotifications,
     vrNotifications,
     hmdNotifications,
     desktopNotifications,
-    webhookNotifications
+    webhookNotifications,
+    ttsNotifications
 }: any) {
     return (
         <>
@@ -92,15 +92,6 @@ export function SettingsDialogs({
                 inProgress={purge.inProgress}
                 onConfirm={purge.onConfirm}
             />
-            <FeedFilterDialog
-                open={feedFilter.open}
-                onOpenChange={feedFilter.setOpen}
-                mode={feedFilter.mode}
-                options={feedFilter.options}
-                filters={feedFilter.filters}
-                onUpdate={feedFilter.onUpdate}
-                onReset={feedFilter.onReset}
-            />
             <WristFeedNotificationsDialog
                 open={wristFeedNotifications.open}
                 onOpenChange={wristFeedNotifications.setOpen}
@@ -130,6 +121,12 @@ export function SettingsDialogs({
                 onOpenChange={webhookNotifications.setOpen}
                 value={webhookNotifications.value}
                 onSave={webhookNotifications.onSave}
+            />
+            <TtsNotificationsDialog
+                open={ttsNotifications.open}
+                onOpenChange={ttsNotifications.setOpen}
+                value={ttsNotifications.value}
+                onSave={ttsNotifications.onSave}
             />
         </>
     );

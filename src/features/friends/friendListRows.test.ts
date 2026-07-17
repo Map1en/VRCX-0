@@ -61,7 +61,7 @@ describe('friendListRows', () => {
     });
 
     it('matches friends by the search filters users can toggle', () => {
-        const friend: any = {
+        const friend: Parameters<typeof matchesFriendListSearch>[0] = {
             id: 'usr_friend',
             displayName: 'Ａｌｉｃｅ Star',
             username: 'alice_user',
@@ -167,7 +167,7 @@ describe('friendListRows', () => {
                 activeSearchFilterIds: new Set(['bio']),
                 userMemoById: new Map(),
                 userNoteById: new Map()
-            }).map((friend: any) => friend.id)
+            }).map((friend) => friend.id)
         ).toEqual(['usr_1', 'usr_3']);
         expect(
             filterFriendListRows({

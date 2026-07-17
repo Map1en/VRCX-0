@@ -9,6 +9,15 @@ export const FRIENDS_LOCATIONS_SEGMENTS = [
     { value: 'offline', labelKey: 'view.friends_locations.offline' }
 ];
 
+export function buildFriendsLocationsSegmentOptions(
+    counts: Record<string, number>
+) {
+    return FRIENDS_LOCATIONS_SEGMENTS.map((segment) => ({
+        ...segment,
+        count: counts[segment.value] ?? 0
+    }));
+}
+
 export function safeJsonParse(value: any, fallback: any) {
     if (!value) {
         return fallback;

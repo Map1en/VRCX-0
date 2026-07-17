@@ -9,6 +9,7 @@ import type {
     KeyboardEvent,
     MouseEvent
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
@@ -59,6 +60,7 @@ function ResizableTableHeadContent<TData extends RowData>({
     header: Header<TData, unknown>;
     dragHandleProps?: DragHandleProps;
 }) {
+    const { t } = useTranslation();
     const canResize = header.column.getCanResize();
     const minSize = header.column.columnDef.minSize ?? 20;
     const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
@@ -79,7 +81,9 @@ function ResizableTableHeadContent<TData extends RowData>({
                         type="button"
                         variant="ghost"
                         size="icon-xs"
-                        aria-label={`Reorder ${header.column.id} column`}
+                        aria-label={t('accessibility.reorder_column', {
+                            column: header.column.id
+                        })}
                         className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
                         {...dragHandleProps}
                     >
@@ -92,7 +96,9 @@ function ResizableTableHeadContent<TData extends RowData>({
                     type="button"
                     variant="ghost"
                     role="slider"
-                    aria-label={`Resize ${header.column.id} column`}
+                    aria-label={t('accessibility.resize_column', {
+                        column: header.column.id
+                    })}
                     aria-orientation="horizontal"
                     aria-valuemin={minSize}
                     aria-valuemax={maxSize}
@@ -174,7 +180,7 @@ function SortableResizableTableHead<TData extends RowData>({
                 ...style,
                 width: resolveSize(header.getSize()),
                 transform: CSS.Translate.toString(transform),
-                transition: transition || 'width transform 0.2s ease-in-out'
+                transition
             }}
         >
             <ResizableTableHeadContent
@@ -273,7 +279,7 @@ function SortableResizableTableCell<TData extends RowData>({
                 ...style,
                 width: resolveSize(cell.column.getSize()),
                 transform: CSS.Translate.toString(transform),
-                transition: transition || 'width transform 0.2s ease-in-out'
+                transition
             }}
         >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}

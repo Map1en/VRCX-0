@@ -10,6 +10,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: commandMocks
 }));
 
+import { ConfigKeys } from './configKeys';
 import { ConfigRepository } from './configRepository';
 
 function createRepository() {
@@ -61,6 +62,38 @@ describe('ConfigRepository', () => {
         await expect(repository.getBool('autoUpdateVRCX', true)).resolves.toBe(
             true
         );
+    });
+
+    it('keeps hidden VR friends panel keys out of the config schema', () => {
+        expect(ConfigKeys).not.toHaveProperty('vrOverlayPanelEnabled');
+        expect(ConfigKeys).not.toHaveProperty(
+            'vrOverlayPanelAllFriendsIncludesFavorites'
+        );
+    });
+
+    it('does not write hidden VR friends panel keys into config storage', async () => {
+        const repository = createRepository();
+
+        await repository.setBool('vrOverlayPanelEnabled', false);
+        await repository.setMany([
+            ['vrOverlayPanelAllFriendsIncludesFavorites', false],
+            ['ThemeMode', 'dark']
+        ]);
+
+        expect(commandMocks.appConfigSetValues).toHaveBeenNthCalledWith(1, []);
+        expect(commandMocks.appConfigSetValues).toHaveBeenNthCalledWith(2, [
+            {
+                key: 'config:vrcx_thememode',
+                value: 'dark'
+            }
+        ]);
+        expect(commandMocks.appConfigSetValues).toHaveBeenCalledTimes(2);
+        await expect(
+            repository.getRawValue('vrOverlayPanelEnabled')
+        ).resolves.toBeNull();
+        await expect(
+            repository.getRawValue('vrOverlayPanelAllFriendsIncludesFavorites')
+        ).resolves.toBeNull();
     });
 
     it('updates the cache after set, setMany, and remove operations', async () => {

@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
+use crate::common::ParamsBuilder;
 use crate::database::DatabaseService;
 use crate::realtime::ensure_realtime_tables;
 use crate::Error;
@@ -20,7 +21,47 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
     ] {
         db.execute_non_query(sql, &Default::default())?;
     }
+    ensure_favorite_unique_indexes(db)?;
     Ok(())
+}
+
+const FAVORITE_UNIQUE_INDEX_TABLES: [(&str, &str); 3] = [
+    ("favorite_world", "world_id"),
+    ("favorite_avatar", "avatar_id"),
+    ("favorite_friend", "user_id"),
+];
+
+fn ensure_favorite_unique_indexes(db: &DatabaseService) -> Result<(), Error> {
+    for (table, column) in FAVORITE_UNIQUE_INDEX_TABLES {
+        let index_name = format!("{table}_{column}_group_idx");
+        if favorite_unique_index_exists(db, &index_name)? {
+            continue;
+        }
+        db.execute_non_query(
+            &format!(
+                "DELETE FROM {table} WHERE id NOT IN (SELECT MIN(id) FROM {table} GROUP BY {column}, group_name)"
+            ),
+            &Default::default(),
+        )?;
+        db.execute_non_query(
+            &format!(
+                "CREATE UNIQUE INDEX IF NOT EXISTS {index_name} ON {table} ({column}, group_name)"
+            ),
+            &Default::default(),
+        )?;
+    }
+    Ok(())
+}
+
+fn favorite_unique_index_exists(db: &DatabaseService, index_name: &str) -> Result<bool, Error> {
+    Ok(!db
+        .execute(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND name = @name",
+            &ParamsBuilder::new()
+                .set("name", index_name.to_string())
+                .build(),
+        )?
+        .is_empty())
 }
 
 pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error> {
@@ -304,9 +345,9 @@ pub(crate) fn add_legacy_indexes(db: &DatabaseService) -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) const VRCX0_SCHEMA_VERSION: i64 = 18;
+pub const VRCX0_SCHEMA_VERSION: i64 = 18;
 
-const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
+pub const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
 const UPSTREAM_DATABASE_VERSION_KEY: &str = "databaseVersion";
 
 fn parse_version(value: &str) -> i64 {
@@ -345,6 +386,16 @@ pub(crate) fn backfill_vrcx0_schema_version(db: &DatabaseService) -> Result<(), 
         set_vrcx0_schema_version(db, shared)?;
     }
     Ok(())
+}
+
+pub fn prepare_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
+    backfill_vrcx0_schema_version(db)?;
+    read_vrcx0_schema_version(db)
+}
+
+pub fn write_database_schema_versions(db: &DatabaseService, version: i64) -> Result<(), Error> {
+    set_vrcx0_schema_version(db, version)?;
+    crate::config::set_string(db, UPSTREAM_DATABASE_VERSION_KEY, &version.to_string())
 }
 
 #[cfg(test)]

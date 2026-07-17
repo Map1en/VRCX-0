@@ -45,7 +45,141 @@
         "last_online": "最后在线 {duration} 前",
         "in_private_world": "目前位于私人房间"
     },
+    "deep_link": {
+        "import_collection": {
+            "prompt": {
+                "title": "新建本地世界收藏",
+                "description": "为即将导入的 {count} 个世界输入本地收藏夹名称。"
+            },
+            "confirm": {
+                "title": "导入世界合集？",
+                "description": "「{title}」· 作者 {author} · 共 {count} 个世界",
+                "worlds_preview": "包含：{names}",
+                "confirm": "导入到 VRCX-0",
+                "cancel": "取消"
+            },
+            "toast": {
+                "import_partial_failed": "有 {count} 个世界导入失败，已跳过",
+                "preview_failed": "加载共享合集失败",
+                "empty": "此共享合集没有可导入的世界",
+                "import_success": "已将 {count} 个世界导入到「{title}」",
+                "import_failed": "导入共享合集失败"
+            },
+            "unknown_author": "未知作者"
+        }
+    },
     "language": "中文（简体） (zh-CN)",
+    "profile_backup": {
+        "header": "备份与恢复",
+        "tools_description": "备份 VRCX-0 数据，并在需要时从备份恢复。",
+        "automatic": "自动备份",
+        "automatic_description": "定期将备份保存到所选文件夹。",
+        "automatic_on": "已开启",
+        "automatic_off": "已关闭",
+        "enable_automatic": "启用自动备份",
+        "interval": "备份间隔",
+        "days": "天",
+        "keep_count": "保留的自动备份数",
+        "location_not_set": "尚未选择备份位置",
+        "last_automatic_backup": "上次自动备份",
+        "no_automatic_backup": "尚未创建备份",
+        "change_folder": "更改文件夹",
+        "manual_backup": "手动备份",
+        "manual_backup_description": "将备份保存到所选文件夹，不会改变自动备份计划。",
+        "phase_snapshot": "正在准备数据",
+        "phase_package": "正在创建备份",
+        "phase_deliver": "正在保存到备份位置",
+        "phase_finalize": "正在完成保存",
+        "background_backup_notice": "可以关闭此对话框，备份会在后台继续。",
+        "backup_now": "立即备份",
+        "backup_now_confirm": "创建备份",
+        "restore": "恢复数据",
+        "restore_description": "验证 VRCX-0 备份，然后重启并恢复数据。",
+        "restore_from_backup": "从备份恢复",
+        "file_filter": "VRCX-0 备份",
+        "automatic_running": "正在自动备份",
+        "manual_running": "正在备份",
+        "retryable_short": "备份未保存",
+        "error_short": "备份失败",
+        "retryable_title": "无法保存备份",
+        "error_title": "无法创建备份",
+        "retry_save": "重试保存",
+        "discard_backup": "放弃此备份",
+        "dismiss_error": "关闭",
+        "validating_restore": "正在检查备份",
+        "restore_validation_description": "正在复制并检查备份，确认可用于恢复。",
+        "restore_progress_copy": "正在复制备份",
+        "restore_progress_extract": "正在解压数据库",
+        "restore_progress_database_check": "正在检查数据库完整性",
+        "restore_progress_verify_staging": "正在最终校验恢复数据",
+        "preparing_restore": "正在准备恢复",
+        "restore_prepare_description": "正在进行重启前的恢复数据最终校验。",
+        "restore_confirm_title": "要从此备份恢复吗？",
+        "restore_confirm_description": "当前数据将替换为备份中的内容，随后 VRCX-0 会重启。恢复前的数据会自动保留，以便出现问题时还原。",
+        "restore_and_restart": "恢复并重启",
+        "restarting_to_restore": "VRCX-0 正在重启以恢复备份",
+        "created_at": "创建时间",
+        "app_version": "VRCX-0 版本",
+        "database_version": "数据库版本",
+        "source_file": "备份文件",
+        "backup_verified": "备份已验证",
+        "checks_passed": "文件、版本和数据库完整性检查均已通过。",
+        "backup_saved": "备份已保存",
+        "restore_succeeded": "已从备份恢复数据",
+        "restore_completed": "恢复完成",
+        "rollback_data_retained": "已保留恢复前的回滚数据",
+        "rollback_retained_description": "已保留恢复前的回滚数据。确认恢复结果正常后可清理。",
+        "clear_rollback": "清理回滚数据",
+        "rollback_cleanup_confirm_title": "清理回滚数据？",
+        "rollback_cleanup_confirm_description": "这会永久删除恢复前保留的回滚数据，且无法撤销。当前使用的数据不会受影响。",
+        "rollback_cleanup_protected": "恢复流程尚未结束，当前回滚数据受保护，暂时无法清理。",
+        "rollback_cleanup_succeeded": "已清理回滚数据",
+        "restore_failed_title": "无法恢复备份",
+        "restore_failed_unchanged": "当前数据未被更改。",
+        "restore_failed_rolled_back": "已恢复到操作前的数据。",
+        "settings_load_failed": "无法加载备份设置",
+        "settings_save_failed": "无法保存备份设置",
+        "folder_selection_failed": "无法选择备份文件夹",
+        "file_selection_failed": "无法选择备份文件",
+        "backup_start_failed": "无法开始备份",
+        "restore_validation_failed": "无法检查备份",
+        "restore_request_failed": "无法重启 VRCX-0 以恢复备份",
+        "action_failed": "无法完成备份操作",
+        "error": {
+            "busy": "正在进行其他备份或恢复操作，请等待其完成后重试。",
+            "delivery_pending": "上一份备份尚未完成写入，请先重试或放弃后再开始新的备份。",
+            "pending_restore": "恢复已准备就绪，重启 VRCX-0 后即可完成。",
+            "directory_unavailable": "备份位置不可用，请检查磁盘或网络连接。",
+            "permission_denied": "VRCX-0 无权保存到此位置，请选择其他文件夹。",
+            "local_disk_full": "VRCX-0 数据位置的可用空间不足，无法创建备份。",
+            "target_disk_full": "备份位置的可用空间不足。",
+            "device_removed": "备份位置已断开连接，请重新连接磁盘后重试。",
+            "already_exists": "已存在同名备份，请稍后重试。",
+            "backup_unavailable": "用于重试的备份已不存在，请重新创建备份。",
+            "snapshot_failed": "无法准备当前数据以创建备份。",
+            "package_failed": "无法创建备份文件。",
+            "io": "无法读取或写入备份文件。",
+            "unknown": "备份时发生意外错误。",
+            "invalid_archive": "此文件不是有效的 VRCX-0 备份。",
+            "unsupported_manifest": "当前版本的 VRCX-0 不支持此备份格式。",
+            "checksum_mismatch": "备份文件已损坏或被修改。",
+            "validation_expired": "已校验的恢复数据已不可用，请重新选择备份。",
+            "newer_app_version": "此备份由较新版本的 VRCX-0 创建。请更新 VRCX-0 后重试。",
+            "newer_database_version": "此备份使用较新的数据库格式。请更新 VRCX-0 后重试。",
+            "database_corrupt": "备份中的数据库已损坏。",
+            "not_vrcx0_profile": "此文件不包含 VRCX-0 备份数据。"
+        },
+        "rollback_error": {
+            "busy": "正在进行其他备份或恢复操作，请等待完成后重试。",
+            "protected": "恢复流程尚未结束，回滚数据当前受保护。",
+            "io": "无法清理回滚数据，请检查文件访问权限后重试。"
+        },
+        "restore_failure": {
+            "staging_corrupted": "准备恢复的数据未通过最终完整性检查。",
+            "db_open_failed": "无法打开恢复后的数据库。",
+            "unknown": "恢复备份时发生意外错误。"
+        }
+    },
     "common": {
         "no_data": "这里空空如也~",
         "no_matching_records": "无匹配记录",
@@ -106,7 +240,8 @@
             "retry": "重试"
         },
         "error": {
-            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，将向自身发送游戏内邀请"
+            "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，将向自身发送游戏内邀请",
+            "failed_to_save_memo": "保存本地备注失败"
         },
         "affinity": {
             "friend": "好友",
@@ -125,7 +260,11 @@
             "empty": "没有在线收藏好友",
             "note": "VRChat 备注",
             "memo": "本地备注",
+            "open": "打开",
+            "request": "申请加入",
+            "invite": "邀请",
             "favorites_online": "在线收藏",
+            "same_instance": "同一房间",
             "local_favorites": "本地收藏",
             "traveling": "正在前往",
             "private": "私密",
@@ -212,7 +351,7 @@
                 "keyboardShortcuts": "键盘快捷键",
                 "reportIssue": "反馈问题",
                 "github": "在 GitHub 上查看",
-                "discord": "加入 Discord",
+                "discord": "Discord",
                 "qqGroup": "QQ群",
                 "openDevtools": "打开 DevTools",
                 "supportVrcx": "支持 VRCX-0"
@@ -245,7 +384,7 @@
     },
     "nav_menu": {
         "qq_group": "QQ群",
-        "discord": "加入 Discord",
+        "discord": "Discord",
         "changelog": "更新日志",
         "update": "更新",
         "update_downloaded": "已下载更新",
@@ -522,6 +661,8 @@
             "signingIn": "正在登录...",
             "register": "注册",
             "forgotPassword": "忘记密码？",
+            "useOtherAccount": "使用其他账号登录",
+            "backToSavedAccounts": "返回账号列表",
             "proxy_settings": "代理设置",
             "proxy_description": "设置登录前使用的代理服务器。支持 Socks5 和 Http 协议",
             "field": {
@@ -610,6 +751,7 @@
             },
             "label": {
                 "previous_avatar": "上一个模型",
+                "online_for": "本次在线 {duration}",
                 "rows": "行",
                 "favorites_are_still_hydrating": "收藏仍在加载",
                 "favorites_only": "仅显示收藏（分组）"
@@ -651,13 +793,12 @@
         },
         "friends_locations": {
             "online": "在线",
+            "other_online": "其他在线好友",
             "favorite": "具有分组的好友",
             "same_instance": "同一房间",
             "active": "活跃中（仅登录网页端）",
             "offline": "离线",
             "search_placeholder": "搜索好友",
-            "spacing": "卡片间距",
-            "scale": "缩放",
             "density": "密度",
             "density_options": {
                 "standard": "标准",
@@ -853,7 +994,6 @@
                 "failed_to_upload_avatar_image": "上传模型图片失败"
             },
             "modal": {
-                "select_avatar_value": "选择模型？\n{value}",
                 "create_impostor": "创建 Impostor？",
                 "create": "创建",
                 "make_avatar_public": "将模型设为公开？",
@@ -925,6 +1065,10 @@
             },
             "select_all": "全选",
             "deselect_all": "取消全选",
+            "selection": {
+                "count_one": "已选择 {count} 项",
+                "count_other": "已选择 {count} 项"
+            },
             "bulk_unfavorite": "批量取消收藏",
             "export": "导出",
             "import": "导入",
@@ -954,7 +1098,8 @@
                 "group_visibility_changed": "已更改分组可见性",
                 "local_favorite_group_renamed": "重命名本地收藏分组成功",
                 "the_favorites_baseline_did_not_finish_loading": "收藏分组数据尚未加载完成",
-                "try_a_different_search_term": "尝试其他搜索词"
+                "try_a_different_search_term": "尝试其他搜索词",
+                "online_favorites_copy_hint": "在线收藏只能在在线分组之间移动；已在线收藏的项目无法复制到另一个在线分组。"
             },
             "success": {
                 "favorite_removed": "已移除收藏",
@@ -977,9 +1122,10 @@
             "action": {
                 "remove_favorite": "移除收藏",
                 "export_favorite": "导出收藏",
-                "edit_mode": "编辑模式",
                 "move": "移动",
-                "move_to": "移动到"
+                "move_to": "移动到",
+                "copy_ids": "复制 ID",
+                "copy_to": "复制到"
             },
             "empty": {
                 "no_favorite_groups_loaded": "收藏分组未被加载",
@@ -1000,10 +1146,70 @@
                 "loading_favorites_baseline": "正在加载收藏基线数据",
                 "loading_remote_avatar_details": "正在加载远程模型详情",
                 "loading_remote_world_details": "正在加载远程世界详情"
+            },
+            "share_collection": {
+                "title": "分享收藏合集",
+                "subtitle": "为 {group} 创建可分享的合集页面。",
+                "subtitle_empty": "创建可分享的收藏合集页面。",
+                "action": {
+                    "menu": "分享此组",
+                    "share": "分享",
+                    "copy_share_url": "复制分享链接",
+                    "open_share_page": "打开分享页面",
+                    "open_manage": "管理我的分享",
+                    "done": "完成",
+                    "open_editor": "打开编辑器",
+                    "forget": "移除记录"
+                },
+                "label": {
+                    "title": "标题",
+                    "listed": "推荐到首页",
+                    "listed_description": "让其他人可以在首页发现这个合集。关闭后，仍可通过分享链接访问。",
+                    "include_notes": "带上我的备注",
+                    "include_notes_description": "把本地世界备注作为评论复制到分享页面，之后可以在网页上编辑。",
+                    "account_connection": "分享内容与当前在 VRCX-0 中登录的 VRChat 账号关联，无需另外登录网页；分享服务由 VRCX-0 提供，与 VRChat 官方无关。",
+                    "worlds": "准备分享 {count}/{total} 个世界",
+                    "truncated": "仅上传前 {cap} 个世界。",
+                    "share_url": "分享链接",
+                    "manage_hint": "编辑、下架、删除都在「管理我的分享」后台完成。"
+                },
+                "success": {
+                    "title": "合集已分享",
+                    "description": "已有 {count} 个世界可以分享。",
+                    "ready": "分享页面已准备好",
+                    "skipped": "有 {count} 个不可用或非公开世界未被加入。",
+                    "skipped_incomplete": "{world} 因信息不完整被跳过。"
+                },
+                "coachmark": {
+                    "title": "分享世界收藏合集",
+                    "description": "可以把任意世界收藏分组变成一个页面，直接分享给其他人。",
+                    "dismiss": "知道了"
+                },
+                "toast": {
+                    "copy_success": "已复制分享链接",
+                    "copy_failed": "复制链接失败",
+                    "create_success": "合集已分享",
+                    "create_failed": "分享合集失败",
+                    "open_manage_failed": "打开分享管理页失败",
+                    "load_failed": "加载分享记录失败",
+                    "open_failed": "打开编辑器失败",
+                    "forget_success": "记录已移除",
+                    "forget_failed": "移除记录失败",
+                    "no_worlds": "此分组没有可分享的世界 ID",
+                    "too_many": "单次分享最多 {cap} 个世界,请先拆分该分组。",
+                    "skipped": "已分享,跳过 {count} 个世界(未同步或非公开)。"
+                }
             }
         },
         "friend_log": {
             "filter_placeholder": "筛选好友日志",
+            "all_types": "全部类型",
+            "selected_types": "已选 {count} 类",
+            "groups": {
+                "relationships": "好友关系",
+                "requests": "好友申请",
+                "profile_changes": "资料变化"
+            },
             "search_placeholder": "搜索好友日志",
             "filters": {
                 "Friend": "新的好友",
@@ -1076,8 +1282,8 @@
             "filters": {
                 "requestInvite": "申请加入",
                 "invite": "邀请",
-                "requestInviteResponse": "拒绝加入申请",
-                "inviteResponse": "拒绝邀请",
+                "requestInviteResponse": "加入申请回应",
+                "inviteResponse": "邀请回应",
                 "friendRequest": "好友申请",
                 "ignoredFriendRequest": "忽略的好友申请",
                 "message": "消息",
@@ -1207,6 +1413,7 @@
             },
             "error": {
                 "friend_roster_failed_to_load": "好友列表加载失败",
+                "failed_to_load_friend_details": "加载好友详情失败",
                 "unable_to_open_this_instance_in_vrchat": "无法在 VRChat 中打开这个房间",
                 "cannot_invite_no_current_vrchat_location_is_available": "无法邀请：当前没有可用的 VRChat 位置",
                 "cannot_invite_from_the_current_instance_type": "无法从当前房间类型发出邀请",
@@ -1576,6 +1783,15 @@
                 "model_count": "{count} 个模型",
                 "add": "添加端点",
                 "empty_description": "添加一个 OpenAI 兼容端点，供 Social AI 和 OpenAI 兼容翻译使用。",
+                "preset": "预设",
+                "preset_custom": "自定义",
+                "presets": {
+                    "openai": "OpenAI",
+                    "openrouter": "OpenRouter",
+                    "gemini": "Google Gemini",
+                    "deepseek": "DeepSeek",
+                    "xai": "xAI"
+                },
                 "name": "名称",
                 "base_url": "Base URL",
                 "models": "模型",
@@ -1735,16 +1951,11 @@
                     "header": "诊断",
                     "refresh_online_users": "刷新在线人数",
                     "refresh_config_json": "获取 API 配置",
-                    "clear_config_json": "清除显示结果",
-                    "runtime_lifecycle": "后端运行态",
-                    "refresh_runtime_lifecycle": "刷新后端运行态"
+                    "clear_config_json": "清除显示结果"
                 },
                 "diagnostics_maintenance": {
                     "header": "维护",
-                    "clear_vrcx_cache": "清除 VRCX-0 缓存",
                     "configure_auto_clear": "设置自动清理周期",
-                    "refresh_cache_size": "刷新缓存大小",
-                    "not_refreshed": "未刷新",
                     "purge_avatar_history": "清理模型记录",
                     "refresh": "刷新数据库状态",
                     "refresh_sqlite_tables": "刷新 SQLite 表",
@@ -1766,6 +1977,9 @@
                     "tray_description": "启用后，点击关闭按钮（X）会将 VRCX-0 最小化到系统托盘而非退出；关闭此选项时，点击 X 将直接退出 VRCX-0。",
                     "background_mode": "最小化到托盘时切换到后台模式",
                     "background_mode_description": "最小化到系统托盘时切换到后台模式，内存占用可降至约十分之一；恢复后部分页面状态可能重置。",
+                    "background_mode_delay": "延迟切换到后台模式",
+                    "background_mode_delay_description": "关闭到系统托盘后，只有在设定分钟数内未重新打开窗口时才切换到后台模式；每次打开窗口都会重置计时。",
+                    "background_mode_delay_button": "设置延迟（分钟）",
                     "auto_install_updates_on_startup": "启动时自动更新",
                     "auto_install_updates_on_startup_description": "打开后，VRCX-0 会在启动 app 时检查更新；如有可安装更新，将自动下载安装并重启完成更新。",
                     "auto_background_download_updates": "后台下载更新",
@@ -1804,22 +2018,30 @@
                     "font_family_jetbrains_mono": "JetBrains Mono",
                     "font_family_fantasque_sans_mono": "Fantasque Sans Mono",
                     "font_family_system_ui": "跟随系统字体",
-                    "font_family_custom": "自定义字体",
-                    "font_family_custom_dialog_title": "自定义字体",
-                    "font_family_custom_dialog_description": "从已安装字体中选择第一/第二顺位，或使用高级选项进行设置。",
+                    "font_family_description": "选择预设字体，或使用此设备上已安装的字体。",
+                    "font_family_custom": "自定义字体…",
+                    "font_family_custom_dialog_title": "选择自定义字体",
+                    "font_family_custom_dialog_description": "使用此设备上已安装的字体，或输入 CSS 字体栈。",
                     "font_family_custom_invalid": "无效的字体，请检查输入。注意：字体名称使用逗号分隔，例如 'My Font', Arial, sans-serif",
-                    "font_family_custom_primary": "第一顺位字体",
-                    "font_family_custom_primary_description": "优先用于西文文本。",
-                    "font_family_custom_secondary": "第二顺位字体",
-                    "font_family_custom_secondary_description": "用作 CJK 回退字体。",
-                    "font_family_custom_detection_unavailable": "字体检测不可用，可使用高级选项进行设置。",
-                    "font_family_custom_detection_unavailable_toast": "字体检测不可用，可使用高级选项进行设置。",
+                    "font_family_custom_primary": "应用字体",
+                    "font_family_custom_primary_description": "用于整个应用界面。",
+                    "font_family_custom_secondary": "回退字体（可选）",
+                    "font_family_custom_secondary_description": "应用字体缺少某个字符时使用。",
+                    "font_family_custom_detection_unavailable_title": "无法读取已安装字体",
+                    "font_family_custom_detection_unavailable": "VRCX-0 无法读取此设备上已安装的字体，请改为输入 CSS 字体栈。",
+                    "font_family_custom_detection_unavailable_toast": "无法读取已安装字体，请改用 CSS 字体栈。",
+                    "font_family_custom_mode_label": "字体来源",
+                    "font_family_custom_mode_installed": "已安装字体",
+                    "font_family_custom_mode_css": "CSS 字体栈",
+                    "font_family_custom_search_placeholder": "搜索已安装字体…",
+                    "font_family_custom_search_optional_placeholder": "搜索可选的回退字体…",
+                    "font_family_custom_no_results": "没有找到匹配的字体。",
                     "font_family_custom_preview": "预览",
-                    "font_family_custom_preview_sample": "The quick brown fox / 那只敏捷的棕色狐狸 / あの機敏な茶色のキツネ / 그 민첩한 갈색 여우",
+                    "font_family_custom_preview_sample": "The quick brown fox / 那只敏捷的棕色狐狸 / 逃げちゃダメだ / 다람쥐 헌 쳇바퀴에 타고파",
                     "font_family_custom_advanced": "高级选项",
-                    "font_family_custom_override": "CSS font-family 覆盖",
-                    "font_family_custom_override_description": "非空时会直接使用这一整串，并忽略上面的选择。",
-                    "font_family_custom_override_hint": "留空即可使用第一/第二顺位字体。",
+                    "font_family_custom_override": "CSS 字体栈",
+                    "font_family_custom_override_description": "输入完整的 CSS font-family 值。",
+                    "font_family_custom_override_hint": "示例：'My Font', Arial, sans-serif",
                     "font_family_custom_override_active": "高级选项配置已生效，上面的字体选择会被忽略。",
                     "font_family_custom_override_placeholder": "'My Font', Arial, sans-serif",
                     "cjk_font_pack_noto": "Noto Sans CJK",
@@ -1931,11 +2153,8 @@
                     "layout": "通知视图",
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知标签页",
-                    "notification_filter": "通知筛选器",
                     "post_update_changelog_prompt": "显示更新后的更新内容提示",
                     "post_update_changelog_prompt_description": "升级后首次启动新版本时，在右下角查看更新内容。",
-                    "test_notification": "发送测试通知",
-                    "test_message": "这是一个测试通知。",
                     "vr_notifications": {
                         "header": "VR 叠加界面通知",
                         "xsoverlay_notifications": "XSOverlay 通知",
@@ -2008,9 +2227,18 @@
                         "header": "文字转语音选项",
                         "when_to_play": "何时使用文字转语音",
                         "tts_voice": "TTS 语音样式",
+                        "system_default_voice": "系统默认",
+                        "notification_filters": "TTS 通知过滤器",
+                        "name_mode": "朗读名称",
+                        "name_mode_username": "用户名",
+                        "name_mode_note": "备注",
+                        "name_mode_username_and_note": "用户名和备注",
                         "use_memo_nicknames": "使用本地备注昵称",
                         "play": "播放",
-                        "tts_test_placeholder": "测试 TTS"
+                        "tts_test_placeholder": "测试 TTS",
+                        "tts_enabled_preview": "通知文字转语音已开启",
+                        "tts_voice_preview": "已选择通知 TTS 语音",
+                        "tts_test_failed": "无法播放文字转语音"
                     }
                 }
             },
@@ -2036,6 +2264,61 @@
                 }
             },
             "advanced": {
+                "advanced_ui": {
+                    "behavior": {
+                        "header": "VRChat 行为",
+                        "quit_header": "关闭残留的 VRChat 进程",
+                        "quit_description": "VRChat 退出后，关闭仍在运行的 VRChat 进程。",
+                        "deep_link_registration": "打开 VRCX-0 分享链接",
+                        "deep_link_registered": "当前用户已设置为使用 VRCX-0 打开分享链接。",
+                        "deep_link_not_registered": "当前系统缺少使用 VRCX-0 打开分享链接的设置，或该设置无效。",
+                        "deep_link_repair": "修复",
+                        "deep_link_repair_success": "已修复分享链接的打开设置",
+                        "deep_link_repair_failed": "无法修复分享链接的打开设置"
+                    },
+                    "storage": {
+                        "header": "存储与清理",
+                        "data_location": "数据位置",
+                        "change_folder": "更改文件夹…",
+                        "more": "更多数据位置操作",
+                        "restore_default": "恢复默认位置",
+                        "cache_header": "自动清理 VRChat 缓存",
+                        "cache_description": "VRChat 关闭时清理旧的资源缓存数据。",
+                        "keep_avatar_data": "保留头像数据时长",
+                        "avatar_cleanup_description": "VRCX-0 启动时每周检查一次。"
+                    },
+                    "troubleshooting": {
+                        "header": "故障排查",
+                        "description": "用于排查问题的日志与诊断工具。",
+                        "show": "显示工具",
+                        "hide": "隐藏工具",
+                        "gamelog": "GameLog 处理",
+                        "gamelog_description": "依赖 VRChat 日志的功能需要启用此项。",
+                        "tools": "诊断",
+                        "database_usage": "数据库占用",
+                        "refresh_database_usage": "刷新数据库占用",
+                        "online_users": "VRChat 在线用户",
+                        "refresh_online_users": "刷新在线用户",
+                        "vrchat_config": "VRChat 配置",
+                        "view_config": "查看…",
+                        "hide_config": "隐藏"
+                    },
+                    "import_recovery": {
+                        "header": "导入与恢复",
+                        "import_from_vrcx": "从 VRCX 导入",
+                        "description": "使用固定 VRCX 数据文件夹中的数据替换当前 VRCX-0 配置和数据库。",
+                        "review": "检查导入内容…"
+                    },
+                    "usage_data": {
+                        "header": "使用数据",
+                        "share": "共享匿名使用数据",
+                        "description": "仅共享改进 VRCX-0 所需的匿名信息。"
+                    },
+                    "danger": {
+                        "avatar_history": "头像历史记录",
+                        "delete": "删除…"
+                    }
+                },
                 "advanced": {
                     "launch_options": "启动选项",
                     "vrc_registry_backup": "VRC 设置数据备份工具",
@@ -2101,12 +2384,10 @@
                         "enable_tooltip": "用于翻译玩家的个人简介"
                     },
                     "launch_commands": {
-                        "header": "启动命令 / 客户端连接",
+                        "header": "VRCX-0 启动与分享链接",
                         "default_launch_mode": "默认启动模式",
                         "default_launch_mode_vr": "VR 模式",
-                        "default_launch_mode_desktop": "桌面模式",
-                        "show_confirmation_on_switch_avatar_enable": "切换模型前显示确认对话框",
-                        "show_confirmation_on_switch_avatar_tooltip": "禁用后，切换模型时 VRCX-0 将不会弹至前台要求确认"
+                        "default_launch_mode_desktop": "桌面模式"
                     },
                     "screenshot_helper": {
                         "header": "截图助手",
@@ -2121,8 +2402,6 @@
                         "header": "数据目录",
                         "description": "当前来源：{source}。这里只保存目录位置，VRCX-0 不会复制数据。",
                         "current": "当前目录",
-                        "default": "默认目录",
-                        "persisted": "已保存的自定义目录",
                         "actions": "数据目录操作",
                         "choose": "选择目录",
                         "reset": "重置为默认",
@@ -2132,7 +2411,6 @@
                         "source_persisted": "已保存的自定义目录",
                         "source_default": "默认目录",
                         "cli_override": "本次启动正在使用 --data-dir 进行命令行目录覆盖。要修改持久化目录，请不要携带命令行启动。",
-                        "not_set": "未设置",
                         "confirm_title": "切换 VRCX-0 数据目录？",
                         "confirm_description": "VRCX-0 不会复制当前数据。要保留登录、数据库、配置和缓存，请在重启前自行把当前数据目录复制到 {path} 并保存，重启后生效。",
                         "confirm_empty": "所选目录为空；除非你手动复制数据进去，否则会作为新的 profile 启动。",
@@ -2249,8 +2527,7 @@
                 "skip": "跳过"
             },
             "dynamic": {
-                "value_value": "{value} {value2}",
-                "cleared_value_query_cache_entries_value_avatar_name_entries_and_value_favorite_detail_entries": "已清除 {value} 条查询缓存、{value2} 条模型名称记录和 {value3} 条收藏详情记录"
+                "value_value": "{value} {value2}"
             }
         },
         "dashboard": {
@@ -2363,6 +2640,11 @@
                 "chatbox_muted": "已屏蔽聊天气泡",
                 "timeout": "超时",
                 "age_verified": "已通过年龄验证",
+                "all": "全部",
+                "friends": "好友",
+                "favorites": "收藏",
+                "restricted": "已限制",
+                "search_placeholder": "搜索昵称、备注或玩家 ID",
                 "rebuilding_the_current_instance_roster_from_game_log_history": "正在从游戏日志历史中重建当前房间的玩家列表"
             },
             "error": {
@@ -2428,7 +2710,8 @@
                 "failed_to_select_avatar": "切换模型失败",
                 "failed_to_create_local_favorite_group": "创建本地收藏分组失败",
                 "failed_to_copy_selected_favorites": "复制所选收藏失败",
-                "failed_to_move_selected_favorites": "移动所选收藏失败"
+                "failed_to_move_selected_favorites": "移动所选收藏失败",
+                "favorites_refresh_unavailable": "尚未登录账号，暂时无法刷新收藏"
             },
             "modal": {
                 "remove_local_favorite": "移除本地收藏？",
@@ -2448,7 +2731,6 @@
                 "request_invite": "确定要请求加入吗？",
                 "request_invite_2": "请求加入",
                 "send": "发送",
-                "select_avatar": "确定要切换到该模型吗？",
                 "delete_value_favorites": "删除 {value} 个收藏？",
                 "this_action_cannot_be_undone": "此操作无法撤销",
                 "clear_local_avatar_history_and_cached_avatar_metadata": "清空本地模型历史和缓存的模型元数据？"
@@ -2478,7 +2760,13 @@
                 "removed_value_value_failed": "已移除 {value}；{value2} 个失败",
                 "search_results_singular": "{count} 条结果",
                 "search_results_plural": "{count} 条结果",
-                "transferred_value_value_failed": "已处理 {value} 个；{value2} 个失败"
+                "transferred_value_value_failed": "已处理 {value} 个；{value2} 个失败",
+                "moved_value_favorites": "已移动 {value} 个收藏",
+                "copied_value_favorites": "已复制 {value} 个收藏",
+                "restored_value_to_source_after_failed_move": "{value} 项移动失败，已还原到原分组",
+                "saved_value_to_local_fallback_group": "{value} 项无法同步到在线，已保存到本地的 {value2} 分组",
+                "target_added_value_source_delete_failed": "{value} 项已添加到目标分组，但从源分组删除失败，现在两处都存在",
+                "skipped_value_already_present": "{value} 项已存在于目标分组，已跳过"
             }
         },
         "friends": {
@@ -2979,7 +3267,7 @@
                 "search_worlds": "搜索世界",
                 "search_favorite_worlds": "搜索收藏的世界",
                 "search_avatars": "搜索模型",
-                "unfriend_request_sent_but_the_active_session_changed_before_local_state_was_updated": "删除好友请求已发送，但更新本地状态前登录账号已切换，本地状态可能未同步"
+                "unfriend_was_not_sent_because_the_active_account_changed": "由于当前登录账号已切换，解除好友请求未发送。请刷新后重试。"
             },
             "loading": {
                 "loading_activity": "正在加载活动",
@@ -3061,6 +3349,7 @@
                 "failed_to_update_discord_connections_setting": "更新 Discord 连接设置失败",
                 "failed_to_update_badge": "更新徽章失败",
                 "failed_to_unfriend_user": "解除用户的好友关系失败",
+                "applied_on_vrchat_but_local_update_failed": "已在 VRChat 上生效，但本地更新失败。",
                 "friend_request_accepted": "好友请求已接受",
                 "friend_request_sent": "好友请求已发送",
                 "friend_request_declined": "好友请求已拒绝",
@@ -3910,6 +4199,7 @@
             "flip_v": "垂直翻转",
             "zoom_in": "放大",
             "zoom_out": "缩小",
+            "zoom_level": "缩放比例",
             "mode_fit": "切换到适应模式",
             "mode_free": "切换到自由模式",
             "reset": "重置"
@@ -4045,6 +4335,10 @@
             "title": "VR 叠加界面通知过滤器",
             "description": "选择在 SteamVR 运行时哪些通知会发送到 XSOverlay 和 OVR Toolkit。"
         },
+        "tts_notifications": {
+            "title": "TTS 通知过滤器",
+            "description": "选择哪些运行时通知会通过文字转语音播放。上方的 TTS 播放条件依然生效。"
+        },
         "hmd_notifications": {
             "title": "头显通知过滤",
             "description": "选择哪些通知会显示在头显视野内。"
@@ -4060,7 +4354,6 @@
         "wrist_feed_notifications": {
             "title": "叠加界面通知过滤器",
             "description": "选择哪些内容会显示在手腕叠加界面中。桌面通知使用单独的过滤设置。",
-            "reset_recommended": "重置",
             "scopes": {
                 "off": "关闭",
                 "on": "开启",
@@ -4109,8 +4402,8 @@
             "types": {
                 "invite": "邀请",
                 "requestInvite": "申请加入",
-                "inviteResponse": "拒绝邀请",
-                "requestInviteResponse": "拒绝加入申请",
+                "inviteResponse": "邀请回应",
+                "requestInviteResponse": "加入申请回应",
                 "friendRequest": "好友请求",
                 "boop": "戳一戳",
                 "group_queueReady": "房间排队就绪",
@@ -4464,13 +4757,6 @@
                 "success": "世界名称更改成功"
             }
         },
-        "auto_clear_cache": {
-            "header": "VRCX-0 缓存自动清理间隔",
-            "description": "以小时为单位，较大的数值可能会影响性能（默认值：24，为 0 时关闭）",
-            "cancel": "取消",
-            "ok": "确定",
-            "input_error": "请输入有效的值"
-        },
         "backup_name": {
             "header": "备份名称",
             "description": "输入备份名称",
@@ -4480,6 +4766,11 @@
             "header": "自动登录延迟",
             "description": "输入延迟时间（秒）（0 表示禁用，最大值为 10）。",
             "input_error": "请输入 0 到 10 之间的整数。"
+        },
+        "background_mode_delay": {
+            "header": "后台模式延迟",
+            "description": "输入延迟时间（分钟），范围 10 到 600。",
+            "input_error": "请输入 10 到 600 之间的整数。"
         },
         "proxy_settings": {
             "header": "代理服务器设置",
@@ -4671,6 +4962,7 @@
         "unfriend": "不再是你的好友了",
         "trust_level": "信誉等级变更为 {trustLevel}",
         "display_name": "已改名为 {displayName}",
+        "bio": "更新简介",
         "group_announcement_title": "群组公告",
         "group_informative_title": "群组信息",
         "group_invite_title": "群组邀请",
@@ -4678,6 +4970,9 @@
         "group_transfer_request_title": "群组转让请求",
         "group_queue_ready_title": "房间队列准备就绪",
         "instance_closed_title": "房间已关闭",
+        "event_title": "事件",
+        "external_title": "外部事件",
+        "video_play_title": "视频播放",
         "portal_spawn_name": "生成了一个通往 {location} 的传送门",
         "portal_spawn": "用户生成了一个传送门",
         "avatar_change": "更换模型为 {avatar}",
@@ -4813,14 +5108,35 @@
         "toggle_sidebar": "切换侧边栏",
         "more": "更多",
         "sidebar": "侧边栏",
-        "mobile_sidebar_description": "显示移动端侧边栏。"
+        "mobile_sidebar_description": "显示移动端侧边栏。",
+        "reorder_column": "重新排列 {column} 列",
+        "resize_column": "调整 {column} 列宽",
+        "remove_avatar_provider": "移除模型来源 {number}",
+        "remove_domain": "移除域名 {number}",
+        "move_item_up": "将 {item} 上移",
+        "move_item_down": "将 {item} 下移",
+        "preview_image": "预览图片：{item}",
+        "announcement": "公告",
+        "apply_status_preset": "应用状态预设：{preset}",
+        "remove_status_preset": "移除状态预设",
+        "select_avatar": "选择模型：{avatar}",
+        "avatar": "模型",
+        "copy_value": "复制 {value}",
+        "open_link": "打开链接：{link}",
+        "open_player": "打开玩家资料：{player}",
+        "player": "玩家",
+        "remove_value": "移除 {value}",
+        "add_table_page_size": "添加每页显示行数"
     },
     "status_bar": {
+        "world_collection_importing": "正在导入世界收藏（{progress}/{total}）",
         "game": "游戏状态",
         "game_stopped": "VRChat 目前没有运行",
         "game_last_session": "上次会话",
         "servers": "服务器状态",
+        "servers_issue": "VRChat 服务器出现异常",
         "servers_ok": "VRChat 服务目前一切正常",
+        "view_status": "查看服务状态",
         "steamvr": "SteamVR",
         "proxy": "代理服务器",
         "realtime_connection": "实时连接",
@@ -5055,7 +5371,8 @@
                 "failed_upgrade_description": "上一次数据库升级失败，在手动修复前，此数据库将无法使用。\n\n当前工作数据库：{path}",
                 "failed_upgrade_description_with_reason": "上一次数据库升级失败。手动修复前，此数据库无法使用。\n\n当前工作数据库：{path}\n\n原因：{reason}",
                 "apply_upgrade_failed": "VRCX-0 应用本地数据库升级失败",
-                "legacy_migration_restart_failed": "VRCX-0 未能重启以迁移已有的 VRCX 数据。你可以重试，或跳过并继续使用当前数据库。"
+                "legacy_migration_restart_failed": "VRCX-0 未能重启以迁移已有的 VRCX 数据。你可以重试，或跳过并继续使用当前数据库。",
+                "newer_schema_requires_newer_app": "此数据库使用结构版本 {value}，但当前 VRCX-0 最高仅支持 {value2}。请安装最新版 VRCX-0 后再打开。"
             },
             "success": {
                 "database_update_complete": "数据库更新完成"
@@ -5075,7 +5392,7 @@
                 "value_item_s_imported": "已导入 {value} 项"
             }
         },
-        "shared_feed_filter_service": {
+        "shared_feed_notification_service": {
             "dynamic": {
                 "feed_value": "动态：{value}"
             }
@@ -5084,11 +5401,6 @@
             "dynamic": {
                 "unknown_tool_action_value": "未知的工具操作：{value}",
                 "unsupported_tool_action_value": "不支持的工具操作：{value}"
-            }
-        },
-        "ipc_event_service": {
-            "modal": {
-                "select_avatar_value": "选择模型？\n{value}"
             }
         },
         "background_maintenance": {

@@ -1,7 +1,9 @@
 use serde_json::Value;
 
 use crate::common::ParamsBuilder;
+use crate::config;
 use crate::database::DatabaseService;
+use crate::secrets;
 use crate::Error;
 
 const COOKIE_TABLE_SQL: &str =
@@ -14,6 +16,19 @@ pub fn ensure_cookie_table(db: &DatabaseService) -> Result<(), Error> {
 }
 
 pub fn get_default_cookies(db: &DatabaseService) -> Result<Option<String>, Error> {
+    let Some(stored) = load_default_cookies_raw(db)? else {
+        return Ok(None);
+    };
+    let Some(cookies) = secrets::open_secret(&stored) else {
+        tracing::info!(
+            "stored cookies are not decryptable on this machine; treating as no session"
+        );
+        return Ok(None);
+    };
+    Ok(Some(cookies))
+}
+
+fn load_default_cookies_raw(db: &DatabaseService) -> Result<Option<String>, Error> {
     ensure_cookie_table(db)?;
     let args = ParamsBuilder::new().set("key", DEFAULT_COOKIE_KEY).build();
     Ok(db
@@ -25,6 +40,14 @@ pub fn get_default_cookies(db: &DatabaseService) -> Result<Option<String>, Error
 }
 
 pub fn save_default_cookies(db: &DatabaseService, value: &str) -> Result<(), Error> {
+    let (stored, encrypted) = secrets::seal_secret_with_status(value);
+    if secrets::is_initialized() && !encrypted && !value.is_empty() {
+        config::remove(db, secrets::CLEANUP_COMPLETED_CONFIG_KEY)?;
+    }
+    upsert_default_cookies_raw(db, &stored)
+}
+
+fn upsert_default_cookies_raw(db: &DatabaseService, value: &str) -> Result<(), Error> {
     ensure_cookie_table(db)?;
     let args = ParamsBuilder::new()
         .set("key", DEFAULT_COOKIE_KEY)
@@ -35,4 +58,25 @@ pub fn save_default_cookies(db: &DatabaseService, value: &str) -> Result<(), Err
         &args,
     )?;
     Ok(())
+}
+
+pub fn migrate_default_cookies(db: &DatabaseService) -> Result<bool, Error> {
+    if !secrets::is_encrypting_writes() {
+        return Ok(false);
+    }
+    let Some(stored) = load_default_cookies_raw(db)? else {
+        return Ok(false);
+    };
+    if stored.is_empty() || secrets::is_sealed_secret(&stored) {
+        return Ok(false);
+    }
+    let (sealed, encrypted) = secrets::seal_secret_with_status(&stored);
+    if !encrypted {
+        return Err(Error::Custom(
+            "failed to encrypt stored cookies during migration".into(),
+        ));
+    }
+    config::remove(db, secrets::CLEANUP_COMPLETED_CONFIG_KEY)?;
+    upsert_default_cookies_raw(db, &sealed)?;
+    Ok(true)
 }

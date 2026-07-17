@@ -2,7 +2,6 @@ import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
     APP_FONT_DEFAULT_KEY
 } from '@/services/themeService';
-import { sharedFeedFiltersDefaults } from '@/shared/constants/feedFilters';
 import {
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT
@@ -14,9 +13,9 @@ import {
     DEFAULT_TRANSLATION_MODEL,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
+    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
-    normalizeSharedFeedFilters,
     TABLE_PAGE_SIZE_DEFAULTS
 } from './settingsValues';
 
@@ -62,8 +61,9 @@ export function createDefaultSettingsPrefs() {
         afkDesktopToast: false,
         desktopNotificationSound: false,
         notificationTTS: 'Never',
+        notificationTTSNameMode: 'username',
         notificationTTSNickName: false,
-        notificationTTSVoice: '0',
+        notificationTTSVoiceNative: '',
         xsNotifications: false,
         ovrtHudNotifications: false,
         ovrtWristNotifications: false,
@@ -81,8 +81,8 @@ export function createDefaultSettingsPrefs() {
         webhookFormat: 'generic',
         webhookFields:
             '["version","event","category","title","message","user","location","locationId","worldId","worldName","timestamp","localTime"]',
-        vrOverlayPanelEnabled: true,
-        vrOverlayPanelAllFriendsIncludesFavorites: true,
+        vrOverlayPanelEnabled: false,
+        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: false,
         wristOverlayStartMode: 'vrchatVrMode',
         wristOverlayButton: 'grip',
@@ -95,7 +95,6 @@ export function createDefaultSettingsPrefs() {
         relaunchVRChatAfterCrash: false,
         vrcQuitFix: true,
         autoSweepVRChatCache: false,
-        showConfirmationOnSwitchAvatar: true,
         gameLogDisabled: false,
         avatarAutoCleanup: 'Off',
         defaultLaunchMode: 'vr',
@@ -105,6 +104,8 @@ export function createDefaultSettingsPrefs() {
         autoLoginDelayEnabled: false,
         autoLoginDelaySeconds: 0,
         backgroundModeEnabled: false,
+        backgroundModeDelayEnabled: false,
+        backgroundModeDelayMinutes: 60,
         isStartAtWindowsStartup: false,
         isStartAsMinimizedState: false,
         isCloseToTray: false,
@@ -119,9 +120,6 @@ export function createDefaultSettingsPrefs() {
         },
         localFavoriteFriendsGroups,
         feedHiddenUsers,
-        sharedFeedFilters: normalizeSharedFeedFilters(
-            sharedFeedFiltersDefaults
-        ),
         overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
         vrNotificationActivityFilters: DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
         hmdNotificationActivityFilters:
@@ -129,6 +127,8 @@ export function createDefaultSettingsPrefs() {
         desktopNotificationActivityFilters:
             DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
         webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
+        ttsNotificationActivityFilters:
+            DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
         feedTimeDisplayMode: 'relative',
         youtubeAPI: false,
         translationAPI: false,

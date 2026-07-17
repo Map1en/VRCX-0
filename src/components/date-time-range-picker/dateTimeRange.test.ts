@@ -23,7 +23,7 @@ describe('buildMinuteOptions', () => {
 
     it('falls back to step 1 for invalid steps', () => {
         expect(buildMinuteOptions(0)).toHaveLength(60);
-        expect(buildMinuteOptions(NaN as any)).toHaveLength(60);
+        expect(buildMinuteOptions(NaN)).toHaveLength(60);
     });
 });
 

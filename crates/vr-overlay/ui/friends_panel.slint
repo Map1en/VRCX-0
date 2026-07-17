@@ -1,0 +1,466 @@
+import { ListView } from "std-widgets.slint";
+import { AvatarPlaceholder } from "avatar_placeholder.slint";
+
+export struct FriendPanelCategoryItem {
+    key: string,
+    label: string,
+    count: string,
+    selected: bool,
+}
+
+export struct FriendPanelRowItem {
+    section-label: string,
+    user-id: string,
+    display-name: string,
+    location-text: string,
+    traveling-text: string,
+    note-text: string,
+    memo-text: string,
+    avatar: image,
+    has-avatar: bool,
+    status-color: color,
+    name-color: color,
+    primary-label: string,
+    primary-kind: string,
+    has-primary: bool,
+    has-invite: bool,
+    invite-label: string,
+    armed-primary: bool,
+    armed-invite: bool,
+    is-traveling: bool,
+    is-section: bool,
+}
+
+export component FriendsPanel inherits Window {
+    width: 1080px;
+    height: 720px;
+    background: transparent;
+
+    in property <string> panel-title: "Favorite Friends";
+    in property <string> status-message;
+    in property <string> empty-label;
+    in property <[FriendPanelCategoryItem]> categories: [];
+    in property <[FriendPanelRowItem]> rows: [];
+
+    callback category-selected(string);
+    callback row-clicked(string);
+    callback action-clicked(string, string);
+    callback action-hover-lost(string, string);
+
+    property <FriendPanelRowItem> detail-row;
+
+    property <color> background-color: #080d14f0;
+    property <color> panel-color: #101822f8;
+    property <color> panel-alt-color: #182330f8;
+    property <color> panel-row-alt-color: #151f2bf8;
+    property <color> panel-hover-color: #263548f8;
+    property <color> panel-pressed-color: #127a96ff;
+    property <color> text-color: #f8fafc;
+    property <color> muted-color: #94a3b8;
+    property <color> divider-color: #334155;
+    property <color> accent-color: #2dd4bf;
+    property <color> favorite-color: #facc15;
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: root.background-color;
+    }
+
+    Rectangle {
+        x: 32px;
+        y: 32px;
+        width: parent.width - 64px;
+        height: parent.height - 64px;
+        background: root.panel-color;
+        border-color: root.divider-color;
+        border-width: 2px;
+        border-radius: 18px;
+    }
+
+    Text {
+        x: 54px;
+        y: 30px;
+        width: 620px;
+        height: 38px;
+        text: root.panel-title;
+        font-size: 32px;
+        color: root.text-color;
+    }
+
+    Text {
+        x: 54px;
+        y: 72px;
+        width: 920px;
+        height: 28px;
+        text: root.status-message;
+        font-size: 20px;
+        color: root.status-message == "" ? root.accent-color : root.favorite-color;
+    }
+
+    ListView {
+        x: 54px;
+        y: 154px;
+        width: 230px;
+        height: 406px;
+        viewport-width: 230px;
+
+        for category in root.categories : Rectangle {
+            width: 230px;
+            height: 58px;
+            background: category.selected ? #25636eff : cat-touch.has-hover ? root.panel-hover-color : root.panel-alt-color;
+            border-color: root.divider-color;
+            border-width: 1px;
+
+            Text {
+                x: 16px;
+                y: 12px;
+                width: 150px;
+                height: 22px;
+                text: category.label;
+                font-size: 19px;
+                color: category.selected ? root.text-color : root.muted-color;
+            }
+
+            Text {
+                x: 168px;
+                y: 14px;
+                width: 46px;
+                height: 20px;
+                text: category.count;
+                font-size: 16px;
+                horizontal-alignment: right;
+                color: category.selected ? root.text-color : root.muted-color;
+            }
+
+            cat-touch := TouchArea {
+                width: parent.width;
+                height: parent.height;
+                clicked => {
+                    root.category-selected(category.key);
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        x: 302px;
+        y: 154px;
+        width: 724px;
+        height: 530px;
+        visible: root.rows.length == 0;
+        background: root.panel-alt-color;
+        border-color: root.divider-color;
+        border-width: 1px;
+
+        Text {
+            x: 24px;
+            y: 232px;
+            width: parent.width - 48px;
+            height: 32px;
+            text: root.empty-label;
+            font-size: 24px;
+            horizontal-alignment: center;
+            color: root.muted-color;
+        }
+    }
+
+    ListView {
+        x: 302px;
+        y: 154px;
+        width: 724px;
+        height: 530px;
+        viewport-width: 724px;
+        visible: root.rows.length > 0;
+
+        for row[index] in root.rows : Rectangle {
+            width: 706px;
+            height: row.is-section ? 38px : 106px;
+            background: row.is-section ? #101822f8 : row-touch.pressed ? root.panel-pressed-color : row-touch.has-hover ? root.panel-hover-color : Math.mod(index, 2) == 0 ? root.panel-alt-color : root.panel-row-alt-color;
+            border-color: row.is-section ? transparent : root.divider-color;
+            border-width: row.is-section ? 0px : 1px;
+
+            Text {
+                x: 18px;
+                y: 8px;
+                width: parent.width - 36px;
+                height: 22px;
+                visible: row.is-section;
+                text: row.section-label;
+                font-size: 18px;
+                color: root.accent-color;
+            }
+
+            row-touch := TouchArea {
+                width: parent.width;
+                height: parent.height;
+                enabled: !row.is-section;
+                clicked => {
+                    root.detail-row = row;
+                    root.row-clicked(row.user-id);
+                    details.show();
+                }
+            }
+
+            AvatarPlaceholder {
+                x: 18px;
+                y: 17px;
+                diameter: 72px;
+                visible: !row.is-section && !row.has-avatar;
+            }
+
+            Image {
+                x: 18px;
+                y: 17px;
+                width: 72px;
+                height: 72px;
+                visible: !row.is-section && row.has-avatar;
+                source: row.avatar;
+            }
+
+            Rectangle {
+                x: 76px;
+                y: 76px;
+                width: 16px;
+                height: 16px;
+                visible: !row.is-section;
+                border-radius: 8px;
+                background: row.status-color;
+            }
+
+            Text {
+                x: 112px;
+                y: 13px;
+                width: 340px;
+                height: 32px;
+                visible: !row.is-section;
+                text: row.display-name;
+                font-size: 26px;
+                overflow: elide;
+                color: row.name-color;
+            }
+
+            Text {
+                x: 112px;
+                y: 46px;
+                width: 348px;
+                height: 28px;
+                visible: !row.is-section && !row.is-traveling;
+                text: row.location-text;
+                font-size: 20px;
+                overflow: elide;
+                color: root.text-color;
+            }
+
+            Rectangle {
+                x: 98px;
+                y: 55px;
+                width: 10px;
+                height: 10px;
+                visible: !row.is-section && row.is-traveling;
+                border-radius: 5px;
+                background: root.accent-color;
+            }
+
+            Text {
+                x: 112px;
+                y: 46px;
+                width: 348px;
+                height: 28px;
+                visible: !row.is-section && row.is-traveling;
+                text: row.traveling-text;
+                font-size: 20px;
+                overflow: elide;
+                color: root.accent-color;
+            }
+
+            Text {
+                x: 112px;
+                y: 74px;
+                width: 348px;
+                height: 22px;
+                visible: !row.is-section && row.note-text != "";
+                overflow: elide;
+                text: row.note-text;
+                font-size: 16px;
+                color: root.muted-color;
+            }
+
+            Text {
+                x: 112px;
+                y: 74px;
+                width: 348px;
+                height: 22px;
+                visible: !row.is-section && row.note-text == "";
+                overflow: elide;
+                text: row.memo-text;
+                font-size: 16px;
+                color: root.muted-color;
+            }
+
+            Rectangle {
+                x: parent.width - 232px;
+                y: 33px;
+                width: 104px;
+                height: 40px;
+                visible: !row.is-section && row.has-primary;
+                border-color: row.armed-primary ? root.favorite-color : root.accent-color;
+                border-width: 2px;
+                border-radius: 4px;
+                background: primary-touch.pressed ? #164e63ff : row.armed-primary ? #5a4314ff : #0f172aff;
+
+                Text {
+                    width: parent.width;
+                    height: parent.height;
+                    text: row.primary-label;
+                    font-size: 18px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: root.text-color;
+                }
+
+                primary-touch := TouchArea {
+                    width: parent.width;
+                    height: parent.height;
+                    clicked => {
+                        root.action-clicked(row.user-id, row.primary-kind);
+                    }
+                    changed has-hover => {
+                        if (!self.has-hover && row.armed-primary) {
+                            root.action-hover-lost(row.user-id, row.primary-kind);
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                x: parent.width - 118px;
+                y: 33px;
+                width: 104px;
+                height: 40px;
+                visible: !row.is-section && row.has-invite;
+                border-color: row.armed-invite ? root.favorite-color : root.accent-color;
+                border-width: 2px;
+                border-radius: 4px;
+                background: invite-touch.pressed ? #164e63ff : row.armed-invite ? #5a4314ff : #0f172aff;
+
+                Text {
+                    width: parent.width;
+                    height: parent.height;
+                    text: row.invite-label;
+                    font-size: 18px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: root.text-color;
+                }
+
+                invite-touch := TouchArea {
+                    width: parent.width;
+                    height: parent.height;
+                    clicked => {
+                        root.action-clicked(row.user-id, "invite");
+                    }
+                    changed has-hover => {
+                        if (!self.has-hover && row.armed-invite) {
+                            root.action-hover-lost(row.user-id, "invite");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    details := PopupWindow {
+        x: 620px;
+        y: 118px;
+        width: 380px;
+        height: 244px;
+
+        Rectangle {
+            width: parent.width;
+            height: parent.height;
+            background: #101822ff;
+            border-color: root.accent-color;
+            border-width: 2px;
+            border-radius: 12px;
+        }
+
+        AvatarPlaceholder {
+            x: 24px;
+            y: 24px;
+            diameter: 72px;
+            visible: !root.detail-row.has-avatar;
+        }
+
+        Image {
+            x: 24px;
+            y: 24px;
+            width: 72px;
+            height: 72px;
+            visible: root.detail-row.has-avatar;
+            source: root.detail-row.avatar;
+        }
+
+        Rectangle {
+            x: 82px;
+            y: 83px;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background: root.detail-row.status-color;
+        }
+
+        Text {
+            x: 116px;
+            y: 26px;
+            width: parent.width - 140px;
+            height: 32px;
+            text: root.detail-row.display-name;
+            font-size: 25px;
+            color: root.detail-row.name-color;
+        }
+
+        Text {
+            x: 116px;
+            y: 62px;
+            width: parent.width - 140px;
+            height: 26px;
+            text: root.detail-row.is-traveling ? root.detail-row.traveling-text : root.detail-row.location-text;
+            font-size: 18px;
+            color: root.detail-row.is-traveling ? root.accent-color : root.text-color;
+        }
+
+        Text {
+            x: 24px;
+            y: 118px;
+            width: parent.width - 48px;
+            height: 24px;
+            visible: root.detail-row.note-text != "";
+            text: root.detail-row.note-text;
+            font-size: 17px;
+            color: root.muted-color;
+        }
+
+        Text {
+            x: 24px;
+            y: 148px;
+            width: parent.width - 48px;
+            height: 24px;
+            visible: root.detail-row.memo-text != "";
+            text: root.detail-row.memo-text;
+            font-size: 17px;
+            color: root.muted-color;
+        }
+
+        Text {
+            x: 24px;
+            y: parent.height - 42px;
+            width: parent.width - 48px;
+            height: 24px;
+            visible: root.status-message != "";
+            text: root.status-message;
+            font-size: 16px;
+            color: root.favorite-color;
+        }
+    }
+}

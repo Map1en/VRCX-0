@@ -16,6 +16,24 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FRIENDS_LOCATIONS_DENSITY_OPTIONS } from '../friendsLocationsDensity';
 
+type FriendsLocationsSegmentOption = {
+    value: string;
+    labelKey: string;
+    count: number;
+};
+
+type FriendsLocationsToolbarProps = {
+    activeSegment: string;
+    segmentOptions: FriendsLocationsSegmentOption[];
+    searchQuery: string;
+    showSameInstanceInOnline: boolean;
+    density: string;
+    onActiveSegmentChange: (value: string) => void;
+    onSearchQueryChange: (value: string) => void;
+    onShowSameInstanceInOnlineChange: (value: boolean) => void;
+    onDensityChange: (value: string) => void;
+};
+
 export function FriendsLocationsToolbar({
     activeSegment,
     segmentOptions,
@@ -26,7 +44,7 @@ export function FriendsLocationsToolbar({
     onSearchQueryChange,
     onShowSameInstanceInOnlineChange,
     onDensityChange
-}: any) {
+}: FriendsLocationsToolbarProps) {
     const { t } = useTranslation();
 
     return (
@@ -38,12 +56,15 @@ export function FriendsLocationsToolbar({
                     className="gap-0"
                 >
                     <TabsList>
-                        {segmentOptions.map((segment: any) => (
+                        {segmentOptions.map((segment) => (
                             <TabsTrigger
                                 key={segment.value}
                                 value={segment.value}
                             >
-                                {t(segment.labelKey)}
+                                <span>{t(segment.labelKey)}</span>
+                                <span className="text-muted-foreground tabular-nums">
+                                    {segment.count}
+                                </span>
                             </TabsTrigger>
                         ))}
                     </TabsList>
@@ -122,7 +143,7 @@ export function FriendsLocationsToolbar({
                                 className="grid w-full grid-cols-3"
                             >
                                 {FRIENDS_LOCATIONS_DENSITY_OPTIONS.map(
-                                    (option: any) => (
+                                    (option) => (
                                         <ToggleGroupItem
                                             key={option.value}
                                             value={option.value}

@@ -1,31 +1,30 @@
 import { toast } from 'sonner';
 
-import { commands } from '@/platform/tauri/bindings';
-import authRepository, {
-    type SavedAuthSnapshot,
-    type SavedCredentialRecord
-} from '@/repositories/authRepository';
-import webRepository from '@/repositories/webRepository';
+import {
+    commands,
+    type AutoLoginOutcome,
+    type LoginFailureKind
+} from '@/platform/tauri/bindings';
+import type { SavedAuthSnapshot } from '@/repositories/authRepository';
+import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
-import { resetActivityCacheState } from './activityCacheService';
 import {
-    AUTO_LOGIN_MAX_ATTEMPTS,
-    canAttemptReactAutoLogin,
-    recordReactAutoLoginAttempt
-} from './authAutoLoginState';
-import {
-    executeCookieSessionRestore,
-    executeSavedCredentialLogin
+    finalizeSuccessfulLogin,
+    resolveLoginSessionState,
+    toAuthUserRecord
 } from './authExecutionService';
-import { applySavedAuthSnapshot } from './authSnapshotService';
+import {
+    applySavedAuthSnapshot,
+    refreshSavedAuthSnapshot
+} from './authSnapshotService';
 import i18n from './i18nService';
 
 const MAX_AUTO_LOGIN_DELAY_SECONDS = 10;
-const MANUAL_AUTH_FAILURE_NOTIFICATION_CODES = new Set([
-    'AUTH_SAVED_CREDENTIALS_INVALID',
-    'AUTH_RESTORE_INTERACTIVE_REQUIRED'
+const NOTIFY_ON_FAILURE_KINDS = new Set<LoginFailureKind>([
+    'invalidCredentials',
+    'twoFactorUnavailable'
 ]);
 
 type AutoLoginDelayOptions = {
@@ -35,6 +34,7 @@ type AutoLoginDelayOptions = {
 
 type AuthAutoLoginError = Error & {
     code?: string;
+    kind?: LoginFailureKind;
     authSnapshot?: SavedAuthSnapshot;
 };
 
@@ -46,17 +46,24 @@ function createAutoLoginAbortError() {
     return error;
 }
 
-function isMissingCredentialsError(error: unknown) {
-    return Boolean(
-        isRecord(error) &&
-        error.status === 401 &&
-        typeof error.message === 'string' &&
-        error.message.includes('Missing Credentials')
+function autoLoginOutcomeFailureError(
+    outcome: AutoLoginOutcome & { status: 'failed' }
+): AuthAutoLoginError {
+    const error: AuthAutoLoginError = new Error(
+        outcome.reason || 'Automatic login failed.'
     );
+    error.kind = outcome.kind;
+    error.authSnapshot = outcome.snapshot as SavedAuthSnapshot;
+    return error;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
+function shouldShowManualAuthFailureNotification(
+    error: AuthAutoLoginError
+): boolean {
+    return (
+        typeof error.kind === 'string' &&
+        NOTIFY_ON_FAILURE_KINDS.has(error.kind)
+    );
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string) {
@@ -64,15 +71,6 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
         return error.message;
     }
     return fallbackMessage;
-}
-
-function shouldShowManualAuthFailureNotification(
-    error: AuthAutoLoginError
-): boolean {
-    return (
-        typeof error.code === 'string' &&
-        MANUAL_AUTH_FAILURE_NOTIFICATION_CODES.has(error.code)
-    );
 }
 
 function normalizeAutoLoginDelaySeconds(seconds: unknown) {
@@ -222,7 +220,6 @@ function setSignedOutSessionState() {
         isFavoritesLoaded: false,
         sessionPhase: 'signed_out'
     });
-    resetActivityCacheState();
 }
 
 export async function executeReactAutoLogin(
@@ -230,11 +227,6 @@ export async function executeReactAutoLogin(
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const runtimeStore = useRuntimeStore.getState();
-    const savedCredential: SavedCredentialRecord | null = isRecord(
-        snapshot?.autoLoginTarget
-    )
-        ? (snapshot.autoLoginTarget as SavedCredentialRecord)
-        : null;
     const displayName =
         String(snapshot?.autoLoginDisplayName || '').trim() ||
         snapshot?.lastUserLoggedIn ||
@@ -245,7 +237,7 @@ export async function executeReactAutoLogin(
 
     const cookieRestoreEligible = Boolean(snapshot?.cookieRestoreEligible);
     const savedCredentialFallbackAvailable = Boolean(
-        snapshot?.savedCredentialFallbackAvailable && savedCredential
+        snapshot?.savedCredentialFallbackAvailable
     );
 
     if (!cookieRestoreEligible && !savedCredentialFallbackAvailable) {
@@ -255,45 +247,7 @@ export async function executeReactAutoLogin(
         };
     }
 
-    let didRecordAutoLoginAttempt = false;
-    function recordAutoLoginAttemptBeforeRequest() {
-        if (didRecordAutoLoginAttempt) {
-            return;
-        }
-        recordReactAutoLoginAttempt(throttleKey);
-        didRecordAutoLoginAttempt = true;
-    }
-
     try {
-        if (!canAttemptReactAutoLogin(throttleKey)) {
-            try {
-                await webRepository.clearAuthCookies();
-            } catch {
-                // no-op
-            }
-            setSignedOutSessionState();
-            const throttledSnapshot = applySavedAuthSnapshot(
-                await authRepository.recordLogout(lastUserLoggedIn, {
-                    clearLastUserLoggedIn: true,
-                    cookies: null
-                })
-            );
-            runtimeStore.setStartupTask(
-                'auth',
-                'completed',
-                `Automatic login paused for ${displayName} after ${AUTO_LOGIN_MAX_ATTEMPTS} attempts in the last hour.`
-            );
-            await flashWindowSafely();
-            await showAuthFailureNotificationSafely(
-                'frontend-auto-login-throttled'
-            );
-            toast.error(await i18n.t('message.auth.auto_login_failed'));
-            return {
-                status: 'throttled',
-                snapshot: throttledSnapshot
-            };
-        }
-
         if (cookieRestoreEligible) {
             runtimeStore.setStartupTask(
                 'auth',
@@ -314,27 +268,44 @@ export async function executeReactAutoLogin(
             if (signal?.aborted) {
                 throw createAutoLoginAbortError();
             }
-
-            try {
-                recordAutoLoginAttemptBeforeRequest();
-                const restoredSnapshot = await executeCookieSessionRestore();
-                toast.success(await i18n.t('message.auth.auto_login_success'));
-                return {
-                    status: 'success',
-                    snapshot: restoredSnapshot
-                };
-            } catch (error) {
-                if (!isMissingCredentialsError(error)) {
-                    throw error;
-                }
-            }
-
-            await webRepository.clearAuthCookies();
+        } else {
+            runtimeStore.setStartupTask(
+                'auth',
+                'running',
+                `Attempting saved-credential login for ${displayName}.`
+            );
         }
 
-        if (!savedCredentialFallbackAvailable || !savedCredential) {
+        const outcome = await vrchatAuthRepository.autoLoginStart({
+            endpoint: '',
+            userId: throttleKey
+        });
+        if (signal?.aborted) {
+            throw createAutoLoginAbortError();
+        }
+
+        if (outcome.status === 'throttled') {
+            applySavedAuthSnapshot(outcome.snapshot as SavedAuthSnapshot);
             setSignedOutSessionState();
-            applySavedAuthSnapshot(snapshot);
+            runtimeStore.setStartupTask(
+                'auth',
+                'completed',
+                `Automatic login paused for ${displayName} after too many attempts in the last hour.`
+            );
+            await flashWindowSafely();
+            await showAuthFailureNotificationSafely(
+                'frontend-auto-login-throttled'
+            );
+            toast.error(await i18n.t('message.auth.auto_login_failed'));
+            return {
+                status: 'throttled',
+                snapshot: outcome.snapshot
+            };
+        }
+
+        if (outcome.status === 'expired') {
+            setSignedOutSessionState();
+            applySavedAuthSnapshot(outcome.snapshot as SavedAuthSnapshot);
             runtimeStore.setStartupTask(
                 'auth',
                 'completed',
@@ -345,26 +316,49 @@ export async function executeReactAutoLogin(
             );
             return {
                 status: 'expired',
-                snapshot
+                snapshot: outcome.snapshot
             };
         }
 
-        runtimeStore.setStartupTask(
-            'auth',
-            'running',
-            `Attempting saved-credential login for ${displayName}.`
+        if (outcome.status === 'failed') {
+            throw autoLoginOutcomeFailureError(outcome);
+        }
+
+        async function restartChallenge() {
+            await vrchatAuthRepository.cancelLoginSession();
+            return vrchatAuthRepository.startLoginSession({
+                mode: 'savedCredential',
+                endpoint: '',
+                userId: throttleKey
+            });
+        }
+
+        const session = await resolveLoginSessionState(
+            outcome,
+            restartChallenge
         );
-        recordAutoLoginAttemptBeforeRequest();
-        const nextSnapshot = await executeSavedCredentialLogin(savedCredential);
+        const refreshedSnapshot = await refreshSavedAuthSnapshot();
+        const finalSnapshot = await finalizeSuccessfulLogin(
+            refreshedSnapshot,
+            'Authenticated automatically.',
+            toAuthUserRecord(session),
+            {
+                endpoint: session.endpoint,
+                websocket: session.websocket
+            }
+        );
 
         toast.success(await i18n.t('message.auth.auto_login_success'));
         return {
             status: 'success',
-            snapshot: nextSnapshot
+            snapshot: finalSnapshot
         };
     } catch (error) {
         const authError = error as AuthAutoLoginError;
-        if (authError?.code === 'AUTH_AUTO_LOGIN_CANCELLED') {
+        if (
+            signal?.aborted ||
+            authError?.code === 'AUTH_AUTO_LOGIN_CANCELLED'
+        ) {
             runtimeStore.setStartupTask(
                 'auth',
                 'completed',

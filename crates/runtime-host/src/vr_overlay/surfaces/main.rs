@@ -2,6 +2,7 @@ use vrcx_0_application::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityEntry,
     OverlayActivityText,
 };
+use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{
     AvatarBitmap, Color, FeedRelation, FeedSeverity, MainSurfaceModel, OverlaySize, ToastCard,
 };
@@ -12,6 +13,7 @@ use super::super::localization::{OverlayLocale, OverlayLocalizer};
 pub(crate) struct HmdToastView {
     pub entry: OverlayActivityEntry,
     pub avatar: Option<AvatarBitmap>,
+    pub show_avatar: bool,
     pub merge_count: u32,
 }
 
@@ -19,10 +21,12 @@ pub(crate) struct HmdToastView {
 pub(crate) struct MainOverlayFrameInput {
     pub toasts: Vec<HmdToastView>,
     pub locale: OverlayLocale,
+    pub show_instance_id_in_location: bool,
 }
 
 pub(crate) fn build_main_surface_model(input: MainOverlayFrameInput) -> MainSurfaceModel {
-    let localizer = OverlayLocalizer::new(input.locale);
+    let localizer =
+        OverlayLocalizer::with_instance_id(input.locale, input.show_instance_id_in_location);
     MainSurfaceModel {
         size: OverlaySize::new(960, 528),
         dark_background: true,
@@ -41,17 +45,18 @@ fn toast_card_from_activity(toast: HmdToastView, localizer: &OverlayLocalizer) -
         actor_name: actor_text(&entry, localizer),
         relation: feed_relation(entry.actor_relation),
         action: action_text(&entry, toast.merge_count, localizer),
-        context: context_text(&entry, localizer),
         severity: feed_severity(&entry),
         avatar: toast.avatar,
+        show_avatar: toast.show_avatar,
     }
 }
 
 fn actor_text(entry: &OverlayActivityEntry, localizer: &OverlayLocalizer) -> String {
     let localized_title = localized_entry_text(entry, localizer, &entry.content.title);
+    let source_title = entry.content.title.source_text();
     first_non_empty([
         localized_title.as_str(),
-        entry.content.title.fallback.as_str(),
+        source_title.as_str(),
         entry.actor_display_name.as_str(),
     ])
 }
@@ -63,59 +68,21 @@ fn action_text(
 ) -> String {
     if merge_count > 1 {
         let others = merge_count - 1;
-        let (key, fallback) = match entry.activity_type.as_str() {
-            "OnPlayerLeft" => (
-                "notifications.left_with_others",
-                format!("and {others} more left"),
-            ),
-            _ => (
-                "notifications.joined_with_others",
-                format!("and {others} more joined"),
-            ),
+        let message = match entry.activity_type.as_str() {
+            "OnPlayerLeft" => OverlayMessage::notifications_left_with_others(others),
+            _ => OverlayMessage::notifications_joined_with_others(others),
         };
-        return localizer.text(&OverlayActivityText {
-            key: key.to_string(),
-            fallback,
-            params: serde_json::json!({ "count": others }),
-        });
+        return localizer.text(&OverlayActivityText::message(message));
     }
     let localized_body = localized_entry_text(entry, localizer, &entry.content.body);
+    let source_body = entry.content.body.source_text();
     first_non_empty([
         localized_body.as_str(),
-        entry.content.body.fallback.as_str(),
+        source_body.as_str(),
         entry.content.summary.as_str(),
         entry.content.detail.as_str(),
         entry.activity_type.as_str(),
     ])
-}
-
-fn context_text(entry: &OverlayActivityEntry, localizer: &OverlayLocalizer) -> Option<String> {
-    let display_location = localizer.display_location(
-        &entry.content.location,
-        &entry.content.world_name,
-        &entry.content.group_name,
-    );
-    let status = status_line(entry, localizer);
-    let value = first_non_empty([
-        display_location.as_str(),
-        status.as_str(),
-        entry.content.display_location.as_str(),
-        entry.content.world_name.as_str(),
-        entry.content.group_name.as_str(),
-    ]);
-    (!value.trim().is_empty()).then_some(value)
-}
-
-fn status_line(entry: &OverlayActivityEntry, localizer: &OverlayLocalizer) -> String {
-    let status = localizer.status_text(&entry.content.status);
-    let description = entry.content.status_description.trim();
-    if status.is_empty() {
-        description.to_string()
-    } else if description.is_empty() {
-        status
-    } else {
-        format!("{status} {description}")
-    }
 }
 
 fn localized_entry_text(

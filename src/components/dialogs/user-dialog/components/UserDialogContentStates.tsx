@@ -9,7 +9,9 @@ export function UserDialogEmptyState({
     title,
     description,
     loading = false
-}: any) {
+}: Pick<ComponentProps<typeof AppEmptyState>, 'title' | 'description'> & {
+    loading?: boolean;
+}) {
     return (
         <AppEmptyState
             className="min-h-56"
@@ -20,7 +22,7 @@ export function UserDialogEmptyState({
     );
 }
 
-function SkeletonLine({ className }: any) {
+function SkeletonLine({ className }: { className?: string }) {
     return <Skeleton className={cn('h-4', className)} />;
 }
 
@@ -62,7 +64,7 @@ function UserDialogHeaderSkeleton() {
     );
 }
 
-function UserDialogPanelSkeleton({ compact = false }: any) {
+function UserDialogPanelSkeleton({ compact = false }: { compact?: boolean }) {
     return (
         <Card size="sm" className="border shadow-none ring-0">
             <div className="space-y-4 px-4">
@@ -86,7 +88,10 @@ function UserDialogPanelSkeleton({ compact = false }: any) {
 export function UserDialogProfileSkeleton({
     label = 'Loading user profile',
     visible = true
-}: any) {
+}: {
+    label?: string;
+    visible?: boolean;
+}) {
     return (
         <EntityDialogScaffold
             className={cn(
@@ -126,3 +131,4 @@ export function UserDialogProfileSkeleton({
         </EntityDialogScaffold>
     );
 }
+import type { ComponentProps } from 'react';

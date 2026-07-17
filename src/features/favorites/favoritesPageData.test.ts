@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFavoriteRemoteItemsByGroup } from './favoritesPageData';
+import {
+    buildFavoriteAvatarHistoryItems,
+    buildFavoriteLocalItemsByGroup,
+    buildFavoriteRemoteItemsByGroup
+} from './favoritesPageData';
 
 function buildWorldItems({
     cachedWorldDetail,
@@ -484,6 +488,77 @@ describe('favorites page data helpers', () => {
                 }),
                 isPrivate: false,
                 isUnavailable: false
+            })
+        ]);
+    });
+
+    it('keeps full and compact image urls separate for remote world cards', () => {
+        const items = buildWorldItems({
+            remoteWorldDetail: {
+                name: 'Image World',
+                thumbnailImageUrl: 'https://example.test/thumb/256',
+                imageUrl: 'https://example.test/full/256'
+            }
+        });
+
+        expect(items).toEqual([
+            expect.objectContaining({
+                imageUrl: 'https://example.test/full/256',
+                imageSmallUrl: 'https://example.test/thumb/128'
+            })
+        ]);
+    });
+
+    it('keeps full and compact image urls separate for local world cards', () => {
+        const items = buildFavoriteLocalItemsByGroup({
+            kind: 'world',
+            localGroups: [
+                {
+                    key: 'Worlds',
+                    label: 'Worlds'
+                }
+            ],
+            localWorldFavorites: {
+                Worlds: ['wrld_local']
+            },
+            localWorldDetailsById: {
+                wrld_local: {
+                    id: 'wrld_local',
+                    name: 'Local World',
+                    thumbnailImageUrl: 'https://example.test/local-thumb/256',
+                    imageUrl: 'https://example.test/local-full/256'
+                }
+            },
+            sortValue: 'date',
+            t: (key: string) => key
+        })['Worlds'];
+
+        expect(items).toEqual([
+            expect.objectContaining({
+                imageUrl: 'https://example.test/local-full/256',
+                imageSmallUrl: 'https://example.test/local-thumb/128'
+            })
+        ]);
+    });
+
+    it('keeps full and compact image urls separate for avatar history cards', () => {
+        const items = buildFavoriteAvatarHistoryItems({
+            kind: 'avatar',
+            avatarHistory: [
+                {
+                    id: 'avtr_history',
+                    name: 'History Avatar',
+                    thumbnailImageUrl: 'https://example.test/history-thumb/256',
+                    imageUrl: 'https://example.test/history-full/256'
+                }
+            ],
+            t: (key: string) => key
+        });
+
+        expect(items).toEqual([
+            expect.objectContaining({
+                imageUrl: 'https://example.test/history-full/256',
+                imageSmallUrl: 'https://example.test/history-thumb/128'
             })
         ]);
     });

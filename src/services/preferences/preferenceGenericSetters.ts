@@ -8,10 +8,7 @@ import {
     normalizeTrustColors,
     TRUST_COLOR_DEFAULTS
 } from '@/shared/utils/trustColors';
-import {
-    normalizeFeedHiddenUsers,
-    normalizeSharedFeedFilters
-} from '@/state/preferencesStore';
+import { normalizeFeedHiddenUsers } from '@/state/preferencesStore';
 import type { TrustColorKey } from '@/state/preferencesStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
@@ -69,6 +66,18 @@ import type {
     ProxyServerPreferenceOptions,
     StringConfigPreferenceKey
 } from './preferencesTypes';
+
+type HiddenVrPanelBoolConfigKey =
+    | 'vrOverlayPanelEnabled'
+    | 'vrOverlayPanelAllFriendsIncludesFavorites';
+type BoolConfigPreferenceInputKey =
+    | BoolConfigPreferenceKey
+    | HiddenVrPanelBoolConfigKey;
+
+const HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS = new Set<string>([
+    'vrOverlayPanelEnabled',
+    'vrOverlayPanelAllFriendsIncludesFavorites'
+]);
 
 export async function setAppLanguagePreference(language: unknown) {
     const nextLanguage = normalizeLanguageCode(language);
@@ -305,9 +314,13 @@ export async function setCloseToTrayPreference(value: boolean) {
 }
 
 export async function setBoolConfigPreference(
-    key: BoolConfigPreferenceKey,
+    key: BoolConfigPreferenceInputKey,
     value: boolean
 ) {
+    if (isHiddenVrPanelBoolConfigKey(key)) {
+        patchPreferenceValue(key, false);
+        return;
+    }
     const enabled = value;
     await configRepository.setBool(key, enabled);
     const normalizedKey = normalizePreferenceKey(key);
@@ -341,6 +354,12 @@ export async function setBoolConfigPreference(
     patchPreferenceValue(key, enabled);
     publishPreferenceChanged(key, enabled);
     await reloadWristOverlayRuntimeConfigIfNeeded(key);
+}
+
+function isHiddenVrPanelBoolConfigKey(
+    key: BoolConfigPreferenceInputKey
+): key is HiddenVrPanelBoolConfigKey {
+    return HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS.has(key);
 }
 
 export async function setStringConfigPreference(
@@ -514,17 +533,6 @@ export async function resetTrustColorsPreference() {
     patchPreferences({ trustColor });
     publishPreferenceChanged('VRCX_trustColor', trustColor);
     return trustColor;
-}
-
-export async function setSharedFeedFiltersPreference(value: unknown) {
-    const sharedFeedFilters = normalizeSharedFeedFilters(value);
-    await configRepository.setString(
-        'sharedFeedFilters',
-        JSON.stringify(sharedFeedFilters)
-    );
-    patchPreferences({ sharedFeedFilters });
-    publishPreferenceChanged('sharedFeedFilters', sharedFeedFilters);
-    return sharedFeedFilters;
 }
 
 export async function setLocalFavoriteFriendsGroupsPreference(value: unknown) {

@@ -195,9 +195,11 @@ impl RuntimeHostState {
             Arc::clone(&self.background_group_instances_refresh_running);
         let session_slot = Arc::clone(&self.backend_frontend_session);
         let realtime_runtime = Arc::clone(&self.realtime_runtime);
+        let authenticated_runtime = self.authenticated_runtime.clone();
         let vr_overlay_runtime = Arc::clone(&self.vr_overlay_runtime);
         let runtime_context = Arc::clone(&self.runtime_context);
         let discord_rpc = Arc::clone(&self.discord_rpc);
+        let discord_reconcile_generation = Arc::clone(&self.discord_reconcile_generation);
 
         self.runtime_context
             .tasks
@@ -207,14 +209,18 @@ impl RuntimeHostState {
                 let mut discord_success_info: Option<String> = None;
                 let mut next_presence = Instant::now();
                 let mut next_discord = Instant::now();
+                let mut observed_discord_reconcile_generation =
+                    discord_reconcile_generation.load(Ordering::Acquire);
                 let mut next_current_user = Instant::now();
                 let mut next_group_instances = Instant::now();
                 let mut next_overlay_activity_config = Instant::now();
-                let mut next_social = Instant::now();
+                let mut next_social = Instant::now()
+                    + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
                 let mut next_moderation = Instant::now();
                 let mut next_print_cleanup = Instant::now();
                 let mut favorite_friend_groups_by_key: HashMap<String, Vec<String>> =
                     HashMap::new();
+                let mut favorite_groups_initialized = false;
                 let mut active_scope_key =
                     background_capability_session_scope_key(&session_slot).unwrap_or_default();
                 let sleep_chunk = Duration::from_secs(1);
@@ -231,6 +237,12 @@ impl RuntimeHostState {
                     }
 
                     let now = Instant::now();
+                    if observe_discord_reconcile_request(
+                        discord_reconcile_generation.as_ref(),
+                        &mut observed_discord_reconcile_generation,
+                    ) {
+                        next_discord = now;
+                    }
                     let scope_key =
                         background_capability_session_scope_key(&session_slot).unwrap_or_default();
                     if scope_key != active_scope_key {
@@ -239,6 +251,7 @@ impl RuntimeHostState {
                         discord_state = BackgroundDiscordPresenceState::default();
                         discord_success_info = None;
                         favorite_friend_groups_by_key.clear();
+                        favorite_groups_initialized = false;
                         runtime_context.overlay_activity.clear_runtime_state();
                         vr_overlay_runtime.clear_friends_panel_session_state();
                         next_presence = now;
@@ -246,7 +259,8 @@ impl RuntimeHostState {
                         next_current_user = now;
                         next_group_instances = now;
                         next_overlay_activity_config = now;
-                        next_social = now;
+                        next_social = now
+                            + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
                         next_moderation = now;
                         next_print_cleanup = now;
                     }
@@ -298,7 +312,23 @@ impl RuntimeHostState {
                         runtime_context: &runtime_context,
                         backend_runtime: &backend_runtime,
                         background_jobs: &background_jobs,
+                        authenticated_runtime: &authenticated_runtime,
                     };
+
+                    if !favorite_groups_initialized {
+                        let snapshot = authenticated_runtime.snapshot();
+                        if let Some(favorites) = snapshot
+                            .favorites_baseline
+                            .as_ref()
+                            .and_then(|baseline| baseline.snapshot.as_ref())
+                        {
+                            favorite_friend_groups_by_key =
+                                crate::authenticated_runtime::favorite_group_membership_from_snapshot(
+                                    favorites.as_value(),
+                                );
+                            favorite_groups_initialized = true;
+                        }
+                    }
 
                     if now >= next_social {
                         run_background_social_baseline_refresh(
@@ -555,5 +585,40 @@ pub(super) fn read_group_order(user_id: &str) -> Value {
     match serde_json::from_str::<Value>(&raw) {
         Ok(value) if value.is_array() => value,
         _ => json!([]),
+    }
+}
+
+fn observe_discord_reconcile_request(generation: &AtomicU64, observed: &mut u64) -> bool {
+    let requested = generation.load(Ordering::Acquire);
+    if requested == *observed {
+        return false;
+    }
+    *observed = requested;
+    true
+}
+
+#[cfg(test)]
+mod discord_reconcile_tests {
+    use super::*;
+
+    #[test]
+    fn observes_each_reconcile_generation_once() {
+        let generation = AtomicU64::new(0);
+        let mut observed = 0;
+
+        assert!(!observe_discord_reconcile_request(
+            &generation,
+            &mut observed
+        ));
+        generation.fetch_add(1, Ordering::AcqRel);
+        assert!(observe_discord_reconcile_request(
+            &generation,
+            &mut observed
+        ));
+        assert_eq!(observed, 1);
+        assert!(!observe_discord_reconcile_request(
+            &generation,
+            &mut observed
+        ));
     }
 }

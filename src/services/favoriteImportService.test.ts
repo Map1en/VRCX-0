@@ -1,59 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type {
+    FavoriteImportStartInput,
+    FavoriteImportStatus
+} from '@/platform/tauri/bindings';
+
 const AVATAR_ID = 'avtr_00000000-0000-0000-0000-000000000001';
-const WORLD_ID = 'wrld_00000000-0000-0000-0000-000000000002';
-const USER_ID = 'usr_00000000-0000-0000-0000-000000000003';
 
 const mocks = vi.hoisted(() => ({
-    addAvatarToCache: vi.fn(),
-    getAvatarProfile: vi.fn(),
-    addAvatarToFavorites: vi.fn(),
-    addWorldToFavorites: vi.fn(),
-    addFriendToLocalFavorites: vi.fn(),
-    addWorldToCache: vi.fn(),
-    getUserProfile: vi.fn(),
-    addFavorite: vi.fn(),
-    getWorldProfile: vi.fn(),
+    favoriteImportStart: vi.fn(),
+    favoriteImportStatus: vi.fn(),
+    favoriteImportCancel: vi.fn(),
     bootstrapFavorites: vi.fn(),
     translate: vi.fn()
 }));
 
-vi.mock('@/repositories/avatarCacheRepository', () => ({
-    default: {
-        addAvatarToCache: mocks.addAvatarToCache
-    }
-}));
-
-vi.mock('@/repositories/avatarProfileRepository', () => ({
-    default: {
-        getAvatarProfile: mocks.getAvatarProfile
-    }
-}));
-
-vi.mock('@/repositories/favoritePersistenceRepository', () => ({
-    default: {
-        addAvatarToFavorites: mocks.addAvatarToFavorites,
-        addWorldToFavorites: mocks.addWorldToFavorites,
-        addFriendToLocalFavorites: mocks.addFriendToLocalFavorites,
-        addWorldToCache: mocks.addWorldToCache
-    }
-}));
-
-vi.mock('@/repositories/userProfileRepository', () => ({
-    default: {
-        getUserProfile: mocks.getUserProfile
-    }
-}));
-
-vi.mock('@/repositories/vrchatFavoriteRepository', () => ({
-    default: {
-        addFavorite: mocks.addFavorite
-    }
-}));
-
-vi.mock('@/repositories/worldProfileRepository', () => ({
-    default: {
-        getWorldProfile: mocks.getWorldProfile
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: {
+        appFavoriteImportStart: mocks.favoriteImportStart,
+        appFavoriteImportStatus: mocks.favoriteImportStatus,
+        appFavoriteImportCancel: mocks.favoriteImportCancel
     }
 }));
 
@@ -67,7 +33,43 @@ vi.mock('./favoriteBootstrapService', () => ({
     bootstrapFavorites: mocks.bootstrapFavorites
 }));
 
-describe('favoriteImportService parsing and validation', () => {
+function completedStatus(
+    input: FavoriteImportStartInput,
+    options: {
+        succeeded?: number;
+        failed?: number;
+        message?: string;
+    } = {}
+): FavoriteImportStatus {
+    const succeeded = options.succeeded ?? input.ids?.length ?? 0;
+    const failed = options.failed ?? 0;
+    return {
+        runId: 'favorite-test-1',
+        status: 'completed',
+        operation: input.operation,
+        kind: input.kind,
+        authScopeGeneration: 1,
+        total: input.ids?.length ?? 0,
+        processed: input.ids?.length ?? 0,
+        succeeded,
+        failed,
+        cancelRequested: false,
+        items: (input.ids ?? []).map((id, index) => ({
+            id,
+            state: index < succeeded ? 'succeeded' : 'failed',
+            message: index < succeeded ? '' : options.message || 'failed',
+            entity:
+                input.operation === 'hydrate' && index < succeeded
+                    ? { id, name: 'Avatar' }
+                    : null
+        })),
+        startedAt: '2026-01-01T00:00:00Z',
+        finishedAt: '2026-01-01T00:00:01Z',
+        lastError: failed ? options.message || 'failed' : null
+    };
+}
+
+describe('favoriteImportService typed worker adapter', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const { useFavoriteImportStore } =
@@ -88,26 +90,25 @@ describe('favoriteImportService parsing and validation', () => {
             currentUserSnapshot: { id: 'usr_self' }
         });
 
-        mocks.getAvatarProfile.mockResolvedValue({
-            id: AVATAR_ID,
-            name: 'Avatar'
-        });
-        mocks.getWorldProfile.mockResolvedValue({
-            id: WORLD_ID,
-            name: 'World',
-            createdAt: '2026-01-01T00:00:00Z',
-            updatedAt: '2026-01-02T00:00:00Z'
-        });
-        mocks.getUserProfile.mockResolvedValue({
-            id: USER_ID,
-            displayName: 'Friend'
-        });
-        mocks.addAvatarToCache.mockResolvedValue(undefined);
-        mocks.addWorldToCache.mockResolvedValue(undefined);
-        mocks.addAvatarToFavorites.mockResolvedValue(undefined);
-        mocks.addWorldToFavorites.mockResolvedValue(undefined);
-        mocks.addFriendToLocalFavorites.mockResolvedValue(undefined);
-        mocks.addFavorite.mockResolvedValue(undefined);
+        mocks.favoriteImportStart.mockImplementation(
+            async (input: FavoriteImportStartInput) => completedStatus(input)
+        );
+        mocks.favoriteImportStatus.mockResolvedValue(
+            completedStatus({
+                kind: 'avatar',
+                operation: 'hydrate',
+                ids: [],
+                target: null
+            })
+        );
+        mocks.favoriteImportCancel.mockResolvedValue(
+            completedStatus({
+                kind: 'avatar',
+                operation: 'hydrate',
+                ids: [],
+                target: null
+            })
+        );
         mocks.bootstrapFavorites.mockResolvedValue(undefined);
         mocks.translate.mockImplementation((_key: string, params?: unknown) =>
             params && typeof params === 'object' && 'value' in params
@@ -116,7 +117,7 @@ describe('favoriteImportService parsing and validation', () => {
         );
     });
 
-    it('extracts and deduplicates avatar ids before resolving profiles', async () => {
+    it('extracts and deduplicates ids before starting backend hydration', async () => {
         const { useFavoriteImportStore } =
             await import('@/state/favoriteImportStore');
         const { processFavoriteImportList } =
@@ -128,30 +129,20 @@ describe('favoriteImportService parsing and validation', () => {
 
         await processFavoriteImportList();
 
-        expect(mocks.getAvatarProfile).toHaveBeenCalledTimes(1);
-        expect(mocks.getAvatarProfile).toHaveBeenCalledWith({
-            avatarId: AVATAR_ID,
-            endpoint: 'https://api.example.test'
-        });
-        expect(mocks.addAvatarToCache).toHaveBeenCalledWith({
-            id: AVATAR_ID,
-            name: 'Avatar'
+        expect(mocks.favoriteImportStart).toHaveBeenCalledWith({
+            kind: 'avatar',
+            operation: 'hydrate',
+            ids: [AVATAR_ID],
+            target: null
         });
         expect(useFavoriteImportStore.getState()).toMatchObject({
             loading: false,
-            progress: 0,
-            progressTotal: 0,
             errors: '',
-            rows: [
-                {
-                    id: AVATAR_ID,
-                    name: 'Avatar'
-                }
-            ]
+            rows: [{ id: AVATAR_ID, name: 'Avatar' }]
         });
     });
 
-    it('uses the selected favorite type config and rejects unsupported dialog types', async () => {
+    it('keeps type parsing and unsupported dialog validation on the frontend', async () => {
         const { getFavoriteImportTypeConfig, openFavoriteImportDialog } =
             await import('./favoriteImportService');
 
@@ -170,51 +161,44 @@ describe('favoriteImportService parsing and validation', () => {
         ).toThrow('Unsupported favorite import type: bad');
     });
 
-    it('blocks local imports when the item is already in the selected local group', async () => {
+    it('shows backend local duplicate failures without removing the preview row', async () => {
         const { useFavoriteImportStore } =
             await import('@/state/favoriteImportStore');
-        const { useFavoriteStore } = await import('@/state/favoriteStore');
         const { importFavoriteImportRows } =
             await import('./favoriteImportService');
-        useFavoriteStore.getState().setFavoritesSnapshot({
-            localAvatarFavoriteGroups: ['Avatars'],
-            localAvatarFavorites: {
-                Avatars: [AVATAR_ID]
-            },
-            localAvatarFavoritesList: [AVATAR_ID]
-        });
-        useFavoriteImportStore.getState().openDialog({
-            type: 'avatar',
-            input: ''
-        });
-        useFavoriteImportStore.getState().setRows([
-            {
-                id: AVATAR_ID,
-                name: 'Avatar'
-            }
-        ]);
+        mocks.favoriteImportStart.mockImplementation(
+            async (input: FavoriteImportStartInput) =>
+                completedStatus(input, {
+                    succeeded: 0,
+                    failed: 1,
+                    message: 'Avatar is already in local favorites.'
+                })
+        );
+        useFavoriteImportStore.getState().openDialog({ type: 'avatar' });
+        useFavoriteImportStore
+            .getState()
+            .setRows([{ id: AVATAR_ID, name: 'Avatar' }]);
         useFavoriteImportStore.getState().setLocalGroupName('Avatars');
 
         await importFavoriteImportRows();
 
-        expect(mocks.addAvatarToFavorites).not.toHaveBeenCalled();
-        expect(useFavoriteImportStore.getState().rows).toEqual([
-            {
-                id: AVATAR_ID,
-                name: 'Avatar'
+        expect(mocks.favoriteImportStart).toHaveBeenCalledWith({
+            kind: 'avatar',
+            operation: 'import',
+            ids: [AVATAR_ID],
+            target: {
+                location: 'local',
+                group: 'Avatars',
+                favoriteType: ''
             }
-        ]);
+        });
+        expect(useFavoriteImportStore.getState().rows).toHaveLength(1);
         expect(useFavoriteImportStore.getState().errors).toContain(
             'Avatar is already in local favorites.'
         );
-        expect(useFavoriteImportStore.getState()).toMatchObject({
-            loading: false,
-            importProgress: 0,
-            importProgressTotal: 0
-        });
     });
 
-    it('imports remote favorites and refreshes the authenticated favorite snapshot', async () => {
+    it('passes the selected remote group to Rust and refreshes after success', async () => {
         const { useFavoriteImportStore } =
             await import('@/state/favoriteImportStore');
         const { useFavoriteStore } = await import('@/state/favoriteStore');
@@ -227,28 +211,25 @@ describe('favoriteImportService parsing and validation', () => {
                     type: 'avatar',
                     displayName: 'Avatars'
                 }
-            ],
-            remoteFavoritesByObjectId: {}
+            ]
         });
-        useFavoriteImportStore.getState().openDialog({
-            type: 'avatar',
-            input: ''
-        });
-        useFavoriteImportStore.getState().setRows([
-            {
-                id: AVATAR_ID,
-                name: 'Avatar'
-            }
-        ]);
+        useFavoriteImportStore.getState().openDialog({ type: 'avatar' });
+        useFavoriteImportStore
+            .getState()
+            .setRows([{ id: AVATAR_ID, name: 'Avatar' }]);
         useFavoriteImportStore.getState().setRemoteGroupName('avatars1');
 
         await importFavoriteImportRows();
 
-        expect(mocks.addFavorite).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test',
-            type: 'avatar',
-            favoriteId: AVATAR_ID,
-            tags: 'avatars1'
+        expect(mocks.favoriteImportStart).toHaveBeenCalledWith({
+            kind: 'avatar',
+            operation: 'import',
+            ids: [AVATAR_ID],
+            target: {
+                location: 'remote',
+                group: 'avatars1',
+                favoriteType: 'avatar'
+            }
         });
         expect(mocks.bootstrapFavorites).toHaveBeenCalledWith({
             userId: 'usr_self',
@@ -256,5 +237,26 @@ describe('favoriteImportService parsing and validation', () => {
             currentUserSnapshot: { id: 'usr_self' }
         });
         expect(useFavoriteImportStore.getState().rows).toEqual([]);
+    });
+
+    it('keeps typed start failures inside the active dialog error list', async () => {
+        const { useFavoriteImportStore } =
+            await import('@/state/favoriteImportStore');
+        const { processFavoriteImportList } =
+            await import('./favoriteImportService');
+        mocks.favoriteImportStart.mockRejectedValue(
+            new Error('Authenticated session changed.')
+        );
+        useFavoriteImportStore.getState().openDialog({
+            type: 'avatar',
+            input: AVATAR_ID
+        });
+
+        await processFavoriteImportList();
+
+        expect(useFavoriteImportStore.getState().errors).toContain(
+            'Authenticated session changed.'
+        );
+        expect(useFavoriteImportStore.getState().loading).toBe(false);
     });
 });

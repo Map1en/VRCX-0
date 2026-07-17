@@ -11,8 +11,8 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { useKnownUserFact } from '@/domain/users/useKnownUser';
-import { formatDateFilter } from '@/lib/dateTime';
+import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
+import { useKnownUserFact } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -54,12 +54,24 @@ function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
-function formatTimestamp(value: unknown) {
+function formatTimestampParts(value: unknown) {
     if (!value) {
-        return '-';
+        return { date: '-', time: '' };
     }
 
-    return formatDateFilter(value, 'short');
+    const date = formatDateTime(value, { month: 'short', day: 'numeric' });
+    if (date === '-') {
+        return { date: '-', time: '' };
+    }
+
+    const time = formatDateTime(value, {
+        hour: 'numeric',
+        minute: '2-digit'
+    })
+        .replace(' AM', 'am')
+        .replace(' PM', 'pm');
+
+    return { date, time };
 }
 
 function formatTimestampLong(value: unknown) {
@@ -436,6 +448,6 @@ export {
     FeedUserAvatarButton,
     FeedUserLink,
     DataTableSortButton as SortButton,
-    formatTimestamp,
-    formatTimestampLong
+    formatTimestampLong,
+    formatTimestampParts
 };

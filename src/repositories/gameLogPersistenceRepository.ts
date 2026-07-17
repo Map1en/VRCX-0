@@ -42,6 +42,7 @@ type PreviousInstanceGroup = {
 type InstancePlayerAggregate = {
     rowId: number;
     created_at: string;
+    left_at: string;
     displayName: string;
     userId: string;
     time: number;
@@ -521,6 +522,8 @@ const gameLog = {
             var count = 0;
             var rowId = rowData.rowId;
             var created_at = rowData.created_at;
+            var left_at =
+                rowData.type === 'OnPlayerLeft' ? rowData.created_at : '';
             var displayName = normalizeGameLogIdentifier(rowData.displayName);
             var userId = normalizeGameLogIdentifier(rowData.userId);
             var playerKey = userId || `${displayName || 'anonymous'}:${rowId}`;
@@ -532,13 +535,21 @@ const gameLog = {
                 time += ref.time;
                 count = ref.count;
                 created_at = ref.created_at;
+                left_at =
+                    rowData.type === 'OnPlayerLeft'
+                        ? rowData.created_at
+                        : ref.left_at;
             }
             if (rowData.type === 'OnPlayerJoined') {
+                if (count === 0) {
+                    created_at = rowData.created_at;
+                }
                 count++;
             }
             var row: InstancePlayerAggregate = {
                 rowId,
                 created_at,
+                left_at,
                 displayName: ref?.displayName || displayName,
                 userId,
                 time,

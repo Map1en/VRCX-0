@@ -14,4 +14,4 @@ pub use types::{
     ActivitySessionOutput, ActivitySyncStateInput, ActivitySyncStateOutput, ActivityViewBuildInput,
     ActivityViewOutput,
 };
-pub use view::{activity_overlap_view_build, activity_view_build};
+pub use view::{activity_overlap_view_build, activity_self_sessions_warmup, activity_view_build};

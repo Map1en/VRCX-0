@@ -30,7 +30,7 @@ fn webhook_delivery_ignores_game_state_conditions() {
         is_game_no_vr: false,
     };
 
-    let plan = decide_notification_plan(&delivery(true, true, true), &preferences, &game);
+    let plan = decide_notification_plan(&delivery(true, true, true, true), &preferences, &game);
 
     assert!(!plan.desktop);
     assert!(!plan.tts);
@@ -47,7 +47,7 @@ fn vr_delivery_requires_steamvr_and_enabled_channels() {
     };
 
     let not_in_vr = decide_notification_plan(
-        &delivery(false, true, false),
+        &delivery(false, true, false, false),
         &preferences,
         &NotificationDeliveryGameState {
             is_game_running: true,
@@ -59,7 +59,7 @@ fn vr_delivery_requires_steamvr_and_enabled_channels() {
     assert!(!not_in_vr.ovrt);
 
     let in_vr = decide_notification_plan(
-        &delivery(false, true, false),
+        &delivery(false, true, false, false),
         &preferences,
         &NotificationDeliveryGameState {
             is_game_running: true,
@@ -173,10 +173,32 @@ fn backend_snapshot(
         game_log_persisted_count: 0,
         last_error: None,
         updated_at: "2026-07-03T08:30:00.000Z".into(),
+        friend_profile_load: vrcx_0_application::FriendProfileLoadStatusPayload::default(),
     }
 }
 
-fn delivery(desktop: bool, vr: bool, webhook: bool) -> OverlayActivityDelivery {
+#[test]
+fn tts_delivery_uses_independent_filter_surface() {
+    let preferences = NotificationDeliveryPreferences {
+        notification_tts: "Always".into(),
+        ..NotificationDeliveryPreferences::default()
+    };
+    let game = NotificationDeliveryGameState {
+        is_game_running: true,
+        is_steamvr_running: true,
+        is_game_no_vr: false,
+    };
+
+    let disabled =
+        decide_notification_plan(&delivery(true, true, false, false), &preferences, &game);
+    assert!(!disabled.tts);
+
+    let enabled =
+        decide_notification_plan(&delivery(false, false, false, true), &preferences, &game);
+    assert!(enabled.tts);
+}
+
+fn delivery(desktop: bool, vr: bool, webhook: bool, tts: bool) -> OverlayActivityDelivery {
     OverlayActivityDelivery {
         entry: OverlayActivityEntry {
             sequence: 1,
@@ -194,6 +216,7 @@ fn delivery(desktop: bool, vr: bool, webhook: bool) -> OverlayActivityDelivery {
         vr,
         hmd: false,
         webhook,
+        tts,
     }
 }
 

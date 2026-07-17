@@ -84,3 +84,23 @@ fn favorite_move_rolls_back_when_target_write_fails() {
     assert!(result.is_err());
     assert_eq!(group_names(&db, "world"), vec!["source".to_string()]);
 }
+
+#[test]
+fn favorite_move_is_idempotent_when_target_already_has_entity() {
+    let (_dir, db) = test_db("favorite-move-target-present");
+    favorite_add(&db, "world".into(), "wrld_1".into(), "source".into()).unwrap();
+    favorite_add(&db, "world".into(), "wrld_1".into(), "target".into()).unwrap();
+
+    let result = favorite_move(
+        &db,
+        "world".into(),
+        "wrld_1".into(),
+        "source".into(),
+        "target".into(),
+    )
+    .unwrap();
+
+    assert_eq!(result.removed, 1);
+    assert_eq!(result.added, 0);
+    assert_eq!(group_names(&db, "world"), vec!["target".to_string()]);
+}

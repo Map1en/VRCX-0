@@ -18,11 +18,45 @@ import {
     EntityActionItem,
     EntityActionSeparator
 } from '../../EntityDialogScaffold';
+import type {
+    AvatarActionStatus,
+    AvatarControls,
+    AvatarReleaseStatus,
+    AvatarViewRecord
+} from '../avatarDialogTypes';
 
 export function AvatarDialogHeaderActions({
     avatarMenuCommands,
     avatarMenuModel
-}: any) {
+}: {
+    avatarMenuCommands: {
+        onAvatarBlock: AvatarControls['onAvatarBlock'];
+        onChangeContentTags: AvatarControls['onChangeContentTags'];
+        onChangeImage: AvatarControls['onChangeImage'];
+        onCreateImposter: AvatarControls['onCreateImposter'];
+        onDelete: AvatarControls['onDelete'];
+        onDeleteCache: AvatarControls['onDeleteCache'];
+        onDeleteImposter: AvatarControls['onDeleteImposter'];
+        onEditDetails: AvatarControls['onEditDetails'];
+        onOpenLink(url: string): void;
+        onRefresh: AvatarControls['onRefresh'];
+        onRegenerateImposter: AvatarControls['onRegenerateImposter'];
+        onReleaseStatus(status: AvatarReleaseStatus): void;
+        onSelect: AvatarControls['onSelect'];
+        onSelectFallback: AvatarControls['onSelectFallback'];
+    };
+    avatarMenuModel: {
+        actionStatus: AvatarActionStatus;
+        avatar: AvatarViewRecord;
+        avatarBlocked: boolean;
+        canManageAvatar: boolean;
+        canSelectAvatar: boolean;
+        canSelectFallbackAvatar: boolean;
+        hasImposter: boolean;
+        isCurrentAvatar: boolean;
+        packageUrl: string;
+    };
+}) {
     const { t } = useTranslation();
     const {
         actionStatus,

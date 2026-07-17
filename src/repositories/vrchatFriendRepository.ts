@@ -24,10 +24,6 @@ interface FriendEndpointInput {
     isFriend?: boolean | null;
 }
 
-interface CancelFriendRequestInput extends FriendEndpointInput {
-    notificationId?: unknown;
-}
-
 function isValidFriendUser(user: unknown): user is FriendRecord {
     return Boolean(
         user &&
@@ -134,27 +130,6 @@ async function getUser({
     );
 }
 
-async function deleteFriend({ userId, endpoint = '' }: FriendEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    if (!normalizedUserId) {
-        throw new Error(
-            'VrchatFriendRepository.deleteFriend requires a user id.'
-        );
-    }
-
-    const response = await commands.appVrchatFriendDelete({
-        userId: normalizedUserId,
-        endpoint
-    });
-    return unwrapVrchatFriendResponse<Record<string, unknown>>(
-        response,
-        `auth/user/friends/${encodeURIComponent(normalizedUserId)}`
-    );
-}
-
 async function getFriendStatus({ userId, endpoint = '' }: FriendEndpointInput) {
     const normalizedUserId =
         typeof userId === 'string'
@@ -176,78 +151,12 @@ async function getFriendStatus({ userId, endpoint = '' }: FriendEndpointInput) {
     );
 }
 
-async function sendFriendRequest({
-    userId,
-    endpoint = ''
-}: FriendEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    if (!normalizedUserId) {
-        throw new Error(
-            'VrchatFriendRepository.sendFriendRequest requires a user id.'
-        );
-    }
-
-    const response = await commands.appVrchatFriendRequestSend({
-        userId: normalizedUserId,
-        endpoint
-    });
-    return unwrapVrchatFriendResponse<Record<string, unknown>>(
-        response,
-        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`
-    );
-}
-
-async function cancelFriendRequest({
-    userId,
-    notificationId = '',
-    endpoint = ''
-}: CancelFriendRequestInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    if (!normalizedUserId) {
-        throw new Error(
-            'VrchatFriendRepository.cancelFriendRequest requires a user id.'
-        );
-    }
-
-    const params =
-        typeof notificationId === 'string' && notificationId.trim()
-            ? { notificationId: notificationId.trim() }
-            : null;
-
-    const response = await commands.appVrchatFriendRequestCancel({
-        userId: normalizedUserId,
-        notificationId: params?.notificationId || '',
-        endpoint
-    });
-    return unwrapVrchatFriendResponse<Record<string, unknown>>(
-        response,
-        `user/${encodeURIComponent(normalizedUserId)}/friendRequest`
-    );
-}
-
 const vrchatFriendRepository = Object.freeze({
     getFriends,
     getAllFriends,
     getUser,
-    deleteFriend,
-    getFriendStatus,
-    sendFriendRequest,
-    cancelFriendRequest
+    getFriendStatus
 });
 
-export {
-    getFriends,
-    getAllFriends,
-    getUser,
-    deleteFriend,
-    getFriendStatus,
-    sendFriendRequest,
-    cancelFriendRequest
-};
+export { getFriends, getAllFriends, getUser, getFriendStatus };
 export default vrchatFriendRepository;

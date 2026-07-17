@@ -1,44 +1,43 @@
-use serde_json::{json, Value};
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 use vrcx_0_application::{
     HostSessionRuntime, ImageCache, OverlayActivityDelivery, OverlayActivitySink,
-    OverlayActivitySnapshot, RuntimeDiagnostics, RuntimeEventBus, TaskSupervisor, WebClient,
+    OverlayActivitySnapshot, RealtimeHostRuntime, RuntimeDiagnostics, TaskSupervisor, WebClient,
     WorldCache,
 };
 use vrcx_0_core::location::{format_display_location, is_meaningful_world_name, parse_location};
 use vrcx_0_host::overlay_notifications::{send_xs_notification, OvrToolkit};
+use vrcx_0_host::tts::TtsEngine;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
 use super::discord::{build_discord_payload, DiscordDeps};
-use super::image_file::extract_file_id;
+use super::image_file::{extract_file_id, extract_file_version, fallback_file_version};
 use super::rendered::RenderedNotification;
 use super::webhook::send_json_webhook_with_retry;
-use crate::notification::user_image::UserImageCache;
+use crate::notification::user_image::{normalize_avatar_image_url_128, UserImageCache};
 use crate::vr_overlay::{OverlayLocale, OverlayLocalizer};
+
+mod generic_webhook;
+mod preferences;
+
+use generic_webhook::{default_webhook_fields, generic_webhook_payload};
+pub use generic_webhook::{filter_generic_webhook_payload, webhook_local_time_string};
+#[cfg(test)]
+use preferences::config_tts_name_mode;
+pub use preferences::parse_webhook_fields;
+use preferences::{config_bool, load_preferences};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 const OVERLAY_NOTIFICATION_APP_TITLE: &str = "VRCX-0";
-const DEFAULT_WEBHOOK_FIELDS: &[&str] = &[
-    "version",
-    "event",
-    "category",
-    "title",
-    "message",
-    "user",
-    "location",
-    "locationId",
-    "worldId",
-    "worldName",
-    "timestamp",
-    "localTime",
-];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NotificationDeliveryPreferences {
     pub desktop_toast: String,
     pub desktop_notification_sound: bool,
     pub notification_tts: String,
+    pub notification_tts_name_mode: String,
+    pub notification_tts_voice_native: String,
     pub xs_notifications: bool,
     pub ovrt_hud_notifications: bool,
     pub ovrt_wrist_notifications: bool,
@@ -49,6 +48,7 @@ pub struct NotificationDeliveryPreferences {
     pub webhook_url: String,
     pub webhook_format: String,
     pub webhook_fields: Vec<String>,
+    pub show_instance_id_in_location: bool,
 }
 
 impl Default for NotificationDeliveryPreferences {
@@ -57,6 +57,8 @@ impl Default for NotificationDeliveryPreferences {
             desktop_toast: "Never".into(),
             desktop_notification_sound: false,
             notification_tts: "Never".into(),
+            notification_tts_name_mode: "username".into(),
+            notification_tts_voice_native: String::new(),
             xs_notifications: false,
             ovrt_hud_notifications: false,
             ovrt_wrist_notifications: false,
@@ -67,6 +69,7 @@ impl Default for NotificationDeliveryPreferences {
             webhook_url: String::new(),
             webhook_format: "generic".into(),
             webhook_fields: default_webhook_fields(),
+            show_instance_id_in_location: false,
         }
     }
 }
@@ -113,8 +116,7 @@ pub fn decide_notification_plan(
     let webhook = delivery.webhook
         && preferences.webhook_enabled
         && !preferences.webhook_url.trim().is_empty();
-    let tts = (delivery.desktop || delivery.vr)
-        && should_play_for_condition(&preferences.notification_tts, game);
+    let tts = delivery.tts && should_play_for_condition(&preferences.notification_tts, game);
 
     NotificationDeliveryPlan {
         desktop,
@@ -175,6 +177,34 @@ impl DesktopNotifier for DesktopNotifierSlot {
     }
 }
 
+#[derive(Clone, Default)]
+pub struct RealtimeUserImageResolverSlot {
+    inner: Arc<Mutex<Option<Arc<RealtimeHostRuntime>>>>,
+}
+
+impl RealtimeUserImageResolverSlot {
+    pub fn set(&self, runtime: Arc<RealtimeHostRuntime>) {
+        match self.inner.lock() {
+            Ok(mut slot) => {
+                *slot = Some(runtime);
+            }
+            Err(error) => {
+                tracing::warn!("failed to set realtime user image resolver bridge: {error}");
+            }
+        }
+    }
+
+    pub(crate) fn cached_url(
+        &self,
+        endpoint: &str,
+        user_id: &str,
+        allow_user_icon: bool,
+    ) -> Option<String> {
+        let runtime = self.inner.lock().ok()?.clone()?;
+        runtime.cached_user_notification_image_url(endpoint, user_id, allow_user_icon)
+    }
+}
+
 pub struct NotificationDispatcher {
     session: HostSessionRuntime,
     config: ConfigRepository,
@@ -184,8 +214,9 @@ pub struct NotificationDispatcher {
     web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
     user_image_cache: Arc<UserImageCache>,
+    realtime_user_image_resolver: RealtimeUserImageResolverSlot,
     desktop: Arc<dyn DesktopNotifier>,
-    event_bus: RuntimeEventBus,
+    tts: Arc<dyn TtsEngine>,
     diagnostics: RuntimeDiagnostics,
     tasks: TaskSupervisor,
 }
@@ -197,8 +228,9 @@ pub struct NotificationDispatcherDeps {
     pub image_cache: Arc<ImageCache>,
     pub web: Arc<WebClient>,
     pub world_cache: Arc<WorldCache>,
+    pub realtime_user_image_resolver: RealtimeUserImageResolverSlot,
     pub desktop: Arc<dyn DesktopNotifier>,
-    pub event_bus: RuntimeEventBus,
+    pub tts: Arc<dyn TtsEngine>,
     pub diagnostics: RuntimeDiagnostics,
     pub tasks: TaskSupervisor,
 }
@@ -214,8 +246,9 @@ impl NotificationDispatcher {
             web: deps.web,
             world_cache: deps.world_cache,
             user_image_cache: Arc::new(UserImageCache::new()),
+            realtime_user_image_resolver: deps.realtime_user_image_resolver,
             desktop: deps.desktop,
-            event_bus: deps.event_bus,
+            tts: deps.tts,
             diagnostics: deps.diagnostics,
             tasks: deps.tasks,
         }
@@ -247,21 +280,25 @@ impl OverlayActivitySink for NotificationDispatcher {
         let web = Arc::clone(&self.web);
         let db = Arc::clone(&self.db);
         let user_image_cache = Arc::clone(&self.user_image_cache);
+        let realtime_user_image_resolver = self.realtime_user_image_resolver.clone();
         let allow_user_icon = config_bool(&self.config, "displayVRCPlusIconsAsAvatar", true);
         let desktop = Arc::clone(&self.desktop);
-        let event_bus = self.event_bus.clone();
+        let tts = Arc::clone(&self.tts);
         let diagnostics = self.diagnostics.clone();
 
         self.tasks.spawn(async move {
             let mut delivery = delivery;
-            resolve_delivery_world_name(
+            let needs_local_image = preferences.image_notifications && plan.needs_local_image();
+            let world_name_result = resolve_delivery_world_name(
                 world_cache.as_ref(),
                 web.as_ref(),
                 &endpoint,
-                &mut delivery,
-            )
-            .await;
-            if preferences.image_notifications && plan.needs_local_image() {
+                &delivery,
+            );
+            let actor_image_result = async {
+                if !needs_local_image {
+                    return None;
+                }
                 resolve_delivery_actor_image(
                     user_image_cache.as_ref(),
                     web.as_ref(),
@@ -269,11 +306,24 @@ impl OverlayActivitySink for NotificationDispatcher {
                     &endpoint,
                     allow_user_icon,
                     &current_user_id,
-                    &mut delivery,
+                    &realtime_user_image_resolver,
+                    &delivery,
                 )
-                .await;
+                .await
+            };
+            let (world_name_result, actor_image_result) =
+                tokio::join!(world_name_result, actor_image_result);
+            if let Some((world_name, display_location)) = world_name_result {
+                delivery.entry.content.world_name = world_name;
+                if !display_location.trim().is_empty() {
+                    delivery.entry.content.display_location = display_location;
+                }
             }
-            let render = render_delivery(&delivery, locale);
+            if let Some(image_url) = actor_image_result {
+                delivery.entry.content.image_url = image_url;
+            }
+            let render =
+                render_delivery(&delivery, locale, preferences.show_instance_id_in_location);
             dispatch_rendered_notification(
                 delivery,
                 preferences,
@@ -289,7 +339,7 @@ impl OverlayActivitySink for NotificationDispatcher {
                 endpoint,
                 allow_user_icon,
                 desktop,
-                event_bus,
+                tts,
                 diagnostics,
             )
             .await;
@@ -313,11 +363,15 @@ async fn dispatch_rendered_notification(
     endpoint: String,
     allow_user_icon: bool,
     desktop: Arc<dyn DesktopNotifier>,
-    event_bus: RuntimeEventBus,
+    tts: Arc<dyn TtsEngine>,
     diagnostics: RuntimeDiagnostics,
 ) {
     if plan.tts {
-        event_bus.emit("notificationTts", render.tts_payload(&delivery));
+        let text = notification_tts_text(db.as_ref(), &delivery, &render, &preferences, locale);
+        if let Err(error) = tts.speak(&text, non_empty(&preferences.notification_tts_voice_native))
+        {
+            tracing::warn!("[TTS] notification speak failed: {error}");
+        }
     }
 
     let local_image = if plan.needs_local_image() && preferences.image_notifications {
@@ -403,10 +457,10 @@ async fn resolve_delivery_world_name(
     world_cache: &WorldCache,
     web: &WebClient,
     endpoint: &str,
-    delivery: &mut OverlayActivityDelivery,
-) {
+    delivery: &OverlayActivityDelivery,
+) -> Option<(String, String)> {
     if is_meaningful_world_name(&delivery.entry.content.world_name) {
-        return;
+        return None;
     }
     let world_id = {
         let content = &delivery.entry.content;
@@ -418,20 +472,16 @@ async fn resolve_delivery_world_name(
         }
     };
     if world_id.is_empty() {
-        return;
+        return None;
     }
-    let Some(name) = world_cache.resolve_name(web, endpoint, &world_id).await else {
-        return;
-    };
+    let name = world_cache.resolve_name(web, endpoint, &world_id).await?;
     let parsed = parse_location(&delivery.entry.content.location);
     let display_location =
         format_display_location(&parsed, &name, &delivery.entry.content.group_name);
-    delivery.entry.content.world_name = name;
-    if !display_location.trim().is_empty() {
-        delivery.entry.content.display_location = display_location;
-    }
+    Some((name, display_location))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn resolve_delivery_actor_image(
     user_image_cache: &UserImageCache,
     web: &WebClient,
@@ -439,18 +489,19 @@ async fn resolve_delivery_actor_image(
     endpoint: &str,
     allow_user_icon: bool,
     current_user_id: &str,
-    delivery: &mut OverlayActivityDelivery,
-) {
-    let Some(actor_user_id) = delivery_actor_image_user_id(delivery, current_user_id) else {
-        return;
-    };
-    let Some(image_url) = user_image_cache
+    realtime_user_image_resolver: &RealtimeUserImageResolverSlot,
+    delivery: &OverlayActivityDelivery,
+) -> Option<String> {
+    let actor_user_id = delivery_actor_image_user_id(delivery, current_user_id)?;
+    if let Some(image_url) = realtime_user_image_resolver
+        .cached_url(endpoint, actor_user_id, allow_user_icon)
+        .map(|url| normalize_avatar_image_url_128(&url, endpoint))
+    {
+        return Some(image_url);
+    }
+    user_image_cache
         .resolve(web, db, endpoint, actor_user_id, allow_user_icon)
         .await
-    else {
-        return;
-    };
-    delivery.entry.content.image_url = image_url;
 }
 
 fn delivery_actor_image_user_id<'a>(
@@ -474,8 +525,9 @@ fn delivery_actor_image_user_id<'a>(
 fn render_delivery(
     delivery: &OverlayActivityDelivery,
     locale: OverlayLocale,
+    show_instance_id: bool,
 ) -> RenderedNotification {
-    let localizer = OverlayLocalizer::new(locale);
+    let localizer = OverlayLocalizer::with_instance_id(locale, show_instance_id);
     let entry = &delivery.entry;
     let title = localizer.activity_text(
         &entry.content.title,
@@ -515,6 +567,63 @@ fn combine_text(title: &str, body: &str) -> String {
     }
 }
 
+fn notification_tts_text(
+    db: &DatabaseService,
+    delivery: &OverlayActivityDelivery,
+    render: &RenderedNotification,
+    preferences: &NotificationDeliveryPreferences,
+    locale: OverlayLocale,
+) -> String {
+    let render = if preferences.show_instance_id_in_location {
+        Cow::Owned(render_delivery(delivery, locale, false))
+    } else {
+        Cow::Borrowed(render)
+    };
+    let name_mode = notification_tts_name_mode(&preferences.notification_tts_name_mode);
+    if name_mode == "username" {
+        return render.text.clone();
+    }
+    let title = render.title.trim();
+    let actor_user_id = delivery.entry.actor_user_id.trim();
+    if title.is_empty() || actor_user_id.is_empty() {
+        return render.text.clone();
+    }
+    let Some(memo_first_line) = user_memo_first_line(db, actor_user_id) else {
+        return render.text.clone();
+    };
+    let replacement = match name_mode {
+        "note" => memo_first_line,
+        "usernameAndNote" => format!("{title}, {memo_first_line}"),
+        _ => return render.text.clone(),
+    };
+    render.text.replacen(title, &replacement, 1)
+}
+
+fn notification_tts_name_mode(value: &str) -> &'static str {
+    match value {
+        "note" => "note",
+        "usernameAndNote" => "usernameAndNote",
+        _ => "username",
+    }
+}
+
+fn user_memo_first_line(db: &DatabaseService, actor_user_id: &str) -> Option<String> {
+    match vrcx_0_persistence::memos::memo_get_user(db, actor_user_id.to_string()) {
+        Ok(Some(memo)) => memo
+            .memo
+            .lines()
+            .next()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string),
+        Ok(None) => None,
+        Err(error) => {
+            tracing::debug!("failed to load TTS nickname memo: {error}");
+            None
+        }
+    }
+}
+
 fn should_play_for_condition(condition: &str, game: &NotificationDeliveryGameState) -> bool {
     match condition {
         "Always" => true,
@@ -524,28 +633,6 @@ fn should_play_for_condition(condition: &str, game: &NotificationDeliveryGameSta
         "Game Running" => game.is_game_running,
         "Desktop Mode" => game.is_game_no_vr && game.is_game_running,
         _ => false,
-    }
-}
-
-fn load_preferences(config: &ConfigRepository) -> NotificationDeliveryPreferences {
-    NotificationDeliveryPreferences {
-        desktop_toast: config_string(config, "desktopToast", "Never"),
-        desktop_notification_sound: config_bool(config, "desktopNotificationSound", false),
-        notification_tts: config_string(config, "notificationTTS", "Never"),
-        xs_notifications: config_bool_with_legacy(config, "xsNotifications", false),
-        ovrt_hud_notifications: config_bool_with_legacy(config, "ovrtHudNotifications", false),
-        ovrt_wrist_notifications: config_bool_with_legacy(config, "ovrtWristNotifications", false),
-        image_notifications: config_bool_with_legacy(config, "imageNotifications", true),
-        notification_timeout_ms: config_int_with_legacy(config, "notificationTimeout", 3000),
-        notification_opacity_percent: config_int_with_legacy(config, "notificationOpacity", 100),
-        webhook_enabled: config_bool(config, "webhookEnabled", false),
-        webhook_url: config_string(config, "webhookUrl", ""),
-        webhook_format: normalize_webhook_format(&config_string(
-            config,
-            "webhookFormat",
-            "generic",
-        )),
-        webhook_fields: parse_webhook_fields(&config_string(config, "webhookFields", "")),
     }
 }
 
@@ -568,95 +655,6 @@ fn load_locale(config: &ConfigRepository) -> OverlayLocale {
         .unwrap_or_default()
 }
 
-fn config_string(config: &ConfigRepository, key: &str, default_value: &str) -> String {
-    config
-        .get_string(key, default_value)
-        .unwrap_or_else(|_| default_value.to_string())
-}
-
-fn config_bool(config: &ConfigRepository, key: &str, default_value: bool) -> bool {
-    config.get_bool(key, default_value).unwrap_or(default_value)
-}
-
-fn config_bool_with_legacy(config: &ConfigRepository, key: &str, default_value: bool) -> bool {
-    if config.get_raw(key).ok().flatten().is_some() {
-        return config_bool(config, key, default_value);
-    }
-    if let Some(legacy_key) = legacy_overlay_notification_key(key) {
-        if config.get_raw(legacy_key).ok().flatten().is_some() {
-            return config_bool(config, legacy_key, default_value);
-        }
-    }
-    default_value
-}
-
-fn config_int_with_legacy(config: &ConfigRepository, key: &str, default_value: i32) -> i32 {
-    if let Some(raw) = config.get_raw(key).ok().flatten() {
-        return parse_config_int(&raw, default_value);
-    }
-    if let Some(legacy_key) = legacy_overlay_notification_key(key) {
-        if let Some(raw) = config.get_raw(legacy_key).ok().flatten() {
-            return parse_config_int(&raw, default_value);
-        }
-    }
-    default_value
-}
-
-fn parse_config_int(value: &str, default_value: i32) -> i32 {
-    value.trim().parse::<i32>().unwrap_or(default_value)
-}
-
-fn legacy_overlay_notification_key(key: &str) -> Option<&'static str> {
-    match key {
-        "xsNotifications" => Some("VRCX-0_xsNotifications"),
-        "ovrtHudNotifications" => Some("VRCX-0_ovrtHudNotifications"),
-        "ovrtWristNotifications" => Some("VRCX-0_ovrtWristNotifications"),
-        "imageNotifications" => Some("VRCX-0_imageNotifications"),
-        "notificationTimeout" => Some("VRCX-0_notificationTimeout"),
-        "notificationOpacity" => Some("VRCX-0_notificationOpacity"),
-        _ => None,
-    }
-}
-
-fn normalize_webhook_format(value: &str) -> String {
-    if value == "discord" {
-        "discord".into()
-    } else {
-        "generic".into()
-    }
-}
-
-fn default_webhook_fields() -> Vec<String> {
-    DEFAULT_WEBHOOK_FIELDS
-        .iter()
-        .map(|field| (*field).to_string())
-        .collect()
-}
-
-pub fn parse_webhook_fields(value: &str) -> Vec<String> {
-    let fields = value.trim();
-    if fields.is_empty() {
-        return default_webhook_fields();
-    }
-    let parsed = if fields.starts_with('[') {
-        serde_json::from_str::<Vec<String>>(fields).unwrap_or_default()
-    } else {
-        fields.split(',').map(str::to_string).collect()
-    };
-    let mut selected = Vec::new();
-    for field in parsed {
-        let field = field.trim();
-        if is_default_webhook_field(field) && !selected.iter().any(|item| item == field) {
-            selected.push(field.to_string());
-        }
-    }
-    if selected.is_empty() {
-        default_webhook_fields()
-    } else {
-        selected
-    }
-}
-
 async fn resolve_local_image(image_cache: &ImageCache, image_url: &str) -> Option<String> {
     let url = image_url.trim();
     if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -668,27 +666,6 @@ async fn resolve_local_image(image_cache: &ImageCache, image_url: &str) -> Optio
         return None;
     }
     image_cache.get_image(url, &file_id, &version).await.ok()
-}
-
-fn extract_file_version(value: &str, file_id: &str) -> Option<String> {
-    let marker = format!("/{file_id}/");
-    let start = value.find(&marker)? + marker.len();
-    let version = value[start..]
-        .chars()
-        .take_while(|ch| ch.is_ascii_digit())
-        .collect::<String>();
-    (!version.is_empty()).then_some(version)
-}
-
-fn fallback_file_version(value: &str) -> String {
-    value
-        .split('/')
-        .next_back()
-        .unwrap_or_default()
-        .split('?')
-        .next()
-        .unwrap_or_default()
-        .to_string()
 }
 
 async fn send_webhook_with_retry(
@@ -719,254 +696,10 @@ async fn send_webhook_with_retry(
     .await;
 }
 
-fn generic_webhook_payload(
-    delivery: &OverlayActivityDelivery,
-    render: &RenderedNotification,
-    fields: &[String],
-) -> Value {
-    let entry = &delivery.entry;
-    let payload = json!({
-        "version": 1,
-        "event": &entry.activity_type,
-        "category": entry.category,
-        "title": &render.title,
-        "message": &render.text,
-        "user": {
-            "id": &entry.actor_user_id,
-            "displayName": &entry.actor_display_name,
-        },
-        "location": &render.display_location,
-        "locationId": &entry.content.location,
-        "worldId": &entry.content.world_id,
-        "worldName": &entry.content.world_name,
-        "timestamp": &entry.created_at,
-        "localTime": webhook_local_time_string(&entry.created_at),
-    });
-    filter_generic_webhook_payload(payload, fields)
-}
-
-pub fn filter_generic_webhook_payload(payload: Value, fields: &[String]) -> Value {
-    let Some(object) = payload.as_object() else {
-        return payload;
-    };
-
-    let mut filtered = serde_json::Map::new();
-    if fields.is_empty() {
-        for field in DEFAULT_WEBHOOK_FIELDS {
-            insert_generic_webhook_field(&mut filtered, object, field);
-        }
-    } else {
-        for field in fields {
-            let field = field.as_str();
-            if is_default_webhook_field(field) {
-                insert_generic_webhook_field(&mut filtered, object, field);
-            }
-        }
-    }
-    Value::Object(filtered)
-}
-
-fn insert_generic_webhook_field(
-    target: &mut serde_json::Map<String, Value>,
-    source: &serde_json::Map<String, Value>,
-    field: &str,
-) {
-    if let Some(value) = source.get(field) {
-        target.insert(field.to_string(), value.clone());
-    }
-}
-
-fn is_default_webhook_field(field: &str) -> bool {
-    DEFAULT_WEBHOOK_FIELDS.contains(&field)
-}
-
-pub fn webhook_local_time_string(created_at: &str) -> String {
-    chrono::DateTime::parse_from_rfc3339(created_at)
-        .map(|value| {
-            value
-                .with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        })
-        .unwrap_or_default()
-}
-
 fn non_empty(value: &str) -> Option<&str> {
     let value = value.trim();
     (!value.is_empty()).then_some(value)
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-    use vrcx_0_application::{
-        OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
-        OverlayActivityDelivery, OverlayActivityEntry,
-    };
-
-    use crate::vr_overlay::OverlayLocale;
-
-    use super::{
-        delivery_actor_image_user_id, generic_webhook_payload, overlay_notification_render,
-        parse_webhook_fields, render_delivery,
-    };
-    use crate::notification::rendered::RenderedNotification;
-
-    #[test]
-    fn generic_webhook_payload_exposes_location_id_and_local_time() {
-        let payload = generic_webhook_payload(
-            &delivery(),
-            &rendered(),
-            &["location".into(), "locationId".into(), "localTime".into()],
-        );
-
-        assert_eq!(
-            payload.get("location").and_then(|value| value.as_str()),
-            Some("Named World public")
-        );
-        assert_eq!(
-            payload.get("locationId").and_then(|value| value.as_str()),
-            Some("wrld_named:123")
-        );
-        let local_time = payload
-            .get("localTime")
-            .and_then(|value| value.as_str())
-            .expect("localTime");
-        assert_eq!(local_time.len(), "2026-06-18 17:30:00".len());
-        assert!(payload.get("timestamp").is_none());
-        assert!(payload.get("worldName").is_none());
-    }
-
-    #[test]
-    fn generic_webhook_fields_ignore_localized_names() {
-        let fields = parse_webhook_fields(r#"["locationId","位置","タイトル"]"#);
-        let payload = generic_webhook_payload(&delivery(), &rendered(), &fields);
-
-        assert_eq!(payload.as_object().unwrap().len(), 1);
-        assert_eq!(
-            payload.get("locationId").and_then(|value| value.as_str()),
-            Some("wrld_named:123")
-        );
-        assert!(payload.get("位置").is_none());
-        assert!(payload.get("タイトル").is_none());
-    }
-
-    #[test]
-    fn overlay_notification_render_uses_app_title_and_combined_text() {
-        let render = rendered();
-
-        let overlay = overlay_notification_render(&render);
-
-        assert_eq!(overlay.title, "VRCX-0");
-        assert_eq!(overlay.text, "Traveler joined Named World");
-        assert_eq!(render.title, "Traveler");
-    }
-
-    #[test]
-    fn delivery_actor_image_user_id_skips_current_user_actor() {
-        let mut delivery = delivery();
-        delivery.entry.actor_user_id = "usr_self".into();
-
-        assert_eq!(delivery_actor_image_user_id(&delivery, "usr_self"), None);
-
-        delivery.entry.actor_user_id = "usr_sender".into();
-        assert_eq!(
-            delivery_actor_image_user_id(&delivery, "usr_self"),
-            Some("usr_sender")
-        );
-
-        delivery.entry.content.image_url = "https://images.example/existing.png".into();
-        assert_eq!(delivery_actor_image_user_id(&delivery, "usr_self"), None);
-    }
-
-    #[test]
-    fn render_delivery_localizes_location_access_labels() {
-        let mut delivery = delivery();
-        delivery.entry.actor_display_name = "Traveler".into();
-        delivery.entry.content.location =
-            "wrld_named:123~group(grp_a)~groupAccessType(plus)".into();
-        delivery.entry.content.world_name = "Group World".into();
-        delivery.entry.content.group_name = "Group Name".into();
-        delivery.entry.content.title = text("", "Traveler", json!({}));
-        delivery.entry.content.body = text(
-            "notifications.gps",
-            "is in Group World groupPlus(Group Name)",
-            json!({ "location": "Group World groupPlus(Group Name)" }),
-        );
-
-        let render = render_delivery(&delivery, OverlayLocale::ZhCn);
-
-        assert_eq!(
-            render.text,
-            "Traveler 现在位于 Group World 群组+(Group Name)"
-        );
-        assert_eq!(render.display_location, "Group World 群组+(Group Name)");
-    }
-
-    #[test]
-    fn generic_webhook_location_uses_localized_access_label() {
-        let mut delivery = delivery();
-        delivery.entry.content.location =
-            "wrld_named:123~group(grp_a)~groupAccessType(plus)".into();
-        delivery.entry.content.world_name = "Group World".into();
-        delivery.entry.content.group_name = "Group Name".into();
-        delivery.entry.content.display_location = "Group World groupPlus(Group Name)".into();
-
-        let render = render_delivery(&delivery, OverlayLocale::ZhCn);
-        let payload = generic_webhook_payload(&delivery, &render, &["location".into()]);
-
-        assert_eq!(
-            payload.get("location").and_then(|value| value.as_str()),
-            Some("Group World 群组+(Group Name)")
-        );
-    }
-
-    fn rendered() -> RenderedNotification {
-        RenderedNotification {
-            title: "Traveler".into(),
-            body: "joined Named World".into(),
-            text: "Traveler joined Named World".into(),
-            display_location: "Named World public".into(),
-            image_url: String::new(),
-        }
-    }
-
-    fn delivery() -> OverlayActivityDelivery {
-        OverlayActivityDelivery {
-            entry: OverlayActivityEntry {
-                sequence: 1,
-                source_id: "game-log:join".into(),
-                activity_type: "OnPlayerJoined".into(),
-                category: OverlayActivityCategory::CurrentInstance,
-                created_at: "2026-06-18T08:30:00.000Z".into(),
-                actor_user_id: "usr_traveler".into(),
-                actor_display_name: "Traveler".into(),
-                content: OverlayActivityContent {
-                    location: "wrld_named:123".into(),
-                    world_id: "wrld_named".into(),
-                    display_location: "Named World public".into(),
-                    world_name: "Named World".into(),
-                    ..OverlayActivityContent::default()
-                },
-                actor_relation: OverlayActivityActorRelation::None,
-                payload: json!({}),
-            },
-            desktop: false,
-            vr: false,
-            hmd: false,
-            webhook: true,
-        }
-    }
-
-    fn text(
-        key: &str,
-        fallback: &str,
-        params: serde_json::Value,
-    ) -> vrcx_0_application::OverlayActivityText {
-        vrcx_0_application::OverlayActivityText {
-            key: key.into(),
-            fallback: fallback.into(),
-            params,
-        }
-    }
-}
+mod tests;

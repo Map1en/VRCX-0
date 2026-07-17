@@ -183,6 +183,16 @@ const toolDefinitions: ToolDefinition[] = [
         action: { type: 'route', routeName: 'vrchat-log' }
     },
     {
+        key: 'profile-backup',
+        category: 'system',
+        iconKey: 'database-backup',
+        navIcon: 'lucide:DatabaseBackup',
+        titleKey: 'profile_backup.header',
+        descriptionKey: 'profile_backup.tools_description',
+        navEligible: true,
+        action: { type: 'dialog', dialogKey: 'profile-backup' }
+    },
+    {
         key: 'llm-endpoints',
         category: 'other',
         iconKey: 'plug',

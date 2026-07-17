@@ -4,14 +4,14 @@ import {
     isUserDialogDataTab,
     loadUserDialogTabData,
     userDialogAvatarSortRequest,
-    userDialogDataKeyForTab
+    userDialogDataKeyForTab,
+    type UserDialogRepositories
 } from './userDialogTabService';
 
-function repositories(overrides: any = {}) {
+function repositories(
+    overrides: Partial<UserDialogRepositories> = {}
+): UserDialogRepositories {
     return {
-        avatarProfileRepository: {
-            getAllAvatarsByUser: async (): Promise<unknown[]> => []
-        },
         avatarSearchProviderRepository: {
             getConfig: async () => ({ enabled: false, selectedProvider: '' }),
             search: async (): Promise<{ avatars: unknown[] }> => ({
@@ -53,19 +53,19 @@ describe('userDialogTabService', () => {
         const calls: [string, unknown][] = [];
         const fakeRepositories = repositories({
             userProfileRepository: {
-                getAllMutualFriends: async (params: any) => {
+                getAllMutualFriends: async (params) => {
                     calls.push(['mutual', params]);
                     return [{ id: 'usr_friend' }];
                 }
             },
             groupProfileRepository: {
-                getUserGroups: async (params: any) => {
+                getUserGroups: async (params) => {
                     calls.push(['groups', params]);
                     return [{ id: 'grp_one' }];
                 }
             },
             worldProfileRepository: {
-                getAllWorldsByUser: async (params: any) => {
+                getAllWorldsByUser: async (params) => {
                     calls.push(['worlds', params]);
                     return [{ id: 'wrld_one' }];
                 }
@@ -135,7 +135,7 @@ describe('userDialogTabService', () => {
         let request = null;
         const fakeRepositories = repositories({
             myAvatarRepository: {
-                getMyAvatars: async (params: any) => {
+                getMyAvatars: async (params) => {
                     request = params;
                     return [{ id: 'avtr_private' }];
                 }
@@ -183,7 +183,7 @@ describe('userDialogTabService', () => {
                     enabled: true,
                     selectedProvider: 'provider-a'
                 }),
-                search: async (params: any) => {
+                search: async (params) => {
                     searchRequest = params;
                     return {
                         avatars: [
@@ -226,7 +226,7 @@ describe('userDialogTabService', () => {
         const favoriteWorldRequests: unknown[] = [];
         const fakeRepositories = repositories({
             vrchatFavoriteRepository: {
-                getAllFavoriteGroups: async (params: any) => {
+                getAllFavoriteGroups: async (params) => {
                     favoriteGroupRequest = params;
                     return [
                         {
@@ -242,7 +242,7 @@ describe('userDialogTabService', () => {
                         { name: 'worlds_b', type: 'world' }
                     ];
                 },
-                getAllFavoriteWorlds: async (params: any) => {
+                getAllFavoriteWorlds: async (params) => {
                     favoriteWorldRequests.push(params);
                     if (params.tag === 'worlds_b') {
                         throw new Error('group unavailable');

@@ -51,9 +51,11 @@ pub async fn app__favorites_transfer(
                 ),
                 0,
             );
-            if kind.trim() == "world" && output.local_changed {
-                state.realtime_runtime.sync_world_cache_favorites_from_db();
-            }
+            state.realtime_runtime.notify_favorites_changed(
+                &kind,
+                output.local_changed,
+                output.remote_changed,
+            );
         }
         Err(error) => {
             diagnostics.record_command(command, "error", error.to_string());

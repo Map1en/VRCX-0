@@ -3,10 +3,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { shouldHandleRuntimeAuthFailure } from './authSessionRecoveryService';
 import {
-    resetBackgroundMaintenance,
-    runBackgroundMaintenanceTick
-} from './backgroundMaintenanceService';
-import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
     refreshHostCapabilities
@@ -82,15 +78,14 @@ async function tickRuntimeLoop() {
         if (stopped || tickToken !== activeTickToken) {
             return;
         }
-        await runBackgroundMaintenanceTick();
         useRuntimeStore
             .getState()
             .setStartupTask(
                 'updateLoop',
                 'running',
                 gameLogAvailable
-                    ? 'Backend game log ingest and background maintenance are active.'
-                    : 'Background maintenance is active. Game log ingest is unavailable in this host.'
+                    ? 'Backend game log ingest is active.'
+                    : 'Game log ingest is unavailable in this host.'
             );
     } catch (error) {
         if (isVrchatMissingCredentialsError(error)) {
@@ -137,8 +132,8 @@ export function startRuntimeUpdateLoop() {
             'updateLoop',
             'running',
             isHostCapabilityAvailable('gameLogWatcher')
-                ? 'Starting game log tail sync and background maintenance.'
-                : 'Starting background maintenance without game log tail sync.'
+                ? 'Starting game log tail sync.'
+                : 'Game log tail sync is unavailable in this host.'
         );
     tickRuntimeLoop();
     return stopRuntimeUpdateLoop;
@@ -162,7 +157,6 @@ export function stopRuntimeUpdateLoop() {
             'pending',
             'Game log tail sync is stopped.'
         );
-    resetBackgroundMaintenance();
     notifyUpdateLoopIdle();
 }
 

@@ -46,9 +46,16 @@ export function sortFavoriteItems(items: any, sortValue: any) {
     });
 }
 
-export function shrinkFavoriteImage(url: any) {
+export function resolveFavoriteImage(url: unknown) {
+    return typeof url === 'string' ? convertFileUrlToImageUrl(url, 256) : '';
+}
+
+export function shrinkFavoriteImage(url: unknown) {
+    if (typeof url !== 'string') {
+        return '';
+    }
     const normalized = convertFileUrlToImageUrl(url, 128);
-    if (typeof normalized !== 'string' || !normalized) {
+    if (!normalized) {
         return '';
     }
     return normalized.includes('/256')

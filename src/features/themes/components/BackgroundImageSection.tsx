@@ -33,6 +33,7 @@ import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -371,12 +372,14 @@ export function BackgroundImageSection() {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="daily">
-                                    {t('view.background_image.mode.daily')}
-                                </SelectItem>
-                                <SelectItem value="custom">
-                                    {t('view.background_image.mode.custom')}
-                                </SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="daily">
+                                        {t('view.background_image.mode.daily')}
+                                    </SelectItem>
+                                    <SelectItem value="custom">
+                                        {t('view.background_image.mode.custom')}
+                                    </SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                         {mode === 'daily' ? (
@@ -399,16 +402,18 @@ export function BackgroundImageSection() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {backgroundImageRemoteProviders.map(
-                                        (provider) => (
-                                            <SelectItem
-                                                key={provider.id}
-                                                value={provider.id}
-                                            >
-                                                {provider.name}
-                                            </SelectItem>
-                                        )
-                                    )}
+                                    <SelectGroup>
+                                        {backgroundImageRemoteProviders.map(
+                                            (provider) => (
+                                                <SelectItem
+                                                    key={provider.id}
+                                                    value={provider.id}
+                                                >
+                                                    {provider.name}
+                                                </SelectItem>
+                                            )
+                                        )}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         ) : null}
@@ -511,16 +516,18 @@ export function BackgroundImageSection() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="daily">
-                                            {t(
-                                                'view.background_image.rotation.daily'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="hourly">
-                                            {t(
-                                                'view.background_image.rotation.hourly'
-                                            )}
-                                        </SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="daily">
+                                                {t(
+                                                    'view.background_image.rotation.daily'
+                                                )}
+                                            </SelectItem>
+                                            <SelectItem value="hourly">
+                                                {t(
+                                                    'view.background_image.rotation.hourly'
+                                                )}
+                                            </SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>

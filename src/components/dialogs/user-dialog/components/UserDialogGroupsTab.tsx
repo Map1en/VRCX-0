@@ -14,8 +14,32 @@ import {
     EntityBlank,
     EntityDialogTabContent
 } from '../../EntityDialogScaffold';
+import type { buildUserDialogProfileSummary } from '../userDialogViewData';
 import { EntityList, UserGroupSection } from '../UserDialogViewParts';
+import type { useUserDialogTabData } from '../useUserDialogTabData';
 import { UserDialogSearchHeader } from './UserDialogSearchHeader';
+
+type UserTabData = ReturnType<typeof useUserDialogTabData>;
+type ProfileSummary = ReturnType<typeof buildUserDialogProfileSummary>;
+type UserDialogGroupsTabProps = Pick<
+    UserTabData,
+    | 'profileGroups'
+    | 'filteredProfileGroups'
+    | 'remoteStatus'
+    | 'remoteErrors'
+    | 'loadTab'
+    | 'search'
+    | 'setSearch'
+    | 'effectiveGroupSort'
+    | 'setGroupSort'
+    | 'groupSearchActive'
+> &
+    Pick<
+        ProfileSummary,
+        'userGroupSections' | 'ownGroupCountText' | 'remainingGroupCountText'
+    > & {
+        isCurrentUser: boolean;
+    };
 
 export function UserDialogGroupsTab({
     profileGroups,
@@ -32,7 +56,7 @@ export function UserDialogGroupsTab({
     userGroupSections,
     ownGroupCountText,
     remainingGroupCountText
-}: any) {
+}: UserDialogGroupsTabProps) {
     const { t } = useTranslation();
 
     return (
@@ -53,7 +77,7 @@ export function UserDialogGroupsTab({
                 </span>
                 <Select
                     value={effectiveGroupSort}
-                    onValueChange={setGroupSort}
+                    onValueChange={(value) => setGroupSort(value ?? '')}
                     disabled={remoteStatus.groups === 'running'}
                     items={Object.values(userDialogGroupSortingOptions).map(
                         (option) => ({
@@ -68,7 +92,7 @@ export function UserDialogGroupsTab({
                     <SelectContent>
                         <SelectGroup>
                             {Object.entries(userDialogGroupSortingOptions).map(
-                                ([key, option]: any) => (
+                                ([key, option]) => (
                                     <SelectItem
                                         key={key}
                                         value={option.value}

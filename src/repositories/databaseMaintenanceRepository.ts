@@ -30,20 +30,8 @@ function normalizeUserId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-function runMaintenanceTask(task: string): Promise<unknown> {
-    return commands.appDatabaseMaintenanceRun(task);
-}
-
-async function initGlobalTables(): Promise<void> {
-    await runMaintenanceTask('initGlobalTables');
-}
-
 async function vacuum(): Promise<void> {
-    await runMaintenanceTask('vacuum');
-}
-
-async function optimize(): Promise<void> {
-    await runMaintenanceTask('optimize');
+    await commands.appDatabaseMaintenanceRun('vacuum');
 }
 
 async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
@@ -121,65 +109,9 @@ async function getTableSizes(userId: unknown): Promise<MaintenanceTableSizes> {
     return getRuntimeTableSizes(userId);
 }
 
-async function updateTableForGroupNames(): Promise<void> {
-    await runMaintenanceTask('updateTableForGroupNames');
-}
-
-async function addFriendLogFriendNumber(): Promise<void> {
-    await runMaintenanceTask('addFriendLogFriendNumber');
-}
-
-async function updateTableForAvatarHistory(): Promise<void> {
-    await runMaintenanceTask('updateTableForAvatarHistory');
-}
-
-async function addV17PerformanceIndexes(): Promise<void> {
-    await runMaintenanceTask('addV17PerformanceIndexes');
-}
-
-async function addPerformanceIndexes(): Promise<void> {
-    await runMaintenanceTask('addPerformanceIndexes');
-}
-
-async function upgradeDatabaseVersion(): Promise<void> {
-    await runMaintenanceTask('upgradeDatabaseVersion');
-}
-
-async function cleanLegendFromFriendLog(): Promise<void> {
-    await runMaintenanceTask('cleanLegendFromFriendLog');
-}
-
-async function fixGameLogTraveling(): Promise<void> {
-    await runMaintenanceTask('fixGameLogTraveling');
-}
-
-async function fixNegativeGPS(): Promise<void> {
-    await runMaintenanceTask('fixNegativeGPS');
-}
-
 async function getBrokenLeaveEntries(): Promise<LocalDbValue[]> {
     const rows = await commands.appDatabaseMaintenanceBrokenLeaveEntriesGet();
     return Array.isArray(rows) ? rows : [];
-}
-
-async function fixBrokenLeaveEntries(): Promise<void> {
-    await runMaintenanceTask('fixBrokenLeaveEntries');
-}
-
-async function fixBrokenGroupInvites(): Promise<void> {
-    await runMaintenanceTask('fixBrokenGroupInvites');
-}
-
-async function fixBrokenNotifications(): Promise<void> {
-    await runMaintenanceTask('fixBrokenNotifications');
-}
-
-async function fixBrokenGroupChange(): Promise<void> {
-    await runMaintenanceTask('fixBrokenGroupChange');
-}
-
-async function fixCancelFriendRequestTypo(): Promise<void> {
-    await runMaintenanceTask('fixCancelFriendRequestTypo');
 }
 
 async function getBrokenGameLogDisplayNames(): Promise<
@@ -193,67 +125,23 @@ async function getBrokenGameLogDisplayNames(): Promise<
     }));
 }
 
-async function fixBrokenGameLogDisplayNames(): Promise<void> {
-    await runMaintenanceTask('fixBrokenGameLogDisplayNames');
-}
-
-async function repairZeroCopresenceDurations(): Promise<void> {
-    await runMaintenanceTask('repairZeroCopresenceDurations');
-}
-
 const databaseMaintenanceRepository = Object.freeze({
-    addFriendLogFriendNumber,
-    addPerformanceIndexes,
-    addV17PerformanceIndexes,
-    cleanLegendFromFriendLog,
-    fixBrokenGameLogDisplayNames,
-    fixBrokenGroupChange,
-    fixBrokenGroupInvites,
-    fixBrokenLeaveEntries,
-    fixBrokenNotifications,
-    fixCancelFriendRequestTypo,
-    fixGameLogTraveling,
-    fixNegativeGPS,
     getBrokenGameLogDisplayNames,
     getBrokenLeaveEntries,
     getGlobalTableSizes,
     getMaxFriendLogNumber,
     getTableSizes,
     getUserTableSizes,
-    initGlobalTables,
-    optimize,
-    repairZeroCopresenceDurations,
-    updateTableForAvatarHistory,
-    updateTableForGroupNames,
-    upgradeDatabaseVersion,
     vacuum
 });
 
 export {
-    addFriendLogFriendNumber,
-    addPerformanceIndexes,
-    addV17PerformanceIndexes,
-    cleanLegendFromFriendLog,
-    fixBrokenGameLogDisplayNames,
-    fixBrokenGroupChange,
-    fixBrokenGroupInvites,
-    fixBrokenLeaveEntries,
-    fixBrokenNotifications,
-    fixCancelFriendRequestTypo,
-    fixGameLogTraveling,
-    fixNegativeGPS,
     getBrokenGameLogDisplayNames,
     getBrokenLeaveEntries,
     getGlobalTableSizes,
     getMaxFriendLogNumber,
     getTableSizes,
     getUserTableSizes,
-    initGlobalTables,
-    optimize,
-    repairZeroCopresenceDurations,
-    updateTableForAvatarHistory,
-    updateTableForGroupNames,
-    upgradeDatabaseVersion,
     vacuum
 };
 export default databaseMaintenanceRepository;

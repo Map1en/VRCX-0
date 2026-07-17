@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { timeToText } from '@/lib/dateTime';
@@ -98,10 +99,13 @@ export function UserHoverCardContent({
                     }
                 >
                     {worldThumb ? (
-                        <img
+                        <FadeInImage
                             src={worldThumb}
                             alt=""
                             className="size-full object-cover"
+                            fallback={
+                                <ImageIcon className="text-muted-foreground/50 size-7" />
+                            }
                         />
                     ) : (
                         <ImageIcon className="text-muted-foreground/50 size-7" />
@@ -125,10 +129,13 @@ export function UserHoverCardContent({
                     >
                         <span className="bg-muted flex size-full items-center justify-center overflow-hidden rounded-full border">
                             {model.avatarUrl ? (
-                                <img
+                                <FadeInImage
                                     src={model.avatarUrl}
                                     alt=""
                                     className="size-full object-cover"
+                                    fallback={
+                                        <UserIcon className="text-muted-foreground size-5" />
+                                    }
                                 />
                             ) : (
                                 <UserIcon className="text-muted-foreground size-5" />

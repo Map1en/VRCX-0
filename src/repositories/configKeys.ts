@@ -16,7 +16,6 @@ export const ConfigKeys = defineConfigKeys({
     appLanguage: { type: 'string', default: null },
     maxTableSize_v2: { type: 'int', default: 500 },
     searchLimit: { type: 'int', default: 50000 },
-    clearVRCXCacheFrequency: { type: 'int', default: 172800 },
     autoUpdateVRCX: { type: 'string', default: 'Auto Download' },
     autoInstallUpdatesOnStartup: { type: 'bool', default: true },
     autoBackgroundDownloadUpdates: { type: 'bool', default: false },
@@ -57,6 +56,8 @@ export const ConfigKeys = defineConfigKeys({
     CloseToTray: { type: 'bool', default: false },
     autoLoginDelayEnabled: { type: 'bool', default: false },
     autoLoginDelaySeconds: { type: 'int', default: 0 },
+    backgroundModeDelayEnabled: { type: 'bool', default: false },
+    backgroundModeDelayMinutes: { type: 'int', default: 60 },
     weekStartsOn: { type: 'int', default: null },
 
     // ── Settings - Appearance ────────────────────────
@@ -145,7 +146,8 @@ export const ConfigKeys = defineConfigKeys({
     desktopNotificationSound: { type: 'bool', default: false },
     notificationLayout: { type: 'string', default: null },
     notificationTTS: { type: 'string', default: 'Never' },
-    notificationTTSVoice: { type: 'string', default: '0' },
+    notificationTTSVoiceNative: { type: 'string', default: '' },
+    notificationTTSNameMode: { type: 'string', default: 'username' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
     showPostUpdateChangelogToast: { type: 'bool', default: true },
@@ -172,14 +174,10 @@ export const ConfigKeys = defineConfigKeys({
     vrNotificationActivityFilters: { type: 'string', default: '' },
     desktopNotificationActivityFilters: { type: 'string', default: '' },
     webhookActivityFilters: { type: 'string', default: '' },
+    ttsNotificationActivityFilters: { type: 'string', default: '' },
     hmdNotificationActivityFilters: { type: 'string', default: '' },
 
     // ── Settings - Overlay ───────────────────────────
-    vrOverlayPanelEnabled: { type: 'bool', default: true },
-    vrOverlayPanelAllFriendsIncludesFavorites: {
-        type: 'bool',
-        default: true
-    },
     wristOverlayEnabled: { type: 'bool', default: false },
     wristOverlayStartMode: { type: 'string', default: 'vrchatVrMode' },
     wristOverlayButton: { type: 'string', default: 'grip' },
@@ -245,12 +243,9 @@ export const ConfigKeys = defineConfigKeys({
     FavoritesFriendSplitter: { type: 'string', default: '260' },
     FavoritesWorldSplitter: { type: 'string', default: '260' },
     FavoritesAvatarSplitter: { type: 'string', default: '260' },
-    FavoritesFriendCardScale: { type: 'string', default: '1' },
-    FavoritesWorldCardScale: { type: 'string', default: '1' },
-    FavoritesAvatarCardScale: { type: 'string', default: '1' },
-    FavoritesFriendCardSpacing: { type: 'string', default: '1' },
-    FavoritesWorldCardSpacing: { type: 'string', default: '1' },
-    FavoritesAvatarCardSpacing: { type: 'string', default: '1' },
+    FavoritesFriendDensity: { type: 'string', default: 'compact' },
+    FavoritesWorldDensity: { type: 'string', default: 'standard' },
+    FavoritesAvatarDensity: { type: 'string', default: 'standard' },
 
     // ── Table Filters ────────────────────────────────
     notificationTableFilters: { type: 'string', default: '[]' },
@@ -309,14 +304,14 @@ export const ConfigKeys = defineConfigKeys({
 
     // ── Onboarding ───────────────────────────────────
     onboarding_welcome_seen: { type: 'bool', default: false },
+    worldCollectionShareCoachmarkSeen: { type: 'bool', default: false },
 
     // ── Avatar Provider ──────────────────────────────
     avatarRemoteDatabaseProviderList: {
         type: 'string',
         default: '["https://api.avtrdb.com/v3/avatar/search/vrcx"]'
     },
-    avatarRemoteDatabaseProvider: { type: 'string', default: '' },
-    showConfirmationOnSwitchAvatar: { type: 'bool', default: true }
+    avatarRemoteDatabaseProvider: { type: 'string', default: '' }
 });
 
 export type ConfigKeyName = keyof typeof ConfigKeys;
@@ -359,15 +354,10 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
         world: 'VRCX_FavoritesWorldSplitter',
         avatar: 'VRCX_FavoritesAvatarSplitter'
     }),
-    cardScale: Object.freeze({
-        friend: 'VRCX_FavoritesFriendCardScale',
-        world: 'VRCX_FavoritesWorldCardScale',
-        avatar: 'VRCX_FavoritesAvatarCardScale'
-    }),
-    cardSpacing: Object.freeze({
-        friend: 'VRCX_FavoritesFriendCardSpacing',
-        world: 'VRCX_FavoritesWorldCardSpacing',
-        avatar: 'VRCX_FavoritesAvatarCardSpacing'
+    density: Object.freeze({
+        friend: 'VRCX_FavoritesFriendDensity',
+        world: 'VRCX_FavoritesWorldDensity',
+        avatar: 'VRCX_FavoritesAvatarDensity'
     }),
     sort: Object.freeze({
         friend: 'VRCX_FavoritesFriendSort',

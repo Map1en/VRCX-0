@@ -1,25 +1,28 @@
-import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog';
-import { LoginAutoLoginAlert } from './components/LoginAutoLoginAlert';
 import { LoginFormCard } from './components/LoginFormCard';
 import { LoginPageFooter } from './components/LoginPageFooter';
 import { LoginPageHeader } from './components/LoginPageHeader';
+import { LoginPageUtilities } from './components/LoginPageUtilities';
 import { LoginProxySettingsDialog } from './components/LoginProxySettingsDialog';
+import { LoginServerStatusAlert } from './components/LoginServerStatusAlert';
 import { SavedAccountsCard } from './components/SavedAccountsCard';
 import { useLoginPageController } from './useLoginPageController';
 
 export function LoginPage() {
+    const [manualLoginSelected, setManualLoginSelected] = useState(false);
     const {
         actions,
-        autoLogin,
         deleteDialog,
         form,
         header,
-        layout,
         proxyDialog,
-        savedAccounts
+        savedAccounts,
+        serverStatus,
+        utilities
     } = useLoginPageController();
+    const showSavedAccounts = savedAccounts.visible && !manualLoginSelected;
 
     return (
         <div
@@ -27,56 +30,19 @@ export function LoginPage() {
             className="vrcx-0-main-shell relative flex min-h-full w-full flex-col overflow-y-auto p-6"
         >
             <div className="flex flex-1 items-center justify-center">
-                <div className="flex w-full max-w-4xl flex-col gap-4">
+                <div className="flex w-full max-w-lg flex-col gap-4">
                     <LoginPageHeader
                         locale={header.locale}
-                        disabled={header.disabled}
-                        onLanguageChange={(value: any) => {
-                            header.onLanguageChange(value);
-                        }}
-                        onOpenProxyDialog={() => {
-                            header.onOpenProxyDialog();
-                        }}
-                        showLegacyMigration={header.showLegacyMigration}
-                        onMigrateLegacyVrcxData={() => {
-                            header.onMigrateLegacyVrcxData();
-                        }}
+                        onLanguageChange={header.onLanguageChange}
                     />
-                    <div
-                        className={cn(
-                            'grid min-h-0 items-stretch gap-2',
-                            layout.hasSavedAccounts &&
-                                'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'
-                        )}
-                    >
-                        <div className="flex min-h-0 flex-col gap-3">
-                            <LoginAutoLoginAlert
-                                visible={autoLogin.visible}
-                                variant={autoLogin.variant}
-                                target={autoLogin.target}
-                                autoLoginState={autoLogin.autoLoginState}
-                                onCancel={autoLogin.onCancel}
-                                onRetry={autoLogin.onRetry}
-                            />
-                            <LoginFormCard
-                                busy={form.busy}
-                                submitting={form.submitting}
-                                loginForm={form.loginForm}
-                                loginErrors={form.loginErrors}
-                                setLoginForm={form.setLoginForm}
-                                setLoginErrors={form.setLoginErrors}
-                                onSubmit={form.onSubmit}
-                                onCancelAutoLogin={form.onCancelAutoLogin}
-                                onOpenRegister={() => {
-                                    actions.openRegister();
-                                }}
-                                onOpenForgotPassword={() => {
-                                    actions.openForgotPassword();
-                                }}
-                            />
-                        </div>
+                    <LoginServerStatusAlert
+                        indicator={serverStatus.indicator}
+                        status={serverStatus.status}
+                        summary={serverStatus.summary}
+                        onOpenStatusPage={serverStatus.onOpenStatusPage}
+                    />
+                    {showSavedAccounts ? (
                         <SavedAccountsCard
-                            visible={savedAccounts.visible}
                             accounts={savedAccounts.accounts}
                             activeSavedUserId={savedAccounts.activeSavedUserId}
                             isDeleting={savedAccounts.isDeleting}
@@ -84,17 +50,49 @@ export function LoginPage() {
                             onLogin={savedAccounts.onLogin}
                             onDeleteStart={savedAccounts.onDeleteStart}
                             onCancelAutoLogin={savedAccounts.onCancelAutoLogin}
+                            onUseOtherAccount={(entry) => {
+                                form.onCancelAutoLogin();
+                                if (entry) {
+                                    form.onPrepareSavedAccount(entry);
+                                }
+                                setManualLoginSelected(true);
+                            }}
                         />
-                    </div>
+                    ) : (
+                        <LoginFormCard
+                            busy={form.busy}
+                            submitting={form.submitting}
+                            loginForm={form.loginForm}
+                            loginErrors={form.loginErrors}
+                            setLoginForm={form.setLoginForm}
+                            setLoginErrors={form.setLoginErrors}
+                            onSubmit={form.onSubmit}
+                            onCancelAutoLogin={form.onCancelAutoLogin}
+                            onBackToSavedAccounts={() => {
+                                setManualLoginSelected(false);
+                            }}
+                            showBackToSavedAccounts={savedAccounts.visible}
+                            onOpenRegister={actions.openRegister}
+                            onOpenForgotPassword={actions.openForgotPassword}
+                        />
+                    )}
+                    <LoginPageUtilities
+                        disabled={utilities.disabled}
+                        isValidatingRestore={utilities.isValidatingRestore}
+                        onOpenProxyDialog={utilities.onOpenProxyDialog}
+                        onRestoreProfileBackup={
+                            utilities.onRestoreProfileBackup
+                        }
+                        showLegacyMigration={utilities.showLegacyMigration}
+                        onMigrateLegacyVrcxData={
+                            utilities.onMigrateLegacyVrcxData
+                        }
+                    />
                 </div>
             </div>
             <LoginPageFooter
-                onOpenGithub={() => {
-                    actions.openGithub();
-                }}
-                onOpenDiscord={() => {
-                    actions.openDiscord();
-                }}
+                onOpenGithub={actions.openGithub}
+                onOpenDiscord={actions.openDiscord}
             />
             <LoginProxySettingsDialog
                 open={proxyDialog.open}

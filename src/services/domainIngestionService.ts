@@ -1,8 +1,8 @@
-import { ingestUserFactEntries } from '@/domain/users/userFactAccess';
 import type {
     UserFactMergeOptions,
     UserFactSource
 } from '@/domain/users/userFacts';
+import { ingestUserFactEntries } from '@/services/userFactAccessService';
 import { parseLocation } from '@/shared/utils/location';
 import { useInstancePresenceStore } from '@/state/instancePresenceStore';
 import { useLocationHintStore } from '@/state/locationHintStore';
@@ -186,10 +186,15 @@ function recordGameRuntimePresence({
     for (const player of Array.isArray(currentLocationPlayers)
         ? currentLocationPlayers
         : []) {
-        recordKnownUser(record(player), {
-            endpoint,
-            source: 'playerSnapshot'
-        });
+        const source = record(player);
+        const playerUserId = text(source.userId || source.user_id);
+        recordKnownUser(
+            { ...source, id: playerUserId, userId: playerUserId },
+            {
+                endpoint,
+                source: 'playerSnapshot'
+            }
+        );
     }
 }
 

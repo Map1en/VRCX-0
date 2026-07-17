@@ -1,10 +1,15 @@
 import { toast } from 'sonner';
 
+import type { EntityRecord } from '@/domain/entities/profileEntities';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { useDialogStore } from '@/state/dialogStore';
 
+import type {
+    AvatarDialogActionDependencies,
+    AvatarReleaseStatus
+} from './avatarDialogTypes';
 import {
     createAvatarCacheActions,
     createAvatarGalleryUploadActions,
@@ -12,7 +17,13 @@ import {
 } from './avatarMediaActions';
 import { createAvatarModerationActions } from './avatarModerationActions';
 
-function normalizeEntityId(value: any) {
+type CurrentUserRecord = EntityRecord & {
+    id?: string;
+    displayName?: string;
+    username?: string;
+};
+
+function normalizeEntityId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
@@ -50,7 +61,7 @@ export function createAvatarDialogActions({
     setMemo,
     setOwnerEditor,
     t
-}: any) {
+}: AvatarDialogActionDependencies) {
     async function refreshAvatarProfile() {
         if (actionStatusRef.current !== 'idle') {
             return;
@@ -99,7 +110,7 @@ export function createAvatarDialogActions({
             const nextUser =
                 currentUserResponse.json &&
                 typeof currentUserResponse.json === 'object'
-                    ? currentUserResponse.json
+                    ? (currentUserResponse.json as CurrentUserRecord)
                     : null;
             if (nextUser?.id) {
                 setAuthBootstrap({
@@ -131,7 +142,7 @@ export function createAvatarDialogActions({
         const nextUser =
             currentUserResponse.json &&
             typeof currentUserResponse.json === 'object'
-                ? currentUserResponse.json
+                ? (currentUserResponse.json as CurrentUserRecord)
                 : null;
         if (nextUser?.id) {
             setAuthBootstrap({
@@ -185,7 +196,7 @@ export function createAvatarDialogActions({
         }
     }
 
-    async function updateReleaseStatus(nextStatus: any) {
+    async function updateReleaseStatus(nextStatus: AvatarReleaseStatus) {
         if (!canManageAvatar || actionStatusRef.current !== 'idle') {
             return;
         }
@@ -312,7 +323,7 @@ export function createAvatarDialogActions({
         }
     }
 
-    async function refreshAvatarSnapshot({ force = false }: any = {}) {
+    async function refreshAvatarSnapshot({ force = false } = {}) {
         const nextAvatar = await avatarProfileRepository.getAvatarProfile({
             avatarId: avatar.id,
             endpoint: currentEndpoint,
@@ -322,7 +333,7 @@ export function createAvatarDialogActions({
         applyCurrentAvatarUpdate(nextAvatar);
     }
 
-    async function saveMemo(nextValue: any) {
+    async function saveMemo(nextValue: string) {
         const targetAvatarId = normalizeEntityId(avatar.id);
         memoRevisionRef.current += 1;
         try {
@@ -338,11 +349,15 @@ export function createAvatarDialogActions({
             }
             const nextMemo = nextEntry.memo || '';
             setMemo(nextMemo);
-            setAvatar((currentAvatar: any) =>
-                normalizeEntityId(currentAvatar?.id) === targetAvatarId
-                    ? { ...currentAvatar, $memo: nextMemo }
-                    : currentAvatar
-            );
+            setAvatar((currentAvatar) => {
+                if (
+                    !currentAvatar ||
+                    normalizeEntityId(currentAvatar.id) !== targetAvatarId
+                ) {
+                    return currentAvatar;
+                }
+                return { ...currentAvatar, $memo: nextMemo };
+            });
             toast.success(
                 nextMemo
                     ? t('dialog.avatar.toast.memo_saved')
@@ -428,7 +443,7 @@ export function createAvatarDialogActions({
             return;
         }
 
-        await saveMemo(result.value);
+        await saveMemo(typeof result.value === 'string' ? result.value : '');
     }
 
     return {

@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
-import configRepository from '@/repositories/configRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import {
@@ -263,23 +262,6 @@ export function useMyAvatarsActions({
         const avatarId = avatarIdFromValue(avatar);
         if (!avatarId || !currentUserId || avatarId === currentAvatarId) {
             return;
-        }
-        const shouldConfirm = await configRepository.getBool(
-            'showConfirmationOnSwitchAvatar',
-            true
-        );
-        if (shouldConfirm) {
-            const result = await confirm({
-                title: t('common.actions.confirm'),
-                description: t('view.my_avatars.modal.select_avatar_value', {
-                    value: avatar?.name || avatarId
-                }),
-                confirmText: t('common.actions.select'),
-                cancelText: t('common.actions.cancel')
-            });
-            if (!result.ok) {
-                return;
-            }
         }
         const authTarget: MyAvatarsAuthTarget = {
             currentUserId,

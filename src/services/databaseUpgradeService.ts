@@ -2,11 +2,12 @@ import { toast } from 'sonner';
 
 import {
     commands,
+    type DatabaseUpgradePreflight,
+    type DatabaseUpgradeRunResult,
     type DatabaseUpgradeStatus,
     type LegacyVrcxMigrationStatus
 } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
-import databaseMaintenanceRepository from '@/repositories/databaseMaintenanceRepository';
 import i18n from '@/services/i18nService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -14,12 +15,9 @@ import { useSessionStore } from '@/state/sessionStore';
 
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 
-const LEGACY_SCHEMA_VERSION = 16;
-const DATABASE_VERSION = 18;
-const COPRESENCE_DURATION_REPAIR_KEY = 'copresenceDurationRepairV1Done';
-const VRCX0_SCHEMA_VERSION_KEY = 'VRCX_0_databaseVersion';
-
-type DatabaseUpgradePatch = Record<string, unknown>;
+type DatabaseUpgradePatch = Parameters<
+    ReturnType<typeof useRuntimeStore.getState>['setDatabaseUpgradeState']
+>[0];
 
 function setUpgradeState(patch: DatabaseUpgradePatch): void {
     useRuntimeStore.getState().setDatabaseUpgradeState(patch);
@@ -51,175 +49,141 @@ function failedUpgradeDescription(
 }
 
 async function blockOnFailedUpgrade(
-    failedUpgrade: DatabaseUpgradeStatus | null | undefined
+    failedUpgrade: DatabaseUpgradeStatus | null | undefined,
+    fallbackDescription?: string,
+    versions?: { fromVersion: number; toVersion: number }
 ): Promise<boolean> {
+    const description = failedUpgrade
+        ? failedUpgradeDescription(failedUpgrade)
+        : fallbackDescription ||
+          i18n.t('service.database_upgrade_service.error.apply_upgrade_failed');
     setUpgradeState({
         open: false,
         phase: 'error',
-        fromVersion: failedUpgrade?.fromVersion ?? 0,
-        toVersion: failedUpgrade?.toVersion ?? DATABASE_VERSION,
-        detail: failedUpgradeDescription(failedUpgrade),
+        fromVersion: failedUpgrade?.fromVersion ?? versions?.fromVersion ?? 0,
+        toVersion: failedUpgrade?.toVersion ?? versions?.toVersion ?? 0,
+        detail: description,
         legacyMigrationAvailable: false
     });
 
     await useModalStore.getState().alert({
         title: i18n.t('message.database.upgrade_failed_title'),
-        description: failedUpgradeDescription(failedUpgrade),
+        description,
         dismissible: false
     });
     useSessionStore.getState().setSessionState({ databaseReady: false });
     return false;
 }
 
-async function runCopresenceDurationRepairOnce(): Promise<void> {
-    try {
-        const done = await configRepository.getString(
-            COPRESENCE_DURATION_REPAIR_KEY,
-            ''
-        );
-        if (done === '1') {
-            return;
-        }
-        await databaseMaintenanceRepository.repairZeroCopresenceDurations();
-        await configRepository.setString(COPRESENCE_DURATION_REPAIR_KEY, '1');
-    } catch (error) {
-        console.error('Co-presence duration repair failed:', error);
-    }
+function setRunningState(preflight?: DatabaseUpgradePreflight): void {
+    const fromVersion = preflight?.fromVersion ?? 0;
+    const toVersion = preflight?.toVersion ?? 0;
+    setUpgradeState({
+        open: fromVersion > 0 && fromVersion < toVersion,
+        phase: 'running',
+        fromVersion,
+        toVersion,
+        detail: i18n.t(
+            'service.database_upgrade_service.dynamic.updating_database_from_value_to_value',
+            { value: fromVersion, value2: toVersion }
+        ),
+        legacyMigrationAvailable: false
+    });
 }
 
-async function writeUpgradeDatabaseVersion(): Promise<void> {
-    await configRepository.setString(
-        VRCX0_SCHEMA_VERSION_KEY,
-        String(DATABASE_VERSION)
-    );
-    await configRepository.setString(
-        'databaseVersion',
-        String(DATABASE_VERSION)
-    );
-}
-
-async function runLegacyDatabaseMaintenance(): Promise<void> {
-    await databaseMaintenanceRepository.cleanLegendFromFriendLog();
-    await databaseMaintenanceRepository.fixGameLogTraveling();
-    await databaseMaintenanceRepository.fixNegativeGPS();
-    await databaseMaintenanceRepository.fixBrokenLeaveEntries();
-    await databaseMaintenanceRepository.fixBrokenGroupInvites();
-    await databaseMaintenanceRepository.fixBrokenNotifications();
-    await databaseMaintenanceRepository.fixBrokenGroupChange();
-    await databaseMaintenanceRepository.fixCancelFriendRequestTypo();
-    await databaseMaintenanceRepository.fixBrokenGameLogDisplayNames();
-    await databaseMaintenanceRepository.upgradeDatabaseVersion();
-    await databaseMaintenanceRepository.vacuum();
-}
-
-async function runFullDatabaseUpgrade(): Promise<boolean> {
-    let upgradeStarted = false;
-    let upgradeCommitted = false;
-    try {
-        const failedUpgrade = await commands.sqliteGetFailedUpgrade();
-        if (failedUpgrade) {
-            return blockOnFailedUpgrade(failedUpgrade);
-        }
-
-        const currentVersion = await configRepository.getInt(
-            VRCX0_SCHEMA_VERSION_KEY,
-            0
-        );
-
-        if (currentVersion >= DATABASE_VERSION) {
-            setUpgradeState({
-                open: false,
-                phase: 'completed',
-                fromVersion: currentVersion,
-                toVersion: DATABASE_VERSION,
-                detail: i18n.t(
-                    'service.database_upgrade_service.label.database_schema_is_current'
-                ),
-                legacyMigrationAvailable: false
-            });
-            await runCopresenceDurationRepairOnce();
-            useSessionStore.getState().setSessionState({ databaseReady: true });
-            return true;
-        }
-
-        setUpgradeState({
-            open: currentVersion > 0,
-            phase: 'running',
-            fromVersion: currentVersion,
-            toVersion: DATABASE_VERSION,
-            detail: i18n.t(
-                'service.database_upgrade_service.dynamic.updating_database_from_value_to_value',
-                { value: currentVersion, value2: DATABASE_VERSION }
-            ),
-            legacyMigrationAvailable: false
-        });
-
-        await commands.sqliteBeginUpgrade(currentVersion, DATABASE_VERSION);
-        upgradeStarted = true;
-
-        if (currentVersion < LEGACY_SCHEMA_VERSION) {
-            await runLegacyDatabaseMaintenance();
-        }
-        if (currentVersion < DATABASE_VERSION) {
-            await databaseMaintenanceRepository.addV17PerformanceIndexes();
-        }
-        await databaseMaintenanceRepository.optimize();
-        await writeUpgradeDatabaseVersion();
-        await commands.sqliteCommitUpgrade();
-        upgradeCommitted = true;
-        await configRepository.reload();
-
-        setUpgradeState({
-            open: false,
-            phase: 'completed',
-            fromVersion: currentVersion,
-            toVersion: DATABASE_VERSION,
-            detail: i18n.t(
-                'service.database_upgrade_service.success.database_update_complete'
-            )
-        });
-        await runCopresenceDurationRepairOnce();
-        useSessionStore.getState().setSessionState({ databaseReady: true });
-        return true;
-    } catch (error) {
-        console.error('Database upgrade failed:', error);
-        const reason = errorMessage(error);
-        let failedUpgrade: DatabaseUpgradeStatus | null = null;
-        if (upgradeStarted && !upgradeCommitted) {
-            try {
-                await commands.sqliteFailUpgrade(reason);
-                failedUpgrade = await commands.sqliteGetFailedUpgrade();
-            } catch (failError) {
-                console.error(
-                    'Failed to preserve database upgrade work copy:',
-                    failError
-                );
-            }
-        }
-        await showSQLiteErrorDialog(error);
-
-        let description = i18n.t(
-            'service.database_upgrade_service.error.apply_upgrade_failed'
-        );
-        if (upgradeCommitted) {
-            description = i18n.t(
-                'service.database_upgrade_service.action.refresh_config_failed_after_upgrade'
+async function completeDatabaseUpgrade(
+    result: DatabaseUpgradeRunResult
+): Promise<boolean> {
+    if (result.status === 'upgraded') {
+        try {
+            await configRepository.reload();
+        } catch (error) {
+            console.error(
+                'Config refresh failed after database upgrade:',
+                error
             );
-        } else if (failedUpgrade) {
-            description = failedUpgradeDescription(failedUpgrade);
+            await showSQLiteErrorDialog(error);
+            return blockOnFailedUpgrade(
+                null,
+                i18n.t(
+                    'service.database_upgrade_service.action.refresh_config_failed_after_upgrade'
+                ),
+                result
+            );
         }
-        setUpgradeState({
-            open: false,
-            phase: 'error',
-            detail: description
-        });
-        await useModalStore.getState().alert({
-            title: i18n.t('message.database.upgrade_failed_title'),
-            description,
-            dismissible: false
-        });
-        useSessionStore.getState().setSessionState({ databaseReady: false });
-        return false;
+    }
+
+    if (result.repairWarning) {
+        console.warn(
+            'Co-presence duration repair will be retried on the next startup:',
+            result.repairWarning
+        );
+    }
+
+    setUpgradeState({
+        open: false,
+        phase: 'completed',
+        fromVersion: result.fromVersion,
+        toVersion: result.toVersion,
+        detail:
+            result.status === 'upgraded'
+                ? i18n.t(
+                      'service.database_upgrade_service.success.database_update_complete'
+                  )
+                : i18n.t(
+                      'service.database_upgrade_service.label.database_schema_is_current'
+                  ),
+        legacyMigrationAvailable: false
+    });
+    useSessionStore.getState().setSessionState({ databaseReady: true });
+    return true;
+}
+
+async function handleDatabaseUpgradeResult(
+    result: DatabaseUpgradeRunResult
+): Promise<boolean> {
+    if (result.status === 'current' || result.status === 'upgraded') {
+        return completeDatabaseUpgrade(result);
+    }
+
+    if (result.status === 'failed') {
+        const error = new Error(
+            result.error ||
+                i18n.t(
+                    'service.database_upgrade_service.error.apply_upgrade_failed'
+                )
+        );
+        console.error('Database upgrade failed:', error);
+        await showSQLiteErrorDialog(error);
+    }
+
+    return blockOnFailedUpgrade(
+        result.failedUpgrade,
+        result.error ||
+            i18n.t(
+                'service.database_upgrade_service.error.apply_upgrade_failed'
+            ),
+        result
+    );
+}
+
+async function runBackendDatabaseUpgrade(
+    preflight?: DatabaseUpgradePreflight
+): Promise<boolean> {
+    setRunningState(preflight);
+    try {
+        const result = await commands.appDatabaseUpgradeRun();
+        return handleDatabaseUpgradeResult(result);
+    } catch (error) {
+        console.error('Database upgrade command failed:', error);
+        await showSQLiteErrorDialog(error);
+        return blockOnFailedUpgrade(
+            null,
+            `${i18n.t(
+                'service.database_upgrade_service.error.apply_upgrade_failed'
+            )} ${errorMessage(error)}`,
+            preflight
+        );
     }
 }
 
@@ -246,9 +210,41 @@ async function getLegacyMigrationStatus(): Promise<LegacyVrcxMigrationStatus> {
 }
 
 export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
-    const failedUpgrade = await commands.sqliteGetFailedUpgrade();
-    if (failedUpgrade) {
-        return blockOnFailedUpgrade(failedUpgrade);
+    let preflight: DatabaseUpgradePreflight;
+    try {
+        preflight = await commands.appDatabaseUpgradePreflight();
+    } catch (error) {
+        console.error('Database upgrade preflight failed:', error);
+        throw error;
+    }
+
+    if (preflight.status === 'running') {
+        return runBackendDatabaseUpgrade(preflight);
+    }
+    if (preflight.status === 'finished') {
+        if (!preflight.result) {
+            throw new Error(
+                'Finished database upgrade status is missing its result.'
+            );
+        }
+        return handleDatabaseUpgradeResult(preflight.result);
+    }
+
+    if (preflight.status === 'blocked') {
+        return blockOnFailedUpgrade(preflight.failedUpgrade);
+    }
+    if (preflight.status === 'newerSchema') {
+        return blockOnFailedUpgrade(
+            null,
+            i18n.t(
+                'service.database_upgrade_service.error.newer_schema_requires_newer_app',
+                {
+                    value: preflight.fromVersion,
+                    value2: preflight.toVersion
+                }
+            ),
+            preflight
+        );
     }
 
     const legacyMigrationStatus = await getLegacyMigrationStatus();
@@ -257,8 +253,8 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
         setUpgradeState({
             open: true,
             phase: 'confirm-legacy-migration',
-            fromVersion: 0,
-            toVersion: 0,
+            fromVersion: preflight.fromVersion,
+            toVersion: preflight.toVersion,
             detail: i18n.t('message.database.migration_found_description'),
             legacyMigrationAvailable: true
         });
@@ -270,7 +266,7 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
         toast.warning(legacyMigrationStatus.reason);
     }
 
-    return runFullDatabaseUpgrade();
+    return runBackendDatabaseUpgrade(preflight);
 }
 
 export async function confirmLegacyDatabaseMigration(): Promise<void> {
@@ -301,13 +297,11 @@ export async function confirmLegacyDatabaseMigration(): Promise<void> {
 }
 
 export async function skipLegacyDatabaseMigration(): Promise<boolean> {
-    setUpgradeState({
-        open: false,
-        phase: 'running',
-        detail: i18n.t(
-            'service.database_upgrade_service.action.skipping_legacy_migration'
-        ),
-        legacyMigrationAvailable: false
+    const { fromVersion, toVersion } =
+        useRuntimeStore.getState().databaseUpgrade;
+    return runBackendDatabaseUpgrade({
+        status: 'upgradeRequired',
+        fromVersion,
+        toVersion
     });
-    return runFullDatabaseUpgrade();
 }

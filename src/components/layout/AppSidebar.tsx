@@ -1,22 +1,47 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
     setNavWidthPreference,
     setNavbarCollapsedPreference
 } from '@/services/preferencesService';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { normalizeNavWidth, useShellStore } from '@/state/shellStore';
 import { Sidebar, SidebarInset, SidebarProvider } from '@/ui/shadcn/sidebar';
 
 import { AppNavMenu } from './AppNavMenu';
+import {
+    scheduleKeyboardSidebarToggleCleanup,
+    useDelayedNavMenuCollapsed,
+    useSidebarInstantTransition
+} from './navMenuCollapse';
 
 export function AppSidebar({ children }: any) {
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
     const navWidth = useShellStore((state) => state.navWidth);
+    const reducedMotionAndBlur = usePreferencesStore(
+        (state) => state.reducedMotionAndBlur
+    );
     const resizeCleanupRef = useRef<(() => void) | null>(null);
+    const keyboardSidebarToggleCleanupRef = useRef<(() => void) | null>(null);
+    const [
+        keyboardSidebarToggleTargetOpen,
+        setKeyboardSidebarToggleTargetOpen
+    ] = useState<boolean | null>(null);
+    const keyboardSidebarToggleActive =
+        keyboardSidebarToggleTargetOpen !== null;
+    const instantSidebarTransition = useSidebarInstantTransition(
+        keyboardSidebarToggleActive,
+        reducedMotionAndBlur
+    );
+    const navMenuCollapsed = useDelayedNavMenuCollapsed(
+        sidebarOpen,
+        instantSidebarTransition
+    );
 
     useEffect(() => {
         return () => {
             resizeCleanupRef.current?.();
+            keyboardSidebarToggleCleanupRef.current?.();
         };
     }, []);
 
@@ -25,6 +50,32 @@ export function AppSidebar({ children }: any) {
             resizeCleanupRef.current?.();
         }
     }, [sidebarOpen]);
+
+    useEffect(() => {
+        if (keyboardSidebarToggleTargetOpen === null) {
+            keyboardSidebarToggleCleanupRef.current?.();
+            keyboardSidebarToggleCleanupRef.current = null;
+            return;
+        }
+        if (keyboardSidebarToggleTargetOpen !== sidebarOpen) {
+            return;
+        }
+
+        const targetOpen = keyboardSidebarToggleTargetOpen;
+        keyboardSidebarToggleCleanupRef.current?.();
+        keyboardSidebarToggleCleanupRef.current =
+            scheduleKeyboardSidebarToggleCleanup(() => {
+                keyboardSidebarToggleCleanupRef.current = null;
+                setKeyboardSidebarToggleTargetOpen((currentTargetOpen) =>
+                    currentTargetOpen === targetOpen ? null : currentTargetOpen
+                );
+            });
+    }, [keyboardSidebarToggleTargetOpen, sidebarOpen]);
+
+    function toggleSidebarFromKeyboard() {
+        setKeyboardSidebarToggleTargetOpen(!sidebarOpen);
+        void setNavbarCollapsedPreference(sidebarOpen);
+    }
 
     function startNavResize(event: any) {
         if (!sidebarOpen) {
@@ -111,8 +162,11 @@ export function AppSidebar({ children }: any) {
             data-vrcx-0-surface="sidebar-layout"
             className="vrcx-0-sidebar-layout relative h-full min-h-0 w-full overflow-hidden"
             style={{ '--sidebar-width': `${navWidth}px` }}
+            instantSidebarTransition={instantSidebarTransition}
+            onKeyboardShortcutToggle={toggleSidebarFromKeyboard}
             onOpenChange={(open) => {
-                setNavbarCollapsedPreference(!open);
+                setKeyboardSidebarToggleTargetOpen(null);
+                void setNavbarCollapsedPreference(!open);
             }}
         >
             <Sidebar
@@ -122,7 +176,7 @@ export function AppSidebar({ children }: any) {
                 data-vrcx-0-surface="sidebar"
                 style={{ top: '2rem', bottom: 0, height: 'auto' }}
             >
-                <AppNavMenu isCollapsed={!sidebarOpen} />
+                <AppNavMenu isCollapsed={navMenuCollapsed} />
             </Sidebar>
             {sidebarOpen ? (
                 <div

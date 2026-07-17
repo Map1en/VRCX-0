@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { CommandGroup, CommandItem } from '@/ui/shadcn/command';
 
@@ -56,7 +57,7 @@ function ResultRow({
             onSelect={() => onSelect(item)}
         >
             {item.imageUrl ? (
-                <img
+                <FadeInImage
                     src={item.imageUrl}
                     alt=""
                     className={cn(
@@ -64,6 +65,7 @@ function ResultRow({
                         isFriend ? 'rounded-full' : 'rounded'
                     )}
                     loading="lazy"
+                    fallback={<Icon className="size-4 shrink-0" />}
                 />
             ) : (
                 <Icon className="size-4 shrink-0" />

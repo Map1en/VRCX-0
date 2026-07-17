@@ -37,6 +37,7 @@ import {
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue
@@ -350,15 +351,17 @@ function DevKitPanelInner() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {languageCodes.map((code) => (
-                                            <SelectItem
-                                                key={code}
-                                                value={code}
-                                                className="text-xs"
-                                            >
-                                                {getLanguageName(code)}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {languageCodes.map((code) => (
+                                                <SelectItem
+                                                    key={code}
+                                                    value={code}
+                                                    className="text-xs"
+                                                >
+                                                    {getLanguageName(code)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                                 <div className="flex flex-wrap gap-1.5">

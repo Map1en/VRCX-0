@@ -24,13 +24,9 @@ use vrcx_0_persistence::screenshot_cache::{
     ScreenshotLibraryEntry, SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
 
-#[path = "library.rs"]
 mod library;
-#[path = "metadata.rs"]
 mod metadata;
-#[path = "paths.rs"]
 mod paths;
-#[path = "thumbnail.rs"]
 mod thumbnail;
 
 pub use library::{

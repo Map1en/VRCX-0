@@ -67,6 +67,10 @@ export type LocalFavoriteAction = LocalFavoriteGroupAction & {
 export type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
     newGroupName?: unknown;
 };
+export type LocalFavoritesForKindSnapshot = {
+    localFavorites: unknown;
+    localFavoriteGroups: unknown;
+};
 export type RemoteFavoriteCollections = {
     remoteFavoritesByObjectId: Record<string, FavoriteRecord>;
     favoritesSortOrder: string[];
@@ -114,6 +118,10 @@ export type FavoriteStore = FavoriteStoreState & {
     createLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
     renameLocalFavoriteGroup(action: RenameLocalFavoriteGroupAction): void;
     deleteLocalFavoriteGroup(action: LocalFavoriteGroupAction): void;
+    setLocalFavoritesForKind(
+        kind: FavoriteKind,
+        snapshot: LocalFavoritesForKindSnapshot
+    ): void;
     removeRemoteFavorite(objectId: unknown): void;
     addRemoteFavorite(json?: Record<string, unknown> | null): void;
     getRemoteFavoriteByObjectId(objectId: unknown): FavoriteRecord | null;
