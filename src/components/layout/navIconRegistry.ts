@@ -35,6 +35,7 @@ import {
     PackageIcon,
     PaletteIcon,
     PanelLeftIcon,
+    PersonStandingIcon,
     RocketIcon,
     RssIcon,
     SearchIcon,
@@ -47,7 +48,6 @@ import {
     SquareTerminalIcon,
     StarIcon,
     TagsIcon,
-    PersonStandingIcon,
     TextSearchIcon,
     UserRoundIcon,
     UserStarIcon,
@@ -55,14 +55,14 @@ import {
     UsersRoundIcon,
     WrenchIcon
 } from 'lucide-react';
-import React from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 import {
     DEFAULT_NAV_ICON_KEY,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
 
-const navIconComponentByName: Record<string, React.ComponentType<any>> = {
+const navIconComponentByName: Record<string, LucideIcon> = {
     Activity: ActivityIcon,
     Archive: ArchiveIcon,
     Bell: BellIcon,
@@ -137,7 +137,7 @@ function extractLucideIconName(value: unknown): string {
 export function getNavIconComponent(
     value: unknown,
     fallback: unknown = DEFAULT_NAV_ICON_KEY
-): React.ComponentType<any> {
+): LucideIcon {
     const normalized = normalizeNavIconKey(value, fallback);
     const name = extractLucideIconName(normalized);
     return navIconComponentByName[name] || CircleIcon;
