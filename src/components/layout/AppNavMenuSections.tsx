@@ -83,7 +83,7 @@ function AppNavMenuContent({
             onUnpinTool={onUnpinTool}
             onOpenCustomNav={onOpenCustomNav}
         >
-            <SidebarContent className="text-sidebar-foreground pt-2">
+            <SidebarContent className="pt-2">
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -139,7 +139,7 @@ function AppNavFooter({
     const { t } = useTranslation();
 
     return (
-        <SidebarFooter className="text-sidebar-foreground px-2 py-3">
+        <SidebarFooter className="px-2 py-3">
             <SidebarMenu>
                 {showThemeToggle ? (
                     <SidebarMenuItem>

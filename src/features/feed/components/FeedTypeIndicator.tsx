@@ -42,7 +42,7 @@ function FeedTypeIndicator({ label, type }: { label: string; type: unknown }) {
                 />
             ) : null}
             <span
-                className="text-foreground/80 text-sm font-normal"
+                className="text-foreground/80 min-w-0 truncate text-sm font-normal"
                 style={{
                     textBoxTrim: 'trim-both',
                     textBoxEdge: 'cap alphabetic'
