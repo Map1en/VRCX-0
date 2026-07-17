@@ -1,9 +1,7 @@
-const LUCIDE_ICON_PREFIX = 'lucide:';
+export const DEFAULT_NAV_ICON_KEY = 'Circle';
+export const DEFAULT_FOLDER_ICON = 'Folder';
 
-export const DEFAULT_NAV_ICON_KEY = 'lucide:Circle';
-export const DEFAULT_FOLDER_ICON = 'lucide:Folder';
-
-export type NavIconKey = `${typeof LUCIDE_ICON_PREFIX}${string}`;
+export type NavIconKey = string;
 
 export interface NavIconOption {
     key: string;
@@ -11,65 +9,63 @@ export interface NavIconOption {
 }
 
 const navIconEntries: Array<readonly [NavIconKey, string]> = [
-    ['lucide:Circle', 'Circle'],
-    ['lucide:Rss', 'RSS'],
-    ['lucide:MapPin', 'Map Pin'],
-    ['lucide:History', 'History'],
-    ['lucide:TextSearch', 'Text Search'],
-    ['lucide:Gamepad2', 'Gamepad'],
-    ['lucide:UsersRound', 'Room Players'],
-    ['lucide:Search', 'Search'],
-    ['lucide:Heart', 'Heart'],
-    ['lucide:UserStar', 'Favorite User'],
-    ['lucide:Globe', 'Globe'],
-    ['lucide:MapPinned', 'Map'],
-    ['lucide:Smile', 'Smile'],
-    ['lucide:Box', 'Model'],
-    ['lucide:Cuboid', '3D Model'],
-    ['lucide:Boxes', 'Model Library'],
-    ['lucide:Contact', 'Contact'],
-    ['lucide:ContactRound', 'Round Contact'],
-    ['lucide:PersonStanding', 'Person Standing'],
-    ['lucide:BookOpen', 'Book'],
-    ['lucide:ShieldAlert', 'Shield'],
-    ['lucide:ShieldUser', 'Moderation'],
-    ['lucide:Bell', 'Bell'],
-    ['lucide:Image', 'Image'],
-    ['lucide:ChartBar', 'Chart'],
-    ['lucide:Users', 'Users'],
-    ['lucide:Wrench', 'Tools'],
-    ['lucide:Star', 'Star'],
-    ['lucide:Folder', 'Folder'],
-    ['lucide:LayoutDashboard', 'Dashboard'],
-    ['lucide:Camera', 'Camera'],
-    ['lucide:Images', 'Images'],
-    ['lucide:Database', 'Database'],
-    ['lucide:DatabaseBackup', 'Database Backup'],
-    ['lucide:ServerCog', 'Server'],
-    ['lucide:Archive', 'Archive'],
-    ['lucide:Package', 'Package'],
-    ['lucide:SlidersHorizontal', 'Sliders'],
-    ['lucide:SquareTerminal', 'Terminal'],
-    ['lucide:Bot', 'Bot'],
-    ['lucide:CalendarDays', 'Calendar'],
-    ['lucide:FileText', 'File Text'],
-    ['lucide:Download', 'Download'],
-    ['lucide:MessageSquareText', 'Message'],
-    ['lucide:Settings', 'Settings'],
-    ['lucide:House', 'Home'],
-    ['lucide:Compass', 'Compass'],
-    ['lucide:Tags', 'Tags'],
-    ['lucide:UserRound', 'User'],
-    ['lucide:Activity', 'Activity'],
-    ['lucide:Rocket', 'Rocket'],
-    ['lucide:Gauge', 'Gauge'],
-    ['lucide:List', 'List'],
-    ['lucide:PanelLeft', 'Panel']
+    ['Circle', 'Circle'],
+    ['Feed', 'Feed'],
+    ['Location', 'Location'],
+    ['GameLog', 'Game Log'],
+    ['InstanceHistory', 'Instance History'],
+    ['Gamepad2', 'Gamepad'],
+    ['Players', 'Players'],
+    ['Search', 'Search'],
+    ['Heart', 'Heart'],
+    ['FavoriteFriends', 'Favorite Friends'],
+    ['Globe', 'Globe'],
+    ['FavoriteWorlds', 'Favorite Worlds'],
+    ['Smile', 'Smile'],
+    ['Box', 'Model'],
+    ['Cuboid', '3D Model'],
+    ['Boxes', 'Model Library'],
+    ['FriendLog', 'Friend Log'],
+    ['ContactRound', 'Round Contact'],
+    ['FavoriteAvatars', 'Favorite Avatars'],
+    ['FriendList', 'Friend List'],
+    ['ShieldAlert', 'Shield Alert'],
+    ['Moderation', 'Moderation'],
+    ['Notification', 'Notification'],
+    ['SteamScreenshots', 'Steam Screenshots'],
+    ['ChartBar', 'Chart'],
+    ['ChartsMutual', 'Charts Mutual'],
+    ['Tools', 'Tools'],
+    ['DashboardDefault', 'Dashboard Default'],
+    ['Folder', 'Folder'],
+    ['LayoutDashboard', 'Dashboard'],
+    ['ScreenshotMetadata', 'Screenshot Metadata'],
+    ['Gallery', 'Gallery'],
+    ['VrcxData', 'VRCX Data'],
+    ['ProfileBackup', 'Profile Backup'],
+    ['VrchatData', 'VRChat Data'],
+    ['CrashDumps', 'Crash Dumps'],
+    ['Inventory', 'Inventory'],
+    ['VrchatConfig', 'VRChat Config'],
+    ['LaunchOptions', 'Launch Options'],
+    ['AutoChangeStatus', 'Auto Change Status'],
+    ['PresenceSchedule', 'Presence Schedule'],
+    ['VrchatLog', 'VRChat Log'],
+    ['ExportOwnAvatars', 'Export Own Avatars'],
+    ['PresenceInviteRequests', 'Presence Invite Requests'],
+    ['Settings', 'Settings'],
+    ['House', 'Home'],
+    ['Compass', 'Compass'],
+    ['Tags', 'Tags'],
+    ['UserRound', 'User'],
+    ['Activity', 'Activity'],
+    ['AppLauncher', 'App Launcher'],
+    ['Gauge', 'Gauge'],
+    ['List', 'List'],
+    ['PanelLeft', 'Panel']
 ];
 
-const navIconNames = new Set(
-    navIconEntries.map(([key]) => key.slice(LUCIDE_ICON_PREFIX.length))
-);
+const navIconNames = new Set(navIconEntries.map(([key]) => key));
 
 export const NAV_ICON_OPTIONS: NavIconOption[] = navIconEntries.map(
     ([key, label]) => ({
@@ -78,7 +74,7 @@ export const NAV_ICON_OPTIONS: NavIconOption[] = navIconEntries.map(
     })
 );
 
-function extractLucideIconName(value: unknown): string {
+function extractIconName(value: unknown): string {
     if (typeof value !== 'string') {
         return '';
     }
@@ -86,8 +82,8 @@ function extractLucideIconName(value: unknown): string {
     if (!trimmed) {
         return '';
     }
-    const rawName = trimmed.startsWith(LUCIDE_ICON_PREFIX)
-        ? trimmed.slice(LUCIDE_ICON_PREFIX.length)
+    const rawName = trimmed.startsWith('lucide:')
+        ? trimmed.slice('lucide:'.length)
         : trimmed;
     return rawName.endsWith('Icon') ? rawName.slice(0, -4) : rawName;
 }
@@ -96,14 +92,14 @@ export function normalizeNavIconKey(
     value: unknown,
     fallback: unknown = DEFAULT_NAV_ICON_KEY
 ): string {
-    const name = extractLucideIconName(value);
+    const name = extractIconName(value);
     if (name && navIconNames.has(name)) {
-        return `${LUCIDE_ICON_PREFIX}${name}`;
+        return name;
     }
 
-    const fallbackName = extractLucideIconName(fallback);
+    const fallbackName = extractIconName(fallback);
     if (fallbackName && navIconNames.has(fallbackName)) {
-        return `${LUCIDE_ICON_PREFIX}${fallbackName}`;
+        return fallbackName;
     }
 
     return '';

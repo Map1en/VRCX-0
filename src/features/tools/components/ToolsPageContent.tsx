@@ -383,7 +383,7 @@ export function ToolsPageContent({
         const normalizedToolKey = normalizePinnedToolKey(tool.key);
         return (
             <ToolItem
-                icon={getNavIconComponent(tool.navIcon, 'lucide:Wrench')}
+                icon={getNavIconComponent(tool.navIcon, 'Wrench')}
                 title={label(tool.titleKey)}
                 description={label(tool.descriptionKey)}
                 actionsLabel={label('view.tools.quick_access.actions')}

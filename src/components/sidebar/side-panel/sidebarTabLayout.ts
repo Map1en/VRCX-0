@@ -58,14 +58,14 @@ export const DEFAULT_SIDEBAR_TAB_LAYOUT: SidebarTabLayout = [
         id: SYSTEM_TAB_FRIENDS,
         type: 'system',
         systemTab: SYSTEM_TAB_FRIENDS,
-        icon: 'lucide:UserRound',
+        icon: 'UserRound',
         visible: true
     },
     {
         id: SYSTEM_TAB_GROUPS,
         type: 'system',
         systemTab: SYSTEM_TAB_GROUPS,
-        icon: 'lucide:Users',
+        icon: 'Users',
         visible: true
     }
 ];
@@ -132,7 +132,7 @@ function normalizeFavoriteCollectionTab(
         id,
         type: 'favoriteCollection',
         name,
-        icon: normalizeNavIconKey(item.icon, 'lucide:UserStar'),
+        icon: normalizeNavIconKey(item.icon, 'UserStar'),
         visible: item.visible !== false,
         sourceGroupKeys: uniqueStrings(item.sourceGroupKeys)
     };
@@ -219,7 +219,7 @@ export function createFavoriteCollectionTab(
         id,
         type: 'favoriteCollection',
         name: label,
-        icon: 'lucide:UserStar',
+        icon: 'UserStar',
         visible: true,
         sourceGroupKeys: []
     };
@@ -269,13 +269,13 @@ export function moveSidebarTab(
 
 export function sidebarTabFallbackIcon(item: SidebarTabLayoutItem): string {
     if (item.type === 'favoriteCollection') {
-        return 'lucide:UserStar';
+        return 'UserStar';
     }
     if (item.systemTab === SYSTEM_TAB_GROUPS) {
-        return 'lucide:Users';
+        return 'Users';
     }
     if (item.systemTab === SYSTEM_TAB_FRIENDS) {
-        return 'lucide:UserRound';
+        return 'UserRound';
     }
     return DEFAULT_NAV_ICON_KEY;
 }

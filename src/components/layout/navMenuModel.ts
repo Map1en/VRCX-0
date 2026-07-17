@@ -137,7 +137,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
             id: 'default-folder-favorites',
             nameKey: 'nav_tooltip.favorites',
             name: t('nav_tooltip.favorites'),
-            icon: 'lucide:Star',
+            icon: 'Star',
             items: ['favorite-friends', 'favorite-worlds', 'favorite-avatars']
         },
         {
@@ -145,7 +145,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
             id: 'default-folder-social',
             nameKey: 'nav_tooltip.social',
             name: t('nav_tooltip.social'),
-            icon: 'lucide:Users',
+            icon: 'Users',
             items: ['friend-log', 'friend-list', 'moderation']
         },
         { type: 'item', key: 'notification' },
