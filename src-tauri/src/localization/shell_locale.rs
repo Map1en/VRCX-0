@@ -313,7 +313,7 @@ mod tests {
         );
         assert_eq!(
             catalog.localized_text("cs", "nativeShell.menu.app.about"),
-            Some("About VRCX-0")
+            Some("O aplikaci VRCX-0")
         );
     }
 
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(window_zh_cn.close_window, "关闭窗口");
 
         let help_en = macos_menu::help_menu_labels_for_language("en");
-        assert_eq!(help_en.discord, "Join our Discord");
+        assert_eq!(help_en.discord, "Discord");
 
         let help_ko = macos_menu::help_menu_labels_for_language("ko");
         assert_eq!(help_ko.title, "도움말");
