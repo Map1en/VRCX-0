@@ -47,20 +47,16 @@ import {
     SquareTerminalIcon,
     StarIcon,
     TagsIcon,
+    PersonStandingIcon,
     TextSearchIcon,
     UserRoundIcon,
     UserStarIcon,
     UsersIcon,
     UsersRoundIcon,
-    WrenchIcon,
-    LogInIcon,
-    LogOutIcon,
-    PencilLineIcon,
-    VideoIcon
+    WrenchIcon
 } from 'lucide-react';
 import React from 'react';
 
-import { Avatar } from '@/components/Icon';
 import {
     DEFAULT_NAV_ICON_KEY,
     normalizeNavIconKey
@@ -103,7 +99,7 @@ const navIconComponentByName: Record<string, React.ComponentType<any>> = {
     Package: PackageIcon,
     Palette: PaletteIcon,
     PanelLeft: PanelLeftIcon,
-    PersonStanding: Avatar, // Keep Avatar wrapper intact!
+    PersonStanding: PersonStandingIcon,
     Rocket: RocketIcon,
     Rss: RssIcon,
     Search: SearchIcon,
@@ -121,12 +117,7 @@ const navIconComponentByName: Record<string, React.ComponentType<any>> = {
     UserStar: UserStarIcon,
     Users: UsersIcon,
     UsersRound: UsersRoundIcon,
-    Wrench: WrenchIcon,
-    LogIn: LogInIcon,
-    LogOut: LogOutIcon,
-    Status: PencilLineIcon,
-    Doc: FileTextIcon,
-    Video: VideoIcon
+    Wrench: WrenchIcon
 };
 
 function extractLucideIconName(value: unknown): string {

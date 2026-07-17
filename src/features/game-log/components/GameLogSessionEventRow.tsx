@@ -1,9 +1,16 @@
-import { ChevronRightIcon, CopyIcon, ExternalLinkIcon } from 'lucide-react';
+import {
+    ChevronRightIcon,
+    CopyIcon,
+    ExternalLinkIcon,
+    LogInIcon,
+    LogOutIcon,
+    UsersIcon,
+    VideoIcon
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
-import * as Icon from '@/components/Icon';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -87,11 +94,13 @@ function EventTime({ value }: { value: unknown }) {
 function EventIcon({ event }: { event: any }) {
     const isJoin =
         event?.type === 'OnPlayerJoined' || event?.type === 'JoinGroup';
+    const Icon = isJoin ? LogInIcon : LogOutIcon;
 
-    return isJoin ? (
-        <Icon.LogIn className="text-muted-foreground" />
-    ) : (
-        <Icon.LogOut className="text-muted-foreground" />
+    return (
+        <Icon
+            aria-hidden="true"
+            className="text-muted-foreground size-3.5 shrink-0"
+        />
     );
 }
 
@@ -227,7 +236,7 @@ function GroupActivityRow({ durationByKey, event }: any) {
                         <EventIcon event={event} />
                         <span className="flex min-w-0 items-center gap-2 font-normal">
                             <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 tabular-nums">
-                                <Icon.Users />
+                                <UsersIcon className="size-3.5 shrink-0" />
                                 {count}
                             </span>
                             {friendCount > 0 ? (
@@ -280,7 +289,7 @@ function VideoActivityRow({ event }: any) {
                 render={
                     <div className="hover:bg-muted/35 grid min-h-8 grid-cols-[4.75rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
                         <EventTime value={event?.created_at} />
-                        <Icon.Video className="text-muted-foreground" />
+                        <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
                         <div className="flex min-w-0 items-center gap-1.5">
                             {showVideoLink ? (
                                 <Button
