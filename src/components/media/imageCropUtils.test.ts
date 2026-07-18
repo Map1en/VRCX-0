@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildMediaTransform,
+    constrainCropToImage,
     computeCropRect,
+    getRotationCoverZoom,
     isNoopCrop
 } from './imageCropUtils';
 
@@ -74,5 +76,36 @@ describe('buildMediaTransform', () => {
         const out = buildMediaTransform(0, 0, 0, false, false, 1);
         expect(out).toContain('rotateY(0deg)');
         expect(out).toContain('rotateX(0deg)');
+    });
+});
+
+describe('rotated crop constraints', () => {
+    it('zooms a square image enough to cover its crop at 45 degrees', () => {
+        expect(
+            getRotationCoverZoom(
+                { width: 200, height: 200 },
+                { width: 200, height: 200 },
+                45
+            )
+        ).toBeCloseTo(Math.SQRT2);
+    });
+
+    it('keeps crop movement inside the rotated image edges', () => {
+        const position = constrainCropToImage(
+            { x: 200, y: 0 },
+            { width: 400, height: 300 },
+            { width: 200, height: 100 },
+            1,
+            45
+        );
+        const angle = Math.PI / 4;
+        const localX =
+            position.x * Math.cos(angle) + position.y * Math.sin(angle);
+        const localY =
+            -position.x * Math.sin(angle) + position.y * Math.cos(angle);
+        const extent = (200 + 100) / Math.SQRT2 / 2;
+
+        expect(Math.abs(localX) + extent).toBeLessThanOrEqual(200);
+        expect(Math.abs(localY) + extent).toBeLessThanOrEqual(150);
     });
 });

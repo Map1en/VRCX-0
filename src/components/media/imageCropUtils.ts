@@ -1,4 +1,4 @@
-import type { Area } from 'react-easy-crop';
+import type { Area, Point, Size } from 'react-easy-crop';
 
 const MAX_PREVIEW_SIZE = 800;
 
@@ -32,6 +32,56 @@ export function isNoopCrop(
         Math.abs(rect.width - imgWidth) <= 1 &&
         Math.abs(rect.height - imgHeight) <= 1
     );
+}
+
+function rotatedCropHalfExtents(cropSize: Size, rotation: number): Point {
+    const angle = (rotation * Math.PI) / 180;
+    const absCos = Math.abs(Math.cos(angle));
+    const absSin = Math.abs(Math.sin(angle));
+    return {
+        x: (cropSize.width * absCos + cropSize.height * absSin) / 2,
+        y: (cropSize.width * absSin + cropSize.height * absCos) / 2
+    };
+}
+
+export function getRotationCoverZoom(
+    mediaSize: Size,
+    cropSize: Size,
+    rotation: number
+): number {
+    if (mediaSize.width <= 0 || mediaSize.height <= 0) return 1;
+    const extents = rotatedCropHalfExtents(cropSize, rotation);
+    return Math.max(
+        (extents.x * 2) / mediaSize.width,
+        (extents.y * 2) / mediaSize.height
+    );
+}
+
+export function constrainCropToImage(
+    position: Point,
+    mediaSize: Size,
+    cropSize: Size,
+    zoom: number,
+    rotation: number
+): Point {
+    const angle = (rotation * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const extents = rotatedCropHalfExtents(cropSize, rotation);
+    const maxX = Math.max(0, (mediaSize.width * zoom) / 2 - extents.x);
+    const maxY = Math.max(0, (mediaSize.height * zoom) / 2 - extents.y);
+    const localX = Math.max(
+        -maxX,
+        Math.min(maxX, position.x * cos + position.y * sin)
+    );
+    const localY = Math.max(
+        -maxY,
+        Math.min(maxY, -position.x * sin + position.y * cos)
+    );
+    return {
+        x: localX * cos - localY * sin,
+        y: localX * sin + localY * cos
+    };
 }
 
 // react-easy-crop's `transform` prop replaces its default entirely, so the pan
