@@ -15,8 +15,10 @@ pub fn app__favorite_add(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
     let affected = vrcx_0_persistence::favorites::favorite_add(
         state.db.as_ref(),
+        Some(&owner_user_id),
         kind.clone(),
         entity_id,
         group_name,
@@ -35,8 +37,10 @@ pub fn app__favorite_group_delete(
     kind: String,
     group_name: String,
 ) -> Result<i64, AppError> {
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
     let affected = vrcx_0_persistence::favorites::favorite_group_delete(
         state.db.as_ref(),
+        Some(&owner_user_id),
         kind.clone(),
         group_name,
     )
@@ -55,8 +59,10 @@ pub fn app__favorite_group_rename(
     group_name: String,
     new_group_name: String,
 ) -> Result<i64, AppError> {
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
     let affected = vrcx_0_persistence::favorites::favorite_group_rename(
         state.db.as_ref(),
+        Some(&owner_user_id),
         kind.clone(),
         group_name,
         new_group_name,
@@ -74,7 +80,9 @@ pub fn app__favorite_list(
     state: State<'_, AppState>,
     kind: String,
 ) -> Result<Vec<Value>, AppError> {
-    vrcx_0_persistence::favorites::favorite_list(state.db.as_ref(), kind).map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::favorites::favorite_list(state.db.as_ref(), Some(&owner_user_id), kind)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -85,8 +93,10 @@ pub fn app__favorite_remove(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
     let affected = vrcx_0_persistence::favorites::favorite_remove(
         state.db.as_ref(),
+        Some(&owner_user_id),
         kind.clone(),
         entity_id,
         group_name,

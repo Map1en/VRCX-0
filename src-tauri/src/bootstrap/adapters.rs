@@ -1,7 +1,11 @@
+use std::fs;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use async_trait::async_trait;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use tauri::{Emitter, Manager, Url};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::{Update, UpdaterExt};
@@ -300,13 +304,95 @@ pub struct TauriUpdaterPort {
 
 impl TauriUpdaterPort {
     pub fn new(app_handle: tauri::AppHandle) -> Self {
+        match update_cache_dir(&app_handle) {
+            Ok(cache_dir) => cleanup_update_cache_dir(&cache_dir),
+            Err(error) => tracing::warn!(
+                error = %error,
+                "failed to resolve update cache directory during startup cleanup"
+            ),
+        }
         Self { app_handle }
     }
 }
 
 struct TauriPendingUpdate {
     update: Update,
-    bytes: Vec<u8>,
+    artifact_path: PathBuf,
+    sha256: [u8; 32],
+}
+
+impl Drop for TauriPendingUpdate {
+    fn drop(&mut self) {
+        if let Err(error) = fs::remove_file(&self.artifact_path) {
+            if error.kind() != ErrorKind::NotFound {
+                tracing::warn!(
+                    path = %self.artifact_path.display(),
+                    error = %error,
+                    "failed to remove cached update artifact"
+                );
+            }
+        }
+    }
+}
+
+fn update_cache_dir(app_handle: &tauri::AppHandle) -> ApplicationResult<PathBuf> {
+    app_handle
+        .path()
+        .app_cache_dir()
+        .map(|path| path.join("updates"))
+        .map_err(|error| {
+            ApplicationError::Custom(format!("Failed to resolve update cache directory: {error}"))
+        })
+}
+
+fn update_artifact_path(cache_dir: &Path, version: &str) -> PathBuf {
+    let safe_version: String = version
+        .chars()
+        .take(128)
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_') {
+                character
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let safe_version = if safe_version.is_empty() {
+        "unknown"
+    } else {
+        &safe_version
+    };
+    cache_dir.join(format!("vrcx-update-{safe_version}.bin"))
+}
+
+fn cleanup_update_cache_dir(cache_dir: &Path) {
+    if let Err(error) = fs::remove_dir_all(cache_dir) {
+        if error.kind() != ErrorKind::NotFound {
+            tracing::warn!(
+                path = %cache_dir.display(),
+                error = %error,
+                "failed to clean cached update artifacts during startup"
+            );
+        }
+    }
+}
+
+async fn read_verified_update_artifact(
+    artifact_path: &Path,
+    expected_sha256: &[u8; 32],
+) -> ApplicationResult<Vec<u8>> {
+    let bytes = tokio::fs::read(artifact_path).await.map_err(|error| {
+        ApplicationError::UpdateArtifactInvalid(format!(
+            "cached update file could not be read: {error}"
+        ))
+    })?;
+    let actual_sha256: [u8; 32] = Sha256::digest(&bytes).into();
+    if &actual_sha256 != expected_sha256 {
+        return Err(ApplicationError::UpdateArtifactInvalid(
+            "cached update file checksum did not match the downloaded artifact".into(),
+        ));
+    }
+    Ok(bytes)
 }
 
 fn updater_metadata_from(update: &Update) -> UpdaterMetadata {
@@ -403,10 +489,31 @@ impl UpdaterPort for TauriUpdaterPort {
             .map_err(|error| {
                 ApplicationError::Custom(format!("Failed to download update: {error}"))
             })?;
+        let sha256: [u8; 32] = Sha256::digest(&bytes).into();
+        let cache_dir = update_cache_dir(&self.app_handle)?;
+        tokio::fs::create_dir_all(&cache_dir)
+            .await
+            .map_err(|error| {
+                ApplicationError::Custom(format!(
+                    "Failed to create update cache directory: {error}"
+                ))
+            })?;
+        let artifact_path = update_artifact_path(&cache_dir, &update.version);
+        if let Err(error) = tokio::fs::write(&artifact_path, &bytes).await {
+            let _ = tokio::fs::remove_file(&artifact_path).await;
+            return Err(ApplicationError::Custom(format!(
+                "Failed to persist downloaded update artifact: {error}"
+            )));
+        }
+        drop(bytes);
 
         Ok(UpdaterDownloadOutcome {
             metadata,
-            handle: UpdaterInstallHandle(Box::new(TauriPendingUpdate { update, bytes })),
+            handle: UpdaterInstallHandle(Box::new(TauriPendingUpdate {
+                update,
+                artifact_path,
+                sha256,
+            })),
         })
     }
 
@@ -415,7 +522,8 @@ impl UpdaterPort for TauriUpdaterPort {
             .0
             .downcast::<TauriPendingUpdate>()
             .map_err(|_| ApplicationError::Custom("Invalid pending update handle.".into()))?;
-        pending.update.install(pending.bytes).map_err(|error| {
+        let bytes = read_verified_update_artifact(&pending.artifact_path, &pending.sha256).await?;
+        pending.update.install(bytes).map_err(|error| {
             ApplicationError::Custom(format!("Failed to install pending update: {error}"))
         })
     }
@@ -449,4 +557,92 @@ pub(super) fn start_mcp_server_if_enabled(app: &tauri::AppHandle) {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod updater_artifact_tests {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use super::*;
+
+    static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    struct TestDir(PathBuf);
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-updater-{name}-{}-{nonce}",
+                std::process::id()
+            ));
+            fs::create_dir_all(&path).expect("create updater test directory");
+            Self(path)
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn update_artifact_path_stays_inside_cache_directory() {
+        let cache_dir = PathBuf::from("update-cache");
+        let path = update_artifact_path(&cache_dir, "../../2.15.0\\payload");
+
+        assert_eq!(path.parent(), Some(cache_dir.as_path()));
+        assert_eq!(
+            path.file_name().and_then(|name| name.to_str()),
+            Some("vrcx-update-.._.._2.15.0_payload.bin")
+        );
+    }
+
+    #[tokio::test]
+    async fn update_artifact_is_revalidated_before_install() {
+        let dir = TestDir::new("verify");
+        let artifact_path = dir.0.join("update.bin");
+        let original = b"verified update";
+        let sha256: [u8; 32] = Sha256::digest(original).into();
+        tokio::fs::write(&artifact_path, original)
+            .await
+            .expect("write original artifact");
+
+        assert_eq!(
+            read_verified_update_artifact(&artifact_path, &sha256)
+                .await
+                .expect("original artifact verifies"),
+            original
+        );
+
+        tokio::fs::write(&artifact_path, b"tampered update")
+            .await
+            .expect("tamper artifact");
+        assert!(matches!(
+            read_verified_update_artifact(&artifact_path, &sha256).await,
+            Err(ApplicationError::UpdateArtifactInvalid(_))
+        ));
+
+        tokio::fs::remove_file(&artifact_path)
+            .await
+            .expect("remove artifact");
+        assert!(matches!(
+            read_verified_update_artifact(&artifact_path, &sha256).await,
+            Err(ApplicationError::UpdateArtifactInvalid(_))
+        ));
+    }
+
+    #[test]
+    fn startup_cleanup_removes_stale_update_artifacts() {
+        let dir = TestDir::new("cleanup");
+        let cache_dir = dir.0.join("updates");
+        fs::create_dir_all(&cache_dir).expect("create update cache");
+        fs::write(cache_dir.join("stale.bin"), b"stale").expect("write stale artifact");
+
+        cleanup_update_cache_dir(&cache_dir);
+
+        assert!(!cache_dir.exists());
+        assert!(dir.0.exists());
+    }
 }

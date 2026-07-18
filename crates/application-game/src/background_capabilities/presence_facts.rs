@@ -77,7 +77,12 @@ pub fn build_background_presence_facts(
     let runtime_player_count = runtime_players.len();
     let (players, observed_player_event_count) = if has_live_location && runtime_players.is_empty()
     {
-        load_players_from_persistence(db, &current_location, &game_snapshot.started_at)?
+        load_players_from_persistence(
+            db,
+            &input.session.current_user_id,
+            &current_location,
+            &game_snapshot.started_at,
+        )?
     } else {
         (runtime_players, 0)
     };
@@ -93,8 +98,12 @@ pub fn build_background_presence_facts(
             }
         })
         .collect();
-    let present_favorite_group_keys =
-        collect_present_favorite_group_keys(db, &players, &input.favorite_friend_groups_by_key)?;
+    let present_favorite_group_keys = collect_present_favorite_group_keys(
+        db,
+        &input.session.current_user_id,
+        &players,
+        &input.favorite_friend_groups_by_key,
+    )?;
     let can_invite_from_current_location = check_can_invite(
         &current_location,
         &parsed_location,
@@ -176,11 +185,13 @@ fn normalize_runtime_players(players: &[PlayerState]) -> Vec<PresencePlayer> {
 
 fn load_players_from_persistence(
     db: &DatabaseService,
+    owner_user_id: &str,
     location: &str,
     started_at: &str,
 ) -> Result<(Vec<PresencePlayer>, usize)> {
     let rows = vrcx_0_persistence::player_list::player_list_join_leave_rows(
         db,
+        owner_user_id,
         location.to_string(),
         started_at.to_string(),
     )?;
@@ -210,6 +221,7 @@ fn load_players_from_persistence(
 
 fn collect_present_favorite_group_keys(
     db: &DatabaseService,
+    owner_user_id: &str,
     players: &[PresencePlayer],
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
 ) -> Result<Vec<String>> {
@@ -235,7 +247,9 @@ fn collect_present_favorite_group_keys(
             keys.insert(group_key.clone());
         }
     }
-    for row in vrcx_0_persistence::favorites::favorite_list(db, "friend".into())? {
+    for row in
+        vrcx_0_persistence::favorites::favorite_list(db, Some(owner_user_id), "friend".into())?
+    {
         let user_id = string_field(&row, "userId").unwrap_or_default();
         let group_name = string_field(&row, "groupName").unwrap_or_default();
         if !group_name.is_empty() && present_user_ids.contains(user_id.as_str()) {

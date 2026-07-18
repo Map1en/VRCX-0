@@ -6,9 +6,8 @@ mod value;
 
 pub use params::{DbParams, ParamsBuilder};
 pub use query::{
-    delete_all_sql, delete_by_key_sql, delete_where_eq_and_in_sql, delete_where_lt_sql,
-    delete_where_two_eq_sql, ident, insert_or_ignore_sql, insert_or_replace_sql, named_param,
-    update_by_key_sql,
+    delete_all_sql, delete_by_key_sql, delete_where_lt_sql, ident, insert_or_ignore_sql,
+    insert_or_replace_sql, named_param, update_by_key_sql,
 };
 pub use row::{
     row_i64, row_json, row_string, row_value, strict_row_i64, strict_row_json, strict_row_string,

@@ -141,6 +141,7 @@ impl GameClientHostRuntime {
             event_bus: context.event_bus.clone(),
             tasks: context.tasks.clone(),
             session: context.session.clone(),
+            auth_scope: context.auth_scope.clone(),
             actions: Arc::clone(&actions),
             cache_actions: Arc::new(SystemGameClientCacheActions),
             location_source: Arc::new(LogWatcherLocationSource { log_watcher }),

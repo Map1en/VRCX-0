@@ -72,6 +72,7 @@ pub struct SessionSummary {
 #[derive(Default)]
 pub struct SessionStore {
     sessions: Mutex<HashMap<String, Session>>,
+    owners: Mutex<HashMap<String, String>>,
     seq: Mutex<u64>,
     db: Option<Arc<DatabaseService>>,
 }
@@ -81,6 +82,7 @@ impl SessionStore {
     pub fn with_db(db: Arc<DatabaseService>) -> Self {
         let store = Self {
             sessions: Mutex::new(HashMap::new()),
+            owners: Mutex::new(HashMap::new()),
             seq: Mutex::new(0),
             db: Some(db),
         };
@@ -92,11 +94,13 @@ impl SessionStore {
         let Some(db) = self.db.as_ref() else {
             return;
         };
-        match assistant::assistant_sessions_load(db) {
+        match assistant::assistant_sessions_load(db, None) {
             Ok(persisted) => {
                 let mut max_seq = 0u64;
                 let mut guard = self.sessions.lock().unwrap();
+                let mut owners = self.owners.lock().unwrap();
                 for entry in persisted {
+                    owners.insert(entry.id.clone(), entry.owner_user_id.clone());
                     let messages = entry
                         .messages
                         .into_iter()
@@ -140,19 +144,32 @@ impl SessionStore {
         }
     }
 
-    fn upsert_row(&self, id: &str, title: &str, created_at: &str, updated_at: &str) {
+    fn upsert_row(
+        &self,
+        owner_user_id: &str,
+        id: &str,
+        title: &str,
+        created_at: &str,
+        updated_at: &str,
+    ) {
         let Some(db) = self.db.as_ref() else {
             return;
         };
-        if let Err(error) =
-            assistant::assistant_session_upsert(db, id, title, created_at, updated_at)
-        {
+        if let Err(error) = assistant::assistant_session_upsert(
+            db,
+            owner_user_id,
+            id,
+            title,
+            created_at,
+            updated_at,
+        ) {
             tracing::warn!(%error, "assistant: failed to persist session");
         }
     }
 
-    fn persist_session(&self, session: &Session) {
+    fn persist_session(&self, owner_user_id: &str, session: &Session) {
         self.upsert_row(
+            owner_user_id,
             &session.id,
             &session.title,
             &session.created_at,
@@ -169,7 +186,14 @@ impl SessionStore {
         updated_at: &str,
         message: &Message,
     ) {
-        self.upsert_row(id, title, created_at, updated_at);
+        let owner_user_id = self
+            .owners
+            .lock()
+            .unwrap()
+            .get(id)
+            .cloned()
+            .unwrap_or_default();
+        self.upsert_row(&owner_user_id, id, title, created_at, updated_at);
         let Some(db) = self.db.as_ref() else {
             return;
         };
@@ -192,7 +216,12 @@ impl SessionStore {
         *guard
     }
 
-    fn insert_new(&self, id: String, runtime: AssistantRuntimeSelection) -> Session {
+    fn insert_new(
+        &self,
+        owner_user_id: &str,
+        id: String,
+        runtime: AssistantRuntimeSelection,
+    ) -> Session {
         let now = now_rfc3339();
         let session = Session {
             id,
@@ -208,26 +237,38 @@ impl SessionStore {
             created_at: now.clone(),
             updated_at: now,
         };
-        self.sessions
-            .lock()
-            .unwrap()
-            .insert(session.id.clone(), session.clone());
-        self.persist_session(&session);
+        {
+            let mut sessions = self.sessions.lock().unwrap();
+            let mut owners = self.owners.lock().unwrap();
+            sessions.insert(session.id.clone(), session.clone());
+            owners.insert(session.id.clone(), owner_user_id.trim().to_string());
+        }
+        self.persist_session(owner_user_id, &session);
         session
     }
 
-    pub fn create_session_with_runtime(&self, runtime: AssistantRuntimeSelection) -> Session {
-        self.insert_new(format!("ses_{}", random_hex()), runtime)
+    pub fn create_session_with_runtime(
+        &self,
+        owner_user_id: &str,
+        runtime: AssistantRuntimeSelection,
+    ) -> Session {
+        self.insert_new(owner_user_id, format!("ses_{}", random_hex()), runtime)
     }
 
     pub fn ensure_session_with_runtime(
         &self,
+        owner_user_id: &str,
         session_id: Option<String>,
         runtime: AssistantRuntimeSelection,
-    ) -> Session {
+    ) -> Option<Session> {
         let Some(id) = session_id else {
-            return self.create_session_with_runtime(runtime);
+            return Some(self.create_session_with_runtime(owner_user_id, runtime));
         };
+        if self.sessions.lock().unwrap().contains_key(&id)
+            && !self.is_visible_to(&id, owner_user_id)
+        {
+            return None;
+        }
         let seeded = {
             let mut guard = self.sessions.lock().unwrap();
             match guard.get_mut(&id) {
@@ -243,23 +284,33 @@ impl SessionStore {
         match seeded {
             Some((session, true)) => {
                 persist_runtime(self.db.as_deref(), &session);
-                session
+                Some(session)
             }
-            Some((session, false)) => session,
-            None => self.insert_new(id, runtime),
+            Some((session, false)) => Some(session),
+            None => Some(self.insert_new(owner_user_id, id, runtime)),
         }
     }
 
-    pub fn get(&self, session_id: &str) -> Option<Session> {
+    pub fn get(&self, owner_user_id: &str, session_id: &str) -> Option<Session> {
+        self.is_visible_to(session_id, owner_user_id)
+            .then(|| self.sessions.lock().unwrap().get(session_id).cloned())
+            .flatten()
+    }
+
+    pub(crate) fn get_unscoped(&self, session_id: &str) -> Option<Session> {
         self.sessions.lock().unwrap().get(session_id).cloned()
     }
 
-    pub fn list(&self) -> Vec<SessionSummary> {
-        let mut summaries: Vec<SessionSummary> = self
-            .sessions
-            .lock()
-            .unwrap()
+    pub fn list(&self, owner_user_id: &str) -> Vec<SessionSummary> {
+        let sessions = self.sessions.lock().unwrap();
+        let owners = self.owners.lock().unwrap();
+        let mut summaries: Vec<SessionSummary> = sessions
             .values()
+            .filter(|session| {
+                owners
+                    .get(&session.id)
+                    .is_some_and(|owner| owner_visible(owner, owner_user_id))
+            })
             .map(|session| SessionSummary {
                 id: session.id.clone(),
                 title: session.title.clone(),
@@ -274,10 +325,18 @@ impl SessionStore {
         summaries
     }
 
-    pub fn delete(&self, session_id: &str) {
-        self.sessions.lock().unwrap().remove(session_id);
+    pub fn delete(&self, owner_user_id: &str, session_id: &str) {
+        if !self.is_visible_to(session_id, owner_user_id) {
+            return;
+        }
+        {
+            let mut sessions = self.sessions.lock().unwrap();
+            let mut owners = self.owners.lock().unwrap();
+            sessions.remove(session_id);
+            owners.remove(session_id);
+        }
         if let Some(db) = self.db.as_ref() {
-            if let Err(error) = assistant::assistant_session_delete(db, session_id) {
+            if let Err(error) = assistant::assistant_session_delete(db, owner_user_id, session_id) {
                 tracing::warn!(%error, "assistant: failed to delete persisted session");
             }
         }
@@ -379,9 +438,13 @@ impl SessionStore {
 
     pub fn set_runtime(
         &self,
+        owner_user_id: &str,
         session_id: &str,
         runtime: AssistantRuntimeSelection,
     ) -> Option<Session> {
+        if !self.is_visible_to(session_id, owner_user_id) {
+            return None;
+        }
         let updated = {
             let mut guard = self.sessions.lock().unwrap();
             let session = guard.get_mut(session_id)?;
@@ -392,6 +455,18 @@ impl SessionStore {
         persist_runtime(self.db.as_deref(), &updated);
         Some(updated)
     }
+
+    pub fn is_visible_to(&self, session_id: &str, owner_user_id: &str) -> bool {
+        self.owners
+            .lock()
+            .unwrap()
+            .get(session_id)
+            .is_some_and(|owner| owner_visible(owner, owner_user_id))
+    }
+}
+
+fn owner_visible(session_owner: &str, owner_user_id: &str) -> bool {
+    session_owner.is_empty() || session_owner == owner_user_id.trim()
 }
 
 fn persist_ui_state(
@@ -481,20 +556,16 @@ fn now_rfc3339() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::unique_test_database_path;
+
+    const TEST_OWNER: &str = "usr_test";
 
     fn test_db() -> Arc<DatabaseService> {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir =
-            std::env::temp_dir().join(format!("vrcx-0-harness-{}-{nonce}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        Arc::new(DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap())
+        Arc::new(DatabaseService::new(&unique_test_database_path("vrcx-0-harness")).unwrap())
     }
 
     fn create_test_session(store: &SessionStore) -> Session {
-        store.create_session_with_runtime(AssistantRuntimeSelection::default())
+        store.create_session_with_runtime(TEST_OWNER, AssistantRuntimeSelection::default())
     }
 
     #[test]
@@ -537,7 +608,9 @@ mod tests {
         };
 
         // Surfacing entities auto-opens the panel; both must survive a restart.
-        let reopened = SessionStore::with_db(db).get(&session_id).unwrap();
+        let reopened = SessionStore::with_db(db)
+            .get(TEST_OWNER, &session_id)
+            .unwrap();
         assert!(reopened.entity_panel_open);
         assert_eq!(reopened.surfaced_entities.len(), 1);
         assert_eq!(reopened.surfaced_entities[0].id, "usr_1");
@@ -552,6 +625,7 @@ mod tests {
             let session = create_test_session(&store);
             store
                 .set_runtime(
+                    TEST_OWNER,
                     &session.id,
                     AssistantRuntimeSelection {
                         endpoint_id: Some("ep_1".into()),
@@ -564,7 +638,9 @@ mod tests {
                 .id
         };
 
-        let reopened = SessionStore::with_db(db.clone()).get(&session_id).unwrap();
+        let reopened = SessionStore::with_db(db.clone())
+            .get(TEST_OWNER, &session_id)
+            .unwrap();
         assert_eq!(reopened.endpoint_id.as_deref(), Some("ep_1"));
         assert_eq!(reopened.model.as_deref(), Some("model-a"));
         assert!(reopened.allow_writes);
@@ -575,15 +651,18 @@ mod tests {
             create_test_session(&store).id
         };
         let store = SessionStore::with_db(db);
-        let seeded = store.ensure_session_with_runtime(
-            Some(old_session_id),
-            AssistantRuntimeSelection {
-                endpoint_id: Some("ep_seed".into()),
-                model: Some("seed-model".into()),
-                allow_writes: false,
-                playbook_mode: PlaybookMode::Open,
-            },
-        );
+        let seeded = store
+            .ensure_session_with_runtime(
+                TEST_OWNER,
+                Some(old_session_id),
+                AssistantRuntimeSelection {
+                    endpoint_id: Some("ep_seed".into()),
+                    model: Some("seed-model".into()),
+                    allow_writes: false,
+                    playbook_mode: PlaybookMode::Open,
+                },
+            )
+            .unwrap();
         assert_eq!(seeded.endpoint_id.as_deref(), Some("ep_seed"));
         assert_eq!(seeded.model.as_deref(), Some("seed-model"));
         assert_eq!(seeded.playbook_mode, PlaybookMode::Open);
@@ -604,11 +683,17 @@ mod tests {
                 }],
             );
             store.set_surfaced_entities(&session.id, &[]);
-            assert!(store.get(&session.id).unwrap().surfaced_entities.is_empty());
+            assert!(store
+                .get(TEST_OWNER, &session.id)
+                .unwrap()
+                .surfaced_entities
+                .is_empty());
             session.id
         };
 
-        let reopened = SessionStore::with_db(db).get(&session_id).unwrap();
+        let reopened = SessionStore::with_db(db)
+            .get(TEST_OWNER, &session_id)
+            .unwrap();
         assert!(reopened.surfaced_entities.is_empty());
     }
 
@@ -622,8 +707,40 @@ mod tests {
             store.set_entity_panel_open(&session.id, false);
             session.id
         };
-        let reopened = SessionStore::with_db(db).get(&session_id).unwrap();
+        let reopened = SessionStore::with_db(db)
+            .get(TEST_OWNER, &session_id)
+            .unwrap();
         assert!(!reopened.entity_panel_open);
+    }
+
+    #[test]
+    fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
+        let db = test_db();
+        let store = SessionStore::with_db(db.clone());
+        let session_a =
+            store.create_session_with_runtime("usr_a", AssistantRuntimeSelection::default());
+        let session_b =
+            store.create_session_with_runtime("usr_b", AssistantRuntimeSelection::default());
+        let shared = store.create_session_with_runtime("", AssistantRuntimeSelection::default());
+
+        let visible_to_a = store
+            .list("usr_a")
+            .into_iter()
+            .map(|session| session.id)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(
+            visible_to_a,
+            std::collections::HashSet::from([session_a.id.clone(), shared.id.clone()])
+        );
+        assert!(store.get("usr_a", &session_b.id).is_none());
+        assert!(store
+            .set_runtime("usr_b", &session_a.id, AssistantRuntimeSelection::default(),)
+            .is_none());
+
+        store.delete("usr_b", &session_a.id);
+        assert!(SessionStore::with_db(db)
+            .get("usr_a", &session_a.id)
+            .is_some());
     }
 
     #[test]

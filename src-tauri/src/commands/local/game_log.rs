@@ -16,9 +16,14 @@ pub fn app__game_log_entries_add(
     kind: String,
     entries: Vec<Value>,
 ) -> Result<(), AppError> {
-    let affected_count =
-        vrcx_0_persistence::game_log::game_log_entries_add(state.db.as_ref(), kind, entries)
-            .map_err(AppError::from)?;
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let affected_count = vrcx_0_persistence::game_log::game_log_entries_add(
+        state.db.as_ref(),
+        &owner_user_id,
+        kind,
+        entries,
+    )
+    .map_err(AppError::from)?;
     state
         .runtime_context
         .event_bus
@@ -33,8 +38,14 @@ pub fn app__game_log_entry_delete(
     kind: String,
     entry: Value,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::game_log::game_log_entry_delete(state.db.as_ref(), kind, entry)
-        .map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::game_log::game_log_entry_delete(
+        state.db.as_ref(),
+        &owner_user_id,
+        kind,
+        entry,
+    )
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -44,8 +55,14 @@ pub fn app__game_log_instance_delete(
     location: String,
     event_ids: Vec<i64>,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::game_log::game_log_instance_delete(state.db.as_ref(), location, event_ids)
-        .map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::game_log::game_log_instance_delete(
+        state.db.as_ref(),
+        &owner_user_id,
+        location,
+        event_ids,
+    )
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -54,8 +71,13 @@ pub fn app__game_log_instance_delete_by_location(
     state: State<'_, AppState>,
     location: String,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::game_log::game_log_instance_delete_by_location(state.db.as_ref(), location)
-        .map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::game_log::game_log_instance_delete_by_location(
+        state.db.as_ref(),
+        &owner_user_id,
+        location,
+    )
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -64,7 +86,9 @@ pub fn app__game_log_query(
     state: State<'_, AppState>,
     query: GameLogQueryInput,
 ) -> Result<Value, AppError> {
-    vrcx_0_persistence::game_log::game_log_query(state.db.as_ref(), query).map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::game_log::game_log_query(state.db.as_ref(), &owner_user_id, query)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -73,6 +97,7 @@ pub fn app__game_log_sessions_query(
     state: State<'_, AppState>,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>, AppError> {
-    vrcx_0_application_game::game_log_sessions_query(state.db.as_ref(), input)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_application_game::game_log_sessions_query(state.db.as_ref(), &owner_user_id, input)
         .map_err(AppError::from)
 }

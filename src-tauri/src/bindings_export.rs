@@ -528,7 +528,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::updater::app__app_update_check_run,
             commands::host::updater::app__app_update_download_status_get,
             commands::host::updater::app__app_update_install_confirm,
-            commands::host::updater::app__app_update_background_download_preference_changed,
             commands::host::legacy_migration::app__check_legacy_vrcx_available,
             commands::host::legacy_migration::app__get_legacy_vrcx_force_migration_status,
             commands::host::legacy_migration::app__get_legacy_vrcx_migration_status,

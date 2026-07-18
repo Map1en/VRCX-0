@@ -6,7 +6,7 @@ use vrcx_0_persistence::DatabaseService;
 
 use crate::worker::{RuntimeWorker, RuntimeWorkerOptions};
 use crate::Result;
-use crate::{HostSessionRuntime, RuntimeEventBus, TaskSupervisor};
+use crate::{HostSessionRuntime, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_application_core::GameProcessEvent;
 
 use super::actions::{GameClientActions, GameClientDebugLoggingActions};
@@ -22,6 +22,7 @@ pub struct GameClientRuntimeDeps {
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
+    pub auth_scope: RuntimeAuthScope,
     pub actions: Arc<dyn GameClientActions>,
     pub cache_actions: Arc<dyn GameClientCacheActions>,
     pub location_source: Arc<dyn GameClientLocationSource>,
@@ -44,6 +45,7 @@ impl GameClientRuntime {
                 event_bus: deps.event_bus.clone(),
                 tasks: deps.tasks,
                 session: deps.session,
+                auth_scope: deps.auth_scope,
                 actions: deps.actions,
                 cache_actions: deps.cache_actions,
                 location_source: deps.location_source,

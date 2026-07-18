@@ -6,6 +6,7 @@ use crate::common::{normalize_text, now_iso, row_json, ParamsBuilder};
 use crate::config::{ensure_config_table, resolve_config_key};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert};
 use crate::Error;
 
 const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
@@ -17,7 +18,11 @@ pub struct FavoriteMoveResult {
     pub added: i64,
 }
 
-pub fn favorite_list(db: &DatabaseService, kind: String) -> Result<Vec<Value>, Error> {
+pub fn favorite_list(
+    db: &DatabaseService,
+    owner_user_id: Option<&str>,
+    kind: String,
+) -> Result<Vec<Value>, Error> {
     ensure_global_store_tables(db)?;
     let (table, column, _) = normalize_kind(&kind)?;
     let id_key = match kind.trim() {
@@ -26,10 +31,14 @@ pub fn favorite_list(db: &DatabaseService, kind: String) -> Result<Vec<Value>, E
         "world" => "worldId",
         _ => "entityId",
     };
+    let owner_id = owner_id_for_kind_read(db, &kind, owner_user_id)?;
     Ok(db
         .execute(
-            &format!("SELECT created_at, {column}, group_name FROM {table}"),
-            &Default::default(),
+            &format!(
+                "SELECT created_at, {column}, group_name FROM {table} {}",
+                visible_owner_where(&kind)
+            ),
+            &ParamsBuilder::new().set("owner_id", owner_id).build(),
         )?
         .into_iter()
         .map(|row| {
@@ -44,41 +53,52 @@ pub fn favorite_list(db: &DatabaseService, kind: String) -> Result<Vec<Value>, E
 
 pub fn favorite_add(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: String,
     entity_id: String,
     group_name: String,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
     let (table, column, entity_param) = normalize_kind(&kind)?;
+    let owner_id = owner_id_for_kind_write(db, &kind, owner_user_id)?;
+    let (owner_column, owner_value) = owner_insert_parts(&kind);
     db.execute_non_query(
-        &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
+        &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at{owner_column}) VALUES ({entity_param}, @group_name, @created_at{owner_value})"),
         &ParamsBuilder::new()
             .set(entity_param, normalize_text(entity_id))
             .set("group_name", normalize_text(group_name))
             .set("created_at", now_iso())
+            .set("owner_id", owner_id)
             .build(),
     )
 }
 
 pub fn favorite_remove(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: String,
     entity_id: String,
     group_name: String,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
     let (table, column, _) = normalize_kind(&kind)?;
+    let owner_id = owner_id_for_kind_read(db, &kind, owner_user_id)?;
     db.execute_non_query(
-        &format!("DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name"),
+        &format!(
+            "DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name {}",
+            visible_owner_and(&kind)
+        ),
         &ParamsBuilder::new()
             .set("entity_id", normalize_text(entity_id))
             .set("group_name", normalize_text(group_name))
+            .set("owner_id", owner_id)
             .build(),
     )
 }
 
 pub fn favorite_move(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: String,
     entity_id: String,
     source_group_name: String,
@@ -89,6 +109,8 @@ pub fn favorite_move(
     let normalized_entity_id = normalize_text(entity_id);
     let normalized_source_group_name = normalize_text(source_group_name);
     let normalized_target_group_name = normalize_text(target_group_name);
+    let owner_id = owner_id_for_kind_write(db, &kind, owner_user_id)?;
+    let (owner_column, owner_value) = owner_insert_parts(&kind);
     if normalized_entity_id.is_empty() {
         return Err(Error::Custom("favorite_move requires entity id".into()));
     }
@@ -100,10 +122,11 @@ pub fn favorite_move(
 
     db.write_transaction(|tx| {
         let removed = tx.execute_non_query(
-            &format!("DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name"),
+            &format!("DELETE FROM {table} WHERE {column} = @entity_id AND group_name = @group_name {}", visible_owner_and(&kind)),
             &ParamsBuilder::new()
                 .set("entity_id", normalized_entity_id.clone())
                 .set("group_name", normalized_source_group_name)
+                .set("owner_id", owner_id)
                 .build(),
         )?;
         if normalized_target_group_name.is_empty() {
@@ -112,11 +135,12 @@ pub fn favorite_move(
             ));
         }
         let added = tx.execute_non_query(
-            &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at) VALUES ({entity_param}, @group_name, @created_at)"),
+            &format!("INSERT OR IGNORE INTO {table} ({column}, group_name, created_at{owner_column}) VALUES ({entity_param}, @group_name, @created_at{owner_value})"),
             &ParamsBuilder::new()
                 .set(entity_param, normalized_entity_id)
                 .set("group_name", normalized_target_group_name)
                 .set("created_at", now_iso())
+                .set("owner_id", owner_id)
                 .build(),
         )?;
         Ok(FavoriteMoveResult { removed, added })
@@ -125,6 +149,7 @@ pub fn favorite_move(
 
 pub fn favorite_group_rename(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: String,
     group_name: String,
     new_group_name: String,
@@ -133,6 +158,8 @@ pub fn favorite_group_rename(
     let (table, column, _) = normalize_kind(&kind)?;
     let normalized_group_name = normalize_text(group_name);
     let normalized_new_group_name = normalize_text(new_group_name);
+    let owner_id = owner_id_for_kind_read(db, &kind, owner_user_id)?;
+    let owner_scope = visible_owner_and(&kind);
     db.write_transaction(|tx| {
         let deduped = delete_rows_already_in_group(
             tx,
@@ -140,14 +167,17 @@ pub fn favorite_group_rename(
             column,
             &normalized_group_name,
             &normalized_new_group_name,
+            owner_scope,
+            owner_id,
         )?;
         let renamed = tx.execute_non_query(
             &format!(
-                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name"
+                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
             ),
             &ParamsBuilder::new()
                 .set("new_group_name", normalized_new_group_name)
                 .set("group_name", normalized_group_name)
+                .set("owner_id", owner_id)
                 .build(),
         )?;
         Ok(deduped + renamed)
@@ -160,35 +190,45 @@ fn delete_rows_already_in_group(
     column: &str,
     group_name: &str,
     new_group_name: &str,
+    owner_scope: &str,
+    owner_id: i64,
 ) -> Result<i64, Error> {
     tx.execute_non_query(
         &format!(
-            "DELETE FROM {table} WHERE group_name = @group_name AND {column} IN (SELECT {column} FROM {table} WHERE group_name = @new_group_name)"
+            "DELETE FROM {table} WHERE group_name = @group_name {owner_scope} AND {column} IN (SELECT {column} FROM {table} WHERE group_name = @new_group_name {owner_scope})"
         ),
         &ParamsBuilder::new()
             .set("group_name", group_name.to_string())
             .set("new_group_name", new_group_name.to_string())
+            .set("owner_id", owner_id)
             .build(),
     )
 }
 
 pub fn favorite_group_delete(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: String,
     group_name: String,
 ) -> Result<i64, Error> {
     ensure_global_store_tables(db)?;
     let (table, _, _) = normalize_kind(&kind)?;
+    let owner_id = owner_id_for_kind_read(db, &kind, owner_user_id)?;
     db.execute_non_query(
-        &format!("DELETE FROM {table} WHERE group_name = @group_name"),
+        &format!(
+            "DELETE FROM {table} WHERE group_name = @group_name {}",
+            visible_owner_and(&kind)
+        ),
         &ParamsBuilder::new()
             .set("group_name", normalize_text(group_name))
+            .set("owner_id", owner_id)
             .build(),
     )
 }
 
 pub fn favorite_group_rename_with_config(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: &str,
     config_key: &str,
     group_name: &str,
@@ -202,6 +242,7 @@ pub fn favorite_group_rename_with_config(
     let config_value = json!(config_groups).to_string();
     let normalized_group_name = normalize_text(group_name);
     let normalized_new_group_name = normalize_text(new_group_name);
+    let (owner_scope, owner_id) = config_realm_owner_scope(db, kind, config_key, owner_user_id)?;
     db.write_transaction(|tx| {
         delete_rows_already_in_group(
             tx,
@@ -209,14 +250,17 @@ pub fn favorite_group_rename_with_config(
             column,
             &normalized_group_name,
             &normalized_new_group_name,
+            owner_scope,
+            owner_id,
         )?;
         let affected = tx.execute_non_query(
             &format!(
-                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name"
+                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
             ),
             &ParamsBuilder::new()
                 .set("new_group_name", normalized_new_group_name.clone())
                 .set("group_name", normalized_group_name.clone())
+                .set("owner_id", owner_id)
                 .build(),
         )?;
         tx.execute_non_query(
@@ -232,6 +276,7 @@ pub fn favorite_group_rename_with_config(
 
 pub fn favorite_group_delete_with_config(
     db: &DatabaseService,
+    owner_user_id: Option<&str>,
     kind: &str,
     config_key: &str,
     group_name: &str,
@@ -242,11 +287,13 @@ pub fn favorite_group_delete_with_config(
     let (table, _, _) = normalize_kind(kind)?;
     let stored_key = resolve_config_key(config_key);
     let config_value = json!(config_groups).to_string();
+    let (owner_scope, owner_id) = config_realm_owner_scope(db, kind, config_key, owner_user_id)?;
     db.write_transaction(|tx| {
         let affected = tx.execute_non_query(
-            &format!("DELETE FROM {table} WHERE group_name = @group_name"),
+            &format!("DELETE FROM {table} WHERE group_name = @group_name {owner_scope}"),
             &ParamsBuilder::new()
                 .set("group_name", normalize_text(group_name))
+                .set("owner_id", owner_id)
                 .build(),
         )?;
         tx.execute_non_query(
@@ -258,6 +305,73 @@ pub fn favorite_group_delete_with_config(
         )?;
         Ok(affected)
     })
+}
+
+fn owner_id_for_kind_read(
+    db: &DatabaseService,
+    kind: &str,
+    owner_user_id: Option<&str>,
+) -> Result<i64, Error> {
+    if kind.trim() == "friend" {
+        owner_id_for_filter(db, owner_user_id.unwrap_or_default())
+    } else {
+        Ok(0)
+    }
+}
+
+fn owner_id_for_kind_write(
+    db: &DatabaseService,
+    kind: &str,
+    owner_user_id: Option<&str>,
+) -> Result<i64, Error> {
+    if kind.trim() == "friend" {
+        owner_id_get_or_insert(db, owner_user_id.unwrap_or_default())
+    } else {
+        Ok(0)
+    }
+}
+
+fn visible_owner_where(kind: &str) -> &'static str {
+    if kind.trim() == "friend" {
+        "WHERE owner_id IN (0, @owner_id)"
+    } else {
+        ""
+    }
+}
+
+fn visible_owner_and(kind: &str) -> &'static str {
+    if kind.trim() == "friend" {
+        "AND owner_id IN (0, @owner_id)"
+    } else {
+        ""
+    }
+}
+
+fn owner_insert_parts(kind: &str) -> (&'static str, &'static str) {
+    if kind.trim() == "friend" {
+        (", owner_id", ", @owner_id")
+    } else {
+        ("", "")
+    }
+}
+
+fn config_realm_owner_scope(
+    db: &DatabaseService,
+    kind: &str,
+    config_key: &str,
+    owner_user_id: Option<&str>,
+) -> Result<(&'static str, i64), Error> {
+    if kind.trim() != "friend" {
+        return Ok(("", 0));
+    }
+    if config_key == "localFavoriteFriendGroups" {
+        Ok(("AND owner_id = 0", 0))
+    } else {
+        Ok((
+            "AND owner_id = @owner_id",
+            owner_id_for_kind_write(db, kind, owner_user_id)?,
+        ))
+    }
 }
 
 pub(crate) fn normalize_kind(
@@ -309,7 +423,7 @@ mod tests {
     }
 
     fn group_names(db: &DatabaseService, kind: &str) -> Vec<String> {
-        favorite_list(db, kind.into())
+        favorite_list(db, None, kind.into())
             .unwrap()
             .into_iter()
             .map(|row| {
@@ -337,10 +451,11 @@ mod tests {
     #[test]
     fn rename_updates_favorites_and_config_atomically() {
         let (_dir, db) = test_db("favorite-rename-with-config");
-        favorite_add(&db, "friend".into(), "usr_1".into(), "old".into()).unwrap();
+        favorite_add(&db, None, "friend".into(), "usr_1".into(), "old".into()).unwrap();
 
         let affected = favorite_group_rename_with_config(
             &db,
+            None,
             "friend",
             "localFavoriteFriendGroups",
             "old",
@@ -360,11 +475,11 @@ mod tests {
     #[test]
     fn rename_merges_into_existing_group_despite_unique_index() {
         let (_dir, db) = test_db("favorite-rename-merge");
-        favorite_add(&db, "world".into(), "wrld_1".into(), "a".into()).unwrap();
-        favorite_add(&db, "world".into(), "wrld_1".into(), "b".into()).unwrap();
-        favorite_add(&db, "world".into(), "wrld_2".into(), "a".into()).unwrap();
+        favorite_add(&db, None, "world".into(), "wrld_1".into(), "a".into()).unwrap();
+        favorite_add(&db, None, "world".into(), "wrld_1".into(), "b".into()).unwrap();
+        favorite_add(&db, None, "world".into(), "wrld_2".into(), "a".into()).unwrap();
 
-        favorite_group_rename(&db, "world".into(), "a".into(), "b".into()).unwrap();
+        favorite_group_rename(&db, None, "world".into(), "a".into(), "b".into()).unwrap();
 
         let mut groups = group_names(&db, "world");
         groups.sort();
@@ -374,11 +489,12 @@ mod tests {
     #[test]
     fn rename_with_config_merges_into_existing_group_despite_unique_index() {
         let (_dir, db) = test_db("favorite-rename-merge-with-config");
-        favorite_add(&db, "friend".into(), "usr_1".into(), "a".into()).unwrap();
-        favorite_add(&db, "friend".into(), "usr_1".into(), "b".into()).unwrap();
+        favorite_add(&db, None, "friend".into(), "usr_1".into(), "a".into()).unwrap();
+        favorite_add(&db, None, "friend".into(), "usr_1".into(), "b".into()).unwrap();
 
         favorite_group_rename_with_config(
             &db,
+            None,
             "friend",
             "localFavoriteFriendGroups",
             "a",
@@ -397,7 +513,7 @@ mod tests {
     #[test]
     fn write_transaction_rolls_back_favorite_write_on_error() {
         let (_dir, db) = test_db("favorite-tx-rollback");
-        favorite_add(&db, "friend".into(), "usr_1".into(), "keep".into()).unwrap();
+        favorite_add(&db, None, "friend".into(), "usr_1".into(), "keep".into()).unwrap();
 
         let result = db.write_transaction(|tx| {
             tx.execute_non_query(
@@ -417,10 +533,11 @@ mod tests {
     #[test]
     fn delete_removes_favorites_and_rewrites_config_atomically() {
         let (_dir, db) = test_db("favorite-delete-with-config");
-        favorite_add(&db, "friend".into(), "usr_1".into(), "doomed".into()).unwrap();
+        favorite_add(&db, None, "friend".into(), "usr_1".into(), "doomed".into()).unwrap();
 
         favorite_group_delete_with_config(
             &db,
+            None,
             "friend",
             "localFavoriteFriendGroups",
             "doomed",
@@ -436,12 +553,84 @@ mod tests {
     fn favorite_add_is_idempotent_for_same_entity_and_group() {
         let (_dir, db) = test_db("favorite-add-idempotent");
 
-        let first = favorite_add(&db, "world".into(), "wrld_1".into(), "group".into()).unwrap();
-        let second = favorite_add(&db, "world".into(), "wrld_1".into(), "group".into()).unwrap();
+        let first =
+            favorite_add(&db, None, "world".into(), "wrld_1".into(), "group".into()).unwrap();
+        let second =
+            favorite_add(&db, None, "world".into(), "wrld_1".into(), "group".into()).unwrap();
 
         assert_eq!(first, 1);
         assert_eq!(second, 0);
-        assert_eq!(favorite_list(&db, "world".into()).unwrap().len(), 1);
+        assert_eq!(favorite_list(&db, None, "world".into()).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
+        let (_dir, db) = test_db("favorite-owner-scope");
+
+        assert_eq!(
+            favorite_add(
+                &db,
+                Some("usr_a"),
+                "friend".into(),
+                "usr_same".into(),
+                "group".into(),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            favorite_add(
+                &db,
+                Some("usr_b"),
+                "friend".into(),
+                "usr_same".into(),
+                "group".into(),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            favorite_add(
+                &db,
+                Some("usr_a"),
+                "friend".into(),
+                "usr_same".into(),
+                "group".into(),
+            )
+            .unwrap(),
+            0
+        );
+        favorite_add(
+            &db,
+            None,
+            "friend".into(),
+            "usr_shared".into(),
+            "legacy".into(),
+        )
+        .unwrap();
+
+        let a = favorite_list(&db, Some("usr_a"), "friend".into()).unwrap();
+        let b = favorite_list(&db, Some("usr_b"), "friend".into()).unwrap();
+        assert_eq!(a.len(), 2);
+        assert_eq!(b.len(), 2);
+
+        let first_world = favorite_add(
+            &db,
+            Some("usr_a"),
+            "world".into(),
+            "wrld_1".into(),
+            "group".into(),
+        )
+        .unwrap();
+        let duplicate_world = favorite_add(
+            &db,
+            Some("usr_b"),
+            "world".into(),
+            "wrld_1".into(),
+            "group".into(),
+        )
+        .unwrap();
+        assert_eq!((first_world, duplicate_world), (1, 0));
     }
 
     #[test]
@@ -465,7 +654,7 @@ mod tests {
 
         ensure_global_store_tables(&db).unwrap();
 
-        assert_eq!(favorite_list(&db, "world".into()).unwrap().len(), 1);
+        assert_eq!(favorite_list(&db, None, "world".into()).unwrap().len(), 1);
 
         let duplicate_insert = db.execute_non_query(
             "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-03T00:00:00.000Z', 'wrld_1', 'group')",

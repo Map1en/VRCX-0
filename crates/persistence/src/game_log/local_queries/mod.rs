@@ -5,12 +5,12 @@ use std::collections::HashMap;
 use serde_json::{json, Value};
 
 use crate::common::{
-    add_list_params, delete_by_key_sql, delete_where_eq_and_in_sql, delete_where_two_eq_sql,
-    normalize_text, object_field, object_field_string, query_param_bool, query_param_i64,
-    query_param_string, query_param_string_array, row_i64, row_json, row_string, strict_row_json,
-    strict_row_string, value_as_i64, ParamsBuilder,
+    add_list_params, normalize_text, object_field, object_field_string, query_param_bool,
+    query_param_i64, query_param_string, query_param_string_array, row_i64, row_json, row_string,
+    strict_row_json, strict_row_string, value_as_i64, ParamsBuilder,
 };
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::{
@@ -43,6 +43,14 @@ use sql::{
     game_log_resource_load_union_select, game_log_video_play_union_select,
     GAME_LOG_RECENT_DESCRIPTORS,
 };
+
+fn scoped_params(owner_id: i64) -> ParamsBuilder {
+    ParamsBuilder::new().set("owner_id", owner_id)
+}
+
+fn scoped_param_map(owner_id: i64) -> HashMap<String, Value> {
+    HashMap::from([("@owner_id".into(), Value::from(owner_id))])
+}
 
 pub use mutations::{
     game_log_entries_add, game_log_entry_delete, game_log_instance_delete,

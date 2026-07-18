@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::database::DatabaseService;
-use crate::game_log::game_log_query;
+use crate::game_log::{game_log_query, get_game_log_events, get_game_log_locations};
 use crate::Error;
 use serde_json::json;
 use vrcx_0_core::json::RawJson;
@@ -232,7 +232,7 @@ fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), Error> 
         data: "event data".into(),
     });
 
-    let affected_count = write_batch(db, &batch)?;
+    let affected_count = write_batch(db, "usr_test", &batch)?;
     assert_eq!(affected_count, 3);
 
     let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
@@ -244,6 +244,136 @@ fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), Error> 
     assert_eq!(rows[0][0], serde_json::json!(1));
     let rows = db.execute("SELECT COUNT(*) FROM gamelog_event", &Default::default())?;
     assert_eq!(rows[0][0], serde_json::json!(1));
+    Ok(())
+}
+
+#[test]
+fn account_scoped_reads_include_shared_rows_and_machine_cursor_stays_global() -> Result<(), Error> {
+    let test_db = test_db("store-gamelog-owner-scope")?;
+    let db = &test_db.db;
+
+    insert_event(
+        db,
+        &GameLogEventEntry {
+            created_at: "2026-05-14T05:00:00.000Z".into(),
+            data: "shared".into(),
+        },
+    )?;
+    insert_location(
+        db,
+        &GameLogLocationEntry {
+            created_at: "2026-05-14T05:00:00.000Z".into(),
+            location: "wrld_shared:1".into(),
+            world_id: "wrld_shared".into(),
+            world_name: "Shared".into(),
+            time: 1,
+            group_name: "".into(),
+        },
+    )?;
+
+    for (owner_user_id, created_at, value) in [
+        ("usr_a", "2026-05-14T06:00:00.000Z", "a"),
+        ("usr_b", "2026-05-14T07:00:00.000Z", "b"),
+    ] {
+        let mut batch = GameLogWriteBatch::default();
+        batch.events.push(GameLogEventEntry {
+            created_at: created_at.into(),
+            data: value.into(),
+        });
+        batch.locations.push(GameLogLocationEntry {
+            created_at: created_at.into(),
+            location: format!("wrld_{value}:1"),
+            world_id: format!("wrld_{value}"),
+            world_name: value.to_uppercase(),
+            time: 1,
+            group_name: "".into(),
+        });
+        assert_eq!(write_batch(db, owner_user_id, &batch)?, 2);
+    }
+
+    assert_eq!(
+        get_game_log_events(db, "usr_a")?
+            .into_iter()
+            .map(|entry| entry.data)
+            .collect::<Vec<_>>(),
+        vec!["shared", "a"]
+    );
+    assert_eq!(
+        get_game_log_events(db, "usr_b")?
+            .into_iter()
+            .map(|entry| entry.data)
+            .collect::<Vec<_>>(),
+        vec!["shared", "b"]
+    );
+    assert_eq!(
+        get_game_log_locations(db, "usr_a")?
+            .into_iter()
+            .map(|entry| entry.location)
+            .collect::<Vec<_>>(),
+        vec!["wrld_shared:1", "wrld_a:1"]
+    );
+    let tagged_rows = db.execute(
+        "SELECT e.data, o.user_id FROM gamelog_event e JOIN owners o ON o.id = e.owner_id ORDER BY e.id",
+        &Default::default(),
+    )?;
+    assert_eq!(tagged_rows.len(), 2);
+    assert_eq!(tagged_rows[0], vec![json!("a"), json!("usr_a")]);
+    assert_eq!(tagged_rows[1], vec![json!("b"), json!("usr_b")]);
+
+    let online_sessions = game_log_query(
+        db,
+        "usr_a",
+        GameLogQueryInput {
+            kind: "onlineSessions".into(),
+            params: RawJson::from(json!({})),
+        },
+    )?;
+    assert_eq!(
+        online_sessions
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|row| row.get("created_at").and_then(serde_json::Value::as_str))
+            .collect::<Vec<_>>(),
+        vec!["2026-05-14T05:00:00.000Z", "2026-05-14T06:00:00.000Z"]
+    );
+
+    let last = crate::game_log::get_last_game_log_location(db)?.unwrap();
+    assert_eq!(last.location, "wrld_b:1");
+    Ok(())
+}
+
+#[test]
+fn game_log_uniqueness_remains_machine_global() -> Result<(), Error> {
+    let test_db = test_db("store-gamelog-global-unique")?;
+    let db = &test_db.db;
+    let mut batch = GameLogWriteBatch::default();
+    batch.events.push(GameLogEventEntry {
+        created_at: "2026-05-14T06:00:00.000Z".into(),
+        data: "duplicate".into(),
+    });
+
+    assert_eq!(write_batch(db, "usr_a", &batch)?, 1);
+    assert_eq!(write_batch(db, "usr_b", &batch)?, 0);
+    assert!(get_game_log_events(db, "usr_b")?.is_empty());
+    Ok(())
+}
+
+#[test]
+fn machine_cursor_uses_latest_row_from_any_owner() -> Result<(), Error> {
+    let test_db = test_db("store-gamelog-global-cursor")?;
+    let db = &test_db.db;
+    let created_at = (chrono::Utc::now() - chrono::Duration::minutes(1))
+        .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+        .to_string();
+    let mut batch = GameLogWriteBatch::default();
+    batch.events.push(GameLogEventEntry {
+        created_at: created_at.clone(),
+        data: "owner-a-latest".into(),
+    });
+    write_batch(db, "usr_a", &batch)?;
+
+    assert_eq!(crate::game_log::get_last_game_log_date(db)?, created_at);
     Ok(())
 }
 
@@ -275,12 +405,9 @@ fn batch_write_rolls_back_when_one_core_insert_fails() -> Result<(), Error> {
         time: 0,
     });
 
-    assert!(write_batch(&db, &batch).is_err());
-    let rows = db.execute(
-        "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'gamelog_location'",
-        &Default::default(),
-    )?;
-    assert!(rows.is_empty());
+    assert!(write_batch(&db, "usr_test", &batch).is_err());
+    let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
+    assert_eq!(rows[0][0], serde_json::json!(0));
     Ok(())
 }
 
@@ -302,6 +429,7 @@ fn local_query_negative_limits_are_clamped_to_zero() -> Result<(), Error> {
 
     let result = game_log_query(
         db,
+        "usr_test",
         GameLogQueryInput {
             kind: "recentDatabase".into(),
             params: RawJson::from(json!({
@@ -396,6 +524,7 @@ fn previous_instances_by_user_id_uses_latest_location_metadata() -> Result<(), E
 
     let result = game_log_query(
         db,
+        "usr_test",
         GameLogQueryInput {
             kind: "previousInstancesByUserIdRows".into(),
             params: RawJson::from(json!({
@@ -466,6 +595,7 @@ fn previous_instances_by_user_id_filters_by_date_range() -> Result<(), Error> {
 
     let result = game_log_query(
         db,
+        "usr_test",
         GameLogQueryInput {
             kind: "previousInstancesByUserIdRows".into(),
             params: RawJson::from(json!({

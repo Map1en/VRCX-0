@@ -9,7 +9,6 @@ import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 
 type SettingsSystemTabProps = {
-    autoBackgroundDownloadUpdates?: boolean;
     autoInstallUpdatesOnStartup?: boolean;
     autoLoginDelayEnabled?: boolean;
     autoLoginDelaySeconds?: ReactNode;
@@ -23,7 +22,6 @@ type SettingsSystemTabProps = {
     proxyEnabled?: boolean;
     proxyServer?: string;
     showPostUpdateChangelogToast?: boolean;
-    onAutoBackgroundDownloadUpdatesChange: (checked: boolean) => unknown;
     onAutoInstallUpdatesOnStartupChange: (checked: boolean) => unknown;
     onAutoLoginDelayEnabledChange: (checked: boolean) => unknown;
     onBackgroundModeEnabledChange: (checked: boolean) => unknown;
@@ -46,7 +44,6 @@ export function SettingsSystemTab({
     autoLoginDelayEnabled,
     autoLoginDelaySeconds,
     autoInstallUpdatesOnStartup,
-    autoBackgroundDownloadUpdates,
     showPostUpdateChangelogToast,
     backgroundModeEnabled,
     backgroundModeDelayEnabled,
@@ -62,7 +59,6 @@ export function SettingsSystemTab({
     onBackgroundModeDelayEnabledChange,
     onPromptBackgroundModeDelayMinutes,
     onAutoInstallUpdatesOnStartupChange,
-    onAutoBackgroundDownloadUpdatesChange,
     onPostUpdateChangelogToastChange,
     onProxyEnabledChange,
     onProxySettings
@@ -190,19 +186,6 @@ export function SettingsSystemTab({
                     <Switch
                         checked={autoInstallUpdatesOnStartup}
                         onCheckedChange={onAutoInstallUpdatesOnStartupChange}
-                    />
-                </Field>
-                <Field
-                    label={t(
-                        'view.settings.general.application.auto_background_download_updates'
-                    )}
-                    description={t(
-                        'view.settings.general.application.auto_background_download_updates_description'
-                    )}
-                >
-                    <Switch
-                        checked={autoBackgroundDownloadUpdates}
-                        onCheckedChange={onAutoBackgroundDownloadUpdatesChange}
                     />
                 </Field>
                 <Field

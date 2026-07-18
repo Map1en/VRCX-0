@@ -1,16 +1,31 @@
 use sea_query::{ColumnDef, Index, SqliteQueryBuilder, Table};
 
 use crate::common::{ident, DbWriteTarget};
+use crate::database::schema::add_column_if_missing;
 use crate::database::DatabaseService;
+use crate::ownership::ensure_owner_table_on;
 use crate::Error;
 
 use super::schema::*;
 
 pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), Error> {
-    ensure_game_log_tables_on(db)
+    ensure_game_log_tables_on(db)?;
+    for table in [
+        TABLE_LOCATION,
+        TABLE_JOIN_LEAVE,
+        TABLE_PORTAL_SPAWN,
+        TABLE_VIDEO_PLAY,
+        TABLE_RESOURCE_LOAD,
+        TABLE_EVENT,
+        TABLE_EXTERNAL,
+    ] {
+        add_column_if_missing(db, table, COL_OWNER_ID, "INTEGER NOT NULL DEFAULT 0")?;
+    }
+    Ok(())
 }
 
 pub(super) fn ensure_game_log_tables_on(target: &impl DbWriteTarget) -> Result<(), Error> {
+    ensure_owner_table_on(target)?;
     for sql in create_table_sqls() {
         target.execute_non_query(&sql, &Default::default())?;
     }
@@ -47,6 +62,12 @@ fn integer_column(name: &'static str) -> ColumnDef {
     column
 }
 
+fn owner_column() -> ColumnDef {
+    let mut column = ColumnDef::new(ident(COL_OWNER_ID));
+    column.integer().not_null().default(0);
+    column
+}
+
 fn unique_index(columns: &[&'static str]) -> sea_query::IndexCreateStatement {
     let mut index = Index::create();
     index.unique();
@@ -67,6 +88,7 @@ fn create_location_table_sql() -> String {
         .col(text_column(COL_WORLD_NAME))
         .col(integer_column(COL_TIME))
         .col(text_column(COL_GROUP_NAME))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_LOCATION]))
         .to_string(SqliteQueryBuilder)
 }
@@ -82,6 +104,7 @@ fn create_join_leave_table_sql() -> String {
         .col(text_column(COL_LOCATION))
         .col(text_column(COL_USER_ID))
         .col(integer_column(COL_TIME))
+        .col(owner_column())
         .index(&mut unique_index(&[
             COL_CREATED_AT,
             COL_TYPE,
@@ -101,6 +124,7 @@ fn create_portal_spawn_table_sql() -> String {
         .col(text_column(COL_USER_ID))
         .col(text_column(COL_INSTANCE_ID))
         .col(text_column(COL_WORLD_NAME))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_DISPLAY_NAME]))
         .to_string(SqliteQueryBuilder)
 }
@@ -117,6 +141,7 @@ fn create_video_play_table_sql() -> String {
         .col(text_column(COL_LOCATION))
         .col(text_column(COL_DISPLAY_NAME))
         .col(text_column(COL_USER_ID))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_VIDEO_URL]))
         .to_string(SqliteQueryBuilder)
 }
@@ -130,6 +155,7 @@ fn create_resource_load_table_sql() -> String {
         .col(text_column(COL_RESOURCE_URL))
         .col(text_column(COL_RESOURCE_TYPE))
         .col(text_column(COL_LOCATION))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_RESOURCE_URL]))
         .to_string(SqliteQueryBuilder)
 }
@@ -141,6 +167,7 @@ fn create_event_table_sql() -> String {
         .col(id_column())
         .col(text_column(COL_CREATED_AT))
         .col(text_column(COL_DATA))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_DATA]))
         .to_string(SqliteQueryBuilder)
 }
@@ -155,6 +182,7 @@ fn create_external_table_sql() -> String {
         .col(text_column(COL_DISPLAY_NAME))
         .col(text_column(COL_USER_ID))
         .col(text_column(COL_LOCATION))
+        .col(owner_column())
         .index(&mut unique_index(&[COL_CREATED_AT, COL_MESSAGE]))
         .to_string(SqliteQueryBuilder)
 }

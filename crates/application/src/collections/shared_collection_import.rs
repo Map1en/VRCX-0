@@ -91,7 +91,7 @@ pub struct VrchatSharedCollectionImportActions<'a> {
 
 impl SharedCollectionImportActions for VrchatSharedCollectionImportActions<'_> {
     fn create_group(&self, group_name: &str) -> Result<()> {
-        create_local_favorite_group(self.db, "world", group_name.to_string())
+        create_local_favorite_group(self.db, "", "world", group_name.to_string())
     }
 
     fn fetch_and_cache_world<'a>(
@@ -135,6 +135,7 @@ impl SharedCollectionImportActions for VrchatSharedCollectionImportActions<'_> {
     fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()> {
         favorite_add(
             self.db,
+            None,
             "world".into(),
             world_id.to_string(),
             group_name.to_string(),

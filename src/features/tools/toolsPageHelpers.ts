@@ -18,12 +18,12 @@ const catalogDragPrefix = 'tools-catalog-tool:';
 const collapsibleCategories = toolCategories.map((category) => category.key);
 
 export const defaultCollapsedState: Record<string, boolean> = {
-    group: false,
     image: false,
     shortcuts: false,
     social: false,
-    system: false,
-    user: false,
+    vrchat: false,
+    data: false,
+    debug: false,
     other: false
 };
 

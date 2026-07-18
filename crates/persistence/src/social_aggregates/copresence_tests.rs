@@ -73,6 +73,73 @@ fn copresence_summary_groups_minutes_days_instances_and_access_type() {
 }
 
 #[test]
+fn copresence_is_account_scoped_and_includes_shared_history() {
+    let (_dir, db) = test_db("copresence-owner-scope");
+    for (owner_user_id, created_at, display_name, user_id, millis) in [
+        ("", "2026-06-01T10:00:00Z", "Shared", "usr_shared", 60_000),
+        (
+            "usr_a",
+            "2026-06-01T10:01:00Z",
+            "Account A",
+            "usr_a_friend",
+            120_000,
+        ),
+        (
+            "usr_b",
+            "2026-06-01T10:02:00Z",
+            "Account B",
+            "usr_b_friend",
+            180_000,
+        ),
+    ] {
+        crate::game_log::write_batch(
+            &db,
+            owner_user_id,
+            &crate::game_log::GameLogWriteBatch {
+                join_leave: vec![crate::game_log::GameLogJoinLeaveEntry {
+                    created_at: created_at.into(),
+                    event_type: "OnPlayerLeft".into(),
+                    display_name: display_name.into(),
+                    location: "wrld_scope:1".into(),
+                    user_id: user_id.into(),
+                    world_name: String::new(),
+                    time: millis,
+                }],
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    }
+
+    let visible_names = |owner_user_id: &str| {
+        get_copresence_summary(
+            &db,
+            CopresenceSummaryInput {
+                time_window: TimeWindow::all(),
+                group_by: CopresenceGroupBy::Friend,
+                min_minutes: None,
+                limit: None,
+                owner_user_id: Some(owner_user_id.into()),
+                friends_only: false,
+            },
+        )
+        .unwrap()
+        .rows
+        .into_iter()
+        .map(|row| row.display_name)
+        .collect::<std::collections::HashSet<_>>()
+    };
+    assert_eq!(
+        visible_names("usr_a"),
+        std::collections::HashSet::from(["Shared".into(), "Account A".into()])
+    );
+    assert_eq!(
+        visible_names("usr_b"),
+        std::collections::HashSet::from(["Shared".into(), "Account B".into()])
+    );
+}
+
+#[test]
 fn copresence_summary_applies_limit_after_ranking() {
     let (_dir, db) = test_db("copresence-limit");
     create_game_log_tables(&db);

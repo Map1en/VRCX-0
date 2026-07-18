@@ -84,8 +84,10 @@ impl VrcxMcpServer {
         &self,
         Parameters(input): Parameters<SearchWorldsVisitedParams>,
     ) -> Result<CallToolResult, String> {
+        let owner_user_id = require_current_user_id(&self.runtime)?;
         social_aggregates_result(social_aggregates::search_worlds_visited(
             self.runtime.db.as_ref(),
+            &owner_user_id,
             social_aggregates::SearchWorldsVisitedInput {
                 time_window: input.time_window.into(),
                 limit: input.limit.unwrap_or(25),
@@ -346,6 +348,7 @@ impl VrcxMcpServer {
         let top_worlds = summarize_world_visits(
             social_aggregates::search_worlds_visited(
                 db,
+                &owner_user_id,
                 social_aggregates::SearchWorldsVisitedInput {
                     time_window: time_window.clone(),
                     limit: 100,

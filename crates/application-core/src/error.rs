@@ -9,6 +9,9 @@ pub enum Error {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("Update artifact is invalid: {0}")]
+    UpdateArtifactInvalid(String),
+
     #[error("{0}")]
     Custom(String),
 }

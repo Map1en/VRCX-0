@@ -35,7 +35,7 @@ fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
 }
 
 fn group_names(db: &DatabaseService, kind: &str) -> Vec<String> {
-    let mut names: Vec<String> = favorite_list(db, kind.into())
+    let mut names: Vec<String> = favorite_list(db, None, kind.into())
         .unwrap()
         .into_iter()
         .map(|row| {
@@ -52,10 +52,11 @@ fn group_names(db: &DatabaseService, kind: &str) -> Vec<String> {
 #[test]
 fn favorite_move_removes_source_and_adds_target_atomically() {
     let (_dir, db) = test_db("favorite-move");
-    favorite_add(&db, "world".into(), "wrld_1".into(), "source".into()).unwrap();
+    favorite_add(&db, None, "world".into(), "wrld_1".into(), "source".into()).unwrap();
 
     let result = favorite_move(
         &db,
+        None,
         "world".into(),
         "wrld_1".into(),
         "source".into(),
@@ -71,10 +72,11 @@ fn favorite_move_removes_source_and_adds_target_atomically() {
 #[test]
 fn favorite_move_rolls_back_when_target_write_fails() {
     let (_dir, db) = test_db("favorite-move-rollback");
-    favorite_add(&db, "world".into(), "wrld_1".into(), "source".into()).unwrap();
+    favorite_add(&db, None, "world".into(), "wrld_1".into(), "source".into()).unwrap();
 
     let result = favorite_move(
         &db,
+        None,
         "world".into(),
         "wrld_1".into(),
         "source".into(),
@@ -88,11 +90,12 @@ fn favorite_move_rolls_back_when_target_write_fails() {
 #[test]
 fn favorite_move_is_idempotent_when_target_already_has_entity() {
     let (_dir, db) = test_db("favorite-move-target-present");
-    favorite_add(&db, "world".into(), "wrld_1".into(), "source".into()).unwrap();
-    favorite_add(&db, "world".into(), "wrld_1".into(), "target".into()).unwrap();
+    favorite_add(&db, None, "world".into(), "wrld_1".into(), "source".into()).unwrap();
+    favorite_add(&db, None, "world".into(), "wrld_1".into(), "target".into()).unwrap();
 
     let result = favorite_move(
         &db,
+        None,
         "world".into(),
         "wrld_1".into(),
         "source".into(),

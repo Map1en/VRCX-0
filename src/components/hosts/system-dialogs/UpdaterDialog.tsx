@@ -54,10 +54,13 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const downloadProgress = useRuntimeStore(
         (state) => state.updateLoop.downloadProgress
     );
-    const progress =
-        latestRelease && downloadedVersion === latestRelease.canonicalVersion
-            ? downloadProgress
-            : 0;
+    const hasMatchingDownload =
+        latestRelease?.canonicalVersion === downloadedVersion;
+    const progress = hasMatchingDownload ? downloadProgress : 0;
+    const showDownloadProgress =
+        canInstallUpdates &&
+        (downloading ||
+            (autoDownloadState === 'downloading' && hasMatchingDownload));
     const currentVersionText =
         // oxlint-disable-next-line no-undef
         formatReleaseDisplayVersion(VERSION || '') || '-';
@@ -199,7 +202,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                             {currentVersionText} -&gt; {latestVersionText}
                         </div>
                     </div>
-                    {canInstallUpdates && downloading ? (
+                    {showDownloadProgress ? (
                         <div className="flex flex-col gap-2">
                             <div className="bg-muted h-2 overflow-hidden rounded-full">
                                 <div

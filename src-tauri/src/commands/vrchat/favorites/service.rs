@@ -255,8 +255,14 @@ pub fn app__local_favorite_group_create(
         input.group_name,
         "LocalFavoriteGroupCreate requires groupName.",
     )?;
-    vrcx_0_application::create_local_favorite_group(state.db.as_ref(), &kind, group_name)
-        .map_err(AppError::from)?;
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_application::create_local_favorite_group(
+        state.db.as_ref(),
+        &owner_user_id,
+        &kind,
+        group_name,
+    )
+    .map_err(AppError::from)?;
     state
         .realtime_runtime
         .notify_favorites_changed(&kind, true, false);
@@ -278,8 +284,10 @@ pub fn app__local_favorite_group_rename(
         input.new_group_name,
         "LocalFavoriteGroupRename requires newGroupName.",
     )?;
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
     let affected = vrcx_0_application::rename_local_favorite_group(
         state.db.as_ref(),
+        &owner_user_id,
         &kind,
         group_name,
         new_group_name,
@@ -302,9 +310,14 @@ pub fn app__local_favorite_group_delete(
         input.group_name,
         "LocalFavoriteGroupDelete requires groupName.",
     )?;
-    let affected =
-        vrcx_0_application::delete_local_favorite_group(state.db.as_ref(), &kind, group_name)
-            .map_err(AppError::from)?;
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let affected = vrcx_0_application::delete_local_favorite_group(
+        state.db.as_ref(),
+        &owner_user_id,
+        &kind,
+        group_name,
+    )
+    .map_err(AppError::from)?;
     state
         .realtime_runtime
         .notify_favorites_changed(&kind, true, false);

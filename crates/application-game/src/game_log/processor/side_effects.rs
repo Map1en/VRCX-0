@@ -27,6 +27,7 @@ pub(super) struct GameLogSideEffectDeps {
     tasks: TaskSupervisor,
     media_queue: InstanceMediaQueue,
     host_actions: Arc<dyn GameLogHostActions>,
+    pub(super) owner_user_id: String,
 }
 
 impl GameLogSideEffectDeps {
@@ -39,6 +40,7 @@ impl GameLogSideEffectDeps {
             tasks: deps.tasks.clone(),
             media_queue,
             host_actions: Arc::clone(&deps.host_actions),
+            owner_user_id: deps.auth_scope.snapshot().current_user_id,
         }
     }
 
@@ -65,6 +67,7 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
                     deps.db.as_ref(),
                     deps.web.as_ref(),
                     &deps.event_bus,
+                    &deps.owner_user_id,
                     input,
                 )
                 .await
@@ -90,6 +93,7 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
                     deps.db.as_ref(),
                     deps.host_actions.as_ref(),
                     &deps.event_bus,
+                    &deps.owner_user_id,
                     input,
                 )
                 .await

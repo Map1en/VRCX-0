@@ -34,7 +34,6 @@ const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/Map1en/VRCX-0/re
 const APP_UPDATE_CHECK_JOB: &str = "appUpdateCheck";
 const APP_UPDATE_CHECK_INTERVAL_SECONDS: u64 = 10_800;
 const CONFIG_AUTO_INSTALL_ON_STARTUP: &str = "autoInstallUpdatesOnStartup";
-const CONFIG_AUTO_BACKGROUND_DOWNLOAD: &str = "autoBackgroundDownloadUpdates";
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -447,39 +446,6 @@ impl AppUpdateRuntime {
         self.run_check_cycle().await
     }
 
-    pub fn discard_pending(&self) {
-        self.with_download_state(|state| *state = DownloadState::idle());
-        self.inner.download_notify.notify_waiters();
-    }
-
-    pub async fn set_auto_background_download_preference(&self, enabled: bool) {
-        if !enabled {
-            self.discard_pending();
-            return;
-        }
-
-        let snapshot = self.snapshot();
-        if !snapshot.has_available_update {
-            return;
-        }
-        let Some(release) = snapshot.release else {
-            return;
-        };
-        if release.updater_type != "tauri" {
-            return;
-        }
-
-        let runtime = self.clone();
-        self.inner.tasks.spawn(async move {
-            if let Err(error) = runtime.ensure_downloaded(&release).await {
-                tracing::warn!(
-                    error = %error,
-                    "background download preference change download failed"
-                );
-            }
-        });
-    }
-
     pub async fn install(&self, version: &str) -> Result<UpdaterMetadata> {
         enum Action {
             UsePending(PendingDownload),
@@ -487,6 +453,7 @@ impl AppUpdateRuntime {
             NeedDownload,
         }
 
+        let mut retried_invalid_artifact = false;
         loop {
             let notified = self.inner.download_notify.notified();
             tokio::pin!(notified);
@@ -507,7 +474,26 @@ impl AppUpdateRuntime {
             });
 
             match action {
-                Action::UsePending(pending) => return self.finish_install(pending).await,
+                Action::UsePending(pending) => {
+                    let pending_version = pending.version.clone();
+                    match self.finish_install(pending).await {
+                        Err(Error::UpdateArtifactInvalid(message)) if !retried_invalid_artifact => {
+                            retried_invalid_artifact = true;
+                            tracing::warn!(
+                                version = pending_version,
+                                error = %message,
+                                "update artifact validation failed; downloading it once more"
+                            );
+                            self.with_download_state(|state| *state = DownloadState::idle());
+                            self.inner.download_notify.notify_waiters();
+                        }
+                        Err(error) => {
+                            self.record_install_error(&pending_version, &error);
+                            return Err(error);
+                        }
+                        Ok(metadata) => return Ok(metadata),
+                    }
+                }
                 Action::Wait => {
                     notified.await;
                 }
@@ -571,6 +557,7 @@ impl AppUpdateRuntime {
                     }
                 }
                 match state.phase {
+                    DownloadPhase::Installing => StartAction::Early(state.snapshot()),
                     DownloadPhase::Downloading
                         if state.version.as_deref() == Some(version.as_str()) =>
                     {
@@ -666,29 +653,25 @@ impl AppUpdateRuntime {
             metadata,
             handle,
         } = pending;
-        let result = self.inner.port.install(handle).await;
-        match result {
-            Ok(()) => {
-                self.with_download_state(|state| *state = DownloadState::idle());
-                self.inner.download_notify.notify_waiters();
-                self.inner.event_bus.emit(AppUpdateInstalledPayload {
-                    version,
-                    metadata: metadata.clone(),
-                });
-                Ok(metadata)
-            }
-            Err(error) => {
-                let snapshot = self.with_download_state(|state| {
-                    state.version = Some(version.clone());
-                    state.phase = DownloadPhase::Error;
-                    state.error = Some(error.to_string());
-                    state.snapshot()
-                });
-                self.inner.download_notify.notify_waiters();
-                self.emit_download_progress_snapshot(&snapshot);
-                Err(error)
-            }
-        }
+        self.inner.port.install(handle).await?;
+        self.with_download_state(|state| *state = DownloadState::idle());
+        self.inner.download_notify.notify_waiters();
+        self.inner.event_bus.emit(AppUpdateInstalledPayload {
+            version,
+            metadata: metadata.clone(),
+        });
+        Ok(metadata)
+    }
+
+    fn record_install_error(&self, version: &str, error: &Error) {
+        let snapshot = self.with_download_state(|state| {
+            state.version = Some(version.to_string());
+            state.phase = DownloadPhase::Error;
+            state.error = Some(error.to_string());
+            state.snapshot()
+        });
+        self.inner.download_notify.notify_waiters();
+        self.emit_download_progress_snapshot(&snapshot);
     }
 
     fn apply_download_progress(&self, version: &str, event: UpdaterDownloadProgress) {
@@ -793,12 +776,6 @@ impl AppUpdateRuntime {
         if release.updater_type != "tauri" {
             return;
         }
-        let enabled = config::get_bool(&self.inner.db, CONFIG_AUTO_BACKGROUND_DOWNLOAD, false)
-            .unwrap_or(false);
-        if !enabled {
-            return;
-        }
-
         let runtime = self.clone();
         self.inner.tasks.spawn(async move {
             if let Err(error) = runtime.ensure_downloaded(&release).await {

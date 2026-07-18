@@ -67,6 +67,9 @@ impl From<vrcx_0_application_core::Error> for AppError {
             vrcx_0_application_core::Error::Database(message) => AppError::Database(message),
             vrcx_0_application_core::Error::Io(error) => AppError::Io(error),
             vrcx_0_application_core::Error::Json(error) => AppError::Json(error),
+            vrcx_0_application_core::Error::UpdateArtifactInvalid(message) => {
+                AppError::Custom(format!("Update artifact is invalid: {message}"))
+            }
             vrcx_0_application_core::Error::Custom(message) => AppError::Custom(message),
         }
     }

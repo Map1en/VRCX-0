@@ -12,7 +12,7 @@ use crate::database::schema::{
     ensure_user_store_tables, read_vrcx0_schema_version, safe_identifier, select_table_names,
     table_column_names, VRCX0_SCHEMA_VERSION,
 };
-use crate::game_log::ensure_game_log_tables;
+use crate::game_log::{claim_legacy_ownership, ensure_game_log_tables};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -158,6 +158,7 @@ pub fn user_tables_ensure(
     let user_id = normalize_text(user_id);
     let user_prefix = normalize_user_table_prefix(&user_id)?;
     ensure_user_store_tables(db, &user_prefix)?;
+    claim_legacy_ownership(db, &user_id)?;
     Ok(UserTableContextOutput {
         user_id,
         user_prefix,

@@ -16,6 +16,7 @@ fn search_worlds_visited_returns_recent_world_candidates() {
 
     let output = search_worlds_visited(
         &db,
+        "usr_test",
         SearchWorldsVisitedInput {
             time_window: TimeWindow {
                 from: Some("2026-06-01T21:00:00Z".into()),
@@ -36,34 +37,38 @@ fn search_worlds_visited_returns_recent_world_candidates() {
 fn favorite_local_supports_kind_action_and_dry_run() {
     let (_dir, db) = test_db("favorite-local-dry-run");
 
-    let output = favorite_local(&db, favorite_friend_input("add", true)).unwrap();
+    let output = favorite_local(&db, "usr_test", favorite_friend_input("add", true)).unwrap();
 
     assert!(output.dry_run);
     assert_eq!(output.kind, "friend");
     assert_eq!(output.entity_id, "usr_alice");
     assert_eq!(output.action, "add");
-    assert!(crate::favorites::favorite_list(&db, "friend".into())
-        .unwrap()
-        .is_empty());
+    assert!(
+        crate::favorites::favorite_list(&db, Some("usr_test"), "friend".into())
+            .unwrap()
+            .is_empty()
+    );
 
-    favorite_local(&db, favorite_friend_input("add", false)).unwrap();
+    favorite_local(&db, "usr_test", favorite_friend_input("add", false)).unwrap();
     assert_eq!(
-        crate::favorites::favorite_list(&db, "friend".into())
+        crate::favorites::favorite_list(&db, Some("usr_test"), "friend".into())
             .unwrap()
             .len(),
         1
     );
 
-    favorite_local(&db, favorite_friend_input("remove", true)).unwrap();
+    favorite_local(&db, "usr_test", favorite_friend_input("remove", true)).unwrap();
     assert_eq!(
-        crate::favorites::favorite_list(&db, "friend".into())
+        crate::favorites::favorite_list(&db, Some("usr_test"), "friend".into())
             .unwrap()
             .len(),
         1
     );
 
-    favorite_local(&db, favorite_friend_input("remove", false)).unwrap();
-    assert!(crate::favorites::favorite_list(&db, "friend".into())
-        .unwrap()
-        .is_empty());
+    favorite_local(&db, "usr_test", favorite_friend_input("remove", false)).unwrap();
+    assert!(
+        crate::favorites::favorite_list(&db, Some("usr_test"), "friend".into())
+            .unwrap()
+            .is_empty()
+    );
 }

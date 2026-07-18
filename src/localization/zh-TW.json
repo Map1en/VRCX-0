@@ -1528,6 +1528,12 @@
                 "empty": "把工具拖到這裡，或從工具選單新增。",
                 "actions": "工具操作"
             },
+            "category": {
+                "social": "社交",
+                "vrchat": "VRChat 設定與啟動",
+                "data": "資料與備份",
+                "debug": "除錯"
+            },
             "group": {
                 "header": "群組",
                 "calendar": "行事曆",
@@ -1984,8 +1990,6 @@
                     "background_mode_delay_button": "設定延遲分鐘數",
                     "auto_install_updates_on_startup": "啟動時自動更新",
                     "auto_install_updates_on_startup_description": "啟用時，VRCX-0 會在啟動時檢查更新。\n如果有可安裝的更新，將會自動下載、安裝並重新啟動。",
-                    "auto_background_download_updates": "在背景下載更新",
-                    "auto_background_download_updates_description": "啟用時，VRCX-0 會在檢查更新後於背景下載可安裝的更新。\n更新下載完成後，您可以從標題列安裝更新；若有更新版本釋出，VRCX-0 會捨棄舊的下載內容，並改為下載最新版本。",
                     "proxy": "代理設定"
                 },
                 "favorites": {

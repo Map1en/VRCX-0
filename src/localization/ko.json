@@ -1499,6 +1499,12 @@
                 "empty": "도구를 여기로 드래그하거나 도구 메뉴에서 추가하세요.",
                 "actions": "도구 작업"
             },
+            "category": {
+                "social": "소셜",
+                "vrchat": "VRChat 설정 및 실행",
+                "data": "데이터 및 백업",
+                "debug": "디버깅"
+            },
             "group": {
                 "header": "그룹",
                 "calendar": "달력",
@@ -1930,8 +1936,6 @@
                     "background_mode_delay_button": "지연 시간(분) 설정",
                     "auto_install_updates_on_startup": "시작 시 자동 업데이트",
                     "auto_install_updates_on_startup_description": "켜면 VRCX-0이 앱 시작 시 업데이트를 확인합니다. 설치 가능한 업데이트가 있으면 자동으로 다운로드하고 설치한 뒤 다시 시작해 업데이트를 완료합니다.",
-                    "auto_background_download_updates": "백그라운드에서 업데이트 다운로드",
-                    "auto_background_download_updates_description": "켜면 VRCX-0이 업데이트 확인 후 설치 가능한 업데이트를 백그라운드에서 다운로드합니다. 준비된 업데이트는 제목 표시줄에서 설치할 수 있으며, 더 새 버전이 나오면 VRCX-0은 이전 다운로드를 버리고 최신 버전을 다운로드합니다.",
                     "proxy": "프록시 설정",
                     "startup_system_description": "--autostart를 사용하여 VRCX-0을 시작하는 데스크톱 자동 시작 항목을 만듭니다."
                 },

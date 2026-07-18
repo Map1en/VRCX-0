@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     canInstallUpdatesOnPlatform: vi.fn(),
@@ -8,7 +11,7 @@ const mocks = vi.hoisted(() => ({
     getPreviewStableReleaseUpdateMode: vi.fn(),
     appAppUpdateCheckRun: vi.fn(),
     toNormalizedReleaseFromSnapshot: vi.fn(),
-    downloadAndInstallUpdate: vi.fn()
+    confirmInstall: vi.fn()
 }));
 
 vi.mock('react-i18next', () => ({
@@ -21,7 +24,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/services/updateService', () => ({
     canInstallUpdatesOnPlatform: mocks.canInstallUpdatesOnPlatform,
     getPreviewStableReleaseUpdateMode: mocks.getPreviewStableReleaseUpdateMode,
-    downloadAndInstallUpdate: mocks.downloadAndInstallUpdate,
+    confirmInstall: mocks.confirmInstall,
     formatReleaseDisplayVersion: (value: unknown) => String(value || ''),
     toNormalizedReleaseFromSnapshot: mocks.toNormalizedReleaseFromSnapshot
 }));
@@ -82,6 +85,10 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { UpdaterDialog } from './UpdaterDialog';
 
 describe('UpdaterDialog', () => {
+    afterEach(() => {
+        cleanup();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         vi.stubGlobal('VERSION', '2.6.0');
@@ -133,5 +140,47 @@ describe('UpdaterDialog', () => {
         );
 
         expect(html).toContain('dialog.system.action.install_and_restart');
+    });
+
+    it('shows matching background download progress when opened mid-download', async () => {
+        const release = {
+            displayName: 'VRCX-0 2.7.0',
+            tagName: 'v2.7.0',
+            htmlUrl: 'https://example.test/releases/v2.7.0',
+            publishedAt: '2026-07-18T00:00:00Z',
+            body: '',
+            canonicalVersion: '2.7.0',
+            displayVersion: '2.7.0',
+            manifestUrl: 'https://example.test/latest.json',
+            target: 'windows-x86_64-stable',
+            updaterType: 'tauri'
+        };
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue(release);
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: true,
+            checkedAt: '2026-07-18T00:00:00.000Z',
+            detail: 'Update available.',
+            error: null,
+            release,
+            shouldNotify: false
+        });
+        useRuntimeStore.getState().setUpdateLoopState({
+            autoDownloadState: 'downloading',
+            downloadedVersion: '2.7.0',
+            downloadProgress: 42
+        });
+
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+
+        await waitFor(() => {
+            expect(screen.getByText('42%')).toBeTruthy();
+        });
+
+        act(() => {
+            useRuntimeStore.getState().setUpdateLoopState({
+                downloadedVersion: '2.8.0'
+            });
+        });
+        expect(screen.queryByText('42%')).toBeNull();
     });
 });

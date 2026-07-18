@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
+use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_integrations::llm::ToolDefinition;
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 use vrcx_0_runtime_host::RuntimeHostState;
@@ -34,6 +34,7 @@ pub struct AssistantController {
     tools: Arc<InProcessMcpTools>,
     tool_defs: Arc<Vec<ToolDefinition>>,
     sessions: Arc<SessionStore>,
+    auth_scope: RuntimeAuthScope,
     cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>>,
 }
 
@@ -60,6 +61,7 @@ impl AssistantController {
             tools,
             tool_defs,
             sessions: Arc::new(SessionStore::with_db(state.runtime_context.db.clone())),
+            auth_scope: state.runtime_context.auth_scope.clone(),
             cancels: Arc::new(Mutex::new(HashMap::new())),
         })
     }
@@ -109,7 +111,7 @@ impl AssistantController {
         let selection =
             self.set_default_runtime(endpoint_id, model, allow_writes, playbook_mode)?;
         self.sessions
-            .set_runtime(session_id, selection)
+            .set_runtime(&self.owner_user_id(), session_id, selection)
             .ok_or(HarnessError::SessionNotFound)
     }
 
@@ -135,28 +137,46 @@ impl AssistantController {
     }
 
     pub fn list_sessions(&self) -> Vec<SessionSummary> {
-        self.sessions.list()
+        self.sessions.list(&self.owner_user_id())
     }
 
     pub fn get_session(&self, session_id: &str) -> Option<Session> {
-        self.sessions.get(session_id)
+        self.sessions.get(&self.owner_user_id(), session_id)
     }
 
     pub fn new_session(&self) -> Session {
         let runtime = self.endpoints.last_selection().unwrap_or_default();
-        self.sessions.create_session_with_runtime(runtime)
+        self.sessions
+            .create_session_with_runtime(&self.owner_user_id(), runtime)
     }
 
     pub fn set_entity_panel_open(&self, session_id: &str, open: bool) {
-        self.sessions.set_entity_panel_open(session_id, open);
+        if self
+            .sessions
+            .is_visible_to(session_id, &self.owner_user_id())
+        {
+            self.sessions.set_entity_panel_open(session_id, open);
+        }
     }
 
     pub fn delete_session(&self, session_id: &str) {
-        self.cancel(session_id);
-        self.sessions.delete(session_id);
+        let owner_user_id = self.owner_user_id();
+        if self.sessions.is_visible_to(session_id, &owner_user_id) {
+            self.cancel_visible(session_id);
+            self.sessions.delete(&owner_user_id, session_id);
+        }
     }
 
     pub fn cancel(&self, session_id: &str) {
+        if self
+            .sessions
+            .is_visible_to(session_id, &self.owner_user_id())
+        {
+            self.cancel_visible(session_id);
+        }
+    }
+
+    fn cancel_visible(&self, session_id: &str) {
         if let Some((_, token)) = self.cancels.lock().unwrap().remove(session_id) {
             token.cancel();
         }
@@ -169,9 +189,11 @@ impl AssistantController {
         locale: Option<String>,
     ) -> Result<SendResult, HarnessError> {
         let runtime = self.endpoints.last_selection()?;
+        let owner_user_id = self.owner_user_id();
         let session = self
             .sessions
-            .ensure_session_with_runtime(session_id, runtime);
+            .ensure_session_with_runtime(&owner_user_id, session_id, runtime)
+            .ok_or(HarnessError::SessionNotFound)?;
         let endpoint_id = session
             .endpoint_id
             .as_deref()
@@ -253,6 +275,10 @@ impl AssistantController {
             session_id,
             turn_id,
         })
+    }
+
+    fn owner_user_id(&self) -> String {
+        self.auth_scope.snapshot().current_user_id
     }
 }
 

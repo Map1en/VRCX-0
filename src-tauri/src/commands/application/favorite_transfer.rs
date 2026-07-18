@@ -23,10 +23,12 @@ pub async fn app__favorites_transfer(
         "running",
         format!("Transferring {} favorite item(s).", input.items.len()),
     );
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
 
     let result = transfer_favorites(
         FavoriteTransferDeps {
             db: state.db.as_ref(),
+            owner_user_id: &owner_user_id,
             web: state.web.as_ref(),
             diagnostics: &diagnostics,
             sync: &sync,

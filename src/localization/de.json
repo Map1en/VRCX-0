@@ -1528,6 +1528,12 @@
                 "empty": "Ziehe Werkzeuge hierher oder füge sie über ein Werkzeugmenü hinzu.",
                 "actions": "Werkzeugaktionen"
             },
+            "category": {
+                "social": "Soziales",
+                "vrchat": "VRChat-Einstellungen & Start",
+                "data": "Daten & Sicherungen",
+                "debug": "Debugging"
+            },
             "group": {
                 "header": "Gruppe",
                 "calendar": "Kalender",
@@ -1984,8 +1990,6 @@
                     "background_mode_delay_button": "Verzögerung in Minuten festlegen",
                     "auto_install_updates_on_startup": "Automatisches Update beim Start",
                     "auto_install_updates_on_startup_description": "Wenn aktiviert, prüft VRCX-0 beim Start auf Updates. Ist ein installierbares Update verfügbar, wird es automatisch heruntergeladen, installiert und der Neustart durchgeführt.",
-                    "auto_background_download_updates": "Updates im Hintergrund herunterladen",
-                    "auto_background_download_updates_description": "Wenn aktiviert, lädt VRCX-0 installierbare Updates nach einer Update-Prüfung im Hintergrund herunter. Du kannst das fertige Update über die Titelleiste installieren; erscheint eine neuere Version, verwirft VRCX-0 den alten Download und lädt die neueste Version herunter.",
                     "proxy": "Proxy-Einstellungen"
                 },
                 "favorites": {

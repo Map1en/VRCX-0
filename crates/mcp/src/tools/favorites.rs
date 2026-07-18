@@ -9,7 +9,9 @@ use vrcx_0_persistence::{favorites as persistence_favorites, social_aggregates};
 use crate::config::MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY;
 use crate::server::VrcxMcpServer;
 
-use super::common::{map_persistence_error, social_aggregates_result, structured_result};
+use super::common::{
+    map_persistence_error, require_current_user_id, social_aggregates_result, structured_result,
+};
 
 #[tool_router(router = favorites_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -21,8 +23,10 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<FavoriteLocalParams>,
     ) -> Result<CallToolResult, String> {
         let dry_run = input.dry_run.unwrap_or(true);
+        let owner_user_id = require_current_user_id(&self.runtime)?;
         let result = social_aggregates::favorite_local(
             self.runtime.db.as_ref(),
+            &owner_user_id,
             social_aggregates::FavoriteLocalInput {
                 kind: input.kind,
                 entity_id: input.entity_id,
@@ -65,11 +69,16 @@ impl VrcxMcpServer {
 impl VrcxMcpServer {
     fn get_favorites_output(&self, input: GetFavoritesParams) -> Result<FavoritesOutput, String> {
         let kind = normalize_favorite_kind(&input.kind)?;
-        let rows = persistence_favorites::favorite_list(self.runtime.db.as_ref(), kind.clone())
-            .map_err(map_persistence_error)?
-            .into_iter()
-            .filter_map(|row| favorite_row_from_value(&kind, &row))
-            .collect();
+        let owner_user_id = require_current_user_id(&self.runtime)?;
+        let rows = persistence_favorites::favorite_list(
+            self.runtime.db.as_ref(),
+            Some(&owner_user_id),
+            kind.clone(),
+        )
+        .map_err(map_persistence_error)?
+        .into_iter()
+        .filter_map(|row| favorite_row_from_value(&kind, &row))
+        .collect();
         Ok(FavoritesOutput {
             rows,
             caveats: vec![

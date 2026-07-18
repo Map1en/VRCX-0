@@ -250,6 +250,7 @@ fn build_location_inputs(rows: &[SessionLocationSegmentRow]) -> Vec<SessionLocat
 
 fn load_session_events(
     db: &DatabaseService,
+    owner_user_id: &str,
     locations: &[SessionLocationInput],
     favorite_user_ids: &HashSet<String>,
 ) -> Result<Vec<SessionEventInput>> {
@@ -274,7 +275,7 @@ fn load_session_events(
 
     let after_date = epoch_to_iso(min_epoch - DAY_MS);
     let before_date = epoch_to_iso(max_epoch + DAY_MS);
-    let rows = get_session_events_for_range(db, &after_date, &before_date)?;
+    let rows = get_session_events_for_range(db, owner_user_id, &after_date, &before_date)?;
 
     Ok(rows
         .into_iter()
@@ -457,6 +458,7 @@ fn filter_sessions(
 
 pub fn game_log_sessions_query(
     db: &DatabaseService,
+    owner_user_id: &str,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>> {
     let search = input.search.trim().to_string();
@@ -494,7 +496,7 @@ pub fn game_log_sessions_query(
         // rows" convergence and must not be flattened into a single build pass.
         // Bounded by `search_limit` (locations scanned) and `limit` (rows kept).
         while has_more && (latest.len() as i64) < limit && accumulated_locations < search_limit {
-            let batch = get_session_location_segments(db, before_id, fetch_count)?;
+            let batch = get_session_location_segments(db, owner_user_id, before_id, fetch_count)?;
             if batch.is_empty() {
                 break;
             }
@@ -509,7 +511,8 @@ pub fn game_log_sessions_query(
             }
 
             let location_inputs = build_location_inputs(effective);
-            let batch_events = load_session_events(db, &location_inputs, &favorite_user_ids)?;
+            let batch_events =
+                load_session_events(db, owner_user_id, &location_inputs, &favorite_user_ids)?;
             before_id = effective.last().map(|row| row.id);
             accumulated_locations += effective.len() as i64;
             all_locations.extend(location_inputs);
@@ -533,16 +536,16 @@ pub fn game_log_sessions_query(
             } else {
                 date_to
             };
-            get_session_location_segments_by_date_range(db, &from, &to, fetch_limit)?
+            get_session_location_segments_by_date_range(db, owner_user_id, &from, &to, fetch_limit)?
         } else {
-            get_session_location_segments(db, None, fetch_limit)?
+            get_session_location_segments(db, owner_user_id, None, fetch_limit)?
         };
         if locations.is_empty() {
             return Ok(Vec::new());
         }
 
         let location_inputs = build_location_inputs(&locations);
-        let events = load_session_events(db, &location_inputs, &favorite_user_ids)?;
+        let events = load_session_events(db, owner_user_id, &location_inputs, &favorite_user_ids)?;
         let built = build_game_log_sessions(&location_inputs, &events);
         let mut filtered = filter_sessions(built, &filters, &favorite_user_ids, &search);
         filtered.truncate(limit as usize);
@@ -650,11 +653,11 @@ mod tests {
             video_plays,
             ..Default::default()
         };
-        write_batch(db, &batch).unwrap();
+        write_batch(db, "", &batch).unwrap();
     }
 
     fn query(db: &DatabaseService, input: GameLogSessionsQueryInput) -> Vec<GameLogSessionDto> {
-        game_log_sessions_query(db, input).unwrap()
+        game_log_sessions_query(db, "", input).unwrap()
     }
 
     #[test]

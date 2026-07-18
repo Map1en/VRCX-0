@@ -173,13 +173,30 @@ function normalizeGroupList(values: unknown) {
     ).sort((left, right) => left.localeCompare(right));
 }
 
-async function getExplicitLocalFavoriteGroups(kind: unknown) {
+async function getExplicitLocalFavoriteGroups(
+    kind: unknown,
+    currentUserId?: unknown
+) {
     const key = getLocalFavoriteGroupConfigKey(kind);
     if (!key) {
         return [];
     }
 
-    return normalizeGroupList(await configRepository.getArray(key, []));
+    if (kind !== 'friend') {
+        return normalizeGroupList(await configRepository.getArray(key, []));
+    }
+
+    const normalizedUserId = normalizeEntityId(currentUserId);
+    const [sharedGroups, accountGroups] = await Promise.all([
+        configRepository.getArray(key, []),
+        normalizedUserId
+            ? configRepository.getArray(`${key}:${normalizedUserId}`, [])
+            : Promise.resolve([])
+    ]);
+    return normalizeGroupList([
+        ...(sharedGroups ?? []),
+        ...(accountGroups ?? [])
+    ]);
 }
 
 async function createLocalFavoriteGroup({

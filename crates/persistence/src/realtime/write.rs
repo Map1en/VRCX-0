@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry};
+use crate::ownership::owner_id_get_or_insert;
 use crate::Error;
 use vrcx_0_core::trust::trust_level_changed;
 
@@ -49,6 +50,11 @@ pub fn write_realtime_batch(
     if !batch.game_log_locations.is_empty() {
         ensure_game_log_tables(db)?;
     }
+    let owner_id = if batch.game_log_locations.is_empty() {
+        0
+    } else {
+        owner_id_get_or_insert(db, &owner_user_id)?
+    };
     db.write_transaction(|tx| {
         let mut counts = RealtimeWriteCounts::default();
         for entry in &batch.friend_log_upserts {
@@ -88,7 +94,7 @@ pub fn write_realtime_batch(
             counts.add_realtime_rows(upsert_avatar_time_spent(tx, &user_prefix, entry)?);
         }
         for entry in &batch.game_log_locations {
-            counts.add_game_log_rows(insert_game_log_location_if_changed(tx, entry)?);
+            counts.add_game_log_rows(insert_game_log_location_if_changed(tx, owner_id, entry)?);
         }
         Ok(counts)
     })
@@ -661,14 +667,15 @@ fn upsert_avatar_time_spent(
 
 fn insert_game_log_location_if_changed(
     tx: &mut DatabaseWriteTransaction<'_>,
+    owner_id: i64,
     entry: &GameLogLocationEntry,
 ) -> Result<u64, Error> {
     if entry.location.trim().is_empty() {
         return Ok(0);
     }
     let rows = tx.execute(
-        "SELECT location FROM gamelog_location ORDER BY created_at DESC, id DESC LIMIT 1",
-        &Default::default(),
+        "SELECT location FROM gamelog_location WHERE owner_id IN (0, @owner_id) ORDER BY created_at DESC, id DESC LIMIT 1",
+        &ParamsBuilder::new().set("owner_id", owner_id).build(),
     )?;
     let latest = rows
         .first()
@@ -679,7 +686,7 @@ fn insert_game_log_location_if_changed(
         return Ok(0);
     }
     tx.execute_non_query(
-        "INSERT OR IGNORE INTO gamelog_location (created_at, location, world_id, world_name, time, group_name) VALUES (@created_at, @location, @world_id, @world_name, @time, @group_name)",
+        "INSERT OR IGNORE INTO gamelog_location (created_at, location, world_id, world_name, time, group_name, owner_id) VALUES (@created_at, @location, @world_id, @world_name, @time, @group_name, @owner_id)",
         &ParamsBuilder::new()
             .set("created_at", entry.created_at.clone())
             .set("location", entry.location.clone())
@@ -687,6 +694,7 @@ fn insert_game_log_location_if_changed(
             .set("world_name", entry.world_name.clone())
             .set("time", entry.time)
             .set("group_name", entry.group_name.clone())
+            .set("owner_id", owner_id)
             .build(),
     )
     .map(affected_count)

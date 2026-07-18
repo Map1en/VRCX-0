@@ -17,6 +17,7 @@ pub mod local_moderation;
 pub mod memos;
 pub mod mutual_graph;
 pub mod notifications;
+pub(crate) mod ownership;
 pub mod player_list;
 pub mod profile_backup;
 pub mod realtime;

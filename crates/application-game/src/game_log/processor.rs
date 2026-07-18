@@ -103,7 +103,7 @@ impl GameLogProcessor {
                 engine.seed_current_location(last.location, last.world_name, last.created_at);
                 if location.starts_with("wrld_") {
                     if let Ok(entries) =
-                        vrcx_0_persistence::game_log::get_join_leave_entries_for_location_range(
+                        vrcx_0_persistence::game_log::get_join_leave_entries_for_location_range_unscoped(
                             &deps.db,
                             &location,
                             &started_at,
@@ -182,8 +182,11 @@ impl GameLogProcessor {
         mut output: GameLogIngestOutput,
     ) -> Result<()> {
         self.enrich_ingest_output_world_names(&mut output);
-        let write_outcome =
-            self.write_batch_or_emit_failure_telemetry(&output.batch, output.raw_rows.clone())?;
+        let write_outcome = self.write_batch_or_emit_failure_telemetry(
+            &deps.owner_user_id,
+            &output.batch,
+            output.raw_rows.clone(),
+        )?;
         if let GameLogWriteOutcome::RuntimePersisted { affected_count } = write_outcome {
             let overlay_output = self.overlay_activity_output(&output);
             self.deps
@@ -268,10 +271,11 @@ impl GameLogProcessor {
 
     fn write_batch_or_emit_failure_telemetry(
         &self,
+        owner_user_id: &str,
         batch: &GameLogWriteBatch,
         raw_rows: Vec<Vec<String>>,
     ) -> Result<GameLogWriteOutcome> {
-        match write_batch_with_retry(&self.deps.db, batch) {
+        match write_batch_with_retry(&self.deps.db, owner_user_id, batch) {
             Ok(affected_count) => {
                 self.deps.sync.record(
                     "gameLog",
@@ -423,10 +427,14 @@ fn remember_error(first_error: &mut Option<Error>, error: Error) {
     }
 }
 
-fn write_batch_with_retry(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<u64> {
+fn write_batch_with_retry(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    batch: &GameLogWriteBatch,
+) -> Result<u64> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
-        match write_batch(db, batch) {
+        match write_batch(db, owner_user_id, batch) {
             Ok(affected_count) => return Ok(affected_count),
             Err(error) => {
                 let Some(delay_ms) = delays.next() else {

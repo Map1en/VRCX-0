@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { handleAutoBackgroundDownloadUpdatesPreferenceChange } from '@/services/backgroundMaintenanceService';
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '@/services/changelogService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -42,7 +41,6 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
             autoLoginDelayEnabled={prefs.autoLoginDelayEnabled}
             autoLoginDelaySeconds={prefs.autoLoginDelaySeconds}
             autoInstallUpdatesOnStartup={prefs.autoInstallUpdatesOnStartup}
-            autoBackgroundDownloadUpdates={prefs.autoBackgroundDownloadUpdates}
             showPostUpdateChangelogToast={prefs.showPostUpdateChangelogToast}
             backgroundModeEnabled={prefs.backgroundModeEnabled}
             backgroundModeDelayEnabled={prefs.backgroundModeDelayEnabled}
@@ -96,17 +94,6 @@ export function SettingsSystemSection({ system }: SettingsSystemSectionProps) {
                 saveBoolPreference(
                     'autoInstallUpdatesOnStartup',
                     'autoInstallUpdatesOnStartup',
-                    enabled
-                );
-            }}
-            onAutoBackgroundDownloadUpdatesChange={async (checked: unknown) => {
-                const enabled = normalizeCheckedState(checked);
-                await saveBoolPreference(
-                    'autoBackgroundDownloadUpdates',
-                    'autoBackgroundDownloadUpdates',
-                    enabled
-                );
-                await handleAutoBackgroundDownloadUpdatesPreferenceChange(
                     enabled
                 );
             }}

@@ -58,7 +58,8 @@ pub fn app__activity_view(
 pub fn app__activity_self_source_bounds(
     state: State<'_, AppState>,
 ) -> Result<ActivitySelfSourceBoundsOutput, AppError> {
-    vrcx_0_persistence::activity::activity_self_source_bounds(state.db.as_ref())
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::activity::activity_self_source_bounds(state.db.as_ref(), &owner_user_id)
         .map_err(AppError::from)
 }
 
@@ -68,8 +69,13 @@ pub fn app__activity_self_sessions_refresh(
     state: State<'_, AppState>,
     input: ActivitySelfSessionsRefreshInput,
 ) -> Result<ActivitySelfSessionsRefreshOutput, AppError> {
-    vrcx_0_persistence::activity::activity_self_sessions_refresh(state.db.as_ref(), input)
-        .map_err(AppError::from)
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::activity::activity_self_sessions_refresh(
+        state.db.as_ref(),
+        &owner_user_id,
+        input,
+    )
+    .map_err(AppError::from)
 }
 
 #[tauri::command]

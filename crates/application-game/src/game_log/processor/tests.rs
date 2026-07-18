@@ -152,9 +152,9 @@ fn tracks_location_players_and_session_duration() -> Result<()> {
         )),
     ])?;
 
-    let locations = vrcx_0_persistence::game_log::get_game_log_locations(&db)?;
+    let locations = vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?;
     assert_eq!(locations[0].time, 40000);
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db)?;
+    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
     assert_eq!(join_leave.len(), 2);
     assert_eq!(join_leave[0].event_type, "OnPlayerJoined");
     assert_eq!(join_leave[1].event_type, "OnPlayerLeft");
@@ -264,7 +264,7 @@ fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db)?;
+    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
     assert_eq!(join_leave.len(), 1);
     assert!(processor
         .deps
@@ -281,6 +281,7 @@ fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     vrcx_0_persistence::game_log::write_batch(
         &db,
+        "",
         &vrcx_0_persistence::game_log::GameLogWriteBatch {
             locations: vec![vrcx_0_persistence::game_log::GameLogLocationEntry {
                 created_at: "2026-05-14T08:05:00.000Z".into(),
@@ -303,7 +304,7 @@ fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
         },
     ))])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db)?;
+    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
     assert_eq!(join_leave.len(), 1);
     assert!(processor
         .deps
@@ -453,7 +454,7 @@ fn suppresses_leave_overlay_notifications_right_after_destination() -> Result<()
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db)?;
+    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
     assert_eq!(join_leave.len(), 2);
     let entries = processor.deps.overlay_activity.snapshot().entries;
     assert_eq!(entries.len(), 1);
@@ -492,7 +493,7 @@ fn suppresses_current_user_join_leave_overlay_notifications() -> Result<()> {
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db)?;
+    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "usr_self")?;
     assert_eq!(join_leave.len(), 2);
     assert!(processor
         .deps

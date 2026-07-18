@@ -3,6 +3,7 @@ use sea_query::{Expr, ExprTrait, Order, Query, SqliteQueryBuilder};
 
 use crate::common::{ident, row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::schema::*;
@@ -18,6 +19,7 @@ fn latest_join_leave_lookup_sql() -> String {
         .from(ident(TABLE_JOIN_LEAVE))
         .and_where(Expr::col(ident(COL_DISPLAY_NAME)).eq(Expr::cust("@displayName")))
         .and_where(Expr::col(ident(COL_USER_ID)).ne(""))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_ID), Order::Desc)
         .limit(1)
         .to_string(SqliteQueryBuilder)
@@ -34,6 +36,7 @@ fn location_before_or_at_sql() -> String {
         ])
         .from(ident(TABLE_LOCATION))
         .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@createdAt")))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_CREATED_AT), Order::Desc)
         .limit(1)
         .to_string(SqliteQueryBuilder)
@@ -55,8 +58,9 @@ fn last_location_sql() -> String {
         .to_string(SqliteQueryBuilder)
 }
 
-fn join_leave_entries_for_location_range_sql() -> String {
-    Query::select()
+fn join_leave_entries_for_location_range_sql(scoped: bool) -> String {
+    let mut query = Query::select();
+    query
         .columns([
             ident(COL_ID),
             ident(COL_CREATED_AT),
@@ -68,7 +72,11 @@ fn join_leave_entries_for_location_range_sql() -> String {
         .from(ident(TABLE_JOIN_LEAVE))
         .and_where(Expr::col(ident(COL_LOCATION)).eq(Expr::cust("@location")))
         .and_where(Expr::col(ident(COL_CREATED_AT)).gte(Expr::cust("@afterDate")))
-        .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")))
+        .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")));
+    if scoped {
+        query.and_where(owner_scope_expr());
+    }
+    query
         .order_by(ident(COL_CREATED_AT), Order::Asc)
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
@@ -88,7 +96,8 @@ fn session_location_segments_sql(has_cursor: bool, limit: i64) -> String {
     let mut query = Query::select();
     query
         .columns(SESSION_LOCATION_COLUMNS.into_iter().map(ident))
-        .from(ident(TABLE_LOCATION));
+        .from(ident(TABLE_LOCATION))
+        .and_where(owner_scope_expr());
     if has_cursor {
         query.and_where(Expr::col(ident(COL_ID)).lt(Expr::cust("@beforeId")));
     }
@@ -104,6 +113,7 @@ fn session_location_segments_by_date_range_sql(limit: i64) -> String {
         .from(ident(TABLE_LOCATION))
         .and_where(Expr::col(ident(COL_CREATED_AT)).gte(Expr::cust("@afterDate")))
         .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_ID), Order::Desc)
         .limit(u64::try_from(limit).unwrap_or(0))
         .to_string(SqliteQueryBuilder)
@@ -122,6 +132,7 @@ fn session_join_leave_events_sql() -> String {
         .from(ident(TABLE_JOIN_LEAVE))
         .and_where(Expr::col(ident(COL_CREATED_AT)).gte(Expr::cust("@afterDate")))
         .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_CREATED_AT), Order::Asc)
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
@@ -142,6 +153,7 @@ fn session_video_events_sql() -> String {
         .from(ident(TABLE_VIDEO_PLAY))
         .and_where(Expr::col(ident(COL_CREATED_AT)).gte(Expr::cust("@afterDate")))
         .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_CREATED_AT), Order::Asc)
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
@@ -160,6 +172,7 @@ fn game_log_events_sql() -> String {
     Query::select()
         .columns([COL_CREATED_AT, COL_DATA].into_iter().map(ident))
         .from(ident(TABLE_EVENT))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
 }
@@ -179,6 +192,7 @@ fn game_log_locations_sql() -> String {
             .map(ident),
         )
         .from(ident(TABLE_LOCATION))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
 }
@@ -198,6 +212,7 @@ fn game_log_join_leave_sql() -> String {
             .map(ident),
         )
         .from(ident(TABLE_JOIN_LEAVE))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_CREATED_AT), Order::Asc)
         .to_string(SqliteQueryBuilder)
 }
@@ -216,8 +231,17 @@ fn game_log_externals_sql() -> String {
             .map(ident),
         )
         .from(ident(TABLE_EXTERNAL))
+        .and_where(owner_scope_expr())
         .order_by(ident(COL_ID), Order::Asc)
         .to_string(SqliteQueryBuilder)
+}
+
+fn owner_scope_expr() -> sea_query::SimpleExpr {
+    Expr::cust(format!("{COL_OWNER_ID} IN (0, @ownerId)"))
+}
+
+fn owner_params(db: &DatabaseService, owner_user_id: &str) -> Result<ParamsBuilder, Error> {
+    Ok(ParamsBuilder::new().set("ownerId", owner_id_for_filter(db, owner_user_id)?))
 }
 
 fn game_log_location_table_exists_sql() -> String {
@@ -232,9 +256,10 @@ fn game_log_location_table_exists_sql() -> String {
 
 pub fn get_user_id_from_display_name(
     db: &DatabaseService,
+    owner_user_id: &str,
     display_name: &str,
 ) -> Result<String, Error> {
-    let args = ParamsBuilder::new()
+    let args = owner_params(db, owner_user_id)?
         .set("displayName", display_name)
         .build();
     Ok(db
@@ -248,9 +273,12 @@ pub fn get_user_id_from_display_name(
 
 pub fn get_location_before_or_at(
     db: &DatabaseService,
+    owner_user_id: &str,
     created_at: &str,
 ) -> Result<Option<GameLogLocationSnapshot>, Error> {
-    let args = ParamsBuilder::new().set("createdAt", created_at).build();
+    let args = owner_params(db, owner_user_id)?
+        .set("createdAt", created_at)
+        .build();
     Ok(db
         .execute(&location_before_or_at_sql(), &args)?
         .first()
@@ -265,17 +293,50 @@ pub fn get_location_before_or_at(
 
 pub fn get_join_leave_entries_for_location_range(
     db: &DatabaseService,
+    owner_user_id: &str,
     location: &str,
     after_date: &str,
     before_date: &str,
 ) -> Result<Vec<GameLogJoinLeaveSnapshot>, Error> {
-    let args = ParamsBuilder::new()
+    get_join_leave_entries_for_location_range_inner(
+        db,
+        Some(owner_user_id),
+        location,
+        after_date,
+        before_date,
+    )
+}
+
+pub fn get_join_leave_entries_for_location_range_unscoped(
+    db: &DatabaseService,
+    location: &str,
+    after_date: &str,
+    before_date: &str,
+) -> Result<Vec<GameLogJoinLeaveSnapshot>, Error> {
+    get_join_leave_entries_for_location_range_inner(db, None, location, after_date, before_date)
+}
+
+fn get_join_leave_entries_for_location_range_inner(
+    db: &DatabaseService,
+    owner_user_id: Option<&str>,
+    location: &str,
+    after_date: &str,
+    before_date: &str,
+) -> Result<Vec<GameLogJoinLeaveSnapshot>, Error> {
+    let mut args = ParamsBuilder::new();
+    if let Some(owner_user_id) = owner_user_id {
+        args = args.set("ownerId", owner_id_for_filter(db, owner_user_id)?);
+    }
+    let args = args
         .set(COL_LOCATION, location)
         .set("afterDate", after_date)
         .set("beforeDate", before_date)
         .build();
     Ok(db
-        .execute(&join_leave_entries_for_location_range_sql(), &args)?
+        .execute(
+            &join_leave_entries_for_location_range_sql(owner_user_id.is_some()),
+            &args,
+        )?
         .into_iter()
         .map(|row| GameLogJoinLeaveSnapshot {
             id: row_i64(&row, 0),
@@ -302,11 +363,12 @@ fn session_location_segment_from_row(row: &[serde_json::Value]) -> SessionLocati
 
 pub fn get_session_location_segments(
     db: &DatabaseService,
+    owner_user_id: &str,
     before_id: Option<i64>,
     limit: i64,
 ) -> Result<Vec<SessionLocationSegmentRow>, Error> {
     ensure_game_log_tables(db)?;
-    let mut args = ParamsBuilder::new();
+    let mut args = owner_params(db, owner_user_id)?;
     if let Some(before_id) = before_id {
         args = args.set("beforeId", before_id);
     }
@@ -322,12 +384,13 @@ pub fn get_session_location_segments(
 
 pub fn get_session_location_segments_by_date_range(
     db: &DatabaseService,
+    owner_user_id: &str,
     after_date: &str,
     before_date: &str,
     limit: i64,
 ) -> Result<Vec<SessionLocationSegmentRow>, Error> {
     ensure_game_log_tables(db)?;
-    let args = ParamsBuilder::new()
+    let args = owner_params(db, owner_user_id)?
         .set("afterDate", after_date)
         .set("beforeDate", before_date)
         .build();
@@ -340,11 +403,12 @@ pub fn get_session_location_segments_by_date_range(
 
 pub fn get_session_events_for_range(
     db: &DatabaseService,
+    owner_user_id: &str,
     after_date: &str,
     before_date: &str,
 ) -> Result<Vec<SessionEventRow>, Error> {
     ensure_game_log_tables(db)?;
-    let args = ParamsBuilder::new()
+    let args = owner_params(db, owner_user_id)?
         .set("afterDate", after_date)
         .set("beforeDate", before_date)
         .build();
@@ -379,10 +443,14 @@ pub fn get_session_events_for_range(
     Ok(rows)
 }
 
-pub fn get_game_log_events(db: &DatabaseService) -> Result<Vec<GameLogEventEntry>, Error> {
+pub fn get_game_log_events(
+    db: &DatabaseService,
+    owner_user_id: &str,
+) -> Result<Vec<GameLogEventEntry>, Error> {
     ensure_game_log_tables(db)?;
+    let args = owner_params(db, owner_user_id)?.build();
     Ok(db
-        .execute(&game_log_events_sql(), &Default::default())?
+        .execute(&game_log_events_sql(), &args)?
         .into_iter()
         .map(|row| GameLogEventEntry {
             created_at: row_string(&row, 0),
@@ -391,10 +459,14 @@ pub fn get_game_log_events(db: &DatabaseService) -> Result<Vec<GameLogEventEntry
         .collect())
 }
 
-pub fn get_game_log_locations(db: &DatabaseService) -> Result<Vec<GameLogLocationEntry>, Error> {
+pub fn get_game_log_locations(
+    db: &DatabaseService,
+    owner_user_id: &str,
+) -> Result<Vec<GameLogLocationEntry>, Error> {
     ensure_game_log_tables(db)?;
+    let args = owner_params(db, owner_user_id)?.build();
     Ok(db
-        .execute(&game_log_locations_sql(), &Default::default())?
+        .execute(&game_log_locations_sql(), &args)?
         .into_iter()
         .map(|row| GameLogLocationEntry {
             created_at: row_string(&row, 0),
@@ -431,10 +503,14 @@ pub fn get_last_game_log_location(
         }))
 }
 
-pub fn get_game_log_join_leave(db: &DatabaseService) -> Result<Vec<GameLogJoinLeaveEntry>, Error> {
+pub fn get_game_log_join_leave(
+    db: &DatabaseService,
+    owner_user_id: &str,
+) -> Result<Vec<GameLogJoinLeaveEntry>, Error> {
     ensure_game_log_tables(db)?;
+    let args = owner_params(db, owner_user_id)?.build();
     Ok(db
-        .execute(&game_log_join_leave_sql(), &Default::default())?
+        .execute(&game_log_join_leave_sql(), &args)?
         .into_iter()
         .map(|row| GameLogJoinLeaveEntry {
             created_at: row_string(&row, 0),
@@ -451,10 +527,14 @@ pub fn get_game_log_join_leave(db: &DatabaseService) -> Result<Vec<GameLogJoinLe
         .collect())
 }
 
-pub fn get_game_log_externals(db: &DatabaseService) -> Result<Vec<GameLogExternalEntry>, Error> {
+pub fn get_game_log_externals(
+    db: &DatabaseService,
+    owner_user_id: &str,
+) -> Result<Vec<GameLogExternalEntry>, Error> {
     ensure_game_log_tables(db)?;
+    let args = owner_params(db, owner_user_id)?.build();
     Ok(db
-        .execute(&game_log_externals_sql(), &Default::default())?
+        .execute(&game_log_externals_sql(), &args)?
         .into_iter()
         .map(|row| GameLogExternalEntry {
             created_at: row_string(&row, 0),
@@ -464,18 +544,6 @@ pub fn get_game_log_externals(db: &DatabaseService) -> Result<Vec<GameLogExterna
             location: row_string(&row, 4),
         })
         .collect())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn join_leave_range_sql_orders_same_timestamp_rows_by_id() {
-        let sql = join_leave_entries_for_location_range_sql();
-
-        assert!(sql.contains("ORDER BY \"created_at\" ASC, \"id\" ASC"));
-    }
 }
 
 pub fn game_log_location_table_exists(db: &DatabaseService) -> Result<bool, Error> {
@@ -521,5 +589,17 @@ pub fn get_last_game_log_date(db: &DatabaseService) -> Result<String, Error> {
         Ok(latest.clone())
     } else {
         Ok(now_string)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn join_leave_range_sql_orders_same_timestamp_rows_by_id() {
+        let sql = join_leave_entries_for_location_range_sql(true);
+
+        assert!(sql.contains("ORDER BY \"created_at\" ASC, \"id\" ASC"));
     }
 }

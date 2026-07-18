@@ -7,6 +7,8 @@ mod events;
 mod playbook;
 mod runtime;
 mod session;
+#[cfg(test)]
+mod test_support;
 
 pub use config::{
     AssistantConfig, PlaybookMode, ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY,

@@ -8,8 +8,13 @@ fn limit_usize(limit: i64) -> usize {
     usize::try_from(limit).unwrap_or(usize::MAX)
 }
 
-pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<Value, Error> {
+pub fn game_log_query(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    query: GameLogQueryInput,
+) -> Result<Value, Error> {
     ensure_game_log_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     let params = query.params.into_value();
     let kind = normalize_text(&query.kind);
     match kind.as_str() {
@@ -17,7 +22,7 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let date_offset = query_param_string(&params, "dateOffset");
             let limit = non_negative_query_param_i64(&params, "maxTableSize", 500);
             let mut rows = Vec::new();
-            let recent_params = ParamsBuilder::new()
+            let recent_params = scoped_params(owner_id)
                 .set("date_offset", date_offset)
                 .set("limit", limit)
                 .build();
@@ -49,7 +54,7 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let filters = query_param_string_array(&params, "filters");
             let flags = game_log_filter_flags(&filters, include_extra);
             let vip_list = query_param_string_array(&params, "vipList");
-            let mut db_params = HashMap::new();
+            let mut db_params = scoped_param_map(owner_id);
             let max_entries = non_negative_query_param_i64(&params, "maxEntries", 500);
             db_params.insert("@limit".into(), Value::from(max_entries));
             db_params.insert("@per_table".into(), Value::from(max_entries));
@@ -260,8 +265,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             };
             let row = db
                 .execute(
-                    "SELECT created_at, world_id FROM gamelog_location WHERE world_id = @world_id ORDER BY id DESC LIMIT @count",
-                    &ParamsBuilder::new()
+                    "SELECT created_at, world_id FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id ORDER BY id DESC LIMIT @count",
+                    &scoped_params(owner_id)
                         .set("world_id", world_id)
                         .set("count", count)
                         .build(),
@@ -276,8 +281,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let world_id = query_param_string(&params, "worldId");
             let count = db
                 .execute(
-                    "SELECT COUNT(DISTINCT location) FROM gamelog_location WHERE world_id = @world_id",
-                    &ParamsBuilder::new().set("world_id", world_id.clone()).build(),
+                    "SELECT COUNT(DISTINCT location) FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id",
+                    &scoped_params(owner_id).set("world_id", world_id.clone()).build(),
                 )?
                 .first()
                 .map(|row| row_i64(row, 0))
@@ -288,8 +293,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let world_id = query_param_string(&params, "worldId");
             let time_spent = db
                 .execute(
-                    "SELECT COALESCE(SUM(time), 0) FROM gamelog_location WHERE world_id = @world_id",
-                    &ParamsBuilder::new().set("world_id", world_id.clone()).build(),
+                    "SELECT COALESCE(SUM(time), 0) FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id",
+                    &scoped_params(owner_id).set("world_id", world_id.clone()).build(),
                 )?
                 .first()
                 .map(|row| row_i64(row, 0))
@@ -300,8 +305,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let group_id = query_param_string(&params, "groupId");
             let created_at = db
                 .execute(
-                    "SELECT created_at FROM gamelog_location WHERE location LIKE @group_id ORDER BY id DESC LIMIT 1",
-                    &ParamsBuilder::new()
+                    "SELECT created_at FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND location LIKE @group_id ORDER BY id DESC LIMIT 1",
+                    &scoped_params(owner_id)
                         .set("group_id", format!("%{group_id}%"))
                         .build(),
                 )?
@@ -317,9 +322,10 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             for row in db.execute(
                 "SELECT created_at, location, time, world_name, group_name
                  FROM gamelog_location
-                 WHERE location LIKE @group_id
+                 WHERE owner_id IN (0, @owner_id)
+                   AND location LIKE @group_id
                  ORDER BY id DESC",
-                &ParamsBuilder::new()
+                &scoped_params(owner_id)
                     .set("group_id", format!("%{group_id}%"))
                     .build(),
             )? {
@@ -361,8 +367,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             };
             let row = db
                 .execute(
-                    "SELECT created_at, user_id FROM gamelog_join_leave WHERE user_id = @user_id OR display_name = @display_name ORDER BY id DESC LIMIT @count",
-                    &ParamsBuilder::new()
+                    "SELECT created_at, user_id FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (user_id = @user_id OR display_name = @display_name) ORDER BY id DESC LIMIT @count",
+                    &scoped_params(owner_id)
                         .set("user_id", user_id.clone())
                         .set("display_name", display_name)
                         .set("count", count)
@@ -385,8 +391,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let display_name = query_param_string(&params, "displayName");
             let count = db
                 .execute(
-                    "SELECT COUNT(DISTINCT location) FROM gamelog_join_leave WHERE (type = 'OnPlayerJoined') AND (user_id = @user_id OR display_name = @display_name)",
-                    &ParamsBuilder::new()
+                    "SELECT COUNT(DISTINCT location) FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (type = 'OnPlayerJoined') AND (user_id = @user_id OR display_name = @display_name)",
+                    &scoped_params(owner_id)
                         .set("user_id", user_id.clone())
                         .set("display_name", display_name)
                         .build(),
@@ -403,9 +409,10 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 .execute(
                     "SELECT COALESCE(SUM(time), 0)
                      FROM gamelog_join_leave
-                     WHERE type = 'OnPlayerLeft'
+                     WHERE owner_id IN (0, @owner_id)
+                       AND type = 'OnPlayerLeft'
                        AND (user_id = @user_id OR display_name = @display_name)",
-                    &ParamsBuilder::new()
+                    &scoped_params(owner_id)
                         .set("user_id", user_id.clone())
                         .set("display_name", display_name)
                         .build(),
@@ -425,8 +432,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             };
             let last_seen = db
                 .execute(
-                    "SELECT created_at FROM gamelog_join_leave WHERE user_id = @user_id OR display_name = @display_name ORDER BY id DESC LIMIT @count",
-                    &ParamsBuilder::new()
+                    "SELECT created_at FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (user_id = @user_id OR display_name = @display_name) ORDER BY id DESC LIMIT @count",
+                    &scoped_params(owner_id)
                         .set("user_id", user_id.clone())
                         .set("display_name", display_name.clone())
                         .set("count", count)
@@ -441,8 +448,9 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                         COALESCE(SUM(CASE WHEN type = 'OnPlayerLeft' THEN time ELSE 0 END), 0),
                         COUNT(DISTINCT NULLIF(location, ''))
                      FROM gamelog_join_leave
-                     WHERE user_id = @user_id OR display_name = @display_name",
-                    &ParamsBuilder::new()
+                     WHERE owner_id IN (0, @owner_id)
+                       AND (user_id = @user_id OR display_name = @display_name)",
+                    &scoped_params(owner_id)
                         .set("user_id", user_id.clone())
                         .set("display_name", display_name.clone())
                         .build(),
@@ -453,12 +461,13 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             for row in db.execute(
                 "SELECT display_name, MAX(created_at)
                  FROM gamelog_join_leave
-                 WHERE user_id = @user_id
+                 WHERE owner_id IN (0, @owner_id)
+                   AND user_id = @user_id
                    AND display_name != ''
                    AND display_name != @display_name
                  GROUP BY display_name
                  ORDER BY MAX(created_at) DESC",
-                &ParamsBuilder::new()
+                &scoped_params(owner_id)
                     .set("user_id", user_id.clone())
                     .set("display_name", display_name)
                     .build(),
@@ -482,7 +491,7 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             if user_ids.is_empty() && display_names.is_empty() {
                 return Ok(Value::Array(Vec::new()));
             }
-            let mut db_params = HashMap::new();
+            let mut db_params = scoped_param_map(owner_id);
             let mut clauses = Vec::new();
             let user_placeholders = add_list_params(&mut db_params, &user_ids, "stat_user_id");
             if !user_placeholders.is_empty() {
@@ -509,7 +518,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                             FROM
                                 gamelog_join_leave g
                             WHERE
-                                {}
+                                g.owner_id IN (0, @owner_id)
+                                AND ({})
                             GROUP BY
                                 g.user_id,
                                 g.display_name
@@ -544,8 +554,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             ] {
                 if let Some(date) = db
                     .execute(
-                        &format!("SELECT created_at FROM {table} ORDER BY id DESC LIMIT 1"),
-                        &Default::default(),
+                        &format!("SELECT created_at FROM {table} WHERE owner_id IN (0, @owner_id) ORDER BY id DESC LIMIT 1"),
+                        &scoped_params(owner_id).build(),
                     )?
                     .first()
                     .map(|row| row_string(row, 0))
@@ -564,8 +574,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             if user_id.is_empty() {
                 return Ok(Value::Array(Vec::new()));
             }
-            let mut clauses = vec!["jl.user_id = @user_id"];
-            let mut db_params = ParamsBuilder::new().set("user_id", user_id);
+            let mut clauses = vec!["jl.owner_id IN (0, @owner_id)", "jl.user_id = @user_id"];
+            let mut db_params = scoped_params(owner_id).set("user_id", user_id);
             if !date_from.is_empty() {
                 clauses.push("jl.created_at >= @date_from");
                 db_params = db_params.set("date_from", date_from);
@@ -591,9 +601,11 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                             SELECT gl2.id
                             FROM gamelog_location gl2
                             WHERE gl2.location = jl.location
+                              AND gl2.owner_id IN (0, @owner_id)
                             ORDER BY gl2.id DESC
                             LIMIT 1
                         )
+                        AND gl.owner_id IN (0, @owner_id)
                         WHERE {where_clause}
                         ORDER BY jl.id ASC"
                     ),
@@ -621,9 +633,10 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 db.execute(
                     "SELECT id, created_at, location, time, world_name, group_name
                          FROM gamelog_location
-                         WHERE world_id = @world_id
+                         WHERE owner_id IN (0, @owner_id)
+                           AND world_id = @world_id
                          ORDER BY id DESC",
-                    &ParamsBuilder::new().set("world_id", world_id).build(),
+                    &scoped_params(owner_id).set("world_id", world_id).build(),
                 )?
                 .into_iter()
                 .map(|row| {
@@ -644,8 +657,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             Ok(Value::Array(
                 db
                     .execute(
-                        "SELECT id, created_at, display_name, user_id, time, type FROM gamelog_join_leave WHERE location = @location ORDER BY id ASC",
-                        &ParamsBuilder::new().set("location", location).build(),
+                        "SELECT id, created_at, display_name, user_id, time, type FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND location = @location ORDER BY id ASC",
+                        &scoped_params(owner_id).set("location", location).build(),
                     )?
                     .into_iter()
                     .map(|row| {
@@ -667,10 +680,13 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 .execute(
                     "SELECT created_at, location, world_id, world_name, group_name
                      FROM gamelog_location
-                     WHERE created_at <= @created_at
+                     WHERE owner_id IN (0, @owner_id)
+                       AND created_at <= @created_at
                      ORDER BY created_at DESC
                      LIMIT 1",
-                    &ParamsBuilder::new().set("created_at", created_at).build(),
+                    &scoped_params(owner_id)
+                        .set("created_at", created_at)
+                        .build(),
                 )?
                 .first()
                 .cloned();
@@ -694,11 +710,12 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 db.execute(
                     "SELECT created_at, type, display_name, user_id
                          FROM gamelog_join_leave
-                         WHERE location = @location
+                         WHERE owner_id IN (0, @owner_id)
+                           AND location = @location
                            AND created_at >= @after_date
                            AND created_at <= @before_date
                          ORDER BY created_at ASC",
-                    &ParamsBuilder::new()
+                    &scoped_params(owner_id)
                         .set("location", location)
                         .set("after_date", after_date)
                         .set("before_date", before_date)
@@ -722,9 +739,10 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 db.execute(
                     "SELECT created_at, display_name, user_id, time
                          FROM gamelog_join_leave
-                         WHERE location = @location AND type = 'OnPlayerLeft'
+                         WHERE owner_id IN (0, @owner_id)
+                           AND location = @location AND type = 'OnPlayerLeft'
                          ORDER BY created_at ASC",
-                    &ParamsBuilder::new().set("location", location).build(),
+                    &scoped_params(owner_id).set("location", location).build(),
                 )?
                 .into_iter()
                 .map(|row| {
@@ -744,9 +762,10 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 db.execute(
                     "SELECT created_at, display_name
                          FROM gamelog_join_leave
-                         WHERE user_id = @user_id
+                         WHERE owner_id IN (0, @owner_id)
+                           AND user_id = @user_id
                          ORDER BY id DESC",
-                    &ParamsBuilder::new().set("user_id", user_id).build(),
+                    &scoped_params(owner_id).set("user_id", user_id).build(),
                 )?
                 .into_iter()
                 .map(|row| {
@@ -760,8 +779,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
         }
         "instanceTimes" => Ok(Value::Array(
             db.execute(
-                "SELECT location, time FROM gamelog_location",
-                &Default::default(),
+                "SELECT location, time FROM gamelog_location WHERE owner_id IN (0, @owner_id)",
+                &scoped_params(owner_id).build(),
             )?
             .into_iter()
             .map(|row| json!({ "location": row_json(&row, 0), "time": row_i64(&row, 1) }))
@@ -774,8 +793,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             if !from_date.is_empty() {
                 if let Some(row) = db
                     .execute(
-                        "SELECT created_at, time FROM gamelog_location WHERE created_at < @from_date ORDER BY created_at DESC LIMIT 1",
-                        &ParamsBuilder::new().set("from_date", from_date.clone()).build(),
+                        "SELECT created_at, time FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND created_at < @from_date ORDER BY created_at DESC LIMIT 1",
+                        &scoped_params(owner_id).set("from_date", from_date.clone()).build(),
                     )?
                     .first()
                     .cloned()
@@ -783,8 +802,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                     rows.push(json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }));
                 }
             }
-            let mut clauses = Vec::new();
-            let mut db_params = HashMap::new();
+            let mut clauses = vec!["owner_id IN (0, @owner_id)"];
+            let mut db_params = scoped_param_map(owner_id);
             if !from_date.is_empty() {
                 clauses.push("created_at >= @from_date");
                 db_params.insert("@from_date".into(), Value::String(from_date));
@@ -793,11 +812,7 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                 clauses.push("created_at < @to_date");
                 db_params.insert("@to_date".into(), Value::String(to_date));
             }
-            let date_clause = if clauses.is_empty() {
-                String::new()
-            } else {
-                format!("WHERE {}", clauses.join(" AND "))
-            };
+            let date_clause = format!("WHERE {}", clauses.join(" AND "));
             for row in db.execute(
                 &format!("SELECT created_at, time FROM gamelog_location {date_clause} ORDER BY created_at"),
                 &db_params,
@@ -816,8 +831,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             Ok(Value::Array(
                 db
                     .execute(
-                        &format!("SELECT created_at, time FROM gamelog_location WHERE created_at {op} @after ORDER BY created_at"),
-                        &ParamsBuilder::new().set("after", after).build(),
+                        &format!("SELECT created_at, time FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND created_at {op} @after ORDER BY created_at"),
+                        &scoped_params(owner_id).set("after", after).build(),
                     )?
                     .into_iter()
                     .map(|row| json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }))
@@ -844,7 +859,7 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             } else {
                 "total_time DESC"
             };
-            let mut db_params = HashMap::new();
+            let mut db_params = scoped_param_map(owner_id);
             db_params.insert("@limit".into(), Value::from(limit));
             if days > 0 {
                 db_params.insert(
@@ -861,7 +876,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                         &format!(
                             "SELECT world_id, world_name, COUNT(*) AS visit_count, SUM(time) AS total_time
                              FROM gamelog_location
-                             WHERE world_id IS NOT NULL
+                             WHERE owner_id IN (0, @owner_id)
+                               AND world_id IS NOT NULL
                                AND world_id != ''
                                AND world_id LIKE 'wrld_%'
                                {where_clause}
@@ -894,12 +910,13 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
                     .execute(
                         "SELECT id, created_at, type, display_name, location, user_id, time
                          FROM gamelog_join_leave
-                         WHERE type = 'OnPlayerLeft'
+                         WHERE owner_id IN (0, @owner_id)
+                           AND type = 'OnPlayerLeft'
                            AND (
                              strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds') BETWEEN @utc_start_date AND @utc_end_date
                              OR created_at BETWEEN @utc_start_date AND @utc_end_date
                            )",
-                        &ParamsBuilder::new()
+                        &scoped_params(owner_id)
                             .set("utc_start_date", start_date)
                             .set("utc_end_date", end_date)
                             .build(),
@@ -923,8 +940,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let user_id = query_param_string(&params, "userId");
             Ok(Value::Array(
                 db.execute(
-                    "SELECT created_at FROM gamelog_join_leave WHERE user_id = @user_id",
-                    &ParamsBuilder::new().set("user_id", user_id).build(),
+                    "SELECT created_at FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND user_id = @user_id",
+                    &scoped_params(owner_id).set("user_id", user_id).build(),
                 )?
                 .into_iter()
                 .map(|row| row_json(&row, 0))
@@ -937,8 +954,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             Ok(Value::Array(
                 db
                     .execute(
-                        "SELECT created_at, location FROM gamelog_join_leave WHERE user_id = @user_id AND created_at > @created_at ORDER BY created_at DESC",
-                        &ParamsBuilder::new()
+                        "SELECT created_at, location FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND user_id = @user_id AND created_at > @created_at ORDER BY created_at DESC",
+                        &scoped_params(owner_id)
                             .set("user_id", user_id)
                             .set("created_at", created_at)
                             .build(),
@@ -952,8 +969,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let world_id = query_param_string(&params, "worldId");
             let world_name = db
                 .execute(
-                    "SELECT world_name FROM gamelog_location WHERE world_id = @world_id ORDER BY id DESC LIMIT 1",
-                    &ParamsBuilder::new().set("world_id", world_id).build(),
+                    "SELECT world_name FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id ORDER BY id DESC LIMIT 1",
+                    &scoped_params(owner_id).set("world_id", world_id).build(),
                 )?
                 .first()
                 .map(|row| row_string(row, 0))
@@ -964,8 +981,8 @@ pub fn game_log_query(db: &DatabaseService, query: GameLogQueryInput) -> Result<
             let display_name = query_param_string(&params, "displayName");
             let user_id = db
                 .execute(
-                    "SELECT user_id FROM gamelog_join_leave WHERE display_name = @display_name AND user_id != '' ORDER BY id DESC LIMIT 1",
-                    &ParamsBuilder::new().set("display_name", display_name).build(),
+                    "SELECT user_id FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND display_name = @display_name AND user_id != '' ORDER BY id DESC LIMIT 1",
+                    &scoped_params(owner_id).set("display_name", display_name).build(),
                 )?
                 .first()
                 .map(|row| row_string(row, 0))

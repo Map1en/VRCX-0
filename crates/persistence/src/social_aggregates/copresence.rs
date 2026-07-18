@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -18,6 +19,13 @@ pub fn get_copresence_summary(
     db: &DatabaseService,
     input: CopresenceSummaryInput,
 ) -> Result<CopresenceSummaryOutput, Error> {
+    let owner_user_id = input
+        .owner_user_id
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_string();
+    let owner_id = owner_id_for_filter(db, &owner_user_id)?;
     let limit = clamped_optional_limit(input.limit, 25, 100);
     let min_millis = input.min_minutes.unwrap_or(0).max(0).saturating_mul(60_000);
     let world_id_expr = match input.group_by {
@@ -59,17 +67,12 @@ pub fn get_copresence_summary(
                     ELSE 'unknown'
                 END AS access_bucket
             FROM gamelog_join_leave g
-            WHERE g.type = 'OnPlayerLeft'",
+            WHERE g.owner_id IN (0, @owner_id)
+              AND g.type = 'OnPlayerLeft'",
     );
-    let mut params = ParamsBuilder::new();
+    let mut params = ParamsBuilder::new().set("owner_id", owner_id);
     append_time_window_filter(&mut sql, &mut params, &input.time_window, "g.created_at");
 
-    let owner_user_id = input
-        .owner_user_id
-        .as_deref()
-        .map(str::trim)
-        .unwrap_or_default()
-        .to_string();
     sql.push_str(" AND (@owner_user_id = '' OR COALESCE(g.user_id, '') <> @owner_user_id)");
 
     if input.friends_only {
@@ -246,7 +249,7 @@ pub fn get_copresence_summary(
         .filter(|world_id| !world_id.is_empty())
         .collect::<BTreeSet<_>>();
     if !world_ids.is_empty() {
-        let world_names = world_names_for_ids(db, &world_ids)?;
+        let world_names = world_names_for_ids(db, &owner_user_id, &world_ids)?;
         for row in &mut rows {
             if let Some(world_id) = row.world_id.as_ref() {
                 if let Some(name) = world_names.get(world_id) {

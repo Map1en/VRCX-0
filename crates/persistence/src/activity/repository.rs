@@ -16,6 +16,7 @@ use crate::common::{
 use crate::database::schema::ensure_user_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::ensure_game_log_tables;
+use crate::ownership::owner_id_for_filter;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -158,6 +159,7 @@ fn default_activity_sync_state(user_id: &str) -> ActivitySyncStateOutput {
 
 fn read_self_activity_source_slice(
     db: &DatabaseService,
+    owner_user_id: &str,
     from_date: &str,
     to_date: &str,
 ) -> Result<Vec<ActivitySourceLocationRow>, Error> {
@@ -175,13 +177,18 @@ fn read_self_activity_source_slice(
          FROM (
              SELECT created_at, time
              FROM gamelog_location
-             WHERE created_at >= @to_date_iso
+             WHERE owner_id IN (0, @owner_id)
+               AND created_at >= @to_date_iso
              ORDER BY created_at
              LIMIT 1
          )"
         .to_string()
     };
     let mut db_params = HashMap::new();
+    db_params.insert(
+        "@owner_id".into(),
+        Value::from(owner_id_for_filter(db, owner_user_id)?),
+    );
     db_params.insert(
         "@from_date_iso".into(),
         Value::String(from_date.to_string()),
@@ -196,14 +203,16 @@ fn read_self_activity_source_slice(
                      FROM (
                          SELECT created_at, time
                          FROM gamelog_location
-                         WHERE created_at < @from_date_iso
+                         WHERE owner_id IN (0, @owner_id)
+                           AND created_at < @from_date_iso
                          ORDER BY created_at DESC
                          LIMIT 1
                      )
                      UNION ALL
                      SELECT created_at, time, 1 AS sort_group
                      FROM gamelog_location
-                     WHERE created_at >= @from_date_iso
+                     WHERE owner_id IN (0, @owner_id)
+                       AND created_at >= @from_date_iso
                        {to_filter}
                      {to_tail}
                  )
@@ -221,6 +230,7 @@ fn read_self_activity_source_slice(
 
 fn read_self_activity_source_after(
     db: &DatabaseService,
+    owner_user_id: &str,
     after_created_at: &str,
     inclusive: bool,
 ) -> Result<Vec<ActivitySourceLocationRow>, Error> {
@@ -231,10 +241,12 @@ fn read_self_activity_source_after(
             &format!(
                 "SELECT created_at, time
                  FROM gamelog_location
-                 WHERE created_at {op} @after_created_at
+                 WHERE owner_id IN (0, @owner_id)
+                   AND created_at {op} @after_created_at
                  ORDER BY created_at"
             ),
             &ParamsBuilder::new()
+                .set("owner_id", owner_id_for_filter(db, owner_user_id)?)
                 .set("after_created_at", normalize_text(after_created_at))
                 .build(),
         )?
@@ -473,12 +485,14 @@ pub fn activity_friend_presence_slice(
 
 pub fn activity_self_source_bounds(
     db: &DatabaseService,
+    owner_user_id: &str,
 ) -> Result<ActivitySelfSourceBoundsOutput, Error> {
     ensure_game_log_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     let row = db
         .execute(
-            "SELECT MIN(created_at), MAX(created_at), COUNT(*) FROM gamelog_location",
-            &Default::default(),
+            "SELECT MIN(created_at), MAX(created_at), COUNT(*) FROM gamelog_location WHERE owner_id IN (0, @owner_id)",
+            &ParamsBuilder::new().set("owner_id", owner_id).build(),
         )?
         .into_iter()
         .next();
@@ -498,14 +512,16 @@ pub fn activity_self_source_bounds(
 
 pub fn activity_self_sessions_refresh(
     db: &DatabaseService,
-    input: ActivitySelfSessionsRefreshInput,
+    owner_user_id: &str,
+    mut input: ActivitySelfSessionsRefreshInput,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    let user_id = normalize_text(&input.user_id);
+    let user_id = normalize_text(owner_user_id);
     if user_id.is_empty() {
         return Err(Error::Custom(
             "ActivitySelfSessionsRefresh requires userId.".into(),
         ));
     }
+    input.user_id = user_id.clone();
     with_activity_refresh_lock(db, &user_id, || {
         activity_self_sessions_refresh_inner(db, input, user_id.clone())
     })
@@ -582,7 +598,7 @@ fn activity_self_sessions_refresh_inner(
             let range_days =
                 clamp_activity_range_days(&input.range_days, ACTIVITY_INITIAL_RANGE_DAYS);
             let from_date = activity_iso_from_ms(now_ms - range_days * ACTIVITY_DAY_MS);
-            let rows = read_self_activity_source_slice(db, &from_date, "")?;
+            let rows = read_self_activity_source_slice(db, &user_id, &from_date, "")?;
             let source_last_created_at = rows
                 .last()
                 .map(|row| row.created_at.clone())
@@ -603,7 +619,8 @@ fn activity_self_sessions_refresh_inner(
             if sync.source_last_created_at.is_empty() {
                 return Ok(activity_refresh_output(sync, sessions, 0));
             }
-            let rows = read_self_activity_source_after(db, &sync.source_last_created_at, true)?;
+            let rows =
+                read_self_activity_source_after(db, &user_id, &sync.source_last_created_at, true)?;
             if rows.is_empty() {
                 sync.updated_at = now_iso;
                 write_activity_sync_state_data(db, &user_prefix, &user_id, &sync)?;
@@ -654,7 +671,7 @@ fn activity_self_sessions_refresh_inner(
             } else {
                 String::new()
             };
-            let rows = read_self_activity_source_slice(db, &from_date, &to_date)?;
+            let rows = read_self_activity_source_slice(db, &user_id, &from_date, &to_date)?;
             let computed =
                 build_sessions_from_gamelog(&rows, now_ms, false, &sync.source_last_created_at);
             if !computed.is_empty() {

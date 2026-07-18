@@ -9,6 +9,7 @@ use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
 use crate::game_log::ensure_game_log_tables;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use crate::worlds::{world_summary_from_row, WorldSummaryOutput};
@@ -49,6 +50,7 @@ pub struct InstanceActivityRowOutput {
 
 pub fn player_list_location_get(
     db: &DatabaseService,
+    owner_user_id: &str,
     location: String,
 ) -> Result<Option<PlayerLocationOutput>, Error> {
     ensure_game_log_tables(db)?;
@@ -56,14 +58,19 @@ pub fn player_list_location_get(
     if location.is_empty() {
         return Ok(None);
     }
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     Ok(db
         .execute(
             "SELECT created_at, location, world_id, world_name, time, group_name
              FROM gamelog_location
-             WHERE location = @location
+             WHERE owner_id IN (0, @owner_id)
+               AND location = @location
              ORDER BY id DESC
              LIMIT 1",
-            &ParamsBuilder::new().set("location", location).build(),
+            &ParamsBuilder::new()
+                .set("owner_id", owner_id)
+                .set("location", location)
+                .build(),
         )?
         .first()
         .map(|row| player_location_from_row(row)))
@@ -71,15 +78,18 @@ pub fn player_list_location_get(
 
 pub fn player_list_latest_location_get(
     db: &DatabaseService,
+    owner_user_id: &str,
 ) -> Result<Option<PlayerLocationOutput>, Error> {
     ensure_game_log_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     Ok(db
         .execute(
             "SELECT created_at, location, world_id, world_name, time, group_name
              FROM gamelog_location
+             WHERE owner_id IN (0, @owner_id)
              ORDER BY id DESC
              LIMIT 1",
-            &Default::default(),
+            &ParamsBuilder::new().set("owner_id", owner_id).build(),
         )?
         .first()
         .map(|row| player_location_from_row(row)))
@@ -87,18 +97,22 @@ pub fn player_list_latest_location_get(
 
 pub fn player_list_join_leave_rows(
     db: &DatabaseService,
+    owner_user_id: &str,
     location: String,
     started_at: String,
 ) -> Result<Vec<PlayerJoinLeaveOutput>, Error> {
     ensure_game_log_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     Ok(db
         .execute(
             "SELECT id, created_at, type, display_name, user_id, time
              FROM gamelog_join_leave
-             WHERE location = @location
+             WHERE owner_id IN (0, @owner_id)
+               AND location = @location
                AND (@started_at = '' OR created_at >= @started_at)
              ORDER BY id ASC",
             &ParamsBuilder::new()
+                .set("owner_id", owner_id)
                 .set("location", normalize_text(location))
                 .set("started_at", normalize_text(started_at))
                 .build(),
@@ -110,6 +124,7 @@ pub fn player_list_join_leave_rows(
 
 pub fn instance_activity_dates_get(
     db: &DatabaseService,
+    owner_user_id: &str,
     user_id: String,
 ) -> Result<Vec<String>, Error> {
     ensure_game_log_tables(db)?;
@@ -117,13 +132,18 @@ pub fn instance_activity_dates_get(
     if user_id.is_empty() {
         return Ok(Vec::new());
     }
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     Ok(db
         .execute(
             "SELECT created_at
              FROM gamelog_join_leave
-             WHERE user_id = @user_id
+             WHERE owner_id IN (0, @owner_id)
+               AND user_id = @user_id
              ORDER BY created_at DESC",
-            &ParamsBuilder::new().set("user_id", user_id).build(),
+            &ParamsBuilder::new()
+                .set("owner_id", owner_id)
+                .set("user_id", user_id)
+                .build(),
         )?
         .into_iter()
         .map(|row| row_string(&row, 0))
@@ -133,15 +153,18 @@ pub fn instance_activity_dates_get(
 
 pub fn instance_activity_rows_get(
     db: &DatabaseService,
+    owner_user_id: &str,
     start_date: String,
     end_date: String,
 ) -> Result<Vec<InstanceActivityRowOutput>, Error> {
     ensure_game_log_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     Ok(db
         .execute(
             "SELECT id, created_at, type, display_name, location, user_id, time
              FROM gamelog_join_leave
-             WHERE type = 'OnPlayerLeft'
+             WHERE owner_id IN (0, @owner_id)
+               AND type = 'OnPlayerLeft'
                AND (
                  strftime('%Y-%m-%dT%H:%M:%SZ', created_at, '-' || (time * 1.0 / 1000) || ' seconds')
                     BETWEEN @utc_start_date AND @utc_end_date
@@ -149,6 +172,7 @@ pub fn instance_activity_rows_get(
                )
              ORDER BY created_at ASC, id ASC",
             &ParamsBuilder::new()
+                .set("owner_id", owner_id)
                 .set("utc_start_date", start_date)
                 .set("utc_end_date", end_date)
                 .build(),
@@ -177,6 +201,7 @@ fn empty_world_summary(id: String, name: String) -> WorldSummaryOutput {
 
 pub fn world_summaries_get(
     db: &DatabaseService,
+    owner_user_id: &str,
     world_ids: Vec<String>,
 ) -> Result<HashMap<String, WorldSummaryOutput>, Error> {
     ensure_global_store_tables(db)?;
@@ -192,7 +217,8 @@ pub fn world_summaries_get(
         return Ok(HashMap::new());
     }
 
-    let mut params = ParamsBuilder::new();
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
+    let mut params = ParamsBuilder::new().set("owner_id", owner_id);
     let mut placeholders = Vec::with_capacity(world_ids.len());
     for (index, world_id) in world_ids.iter().enumerate() {
         let key = format!("world_id_{index}");
@@ -225,12 +251,14 @@ pub fn world_summaries_get(
                  SELECT world_id, MAX(id) AS max_id
                  FROM gamelog_location
                  WHERE world_id IN ({in_clause})
+                   AND owner_id IN (0, @owner_id)
                    AND world_name IS NOT NULL
                    AND world_name != ''
                  GROUP BY world_id
              ) latest
                  ON latest.world_id = gl.world_id
-                AND latest.max_id = gl.id"
+                AND latest.max_id = gl.id
+             WHERE gl.owner_id IN (0, @owner_id)"
         ),
         &params,
     )? {

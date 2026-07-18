@@ -46,7 +46,8 @@ pub(super) fn create_game_log_tables(db: &DatabaseService) {
                 display_name TEXT,
                 location TEXT,
                 user_id TEXT,
-                time INTEGER
+                time INTEGER,
+                owner_id INTEGER NOT NULL DEFAULT 0
             )",
         &Default::default(),
     )
@@ -59,7 +60,8 @@ pub(super) fn create_game_log_tables(db: &DatabaseService) {
                 world_id TEXT,
                 world_name TEXT,
                 time INTEGER,
-                group_name TEXT
+                group_name TEXT,
+                owner_id INTEGER NOT NULL DEFAULT 0
             )",
         &Default::default(),
     )

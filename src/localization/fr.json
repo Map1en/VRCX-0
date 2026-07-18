@@ -1528,6 +1528,12 @@
                 "empty": "Glissez des outils ici, ou ajoutez-les depuis un menu d'outils.",
                 "actions": "Actions de l'outil"
             },
+            "category": {
+                "social": "Social",
+                "vrchat": "Configuration et lancement de VRChat",
+                "data": "Données et sauvegardes",
+                "debug": "Débogage"
+            },
             "group": {
                 "header": "Groupe",
                 "calendar": "Calendrier",
@@ -1984,8 +1990,6 @@
                     "background_mode_delay_button": "Définir le délai en minutes",
                     "auto_install_updates_on_startup": "Mise à jour automatique au démarrage",
                     "auto_install_updates_on_startup_description": "Une fois activé, VRCX-0 vérifie les mises à jour au démarrage de l'application. Si une mise à jour installable est disponible, elle sera téléchargée, installée et l'application redémarrera automatiquement.",
-                    "auto_background_download_updates": "Télécharger les mises à jour en arrière-plan",
-                    "auto_background_download_updates_description": "Lorsque cette option est activée, VRCX-0 télécharge les mises à jour installables en arrière-plan après une vérification. Vous pouvez installer la mise à jour prête depuis la barre de titre ; si une version plus récente apparaît, VRCX-0 ignore l’ancien téléchargement et télécharge la dernière version.",
                     "proxy": "Paramètres du proxy"
                 },
                 "favorites": {

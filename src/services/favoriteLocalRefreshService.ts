@@ -55,9 +55,13 @@ async function refreshLocalAvatarFavorites(): Promise<void> {
 }
 
 async function refreshLocalFriendFavorites(): Promise<void> {
+    const currentUserId = useFavoriteStore.getState().currentUserId;
     const [rows, groups] = await Promise.all([
         favoritePersistenceRepository.getFriendFavorites(),
-        favoritePersistenceRepository.getExplicitLocalFavoriteGroups('friend')
+        favoritePersistenceRepository.getExplicitLocalFavoriteGroups(
+            'friend',
+            currentUserId
+        )
     ]);
     useFavoriteStore.getState().setLocalFavoritesForKind('friend', {
         localFavorites: buildGroupMap<FriendFavoriteRow>(rows, 'userId'),

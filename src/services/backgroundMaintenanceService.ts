@@ -3,10 +3,7 @@ export {
     refreshFriendAndFavoriteSnapshots,
     refreshPlayerModerations
 } from './backgroundMaintenanceSessionService';
-export {
-    handleAppUpdateStatusEvent,
-    handleAutoBackgroundDownloadUpdatesPreferenceChange
-} from './backgroundMaintenanceUpdateService';
+export { handleAppUpdateStatusEvent } from './backgroundMaintenanceUpdateService';
 export {
     runForegroundUpdateRegistryBackupMaintenance,
     runStartupMaintenance

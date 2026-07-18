@@ -1,10 +1,10 @@
 type ToolCategoryKey =
     | 'image'
     | 'shortcuts'
-    | 'group'
     | 'social'
-    | 'system'
-    | 'user'
+    | 'vrchat'
+    | 'data'
+    | 'debug'
     | 'other';
 
 type ToolAction =
@@ -67,10 +67,10 @@ interface ToolNavDefinition {
 const toolCategories: ToolCategory[] = [
     { key: 'image', labelKey: 'view.tools.pictures.header' },
     { key: 'shortcuts', labelKey: 'view.tools.shortcuts.header' },
-    { key: 'group', labelKey: 'view.tools.group.header' },
-    { key: 'social', labelKey: 'view.tools.social_automation.header' },
-    { key: 'system', labelKey: 'view.tools.system_tools.header' },
-    { key: 'user', labelKey: 'view.tools.export.header' },
+    { key: 'social', labelKey: 'view.tools.category.social' },
+    { key: 'vrchat', labelKey: 'view.tools.category.vrchat' },
+    { key: 'data', labelKey: 'view.tools.category.data' },
+    { key: 'debug', labelKey: 'view.tools.category.debug' },
     { key: 'other', labelKey: 'view.tools.other.header' }
 ];
 
@@ -173,7 +173,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'vrchat-log',
-        category: 'system',
+        category: 'debug',
         iconKey: 'file-text',
         navIcon: 'lucide:FileText',
         titleKey: 'view.tools.system_tools.vrchat_log',
@@ -184,7 +184,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'profile-backup',
-        category: 'system',
+        category: 'data',
         iconKey: 'database-backup',
         navIcon: 'lucide:DatabaseBackup',
         titleKey: 'profile_backup.header',
@@ -220,7 +220,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'vrchat-config',
-        category: 'system',
+        category: 'vrchat',
         iconKey: 'sliders-horizontal',
         navIcon: 'lucide:SlidersHorizontal',
         titleKey: 'view.tools.system_tools.vrchat_config',
@@ -235,7 +235,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'launch-options',
-        category: 'system',
+        category: 'vrchat',
         iconKey: 'terminal',
         navIcon: 'lucide:SquareTerminal',
         titleKey: 'view.settings.advanced.advanced.launch_options',
@@ -251,7 +251,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'app-launcher',
-        category: 'system',
+        category: 'vrchat',
         iconKey: 'rocket',
         navIcon: 'lucide:Rocket',
         titleKey: 'view.tools.system_tools.app_launcher',
@@ -265,7 +265,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'registry-backup',
-        category: 'system',
+        category: 'data',
         iconKey: 'archive',
         navIcon: 'lucide:Archive',
         titleKey: 'view.settings.advanced.advanced.vrc_registry_backup',
@@ -322,7 +322,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'group-calendar',
-        category: 'group',
+        category: 'social',
         iconKey: 'calendar',
         navIcon: 'lucide:CalendarDays',
         titleKey: 'view.tools.group.calendar',
@@ -332,7 +332,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'discord-names',
-        category: 'user',
+        category: 'data',
         iconKey: 'users',
         navIcon: 'lucide:Users',
         titleKey: 'view.tools.export.discord_names',
@@ -342,7 +342,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'export-notes',
-        category: 'user',
+        category: 'data',
         iconKey: 'file-text',
         navIcon: 'lucide:FileText',
         titleKey: 'view.tools.export.export_notes',
@@ -352,7 +352,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'export-friend-list',
-        category: 'user',
+        category: 'data',
         iconKey: 'users',
         navIcon: 'lucide:Contact',
         titleKey: 'view.tools.export.export_friend_list',
@@ -362,7 +362,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'export-own-avatars',
-        category: 'user',
+        category: 'data',
         iconKey: 'download',
         navIcon: 'lucide:Download',
         titleKey: 'view.tools.export.export_own_avatars',
@@ -372,7 +372,7 @@ const toolDefinitions: ToolDefinition[] = [
     },
     {
         key: 'edit-invite-message',
-        category: 'other',
+        category: 'social',
         iconKey: 'pencil',
         navIcon: 'lucide:MessageSquareText',
         titleKey: 'view.tools.other.edit_invite_message',

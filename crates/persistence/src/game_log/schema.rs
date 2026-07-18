@@ -24,3 +24,4 @@ pub(super) const COL_RESOURCE_URL: &str = "resource_url";
 pub(super) const COL_RESOURCE_TYPE: &str = "resource_type";
 pub(super) const COL_DATA: &str = "data";
 pub(super) const COL_MESSAGE: &str = "message";
+pub(super) const COL_OWNER_ID: &str = crate::ownership::COL_OWNER_ID;

@@ -517,18 +517,22 @@ impl VrcxMcpServer {
     }
 
     fn friend_favorite_groups(&self, user_id: &str) -> Result<Vec<String>, String> {
-        let mut groups =
-            persistence_favorites::favorite_list(self.runtime.db.as_ref(), "friend".into())
-                .map_err(map_persistence_error)?
-                .into_iter()
-                .filter(|row| row.get("userId").and_then(Value::as_str) == Some(user_id))
-                .filter_map(|row| {
-                    row.get("groupName")
-                        .and_then(Value::as_str)
-                        .map(str::to_string)
-                })
-                .filter(|group| !group.trim().is_empty())
-                .collect::<Vec<_>>();
+        let owner_user_id = require_current_user_id(&self.runtime)?;
+        let mut groups = persistence_favorites::favorite_list(
+            self.runtime.db.as_ref(),
+            Some(&owner_user_id),
+            "friend".into(),
+        )
+        .map_err(map_persistence_error)?
+        .into_iter()
+        .filter(|row| row.get("userId").and_then(Value::as_str) == Some(user_id))
+        .filter_map(|row| {
+            row.get("groupName")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .filter(|group| !group.trim().is_empty())
+        .collect::<Vec<_>>();
         groups.sort();
         groups.dedup();
         Ok(groups)

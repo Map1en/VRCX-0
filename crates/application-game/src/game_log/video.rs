@@ -47,6 +47,7 @@ pub async fn handle_video_play(
     db: &DatabaseService,
     web: &WebClient,
     event_bus: &RuntimeEventBus,
+    owner_user_id: &str,
     mut input: VideoInput,
 ) -> Result<()> {
     if input.video_url.trim().is_empty() {
@@ -83,7 +84,8 @@ pub async fn handle_video_play(
     }
 
     if input.user_id.is_empty() && !input.display_name.is_empty() {
-        input.user_id = game_log::get_user_id_from_display_name(db, &input.display_name)?;
+        input.user_id =
+            game_log::get_user_id_from_display_name(db, owner_user_id, &input.display_name)?;
     }
 
     let raw_row = vec![
@@ -105,7 +107,7 @@ pub async fn handle_video_play(
         }],
         ..Default::default()
     };
-    let affected_count = match game_log::write_batch(db, &batch) {
+    let affected_count = match game_log::write_batch(db, owner_user_id, &batch) {
         Ok(affected_count) => affected_count,
         Err(error) => {
             let message = error.to_string();

@@ -121,6 +121,7 @@ fn world_cache_init_pins_favorites_and_bounds_working_set() -> Result<()> {
     )?;
     favorite_add(
         db.as_ref(),
+        None,
         "world".into(),
         "wrld_favorite".into(),
         "Favorites".into(),

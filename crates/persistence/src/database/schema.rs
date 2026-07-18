@@ -4,16 +4,18 @@ use serde_json::Value;
 
 use crate::common::ParamsBuilder;
 use crate::database::DatabaseService;
+use crate::ownership::{ensure_owner_table, COL_OWNER_ID};
 use crate::realtime::ensure_realtime_tables;
 use crate::Error;
 
 pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Error> {
+    ensure_owner_table(db)?;
     for sql in [
         "CREATE TABLE IF NOT EXISTS cache_avatar (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
         "CREATE TABLE IF NOT EXISTS cache_world (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
         "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
         "CREATE TABLE IF NOT EXISTS favorite_avatar (id INTEGER PRIMARY KEY, created_at TEXT, avatar_id TEXT, group_name TEXT)",
-        "CREATE TABLE IF NOT EXISTS favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT)",
+        "CREATE TABLE IF NOT EXISTS favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT, owner_id INTEGER NOT NULL DEFAULT 0)",
         "CREATE TABLE IF NOT EXISTS memos (user_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
         "CREATE TABLE IF NOT EXISTS world_memos (world_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
         "CREATE TABLE IF NOT EXISTS avatar_memos (avatar_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
@@ -21,14 +23,19 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
     ] {
         db.execute_non_query(sql, &Default::default())?;
     }
+    add_column_if_missing(
+        db,
+        "favorite_friend",
+        COL_OWNER_ID,
+        "INTEGER NOT NULL DEFAULT 0",
+    )?;
     ensure_favorite_unique_indexes(db)?;
     Ok(())
 }
 
-const FAVORITE_UNIQUE_INDEX_TABLES: [(&str, &str); 3] = [
+const FAVORITE_UNIQUE_INDEX_TABLES: [(&str, &str); 2] = [
     ("favorite_world", "world_id"),
     ("favorite_avatar", "avatar_id"),
-    ("favorite_friend", "user_id"),
 ];
 
 fn ensure_favorite_unique_indexes(db: &DatabaseService) -> Result<(), Error> {
@@ -50,6 +57,23 @@ fn ensure_favorite_unique_indexes(db: &DatabaseService) -> Result<(), Error> {
             &Default::default(),
         )?;
     }
+    let friend_index_name = "favorite_friend_owner_user_id_group_idx";
+    if !favorite_unique_index_exists(db, friend_index_name)? {
+        db.execute_non_query(
+            "DELETE FROM favorite_friend WHERE id NOT IN (SELECT MIN(id) FROM favorite_friend GROUP BY owner_id, user_id, group_name)",
+            &Default::default(),
+        )?;
+        db.execute_non_query(
+            &format!(
+                "CREATE UNIQUE INDEX IF NOT EXISTS {friend_index_name} ON favorite_friend (owner_id, user_id, group_name)"
+            ),
+            &Default::default(),
+        )?;
+    }
+    db.execute_non_query(
+        "DROP INDEX IF EXISTS favorite_friend_user_id_group_idx",
+        &Default::default(),
+    )?;
     Ok(())
 }
 
@@ -65,8 +89,9 @@ fn favorite_unique_index_exists(db: &DatabaseService, index_name: &str) -> Resul
 }
 
 pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error> {
+    ensure_owner_table(db)?;
     for sql in [
-        "CREATE TABLE IF NOT EXISTS assistant_session (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT '', entity_panel_open INTEGER NOT NULL DEFAULT 0, surfaced_entities TEXT NOT NULL DEFAULT '[]')",
+        "CREATE TABLE IF NOT EXISTS assistant_session (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT '', entity_panel_open INTEGER NOT NULL DEFAULT 0, surfaced_entities TEXT NOT NULL DEFAULT '[]', owner_id INTEGER NOT NULL DEFAULT 0)",
         "CREATE TABLE IF NOT EXISTS assistant_message (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, seq INTEGER NOT NULL DEFAULT 0, role TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '')",
         "CREATE INDEX IF NOT EXISTS assistant_message_session_seq_idx ON assistant_message (session_id, seq)",
     ] {
@@ -77,6 +102,12 @@ pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error>
         db,
         "assistant_session",
         "entity_panel_open",
+        "INTEGER NOT NULL DEFAULT 0",
+    )?;
+    add_column_if_missing(
+        db,
+        "assistant_session",
+        COL_OWNER_ID,
         "INTEGER NOT NULL DEFAULT 0",
     )?;
     add_column_if_missing(

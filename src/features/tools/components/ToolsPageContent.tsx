@@ -11,9 +11,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    BotIcon,
+    BugIcon,
     ChevronDownIcon,
-    DownloadIcon,
+    DatabaseBackupIcon,
     FolderOpenIcon,
     ImageIcon,
     MinusIcon,
@@ -21,6 +21,7 @@ import {
     PinIcon,
     PinOffIcon,
     PlusIcon,
+    SettingsIcon,
     StarIcon,
     UsersIcon,
     WrenchIcon,
@@ -52,10 +53,10 @@ import {
 const categoryIconByKey: Record<string, LucideIcon> = {
     image: ImageIcon,
     shortcuts: FolderOpenIcon,
-    group: UsersIcon,
-    social: BotIcon,
-    system: WrenchIcon,
-    user: DownloadIcon,
+    social: UsersIcon,
+    vrchat: SettingsIcon,
+    data: DatabaseBackupIcon,
+    debug: BugIcon,
     other: MoreHorizontalIcon
 };
 

@@ -1,6 +1,7 @@
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_assistant_tables;
 use crate::database::DatabaseService;
+use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert};
 use crate::Error;
 
 #[derive(Debug, Clone)]
@@ -14,6 +15,7 @@ pub struct PersistedMessage {
 
 #[derive(Debug, Clone)]
 pub struct PersistedSession {
+    pub owner_user_id: String,
     pub id: String,
     pub title: String,
     pub created_at: String,
@@ -27,15 +29,29 @@ pub struct PersistedSession {
     pub messages: Vec<PersistedMessage>,
 }
 
-pub fn assistant_sessions_load(db: &DatabaseService) -> Result<Vec<PersistedSession>, Error> {
+pub fn assistant_sessions_load(
+    db: &DatabaseService,
+    owner_user_id: Option<&str>,
+) -> Result<Vec<PersistedSession>, Error> {
     ensure_assistant_tables(db)?;
+    let (owner_filter, owner_id) = if let Some(owner_user_id) = owner_user_id {
+        (
+            "WHERE s.owner_id IN (0, @owner_id)",
+            owner_id_for_filter(db, owner_user_id)?,
+        )
+    } else {
+        ("", 0)
+    };
     let mut sessions: Vec<PersistedSession> = db
         .execute(
-            "SELECT id, title, created_at, updated_at, entity_panel_open, surfaced_entities, endpoint_id, model, allow_writes, playbook_mode FROM assistant_session ORDER BY updated_at DESC",
-            &Default::default(),
+            &format!(
+                "SELECT s.id, s.title, s.created_at, s.updated_at, s.entity_panel_open, s.surfaced_entities, s.endpoint_id, s.model, s.allow_writes, s.playbook_mode, COALESCE(o.user_id, '') FROM assistant_session s LEFT JOIN owners o ON o.id = s.owner_id {owner_filter} ORDER BY s.updated_at DESC"
+            ),
+            &ParamsBuilder::new().set("owner_id", owner_id).build(),
         )?
         .into_iter()
         .map(|row| PersistedSession {
+            owner_user_id: row_string(&row, 10),
             id: row_string(&row, 0),
             title: row_string(&row, 1),
             created_at: row_string(&row, 2),
@@ -73,21 +89,24 @@ pub fn assistant_sessions_load(db: &DatabaseService) -> Result<Vec<PersistedSess
 
 pub fn assistant_session_upsert(
     db: &DatabaseService,
+    owner_user_id: &str,
     id: &str,
     title: &str,
     created_at: &str,
     updated_at: &str,
 ) -> Result<(), Error> {
     ensure_assistant_tables(db)?;
+    let owner_id = owner_id_get_or_insert(db, owner_user_id)?;
     db.execute_non_query(
-        "INSERT INTO assistant_session (id, title, created_at, updated_at) \
-         VALUES (@id, @title, @created_at, @updated_at) \
+        "INSERT INTO assistant_session (id, title, created_at, updated_at, owner_id) \
+         VALUES (@id, @title, @created_at, @updated_at, @owner_id) \
          ON CONFLICT(id) DO UPDATE SET title = excluded.title, updated_at = excluded.updated_at",
         &ParamsBuilder::new()
             .set("id", id.to_string())
             .set("title", title.to_string())
             .set("created_at", created_at.to_string())
             .set("updated_at", updated_at.to_string())
+            .set("owner_id", owner_id)
             .build(),
     )?;
     Ok(())
@@ -133,19 +152,36 @@ pub fn assistant_session_set_runtime(
     Ok(())
 }
 
-pub fn assistant_session_delete(db: &DatabaseService, id: &str) -> Result<(), Error> {
+pub fn assistant_session_delete(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    id: &str,
+) -> Result<(), Error> {
     ensure_assistant_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
     let params = ParamsBuilder::new()
         .set("session_id", id.to_string())
+        .set("owner_id", owner_id)
         .build();
-    db.execute_non_query(
-        "DELETE FROM assistant_message WHERE session_id = @session_id",
-        &params,
-    )?;
-    db.execute_non_query(
-        "DELETE FROM assistant_session WHERE id = @session_id",
-        &params,
-    )?;
+    db.write_transaction(|tx| {
+        let visible = !tx
+            .execute(
+                "SELECT id FROM assistant_session WHERE id = @session_id AND owner_id IN (0, @owner_id) LIMIT 1",
+                &params,
+            )?
+            .is_empty();
+        if visible {
+            tx.execute_non_query(
+                "DELETE FROM assistant_message WHERE session_id = @session_id",
+                &params,
+            )?;
+            tx.execute_non_query(
+                "DELETE FROM assistant_session WHERE id = @session_id AND owner_id IN (0, @owner_id)",
+                &params,
+            )?;
+        }
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -192,14 +228,14 @@ mod tests {
     #[test]
     fn round_trips_sessions_and_messages() {
         let db = test_db("assistant-roundtrip");
-        assistant_session_upsert(&db, "ses_1", "", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, "usr_a", "ses_1", "", "t0", "t0").unwrap();
         assistant_session_set_runtime(&db, "ses_1", Some("ep_1"), Some("model-a"), true, "guided")
             .unwrap();
         assistant_message_insert(&db, "msg_1", "ses_1", 1, "user", "hi", "t1").unwrap();
-        assistant_session_upsert(&db, "ses_1", "hi", "t0", "t1").unwrap();
+        assistant_session_upsert(&db, "usr_a", "ses_1", "hi", "t0", "t1").unwrap();
         assistant_message_insert(&db, "msg_2", "ses_1", 2, "assistant", "hello", "t2").unwrap();
 
-        let loaded = assistant_sessions_load(&db).unwrap();
+        let loaded = assistant_sessions_load(&db, Some("usr_a")).unwrap();
         assert_eq!(loaded.len(), 1);
         let session = &loaded[0];
         assert_eq!(session.title, "hi");
@@ -215,12 +251,14 @@ mod tests {
     #[test]
     fn delete_removes_session_and_messages() {
         let db = test_db("assistant-delete");
-        assistant_session_upsert(&db, "ses_1", "x", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, "usr_a", "ses_1", "x", "t0", "t0").unwrap();
         assistant_message_insert(&db, "msg_1", "ses_1", 1, "user", "hi", "t1").unwrap();
 
-        assistant_session_delete(&db, "ses_1").unwrap();
+        assistant_session_delete(&db, "usr_a", "ses_1").unwrap();
 
-        assert!(assistant_sessions_load(&db).unwrap().is_empty());
+        assert!(assistant_sessions_load(&db, Some("usr_a"))
+            .unwrap()
+            .is_empty());
         let remaining = db
             .execute(
                 "SELECT id FROM assistant_message WHERE session_id = @session_id",
@@ -228,5 +266,27 @@ mod tests {
             )
             .unwrap();
         assert!(remaining.is_empty());
+    }
+
+    #[test]
+    fn sessions_are_scoped_and_cross_owner_delete_is_ignored() {
+        let db = test_db("assistant-owner-scope");
+        assistant_session_upsert(&db, "usr_a", "ses_a", "a", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, "usr_b", "ses_b", "b", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, "", "ses_shared", "shared", "t0", "t0").unwrap();
+
+        let mut a_ids = assistant_sessions_load(&db, Some("usr_a"))
+            .unwrap()
+            .into_iter()
+            .map(|session| session.id)
+            .collect::<Vec<_>>();
+        a_ids.sort();
+        assert_eq!(a_ids, vec!["ses_a", "ses_shared"]);
+
+        assistant_session_delete(&db, "usr_b", "ses_a").unwrap();
+        assert!(assistant_sessions_load(&db, Some("usr_a"))
+            .unwrap()
+            .iter()
+            .any(|session| session.id == "ses_a"));
     }
 }

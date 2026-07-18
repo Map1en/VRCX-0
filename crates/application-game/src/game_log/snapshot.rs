@@ -96,12 +96,13 @@ fn empty_context(location: String, source: &str) -> PlayerListSnapshotContext {
 
 fn resolve_location_context(
     db: &DatabaseService,
+    owner_user_id: &str,
     current_location: &str,
 ) -> Result<PlayerListSnapshotContext> {
     let normalized = current_location.trim().to_string();
 
     if is_live_location(&normalized) {
-        if let Some(row) = player_list_location_get(db, normalized.clone())? {
+        if let Some(row) = player_list_location_get(db, owner_user_id, normalized.clone())? {
             return Ok(context_from_row(row, "database"));
         }
         let world_id = world_id_from_location(&normalized);
@@ -120,7 +121,7 @@ fn resolve_location_context(
         return Ok(empty_context(normalized, "runtime"));
     }
 
-    if let Some(row) = player_list_latest_location_get(db)? {
+    if let Some(row) = player_list_latest_location_get(db, owner_user_id)? {
         return Ok(context_from_row(row, "database"));
     }
 
@@ -129,6 +130,7 @@ fn resolve_location_context(
 
 fn rebuild_roster(
     db: &DatabaseService,
+    owner_user_id: &str,
     location: &str,
     started_at: &str,
     current_user_id: &str,
@@ -138,6 +140,7 @@ fn rebuild_roster(
     let range_start = if started_at_ms > 0 { started_at } else { "" };
     let entries = get_join_leave_entries_for_location_range(
         db,
+        owner_user_id,
         location.trim(),
         range_start,
         ROSTER_RANGE_END,
@@ -189,11 +192,12 @@ fn rebuild_roster(
 
 pub fn player_list_current_snapshot(
     db: &DatabaseService,
+    owner_user_id: &str,
     current_user_id: &str,
     current_location: &str,
     current_location_started_at: &str,
 ) -> Result<PlayerListSnapshotOutput> {
-    let location_context = resolve_location_context(db, current_location)?;
+    let location_context = resolve_location_context(db, owner_user_id, current_location)?;
 
     let runtime_started_at = current_location_started_at.trim();
     let mut context = location_context.clone();
@@ -209,7 +213,13 @@ pub fn player_list_current_snapshot(
     }
 
     let current_user_id = current_user_id.trim();
-    let mut roster = rebuild_roster(db, &context.location, &context.created_at, current_user_id)?;
+    let mut roster = rebuild_roster(
+        db,
+        owner_user_id,
+        &context.location,
+        &context.created_at,
+        current_user_id,
+    )?;
     let mut effective_context = context.clone();
 
     let db_started_at_ms = parse_date_ms(&location_context.created_at);
@@ -219,6 +229,7 @@ pub fn player_list_current_snapshot(
     {
         let db_roster = rebuild_roster(
             db,
+            owner_user_id,
             &location_context.location,
             &location_context.created_at,
             current_user_id,
@@ -329,7 +340,7 @@ mod tests {
             join_leave,
             ..Default::default()
         };
-        write_batch(db, &batch).unwrap();
+        write_batch(db, "", &batch).unwrap();
     }
 
     #[test]
@@ -356,7 +367,7 @@ mod tests {
             ],
         );
 
-        let snapshot = player_list_current_snapshot(&db, "", "wrld_live:123", "").unwrap();
+        let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
         assert_eq!(snapshot.players.len(), 1);
         assert_eq!(snapshot.players[0].user_id, "usr_current");
         assert_eq!(snapshot.context.player_count, Some(1));
@@ -387,7 +398,7 @@ mod tests {
         );
 
         let snapshot =
-            player_list_current_snapshot(&db, "", "wrld_live:123", "2026-04-30T10:00:00.000Z")
+            player_list_current_snapshot(&db, "", "", "wrld_live:123", "2026-04-30T10:00:00.000Z")
                 .unwrap();
         assert_eq!(snapshot.context.created_at, "2026-04-30T10:00:00.000Z");
         assert_eq!(snapshot.players.len(), 1);
@@ -418,7 +429,7 @@ mod tests {
             ],
         );
 
-        let snapshot = player_list_current_snapshot(&db, "", "wrld_live:123", "").unwrap();
+        let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
         assert!(snapshot.players.is_empty());
     }
 
@@ -454,7 +465,7 @@ mod tests {
             ],
         );
 
-        let snapshot = player_list_current_snapshot(&db, "", "wrld_live:123", "").unwrap();
+        let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
         assert_eq!(snapshot.players.len(), 1);
         assert_eq!(snapshot.players[0].display_name, "Guest");
         assert_eq!(snapshot.players[0].joined_at, "2026-04-30T10:01:30.000Z");
@@ -478,9 +489,14 @@ mod tests {
             )],
         );
 
-        let snapshot =
-            player_list_current_snapshot(&db, "", "wrld_live:83220", "2026-06-10T19:00:00.000Z")
-                .unwrap();
+        let snapshot = player_list_current_snapshot(
+            &db,
+            "",
+            "",
+            "wrld_live:83220",
+            "2026-06-10T19:00:00.000Z",
+        )
+        .unwrap();
         assert_eq!(snapshot.players.len(), 1);
         assert_eq!(snapshot.players[0].user_id, "usr_cyan");
         assert_eq!(snapshot.context.created_at, "2026-06-09T12:26:31.000Z");
@@ -502,7 +518,8 @@ mod tests {
             )],
         );
 
-        let snapshot = player_list_current_snapshot(&db, "usr_me", "wrld_live:123", "").unwrap();
+        let snapshot =
+            player_list_current_snapshot(&db, "usr_me", "usr_me", "wrld_live:123", "").unwrap();
         assert!(snapshot.players.is_empty());
         assert_eq!(snapshot.context.player_count, Some(0));
         assert_eq!(snapshot.context.player_facts_known, Some(true));
@@ -511,7 +528,7 @@ mod tests {
     #[test]
     fn non_live_location_returns_context_without_roster() {
         let (_dir, db) = test_db("snapshot-non-live");
-        let snapshot = player_list_current_snapshot(&db, "", "private", "").unwrap();
+        let snapshot = player_list_current_snapshot(&db, "", "", "private", "").unwrap();
         assert_eq!(snapshot.context.source, "runtime");
         assert_eq!(snapshot.context.location, "private");
         assert!(snapshot.players.is_empty());

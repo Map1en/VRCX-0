@@ -15,7 +15,7 @@ use crate::{
     RuntimeNotificationPayload,
 };
 use crate::{Error, Result};
-use crate::{HostSessionRuntime, TaskSupervisor};
+use crate::{HostSessionRuntime, RuntimeAuthScope, TaskSupervisor};
 
 const CRASH_RELAUNCH_MESSAGE: &str = "VRChat crashed, attempting to rejoin last instance.";
 
@@ -73,6 +73,7 @@ pub struct GameClientProcessorDeps {
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
+    pub auth_scope: RuntimeAuthScope,
     pub actions: Arc<dyn GameClientActions>,
     pub cache_actions: Arc<dyn GameClientCacheActions>,
     pub location_source: Arc<dyn GameClientLocationSource>,
@@ -343,6 +344,7 @@ impl GameClientProcessor {
         let created_at = now_iso();
         let affected_count = write_batch(
             &self.deps.db,
+            &self.deps.auth_scope.snapshot().current_user_id,
             &GameLogWriteBatch {
                 events: vec![GameLogEventEntry {
                     created_at: created_at.clone(),

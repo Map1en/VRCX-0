@@ -4,6 +4,7 @@ use vrcx_0_core::location::parse_location;
 
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::caveats::companions_caveats;
@@ -26,6 +27,8 @@ pub fn get_companions_of(
         });
     }
     let limit = clamped_optional_limit(input.limit, 25, 100);
+    let owner_user_id = input.owner_user_id.trim();
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
 
     // Players the signed-in user observed leaving the same instances the target
     // was in, intersecting each pair's presence windows. Aggregating per
@@ -53,7 +56,9 @@ pub fn get_companions_of(
             group_concat(DISTINCT other.location) AS locations
          FROM gamelog_join_leave target
          JOIN gamelog_join_leave other ON other.location = target.location
-         WHERE target.user_id = @target_user_id
+         WHERE target.owner_id IN (0, @owner_id)
+           AND other.owner_id IN (0, @owner_id)
+           AND target.user_id = @target_user_id
            AND target.type = 'OnPlayerLeft'
            AND target.time > 0
            AND target.location LIKE 'wrld_%'
@@ -69,7 +74,8 @@ pub fn get_companions_of(
     );
     let mut params = ParamsBuilder::new()
         .set("target_user_id", target_user_id.clone())
-        .set("owner_user_id", input.owner_user_id.trim());
+        .set("owner_user_id", owner_user_id)
+        .set("owner_id", owner_id);
     append_time_window_filter(
         &mut sql,
         &mut params,
@@ -124,8 +130,8 @@ pub fn get_companions_of(
         .map(|row| row.user_id.clone())
         .collect::<Vec<_>>();
     user_ids.push(target_user_id.clone());
-    let display_names = latest_display_names_for_users(db, &user_ids)?;
-    let world_names = world_names_for_ids(db, &world_ids)?;
+    let display_names = latest_display_names_for_users(db, owner_user_id, &user_ids)?;
+    let world_names = world_names_for_ids(db, owner_user_id, &world_ids)?;
     for row in &mut rows {
         if let Some(name) = display_names.get(&row.user_id) {
             row.display_name = name.clone();

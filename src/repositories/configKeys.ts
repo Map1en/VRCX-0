@@ -18,7 +18,6 @@ export const ConfigKeys = defineConfigKeys({
     searchLimit: { type: 'int', default: 50000 },
     autoUpdateVRCX: { type: 'string', default: 'Auto Download' },
     autoInstallUpdatesOnStartup: { type: 'bool', default: true },
-    autoBackgroundDownloadUpdates: { type: 'bool', default: false },
     id: { type: 'string', default: '' },
     branch: { type: 'string', default: '' },
     telemetryInstallId: { type: 'string', default: null },

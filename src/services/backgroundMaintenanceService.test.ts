@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
     runRuntimeTelemetryJob: vi.fn(),
     recordRuntimeJobTelemetry: vi.fn(),
     appRegistryBackupMaintenanceRun: vi.fn(),
-    appAppUpdateBackgroundDownloadPreferenceChanged: vi.fn(),
     pushNotification: vi.fn()
 }));
 
@@ -22,9 +21,7 @@ vi.mock('@/repositories/configRepository', () => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        appRegistryBackupMaintenanceRun: mocks.appRegistryBackupMaintenanceRun,
-        appAppUpdateBackgroundDownloadPreferenceChanged:
-            mocks.appAppUpdateBackgroundDownloadPreferenceChanged
+        appRegistryBackupMaintenanceRun: mocks.appRegistryBackupMaintenanceRun
     }
 }));
 
@@ -59,7 +56,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
     handleAppUpdateStatusEvent,
-    handleAutoBackgroundDownloadUpdatesPreferenceChange,
     runForegroundUpdateRegistryBackupMaintenance,
     runStartupMaintenance
 } from './backgroundMaintenanceService';
@@ -138,9 +134,6 @@ describe('backgroundMaintenanceService update checks', () => {
         );
         mocks.toNormalizedReleaseFromSnapshot.mockImplementation(
             toNormalizedRelease
-        );
-        mocks.appAppUpdateBackgroundDownloadPreferenceChanged.mockResolvedValue(
-            undefined
         );
         mocks.runRuntimeTelemetryJob.mockImplementation(
             async (_metadata: unknown, task: () => Promise<unknown>) => task()
@@ -240,21 +233,5 @@ describe('backgroundMaintenanceService update checks', () => {
         expect(
             useRuntimeStore.getState().updateLoop.lastUpdaterCheckDetail
         ).toBe('network failed');
-    });
-
-    it('notifies the backend when the background download preference is disabled', async () => {
-        await handleAutoBackgroundDownloadUpdatesPreferenceChange(false);
-
-        expect(
-            mocks.appAppUpdateBackgroundDownloadPreferenceChanged
-        ).toHaveBeenCalledWith(false);
-    });
-
-    it('notifies the backend when the background download preference is enabled', async () => {
-        await handleAutoBackgroundDownloadUpdatesPreferenceChange(true);
-
-        expect(
-            mocks.appAppUpdateBackgroundDownloadPreferenceChanged
-        ).toHaveBeenCalledWith(true);
     });
 });

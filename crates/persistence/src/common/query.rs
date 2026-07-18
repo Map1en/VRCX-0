@@ -56,31 +56,3 @@ pub fn delete_where_lt_sql(table: &str, column: &str, param: &str) -> String {
     query.and_where(Expr::col(ident(column)).lt(named_param(param)));
     query.to_string(SqliteQueryBuilder)
 }
-
-pub fn delete_where_eq_and_in_sql(
-    table: &str,
-    eq_column: &str,
-    in_column: &str,
-    in_params: &[String],
-) -> String {
-    let mut query = Query::delete();
-    query.from_table(ident(table));
-    query.and_where(Expr::col(ident(eq_column)).eq(named_param(eq_column)));
-    query.and_where(
-        Expr::col(ident(in_column)).is_in(in_params.iter().map(|param| named_param(param))),
-    );
-    query.to_string(SqliteQueryBuilder)
-}
-
-pub fn delete_where_two_eq_sql(
-    table: &str,
-    first_column: &str,
-    second_column: &str,
-    second_param: &str,
-) -> String {
-    let mut query = Query::delete();
-    query.from_table(ident(table));
-    query.and_where(Expr::col(ident(first_column)).eq(named_param(first_column)));
-    query.and_where(Expr::col(ident(second_column)).eq(named_param(second_param)));
-    query.to_string(SqliteQueryBuilder)
-}

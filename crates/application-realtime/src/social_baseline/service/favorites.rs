@@ -556,11 +556,14 @@ pub async fn build_favorites_baseline(
         .await?;
 
     let local_world_favorite_rows =
-        vrcx_0_persistence::favorites::favorite_list(deps.db.as_ref(), "world".into())?;
+        vrcx_0_persistence::favorites::favorite_list(deps.db.as_ref(), None, "world".into())?;
     let local_avatar_favorite_rows =
-        vrcx_0_persistence::favorites::favorite_list(deps.db.as_ref(), "avatar".into())?;
-    let local_friend_favorite_rows =
-        vrcx_0_persistence::favorites::favorite_list(deps.db.as_ref(), "friend".into())?;
+        vrcx_0_persistence::favorites::favorite_list(deps.db.as_ref(), None, "avatar".into())?;
+    let local_friend_favorite_rows = vrcx_0_persistence::favorites::favorite_list(
+        deps.db.as_ref(),
+        Some(&user_id),
+        "friend".into(),
+    )?;
     let local_world_cache_rows = serde_json::to_value(
         vrcx_0_persistence::worlds::world_cache_list(deps.db.as_ref())?,
     )?
@@ -575,7 +578,12 @@ pub async fn build_favorites_baseline(
     .unwrap_or_default();
     let explicit_local_world_groups = get_config_array(&deps, "localFavoriteWorldGroups")?;
     let explicit_local_avatar_groups = get_config_array(&deps, "localFavoriteAvatarGroups")?;
-    let explicit_local_friend_groups = get_config_array(&deps, "localFavoriteFriendGroups")?;
+    let mut explicit_local_friend_groups = get_config_array(&deps, "localFavoriteFriendGroups")?;
+    explicit_local_friend_groups.extend(get_config_array(
+        &deps,
+        &format!("localFavoriteFriendGroups:{user_id}"),
+    )?);
+    let explicit_local_friend_groups = unique_values(explicit_local_friend_groups);
 
     let favorite_limits = merge_favorite_limits(&favorite_limits_response);
     let mut cached_favorite_groups_by_id = Map::new();

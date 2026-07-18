@@ -126,6 +126,7 @@ pub struct FavoriteTransferResult {
 
 pub struct FavoriteTransferDeps<'a> {
     pub db: &'a DatabaseService,
+    pub owner_user_id: &'a str,
     pub web: &'a WebClient,
     pub diagnostics: &'a RuntimeDiagnostics,
     pub sync: &'a RuntimeSyncEngine,
@@ -646,6 +647,7 @@ fn add_local_favorite(
 ) -> Result<i64> {
     let affected = vrcx_0_persistence::favorites::favorite_add(
         deps.db,
+        Some(deps.owner_user_id),
         normalize_favorite_kind(&input.kind)?.to_string(),
         normalize_text(&item.entity_id),
         normalize_text(&input.target.group),
@@ -664,11 +666,13 @@ fn add_local_fallback_favorite(
     let kind = normalize_favorite_kind(&input.kind)?;
     super::local_favorites::create_local_favorite_group(
         deps.db,
+        deps.owner_user_id,
         kind,
         FAVORITE_RECOVERED_GROUP.to_string(),
     )?;
     let affected = vrcx_0_persistence::favorites::favorite_add(
         deps.db,
+        Some(deps.owner_user_id),
         kind.to_string(),
         normalize_text(&item.entity_id),
         FAVORITE_RECOVERED_GROUP.to_string(),
@@ -686,6 +690,7 @@ fn delete_local_favorite(
 ) -> Result<i64> {
     Ok(vrcx_0_persistence::favorites::favorite_remove(
         deps.db,
+        Some(deps.owner_user_id),
         normalize_favorite_kind(&input.kind)?.to_string(),
         normalize_text(&item.entity_id),
         normalize_text(&input.source.group),
@@ -699,6 +704,7 @@ fn move_local_favorite(
 ) -> Result<i64> {
     let result = vrcx_0_persistence::favorites::favorite_move(
         deps.db,
+        Some(deps.owner_user_id),
         normalize_favorite_kind(&input.kind)?.to_string(),
         normalize_text(&item.entity_id),
         normalize_text(&input.source.group),

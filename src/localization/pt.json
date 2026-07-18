@@ -1528,6 +1528,12 @@
                 "empty": "Arraste ferramentas para cá ou adicione-as a partir de um menu de ferramenta.",
                 "actions": "Ações da ferramenta"
             },
+            "category": {
+                "social": "Social",
+                "vrchat": "Configuração e inicialização do VRChat",
+                "data": "Dados e backups",
+                "debug": "Depuração"
+            },
             "group": {
                 "header": "Grupo",
                 "calendar": "Calendário",
@@ -1984,8 +1990,6 @@
                     "background_mode_delay_button": "Definir Minutos de Atraso",
                     "auto_install_updates_on_startup": "Atualizar automaticamente na inicialização",
                     "auto_install_updates_on_startup_description": "Quando ativado, o VRCX-0 verifica atualizações ao iniciar o app. Se houver uma atualização instalável disponível, ela será baixada, instalada e o app reiniciará automaticamente.",
-                    "auto_background_download_updates": "Baixar atualizações em segundo plano",
-                    "auto_background_download_updates_description": "Quando ativado, o VRCX-0 baixa atualizações instaláveis em segundo plano após verificar atualizações. Você pode instalar a atualização pronta pela barra de título; se uma versão mais nova aparecer, o VRCX-0 descarta o download antigo e baixa a versão mais recente.",
                     "proxy": "Configurações de Proxy"
                 },
                 "favorites": {

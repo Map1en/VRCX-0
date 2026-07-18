@@ -1,5 +1,6 @@
-use crate::common::{insert_or_ignore_sql, update_by_key_sql, DbWriteTarget, ParamsBuilder};
+use crate::common::{insert_or_ignore_sql, DbWriteTarget, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_get_or_insert;
 use crate::Error;
 
 use super::schema::*;
@@ -10,16 +11,19 @@ use super::types::{
 };
 
 fn update_location_time_sql() -> String {
-    update_by_key_sql(TABLE_LOCATION, &[COL_TIME], COL_CREATED_AT)
+    format!(
+        "UPDATE {TABLE_LOCATION} SET {COL_TIME} = @{COL_TIME} WHERE {COL_CREATED_AT} = @{COL_CREATED_AT} AND {COL_OWNER_ID} IN (0, @{COL_OWNER_ID})"
+    )
 }
 
 #[cfg(test)]
 fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Result<u64, Error> {
-    insert_location_on(db, entry)
+    insert_location_on(db, 0, entry)
 }
 
 fn insert_location_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogLocationEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -29,6 +33,7 @@ fn insert_location_on(
         .set(COL_WORLD_NAME, entry.world_name.clone())
         .set(COL_TIME, entry.time)
         .set(COL_GROUP_NAME, entry.group_name.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -41,6 +46,7 @@ fn insert_location_on(
                     COL_WORLD_NAME,
                     COL_TIME,
                     COL_GROUP_NAME,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -50,17 +56,19 @@ fn insert_location_on(
 
 #[cfg(test)]
 fn update_location_time(db: &DatabaseService, created_at: &str, time: i64) -> Result<u64, Error> {
-    update_location_time_on(db, created_at, time)
+    update_location_time_on(db, 0, created_at, time)
 }
 
 fn update_location_time_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     created_at: &str,
     time: i64,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, created_at)
         .set(COL_TIME, time)
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(&update_location_time_sql(), &args)
@@ -69,11 +77,12 @@ fn update_location_time_on(
 
 #[cfg(test)]
 fn insert_join_leave(db: &DatabaseService, entry: &GameLogJoinLeaveEntry) -> Result<u64, Error> {
-    insert_join_leave_on(db, entry)
+    insert_join_leave_on(db, 0, entry)
 }
 
 fn insert_join_leave_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogJoinLeaveEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -83,6 +92,7 @@ fn insert_join_leave_on(
         .set(COL_LOCATION, entry.location.clone())
         .set(COL_USER_ID, entry.user_id.clone())
         .set(COL_TIME, entry.time)
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -95,6 +105,7 @@ fn insert_join_leave_on(
                     COL_LOCATION,
                     COL_USER_ID,
                     COL_TIME,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -107,11 +118,12 @@ fn insert_portal_spawn(
     db: &DatabaseService,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<u64, Error> {
-    insert_portal_spawn_on(db, entry)
+    insert_portal_spawn_on(db, 0, entry)
 }
 
 fn insert_portal_spawn_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -121,6 +133,7 @@ fn insert_portal_spawn_on(
         .set(COL_USER_ID, entry.user_id.clone())
         .set(COL_INSTANCE_ID, entry.instance_id.clone())
         .set(COL_WORLD_NAME, entry.world_name.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -133,6 +146,7 @@ fn insert_portal_spawn_on(
                     COL_USER_ID,
                     COL_INSTANCE_ID,
                     COL_WORLD_NAME,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -142,6 +156,7 @@ fn insert_portal_spawn_on(
 
 fn insert_video_play_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogVideoPlayEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -152,6 +167,7 @@ fn insert_video_play_on(
         .set(COL_LOCATION, entry.location.clone())
         .set(COL_DISPLAY_NAME, entry.display_name.clone())
         .set(COL_USER_ID, entry.user_id.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -165,6 +181,7 @@ fn insert_video_play_on(
                     COL_LOCATION,
                     COL_DISPLAY_NAME,
                     COL_USER_ID,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -177,11 +194,12 @@ fn insert_resource_load(
     db: &DatabaseService,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<u64, Error> {
-    insert_resource_load_on(db, entry)
+    insert_resource_load_on(db, 0, entry)
 }
 
 fn insert_resource_load_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -189,6 +207,7 @@ fn insert_resource_load_on(
         .set(COL_RESOURCE_URL, entry.resource_url.clone())
         .set(COL_RESOURCE_TYPE, entry.resource_type.clone())
         .set(COL_LOCATION, entry.location.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -199,6 +218,7 @@ fn insert_resource_load_on(
                     COL_RESOURCE_URL,
                     COL_RESOURCE_TYPE,
                     COL_LOCATION,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -208,17 +228,22 @@ fn insert_resource_load_on(
 
 #[cfg(test)]
 fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<u64, Error> {
-    insert_event_on(db, entry)
+    insert_event_on(db, 0, entry)
 }
 
-fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Result<u64, Error> {
+fn insert_event_on(
+    target: &impl DbWriteTarget,
+    owner_id: i64,
+    entry: &GameLogEventEntry,
+) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
         .set(COL_CREATED_AT, entry.created_at.clone())
         .set(COL_DATA, entry.data.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
-            &insert_or_ignore_sql(TABLE_EVENT, &[COL_CREATED_AT, COL_DATA]),
+            &insert_or_ignore_sql(TABLE_EVENT, &[COL_CREATED_AT, COL_DATA, COL_OWNER_ID]),
             &args,
         )
         .map(affected_count)
@@ -226,6 +251,7 @@ fn insert_event_on(target: &impl DbWriteTarget, entry: &GameLogEventEntry) -> Re
 
 fn insert_external_on(
     target: &impl DbWriteTarget,
+    owner_id: i64,
     entry: &GameLogExternalEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -234,6 +260,7 @@ fn insert_external_on(
         .set(COL_DISPLAY_NAME, entry.display_name.clone())
         .set(COL_USER_ID, entry.user_id.clone())
         .set(COL_LOCATION, entry.location.clone())
+        .set(COL_OWNER_ID, owner_id)
         .build();
     target
         .execute_non_query(
@@ -245,6 +272,7 @@ fn insert_external_on(
                     COL_DISPLAY_NAME,
                     COL_USER_ID,
                     COL_LOCATION,
+                    COL_OWNER_ID,
                 ],
             ),
             &args,
@@ -252,41 +280,48 @@ fn insert_external_on(
         .map(affected_count)
 }
 
-pub fn write_batch(db: &DatabaseService, batch: &GameLogWriteBatch) -> Result<u64, Error> {
+pub fn write_batch(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    batch: &GameLogWriteBatch,
+) -> Result<u64, Error> {
     if batch.is_empty() {
         return Ok(0);
     }
 
+    super::tables::ensure_game_log_tables(db)?;
+    let owner_id = owner_id_get_or_insert(db, owner_user_id)?;
     db.write_transaction(|tx| {
         ensure_game_log_tables_on(tx)?;
         let mut affected = 0_u64;
         for entry in &batch.locations {
-            affected = affected.saturating_add(insert_location_on(tx, entry)?);
+            affected = affected.saturating_add(insert_location_on(tx, owner_id, entry)?);
         }
         for update in &batch.location_time_updates {
             affected = affected.saturating_add(update_location_time_on(
                 tx,
+                owner_id,
                 &update.created_at,
                 update.time,
             )?);
         }
         for entry in &batch.join_leave {
-            affected = affected.saturating_add(insert_join_leave_on(tx, entry)?);
+            affected = affected.saturating_add(insert_join_leave_on(tx, owner_id, entry)?);
         }
         for entry in &batch.portal_spawns {
-            affected = affected.saturating_add(insert_portal_spawn_on(tx, entry)?);
+            affected = affected.saturating_add(insert_portal_spawn_on(tx, owner_id, entry)?);
         }
         for entry in &batch.video_plays {
-            affected = affected.saturating_add(insert_video_play_on(tx, entry)?);
+            affected = affected.saturating_add(insert_video_play_on(tx, owner_id, entry)?);
         }
         for entry in &batch.resource_loads {
-            affected = affected.saturating_add(insert_resource_load_on(tx, entry)?);
+            affected = affected.saturating_add(insert_resource_load_on(tx, owner_id, entry)?);
         }
         for entry in &batch.events {
-            affected = affected.saturating_add(insert_event_on(tx, entry)?);
+            affected = affected.saturating_add(insert_event_on(tx, owner_id, entry)?);
         }
         for entry in &batch.externals {
-            affected = affected.saturating_add(insert_external_on(tx, entry)?);
+            affected = affected.saturating_add(insert_external_on(tx, owner_id, entry)?);
         }
         Ok(affected)
     })

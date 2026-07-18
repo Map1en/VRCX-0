@@ -42,17 +42,3 @@ pub async fn app__app_update_install_confirm(
         .await
         .map_err(AppError::from)
 }
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__app_update_background_download_preference_changed(
-    state: State<'_, AppState>,
-    enabled: bool,
-) -> Result<(), AppError> {
-    state
-        .desktop
-        .app_update
-        .set_auto_background_download_preference(enabled)
-        .await;
-    Ok(())
-}

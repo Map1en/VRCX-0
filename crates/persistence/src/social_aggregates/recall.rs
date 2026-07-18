@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use crate::common::{row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::caveats::recall_encounter_caveats;
@@ -17,13 +18,17 @@ pub fn recall_encounter(
     input: RecallEncounterInput,
 ) -> Result<RecallEncounterOutput, Error> {
     let friend_ids = current_friend_id_set(db, &input.owner_user_id)?;
+    let owner_id = owner_id_for_filter(db, &input.owner_user_id)?;
 
     let mut sql = String::from(
         "SELECT user_id, display_name, location, created_at
          FROM gamelog_join_leave g
-         WHERE type = 'OnPlayerJoined' AND display_name <> ''",
+         WHERE g.owner_id IN (0, @owner_id)
+           AND type = 'OnPlayerJoined' AND display_name <> ''",
     );
-    let mut params = ParamsBuilder::new().set("scan_limit", SCAN_LIMIT);
+    let mut params = ParamsBuilder::new()
+        .set("scan_limit", SCAN_LIMIT)
+        .set("owner_id", owner_id);
 
     let owner_user_id = input.owner_user_id.trim();
     if !owner_user_id.is_empty() {
@@ -43,7 +48,7 @@ pub fn recall_encounter(
     if let Some(co_present) = trimmed(&input.co_present_with_user_id) {
         params = params.set("co_present", co_present);
         sql.push_str(
-            " AND g.user_id <> @co_present AND g.location <> '' AND g.location IN (SELECT j.location FROM gamelog_join_leave j WHERE j.user_id = @co_present AND j.location <> ''",
+            " AND g.user_id <> @co_present AND g.location <> '' AND g.location IN (SELECT j.location FROM gamelog_join_leave j WHERE j.owner_id IN (0, @owner_id) AND j.user_id = @co_present AND j.location <> ''",
         );
         append_time_window_filter(&mut sql, &mut params, &input.time_window, "j.created_at");
         sql.push(')');

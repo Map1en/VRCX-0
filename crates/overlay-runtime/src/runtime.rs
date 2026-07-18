@@ -831,7 +831,9 @@ impl VrOverlayRuntime {
         let Some(services) = &self.services else {
             return current;
         };
-        local_favorite_friend_groups_from_db(services.data().db.as_ref()).unwrap_or_default()
+        let owner_user_id = services.data().auth_scope.snapshot().current_user_id;
+        local_favorite_friend_groups_from_db(services.data().db.as_ref(), &owner_user_id)
+            .unwrap_or_default()
     }
 
     fn current_friends_panel_note_memo_maps(

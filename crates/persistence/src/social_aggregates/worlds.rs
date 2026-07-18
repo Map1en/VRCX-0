@@ -1,6 +1,7 @@
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::favorites;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::caveats::{favorite_local_caveats, worlds_visited_caveats};
@@ -12,15 +13,18 @@ use super::types::{
 
 pub fn search_worlds_visited(
     db: &DatabaseService,
+    owner_user_id: &str,
     input: SearchWorldsVisitedInput,
 ) -> Result<SearchWorldsVisitedOutput, Error> {
     let limit = input.limit.clamp(1, 100);
     let mut sql = String::from(
         "SELECT world_id, world_name, location, created_at, time
          FROM gamelog_location
-         WHERE 1 = 1",
+         WHERE owner_id IN (0, @owner_id)",
     );
-    let mut params = ParamsBuilder::new().set("limit", limit);
+    let mut params = ParamsBuilder::new()
+        .set("limit", limit)
+        .set("owner_id", owner_id_for_filter(db, owner_user_id)?);
     append_time_window_filter(&mut sql, &mut params, &input.time_window, "created_at");
     sql.push_str(" ORDER BY created_at DESC, id DESC LIMIT @limit");
 
@@ -65,6 +69,7 @@ fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {
 
 pub fn favorite_local(
     db: &DatabaseService,
+    owner_user_id: &str,
     input: FavoriteLocalInput,
 ) -> Result<FavoriteOutput, Error> {
     let kind = input.kind.trim().to_ascii_lowercase();
@@ -93,7 +98,7 @@ pub fn favorite_local(
     let affected_rows = if input.dry_run {
         0
     } else {
-        action.apply(db, &kind, &entity_id, &group)?
+        action.apply(db, owner_user_id, &kind, &entity_id, &group)?
     };
     Ok(FavoriteOutput {
         kind,
@@ -133,6 +138,7 @@ impl FavoriteAction {
     fn apply(
         self,
         db: &DatabaseService,
+        owner_user_id: &str,
         kind: &str,
         entity_id: &str,
         group: &str,
@@ -140,12 +146,14 @@ impl FavoriteAction {
         match self {
             Self::Add => favorites::favorite_add(
                 db,
+                Some(owner_user_id),
                 kind.to_string(),
                 entity_id.to_string(),
                 group.to_string(),
             ),
             Self::Remove => favorites::favorite_remove(
                 db,
+                Some(owner_user_id),
                 kind.to_string(),
                 entity_id.to_string(),
                 group.to_string(),

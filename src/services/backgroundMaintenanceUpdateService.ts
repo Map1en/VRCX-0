@@ -1,4 +1,3 @@
-import { commands } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
 import {
     formatReleaseDisplayVersion,
@@ -96,17 +95,4 @@ export async function handleAppUpdateStatusEvent(
     snapshot: AppUpdateStatusSnapshot
 ): Promise<void> {
     await applyAppUpdateCheckSnapshot(snapshot);
-}
-
-export async function handleAutoBackgroundDownloadUpdatesPreferenceChange(
-    enabled: boolean
-) {
-    await commands
-        .appAppUpdateBackgroundDownloadPreferenceChanged(enabled)
-        .catch((error: unknown) => {
-            console.warn(
-                'Failed to notify the backend of the background download preference change:',
-                error
-            );
-        });
 }

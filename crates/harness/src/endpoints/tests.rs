@@ -1,26 +1,36 @@
-use std::sync::Arc;
+use std::sync::{Arc, Barrier};
 
 use vrcx_0_persistence::DatabaseService;
 
 use crate::config::{
     ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY,
 };
+use crate::test_support::unique_test_database_path;
 
 use super::*;
 
 fn test_config() -> ConfigRepository {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!(
-        "vrcx-0-llm-endpoints-{}-{nonce}",
-        std::process::id()
-    ));
-    std::fs::create_dir_all(&dir).unwrap();
     ConfigRepository::new(Arc::new(
-        DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap(),
+        DatabaseService::new(&unique_test_database_path("vrcx-0-llm-endpoints")).unwrap(),
     ))
+}
+
+#[test]
+fn test_configs_initialize_in_parallel_without_sharing_a_database() {
+    let barrier = Arc::new(Barrier::new(16));
+    let threads = (0..16)
+        .map(|_| {
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                barrier.wait();
+                drop(test_config());
+            })
+        })
+        .collect::<Vec<_>>();
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
 }
 
 #[test]

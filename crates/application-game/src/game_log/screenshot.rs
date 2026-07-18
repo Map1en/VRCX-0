@@ -31,6 +31,7 @@ pub async fn handle_screenshot(
     db: &DatabaseService,
     host_actions: &dyn GameLogHostActions,
     event_bus: &RuntimeEventBus,
+    owner_user_id: &str,
     input: ScreenshotInput,
 ) -> Result<()> {
     let screenshot_path = input.path.trim().to_string();
@@ -44,7 +45,7 @@ pub async fn handle_screenshot(
 
     let mut next_path = screenshot_path.clone();
     if screenshot_helper {
-        if let Some(context) = screenshot_context(db, &input)? {
+        if let Some(context) = screenshot_context(db, owner_user_id, &input)? {
             let world_id = world_id_from_location(&context.location);
             let metadata = build_metadata(db, &context, &world_id);
             let metadata_json = serde_json::to_string(&metadata)?;
@@ -80,6 +81,7 @@ pub async fn handle_screenshot(
 
 fn screenshot_context(
     db: &DatabaseService,
+    owner_user_id: &str,
     input: &ScreenshotInput,
 ) -> Result<Option<ScreenshotContext>> {
     if !input.snapshot.location.is_empty() {
@@ -99,7 +101,9 @@ fn screenshot_context(
     }
 
     game_log::ensure_game_log_tables(db)?;
-    let Some(location_entry) = game_log::get_location_before_or_at(db, &input.created_at)? else {
+    let Some(location_entry) =
+        game_log::get_location_before_or_at(db, owner_user_id, &input.created_at)?
+    else {
         return Ok(None);
     };
 
@@ -120,6 +124,7 @@ fn screenshot_context(
     let mut players = Vec::<ScreenshotPlayer>::new();
     for entry in game_log::get_join_leave_entries_for_location_range(
         db,
+        owner_user_id,
         &location_entry.location,
         &location_entry.created_at,
         &input.created_at,

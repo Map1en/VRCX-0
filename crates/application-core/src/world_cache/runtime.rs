@@ -316,7 +316,7 @@ impl WorldCache {
     }
 
     fn load_favorite_ids(&self) -> HashSet<String> {
-        match favorite_list(self.db.as_ref(), "world".into()) {
+        match favorite_list(self.db.as_ref(), None, "world".into()) {
             Ok(rows) => rows
                 .into_iter()
                 .filter_map(|row| {
@@ -564,6 +564,7 @@ mod tests {
         let (_dir, db) = test_db("init-placeholder-favorite");
         favorite_add(
             db.as_ref(),
+            None,
             "world".into(),
             "wrld_unknown".into(),
             "Favorites".into(),

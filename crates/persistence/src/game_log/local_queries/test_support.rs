@@ -47,6 +47,7 @@ pub(super) fn query(
 ) -> Result<Value, Error> {
     game_log_query(
         db,
+        "usr_test",
         GameLogQueryInput {
             kind: kind.into(),
             params: RawJson::from(params),
@@ -71,6 +72,7 @@ pub(super) fn row_texts(rows: &[Value], key: &str) -> Vec<String> {
 pub(super) fn seed_fixture(db: &DatabaseService) -> Result<(), Error> {
     write_game_log_batch(
         db,
+        "usr_test",
         &GameLogWriteBatch {
             locations: vec![
                 GameLogLocationEntry {

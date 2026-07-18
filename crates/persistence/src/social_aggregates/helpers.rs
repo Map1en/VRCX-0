@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::common::{row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -11,13 +12,14 @@ use super::types::{ActivityBucket, TimeWindow};
 /// log, so aggregations can surface readable world names instead of raw ids.
 pub(crate) fn world_names_for_ids(
     db: &DatabaseService,
+    owner_user_id: &str,
     world_ids: &BTreeSet<String>,
 ) -> Result<HashMap<String, String>, Error> {
     if world_ids.is_empty() {
         return Ok(HashMap::new());
     }
     let mut placeholders = Vec::with_capacity(world_ids.len());
-    let mut params = ParamsBuilder::new();
+    let mut params = ParamsBuilder::new().set("owner_id", owner_id_for_filter(db, owner_user_id)?);
     for (index, world_id) in world_ids.iter().enumerate() {
         let key = format!("w{index}");
         placeholders.push(format!("@{key}"));
@@ -31,7 +33,8 @@ pub(crate) fn world_names_for_ids(
                  world_name,
                  ROW_NUMBER() OVER (PARTITION BY world_id ORDER BY id DESC) AS rn
              FROM gamelog_location
-             WHERE world_id IN ({}) AND trim(world_name) <> ''
+             WHERE owner_id IN (0, @owner_id)
+               AND world_id IN ({}) AND trim(world_name) <> ''
          )
          WHERE rn = 1",
         placeholders.join(", ")
@@ -51,13 +54,14 @@ pub(crate) fn world_names_for_ids(
 /// just the bounded result set instead of carrying names through the fold.
 pub(crate) fn latest_display_names_for_users(
     db: &DatabaseService,
+    owner_user_id: &str,
     user_ids: &[String],
 ) -> Result<HashMap<String, String>, Error> {
     if user_ids.is_empty() {
         return Ok(HashMap::new());
     }
     let mut placeholders = Vec::with_capacity(user_ids.len());
-    let mut params = ParamsBuilder::new();
+    let mut params = ParamsBuilder::new().set("owner_id", owner_id_for_filter(db, owner_user_id)?);
     for (index, user_id) in user_ids.iter().enumerate() {
         let key = format!("u{index}");
         placeholders.push(format!("@{key}"));
@@ -71,7 +75,8 @@ pub(crate) fn latest_display_names_for_users(
                  display_name,
                  ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn
              FROM gamelog_join_leave
-             WHERE user_id IN ({}) AND trim(display_name) <> ''
+             WHERE owner_id IN (0, @owner_id)
+               AND user_id IN ({}) AND trim(display_name) <> ''
          )
          WHERE rn = 1",
         placeholders.join(", ")

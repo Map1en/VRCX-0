@@ -27,6 +27,7 @@ jobs:
             frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
             rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust }}
             rust_backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust_backend }}
+            tauri_build: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_build }}
             native_catalog: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.native_catalog }}
             tauri_bindings: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_bindings }}
         steps:
@@ -67,6 +68,21 @@ jobs:
                         - 'crates/**'
                         - 'package.json'
                         - 'package-lock.json'
+                        - 'src-tauri/**'
+                      tauri_build:
+                        - '.cargo/**'
+                        - '.github/actions/setup-linux-tauri/**'
+                        - '.github/actions/setup-rust/**'
+                        - '.github/workflows/ci.yml'
+                        - 'Cargo.lock'
+                        - 'Cargo.toml'
+                        - 'crates/**/Cargo.toml'
+                        - 'crates/**/build.rs'
+                        - 'crates/application-game/**'
+                        - 'crates/host-desktop/**'
+                        - 'crates/overlay-runtime/**'
+                        - 'crates/runtime-host-desktop/**'
+                        - 'crates/vr-overlay/**'
                         - 'src-tauri/**'
                       native_catalog:
                         - '.github/workflows/ci.yml'
@@ -151,7 +167,7 @@ jobs:
         name: Tauri Build (${{ matrix.label }})
         runs-on: ${{ matrix.os }}
         needs: changes
-        if: needs.changes.outputs.rust == 'true'
+        if: needs.changes.outputs.tauri_build == 'true'
         defaults:
             run:
                 shell: bash
@@ -200,6 +216,7 @@ jobs:
     rust-coverage:
         name: Rust Coverage
         runs-on: ubuntu-24.04
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         steps:
             - uses: actions/checkout@v7
             - uses: ./.github/actions/setup-linux-tauri
@@ -220,24 +237,7 @@ jobs:
                   if-no-files-found: error
                   retention-days: 7
 
-    rust-tests-linux:
-        name: Rust Tests (Linux)
-        runs-on: ubuntu-24.04
-        needs: changes
-        if: needs.changes.outputs.rust_backend == 'true'
-        steps:
-            - uses: actions/checkout@v7
-            - name: Install Slint Linux dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends libfontconfig1-dev libfreetype6-dev
-            - uses: ./.github/actions/setup-rust
-              with:
-                  cache-key: ci-linux-x86_64
-            - run: npm run rust:test
-            - run: cargo test --locked --package vrcx-0-vr-overlay --features slint-ui
-
-    rust-tests-platforms:
+    rust-tests:
         name: Rust Tests (${{ matrix.label }})
         runs-on: ${{ matrix.os }}
         needs: changes
@@ -249,6 +249,10 @@ jobs:
             fail-fast: false
             matrix:
                 include:
+                    - label: Linux
+                      os: ubuntu-24.04
+                      cache_key: ci-test-linux-x86_64
+                      rust_test_args: --features vrcx-0-vr-overlay/slint-ui
                     - label: Windows
                       os: windows-latest
                       cache_key: ci-test-windows-x86_64
@@ -259,6 +263,11 @@ jobs:
                       rust_test_args: --exclude vrcx-0-overlay-runtime
         steps:
             - uses: actions/checkout@v7
+            - name: Install Slint Linux dependencies
+              if: runner.os == 'Linux'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends libfontconfig1-dev libfreetype6-dev
             - uses: ./.github/actions/setup-rust
               with:
                   cache-key: ${{ matrix.cache_key }}

@@ -115,6 +115,7 @@ fn self_activity_warmup_prepares_a_year_without_bucket_cache() {
     let owner = "usr_self";
     write_batch(
         &db,
+        owner,
         &GameLogWriteBatch {
             locations: vec![GameLogLocationEntry {
                 created_at: "2025-01-05T01:00:00Z".to_string(),
@@ -160,6 +161,7 @@ fn concurrent_page_refresh_cannot_downgrade_year_warmup() {
     let owner = "usr_self";
     write_batch(
         &db,
+        owner,
         &GameLogWriteBatch {
             locations: vec![GameLogLocationEntry {
                 created_at: "2025-01-05T01:00:00Z".to_string(),

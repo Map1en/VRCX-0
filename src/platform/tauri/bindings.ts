@@ -2376,14 +2376,6 @@ export const commands = {
             version
         });
     },
-    async appAppUpdateBackgroundDownloadPreferenceChanged(
-        enabled: boolean
-    ): Promise<null> {
-        return await TAURI_INVOKE(
-            'app__app_update_background_download_preference_changed',
-            { enabled }
-        );
-    },
     async appCheckLegacyVrcxAvailable(): Promise<boolean> {
         return await TAURI_INVOKE('app__check_legacy_vrcx_available');
     },

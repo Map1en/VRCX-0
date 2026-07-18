@@ -1530,6 +1530,12 @@
                 "empty": "Přetáhněte sem nástroje, nebo je přidejte z nabídky nástroje.",
                 "actions": "Akce nástroje"
             },
+            "category": {
+                "social": "Sociální funkce",
+                "vrchat": "Nastavení a spuštění VRChatu",
+                "data": "Data a zálohy",
+                "debug": "Ladění"
+            },
             "group": {
                 "header": "Skupina",
                 "calendar": "Kalendář",
@@ -1986,8 +1992,6 @@
                     "background_mode_delay_button": "Nastavit zpoždění v minutách",
                     "auto_install_updates_on_startup": "Automatická aktualizace při spuštění",
                     "auto_install_updates_on_startup_description": "Když je zapnuto, VRCX-0 při spuštění aplikace zkontroluje aktualizace. Pokud je k dispozici instalovatelná aktualizace, automaticky se stáhne, nainstaluje a aplikace se restartuje.",
-                    "auto_background_download_updates": "Stahovat aktualizace na pozadí",
-                    "auto_background_download_updates_description": "Když je zapnuto, VRCX-0 po kontrole aktualizací stáhne instalovatelné aktualizace na pozadí. Připravenou aktualizaci můžete nainstalovat z horní lišty; pokud vyjde novější verze, VRCX-0 zahodí staré stažení a stáhne nejnovější verzi.",
                     "proxy": "Nastavení proxy"
                 },
                 "favorites": {

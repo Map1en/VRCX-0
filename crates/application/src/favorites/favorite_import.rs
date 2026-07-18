@@ -420,6 +420,7 @@ impl FavoriteImportRuntime {
             FavoriteImportLocation::Local => {
                 let affected = favorite_add(
                     self.db.as_ref(),
+                    Some(&scope.current_user_id),
                     kind_name(kind).into(),
                     id.to_string(),
                     target.group.clone(),

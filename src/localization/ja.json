@@ -1524,6 +1524,12 @@
                 "empty": "ツールをここへドラッグするか、ツールメニューから追加します。",
                 "actions": "ツール操作"
             },
+            "category": {
+                "social": "ソーシャル",
+                "vrchat": "VRChat の設定と起動",
+                "data": "データとバックアップ",
+                "debug": "デバッグ"
+            },
             "group": {
                 "header": "グループ",
                 "calendar": "カレンダー",
@@ -1980,8 +1986,6 @@
                     "background_mode_delay_button": "待機時間を設定",
                     "auto_install_updates_on_startup": "起動時に自動更新",
                     "auto_install_updates_on_startup_description": "有効にすると、VRCX-0 はアプリ起動時に更新を確認します。インストール可能な更新がある場合は、自動的にダウンロードしてインストールし、再起動して更新を完了します。",
-                    "auto_background_download_updates": "バックグラウンドで更新をダウンロード",
-                    "auto_background_download_updates_description": "有効にすると、VRCX-0 は更新確認後にインストール可能な更新をバックグラウンドでダウンロードします。準備ができた更新はタイトルバーからインストールできます。より新しいバージョンが見つかった場合、VRCX-0 は古いダウンロードを破棄して最新をダウンロードします。",
                     "proxy": "プロキシ設定"
                 },
                 "favorites": {

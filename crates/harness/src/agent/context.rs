@@ -38,7 +38,7 @@ pub(super) fn build_context(
 ) -> Vec<ChatMessage> {
     let (history, surfaced) = ctx
         .sessions
-        .get(&ctx.session_id)
+        .get_unscoped(&ctx.session_id)
         .map(|session| (session.messages, session.surfaced_entities))
         .unwrap_or_default();
     build_context_messages(

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -16,6 +17,7 @@ pub fn get_fading_friends(
     input: FadingFriendsInput,
 ) -> Result<FadingFriendsOutput, Error> {
     let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let owner_id = owner_id_for_filter(db, &input.owner_user_id)?;
     let friends_table = format!("{user_prefix}_friend_log_current");
     if !table_exists(db, &friends_table)? {
         return Ok(FadingFriendsOutput {
@@ -27,12 +29,14 @@ pub fn get_fading_friends(
     let sql = format!(
         "SELECT user_id, display_name, time, created_at
          FROM gamelog_join_leave g
-         WHERE type = 'OnPlayerLeft' AND time > 0
+         WHERE g.owner_id IN (0, @owner_id)
+           AND type = 'OnPlayerLeft' AND time > 0
            AND created_at >= @prior_from AND created_at <= @now
            AND EXISTS (SELECT 1 FROM {friends_table} f WHERE f.user_id = g.user_id)
          ORDER BY created_at ASC, id ASC"
     );
     let params = ParamsBuilder::new()
+        .set("owner_id", owner_id)
         .set("prior_from", input.prior_from.as_str())
         .set("now", input.now.as_str());
 

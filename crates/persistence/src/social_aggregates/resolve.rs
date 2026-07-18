@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
+use crate::ownership::owner_id_for_filter;
 use crate::Error;
 
 use super::helpers::{clamped_optional_limit, current_friend_id_set, friend_current_table_name};
@@ -20,6 +21,7 @@ pub fn resolve_user_by_name(
     }
     let limit = clamped_optional_limit(input.limit, 8, 25);
     let friend_ids = current_friend_id_set(db, &input.owner_user_id)?;
+    let owner_id = owner_id_for_filter(db, &input.owner_user_id)?;
     let pattern = format!("%{query}%");
 
     let mut acc: BTreeMap<String, Candidate> = BTreeMap::new();
@@ -28,9 +30,13 @@ pub fn resolve_user_by_name(
     let rows = db.execute(
         "SELECT user_id, display_name, COUNT(*) AS hits, MAX(created_at) AS last_seen
          FROM gamelog_join_leave
-         WHERE trim(user_id) <> '' AND display_name LIKE @pattern
+         WHERE owner_id IN (0, @owner_id)
+           AND trim(user_id) <> '' AND display_name LIKE @pattern
          GROUP BY user_id, display_name",
-        &ParamsBuilder::new().set("pattern", pattern.clone()).build(),
+        &ParamsBuilder::new()
+            .set("pattern", pattern.clone())
+            .set("owner_id", owner_id)
+            .build(),
     )?;
     for row in rows {
         let user_id = row_string(&row, 0);

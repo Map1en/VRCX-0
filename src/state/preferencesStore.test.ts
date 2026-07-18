@@ -21,18 +21,6 @@ describe('preferencesStore normalizers', () => {
         ).toBe(false);
     });
 
-    it('keeps background update downloads disabled by default', () => {
-        expect(DEFAULT_PREFERENCES.autoBackgroundDownloadUpdates).toBe(false);
-        expect(
-            normalizePreferenceSnapshot({}).autoBackgroundDownloadUpdates
-        ).toBe(false);
-        expect(
-            normalizePreferenceSnapshot({
-                autoBackgroundDownloadUpdates: true
-            }).autoBackgroundDownloadUpdates
-        ).toBe(true);
-    });
-
     it('keeps background mode delay disabled with a bounded minute default', () => {
         expect(DEFAULT_PREFERENCES.backgroundModeDelayEnabled).toBe(false);
         expect(DEFAULT_PREFERENCES.backgroundModeDelayMinutes).toBe(60);

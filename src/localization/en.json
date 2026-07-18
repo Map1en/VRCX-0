@@ -1528,6 +1528,12 @@
                 "empty": "Drag tools here, or add them from a tool menu.",
                 "actions": "Tool actions"
             },
+            "category": {
+                "social": "Social",
+                "vrchat": "VRChat Settings & Launch",
+                "data": "Data & Backup",
+                "debug": "Debug"
+            },
             "group": {
                 "header": "Group",
                 "calendar": "Calendar",
@@ -1984,8 +1990,6 @@
                     "background_mode_delay_button": "Set Delay Minutes",
                     "auto_install_updates_on_startup": "Auto-Update on Startup",
                     "auto_install_updates_on_startup_description": "When enabled, VRCX-0 checks for updates when the app starts. If an installable update is available, it will download, install, and restart automatically.",
-                    "auto_background_download_updates": "Download Updates in Background",
-                    "auto_background_download_updates_description": "When enabled, VRCX-0 downloads installable updates in the background after an update check. You can install the ready update from the title bar; if a newer version appears, VRCX-0 discards the old download and downloads the latest one.",
                     "proxy": "Proxy Settings"
                 },
                 "favorites": {
