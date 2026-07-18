@@ -57,24 +57,17 @@ fn value_message(value: Option<&Value>) -> Option<String> {
 }
 
 fn unwrap_error_message(json: &Value, status: i32, fallback: &str) -> String {
-    if let Some(message) = value_message(Some(json)) {
-        return message;
-    }
-
     let object = json.as_object();
-    if let Some(message) = value_message(
-        object
-            .and_then(|record| record.get("error"))
-            .and_then(Value::as_object)
-            .and_then(|error| error.get("message")),
-    ) {
-        return message;
-    }
-    if let Some(message) = value_message(object.and_then(|record| record.get("message"))) {
-        return message;
-    }
+    let nested_message = object
+        .and_then(|record| record.get("error"))
+        .and_then(Value::as_object)
+        .and_then(|error| error.get("message"));
+    let message = value_message(Some(json))
+        .or_else(|| value_message(nested_message))
+        .or_else(|| value_message(object.and_then(|record| record.get("message"))))
+        .unwrap_or_else(|| fallback.to_string());
 
-    format!("{fallback} ({status})")
+    format!("{message} (HTTP {status})")
 }
 
 pub(super) async fn fetch_paged_array<F>(
@@ -262,6 +255,17 @@ async fn refetch_user_with_backoff(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn social_error_message_keeps_http_status() {
+        let message = unwrap_error_message(
+            &json!({ "error": { "message": "Application error." } }),
+            500,
+            "VRChat social baseline request failed",
+        );
+
+        assert_eq!(message, "Application error. (HTTP 500)");
+    }
 
     #[tokio::test]
     async fn fetch_paged_array_pages_with_concurrency_five_until_the_first_short_page() {

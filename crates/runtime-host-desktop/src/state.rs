@@ -157,7 +157,6 @@ impl DesktopRuntimeHostState {
         let process_monitor = ProcessMonitor::new();
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: builder.runtime_context.config.clone(),
-            session: builder.runtime_context.session.clone(),
             tasks: builder.runtime_context.tasks.clone(),
             backend_runtime: builder.backend_runtime.clone(),
             app_version: app_version.clone(),
@@ -816,7 +815,7 @@ impl DesktopRuntimeProfileExtension {
                     vrcx_0_application_game::BackgroundPresenceAutomationState::default();
                 let mut discord_state =
                     vrcx_0_application_game::BackgroundDiscordPresenceState::default();
-                let mut discord_success_info: Option<String> = None;
+                let mut last_discord_output: Option<String> = None;
                 let mut next_presence = Instant::now();
                 let mut next_discord = Instant::now();
                 let mut next_overlay_activity_config = Instant::now();
@@ -849,7 +848,7 @@ impl DesktopRuntimeProfileExtension {
                             vrcx_0_application_game::BackgroundPresenceAutomationState::default();
                         discord_state =
                             vrcx_0_application_game::BackgroundDiscordPresenceState::default();
-                        discord_success_info = None;
+                        last_discord_output = None;
                         next_presence = now;
                         next_discord = now;
                         next_overlay_activity_config = now;
@@ -897,7 +896,7 @@ impl DesktopRuntimeProfileExtension {
                             &tick_context,
                             &discord_rpc,
                             &mut discord_state,
-                            &mut discord_success_info,
+                            &mut last_discord_output,
                             &favorite_friend_groups_by_key,
                         )
                         .await;

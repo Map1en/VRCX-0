@@ -9,6 +9,7 @@ pub enum RuntimeOutputMode {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeOutputLevel {
     Info,
+    Warn,
     Error,
 }
 
@@ -128,18 +129,23 @@ fn format_backend_runtime_telemetry(
             fatal_reason: None,
         }),
         "backgroundInfo" => info(mode, detail),
-        "backgroundError" => Some(RuntimeOutputLine {
-            level: RuntimeOutputLevel::Error,
-            message: with_mode_prefix(mode, detail),
-            fatal_reason: None,
-        }),
+        "backgroundWarning" => output(mode, RuntimeOutputLevel::Warn, detail),
+        "backgroundError" => output(mode, RuntimeOutputLevel::Error, detail),
         _ => None,
     }
 }
 
 fn info(mode: RuntimeOutputMode, message: impl Into<String>) -> Option<RuntimeOutputLine> {
+    output(mode, RuntimeOutputLevel::Info, message)
+}
+
+fn output(
+    mode: RuntimeOutputMode,
+    level: RuntimeOutputLevel,
+    message: impl Into<String>,
+) -> Option<RuntimeOutputLine> {
     Some(RuntimeOutputLine {
-        level: RuntimeOutputLevel::Info,
+        level,
         message: with_mode_prefix(mode, message.into()),
         fatal_reason: None,
     })
@@ -225,6 +231,31 @@ mod tests {
         )
         .unwrap();
         assert_eq!(output.level, RuntimeOutputLevel::Error);
+        assert_eq!(
+            output.message,
+            "background mode Discord SetAssets failed: pipe closed."
+        );
+        assert_eq!(output.fatal_reason, None);
+    }
+
+    #[test]
+    fn formats_background_warning_as_warning_output() {
+        let payload = json!({
+            "kind": "backgroundWarning",
+            "detail": "Discord SetAssets failed: pipe closed.",
+            "snapshot": {
+                "mode": "background",
+                "phase": "running"
+            }
+        });
+
+        let output = format_runtime_output_event(
+            RuntimeOutputMode::Background,
+            "backendRuntimeTelemetry",
+            &payload,
+        )
+        .unwrap();
+        assert_eq!(output.level, RuntimeOutputLevel::Warn);
         assert_eq!(
             output.message,
             "background mode Discord SetAssets failed: pipe closed."

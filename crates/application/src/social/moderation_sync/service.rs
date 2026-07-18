@@ -199,24 +199,17 @@ fn value_message(value: Option<&Value>) -> Option<String> {
 }
 
 fn unwrap_error_message(json: &Value, status: i32) -> String {
-    if let Some(message) = value_message(Some(json)) {
-        return message;
-    }
-
     let object = json.as_object();
-    if let Some(message) = value_message(
-        object
-            .and_then(|record| record.get("error"))
-            .and_then(Value::as_object)
-            .and_then(|error| error.get("message")),
-    ) {
-        return message;
-    }
-    if let Some(message) = value_message(object.and_then(|record| record.get("message"))) {
-        return message;
-    }
+    let nested_message = object
+        .and_then(|record| record.get("error"))
+        .and_then(Value::as_object)
+        .and_then(|error| error.get("message"));
+    let message = value_message(Some(json))
+        .or_else(|| value_message(nested_message))
+        .or_else(|| value_message(object.and_then(|record| record.get("message"))))
+        .unwrap_or_else(|| "VRChat moderation request failed".into());
 
-    format!("VRChat moderation request failed ({status})")
+    format!("{message} (HTTP {status})")
 }
 
 fn normalize_remote_moderation_row(row: &Value) -> Option<RemoteModerationRow> {
@@ -341,6 +334,16 @@ fn resolve_local_moderation_state(
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn moderation_error_message_keeps_http_status() {
+        let message = unwrap_error_message(
+            &json!({ "error": { "message": "Application error." } }),
+            500,
+        );
+
+        assert_eq!(message, "Application error. (HTTP 500)");
+    }
 
     #[test]
     fn normalizes_only_complete_remote_moderation_rows() {

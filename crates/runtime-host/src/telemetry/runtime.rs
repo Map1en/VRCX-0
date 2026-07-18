@@ -7,9 +7,7 @@ use std::time::{Duration, Instant};
 
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
-use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeMode, HostSessionRuntime, TaskStopToken, TaskSupervisor,
-};
+use vrcx_0_application_core::{BackendRuntime, BackendRuntimeMode, TaskStopToken, TaskSupervisor};
 use vrcx_0_host::{
     error_log::drain_client_error_log,
     host_capabilities::{current_arch, current_platform},
@@ -17,7 +15,7 @@ use vrcx_0_host::{
 use vrcx_0_integrations::telemetry::{
     resolve_endpoint, AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload,
     PageHealthPayload, TelemetryClient, TelemetryConfigSnapshot, TelemetryContext,
-    TelemetryRuntimeMode, VrchatLifecyclePayload,
+    TelemetryRuntimeMode,
 };
 use vrcx_0_persistence::config::ConfigRepository;
 
@@ -30,7 +28,6 @@ const TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryConfigRepor
 const TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY: &str = "telemetryClientErrorCursor";
 const ANONYMOUS_USAGE_TELEMETRY_CONFIG_KEY: &str = "anonymousUsageTelemetry";
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30 * 60);
-const VRCHAT_CHECK_INTERVAL: Duration = Duration::from_secs(5);
 const LOOP_SLEEP: Duration = Duration::from_secs(1);
 const SHUTDOWN_FLUSH_TIMEOUT: Duration = Duration::from_secs(3);
 const SEND_RETRY_BACKOFF: Duration = Duration::from_secs(60);
@@ -41,7 +38,6 @@ pub struct TelemetryRuntime {
 
 pub struct TelemetryRuntimeDeps {
     pub config: ConfigRepository,
-    pub session: HostSessionRuntime,
     pub tasks: TaskSupervisor,
     pub backend_runtime: BackendRuntime,
     pub app_version: String,
@@ -51,7 +47,6 @@ pub struct TelemetryRuntimeDeps {
 
 struct TelemetryRuntimeInner {
     config: ConfigRepository,
-    session: HostSessionRuntime,
     tasks: TaskSupervisor,
     backend_runtime: BackendRuntime,
     client: TelemetryClient,
@@ -73,8 +68,6 @@ struct TelemetryState {
     config_snapshot_sent: bool,
     config_snapshot_attempted_at: Option<Instant>,
     last_heartbeat_at: Option<Instant>,
-    last_vrchat_check_at: Option<Instant>,
-    last_vrchat_running: Option<bool>,
     pending_error_cursor: Option<String>,
     acc: TelemetryAccumulator,
 }
@@ -91,7 +84,6 @@ impl TelemetryRuntime {
         Self {
             inner: Arc::new(TelemetryRuntimeInner {
                 config: deps.config,
-                session: deps.session,
                 tasks: deps.tasks,
                 backend_runtime: deps.backend_runtime,
                 client: TelemetryClient::new(resolve_endpoint()),
@@ -167,7 +159,6 @@ impl TelemetryRuntime {
         };
         self.ensure_session_start(&session).await;
         self.send_config_snapshot_once(&session).await;
-        self.send_vrchat_if_changed(&session).await;
         self.send_heartbeat_if_due(&session).await;
     }
 
@@ -305,43 +296,6 @@ impl TelemetryRuntime {
         }
     }
 
-    async fn send_vrchat_if_changed(&self, session: &TelemetrySession) {
-        let now = Instant::now();
-        {
-            let Ok(state) = self.inner.state.lock() else {
-                return;
-            };
-            if state
-                .last_vrchat_check_at
-                .is_some_and(|last| now.duration_since(last) < VRCHAT_CHECK_INTERVAL)
-            {
-                return;
-            }
-        }
-        let running = self.inner.session.snapshot().is_game_running;
-        let should_send = {
-            let Ok(mut state) = self.inner.state.lock() else {
-                return;
-            };
-            state.last_vrchat_check_at = Some(now);
-            let changed = should_send_vrchat_lifecycle(state.last_vrchat_running, running);
-            state.last_vrchat_running = Some(running);
-            changed
-        };
-        if !should_send {
-            return;
-        }
-        if !self.usage_enabled() {
-            return;
-        }
-        let payload = VrchatLifecyclePayload {
-            context: self.context(session, None),
-            state: if running { "started" } else { "stopped" }.into(),
-        };
-        self.post_debug("/api/v1/telemetry/vrchat", &payload, "vrchat lifecycle")
-            .await;
-    }
-
     async fn send_heartbeat_if_due(&self, session: &TelemetrySession) {
         let now = Instant::now();
         {
@@ -468,7 +422,6 @@ impl TelemetryRuntime {
             locale: self.locale(),
             timezone: iana_time_zone::get_timezone().unwrap_or_else(|_| "unknown".into()),
             mode: runtime_mode(self.inner.backend_runtime.snapshot().mode),
-            vrchat_running: self.inner.session.snapshot().is_game_running,
             local_weekday: local_weekday_number(now.weekday()),
             local_hour: now.hour(),
             session_ended,
@@ -478,7 +431,6 @@ impl TelemetryRuntime {
     fn basic_context(&self, session: &TelemetrySession) -> TelemetryContext {
         TelemetryContext {
             mode: TelemetryRuntimeMode::Foreground,
-            vrchat_running: false,
             ..self.context(session, None)
         }
     }
@@ -667,13 +619,6 @@ fn runtime_mode(mode: BackendRuntimeMode) -> TelemetryRuntimeMode {
     }
 }
 
-fn should_send_vrchat_lifecycle(previous: Option<bool>, running: bool) -> bool {
-    match previous {
-        Some(previous) => previous != running,
-        None => running,
-    }
-}
-
 fn is_heartbeat_due(last: Option<Instant>, now: Instant) -> bool {
     last.is_some_and(|last| now.duration_since(last) >= HEARTBEAT_INTERVAL)
 }
@@ -778,15 +723,6 @@ mod tests {
             runtime_mode(BackendRuntimeMode::Headless),
             TelemetryRuntimeMode::Headless
         );
-    }
-
-    #[test]
-    fn vrchat_lifecycle_skips_initial_stopped_baseline() {
-        assert!(!should_send_vrchat_lifecycle(None, false));
-        assert!(should_send_vrchat_lifecycle(None, true));
-        assert!(should_send_vrchat_lifecycle(Some(true), false));
-        assert!(should_send_vrchat_lifecycle(Some(false), true));
-        assert!(!should_send_vrchat_lifecycle(Some(false), false));
     }
 
     #[test]

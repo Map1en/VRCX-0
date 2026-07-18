@@ -80,6 +80,19 @@ pub(in crate::state) fn emit_background_error(
     emit_background_output(runtime_context, backend_runtime, "backgroundError", detail);
 }
 
+pub(in crate::state) fn emit_background_warning(
+    runtime_context: &Arc<RuntimeHostContext>,
+    backend_runtime: &BackendRuntime,
+    detail: impl Into<String>,
+) {
+    emit_background_output(
+        runtime_context,
+        backend_runtime,
+        "backgroundWarning",
+        detail,
+    );
+}
+
 pub(in crate::state) fn emit_background_info_if_changed(
     runtime_context: &Arc<RuntimeHostContext>,
     backend_runtime: &BackendRuntime,
@@ -87,11 +100,21 @@ pub(in crate::state) fn emit_background_info_if_changed(
     detail: impl Into<String>,
 ) {
     let detail = detail.into();
-    if last_detail.as_deref() == Some(detail.as_str()) {
+    if !remember_background_output_if_changed(last_detail, &detail) {
         return;
     }
-    emit_background_info(runtime_context, backend_runtime, detail.clone());
-    *last_detail = Some(detail);
+    emit_background_info(runtime_context, backend_runtime, detail);
+}
+
+pub(in crate::state) fn remember_background_output_if_changed(
+    last_detail: &mut Option<String>,
+    detail: &str,
+) -> bool {
+    if last_detail.as_deref() == Some(detail) {
+        return false;
+    }
+    *last_detail = Some(detail.into());
+    true
 }
 
 fn emit_background_output(

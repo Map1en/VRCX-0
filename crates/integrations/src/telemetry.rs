@@ -110,19 +110,10 @@ pub struct TelemetryContext {
     pub locale: String,
     pub timezone: String,
     pub mode: TelemetryRuntimeMode,
-    pub vrchat_running: bool,
     pub local_weekday: u32,
     pub local_hour: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_ended: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatLifecyclePayload {
-    #[serde(flatten)]
-    pub context: TelemetryContext,
-    pub state: String,
 }
 
 #[derive(Clone, Debug, Serialize)]

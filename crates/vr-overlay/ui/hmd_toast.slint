@@ -6,6 +6,7 @@ export struct HmdToastItem {
     avatar: image,
     has-avatar: bool,
     show-avatar: bool,
+    is-favorite: bool,
     relation-color: color,
     severity-color: color,
 }
@@ -74,10 +75,10 @@ export component HmdToastPanel inherits Window {
             visible: toast.show-avatar && toast.has-avatar;
         }
 
-        Text {
+        actor-text := Text {
             x: parent.content-x;
             y: 17px;
-            width: parent.content-width;
+            width: toast.is-favorite ? parent.content-width - 30px : parent.content-width;
             height: 34px;
             text: toast.actor;
             font-size: 28px;
@@ -85,6 +86,23 @@ export component HmdToastPanel inherits Window {
             vertical-alignment: center;
             overflow: elide;
             color: toast.relation-color;
+        }
+
+        if toast.is-favorite : Path {
+            x: actor-text.preferred-width + 8px < parent.content-width - 22px
+                ? parent.content-x + actor-text.preferred-width + 8px
+                : parent.content-x + parent.content-width - 22px;
+            y: 23px;
+            width: 22px;
+            height: 22px;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: "M 12 2 L 15.09 8.26 L 22 9.27 L 17 14.14 L 18.18 21 L 12 17.77 L 5.82 21 L 7 14.14 L 2 9.27 L 8.91 8.26 Z";
+            fill: toast.relation-color;
+            stroke: toast.relation-color;
+            stroke-width: 2.5px;
+            stroke-line-cap: round;
+            stroke-line-join: round;
         }
 
         Text {

@@ -60,7 +60,7 @@ use auth_session::string_field;
 pub use auth_session::{CliLoginPrompt, CliTwoFactorChoice};
 use background::{
     background_capability_session, background_capability_session_matches, emit_background_error,
-    emit_background_info, gui_maintenance_runtime_mode,
+    emit_background_info, emit_background_warning, gui_maintenance_runtime_mode,
 };
 use background_ticks::{
     run_background_current_user_refresh, run_background_group_instance_refresh,
@@ -82,7 +82,9 @@ pub use runtime_host_state::{
     RuntimeHostStateBuilder,
 };
 const PROFILE_LOCK_FILE: &str = "runtime.lock";
-const BACKGROUND_FACTS_REFRESH_JOB: &str = "backgroundFactsRefresh";
+const BACKGROUND_CURRENT_USER_REFRESH_JOB: &str = "backgroundCurrentUserRefresh";
+const BACKGROUND_GROUP_INSTANCE_REFRESH_JOB: &str = "backgroundGroupInstanceRefresh";
+const BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB: &str = "backgroundSocialBaselineRefresh";
 const BACKGROUND_MODERATION_REFRESH_JOB: &str = "backgroundModerationRefresh";
 const BACKGROUND_PRINT_CLEANUP_JOB: &str = "printAutoCleanup";
 const BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS: u64 = 300;
@@ -118,7 +120,12 @@ const CURRENT_USER_REFRESH_LOCAL_AUTHORITY_FIELDS: &[&str] = &[
 
 #[cfg(test)]
 mod web_ua_tests {
-    use super::web_ua_app_version;
+    use super::{
+        web_ua_app_version, BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
+        BACKGROUND_CURRENT_USER_REFRESH_JOB, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+        BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+        BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+    };
     use crate::RuntimeHostProfile;
 
     #[test]
@@ -134,5 +141,30 @@ mod web_ua_tests {
         let version = web_ua_app_version("2.9.2", RuntimeHostProfile::HeadlessData);
         assert_eq!(version, "2.9.2 (hl)");
         assert!(!version.contains('/'));
+    }
+
+    #[test]
+    fn social_maintenance_refreshes_keep_independent_job_slots_and_cadences() {
+        assert_eq!(
+            [
+                (
+                    BACKGROUND_CURRENT_USER_REFRESH_JOB,
+                    BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
+                ),
+                (
+                    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+                    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+                ),
+                (
+                    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+                    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+                ),
+            ],
+            [
+                ("backgroundCurrentUserRefresh", 300),
+                ("backgroundGroupInstanceRefresh", 300),
+                ("backgroundSocialBaselineRefresh", 3_600),
+            ]
+        );
     }
 }

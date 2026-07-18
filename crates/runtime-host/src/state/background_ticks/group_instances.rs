@@ -6,10 +6,10 @@ use vrcx_0_application_core::BackgroundCapabilitySession;
 use crate::{GroupOrderSource, RuntimeGroupInstancesProjection, RuntimeHostContext};
 
 use super::super::{
-    background_capability_session, background_capability_session_matches, emit_background_error,
-    emit_background_info, gui_maintenance_runtime_mode, AtomicFlagGuard,
-    BackendRuntimeFrontendSessionSnapshot, BACKGROUND_FACTS_REFRESH_JOB,
-    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+    background_capability_session, background_capability_session_matches, emit_background_info,
+    emit_background_warning, gui_maintenance_runtime_mode, AtomicFlagGuard,
+    BackendRuntimeFrontendSessionSnapshot, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
 };
 use super::BackgroundTickContext;
 
@@ -20,19 +20,19 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
 ) {
     let Some(_refresh_guard) = AtomicFlagGuard::try_acquire(refresh_running) else {
         context.background_jobs.mark_scheduled(
-            BACKGROUND_FACTS_REFRESH_JOB,
+            BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
             "Background group instance refresh is already running.",
             BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
         );
         return;
     };
     context.background_jobs.mark_running(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
         "Refreshing background group instance facts.",
     );
     let Some(session) = background_capability_session(context.session_slot) else {
         context.background_jobs.mark_scheduled(
-            BACKGROUND_FACTS_REFRESH_JOB,
+            BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
             "Background group instance refresh is waiting for an authenticated session.",
             BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
         );
@@ -62,7 +62,7 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
                     &session,
                 );
                 context.background_jobs.mark_scheduled(
-                    BACKGROUND_FACTS_REFRESH_JOB,
+                    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
                     "Stale background group instance refresh ignored.",
                     BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
                 );
@@ -91,7 +91,7 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
             );
             context
                 .background_jobs
-                .mark_completed(BACKGROUND_FACTS_REFRESH_JOB, detail);
+                .mark_completed(BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, detail);
         }
         Err(error) => {
             if !background_capability_session_matches(context.session_slot, &session) {
@@ -102,7 +102,7 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
                     &session,
                 );
                 context.background_jobs.mark_scheduled(
-                    BACKGROUND_FACTS_REFRESH_JOB,
+                    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
                     "Stale background group instance refresh error ignored.",
                     BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
                 );
@@ -125,18 +125,18 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
                     instances: None,
                     group_order: None,
                 });
-            emit_background_error(
+            emit_background_warning(
                 context.runtime_context,
                 context.backend_runtime,
                 format!("group instance refresh failed: {error}."),
             );
             context
                 .background_jobs
-                .mark_failed(BACKGROUND_FACTS_REFRESH_JOB, error.to_string());
+                .mark_failed(BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, error.to_string());
         }
     }
     context.background_jobs.mark_scheduled(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
         "Next background group instance facts refresh is waiting.",
         BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
     );

@@ -188,6 +188,7 @@ fn log_runtime_output_event(mode: RuntimeOutputMode, event: &str, payload: &serd
     };
     match line.level {
         RuntimeOutputLevel::Info => tracing::info!("{}", line.message),
+        RuntimeOutputLevel::Warn => tracing::warn!("{}", line.message),
         RuntimeOutputLevel::Error => tracing::error!("{}", line.message),
     }
 }

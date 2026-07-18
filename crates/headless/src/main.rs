@@ -301,6 +301,7 @@ impl ConsoleRuntimeEventSink {
         }
         match output.level {
             RuntimeOutputLevel::Info => println!("{}", output.message),
+            RuntimeOutputLevel::Warn => eprintln!("{}", output.message),
             RuntimeOutputLevel::Error => {
                 eprintln!("{}", output.message);
                 self.append_headless_error_log("headless:event", &output.message);

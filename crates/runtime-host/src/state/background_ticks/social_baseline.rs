@@ -13,8 +13,8 @@ use crate::authenticated_runtime::favorite_group_membership_from_snapshot;
 
 use super::super::{
     background_capability_session, emit_background_error, emit_background_info,
-    gui_maintenance_runtime_mode, BACKGROUND_FACTS_REFRESH_JOB,
-    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+    emit_background_warning, gui_maintenance_runtime_mode,
+    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
 };
 use super::BackgroundTickContext;
 
@@ -23,12 +23,12 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
     favorite_friend_groups_by_key: &mut HashMap<String, Vec<String>>,
 ) {
     context.background_jobs.mark_running(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
         "Refreshing background friend and favorite facts.",
     );
     let Some(session) = background_capability_session(context.session_slot) else {
         context.background_jobs.mark_scheduled(
-            BACKGROUND_FACTS_REFRESH_JOB,
+            BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
             "Background social baseline refresh is waiting for an authenticated session.",
             BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
         );
@@ -49,7 +49,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
             );
             context
                 .background_jobs
-                .mark_failed(BACKGROUND_FACTS_REFRESH_JOB, error.to_string());
+                .mark_failed(BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB, error.to_string());
             return;
         }
     };
@@ -99,7 +99,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
                                 "GUI maintenance friend baseline realtime sync failed"
                             );
                             context.background_jobs.mark_scheduled(
-                                BACKGROUND_FACTS_REFRESH_JOB,
+                                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
                                 "Background friend baseline realtime sync failed.",
                                 BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
                             );
@@ -118,7 +118,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
                                 "GUI maintenance canonical friend baseline encode failed"
                             );
                             context.background_jobs.mark_scheduled(
-                                BACKGROUND_FACTS_REFRESH_JOB,
+                                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
                                 "Background canonical friend snapshot encode failed.",
                                 BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
                             );
@@ -127,7 +127,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
                     };
                     if !applied {
                         context.background_jobs.mark_scheduled(
-                            BACKGROUND_FACTS_REFRESH_JOB,
+                            BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
                             "Superseded background friend baseline was ignored.",
                             BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
                         );
@@ -187,14 +187,14 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
                 error = %error,
                 "GUI maintenance social baseline network request failed"
             );
-            emit_background_error(
+            emit_background_warning(
                 context.runtime_context,
                 context.backend_runtime,
                 format!("social baseline refresh failed: {error}."),
             );
             context
                 .background_jobs
-                .mark_failed(BACKGROUND_FACTS_REFRESH_JOB, error.to_string());
+                .mark_failed(BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB, error.to_string());
             return;
         }
     };
@@ -206,9 +206,9 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
     );
     context
         .background_jobs
-        .mark_completed(BACKGROUND_FACTS_REFRESH_JOB, detail);
+        .mark_completed(BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB, detail);
     context.background_jobs.mark_scheduled(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
         "Next background friend and favorite facts refresh is waiting.",
         BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
     );

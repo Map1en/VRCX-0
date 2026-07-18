@@ -88,8 +88,13 @@ impl DiscordRpc {
             .cloned()
             .ok_or_else(|| Error::Custom("discord activity payload is missing".into()))?;
         let nonce = next_nonce(&mut inner);
-        let connection = ensure_connection(&mut inner, app_id)?;
-        write_activity(connection, nonce, activity)?;
+        if let Err(error) = ensure_connection(&mut inner, app_id)
+            .and_then(|connection| write_activity(connection, nonce, activity))
+        {
+            inner.connection = None;
+            inner.is_active = false;
+            return Err(error);
+        }
         inner.is_active = true;
         Ok(true)
     }
@@ -524,4 +529,52 @@ fn read_exact_from_pipe(file: &std::fs::File, buffer: &mut [u8]) -> Result<(), E
         offset += read as usize;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn set_assets_discards_connection_after_io_failure() {
+        let rpc = DiscordRpc {
+            inner: Mutex::new(DiscordRpcInner {
+                connection: Some(connection_that_rejects_activity()),
+                nonce: 0,
+                is_active: true,
+            }),
+        };
+
+        let result = rpc.set_assets(json!({
+            "appId": DEFAULT_APP_ID,
+            "activity": { "details": "VRChat" }
+        }));
+
+        assert!(result.is_err());
+        let inner = rpc.inner.lock().unwrap();
+        assert!(inner.connection.is_none());
+        assert!(!inner.is_active);
+    }
+
+    #[cfg(windows)]
+    fn connection_that_rejects_activity() -> DiscordRpcConnection {
+        DiscordRpcConnection {
+            app_id: DEFAULT_APP_ID.into(),
+            file: std::fs::File::open(std::env::current_exe().unwrap()).unwrap(),
+        }
+    }
+
+    #[cfg(unix)]
+    fn connection_that_rejects_activity() -> DiscordRpcConnection {
+        use std::net::Shutdown;
+
+        let (stream, peer) = UnixStream::pair().unwrap();
+        stream.shutdown(Shutdown::Both).unwrap();
+        drop(peer);
+        DiscordRpcConnection {
+            app_id: DEFAULT_APP_ID.into(),
+            stream,
+        }
+    }
 }

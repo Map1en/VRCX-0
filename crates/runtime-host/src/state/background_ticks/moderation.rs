@@ -9,7 +9,7 @@ use vrcx_0_persistence::DatabaseService;
 use crate::RuntimeHostContext;
 
 use super::super::{
-    background_capability_session, emit_background_error, emit_background_info,
+    background_capability_session, emit_background_info, emit_background_warning,
     gui_maintenance_runtime_mode, BackendRuntimeFrontendSessionSnapshot,
     BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
 };
@@ -63,7 +63,7 @@ pub(in crate::state) async fn run_background_moderation_refresh(
                 error = %error,
                 "GUI maintenance moderation network request failed"
             );
-            emit_background_error(
+            emit_background_warning(
                 runtime_context,
                 backend_runtime,
                 format!("moderation refresh failed: {error}."),

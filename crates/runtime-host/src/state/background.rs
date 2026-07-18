@@ -16,9 +16,19 @@ impl RuntimeHostState {
 
         for (name, cadence, detail) in [
             (
-                BACKGROUND_FACTS_REFRESH_JOB,
+                BACKGROUND_CURRENT_USER_REFRESH_JOB,
                 BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
-                "Background facts refresh is scheduled.",
+                "Background current user refresh is scheduled.",
+            ),
+            (
+                BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+                BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+                "Background group instance refresh is scheduled.",
+            ),
+            (
+                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+                BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+                "Background social baseline refresh is scheduled.",
             ),
             (
                 BACKGROUND_MODERATION_REFRESH_JOB,
@@ -182,8 +192,16 @@ impl RuntimeHostState {
 
                 running.store(false, Ordering::Release);
                 background_jobs.mark_completed(
-                    BACKGROUND_FACTS_REFRESH_JOB,
-                    "Background facts refresh stopped.",
+                    BACKGROUND_CURRENT_USER_REFRESH_JOB,
+                    "Background current user refresh stopped.",
+                );
+                background_jobs.mark_completed(
+                    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+                    "Background group instance refresh stopped.",
+                );
+                background_jobs.mark_completed(
+                    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+                    "Background social baseline refresh stopped.",
                 );
                 background_jobs.mark_completed(
                     BACKGROUND_MODERATION_REFRESH_JOB,
@@ -287,6 +305,19 @@ pub(super) fn emit_background_error(
     detail: impl Into<String>,
 ) {
     emit_background_output(runtime_context, backend_runtime, "backgroundError", detail);
+}
+
+pub(super) fn emit_background_warning(
+    runtime_context: &Arc<RuntimeHostContext>,
+    backend_runtime: &BackendRuntime,
+    detail: impl Into<String>,
+) {
+    emit_background_output(
+        runtime_context,
+        backend_runtime,
+        "backgroundWarning",
+        detail,
+    );
 }
 
 fn emit_background_output(

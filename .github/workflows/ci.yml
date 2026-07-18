@@ -252,16 +252,18 @@ jobs:
                     - label: Windows
                       os: windows-latest
                       cache_key: ci-test-windows-x86_64
+                      rust_test_args: ''
                     - label: macOS
                       os: macos-latest
                       cache_key: ci-test-macos-aarch64
+                      rust_test_args: --exclude vrcx-0-overlay-runtime
         steps:
             - uses: actions/checkout@v7
             - uses: ./.github/actions/setup-rust
               with:
                   cache-key: ${{ matrix.cache_key }}
                   save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-            - run: npm run rust:test
+            - run: npm run rust:test -- ${{ matrix.rust_test_args }}
 
     native-catalog:
         name: Native Catalog Build

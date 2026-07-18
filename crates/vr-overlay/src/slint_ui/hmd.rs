@@ -97,22 +97,14 @@ fn hmd_toast_item(
 ) -> HmdToastItem {
     let (has_avatar, avatar) = cached_avatar_image(cache, visible_toast_avatar(toast));
     HmdToastItem {
-        actor: SharedString::from(hmd_actor_text(toast)),
+        actor: SharedString::from(toast.actor_name.trim()),
         action: SharedString::from(toast.action.as_str()),
         avatar,
         has_avatar,
         show_avatar: toast.show_avatar,
+        is_favorite: toast.relation == FeedRelation::Favorite,
         relation_color: hmd_relation_color(toast.relation),
         severity_color: hmd_severity_color(toast.severity, accent),
-    }
-}
-
-fn hmd_actor_text(toast: &ToastCard) -> String {
-    let name = toast.actor_name.trim();
-    if toast.relation == FeedRelation::Favorite && !name.is_empty() {
-        format!("{name} ★")
-    } else {
-        name.to_string()
     }
 }
 

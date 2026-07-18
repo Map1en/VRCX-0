@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
-use tracing_subscriber::filter::LevelFilter;
+use tracing::Level;
+use tracing_subscriber::filter::filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
@@ -19,6 +20,11 @@ use super::shared::app_language;
 use super::window::{configure_tray, create_main_window, disable_windows_default_context_menu};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+fn should_capture_gui_error(level: &Level, target: &str) -> bool {
+    level == &Level::ERROR
+        && (target == "vrcx_0" || target.starts_with("vrcx_0::") || target.starts_with("vrcx_0_"))
+}
 
 pub fn init_error_logging(app_data: Option<PathBuf>) {
     let Some(app_data) = app_data.or_else(vrcx_0_host::error_log::default_app_data_dir) else {
@@ -53,7 +59,9 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
                         APP_VERSION,
                     )
                 })
-                .with_filter(LevelFilter::ERROR),
+                .with_filter(filter_fn(|metadata| {
+                    should_capture_gui_error(metadata.level(), metadata.target())
+                })),
         )
         .init();
 }
@@ -224,5 +232,40 @@ fn show_main_window_for_deep_link(app: &tauri::AppHandle) {
 fn emit_deep_link_arrived(app: &tauri::AppHandle) {
     if let Err(error) = app.emit(DEEP_LINK_ARRIVED_EVENT, serde_json::json!({})) {
         tracing::warn!(error = %error, "failed to emit deep link wake event");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_capture_gui_error;
+    use tracing::Level;
+
+    #[test]
+    fn gui_error_log_captures_only_own_error_targets() {
+        for target in [
+            "vrcx_0",
+            "vrcx_0::bootstrap::adapters",
+            "vrcx_0_application",
+            "vrcx_0_application::auth",
+        ] {
+            assert!(should_capture_gui_error(&Level::ERROR, target), "{target}");
+        }
+
+        for target in [
+            "rustls_platform_verifier::verification::windows",
+            "tauri_plugin_updater::updater",
+            "tauri_runtime_wry",
+            "vrcx_0x",
+            "vrcx",
+        ] {
+            assert!(!should_capture_gui_error(&Level::ERROR, target), "{target}");
+        }
+
+        for level in [Level::WARN, Level::INFO, Level::DEBUG, Level::TRACE] {
+            assert!(!should_capture_gui_error(
+                &level,
+                "vrcx_0::bootstrap::adapters"
+            ));
+        }
     }
 }

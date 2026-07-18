@@ -9,12 +9,12 @@ use vrcx_0_persistence::DatabaseService;
 use crate::RuntimeHostContext;
 
 use super::super::{
-    background_capability_session, background_capability_session_matches, emit_background_error,
-    emit_background_info, gui_maintenance_runtime_mode,
+    background_capability_session, background_capability_session_matches, emit_background_info,
+    emit_background_warning, gui_maintenance_runtime_mode,
     replace_backend_frontend_session_user_if_session_matches,
     update_backend_frontend_session_user_filtered_if_session_matches,
     BackendRuntimeFrontendSessionSnapshot, BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
-    BACKGROUND_FACTS_REFRESH_JOB,
+    BACKGROUND_CURRENT_USER_REFRESH_JOB,
 };
 
 pub(in crate::state) async fn run_background_current_user_refresh(
@@ -27,13 +27,13 @@ pub(in crate::state) async fn run_background_current_user_refresh(
     background_jobs: &RuntimeBackgroundJobs,
 ) {
     background_jobs.mark_running(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_CURRENT_USER_REFRESH_JOB,
         "Refreshing background current user facts.",
     );
     let Some(session) = background_capability_session(session_slot) else {
         background_jobs.mark_scheduled(
-            BACKGROUND_FACTS_REFRESH_JOB,
-            "Background facts refresh is waiting for an authenticated session.",
+            BACKGROUND_CURRENT_USER_REFRESH_JOB,
+            "Background current user refresh is waiting for an authenticated session.",
             BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
         );
         return;
@@ -71,7 +71,7 @@ pub(in crate::state) async fn run_background_current_user_refresh(
             }
             let detail = "current user facts refreshed.";
             emit_background_info(runtime_context, backend_runtime, detail);
-            background_jobs.mark_completed(BACKGROUND_FACTS_REFRESH_JOB, detail);
+            background_jobs.mark_completed(BACKGROUND_CURRENT_USER_REFRESH_JOB, detail);
         }
         Err(error) => {
             tracing::warn!(
@@ -79,16 +79,16 @@ pub(in crate::state) async fn run_background_current_user_refresh(
                 error = %error,
                 "GUI maintenance current user network request failed"
             );
-            emit_background_error(
+            emit_background_warning(
                 runtime_context,
                 backend_runtime,
                 format!("current user refresh failed: {error}."),
             );
-            background_jobs.mark_failed(BACKGROUND_FACTS_REFRESH_JOB, error.to_string());
+            background_jobs.mark_failed(BACKGROUND_CURRENT_USER_REFRESH_JOB, error.to_string());
         }
     }
     background_jobs.mark_scheduled(
-        BACKGROUND_FACTS_REFRESH_JOB,
+        BACKGROUND_CURRENT_USER_REFRESH_JOB,
         "Next background current user facts refresh is waiting.",
         BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
     );
