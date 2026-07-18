@@ -2,7 +2,7 @@
 
 use serde_json::Value;
 use tauri::State;
-use vrcx_0_application::vrchat_api::notifications::{
+use vrcx_0_application_core::vrchat_api::notifications::{
     boop_send_input, invite_photo_input, invite_response_photo_input, invite_response_send_input,
     invite_send_input, notification_accept_friend_request_input, notification_hide_remote_input,
     notification_mark_seen_input, notification_respond_input, request_invite_photo_input,
@@ -12,7 +12,7 @@ use vrcx_0_application::vrchat_api::notifications::{
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application as media_upload;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatBoopInput, VrchatInviteResponseInput, VrchatInviteResponsePhotoInput,

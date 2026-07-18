@@ -1775,6 +1775,8 @@
             "llm_endpoints": {
                 "title": "LLM エンドポイント",
                 "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
+                "follow_custom_proxy": "VRCX-0 のカスタムプロキシを使用",
+                "follow_custom_proxy_description": "設定されている場合は LLM リクエストに使用し、それ以外はシステムのプロキシ設定に従います。",
                 "endpoint_count": "{count} 件のエンドポイント",
                 "model_count": "{count} 件のモデル",
                 "add": "エンドポイントを追加",

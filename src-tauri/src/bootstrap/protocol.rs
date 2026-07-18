@@ -140,6 +140,7 @@ pub fn background_image_protocol_response(
 
     if !path_buf.is_file()
         || state
+            .desktop
             .host_file_access
             .ensure_read_allowed(&path_buf, &state.paths)
             .is_err()

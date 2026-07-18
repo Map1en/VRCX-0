@@ -21,7 +21,7 @@ fn deps<'a>(state: &'a State<'_, AppState>) -> SocialMutationDeps<'a> {
 fn record_outcome(
     state: &State<'_, AppState>,
     command: &str,
-    result: &vrcx_0_application::Result<SocialFriendMutationOutcome>,
+    result: &vrcx_0_application_core::Result<SocialFriendMutationOutcome>,
 ) {
     let diagnostics = state.runtime_context.diagnostics.clone();
     let sync = state.runtime_context.sync.clone();

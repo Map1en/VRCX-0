@@ -23,7 +23,7 @@ pub async fn app__proxy_settings_test(
     input: ProxySettingsTestInput,
 ) -> Result<ProxySettingsTestResult, AppError> {
     let result =
-        vrcx_0_application::test_proxy_connectivity(&input.proxy, env!("CARGO_PKG_VERSION"))
+        vrcx_0_application_core::test_proxy_connectivity(&input.proxy, env!("CARGO_PKG_VERSION"))
             .await?;
     Ok(ProxySettingsTestResult {
         normalized_proxy: result.normalized_proxy,

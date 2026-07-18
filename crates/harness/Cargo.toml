@@ -13,7 +13,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "sync", "time"] }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
-vrcx-0-application = { path = "../application" }
+vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-mcp = { path = "../mcp" }
 vrcx-0-persistence = { path = "../persistence" }

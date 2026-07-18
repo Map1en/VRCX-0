@@ -6,16 +6,17 @@ use std::time::{Duration, Instant};
 use crate::adapters::log_watcher::LogWatcherCompatBridge;
 use crate::deep_link::PendingDeepLinks;
 use crate::error::AppError;
-use vrcx_0_application::{DatabaseUpgradeRuntime, UpdaterPort};
+use vrcx_0_application::DatabaseUpgradeRuntime;
+use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_harness::AssistantController;
 use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_mcp::{McpRuntime, McpServerController};
-use vrcx_0_runtime_host::{RuntimeHostOptions, RuntimeHostState};
+use vrcx_0_runtime_host_desktop::{DesktopRuntimeHostOptions, DesktopRuntimeHostState};
 
 pub const BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY: &str = "VRCX_BackgroundModeResumeRoute";
 
 pub struct AppState {
-    pub runtime: RuntimeHostState,
+    pub runtime: DesktopRuntimeHostState,
     pub mcp_controller: McpServerController,
     pub log_watcher_compat_bridge: LogWatcherCompatBridge,
     pub pending_deep_links: PendingDeepLinks,
@@ -49,12 +50,11 @@ impl AppState {
         updater_port: Arc<dyn UpdaterPort>,
     ) -> Result<Self, AppError> {
         let launched_from_autostart = std::env::args().any(|arg| arg == "--autostart");
-        let runtime = RuntimeHostState::new(RuntimeHostOptions {
+        let runtime = DesktopRuntimeHostState::new(DesktopRuntimeHostOptions {
             realtime_origin: realtime_origin(),
             launched_from_autostart,
             app_data_dir,
             app_version: env!("CARGO_PKG_VERSION").into(),
-            is_headless: false,
             app_update_build_label: crate::bootstrap::app_update_build_label(),
             app_update_build_badge: crate::bootstrap::app_update_build_badge(),
             updater_port,
@@ -125,7 +125,7 @@ impl AppState {
 }
 
 impl Deref for AppState {
-    type Target = RuntimeHostState;
+    type Target = DesktopRuntimeHostState;
 
     fn deref(&self) -> &Self::Target {
         &self.runtime

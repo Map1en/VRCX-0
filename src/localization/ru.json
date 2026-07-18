@@ -1781,6 +1781,8 @@
             "llm_endpoints": {
                 "title": "LLM Эндпоинты",
                 "description": "Общие OpenAI-совместимые подключения для Social AI и перевода.",
+                "follow_custom_proxy": "Использовать пользовательский прокси VRCX-0",
+                "follow_custom_proxy_description": "Если он настроен, запросы к LLM идут через него; иначе используется системный прокси.",
                 "endpoint_count": "Эндпоинтов: {count}",
                 "model_count": "Моделей: {count}",
                 "add": "Добавить эндпоинт",

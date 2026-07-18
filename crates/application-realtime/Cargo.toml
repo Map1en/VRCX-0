@@ -1,0 +1,31 @@
+[package]
+name = "vrcx-0-application-realtime"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+test-utils = ["vrcx-0-application-core/test-utils"]
+
+[dependencies]
+chrono = { workspace = true }
+futures-util = "0.3"
+moka = { version = "0.12", features = ["future"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+specta = { workspace = true }
+tokio = { workspace = true, features = [
+    "rt",
+    "macros",
+    "sync",
+    "time",
+    "net",
+    "io-util"
+] }
+tracing = { workspace = true }
+vrcx-0-application-core = { path = "../application-core" }
+vrcx-0-core = { path = "../core" }
+vrcx-0-persistence = { path = "../persistence" }
+vrcx-0-vrchat-client = { path = "../vrchat-client" }
+
+[dev-dependencies]
+vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

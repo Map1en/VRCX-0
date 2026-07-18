@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use serde_json::Value;
-use vrcx_0_application::{OverlayActivityDelivery, WebClient, WorldCache};
+use vrcx_0_application_activity::OverlayActivityDelivery;
+use vrcx_0_application_core::{WebClient, WorldCache};
 use vrcx_0_core::avatar::avatar_name_from_file_name;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_persistence::worlds::world_cache_get;

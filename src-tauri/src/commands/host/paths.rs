@@ -4,9 +4,9 @@ use crate::error::AppError;
 use crate::state::AppState;
 use tauri::State;
 use vrcx_0_host::app_paths::{self, AppDataDirSource};
-use vrcx_0_host::vrchat_paths;
+use vrcx_0_host_desktop::vrchat_paths;
 
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 
 #[tauri::command]
 #[specta::specta]

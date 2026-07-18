@@ -4,8 +4,8 @@ use std::collections::HashMap;
 
 use crate::error::AppError;
 
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
-use vrcx_0_host::local_player_moderations;
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host_desktop::local_player_moderations;
 
 #[tauri::command]
 #[specta::specta]

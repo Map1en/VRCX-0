@@ -3,22 +3,22 @@
 use std::sync::Arc;
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::instances::{
+use vrcx_0_application::{
+    join_instance_launch, InstanceLaunchApiFuture, InstanceLaunchDeps, InstanceLaunchHttpClient,
+    InstanceLaunchInput, InstanceLaunchOutcome, InstanceLaunchPipe,
+};
+use vrcx_0_application_core::vrchat_api::instances::{
     instance_close_input, instance_create_input, instance_get_input, instance_self_invite_input,
     instance_short_name_get_input,
 };
-use vrcx_0_application::vrchat_api::{execute_api_command, VrchatScope};
-use vrcx_0_application::{
-    join_instance_launch, InstanceLaunchApiFuture, InstanceLaunchDeps, InstanceLaunchHttpClient,
-    InstanceLaunchInput, InstanceLaunchOutcome, InstanceLaunchPipe, RuntimeDiagnostics,
-    RuntimeSyncEngine, WebClient,
-};
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
+use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 use vrcx_0_persistence::DatabaseService;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatInstanceCloseInput, VrchatInstanceCreateInput, VrchatInstanceIdentityInput,
@@ -55,7 +55,7 @@ impl TauriInstanceLaunchHttpClient {
         &self,
         command: &'static str,
         request: VrchatApiRequest,
-    ) -> vrcx_0_application::Result<VrchatApiResponse> {
+    ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
         execute_api_command(
             &self.web,
             &self.db,
@@ -111,9 +111,12 @@ impl InstanceLaunchHttpClient for TauriInstanceLaunchHttpClient {
 struct TauriInstanceLaunchPipe;
 
 impl InstanceLaunchPipe for TauriInstanceLaunchPipe {
-    fn try_open_vrchat_launch_url(&self, launch_url: &str) -> vrcx_0_application::Result<bool> {
+    fn try_open_vrchat_launch_url(
+        &self,
+        launch_url: &str,
+    ) -> vrcx_0_application_core::Result<bool> {
         require_host_capability(HostCapability::VrchatLaunchPipe)
-            .map_err(|error| vrcx_0_application::Error::Custom(error.to_string()))?;
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
         Ok(crate::adapters::ipc::vrcipc_send(launch_url))
     }
 }

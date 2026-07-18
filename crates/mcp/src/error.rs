@@ -7,7 +7,7 @@ pub enum McpError {
     #[error("MCP persistence error: {0}")]
     Persistence(#[from] vrcx_0_persistence::Error),
     #[error("MCP application error: {0}")]
-    Application(#[from] vrcx_0_application::Error),
+    Application(#[from] vrcx_0_application_core::Error),
     #[error("{0}")]
     Custom(String),
 }

@@ -4,7 +4,7 @@ use serde::Deserialize;
 use tauri::State;
 
 use crate::state::AppState;
-use vrcx_0_application::RuntimeAuthScopeSnapshot;
+use vrcx_0_application_core::RuntimeAuthScopeSnapshot;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

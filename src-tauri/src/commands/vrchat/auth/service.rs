@@ -4,19 +4,19 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use tauri::State;
-use vrcx_0_application::vrchat_api::auth::{
+use vrcx_0_application_core::vrchat_api::auth::{
     config_get_input, current_user_get_input, file_analysis_get_input, session_get_input,
     visits_get_input,
 };
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 use vrcx_0_application::{
     AutoLoginOutcome, AutoLoginStartInput, LoginSessionStartBasicInput,
     LoginSessionStartCookieRestoreInput, LoginSessionStartSavedCredentialInput, LoginSessionState,
     LogoutRecordInput,
 };
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatAuthAutoLoginStartInput, VrchatAuthEndpointInput, VrchatAuthFileAnalysisInput,

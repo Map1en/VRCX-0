@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
 use vrcx_0_core::vrchat_log_reader::{parse_log_document, LogEntry, LogEntryFilter};
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
-use vrcx_0_host::vrchat_paths;
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host_desktop::vrchat_paths;
 
 const DEFAULT_ENTRY_LIMIT: usize = 300;
 const MAX_ENTRY_LIMIT: usize = 1000;

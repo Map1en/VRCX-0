@@ -2,13 +2,14 @@
 
 use tauri::State;
 use vrcx_0_application::{
-    self as application, vrchat_api::VrchatApiResponse, GroupApiDeps, VrchatGroupGalleryInput,
-    VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput,
-    VrchatGroupLogsInput, VrchatGroupMemberPropsInput, VrchatGroupMembersInput,
-    VrchatGroupMembersSearchInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
-    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
-    VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
+    self as application, GroupApiDeps, VrchatGroupGalleryInput, VrchatGroupIdInput,
+    VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput, VrchatGroupLogsInput,
+    VrchatGroupMemberPropsInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use crate::error::AppError;
 use crate::state::AppState;

@@ -9,7 +9,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::WindowEvent;
-use vrcx_0_application::{
+use vrcx_0_application_core::{
     recommended_tokio_max_blocking_threads, recommended_tokio_worker_threads, BackendRuntimeMode,
     BackendRuntimePhase,
 };

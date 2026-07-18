@@ -1,13 +1,10 @@
 import { commands } from '@/platform/tauri/bindings';
 import type {
+    AppUpdateDownloadProgressPayload,
     AppUpdateDownloadStatusSnapshot,
+    AppUpdateInstalledPayload,
     UpdaterMetadata
 } from '@/platform/tauri/bindings';
-
-import type {
-    AppUpdateDownloadProgressPayload,
-    AppUpdateInstalledPayload
-} from '../runtime-event-bridge/types';
 
 export type {
     AppUpdateDownloadProgressPayload,

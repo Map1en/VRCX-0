@@ -5,7 +5,7 @@ use tauri::{Manager, WebviewWindowBuilder};
 
 use crate::error::AppError;
 use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
-use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
 
 use super::adapters::start_host_services;
 use super::notification::{is_background_mode_active, is_community_theme_enabled, tray_labels};
@@ -143,7 +143,7 @@ pub async fn start_background_mode_for_current_session(
 pub fn restore_foreground_window_from_background_mode(
     app: &tauri::AppHandle,
     state: &AppState,
-) -> Result<vrcx_0_application::BackendRuntimeSnapshot, Box<dyn std::error::Error>> {
+) -> Result<BackendRuntimeSnapshot, Box<dyn std::error::Error>> {
     let current = state.snapshot_backend_runtime();
     if current.mode != BackendRuntimeMode::Background {
         ensure_main_window(app)?;
@@ -208,6 +208,7 @@ pub(super) fn create_main_window(
         builder = builder
             .decorations(true)
             .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
             .traffic_light_position(tauri::LogicalPosition::new(16.0, 16.0));
     }
     let state = app.state::<AppState>();

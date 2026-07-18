@@ -61,13 +61,13 @@ impl From<vrcx_0_host::Error> for AppError {
     }
 }
 
-impl From<vrcx_0_application::Error> for AppError {
-    fn from(value: vrcx_0_application::Error) -> Self {
+impl From<vrcx_0_application_core::Error> for AppError {
+    fn from(value: vrcx_0_application_core::Error) -> Self {
         match value {
-            vrcx_0_application::Error::Database(message) => AppError::Database(message),
-            vrcx_0_application::Error::Io(error) => AppError::Io(error),
-            vrcx_0_application::Error::Json(error) => AppError::Json(error),
-            vrcx_0_application::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_application_core::Error::Database(message) => AppError::Database(message),
+            vrcx_0_application_core::Error::Io(error) => AppError::Io(error),
+            vrcx_0_application_core::Error::Json(error) => AppError::Json(error),
+            vrcx_0_application_core::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }

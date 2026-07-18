@@ -73,7 +73,7 @@ pub fn app__memo_save_user(
     let result = vrcx_0_persistence::memos::memo_save_user(state.db.as_ref(), user_id, memo)
         .map_err(AppError::from)?;
     state
-        .runtime
+        .desktop
         .vr_overlay_runtime
         .invalidate_friends_panel_note_memo_cache();
     Ok(result)

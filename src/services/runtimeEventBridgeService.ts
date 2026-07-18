@@ -47,8 +47,8 @@ import {
     handleRuntimeGameLogProjection,
     handleUpdateIsGameRunning
 } from './runtime-event-bridge/gameRuntimeEventHandlers';
-import { isRecord } from './runtime-event-bridge/guards';
 import type {
+    RuntimeEvent,
     RuntimeEventName,
     RuntimeEventPayloadMap
 } from './runtime-event-bridge/types';
@@ -90,108 +90,80 @@ async function handleRuntimeVrchatAuthFailureEvent(
     );
 }
 
-function handleRuntimeEvent(
-    name: RuntimeEventName,
-    payload: RuntimeEventPayloadMap[RuntimeEventName]
-): void {
+function handleRuntimeEvent(event: RuntimeEvent): void {
     const runtimeStore = useRuntimeStore.getState();
 
-    if (name === 'gameLogPersistenceFallback') {
-        handleGameLogPersistenceFallback(payload);
+    if (event.name === 'gameLogPersistenceFallback') {
+        handleGameLogPersistenceFallback(event.payload);
         return;
     }
 
-    if (name === 'friendProfileLoadStatus') {
-        const friendProfileLoad =
-            payload as RuntimeEventPayloadMap['friendProfileLoadStatus'];
-        if (isFriendProfileLoadTerminalStatus(friendProfileLoad.status)) {
+    if (event.name === 'friendProfileLoadStatus') {
+        if (isFriendProfileLoadTerminalStatus(event.payload.status)) {
             flushFriendProfileProjectionBatch();
         }
-        runtimeStore.recordRuntimeEvent(name, payload);
-        applyFriendProfileLoadStatusPayload(friendProfileLoad);
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        applyFriendProfileLoadStatusPayload(event.payload);
         return;
     }
 
-    if (name === 'printsAutoCleanup') {
-        const printCleanupEvent =
-            payload as RuntimeEventPayloadMap['printsAutoCleanup'];
-        runtimeStore.recordRuntimeEvent(name, payload);
-        handlePrintCleanupEvent(printCleanupEvent);
+    if (event.name === 'printsAutoCleanup') {
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        handlePrintCleanupEvent(event.payload);
         return;
     }
 
-    if (name === 'appUpdateStatus') {
-        void handleAppUpdateStatusEvent(
-            payload as RuntimeEventPayloadMap['appUpdateStatus']
-        );
+    if (event.name === 'appUpdateStatus') {
+        void handleAppUpdateStatusEvent(event.payload);
         void runForegroundUpdateRegistryBackupMaintenance();
         return;
     }
 
-    if (name === 'appUpdateDownloadProgress') {
-        handleAppUpdateDownloadProgressEvent(
-            payload as RuntimeEventPayloadMap['appUpdateDownloadProgress']
-        );
+    if (event.name === 'appUpdateDownloadProgress') {
+        handleAppUpdateDownloadProgressEvent(event.payload);
         return;
     }
 
-    if (name === 'appUpdateInstalled') {
-        handleAppUpdateInstalledEvent(
-            payload as RuntimeEventPayloadMap['appUpdateInstalled']
-        );
+    if (event.name === 'appUpdateInstalled') {
+        handleAppUpdateInstalledEvent(event.payload);
         return;
     }
 
-    if (name === 'profileBackupStatus') {
-        useProfileBackupStore
-            .getState()
-            .applyStatus(
-                payload as RuntimeEventPayloadMap['profileBackupStatus']
-            );
+    if (event.name === 'profileBackupStatus') {
+        useProfileBackupStore.getState().applyStatus(event.payload);
         return;
     }
 
-    if (name === 'profileRestoreProgress') {
-        useProfileBackupStore
-            .getState()
-            .applyRestoreProgress(
-                payload as RuntimeEventPayloadMap['profileRestoreProgress']
-            );
+    if (event.name === 'profileRestoreProgress') {
+        useProfileBackupStore.getState().applyRestoreProgress(event.payload);
         return;
     }
 
-    if (name === 'favoritesChanged') {
-        runtimeStore.recordRuntimeEvent(name, payload);
-        handleFavoritesChangedEvent(
-            payload as RuntimeEventPayloadMap['favoritesChanged']
-        );
+    if (event.name === 'favoritesChanged') {
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        handleFavoritesChangedEvent(event.payload);
         return;
     }
 
-    if (name === 'authenticatedRuntimePhase') {
-        runtimeStore.recordRuntimeEvent(name, payload);
-        applyAuthenticatedRuntimePhaseSnapshot(
-            payload as RuntimeEventPayloadMap['authenticatedRuntimePhase']
-        );
+    if (event.name === 'authenticatedRuntimePhase') {
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        applyAuthenticatedRuntimePhaseSnapshot(event.payload);
         return;
     }
 
-    if (name === 'realtimeWsStatus') {
-        handleAuthenticatedRuntimeRealtimeStatus(
-            payload as RuntimeEventPayloadMap['realtimeWsStatus']
-        );
+    if (event.name === 'realtimeWsStatus') {
+        handleAuthenticatedRuntimeRealtimeStatus(event.payload);
         return;
     }
 
-    if (handleBackendRealtimeProjectionEvent(name, payload)) {
+    if (handleBackendRealtimeProjectionEvent(event.name, event.payload)) {
         return;
     }
 
-    runtimeStore.recordRuntimeEvent(name, payload);
+    runtimeStore.recordRuntimeEvent(event.name, event.payload);
 
-    if (name === 'backendRuntimeTelemetry') {
-        const record = isRecord(payload) ? payload : {};
-        const snapshot = isRecord(record.snapshot) ? record.snapshot : null;
+    if (event.name === 'backendRuntimeTelemetry') {
+        const snapshot = event.payload.snapshot;
         prunePendingBackendRealtimeProjectionEvents(snapshot);
         handleBackendRuntimeTelemetrySnapshot(
             snapshot,
@@ -200,57 +172,47 @@ function handleRuntimeEvent(
         return;
     }
 
-    if (name === 'realtimeEntryCorrection') {
-        handleRealtimeEntryCorrection(
-            payload as RuntimeEventPayloadMap['realtimeEntryCorrection']
-        );
+    if (event.name === 'realtimeEntryCorrection') {
+        handleRealtimeEntryCorrection(event.payload);
         return;
     }
 
-    if (name === 'gameLogProjection') {
-        handleRuntimeGameLogProjection(
-            payload as RuntimeEventPayloadMap['gameLogProjection']
-        );
+    if (event.name === 'gameLogProjection') {
+        handleRuntimeGameLogProjection(event.payload);
         return;
     }
 
-    if (name === 'gameLogSideEffect') {
-        handleGameLogSideEffect(payload);
+    if (event.name === 'gameLogSideEffect') {
+        handleGameLogSideEffect(event.payload);
         return;
     }
 
-    if (name === 'runtimeGroupInstancesProjection') {
-        handleRuntimeGroupInstancesProjection(
-            payload as RuntimeEventPayloadMap['runtimeGroupInstancesProjection']
-        );
+    if (event.name === 'runtimeGroupInstancesProjection') {
+        handleRuntimeGroupInstancesProjection(event.payload);
         return;
     }
 
-    if (name === 'gameClientEvent') {
-        handleGameClientEvent(payload);
+    if (event.name === 'gameClientEvent') {
+        handleGameClientEvent(event.payload);
         return;
     }
 
-    if (name === 'runtimeWorkerError') {
-        console.warn('Backend worker error:', payload);
+    if (event.name === 'runtimeWorkerError') {
+        console.warn('Backend worker error:', event.payload);
         return;
     }
 
-    if (name === 'runtimeVrchatAuthFailure') {
-        void handleRuntimeVrchatAuthFailureEvent(
-            payload as RuntimeEventPayloadMap['runtimeVrchatAuthFailure']
-        );
+    if (event.name === 'runtimeVrchatAuthFailure') {
+        void handleRuntimeVrchatAuthFailureEvent(event.payload);
         return;
     }
 
-    if (name === 'updateIsGameRunning') {
-        handleUpdateIsGameRunning(
-            payload as RuntimeEventPayloadMap['updateIsGameRunning']
-        );
+    if (event.name === 'updateIsGameRunning') {
+        handleUpdateIsGameRunning(event.payload);
         return;
     }
 
-    if (name === 'browserFocus') {
+    if (event.name === 'browserFocus') {
         handleBrowserFocusEvent();
     }
 }
@@ -414,7 +376,7 @@ function subscribeRuntimeEvent<Name extends RuntimeEventName>(
     return tauriClient.events.subscribe<RuntimeEventPayloadMap[Name]>(
         name,
         (payload) => {
-            handleRuntimeEvent(name, payload);
+            handleRuntimeEvent({ name, payload } as RuntimeEvent);
         }
     );
 }

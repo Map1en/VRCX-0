@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::tools::{
+use vrcx_0_application_core::vrchat_api::tools::{
     calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
     group_calendar_get_input, group_calendar_ics_get_input, group_event_follow_input,
     invite_message_edit_input, invite_messages_get_input, user_note_save_input, user_report_input,
@@ -9,7 +9,7 @@ use vrcx_0_application::vrchat_api::tools::{
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatToolsCalendarEventInput, VrchatToolsCalendarGroupInput, VrchatToolsCalendarListInput,

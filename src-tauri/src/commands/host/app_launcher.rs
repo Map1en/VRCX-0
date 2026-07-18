@@ -4,11 +4,11 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
-use vrcx_0_host::auto_launch::{
+use vrcx_0_host_desktop::auto_launch::{
     picked_app_launcher_target, AppLauncherEntry, AppLauncherEntryKind, AppLauncherPickedTarget,
     AppLauncherSnapshot,
 };
-use vrcx_0_host::host_capabilities::{
+use vrcx_0_host_desktop::host_capabilities::{
     require_host_capability, require_host_capability_supported, HostCapability,
 };
 
@@ -98,6 +98,7 @@ pub async fn app__app_launcher_target_pick(
     let picked = picked_app_launcher_target(path).map_err(AppError::Custom)?;
     if matches!(picked.kind, AppLauncherEntryKind::LocalApp) {
         state
+            .desktop
             .host_file_access
             .register_path(PathBuf::from(&picked.target));
     }
@@ -106,7 +107,7 @@ pub async fn app__app_launcher_target_pick(
 
 #[cfg(test)]
 mod app_launcher_tests {
-    use vrcx_0_host::auto_launch::{
+    use vrcx_0_host_desktop::auto_launch::{
         normalize_app_launcher_entries, AppLauncherEntry, AppLauncherEntryKind,
         AppLauncherRunPolicy, AppLauncherScope, AppLauncherStopPolicy,
     };

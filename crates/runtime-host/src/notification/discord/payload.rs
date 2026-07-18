@@ -1,11 +1,11 @@
 use serde_json::{json, Value};
-use vrcx_0_application::{OverlayActivityDelivery, OverlayActivityEntry};
+use vrcx_0_application_activity::{OverlayActivityDelivery, OverlayActivityEntry};
 use vrcx_0_core::location::{launch_url, parse_location, region_label};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
 
-use crate::notification::rendered::RenderedNotification;
-use crate::vr_overlay::{
+use crate::notification::{
     discord_embed_kind, discord_title_key, DiscordEmbedKind, OverlayLocale, OverlayLocalizer,
+    RenderedNotification,
 };
 
 use super::resolve::{

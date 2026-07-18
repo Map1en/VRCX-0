@@ -543,6 +543,42 @@ describe('runtimeEventBridgeService', () => {
         ).toBe(1);
     });
 
+    it('routes typed GameLog side-effect variants', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        mocks.isHostCapabilityAvailable.mockImplementation(
+            (name) => name === 'runtimeGameLogSideEffects'
+        );
+
+        handlers.get('gameLogSideEffect')?.({
+            kind: 'gameNoVR',
+            payload: { isGameNoVR: true }
+        });
+
+        expect(useRuntimeStore.getState().gameState.isGameNoVR).toBe(true);
+    });
+
+    it('routes typed game-client variants', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        mocks.isHostCapabilityAvailable.mockImplementation(
+            (name) => name === 'runtimeGameClientLifecycle'
+        );
+        const payload = {
+            handled: true,
+            location: 'wrld_test:1',
+            delayMs: 500
+        };
+
+        handlers.get('gameClientEvent')?.({
+            kind: 'crashRelaunchDecision',
+            payload
+        });
+
+        expect(mocks.recordRuntimeGameClientEvent).toHaveBeenCalledWith(
+            'crashRelaunchDecision',
+            payload
+        );
+    });
+
     it('applies runtime GameLog projection when runtime ingest is active', async () => {
         const handlers = new Map<string, (payload: unknown) => void>();
         mocks.subscribe.mockImplementation((name, handler) => {

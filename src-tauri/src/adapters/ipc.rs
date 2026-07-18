@@ -1,1 +1,1 @@
-pub use vrcx_0_host::vrchat_ipc::vrcipc_send;
+pub use vrcx_0_host_desktop::vrchat_ipc::vrcipc_send;

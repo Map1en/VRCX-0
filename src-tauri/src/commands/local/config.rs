@@ -27,7 +27,7 @@ pub fn app__config_set_values(
     state: State<'_, AppState>,
     entries: Vec<ConfigWriteEntry>,
 ) -> Result<(), AppError> {
-    vrcx_0_application::validate_config_writes(&entries).map_err(AppError::from)?;
+    vrcx_0_application_core::validate_config_writes(&entries).map_err(AppError::from)?;
     vrcx_0_persistence::config::config_set_values(state.db.as_ref(), entries)
         .map_err(AppError::from)
 }

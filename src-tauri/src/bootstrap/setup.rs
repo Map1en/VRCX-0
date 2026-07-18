@@ -109,7 +109,8 @@ pub fn setup_app_with_data_dir(
 
     let state = app.state::<AppState>();
     state
-        .runtime_context
+        .desktop
+        .services
         .set_notification_desktop_notifier(Arc::new(TauriDesktopNotifier::new(
             app.handle().clone(),
         )));

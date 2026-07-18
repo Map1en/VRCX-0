@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use vrcx_0_application::{
-    MutualGraphFetchRuntime, RealtimeHostRuntime, RuntimeAuthScope, RuntimeDiagnostics,
-    RuntimeSyncEngine, TaskSupervisor, WebClient,
+use vrcx_0_application::MutualGraphFetchRuntime;
+use vrcx_0_application_core::{
+    RuntimeAuthScope, RuntimeDiagnostics, RuntimeSyncEngine, TaskSupervisor, WebClient,
 };
+use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_runtime_host::RuntimeHostState;

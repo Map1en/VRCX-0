@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::{AppHandle, Manager};
-use vrcx_0_runtime_host::vr_overlay::VrOverlayRuntimeSnapshot;
+use vrcx_0_runtime_host_desktop::vr_overlay::VrOverlayRuntimeSnapshot;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -12,7 +12,7 @@ pub async fn app__vr_overlay_status_get(
     app: AppHandle,
 ) -> Result<VrOverlayRuntimeSnapshot, AppError> {
     run_vr_overlay_task(app, "VR overlay status task", |state| {
-        Ok(state.vr_overlay_snapshot())
+        Ok(state.vr_overlay_snapshot()?)
     })
     .await
 }
@@ -35,7 +35,7 @@ pub async fn app__vr_overlay_config_reload(
     app: AppHandle,
 ) -> Result<VrOverlayRuntimeSnapshot, AppError> {
     run_vr_overlay_task(app, "VR overlay config reload task", |state| {
-        Ok(state.reload_vr_overlay_config())
+        Ok(state.reload_vr_overlay_config()?)
     })
     .await
 }

@@ -20,6 +20,14 @@ jobs:
             display_name: ${{ steps.metadata.outputs.display_name }}
             timestamp: ${{ steps.timestamp.outputs.timestamp }}
         steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24.x
+
+            - uses: dtolnay/rust-toolchain@stable
+
             - id: metadata
               name: Resolve package variant
               env:

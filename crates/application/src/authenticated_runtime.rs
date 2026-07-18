@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{
+use vrcx_0_application_realtime::{
     RealtimeTransportStartResult, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineOutput,
 };
 

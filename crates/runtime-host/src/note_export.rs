@@ -6,8 +6,10 @@ use std::sync::{
 use chrono::Utc;
 use vrcx_0_application::{
     prepare_note_export, run_note_export, NoteExportProgress, NoteExportResult,
-    NoteExportStartInput, NoteExportState, NoteExportStatus, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor, VrchatNoteExportActions, WebClient,
+    NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
+};
+use vrcx_0_application_core::{
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor, WebClient,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -200,7 +202,7 @@ impl NoteExportRuntime {
     }
 
     fn emit_status(&self, status: NoteExportStatus) {
-        self.event_bus.emit("noteExportStatus", status);
+        self.event_bus.emit(status);
     }
 
     fn lock_inner(&self) -> std::sync::MutexGuard<'_, NoteExportRuntimeInner> {

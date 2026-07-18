@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 
-use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -14,10 +13,18 @@ use crate::database::schema::{
     table_column_names, VRCX0_SCHEMA_VERSION,
 };
 use crate::game_log::ensure_game_log_tables;
-use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
+use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
 use super::DatabaseService;
+
+mod avatar_cleanup;
+mod copresence_repair;
+
+pub use avatar_cleanup::{
+    avatar_auto_cleanup_run, AvatarAutoCleanupOutcome, AvatarAutoCleanupState,
+};
+use copresence_repair::repair_zero_copresence_durations;
 
 pub fn vacuum_after_secret_migration(db: &DatabaseService) -> Result<(), Error> {
     db.checkpoint_and_vacuum()
@@ -54,24 +61,6 @@ pub struct MaintenanceTableSizesOutput {
 pub struct BrokenGameLogDisplayNameOutput {
     pub id: Value,
     pub display_name: Value,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum AvatarAutoCleanupState {
-    Disabled,
-    NotDue,
-    Ran,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarAutoCleanupOutcome {
-    pub state: AvatarAutoCleanupState,
-    pub retention_days: Option<i64>,
-    pub removed_count: i64,
-    pub cutoff: Option<String>,
-    pub completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -172,85 +161,6 @@ pub fn user_tables_ensure(
     Ok(UserTableContextOutput {
         user_id,
         user_prefix,
-    })
-}
-
-pub fn avatar_auto_cleanup_run(
-    db: &DatabaseService,
-    user_id: &str,
-    now: DateTime<Utc>,
-) -> Result<AvatarAutoCleanupOutcome, Error> {
-    crate::config::ensure_config_table(db)?;
-    let user_prefix = normalize_user_table_prefix(user_id)?;
-    ensure_realtime_tables(db, &user_prefix)?;
-    let cleanup_key = crate::config::resolve_config_key("VRCX_avatarAutoCleanup");
-    let completed_key =
-        crate::config::resolve_config_key(&format!("lastAvatarCleanupDate_{}", user_id.trim()));
-
-    db.write_transaction(|tx| {
-        let setting = tx
-            .execute(
-                "SELECT value FROM configs WHERE key = @key LIMIT 1",
-                &ParamsBuilder::new().set("key", cleanup_key).build(),
-            )?
-            .first()
-            .and_then(|row| row.first())
-            .and_then(Value::as_str)
-            .unwrap_or("Off")
-            .trim()
-            .to_string();
-        let Some(retention_days) = setting.parse::<i64>().ok().filter(|days| *days > 0) else {
-            return Ok(AvatarAutoCleanupOutcome {
-                state: AvatarAutoCleanupState::Disabled,
-                retention_days: None,
-                removed_count: 0,
-                cutoff: None,
-                completed_at: None,
-            });
-        };
-
-        let last_completed = tx
-            .execute(
-                "SELECT value FROM configs WHERE key = @key LIMIT 1",
-                &ParamsBuilder::new().set("key", completed_key.clone()).build(),
-            )?
-            .first()
-            .and_then(|row| row.first())
-            .and_then(Value::as_str)
-            .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
-            .map(|value| value.with_timezone(&Utc));
-        if last_completed.is_some_and(|last| now.signed_duration_since(last) < Duration::days(7)) {
-            return Ok(AvatarAutoCleanupOutcome {
-                state: AvatarAutoCleanupState::NotDue,
-                retention_days: Some(retention_days),
-                removed_count: 0,
-                cutoff: None,
-                completed_at: last_completed.map(|value| value.to_rfc3339()),
-            });
-        }
-
-        let cutoff = (now - Duration::days(retention_days))
-            .format("%Y-%m-%dT%H:%M:%S%.3fZ")
-            .to_string();
-        let completed_at = now.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
-        let removed_count = tx.execute_non_query(
-            &format!("DELETE FROM {user_prefix}_feed_avatar WHERE created_at < @cutoff"),
-            &ParamsBuilder::new().set("cutoff", cutoff.clone()).build(),
-        )?;
-        tx.execute_non_query(
-            "INSERT INTO configs (key, value) VALUES (@key, @value) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            &ParamsBuilder::new()
-                .set("key", completed_key)
-                .set("value", completed_at.clone())
-                .build(),
-        )?;
-        Ok(AvatarAutoCleanupOutcome {
-            state: AvatarAutoCleanupState::Ran,
-            retention_days: Some(retention_days),
-            removed_count,
-            cutoff: Some(cutoff),
-            completed_at: Some(completed_at),
-        })
     })
 }
 
@@ -472,71 +382,6 @@ fn run_database_maintenance_task(
     Ok(())
 }
 
-const MAX_COPRESENCE_DURATION_MS: i64 = 24 * 60 * 60 * 1000;
-const REPAIR_CHUNK_SIZE: usize = 5000;
-
-fn repair_zero_copresence_durations(db: &DatabaseService) -> Result<(), Error> {
-    ensure_game_log_tables(db)?;
-    let zero_leaves = db.execute(
-        "SELECT id, created_at, location, user_id, display_name FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND time = 0 AND location LIKE 'wrld_%'",
-        &Default::default(),
-    )?;
-    for chunk in zero_leaves.chunks(REPAIR_CHUNK_SIZE) {
-        db.write_transaction(|tx| {
-            for row in chunk {
-                let id = row.first().cloned().unwrap_or(Value::Null);
-                let leave_at = row_string(row, 1);
-                let location = row_string(row, 2);
-                let user_id = row_string(row, 3);
-                let display_name = row_string(row, 4);
-                let join_rows = tx.execute(
-                    "SELECT created_at FROM gamelog_join_leave
-                     WHERE type = 'OnPlayerJoined' AND location = @location AND created_at <= @created_at
-                       AND ((@user_id <> '' AND user_id = @user_id)
-                            OR (@user_id = '' AND display_name = @display_name))
-                     ORDER BY created_at DESC, id DESC LIMIT 1",
-                    &ParamsBuilder::new()
-                        .set("location", location)
-                        .set("created_at", leave_at.clone())
-                        .set("user_id", user_id)
-                        .set("display_name", display_name)
-                        .build(),
-                )?;
-                let Some(join_at) = join_rows
-                    .first()
-                    .map(|join| row_string(join, 0))
-                    .filter(|value| !value.is_empty())
-                else {
-                    continue;
-                };
-                let (Some(join_ms), Some(leave_ms)) = (rfc3339_ms(&join_at), rfc3339_ms(&leave_at))
-                else {
-                    continue;
-                };
-                let duration = leave_ms - join_ms;
-                if duration <= 0 || duration > MAX_COPRESENCE_DURATION_MS {
-                    continue;
-                }
-                tx.execute_non_query(
-                    "UPDATE gamelog_join_leave SET time = @time WHERE id = @id",
-                    &ParamsBuilder::new()
-                        .set("time", duration)
-                        .set("id", id)
-                        .build(),
-                )?;
-            }
-            Ok(())
-        })?;
-    }
-    Ok(())
-}
-
-fn rfc3339_ms(value: &str) -> Option<i64> {
-    DateTime::parse_from_rfc3339(value)
-        .ok()
-        .map(|dt| dt.timestamp_millis())
-}
-
 pub fn database_maintenance_table_sizes_get(
     db: &DatabaseService,
     user_id: String,
@@ -656,267 +501,4 @@ pub(crate) fn max_friend_log_number(db: &DatabaseService, user_prefix: &str) -> 
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct TestDir {
-        path: std::path::PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn insert_join_leave(
-        db: &DatabaseService,
-        created_at: &str,
-        event_type: &str,
-        display_name: &str,
-        location: &str,
-        user_id: &str,
-        time: i64,
-    ) {
-        db.execute_non_query(
-            "INSERT INTO gamelog_join_leave (created_at, type, display_name, location, user_id, time)
-             VALUES (@created_at, @type, @name, @location, @user_id, @time)",
-            &ParamsBuilder::new()
-                .set("created_at", created_at)
-                .set("type", event_type)
-                .set("name", display_name)
-                .set("location", location)
-                .set("user_id", user_id)
-                .set("time", time)
-                .build(),
-        )
-        .unwrap();
-    }
-
-    fn leave_time(db: &DatabaseService, user_id: &str) -> i64 {
-        db.execute(
-            "SELECT time FROM gamelog_join_leave WHERE user_id = @user_id AND type = 'OnPlayerLeft'",
-            &ParamsBuilder::new().set("user_id", user_id).build(),
-        )
-        .unwrap()
-        .first()
-        .map(|row| row_i64(row, 0))
-        .unwrap()
-    }
-
-    fn cleanup_test_db(name: &str) -> Result<(TestDir, DatabaseService), Error> {
-        let dir = TestDir::new(name);
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        Ok((dir, db))
-    }
-
-    #[test]
-    fn avatar_auto_cleanup_disables_off_and_invalid_retention() -> Result<(), Error> {
-        let (_dir, db) = cleanup_test_db("avatar-cleanup-disabled")?;
-        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-
-        let off = avatar_auto_cleanup_run(&db, "usr_self", now)?;
-        assert_eq!(off.state, AvatarAutoCleanupState::Disabled);
-
-        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "invalid")?;
-        let invalid = avatar_auto_cleanup_run(&db, "usr_self", now)?;
-        assert_eq!(invalid.state, AvatarAutoCleanupState::Disabled);
-        Ok(())
-    }
-
-    #[test]
-    fn avatar_auto_cleanup_skips_when_last_run_is_less_than_seven_days_old() -> Result<(), Error> {
-        let (_dir, db) = cleanup_test_db("avatar-cleanup-not-due")?;
-        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
-        crate::config::set_string(
-            &db,
-            "lastAvatarCleanupDate_usr_self",
-            "2026-07-12T12:00:00Z",
-        )?;
-        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-
-        let outcome = avatar_auto_cleanup_run(&db, "usr_self", now)?;
-
-        assert_eq!(outcome.state, AvatarAutoCleanupState::NotDue);
-        assert_eq!(outcome.retention_days, Some(30));
-        Ok(())
-    }
-
-    #[test]
-    fn avatar_auto_cleanup_treats_invalid_last_date_as_due_and_commits_delete_with_flag(
-    ) -> Result<(), Error> {
-        let (_dir, db) = cleanup_test_db("avatar-cleanup-runs")?;
-        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
-        crate::config::set_string(&db, "lastAvatarCleanupDate_usr_self", "not-a-date")?;
-        let prefix = normalize_user_table_prefix("usr_self")?;
-        ensure_realtime_tables(&db, &prefix)?;
-        db.execute_non_query(
-            &format!("INSERT INTO {prefix}_feed_avatar (created_at) VALUES (@created_at)"),
-            &ParamsBuilder::new()
-                .set("created_at", "2026-05-01T00:00:00Z")
-                .build(),
-        )?;
-        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-
-        let outcome = avatar_auto_cleanup_run(&db, "usr_self", now)?;
-
-        assert_eq!(outcome.state, AvatarAutoCleanupState::Ran);
-        assert_eq!(outcome.removed_count, 1);
-        assert_eq!(
-            crate::config::get_string(&db, "lastAvatarCleanupDate_usr_self", "")?,
-            "2026-07-17T12:00:00.000Z"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn avatar_auto_cleanup_rolls_back_delete_when_completion_flag_fails() -> Result<(), Error> {
-        let (_dir, db) = cleanup_test_db("avatar-cleanup-rolls-back")?;
-        crate::config::set_string(&db, "VRCX_avatarAutoCleanup", "30")?;
-        crate::config::set_string(&db, "lastAvatarCleanupDate_usr_self", "not-a-date")?;
-        let prefix = normalize_user_table_prefix("usr_self")?;
-        ensure_realtime_tables(&db, &prefix)?;
-        db.execute_non_query(
-            &format!("INSERT INTO {prefix}_feed_avatar (created_at) VALUES (@created_at)"),
-            &ParamsBuilder::new()
-                .set("created_at", "2026-05-01T00:00:00Z")
-                .build(),
-        )?;
-        db.execute_non_query(
-            "CREATE TRIGGER fail_avatar_cleanup_flag BEFORE UPDATE ON configs
-             BEGIN SELECT RAISE(ABORT, 'forced completion flag failure'); END",
-            &Default::default(),
-        )?;
-        let now = DateTime::parse_from_rfc3339("2026-07-17T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-
-        assert!(avatar_auto_cleanup_run(&db, "usr_self", now).is_err());
-        let remaining = db.execute(
-            &format!("SELECT COUNT(*) FROM {prefix}_feed_avatar"),
-            &Default::default(),
-        )?;
-        assert_eq!(remaining.first().map(|row| row_i64(row, 0)), Some(1));
-        Ok(())
-    }
-
-    #[test]
-    fn repair_zero_copresence_durations_pairs_leave_with_join() -> Result<(), Error> {
-        let dir = TestDir::new("gamelog-repair-durations");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        ensure_game_log_tables(&db)?;
-
-        // Alice: real 40-minute session whose leave was written as time=0.
-        insert_join_leave(
-            &db,
-            "2026-06-30T16:00:10.000Z",
-            "OnPlayerJoined",
-            "Alice",
-            "wrld_x:1",
-            "usr_alice",
-            0,
-        );
-        insert_join_leave(
-            &db,
-            "2026-06-30T16:40:10.000Z",
-            "OnPlayerLeft",
-            "Alice",
-            "wrld_x:1",
-            "usr_alice",
-            0,
-        );
-        // Bob: leave with no matching join stays 0.
-        insert_join_leave(
-            &db,
-            "2026-06-30T16:40:10.000Z",
-            "OnPlayerLeft",
-            "Bob",
-            "wrld_x:1",
-            "usr_bob",
-            0,
-        );
-        // Carol: a 'traveling' leave carries no world, so it is not repaired.
-        insert_join_leave(
-            &db,
-            "2026-06-30T16:05:00.000Z",
-            "OnPlayerJoined",
-            "Carol",
-            "wrld_x:1",
-            "usr_carol",
-            0,
-        );
-        insert_join_leave(
-            &db,
-            "2026-06-30T16:20:00.000Z",
-            "OnPlayerLeft",
-            "Carol",
-            "traveling",
-            "usr_carol",
-            0,
-        );
-
-        database_maintenance_run(&db, DatabaseMaintenanceTask::RepairZeroCopresenceDurations)?;
-
-        assert_eq!(leave_time(&db, "usr_alice"), 2_400_000);
-        assert_eq!(leave_time(&db, "usr_bob"), 0);
-        assert_eq!(leave_time(&db, "usr_carol"), 0);
-        Ok(())
-    }
-
-    #[test]
-    fn fix_broken_game_log_display_names_skips_unique_key_collisions() -> Result<(), Error> {
-        let dir = TestDir::new("gamelog-display-name-collision");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        ensure_game_log_tables(&db)?;
-
-        insert_join_leave(
-            &db,
-            "2026-07-03T12:00:00.000Z",
-            "OnPlayerJoined",
-            "Alice (usr_a)",
-            "wrld_x:1",
-            "usr_a",
-            0,
-        );
-        insert_join_leave(
-            &db,
-            "2026-07-03T12:00:00.000Z",
-            "OnPlayerJoined",
-            "Alice (usr_b)",
-            "wrld_x:1",
-            "usr_b",
-            0,
-        );
-
-        database_maintenance_run(&db, DatabaseMaintenanceTask::FixBrokenGameLogDisplayNames)?;
-
-        let rows = db.execute(
-            "SELECT display_name FROM gamelog_join_leave ORDER BY id",
-            &Default::default(),
-        )?;
-
-        assert_eq!(rows.len(), 2);
-        assert_eq!(row_string(&rows[0], 0), "Alice");
-        assert_eq!(row_string(&rows[1], 0), "Alice (usr_b)");
-        Ok(())
-    }
-}
+mod tests;

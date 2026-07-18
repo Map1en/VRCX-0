@@ -83,7 +83,7 @@ impl AssistantConfig {
         if !self.is_configured() {
             return Err(HarnessError::NotConfigured);
         }
-        Ok(LlmClient::new(&self.base_url, &self.api_key, &self.model))
+        LlmClient::new(&self.base_url, &self.api_key, &self.model, None).map_err(HarnessError::from)
     }
 }
 

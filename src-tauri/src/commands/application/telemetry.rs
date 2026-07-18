@@ -12,6 +12,6 @@ pub fn app__telemetry_record_event(
     state: State<'_, AppState>,
     event: TelemetryClientEvent,
 ) -> Result<(), AppError> {
-    state.telemetry.record_event(event);
+    state.desktop.telemetry.record_event(event);
     Ok(())
 }

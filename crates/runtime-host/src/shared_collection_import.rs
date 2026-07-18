@@ -5,11 +5,13 @@ use std::sync::{
 
 use chrono::Utc;
 use vrcx_0_application::{
-    prepare_shared_collection_import, run_shared_collection_import, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot, RuntimeEventBus, SharedCollectionImportProgress,
+    prepare_shared_collection_import, run_shared_collection_import, SharedCollectionImportProgress,
     SharedCollectionImportResult, SharedCollectionImportStartInput, SharedCollectionImportState,
-    SharedCollectionImportStatus, TaskSupervisor, VrchatSharedCollectionImportActions, WebClient,
-    WorldCache,
+    SharedCollectionImportStatus, VrchatSharedCollectionImportActions,
+};
+use vrcx_0_application_core::{
+    FavoritesChangedPayload, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
+    TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -179,7 +181,7 @@ impl SharedCollectionImportRuntime {
     fn finish(
         &self,
         run_id: &str,
-        result: vrcx_0_application::Result<SharedCollectionImportResult>,
+        result: vrcx_0_application_core::Result<SharedCollectionImportResult>,
     ) {
         let terminal = {
             let mut inner = self.lock_inner();
@@ -190,16 +192,18 @@ impl SharedCollectionImportRuntime {
         };
         if terminal.emit_favorites_changed {
             self.world_cache.sync_favorites_from_db();
-            self.event_bus.emit(
-                "favoritesChanged",
-                serde_json::json!({ "kind": "world", "local": true, "remote": false }),
-            );
+            self.event_bus
+                .emit_favorites_changed(FavoritesChangedPayload {
+                    kind: "world".into(),
+                    local: true,
+                    remote: false,
+                });
         }
         self.emit_status(terminal.status);
     }
 
     fn emit_status(&self, status: SharedCollectionImportStatus) {
-        self.event_bus.emit("sharedCollectionImportStatus", status);
+        self.event_bus.emit(status);
     }
 
     fn lock_inner(&self) -> std::sync::MutexGuard<'_, SharedCollectionImportRuntimeInner> {
@@ -243,7 +247,7 @@ fn mark_cancelling_if_scope_mismatch(
 fn apply_terminal_result(
     inner: &mut SharedCollectionImportRuntimeInner,
     run_id: &str,
-    result: vrcx_0_application::Result<SharedCollectionImportResult>,
+    result: vrcx_0_application_core::Result<SharedCollectionImportResult>,
 ) -> Option<AppliedSharedCollectionImportTerminal> {
     if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
         return None;

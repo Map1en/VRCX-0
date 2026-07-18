@@ -38,6 +38,7 @@ pub fn app__community_theme_debug_load_local_theme(
         use std::path::PathBuf;
 
         state
+            .desktop
             .host_file_access
             .ensure_read_allowed(&folder_path, &state.paths)?;
 
@@ -59,6 +60,7 @@ pub fn app__community_theme_debug_load_local_theme(
 
         let css_path_string = css_path.to_string_lossy().to_string();
         state
+            .desktop
             .host_file_access
             .ensure_read_allowed(&css_path_string, &state.paths)?;
         let css = std::fs::read_to_string(&css_path)?;
@@ -67,6 +69,7 @@ pub fn app__community_theme_debug_load_local_theme(
         let manifest = if manifest_path.is_file() {
             let manifest_path_string = manifest_path.to_string_lossy().to_string();
             state
+                .desktop
                 .host_file_access
                 .ensure_read_allowed(&manifest_path_string, &state.paths)?;
             let json = std::fs::read_to_string(&manifest_path)?;

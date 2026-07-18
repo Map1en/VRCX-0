@@ -10,9 +10,9 @@ use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_host::shell_actions;
+use vrcx_0_host_desktop::shell_actions;
 
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 
 const BACKGROUND_IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp"];
 
@@ -96,6 +96,7 @@ pub fn app__open_discord_profile(discord_id: String) -> Result<(), AppError> {
 #[specta::specta]
 pub fn app__get_file_base64(state: State<'_, AppState>, path: String) -> Result<String, AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_read_allowed(&path, &state.paths)?;
     Ok(shell_actions::file_base64(&path)?)
@@ -105,6 +106,7 @@ pub fn app__get_file_base64(state: State<'_, AppState>, path: String) -> Result<
 #[specta::specta]
 pub fn app__get_file_bytes(state: State<'_, AppState>, path: String) -> Result<Vec<u8>, AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_read_allowed(&path, &state.paths)?;
     Ok(shell_actions::file_bytes(&path)?)
@@ -160,6 +162,7 @@ pub fn app__open_ugc_photos_folder(
 ) -> Result<bool, AppError> {
     if let Some(path) = ugc_path.as_deref().filter(|path| !path.is_empty()) {
         state
+            .desktop
             .host_file_access
             .ensure_read_allowed(path, &state.paths)?;
     } else {
@@ -190,6 +193,7 @@ pub fn app__open_folder_and_select_item(
     is_folder: Option<bool>,
 ) -> Result<(), AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_read_allowed(&path, &state.paths)?;
     Ok(shell_actions::open_folder_and_select_item(
@@ -246,7 +250,7 @@ pub async fn app__open_file_selector_dialog(
                 tauri_plugin_dialog::FilePath::Path(p) => p.to_string_lossy().to_string(),
                 other => other.to_string(),
             };
-            state.host_file_access.register_path(&path_str);
+            state.desktop.host_file_access.register_path(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -310,7 +314,7 @@ pub async fn app__save_file_selector_dialog(
             };
             let path = with_fixed_extension(path, default_ext.as_deref());
             let path_str = path.to_string_lossy().to_string();
-            state.host_file_access.register_path(&path_str);
+            state.desktop.host_file_access.register_path(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -357,7 +361,7 @@ pub async fn app__open_background_image_files_selector_dialog(
             .collect(),
     );
     for file in &files {
-        state.host_file_access.register_path(file);
+        state.desktop.host_file_access.register_path(file);
     }
     Ok(files)
 }
@@ -371,14 +375,14 @@ pub fn app__background_image_files_resolve(
     let files = if let Some(folder_path) = input.folder_path.filter(|path| !path.trim().is_empty())
     {
         let folder = PathBuf::from(folder_path);
-        state.host_file_access.register_path(&folder);
+        state.desktop.host_file_access.register_path(&folder);
         background_image_files_in_folder(&folder)?
     } else {
         background_image_files_from_paths(input.paths.unwrap_or_default())
     };
 
     for file in &files {
-        state.host_file_access.register_path(file);
+        state.desktop.host_file_access.register_path(file);
     }
     Ok(files)
 }
@@ -413,7 +417,7 @@ pub async fn app__open_folder_selector_dialog(
                 tauri_plugin_dialog::FilePath::Path(p) => p.to_string_lossy().to_string(),
                 other => other.to_string(),
             };
-            state.host_file_access.register_path(&path_str);
+            state.desktop.host_file_access.register_path(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -460,7 +464,7 @@ pub async fn app__save_vrc_reg_json_file(
             };
 
             shell_actions::write_string_file(&path, &json)?;
-            state.host_file_access.register_path(&path);
+            state.desktop.host_file_access.register_path(&path);
             Ok(path.to_string_lossy().to_string())
         }
         None => Ok(String::new()),

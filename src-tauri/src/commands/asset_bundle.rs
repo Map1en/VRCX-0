@@ -2,7 +2,7 @@
 
 use crate::commands::host::host_capabilities::{require_host_capability, HostCapability};
 use crate::error::AppError;
-use vrcx_0_host::asset_bundle_cache::{self, CacheCheckResult};
+use vrcx_0_host_desktop::asset_bundle_cache::{self, CacheCheckResult};
 
 #[tauri::command]
 #[specta::specta]

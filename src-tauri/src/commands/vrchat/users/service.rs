@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::users::{
+use vrcx_0_application_core::vrchat_api::users::{
     current_user_badge_update_input, current_user_tags_add_input, current_user_tags_remove_input,
     current_user_update_input, user_groups_get_input, user_mutual_counts_get_input,
     user_mutual_friends_get_input, user_represented_group_get_input,
@@ -9,7 +9,7 @@ use vrcx_0_application::vrchat_api::users::{
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatCurrentUserBadgeInput, VrchatCurrentUserTagsInput, VrchatCurrentUserUpdateInput,

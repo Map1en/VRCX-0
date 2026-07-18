@@ -3,7 +3,7 @@ use std::sync::{
     Arc,
 };
 
-use vrcx_0_application::RuntimeAuthScope;
+use vrcx_0_application_core::RuntimeAuthScope;
 
 use super::RuntimeHostState;
 

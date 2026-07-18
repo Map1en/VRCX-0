@@ -1779,6 +1779,8 @@
             "llm_endpoints": {
                 "title": "LLM 端點",
                 "description": "適用於社交 AI 和翻譯的共享 OpenAI 相容連線。",
+                "follow_custom_proxy": "使用 VRCX-0 自訂代理",
+                "follow_custom_proxy_description": "已設定時，LLM 請求會使用此代理；否則依照系統代理設定。",
                 "endpoint_count": "{count} 個端點",
                 "model_count": "{count} 個模型",
                 "add": "新增端點",

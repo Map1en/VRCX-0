@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use tauri::Manager;
 use tauri_plugin_notification::NotificationExt;
-use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
+#[cfg(test)]
+use vrcx_0_application_core::FriendProfileLoadStatusPayload;
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
 
 use crate::localization::shell_locale::{
     self, AuthFailureNotificationLabels, BackgroundModeNotificationLabels, TrayLabels,
@@ -229,7 +231,7 @@ mod tests {
             game_log_persisted_count: 0,
             last_error: None,
             updated_at: String::new(),
-            friend_profile_load: vrcx_0_application::FriendProfileLoadStatusPayload::default(),
+            friend_profile_load: FriendProfileLoadStatusPayload::default(),
         }
     }
 

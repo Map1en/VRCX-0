@@ -12,18 +12,17 @@ use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
-use vrcx_0_application::{
+use vrcx_0_application_core::{
     format_runtime_output_event, recommended_tokio_max_blocking_threads,
-    recommended_tokio_worker_threads, BackendRuntimeMode, NoopUpdaterPort, RuntimeEventSink,
-    RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor,
-    RuntimeTaskHandle,
+    recommended_tokio_worker_threads, BackendRuntimeMode, RuntimeEventSink, RuntimeOutputLevel,
+    RuntimeOutputLine, RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
 use vrcx_0_host::app_paths::resolve_app_data_dir;
 use vrcx_0_host::error_log::{
     append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
 };
 use vrcx_0_runtime_host::{
-    CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostState,
+    CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState,
 };
 
 fn main() -> ExitCode {
@@ -72,10 +71,7 @@ async fn async_main() -> ExitCode {
         launched_from_autostart: false,
         app_data_dir: app_data_dir.clone(),
         app_version: product_app_version(),
-        is_headless: true,
-        app_update_build_label: String::new(),
-        app_update_build_badge: String::new(),
-        updater_port: Arc::new(NoopUpdaterPort),
+        profile: RuntimeHostProfile::HeadlessData,
     }) {
         Ok(state) => state,
         Err(error) => {

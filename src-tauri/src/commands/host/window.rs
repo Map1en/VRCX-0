@@ -75,7 +75,7 @@ pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
 }
 
 fn flush_telemetry_before_task_shutdown(state: &AppState) {
-    let telemetry = state.telemetry.clone();
+    let telemetry = state.desktop.telemetry.clone();
     match tokio::runtime::Handle::try_current() {
         Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
             tokio::task::block_in_place(|| handle.block_on(telemetry.shutdown_flush()));

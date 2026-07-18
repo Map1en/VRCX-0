@@ -6,7 +6,7 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use serde_json::Value;
-use vrcx_0_application::{GameLogSessionDto, GameLogSessionsQueryInput};
+use vrcx_0_application_game::{GameLogSessionDto, GameLogSessionsQueryInput};
 use vrcx_0_persistence::game_log::GameLogQueryInput;
 
 #[tauri::command]
@@ -73,5 +73,6 @@ pub fn app__game_log_sessions_query(
     state: State<'_, AppState>,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>, AppError> {
-    vrcx_0_application::game_log_sessions_query(state.db.as_ref(), input).map_err(AppError::from)
+    vrcx_0_application_game::game_log_sessions_query(state.db.as_ref(), input)
+        .map_err(AppError::from)
 }

@@ -12,7 +12,7 @@ use crate::commands::host::host_capabilities::{require_host_capability, HostCapa
 #[specta::specta]
 pub fn log_watcher__vrc_closed_gracefully(state: State<'_, AppState>) -> Result<bool, AppError> {
     require_host_capability(HostCapability::GameLogWatcher)?;
-    Ok(state.log_watcher.vrc_closed_gracefully())
+    Ok(state.game.log_watcher.vrc_closed_gracefully())
 }
 
 #[tauri::command]
@@ -21,5 +21,5 @@ pub fn log_watcher__get_current_location(
     state: State<'_, AppState>,
 ) -> Result<Option<LogLocationSnapshot>, AppError> {
     require_host_capability(HostCapability::GameLogWatcher)?;
-    Ok(state.log_watcher.current_location_snapshot())
+    Ok(state.game.log_watcher.current_location_snapshot())
 }

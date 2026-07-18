@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::worlds::{
+use vrcx_0_application_core::vrchat_api::worlds::{
     world_delete_input, world_get_input, world_list_by_user_get_input,
     world_persistent_data_delete_input, world_persistent_data_exists_input, world_publish_input,
     world_save_input, world_unpublish_input,
@@ -9,7 +9,7 @@ use vrcx_0_application::vrchat_api::worlds::{
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatWorldIdInput, VrchatWorldListByUserInput, VrchatWorldPersistentDataDeleteInput,

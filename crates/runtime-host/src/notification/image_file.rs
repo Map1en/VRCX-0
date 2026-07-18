@@ -1,4 +1,4 @@
-pub(crate) fn extract_file_id(value: &str) -> Option<String> {
+pub fn extract_file_id(value: &str) -> Option<String> {
     let start = value.find("file_")?;
     let id = value[start..]
         .chars()
@@ -7,7 +7,7 @@ pub(crate) fn extract_file_id(value: &str) -> Option<String> {
     (!id.is_empty()).then_some(id)
 }
 
-pub(crate) fn extract_file_version(value: &str, file_id: &str) -> Option<String> {
+pub fn extract_file_version(value: &str, file_id: &str) -> Option<String> {
     let marker = format!("/{file_id}/");
     let start = value.find(&marker)? + marker.len();
     let version = value[start..]
@@ -17,7 +17,7 @@ pub(crate) fn extract_file_version(value: &str, file_id: &str) -> Option<String>
     (!version.is_empty()).then_some(version)
 }
 
-pub(crate) fn fallback_file_version(value: &str) -> String {
+pub fn fallback_file_version(value: &str) -> String {
     value
         .split('/')
         .next_back()

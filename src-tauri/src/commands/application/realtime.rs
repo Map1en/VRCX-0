@@ -2,7 +2,8 @@
 
 use serde_json::Value;
 use tauri::State;
-use vrcx_0_application::{AuthenticatedRuntimePhaseSnapshot, FriendProfileLoadStatusPayload};
+use vrcx_0_application::AuthenticatedRuntimePhaseSnapshot;
+use vrcx_0_application_core::FriendProfileLoadStatusPayload;
 
 use crate::error::AppError;
 use crate::state::AppState;

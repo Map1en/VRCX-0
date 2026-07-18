@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{
+use vrcx_0_application_game::{
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
-use vrcx_0_host::host_capabilities::{require_host_capability, HostCapability};
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 
 use crate::error::AppError;
 use crate::state::AppState;

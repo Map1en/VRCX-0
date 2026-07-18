@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{
+use vrcx_0_application_realtime::{
     apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
     build_friend_roster_baseline_deferred, SocialBaselineDeps,
 };
@@ -10,7 +10,7 @@ use vrcx_0_core::friends::FriendRecord;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use vrcx_0_application::{
+use vrcx_0_application_realtime::{
     SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
     SocialFriendRosterBaselineOutput,
 };

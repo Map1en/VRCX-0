@@ -3,7 +3,7 @@ use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application::vrchat_api::{self, favorites::favorite_add_input, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{self, favorites::favorite_add_input, VrchatScope};
 use vrcx_0_persistence::{favorites as persistence_favorites, social_aggregates};
 
 use crate::config::MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY;

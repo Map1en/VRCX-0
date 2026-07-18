@@ -6,7 +6,7 @@ use vrcx_0_application::{
     ImportPreview, ShareCollectionCreateInput, ShareCollectionCreateResult, ShareCollectionDeps,
     SharedCollectionImportStartInput, SharedCollectionImportStatus,
 };
-use vrcx_0_host::shell_actions;
+use vrcx_0_host_desktop::shell_actions;
 
 use crate::error::AppError;
 use crate::state::AppState;

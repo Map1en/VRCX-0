@@ -1,16 +1,16 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::favorites::{
+use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
     favorite_group_clear_input, favorite_group_save_input, favorite_groups_get_input,
     favorite_limits_get_input, favorite_worlds_get_input, favorites_get_input,
 };
-use vrcx_0_application::vrchat_api::require_text;
+use vrcx_0_application_core::vrchat_api::require_text;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput, LocalFavoriteInput,

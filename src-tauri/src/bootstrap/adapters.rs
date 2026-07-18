@@ -5,18 +5,18 @@ use serde::Serialize;
 use tauri::{Emitter, Manager, Url};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::{Update, UpdaterExt};
-use vrcx_0_application::RuntimeEventSink;
-use vrcx_0_application::{format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputMode};
-use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase};
-use vrcx_0_application::{
+use vrcx_0_application_core::RuntimeEventSink;
+use vrcx_0_application_core::{format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputMode};
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase};
+use vrcx_0_application_core::{
     Error as ApplicationError, Result as ApplicationResult, UpdaterCheckRequest,
     UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
     UpdaterPort, UpdaterProgressCallback,
 };
-use vrcx_0_application::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
-use vrcx_0_host::host_capabilities::{is_host_capability_available, HostCapability};
-use vrcx_0_runtime_host::notification::DesktopNotifier;
-use vrcx_0_runtime_host::RuntimeHostActions;
+use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
+use vrcx_0_runtime_host_desktop::notification::DesktopNotifier;
+use vrcx_0_runtime_host_desktop::RuntimeHostActions;
 
 use crate::state::AppState;
 
@@ -270,7 +270,8 @@ impl RuntimeTaskExecutor for TauriRuntimeTaskExecutor {
 pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
     state.set_event_sink(TauriRuntimeEventSink::new(app.clone()));
     state
-        .runtime_context
+        .desktop
+        .services
         .host
         .set_actions(TauriRuntimeHostActions::new(app.clone()));
     state
@@ -278,13 +279,16 @@ pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
         .tasks
         .set_executor(TauriRuntimeTaskExecutor);
     state.start_telemetry_runtime();
-    state.start_shell_neutral_services();
+    state.start_data_services();
+    state.start_game_services();
+    state.start_desktop_services();
 
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     if is_host_capability_available(HostCapability::GameLogWatcher) {
+        let game = &state.game;
         state
             .log_watcher_compat_bridge
-            .start(app.clone(), state.log_watcher.clone());
+            .start(app.clone(), game.log_watcher.clone());
     }
 }
 
@@ -321,7 +325,7 @@ async fn find_update(
     app_handle: &tauri::AppHandle,
     request: &UpdaterCheckRequest,
 ) -> ApplicationResult<Option<Update>> {
-    let endpoint = vrcx_0_host::updater_policy::validate_update_request(
+    let endpoint = vrcx_0_host_desktop::updater_policy::validate_update_request(
         &request.manifest_url,
         &request.target,
         request.allow_downgrades,

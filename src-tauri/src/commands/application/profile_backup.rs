@@ -27,7 +27,7 @@ pub async fn app__profile_backup_set_settings(
     settings: ProfileBackupSettings,
 ) -> Result<ProfileBackupSettings, AppError> {
     let runtime = state.profile_backup.clone();
-    let file_access = state.host_file_access.clone();
+    let file_access = state.desktop.host_file_access.clone();
     let app_paths = state.paths.clone();
     tauri::async_runtime::spawn_blocking(move || {
         if let Some(target) = runtime.target_dir_requiring_grant(&settings) {
@@ -46,7 +46,7 @@ pub async fn app__profile_backup_run_manual(
     target_path: String,
 ) -> Result<ProfileBackupActionOutcome, AppError> {
     let runtime = state.profile_backup.clone();
-    let file_access = state.host_file_access.clone();
+    let file_access = state.desktop.host_file_access.clone();
     let app_paths = state.paths.clone();
     tauri::async_runtime::spawn_blocking(move || {
         file_access.ensure_write_allowed(&target_path, &app_paths)?;
@@ -101,7 +101,7 @@ pub async fn app__profile_restore_validate(
     path: String,
 ) -> Result<ProfileRestoreValidationOutcome, AppError> {
     let runtime = state.profile_backup.clone();
-    let file_access = state.host_file_access.clone();
+    let file_access = state.desktop.host_file_access.clone();
     let app_paths = state.paths.clone();
     let source = PathBuf::from(path);
     tauri::async_runtime::spawn_blocking(move || {

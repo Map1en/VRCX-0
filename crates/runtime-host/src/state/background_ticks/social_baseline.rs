@@ -1,10 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::json;
-use vrcx_0_application::{
+use vrcx_0_application_core::FriendProjection;
+use vrcx_0_application_realtime::{
     apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_friend_roster_baseline_deferred, FriendProjection, OverlayFavoriteGroups,
-    SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFriendRosterBaselineInput,
+    build_friend_roster_baseline_deferred, SocialBaselineDeps, SocialFavoritesBaselineInput,
+    SocialFriendRosterBaselineInput,
 };
 use vrcx_0_core::{friends::FriendRecord, json::RawJson};
 
@@ -165,16 +166,10 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
                             .update_favorites_baseline(favorites_output.clone());
                         if let Some(snapshot) = favorites_output.snapshot {
                             let value = snapshot.into_value();
-                            context
-                                .vr_overlay_runtime
-                                .update_friends_panel_favorite_groups_from_baseline(&value);
                             let groups = favorite_group_membership_from_snapshot(&value);
                             context
-                                .runtime_context
-                                .overlay_activity
-                                .set_favorite_groups(OverlayFavoriteGroups::from_map(
-                                    groups.clone(),
-                                ));
+                                .authenticated_runtime
+                                .apply_favorites_snapshot(&value);
                             *favorite_friend_groups_by_key = groups;
                         }
                     }

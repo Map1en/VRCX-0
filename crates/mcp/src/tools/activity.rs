@@ -833,15 +833,17 @@ fn summarize_world_visits(rows: Vec<social_aggregates::VisitedWorldRow>) -> Vec<
 mod activity_output_tests {
     use super::*;
     use std::path::PathBuf;
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
     use std::time::Duration;
 
     use rmcp::handler::server::wrapper::Parameters;
-    use vrcx_0_application::{
-        HostSessionRuntime, MutualGraphFetchRuntime, OverlayActivityRuntime, PrintCleanupQueue,
-        RealtimeHostRuntime, RealtimeHostRuntimeDeps, RuntimeAuthScope, RuntimeDiagnostics,
-        RuntimeEventBus, RuntimeSnapshot, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    use vrcx_0_application::MutualGraphFetchRuntime;
+    use vrcx_0_application_core::{
+        HostSessionRuntime, NoopPrintCleanupInputSink, RuntimeAuthScope, RuntimeDiagnostics,
+        RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, UnavailableLocalGameContextSource,
+        WebClient, WorldCache,
     };
+    use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
     use vrcx_0_persistence::{
         config::ConfigRepository, game_log::ensure_game_log_tables, storage::StorageService,
         DatabaseService,
@@ -905,10 +907,10 @@ mod activity_output_tests {
             tasks: tasks.clone(),
             session,
             auth_scope: auth_scope.clone(),
-            game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
-            overlay_activity: OverlayActivityRuntime::default(),
+            local_game_context: Arc::new(UnavailableLocalGameContextSource),
+            activity_sink: None,
             world_cache,
-            print_cleanup: PrintCleanupQueue::new(),
+            print_cleanup: Arc::new(NoopPrintCleanupInputSink),
             friend_note_change_sink: None,
         }));
         let runtime = crate::runtime::McpRuntime {

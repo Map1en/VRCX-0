@@ -7,13 +7,12 @@ use std::time::{Duration, Instant};
 
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
-use vrcx_0_application::{
+use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimeMode, HostSessionRuntime, TaskStopToken, TaskSupervisor,
 };
 use vrcx_0_host::{
     error_log::drain_client_error_log,
     host_capabilities::{current_arch, current_platform},
-    system_theme::current_system_theme_category,
 };
 use vrcx_0_integrations::telemetry::{
     resolve_endpoint, AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload,
@@ -47,6 +46,7 @@ pub struct TelemetryRuntimeDeps {
     pub backend_runtime: BackendRuntime,
     pub app_version: String,
     pub app_data: PathBuf,
+    pub system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
 }
 
 struct TelemetryRuntimeInner {
@@ -57,6 +57,7 @@ struct TelemetryRuntimeInner {
     client: TelemetryClient,
     app_version: String,
     app_data: PathBuf,
+    system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
     state: Mutex<TelemetryState>,
     flush_lock: tokio::sync::Mutex<()>,
     running: AtomicBool,
@@ -96,6 +97,7 @@ impl TelemetryRuntime {
                 client: TelemetryClient::new(resolve_endpoint()),
                 app_version: normalize_app_version(&deps.app_version),
                 app_data: deps.app_data,
+                system_theme_category: deps.system_theme_category,
                 state: Mutex::new(TelemetryState::default()),
                 flush_lock: tokio::sync::Mutex::new(()),
                 running: AtomicBool::new(false),
@@ -595,7 +597,8 @@ impl TelemetryRuntime {
             .trim()
             .to_ascii_lowercase()
             .to_string();
-        theme_mode_category(&theme_mode, current_system_theme_category()).into()
+        let system_theme = (self.inner.system_theme_category)();
+        theme_mode_category(&theme_mode, &system_theme).into()
     }
 
     fn config_bool(&self, key: &str, default_value: bool) -> bool {
@@ -709,13 +712,13 @@ fn normalize_locale(value: &str) -> String {
     value.trim().replace('_', "-")
 }
 
-fn theme_mode_category(value: &str, system_theme: Option<&str>) -> &'static str {
+fn theme_mode_category(value: &str, system_theme: &str) -> &'static str {
     match value.trim().to_ascii_lowercase().as_str() {
         "dark" | "midnight" => "dark",
         "light" => "light",
-        "system" => match system_theme {
-            Some("dark") => "dark",
-            Some("light") => "light",
+        "system" => match system_theme.trim() {
+            "dark" => "dark",
+            "light" => "light",
             _ => "light",
         },
         _ => "unknown",
@@ -814,13 +817,13 @@ mod tests {
 
     #[test]
     fn theme_mode_category_resolves_system_without_unknown() {
-        assert_eq!(theme_mode_category("dark", None), "dark");
-        assert_eq!(theme_mode_category("midnight", None), "dark");
-        assert_eq!(theme_mode_category("light", None), "light");
-        assert_eq!(theme_mode_category("system", Some("dark")), "dark");
-        assert_eq!(theme_mode_category("system", Some("light")), "light");
-        assert_eq!(theme_mode_category("system", None), "light");
-        assert_eq!(theme_mode_category("other", None), "unknown");
+        assert_eq!(theme_mode_category("dark", ""), "dark");
+        assert_eq!(theme_mode_category("midnight", ""), "dark");
+        assert_eq!(theme_mode_category("light", ""), "light");
+        assert_eq!(theme_mode_category("system", "dark"), "dark");
+        assert_eq!(theme_mode_category("system", "light"), "light");
+        assert_eq!(theme_mode_category("system", ""), "light");
+        assert_eq!(theme_mode_category("other", ""), "unknown");
     }
 
     #[test]

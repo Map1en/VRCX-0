@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::media::{
+use vrcx_0_application_core::vrchat_api::media::{
     asset_upload_input, avatar_gallery_image_upload_input, avatar_image_set_input,
     file_delete_input, file_put_input, file_upload_finish_input, file_upload_stage_path,
     file_upload_start_input, file_version_create_input, files_get_input,
@@ -13,11 +13,11 @@ use vrcx_0_application::vrchat_api::media::{
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 use vrcx_0_application::{
     self as media_upload, LegacyEntityImageKind, LegacyEntityImageUploadInput,
     LegacyMediaUploadDeps, PrintFavoriteState,
 };
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatMediaAssetUploadInput, VrchatMediaAvatarGalleryImageUploadInput,
@@ -187,13 +187,15 @@ pub async fn app__vrchat_media_emoji_upload(
         state,
         "app__vrchat_media_emoji_upload",
         "Uploading emoji.",
-        prepare_media_upload_request(vrcx_0_application::vrchat_api::media::image_upload_input(
-            input.endpoint,
-            "file/image",
-            input.image_data,
-            input.params,
-            true,
-        )?)?,
+        prepare_media_upload_request(
+            vrcx_0_application_core::vrchat_api::media::image_upload_input(
+                input.endpoint,
+                "file/image",
+                input.image_data,
+                input.params,
+                true,
+            )?,
+        )?,
     )
     .await
 }

@@ -6,8 +6,9 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application::{
-    AuthenticatedRuntimePhaseSnapshot, AuthenticatedSessionMaintenanceOutcome, DebugLoggingOutcome,
+    AuthenticatedRuntimePhaseSnapshot, AuthenticatedSessionMaintenanceOutcome,
 };
+use vrcx_0_application_game::DebugLoggingOutcome;
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -47,7 +48,7 @@ fn default_frontend_owner() -> String {
 pub fn app__game_client_debug_logging_status(
     state: State<'_, AppState>,
 ) -> Option<DebugLoggingOutcome> {
-    state.game_client_runtime.debug_logging_outcome()
+    state.game.game_client_runtime.debug_logging_outcome()
 }
 
 #[tauri::command]

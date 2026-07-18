@@ -1,0 +1,40 @@
+[package]
+name = "vrcx-0-runtime-host-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+steamvr-overlay = ["vrcx-0-overlay-runtime/steamvr-overlay"]
+openxr-overlay = ["vrcx-0-overlay-runtime/openxr-overlay"]
+test-utils = [
+    "vrcx-0-application/test-utils",
+    "vrcx-0-application-core/test-utils",
+    "vrcx-0-application-game/test-utils",
+    "vrcx-0-application-realtime/test-utils",
+    "vrcx-0-runtime-host/test-utils"
+]
+
+[dependencies]
+chrono = { workspace = true }
+image.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+specta.workspace = true
+tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
+tracing = { workspace = true }
+vrcx-0-application = { path = "../application" }
+vrcx-0-application-activity = { path = "../application-activity" }
+vrcx-0-application-core = { path = "../application-core" }
+vrcx-0-application-game = { path = "../application-game" }
+vrcx-0-application-realtime = { path = "../application-realtime" }
+vrcx-0-core = { path = "../core" }
+vrcx-0-host = { path = "../host" }
+vrcx-0-host-desktop = { path = "../host-desktop" }
+vrcx-0-i18n = { path = "../i18n" }
+vrcx-0-persistence = { path = "../persistence" }
+vrcx-0-runtime-host = { path = "../runtime-host" }
+vrcx-0-vrchat-client = { path = "../vrchat-client" }
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+vrcx-0-overlay-runtime = { path = "../overlay-runtime" }

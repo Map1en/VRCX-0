@@ -5,21 +5,15 @@ pub struct RuntimeHostOptions {
     pub launched_from_autostart: bool,
     pub app_data_dir: AppDataDirResolution,
     pub app_version: String,
-    pub is_headless: bool,
-    pub app_update_build_label: String,
-    pub app_update_build_badge: String,
-    pub updater_port: Arc<dyn vrcx_0_application::UpdaterPort>,
+    pub profile: RuntimeHostProfile,
 }
 
-pub(super) fn web_ua_app_version(app_version: &str, is_headless: bool) -> String {
-    if is_headless {
-        format!("{app_version} (hl)")
-    } else {
-        app_version.to_string()
+pub(super) fn web_ua_app_version(app_version: &str, profile: RuntimeHostProfile) -> String {
+    match profile {
+        RuntimeHostProfile::Desktop => app_version.to_string(),
+        RuntimeHostProfile::HeadlessData => format!("{app_version} (hl)"),
     }
 }
-
-const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -32,76 +26,56 @@ pub struct BackendRuntimeFrontendSessionSnapshot {
     pub current_user_snapshot: Value,
 }
 
+pub struct RuntimeHostStateBuilder {
+    profile: RuntimeHostProfile,
+    pub app_data_dir: AppDataDirResolution,
+    pub app_version: String,
+    pub paths: AppPaths,
+    pub storage: Arc<StorageService>,
+    pub db: Arc<DatabaseService>,
+    pub profile_backup: ProfileBackupRuntime,
+    pub runtime_context: Arc<RuntimeHostContext>,
+    pub backend_runtime: BackendRuntime,
+    pub web: Arc<WebClient>,
+    pub image_cache: Arc<ImageCache>,
+    pub legacy_vrcx_available: bool,
+    pub legacy_vrcx_source: Option<LegacyVrcxSource>,
+    pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
+    pub launched_from_autostart: bool,
+    profile_lock: ProfileLock,
+}
+
 pub struct RuntimeHostState {
+    pub profile: RuntimeHostProfile,
     pub app_data_dir: AppDataDirResolution,
     pub paths: AppPaths,
     pub storage: Arc<StorageService>,
     pub db: Arc<DatabaseService>,
     pub profile_backup: ProfileBackupRuntime,
-    pub discord_rpc: Arc<DiscordRpc>,
-    pub process_monitor: ProcessMonitor,
-    pub log_watcher: LogWatcher,
     pub runtime_context: Arc<RuntimeHostContext>,
     pub backend_runtime: BackendRuntime,
-    pub telemetry: TelemetryRuntime,
-    pub game_log_runtime: Arc<GameLogHostRuntime>,
-    pub game_client_runtime: Arc<GameClientHostRuntime>,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
-    pub session_runtime: Arc<SessionHostRuntime>,
-    pub vr_overlay_runtime: Arc<VrOverlayRuntime>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
-    pub app_update: AppUpdateRuntime,
     pub authenticated_runtime: AuthenticatedRuntimeOrchestrator,
-    pub host_file_access: HostFileAccess,
-    pub screenshot_cache: MetadataCacheDb,
     pub favorite_import: FavoriteImportRuntime,
     pub shared_collection_import: SharedCollectionImportRuntime,
     pub note_export: NoteExportRuntime,
-
-    pub auto_launch: AutoAppLaunchManager,
+    pub group_order_source: Arc<dyn GroupOrderSource>,
     pub legacy_vrcx_available: bool,
     pub legacy_vrcx_source: Option<LegacyVrcxSource>,
     pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
     pub launched_from_autostart: bool,
+    pub(super) profile_extension: Option<Arc<dyn RuntimeHostProfileExtension>>,
     pub(super) backend_starting: AtomicBool,
     pub(super) background_auth_recovery_running: Arc<AtomicBool>,
-    pub(super) registry_backup_maintenance_running: Arc<AtomicBool>,
-    pub(super) background_capabilities_running: Arc<AtomicBool>,
-    pub(super) discord_reconcile_generation: Arc<AtomicU64>,
+    pub(super) social_maintenance_running: Arc<AtomicBool>,
     pub(super) activity_warmup_generation: Arc<AtomicU64>,
     pub(super) background_group_instances_refresh_running: Arc<AtomicBool>,
-    pub(super) registry_backup_lock: Arc<Mutex<()>>,
     pub(super) backend_frontend_session: Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
     pub(super) authenticated_session_maintenance:
         Arc<Mutex<Option<AuthenticatedSessionMaintenanceOutcome>>>,
     pub(super) _profile_lock: ProfileLock,
-}
-
-pub(super) struct VrOverlayProcessSink {
-    runtime: Arc<VrOverlayRuntime>,
-    log_watcher: LogWatcher,
-}
-
-impl VrOverlayProcessSink {
-    pub(super) fn new(runtime: Arc<VrOverlayRuntime>, log_watcher: LogWatcher) -> Self {
-        Self {
-            runtime,
-            log_watcher,
-        }
-    }
-}
-
-impl GameProcessEventSink for VrOverlayProcessSink {
-    fn on_game_process_event(&self, event: GameProcessEvent) -> vrcx_0_application::Result<()> {
-        self.runtime.on_game_process_event(event)?;
-        if event.is_game_running {
-            if let Some(vr_mode) = self.log_watcher.current_vr_mode() {
-                self.runtime.set_vr_mode(vr_mode);
-            }
-        }
-        Ok(())
-    }
 }
 
 fn run_secret_startup(
@@ -138,17 +112,21 @@ fn run_secret_startup(
         return;
     }
     if let Err(error) = record_cleanup_completed() {
-        tracing::warn!(error = %error, "failed to record completed secret migration cleanup");
+        tracing::warn!(error = %error, "failed to record completed secret migration cleanup state");
     }
 }
 
-fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, is_headless: bool) {
+fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfile) {
     let config = vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(db));
+    let allow_encrypted_writes = match profile {
+        RuntimeHostProfile::Desktop => true,
+        RuntimeHostProfile::HeadlessData => false,
+    };
     run_secret_startup(
         || {
             vrcx_0_persistence::secrets::init_secrets(
                 vrcx_0_host::machine_key::derive_secrets_key(),
-                !is_headless,
+                allow_encrypted_writes,
             );
         },
         vrcx_0_persistence::secrets::is_encrypting_writes,
@@ -176,41 +154,31 @@ fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, is_headless: bool) {
     );
 }
 
-impl RuntimeHostState {
+impl RuntimeHostStateBuilder {
     pub fn new(options: RuntimeHostOptions) -> Result<Self> {
         let RuntimeHostOptions {
             realtime_origin,
             launched_from_autostart,
             app_data_dir,
             app_version,
-            is_headless,
-            app_update_build_label,
-            app_update_build_badge,
-            updater_port,
+            profile,
         } = options;
         let paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
-        cleanup_legacy_updater_files(&paths.app_data);
-
         let profile_lock = ProfileLock::acquire(&paths.app_data)?;
-
         let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
         consume_pending_legacy_migration(&migration_paths)?;
-
         let pending_profile_restore =
             consume_pending_profile_restore(&paths.app_data, &paths.db_file)?;
         if let Err(error) = cleanup_profile_backup_artifacts(&paths.app_data) {
             tracing::warn!(error = %error, "failed to clean up profile backup artifacts");
         }
-
         let (legacy_vrcx_source, legacy_vrcx_migration_status) =
             vrcx_0_persistence::legacy_vrcx::discover_legacy_vrcx_migration(
                 &paths.db_file,
                 &paths.config_file,
             );
         let legacy_vrcx_available = legacy_vrcx_migration_status.available;
-
         let storage = Arc::new(StorageService::new(&paths.config_file)?);
-
         let db = match DatabaseService::new(&paths.db_file) {
             Ok(db) => {
                 if let Some(pending) = pending_profile_restore {
@@ -232,39 +200,20 @@ impl RuntimeHostState {
             }
         };
         let db = Arc::new(db);
-        prepare_secrets_at_rest(&db, is_headless);
-        let discord_rpc = Arc::new(DiscordRpc::new());
-        let process_monitor = ProcessMonitor::new();
-        let web_user_agent_version = web_ua_app_version(&app_version, is_headless);
+        prepare_secrets_at_rest(&db, profile);
         let web = Arc::new(WebClient::new(
             &storage,
             &db,
             realtime_origin,
-            &web_user_agent_version,
+            &web_ua_app_version(&app_version, profile),
         )?);
         let image_fetcher = web.image_fetcher()?;
         let image_cache = Arc::new(ImageCache::new(paths.image_cache.clone(), image_fetcher)?);
-        let host_file_access = HostFileAccess::new();
         let runtime_context = Arc::new(RuntimeHostContext::new(
             Arc::clone(&db),
             Arc::clone(&web),
             Arc::clone(&image_cache),
         ));
-        let app_update = AppUpdateRuntime::new(
-            Arc::clone(&web),
-            Arc::clone(&db),
-            Arc::clone(&storage),
-            runtime_context.event_bus.clone(),
-            runtime_context.background_jobs.clone(),
-            AppUpdateBuildInfo {
-                app_version: app_version.clone(),
-                build_label: app_update_build_label,
-                build_badge: app_update_build_badge,
-            },
-            Arc::new(|| vrcx_0_host::updater_policy::expected_updater_target().ok()),
-            updater_port,
-            runtime_context.tasks.clone(),
-        );
         let profile_backup = ProfileBackupRuntime::new(
             paths.app_data.clone(),
             Arc::clone(&db),
@@ -274,193 +223,178 @@ impl RuntimeHostState {
             runtime_context.background_jobs.clone(),
             app_version.clone(),
         );
-        let profile_backup_target = profile_backup.settings().auto_target_dir;
-        if !profile_backup_target.is_empty() {
-            host_file_access.register_path(profile_backup_target);
-        }
-        register_persisted_user_generated_content_path_grant(
-            &host_file_access,
-            runtime_context.config(),
-        )?;
-        let backend_runtime = BackendRuntime::new();
-        let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
-            config: runtime_context.config.clone(),
-            session: runtime_context.session.clone(),
-            tasks: runtime_context.tasks.clone(),
-            backend_runtime: backend_runtime.clone(),
-            app_version: app_version.clone(),
-            app_data: paths.app_data.clone(),
-        });
-        let game_log_runtime = Arc::new(GameLogHostRuntime::new(
-            Arc::clone(&runtime_context),
-            host_file_access.clone(),
-            paths.clone(),
-        ));
-        let vr_overlay_runtime = Arc::new(VrOverlayRuntime::new(Arc::clone(&runtime_context)));
-        let vr_overlay_enabled = runtime_context
-            .config()
-            .get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
-        vr_overlay_runtime.set_enabled(vr_overlay_enabled);
-        vr_overlay_runtime.start_refresh_loop(runtime_context.tasks.clone());
-        runtime_context.set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(
-            Arc::clone(&vr_overlay_runtime),
-        )));
-        start_preview_bridge_if_enabled(Arc::clone(&runtime_context));
-        let game_log_sink: Arc<dyn GameLogEventSink> = Arc::new(HostGameLogEventFanout::new(vec![
-            game_log_runtime.clone(),
-            vr_overlay_runtime.clone(),
-        ]));
-        let log_watcher = LogWatcher::new_with_location_snapshot_scanner(
-            Some(game_log_sink),
-            Arc::new(HostLogLocationSnapshotScanner),
-        );
-        let game_client_runtime = Arc::new(GameClientHostRuntime::new(
-            Arc::clone(&runtime_context),
-            log_watcher.clone(),
-            host_file_access.clone(),
-            paths.clone(),
-        ));
-        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-            db: Arc::clone(&runtime_context.db),
-            web: Arc::clone(&runtime_context.web),
-            event_bus: runtime_context.event_bus.clone(),
-            sync: runtime_context.sync.clone(),
-            tasks: runtime_context.tasks.clone(),
-            session: runtime_context.session.clone(),
-            auth_scope: runtime_context.auth_scope.clone(),
-            game_log_snapshot: runtime_context.game_log_snapshot_handle(),
-            overlay_activity: runtime_context.overlay_activity.clone(),
-            world_cache: Arc::clone(&runtime_context.world_cache),
-            print_cleanup: runtime_context.print_cleanup.clone(),
-            friend_note_change_sink: Some({
-                let vr_overlay_runtime = Arc::clone(&vr_overlay_runtime);
-                Arc::new(move || {
-                    vr_overlay_runtime.invalidate_friends_panel_note_memo_cache();
-                })
-            }),
-        }));
-        {
-            let realtime_runtime = Arc::clone(&realtime_runtime);
-            vr_overlay_runtime
-                .set_friends_panel_snapshot_provider(move || realtime_runtime.friend_snapshot());
-        }
-        runtime_context.set_realtime_user_image_resolver(Arc::clone(&realtime_runtime));
-        let authenticated_runtime = AuthenticatedRuntimeOrchestrator::new(
-            Arc::clone(&db),
-            Arc::clone(&web),
-            runtime_context.event_bus.clone(),
-            runtime_context.tasks.clone(),
-            runtime_context.auth_scope.clone(),
-            runtime_context.session.clone(),
-            Arc::clone(&realtime_runtime),
-            runtime_context.overlay_activity.clone(),
-            Arc::clone(&vr_overlay_runtime),
-        );
-        let session_runtime = Arc::new(SessionHostRuntime::new(
-            runtime_context.session.clone(),
-            runtime_context.event_bus.clone(),
-        ));
-        let screenshot_cache = MetadataCacheDb::new(&paths.app_data.join("metadataCache.db"))?;
-        let favorite_import = FavoriteImportRuntime::new(
-            Arc::clone(&db),
-            Arc::clone(&web),
-            Arc::clone(&runtime_context.world_cache),
-            runtime_context.event_bus.clone(),
-            runtime_context.tasks.clone(),
-            runtime_context.auth_scope.clone(),
-        );
-        let shared_collection_import = SharedCollectionImportRuntime::new(
-            Arc::clone(&db),
-            Arc::clone(&web),
-            Arc::clone(&runtime_context.world_cache),
-            runtime_context.event_bus.clone(),
-            runtime_context.tasks.clone(),
-            runtime_context.auth_scope.clone(),
-        );
-        let note_export = NoteExportRuntime::new(
-            Arc::clone(&db),
-            Arc::clone(&web),
-            runtime_context.event_bus.clone(),
-            runtime_context.tasks.clone(),
-            runtime_context.auth_scope.clone(),
-        );
-
-        let app_launcher_enabled = runtime_context
-            .config()
-            .get_bool(APP_LAUNCHER_ENABLED_CONFIG_KEY, true)?;
-        let app_launcher_entries = deserialize_app_launcher_entries(
-            runtime_context
-                .config()
-                .get_json(APP_LAUNCHER_ENTRIES_CONFIG_KEY, json!([]))?,
-        );
-        let auto_launch = AutoAppLaunchManager::new(app_launcher_enabled, app_launcher_entries);
 
         Ok(Self {
+            profile,
             app_data_dir,
+            app_version,
             paths,
             storage,
             db,
             profile_backup,
-            discord_rpc,
-            process_monitor,
-            log_watcher,
             runtime_context,
-            backend_runtime,
-            telemetry,
-            game_log_runtime,
-            game_client_runtime,
-            realtime_runtime,
-            session_runtime,
-            vr_overlay_runtime,
+            backend_runtime: BackendRuntime::new(),
             web,
             image_cache,
-            app_update,
-            authenticated_runtime,
-            host_file_access,
-            screenshot_cache,
-            favorite_import,
-            shared_collection_import,
-            note_export,
-            auto_launch,
             legacy_vrcx_available,
             legacy_vrcx_source,
             legacy_vrcx_migration_status,
             launched_from_autostart,
-            backend_starting: AtomicBool::new(false),
-            background_auth_recovery_running: Arc::new(AtomicBool::new(false)),
-            registry_backup_maintenance_running: Arc::new(AtomicBool::new(false)),
-            background_capabilities_running: Arc::new(AtomicBool::new(false)),
-            discord_reconcile_generation: Arc::new(AtomicU64::new(0)),
-            activity_warmup_generation: Arc::new(AtomicU64::new(0)),
-            background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
-            registry_backup_lock: Arc::new(Mutex::new(())),
-            backend_frontend_session: Arc::new(Mutex::new(None)),
-            authenticated_session_maintenance: Arc::new(Mutex::new(None)),
-            _profile_lock: profile_lock,
+            profile_lock,
         })
     }
 
-    pub fn start_telemetry_runtime(&self) {
-        self.telemetry.start();
-    }
-
-    pub fn request_discord_reconcile(&self) -> u64 {
-        self.discord_reconcile_generation
-            .fetch_add(1, Ordering::AcqRel)
-            .saturating_add(1)
+    pub fn finish(self, composition: RuntimeHostComposition) -> Result<RuntimeHostState> {
+        match self.profile {
+            RuntimeHostProfile::Desktop => {
+                if composition.profile_extension.is_none() {
+                    return Err(crate::Error::Custom(
+                        "Desktop runtime profile requires a profile extension.".into(),
+                    ));
+                }
+            }
+            RuntimeHostProfile::HeadlessData => {
+                if composition.profile_extension.is_some() {
+                    return Err(crate::Error::Custom(
+                        "HeadlessData runtime profile must not receive a profile extension.".into(),
+                    ));
+                }
+            }
+        }
+        let RuntimeHostComposition {
+            local_game_context,
+            group_order_source,
+            friend_note_change_sink,
+            favorites_sink,
+            profile_extension,
+        } = composition;
+        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
+            db: Arc::clone(&self.runtime_context.db),
+            web: Arc::clone(&self.runtime_context.web),
+            event_bus: self.runtime_context.event_bus.clone(),
+            sync: self.runtime_context.sync.clone(),
+            tasks: self.runtime_context.tasks.clone(),
+            session: self.runtime_context.session.clone(),
+            auth_scope: self.runtime_context.auth_scope.clone(),
+            local_game_context,
+            activity_sink: Some(Arc::new(self.runtime_context.overlay_activity())),
+            world_cache: Arc::clone(&self.runtime_context.world_cache),
+            print_cleanup: Arc::new(PrintCleanupQueueSink::new(
+                self.runtime_context.print_cleanup.clone(),
+                self.runtime_context.tasks.clone(),
+                PrintCleanupDeps {
+                    db: Arc::clone(&self.runtime_context.db),
+                    web: Arc::clone(&self.runtime_context.web),
+                    event_bus: self.runtime_context.event_bus.clone(),
+                },
+            )),
+            friend_note_change_sink,
+        }));
+        let favorites_sink = {
+            let overlay_activity = self.runtime_context.overlay_activity();
+            let profile_sink = favorites_sink;
+            Some(Arc::new(move |snapshot: &Value| {
+                overlay_activity.set_favorite_groups(
+                    vrcx_0_application_activity::OverlayFavoriteGroups::from_map(
+                        crate::favorite_group_membership_from_snapshot(snapshot),
+                    ),
+                );
+                if let Some(profile_sink) = &profile_sink {
+                    profile_sink(snapshot);
+                }
+            }) as crate::RuntimeHostSnapshotCallback)
+        };
+        let authenticated_runtime = AuthenticatedRuntimeOrchestrator::new(
+            Arc::clone(&self.db),
+            Arc::clone(&self.web),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+            self.runtime_context.session.clone(),
+            Arc::clone(&realtime_runtime),
+            favorites_sink,
+        );
+        let favorite_import = FavoriteImportRuntime::new(
+            Arc::clone(&self.db),
+            Arc::clone(&self.web),
+            Arc::clone(&self.runtime_context.world_cache),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+        );
+        let shared_collection_import = SharedCollectionImportRuntime::new(
+            Arc::clone(&self.db),
+            Arc::clone(&self.web),
+            Arc::clone(&self.runtime_context.world_cache),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+        );
+        let note_export = NoteExportRuntime::new(
+            Arc::clone(&self.db),
+            Arc::clone(&self.web),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+        );
+        Ok(RuntimeHostState {
+            profile: self.profile,
+            app_data_dir: self.app_data_dir,
+            paths: self.paths,
+            storage: self.storage,
+            db: self.db,
+            profile_backup: self.profile_backup,
+            runtime_context: self.runtime_context,
+            backend_runtime: self.backend_runtime,
+            realtime_runtime,
+            web: self.web,
+            image_cache: self.image_cache,
+            authenticated_runtime,
+            favorite_import,
+            shared_collection_import,
+            note_export,
+            group_order_source,
+            legacy_vrcx_available: self.legacy_vrcx_available,
+            legacy_vrcx_source: self.legacy_vrcx_source,
+            legacy_vrcx_migration_status: self.legacy_vrcx_migration_status,
+            launched_from_autostart: self.launched_from_autostart,
+            profile_extension,
+            backend_starting: AtomicBool::new(false),
+            background_auth_recovery_running: Arc::new(AtomicBool::new(false)),
+            social_maintenance_running: Arc::new(AtomicBool::new(false)),
+            activity_warmup_generation: Arc::new(AtomicU64::new(0)),
+            background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
+            backend_frontend_session: Arc::new(Mutex::new(None)),
+            authenticated_session_maintenance: Arc::new(Mutex::new(None)),
+            _profile_lock: self.profile_lock,
+        })
     }
 }
 
-fn register_persisted_user_generated_content_path_grant(
-    host_file_access: &HostFileAccess,
-    config: &vrcx_0_persistence::config::ConfigRepository,
-) -> Result<()> {
-    let ugc_path = config.get_string(USER_GENERATED_CONTENT_PATH_CONFIG_KEY, "")?;
-    let ugc_path = ugc_path.trim();
-    if !ugc_path.is_empty() {
-        host_file_access.register_path(ugc_path);
+impl RuntimeHostState {
+    pub fn new(options: RuntimeHostOptions) -> Result<Self> {
+        match options.profile {
+            RuntimeHostProfile::Desktop => {
+                return Err(crate::Error::Custom(
+                    "Desktop runtime profile must be constructed by runtime-host-desktop.".into(),
+                ));
+            }
+            RuntimeHostProfile::HeadlessData => {}
+        }
+        RuntimeHostStateBuilder::new(options)?.finish(RuntimeHostComposition {
+            local_game_context: Arc::new(UnavailableLocalGameContextSource),
+            group_order_source: Arc::new(UnavailableGroupOrderSource),
+            friend_note_change_sink: None,
+            favorites_sink: None,
+            profile_extension: None,
+        })
     }
-    Ok(())
+
+    pub fn backend_frontend_session_handle(
+        &self,
+    ) -> Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>> {
+        Arc::clone(&self.backend_frontend_session)
+    }
 }
 
 #[cfg(test)]
@@ -494,7 +428,6 @@ mod secret_startup_tests {
             }
             Ok(())
         };
-
         run_secret_startup(
             || events.borrow_mut().push(Step::Initialize),
             || {
@@ -514,14 +447,12 @@ mod secret_startup_tests {
                 Ok(())
             },
         );
-
         (events.into_inner(), cleanup_recorded.get())
     }
 
     #[test]
     fn secret_startup_runs_all_steps_in_order() {
         let (events, cleanup_recorded) = run(None, true, false);
-
         assert_eq!(
             events,
             vec![
@@ -541,7 +472,6 @@ mod secret_startup_tests {
     fn secret_startup_requires_both_migrations_before_cleanup() {
         for failed_step in [Step::MigrateCookies, Step::MigrateSavedCredentials] {
             let (events, cleanup_recorded) = run(Some(failed_step), true, false);
-
             assert_eq!(
                 events,
                 vec![
@@ -560,7 +490,6 @@ mod secret_startup_tests {
     fn secret_startup_skips_cleanup_when_disabled_or_already_completed() {
         for (encrypting_writes, cleanup_completed) in [(false, false), (true, true)] {
             let (events, cleanup_recorded) = run(None, encrypting_writes, cleanup_completed);
-
             assert!(!events.contains(&Step::Cleanup));
             assert!(!cleanup_recorded);
         }
@@ -569,7 +498,6 @@ mod secret_startup_tests {
     #[test]
     fn secret_startup_does_not_record_failed_cleanup() {
         let (events, cleanup_recorded) = run(Some(Step::Cleanup), true, false);
-
         assert!(events.contains(&Step::Cleanup));
         assert!(!events.contains(&Step::RecordCleanupCompleted));
         assert!(!cleanup_recorded);
@@ -578,7 +506,6 @@ mod secret_startup_tests {
     #[test]
     fn secret_startup_retries_when_cleanup_state_cannot_be_read() {
         let (events, cleanup_recorded) = run(Some(Step::ReadCleanupCompleted), true, false);
-
         assert!(events.contains(&Step::Cleanup));
         assert!(cleanup_recorded);
     }
@@ -586,7 +513,6 @@ mod secret_startup_tests {
     #[test]
     fn secret_startup_keeps_cleanup_retryable_when_recording_fails() {
         let (events, cleanup_recorded) = run(Some(Step::RecordCleanupCompleted), true, false);
-
         assert!(events.contains(&Step::Cleanup));
         assert!(events.contains(&Step::RecordCleanupCompleted));
         assert!(!cleanup_recorded);
@@ -594,16 +520,22 @@ mod secret_startup_tests {
 }
 
 #[cfg(test)]
-mod persisted_file_access_tests {
-    use super::{
-        register_persisted_user_generated_content_path_grant,
-        USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
-    };
-    use crate::{HostFileAccess, Result};
+mod profile_bundle_tests {
+    use super::*;
     use std::path::PathBuf;
-    use std::sync::Arc;
-    use vrcx_0_host::app_paths::AppPaths;
-    use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+    use std::sync::atomic::AtomicUsize;
+    use vrcx_0_host::app_paths::AppDataDirSource;
+
+    #[derive(Default)]
+    struct TestProfileExtension {
+        stop_count: AtomicUsize,
+    }
+
+    impl RuntimeHostProfileExtension for TestProfileExtension {
+        fn stop_profile_services(&self) {
+            self.stop_count.fetch_add(1, Ordering::AcqRel);
+        }
+    }
 
     struct TestDir {
         path: PathBuf,
@@ -615,8 +547,10 @@ mod persisted_file_access_tests {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-runtime-host-{name}-{}-{nonce}",
+                std::process::id()
+            ));
             std::fs::create_dir_all(&path).unwrap();
             Self { path }
         }
@@ -629,32 +563,69 @@ mod persisted_file_access_tests {
     }
 
     #[test]
-    fn restores_persisted_user_generated_content_path_for_open_and_save() -> Result<()> {
-        let dir = TestDir::new("persisted-ugc-grant");
+    fn headless_data_constructs_no_game_or_desktop_bundle_and_stops_idempotently() -> Result<()> {
+        let dir = TestDir::new("headless-profile");
         let app_data = dir.path.join("app-data");
-        let ugc_path = dir.path.join("custom-ugc");
         std::fs::create_dir_all(&app_data)?;
-        std::fs::create_dir_all(&ugc_path)?;
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        let config = ConfigRepository::new(db);
-        config.set_string(
-            USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
-            &ugc_path.to_string_lossy(),
-        )?;
+        let state = RuntimeHostState::new(RuntimeHostOptions {
+            realtime_origin: "http://localhost:9000".into(),
+            launched_from_autostart: false,
+            app_data_dir: AppDataDirResolution {
+                current_dir: app_data.clone(),
+                default_dir: app_data.clone(),
+                persisted_dir: None,
+                cli_dir: Some(app_data),
+                source: AppDataDirSource::Cli,
+            },
+            app_version: "0.0.0-test".into(),
+            profile: RuntimeHostProfile::HeadlessData,
+        })?;
+        assert!(state.profile_extension.is_none());
+        assert!(!state.paths.app_data.join("metadataCache.db").exists());
+        state.backend_runtime.set_mode(BackendRuntimeMode::Headless);
+        state
+            .backend_runtime
+            .set_phase(BackendRuntimePhase::Running);
+        let first = state.stop_backend_runtime("test");
+        assert_eq!(first.phase, BackendRuntimePhase::Idle);
+        let second = state.stop_backend_runtime("test-again");
+        assert_eq!(second.phase, BackendRuntimePhase::Idle);
+        assert_eq!(second.updated_at, first.updated_at);
+        Ok(())
+    }
 
-        let host_file_access = HostFileAccess::new();
-        let app_paths = AppPaths::from_app_data(app_data);
-        assert!(host_file_access
-            .ensure_read_allowed(&ugc_path, &app_paths)
-            .is_err());
-        assert!(host_file_access
-            .ensure_write_allowed(&ugc_path, &app_paths)
-            .is_err());
+    #[test]
+    fn desktop_idle_stop_still_cleans_up_profile_services() -> Result<()> {
+        let dir = TestDir::new("desktop-idle-stop");
+        let app_data = dir.path.join("app-data");
+        std::fs::create_dir_all(&app_data)?;
+        let extension = Arc::new(TestProfileExtension::default());
+        let state = RuntimeHostStateBuilder::new(RuntimeHostOptions {
+            realtime_origin: "http://localhost:9000".into(),
+            launched_from_autostart: false,
+            app_data_dir: AppDataDirResolution {
+                current_dir: app_data.clone(),
+                default_dir: app_data.clone(),
+                persisted_dir: None,
+                cli_dir: Some(app_data),
+                source: AppDataDirSource::Cli,
+            },
+            app_version: "0.0.0-test".into(),
+            profile: RuntimeHostProfile::Desktop,
+        })?
+        .finish(RuntimeHostComposition {
+            local_game_context: Arc::new(UnavailableLocalGameContextSource),
+            group_order_source: Arc::new(UnavailableGroupOrderSource),
+            friend_note_change_sink: None,
+            favorites_sink: None,
+            profile_extension: Some(extension.clone()),
+        })?;
 
-        register_persisted_user_generated_content_path_grant(&host_file_access, &config)?;
-
-        host_file_access.ensure_read_allowed(&ugc_path, &app_paths)?;
-        host_file_access.ensure_write_allowed(ugc_path.join("Prints"), &app_paths)?;
+        let before = state.backend_runtime.snapshot();
+        assert_eq!(before.phase, BackendRuntimePhase::Idle);
+        let stopped = state.stop_backend_runtime("application-exit");
+        assert_eq!(stopped.updated_at, before.updated_at);
+        assert_eq!(extension.stop_count.load(Ordering::Acquire), 1);
         Ok(())
     }
 }

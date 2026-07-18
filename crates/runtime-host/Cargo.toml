@@ -5,28 +5,34 @@ edition = "2021"
 
 [features]
 default = []
-steamvr-overlay = ["vrcx-0-host/steamvr-overlay"]
-openxr-overlay = ["vrcx-0-host/openxr-overlay"]
-test-utils = ["vrcx-0-application/test-utils"]
+test-utils = [
+    "vrcx-0-application/test-utils",
+    "vrcx-0-application-core/test-utils",
+    "vrcx-0-application-realtime/test-utils"
+]
 
 [dependencies]
 chrono = { workspace = true }
 iana-time-zone.workspace = true
-image.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
 sys-locale.workspace = true
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["time", "rt", "macros"] }
+tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
 tracing = { workspace = true }
 vrcx-0-application = { path = "../application" }
+vrcx-0-application-activity = { path = "../application-activity" }
+vrcx-0-application-core = { path = "../application-core" }
+vrcx-0-application-realtime = { path = "../application-realtime" }
 vrcx-0-core = { path = "../core" }
 vrcx-0-host = { path = "../host" }
-vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-integrations = { path = "../integrations" }
+vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-media = { path = "../media" }
 vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-ui"] }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
 uuid.workspace = true
+
+[dev-dependencies]
+vrcx-0-application-realtime = { path = "../application-realtime", features = ["test-utils"] }

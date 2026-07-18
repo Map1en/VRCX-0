@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::friends::{friend_status_get_input, friends_get_input};
+use vrcx_0_application_core::vrchat_api::friends::{friend_status_get_input, friends_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{VrchatFriendUserInput, VrchatFriendsGetInput};
 

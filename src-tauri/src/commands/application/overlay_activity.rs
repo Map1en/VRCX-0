@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{
+use vrcx_0_application_activity::{
     overlay_activity_type_definitions, OverlayActivitySnapshot, OverlayActivityTypeDefinition,
 };
 

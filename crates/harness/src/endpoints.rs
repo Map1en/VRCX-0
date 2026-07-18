@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
@@ -7,15 +7,14 @@ use specta::Type;
 use vrcx_0_integrations::llm::{ChatMessage, LlmClient};
 use vrcx_0_persistence::config::ConfigRepository;
 
-use crate::config::{
-    deobfuscate_api_key, normalize_llm_base_url, obfuscate_api_key, PlaybookMode,
-    ASSISTANT_ALLOW_WRITES_CONFIG_KEY, ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY,
-    ASSISTANT_MODEL_CONFIG_KEY, ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY,
-};
+use crate::config::{deobfuscate_api_key, normalize_llm_base_url, obfuscate_api_key, PlaybookMode};
 use crate::error::HarnessError;
 use crate::session::random_hex;
 
+mod migration;
+
 const LLM_ENDPOINTS_CONFIG_KEY: &str = "llm.endpoints";
+const LLM_FOLLOW_CUSTOM_PROXY_CONFIG_KEY: &str = "llm.followCustomProxy";
 const ASSISTANT_LAST_SELECTION_CONFIG_KEY: &str = "assistant.lastSelection";
 const LEGACY_MIGRATION_DONE_KEY: &str = "llm.endpoints.legacyMigrated";
 const TRANSLATION_ENDPOINT_ID_CONFIG_KEY: &str = "translationEndpointId";
@@ -117,15 +116,17 @@ impl Default for AssistantRuntimeSelection {
 #[derive(Clone)]
 pub struct EndpointStore {
     config: ConfigRepository,
+    custom_proxy_url: Option<String>,
     // Serializes read-modify-write of the endpoints blob across concurrent writers.
     write_lock: Arc<Mutex<()>>,
     migrated: Arc<AtomicBool>,
 }
 
 impl EndpointStore {
-    pub fn new(config: ConfigRepository) -> Self {
+    pub fn new(config: ConfigRepository, custom_proxy_url: Option<String>) -> Self {
         Self {
             config,
+            custom_proxy_url,
             write_lock: Arc::new(Mutex::new(())),
             migrated: Arc::new(AtomicBool::new(false)),
         }
@@ -225,7 +226,7 @@ impl EndpointStore {
     ) -> Result<Vec<String>, HarnessError> {
         self.ensure_migrated()?;
         let resolved = self.resolve_detect_target(&input)?;
-        let client = LlmClient::new(&resolved.base_url, &resolved.api_key, "");
+        let client = self.llm_client(&resolved.base_url, &resolved.api_key, "")?;
         let models = normalize_models(client.list_models().await?);
 
         if input.persist.unwrap_or(true) {
@@ -269,6 +270,12 @@ impl EndpointStore {
         })
     }
 
+    pub fn set_follow_custom_proxy(&self, enabled: bool) -> Result<bool, HarnessError> {
+        self.config
+            .set_bool(LLM_FOLLOW_CUSTOM_PROXY_CONFIG_KEY, enabled)?;
+        Ok(enabled)
+    }
+
     pub fn last_selection(&self) -> Result<AssistantRuntimeSelection, HarnessError> {
         self.ensure_migrated()?;
         self.read_last_selection_raw()
@@ -308,10 +315,33 @@ impl EndpointStore {
             .unwrap_or_else(|| {
                 DEFAULT_TRANSLATION_SYSTEM_PROMPT.replace("{targetLang}", &input.target_lang)
             });
-        let client = LlmClient::new(endpoint.base_url, endpoint.api_key, model);
+        let client = self.llm_client(&endpoint.base_url, &endpoint.api_key, model)?;
         Ok(client
             .complete_chat(&[ChatMessage::system(prompt), ChatMessage::user(input.text)])
             .await?)
+    }
+
+    pub(crate) fn llm_client(
+        &self,
+        base_url: &str,
+        api_key: &str,
+        model: &str,
+    ) -> Result<LlmClient, HarnessError> {
+        LlmClient::new(base_url, api_key, model, self.explicit_proxy_url()?)
+            .map_err(HarnessError::from)
+    }
+
+    pub fn follow_custom_proxy(&self) -> Result<bool, HarnessError> {
+        self.config
+            .get_bool(LLM_FOLLOW_CUSTOM_PROXY_CONFIG_KEY, true)
+            .map_err(HarnessError::from)
+    }
+
+    fn explicit_proxy_url(&self) -> Result<Option<&str>, HarnessError> {
+        if self.follow_custom_proxy()? {
+            return Ok(self.custom_proxy_url.as_deref());
+        }
+        Ok(None)
     }
 
     fn resolve_detect_target(
@@ -369,130 +399,6 @@ impl EndpointStore {
         })?;
         self.config.set_json(LLM_ENDPOINTS_CONFIG_KEY, &value)?;
         Ok(())
-    }
-
-    fn ensure_migrated(&self) -> Result<(), HarnessError> {
-        if self.migrated.load(Ordering::Relaxed) {
-            return Ok(());
-        }
-        let _guard = self.write_lock.lock().unwrap();
-        if self.migrated.load(Ordering::Relaxed) {
-            return Ok(());
-        }
-        if !self.config.get_bool(LEGACY_MIGRATION_DONE_KEY, false)? {
-            self.migrate_legacy_configs()?;
-        }
-        self.migrated.store(true, Ordering::Relaxed);
-        Ok(())
-    }
-
-    fn migrate_legacy_configs(&self) -> Result<(), HarnessError> {
-        let mut endpoints = self.load_endpoints()?;
-        let mut changed = false;
-
-        let current_selection = self.read_last_selection_raw()?;
-        let needs_assistant_seed =
-            current_selection.endpoint_id.is_none() && current_selection.model.is_none();
-        if needs_assistant_seed {
-            if let Some((endpoint_id, model, allow_writes, playbook_mode)) =
-                self.migrate_legacy_assistant_endpoint(&mut endpoints)?
-            {
-                let selection = AssistantRuntimeSelection {
-                    endpoint_id: Some(endpoint_id),
-                    model,
-                    allow_writes,
-                    playbook_mode,
-                };
-                self.set_last_selection(&selection)?;
-                changed = true;
-            }
-        }
-
-        if let Some(endpoint_id) = self.migrate_legacy_translation_endpoint(&mut endpoints)? {
-            self.config
-                .set_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, &endpoint_id)?;
-            changed = true;
-        }
-
-        if changed {
-            self.save_endpoints(&endpoints)?;
-        }
-        self.config.set_bool(LEGACY_MIGRATION_DONE_KEY, true)?;
-        Ok(())
-    }
-
-    fn migrate_legacy_assistant_endpoint(
-        &self,
-        endpoints: &mut Vec<StoredLlmEndpoint>,
-    ) -> Result<Option<LegacyAssistantSeed>, HarnessError> {
-        let base_url =
-            normalize_llm_base_url(&self.config.get_string(ASSISTANT_BASE_URL_CONFIG_KEY, "")?);
-        let model = self
-            .config
-            .get_string(ASSISTANT_MODEL_CONFIG_KEY, "")?
-            .trim()
-            .to_string();
-        let api_key = deobfuscate_api_key(
-            self.config
-                .get_string(ASSISTANT_API_KEY_CONFIG_KEY, "")?
-                .trim(),
-        );
-        if base_url.is_empty() || model.is_empty() {
-            return Ok(None);
-        }
-        let endpoint_id =
-            ensure_endpoint(endpoints, "Assistant", &base_url, &api_key, model.as_str());
-        Ok(Some((
-            endpoint_id,
-            Some(model),
-            self.config
-                .get_bool(ASSISTANT_ALLOW_WRITES_CONFIG_KEY, false)?,
-            PlaybookMode::parse(
-                &self
-                    .config
-                    .get_string(ASSISTANT_PLAYBOOK_MODE_CONFIG_KEY, "auto")?,
-            ),
-        )))
-    }
-
-    fn migrate_legacy_translation_endpoint(
-        &self,
-        endpoints: &mut Vec<StoredLlmEndpoint>,
-    ) -> Result<Option<String>, HarnessError> {
-        if self
-            .config
-            .get_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, "")?
-            .trim()
-            .is_empty()
-            && self
-                .config
-                .get_string(TRANSLATION_API_TYPE_CONFIG_KEY, "google")?
-                .trim()
-                .eq_ignore_ascii_case("openai")
-        {
-            let base_url = normalize_llm_base_url(
-                &self
-                    .config
-                    .get_string(TRANSLATION_API_ENDPOINT_CONFIG_KEY, "")?,
-            );
-            let model = self
-                .config
-                .get_string(TRANSLATION_API_MODEL_CONFIG_KEY, "")?
-                .trim()
-                .to_string();
-            if base_url.is_empty() || model.is_empty() {
-                return Ok(None);
-            }
-            let endpoint_id = ensure_endpoint(
-                endpoints,
-                "Translation",
-                &base_url,
-                &self.config.get_string(TRANSLATION_API_KEY_CONFIG_KEY, "")?,
-                model.as_str(),
-            );
-            return Ok(Some(endpoint_id));
-        }
-        Ok(None)
     }
 }
 
@@ -584,189 +490,4 @@ fn normalize_models(models: Vec<String>) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use vrcx_0_persistence::DatabaseService;
-
-    use super::*;
-
-    fn test_config() -> ConfigRepository {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
-            "vrcx-0-llm-endpoints-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        ConfigRepository::new(Arc::new(
-            DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap(),
-        ))
-    }
-
-    #[test]
-    fn upsert_preserves_clears_and_drops_keys_on_provider_change() {
-        let store = EndpointStore::new(test_config());
-        let saved = store
-            .upsert(LlmEndpointUpsertInput {
-                id: None,
-                name: "OpenAI".into(),
-                base_url: "https://api.openai.com/v1/chat/completions".into(),
-                api_key: Some("sk-old".into()),
-                models: vec!["gpt-4o-mini".into()],
-            })
-            .unwrap();
-        assert!(saved.has_key);
-        assert_eq!(saved.base_url, "https://api.openai.com/v1");
-
-        let preserved = store
-            .upsert(LlmEndpointUpsertInput {
-                id: Some(saved.id.clone()),
-                name: "OpenAI".into(),
-                base_url: "https://api.openai.com/v1".into(),
-                api_key: None,
-                models: vec!["gpt-4o-mini".into()],
-            })
-            .unwrap();
-        assert!(preserved.has_key);
-
-        let dropped = store
-            .upsert(LlmEndpointUpsertInput {
-                id: Some(saved.id.clone()),
-                name: "Other".into(),
-                base_url: "https://example.com/v1".into(),
-                api_key: None,
-                models: vec!["model".into()],
-            })
-            .unwrap();
-        assert!(!dropped.has_key);
-
-        let cleared = store
-            .upsert(LlmEndpointUpsertInput {
-                id: Some(saved.id),
-                name: "Other".into(),
-                base_url: "https://example.com/v1".into(),
-                api_key: Some(String::new()),
-                models: vec!["model".into()],
-            })
-            .unwrap();
-        assert!(!cleared.has_key);
-    }
-
-    #[test]
-    fn legacy_assistant_and_translation_configs_migrate_and_dedupe() {
-        let config = test_config();
-        config
-            .set_string(
-                ASSISTANT_BASE_URL_CONFIG_KEY,
-                "https://api.openai.com/v1/chat/completions",
-            )
-            .unwrap();
-        config
-            .set_string(ASSISTANT_API_KEY_CONFIG_KEY, &obfuscate_api_key("sk-a"))
-            .unwrap();
-        config
-            .set_string(ASSISTANT_MODEL_CONFIG_KEY, "gpt-4o-mini")
-            .unwrap();
-        config
-            .set_string(TRANSLATION_API_TYPE_CONFIG_KEY, "openai")
-            .unwrap();
-        config
-            .set_string(
-                TRANSLATION_API_ENDPOINT_CONFIG_KEY,
-                "https://api.openai.com/v1/chat/completions",
-            )
-            .unwrap();
-        config
-            .set_string(TRANSLATION_API_KEY_CONFIG_KEY, "sk-a")
-            .unwrap();
-        config
-            .set_string(TRANSLATION_API_MODEL_CONFIG_KEY, "gpt-4o-mini")
-            .unwrap();
-
-        let store = EndpointStore::new(config.clone());
-        let endpoints = store.list().unwrap();
-        assert_eq!(endpoints.len(), 1);
-        assert_eq!(endpoints[0].base_url, "https://api.openai.com/v1");
-        assert_eq!(endpoints[0].models, vec!["gpt-4o-mini"]);
-        assert_eq!(
-            config
-                .get_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, "")
-                .unwrap(),
-            endpoints[0].id
-        );
-        assert_eq!(
-            store.last_selection().unwrap().endpoint_id.as_deref(),
-            Some(endpoints[0].id.as_str())
-        );
-    }
-
-    #[test]
-    fn deleting_migrated_endpoint_does_not_resurrect_it() {
-        let config = test_config();
-        config
-            .set_string(ASSISTANT_BASE_URL_CONFIG_KEY, "https://api.openai.com/v1")
-            .unwrap();
-        config
-            .set_string(ASSISTANT_MODEL_CONFIG_KEY, "gpt-4o-mini")
-            .unwrap();
-
-        let store = EndpointStore::new(config);
-        let migrated = store.list().unwrap();
-        assert_eq!(migrated.len(), 1);
-
-        store.delete(&migrated[0].id).unwrap();
-
-        assert!(store.list().unwrap().is_empty());
-    }
-
-    #[test]
-    fn delete_clears_last_selection_and_falls_back_translation_endpoint() {
-        let config = test_config();
-        let store = EndpointStore::new(config.clone());
-        let first = store
-            .upsert(LlmEndpointUpsertInput {
-                id: None,
-                name: "First".into(),
-                base_url: "https://first.example/v1".into(),
-                api_key: Some("sk-first".into()),
-                models: vec!["first-model".into()],
-            })
-            .unwrap();
-        let second = store
-            .upsert(LlmEndpointUpsertInput {
-                id: None,
-                name: "Second".into(),
-                base_url: "https://second.example/v1".into(),
-                api_key: Some("sk-second".into()),
-                models: vec!["second-model".into()],
-            })
-            .unwrap();
-
-        store
-            .set_last_selection(&AssistantRuntimeSelection {
-                endpoint_id: Some(first.id.clone()),
-                model: Some("first-model".into()),
-                allow_writes: true,
-                playbook_mode: PlaybookMode::Guided,
-            })
-            .unwrap();
-        config
-            .set_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, &first.id)
-            .unwrap();
-
-        store.delete(&first.id).unwrap();
-
-        let selection = store.last_selection().unwrap();
-        assert!(selection.endpoint_id.is_none());
-        assert!(selection.model.is_none());
-        assert_eq!(
-            config
-                .get_string(TRANSLATION_ENDPOINT_ID_CONFIG_KEY, "")
-                .unwrap(),
-            second.id
-        );
-    }
-}
+mod tests;

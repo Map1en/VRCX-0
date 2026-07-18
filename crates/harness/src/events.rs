@@ -1,15 +1,8 @@
 use serde::Serialize;
 use specta::Type;
-use vrcx_0_application::RuntimeEventBus;
+use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 
 use crate::entities::Entity;
-
-pub const EVENT_DELTA: &str = "assistantDelta";
-pub const EVENT_TOOL_CALL: &str = "assistantToolCall";
-pub const EVENT_TOOL_RESULT: &str = "assistantToolResult";
-pub const EVENT_TURN_ENTITIES: &str = "assistantTurnEntities";
-pub const EVENT_DONE: &str = "assistantDone";
-pub const EVENT_ERROR: &str = "assistantError";
 
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -64,6 +57,30 @@ pub struct AssistantErrorEvent {
     pub message: String,
 }
 
+impl RuntimeEventPayload for AssistantDeltaEvent {
+    const EVENT_NAME: &'static str = "assistantDelta";
+}
+
+impl RuntimeEventPayload for AssistantToolCallEvent {
+    const EVENT_NAME: &'static str = "assistantToolCall";
+}
+
+impl RuntimeEventPayload for AssistantToolResultEvent {
+    const EVENT_NAME: &'static str = "assistantToolResult";
+}
+
+impl RuntimeEventPayload for AssistantTurnEntitiesEvent {
+    const EVENT_NAME: &'static str = "assistantTurnEntities";
+}
+
+impl RuntimeEventPayload for AssistantDoneEvent {
+    const EVENT_NAME: &'static str = "assistantDone";
+}
+
+impl RuntimeEventPayload for AssistantErrorEvent {
+    const EVENT_NAME: &'static str = "assistantError";
+}
+
 #[derive(Clone)]
 pub struct AssistantEmitter {
     bus: RuntimeEventBus,
@@ -81,73 +98,55 @@ impl AssistantEmitter {
     }
 
     pub fn delta(&self, text: &str) {
-        self.bus.emit(
-            EVENT_DELTA,
-            AssistantDeltaEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-                text: text.to_string(),
-            },
-        );
+        self.bus.emit(AssistantDeltaEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+            text: text.to_string(),
+        });
     }
 
     pub fn tool_call(&self, tool_call_id: &str, name: &str, args: &str) {
-        self.bus.emit(
-            EVENT_TOOL_CALL,
-            AssistantToolCallEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-                tool_call_id: tool_call_id.to_string(),
-                name: name.to_string(),
-                args: args.to_string(),
-            },
-        );
+        self.bus.emit(AssistantToolCallEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+            tool_call_id: tool_call_id.to_string(),
+            name: name.to_string(),
+            args: args.to_string(),
+        });
     }
 
     pub fn tool_result(&self, tool_call_id: &str, ok: bool, summary: &str, entities: &[Entity]) {
-        self.bus.emit(
-            EVENT_TOOL_RESULT,
-            AssistantToolResultEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-                tool_call_id: tool_call_id.to_string(),
-                ok,
-                summary: summary.to_string(),
-                entities: entities.to_vec(),
-            },
-        );
+        self.bus.emit(AssistantToolResultEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+            tool_call_id: tool_call_id.to_string(),
+            ok,
+            summary: summary.to_string(),
+            entities: entities.to_vec(),
+        });
     }
 
     pub fn turn_entities(&self, entities: &[Entity]) {
-        self.bus.emit(
-            EVENT_TURN_ENTITIES,
-            AssistantTurnEntitiesEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-                entities: entities.to_vec(),
-            },
-        );
+        self.bus.emit(AssistantTurnEntitiesEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+            entities: entities.to_vec(),
+        });
     }
 
     pub fn done(&self) {
-        self.bus.emit(
-            EVENT_DONE,
-            AssistantDoneEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-            },
-        );
+        self.bus.emit(AssistantDoneEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+        });
     }
 
     pub fn error(&self, code: &str, message: &str) {
-        self.bus.emit(
-            EVENT_ERROR,
-            AssistantErrorEvent {
-                session_id: self.session_id.clone(),
-                turn_id: self.turn_id.clone(),
-                code: code.to_string(),
-                message: message.to_string(),
-            },
-        );
+        self.bus.emit(AssistantErrorEvent {
+            session_id: self.session_id.clone(),
+            turn_id: self.turn_id.clone(),
+            code: code.to_string(),
+            message: message.to_string(),
+        });
     }
 }

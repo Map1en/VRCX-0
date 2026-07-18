@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::{self, VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{self, VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use crate::error::AppError;
 use crate::state::AppState;

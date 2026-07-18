@@ -6,8 +6,9 @@ use vrcx_0_application::{
     run_group_visibility_batch, AvatarContentTagsBatchInput, BatchMutationResult,
     FavoriteImportStartInput, FavoriteImportStatus, GroupLeaveBatchInput,
     GroupVisibilityBatchInput, NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult,
-    RuntimeAuthScopeSnapshot, VrchatBatchMutationActions, VrchatNotificationMarkSeenActions,
+    VrchatBatchMutationActions, VrchatNotificationMarkSeenActions,
 };
+use vrcx_0_application_core::RuntimeAuthScopeSnapshot;
 
 use crate::{error::AppError, state::AppState};
 
@@ -101,7 +102,7 @@ fn active_scope(state: &AppState) -> Result<RuntimeAuthScopeSnapshot, AppError> 
     if scope.active && !scope.current_user_id.trim().is_empty() {
         Ok(scope)
     } else {
-        Err(vrcx_0_application::Error::Custom(
+        Err(vrcx_0_application_core::Error::Custom(
             "Batch action requires an authenticated session.".into(),
         )
         .into())

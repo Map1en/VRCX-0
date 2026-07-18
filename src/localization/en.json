@@ -1779,6 +1779,8 @@
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
+                "follow_custom_proxy": "Use VRCX-0 custom proxy",
+                "follow_custom_proxy_description": "LLM requests use it when configured; otherwise, the system proxy applies.",
                 "endpoint_count": "{count} endpoints",
                 "model_count": "{count} models",
                 "add": "Add endpoint",

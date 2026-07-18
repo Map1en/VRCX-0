@@ -1781,6 +1781,8 @@
             "llm_endpoints": {
                 "title": "LLM endpointy",
                 "description": "Sdílená připojení kompatibilní s OpenAI pro Social AI a překlad.",
+                "follow_custom_proxy": "Používat vlastní proxy VRCX-0",
+                "follow_custom_proxy_description": "Je-li ve VRCX-0 nastavená vlastní proxy, požadavky LLM ji použijí; jinak se použije systémová proxy.",
                 "endpoint_count": "Endpointů: {count}",
                 "model_count": "Modelů: {count}",
                 "add": "Přidat endpoint",

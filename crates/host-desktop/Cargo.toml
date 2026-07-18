@@ -1,0 +1,64 @@
+[package]
+name = "vrcx-0-host-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+steamvr-overlay = ["dep:openvr", "dep:openvr_sys"]
+openxr-overlay = ["dep:openxr", "dep:ash"]
+
+[dependencies]
+arboard = "3"
+base64 = { workspace = true }
+chrono = { workspace = true }
+dirs = { workspace = true }
+fontdb = "0.23"
+hex = "0.4"
+open = "5"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sha2.workspace = true
+specta.workspace = true
+sysinfo = "0.39"
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync"] }
+tracing = { workspace = true }
+url = { workspace = true }
+vrcx-0-core = { path = "../core" }
+vrcx-0-host = { path = "../host" }
+walkdir = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_DataExchange",
+    "Win32_System_IO",
+    "Win32_System_Memory",
+    "Win32_System_Ole",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging"
+] }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common"
+] }
+winreg = "0.56"
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+futures-util = "0.3"
+openvr = { version = "0.9", optional = true }
+openvr_sys = { version = "2.1.4", optional = true }
+openxr = { version = "0.21", optional = true, default-features = false, features = [
+    "loaded"
+] }
+ash = { version = "0.38", optional = true }
+tokio = { workspace = true, features = ["net"] }
+tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }
+vrcx-0-vr-overlay = { path = "../vr-overlay" }

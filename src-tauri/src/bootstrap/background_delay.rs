@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use tauri::Manager;
-use vrcx_0_application::{BackendRuntimeMode, BackendRuntimePhase};
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase};
 
 use crate::error::AppError;
 use crate::state::AppState;

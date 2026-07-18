@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use futures_util::StreamExt;
-use reqwest::Client;
+use reqwest::{Client, Proxy};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -206,17 +206,19 @@ impl LlmClient {
         base_url: impl Into<String>,
         api_key: impl Into<String>,
         model: impl Into<String>,
-    ) -> Self {
-        let http = Client::builder()
-            .timeout(Duration::from_secs(180))
-            .build()
-            .unwrap_or_default();
-        Self {
+        proxy_url: Option<&str>,
+    ) -> Result<Self, LlmError> {
+        let mut builder = Client::builder().timeout(Duration::from_secs(180));
+        if let Some(proxy_url) = proxy_url {
+            builder = builder.proxy(Proxy::all(proxy_url)?);
+        }
+        let http = builder.build()?;
+        Ok(Self {
             http,
             base_url: normalize_base_url(base_url.into()),
             api_key: api_key.into(),
             model: model.into(),
-        }
+        })
     }
 
     /// List the model ids the configured endpoint advertises (`GET /models`).
@@ -456,7 +458,56 @@ fn drain_complete_lines(buffer: &mut Vec<u8>) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
     use super::*;
+
+    #[tokio::test]
+    async fn list_models_uses_explicit_http_proxy() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let proxy_address = listener.local_addr().unwrap();
+        let proxy_task = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = Vec::new();
+            let mut chunk = [0u8; 1024];
+            loop {
+                let read = stream.read(&mut chunk).await.unwrap();
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&chunk[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            let body = r#"{"data":[{"id":"proxy-model"}]}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).await.unwrap();
+            String::from_utf8(request).unwrap()
+        });
+
+        let proxy_url = format!("http://{proxy_address}");
+        let client = LlmClient::new("http://127.0.0.1:9/v1", "", "", Some(&proxy_url)).unwrap();
+
+        assert_eq!(client.list_models().await.unwrap(), vec!["proxy-model"]);
+        let request = proxy_task.await.unwrap();
+        assert!(request.starts_with("GET http://127.0.0.1:9/v1/models HTTP/1.1\r\n"));
+    }
+
+    #[test]
+    fn accepts_socks5_proxy_url() {
+        assert!(LlmClient::new(
+            "https://example.com/v1",
+            "",
+            "model",
+            Some("socks5://127.0.0.1:1080")
+        )
+        .is_ok());
+    }
 
     #[test]
     fn chat_completion_response_extracts_first_message_content() {

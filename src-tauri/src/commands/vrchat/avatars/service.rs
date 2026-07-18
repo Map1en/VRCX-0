@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::vrchat_api::avatars::{
+use vrcx_0_application_core::vrchat_api::avatars::{
     avatar_delete_input, avatar_file_get_input, avatar_gallery_get_input, avatar_get_input,
     avatar_impostor_create_input, avatar_impostor_delete_input, avatar_list_by_user_get_input,
     avatar_moderation_delete_input, avatar_moderation_send_input, avatar_moderations_get_input,
@@ -11,7 +11,7 @@ use vrcx_0_application::vrchat_api::avatars::{
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
 
 use super::types::{
     VrchatAvatarEndpointInput, VrchatAvatarFileInput, VrchatAvatarIdInput,

@@ -10,6 +10,31 @@ use crate::state::AppState;
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__llm_endpoint_follow_custom_proxy(
+    state: State<'_, AppState>,
+) -> Result<bool, AppError> {
+    state
+        .assistant()
+        .await?
+        .follow_custom_proxy()
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__llm_endpoint_set_follow_custom_proxy(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<bool, AppError> {
+    state
+        .assistant()
+        .await?
+        .set_follow_custom_proxy(enabled)
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__llm_endpoint_list(
     state: State<'_, AppState>,
 ) -> Result<Vec<LlmEndpointDto>, AppError> {

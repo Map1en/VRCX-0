@@ -1,19 +1,65 @@
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
-    BackendRuntimeTelemetry, FriendProjection, GameLogProjection, HostSessionProjection,
-    OverlayActivitySnapshot, ParsedLocation, PrintAutoCleanupEvent, ProfileRestoreProgress,
-    RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeInstanceClosedProjection,
-    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeWsStatusPayload,
+    AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
+    AuthenticatedRuntimePhaseSnapshot, ProfileBackupStatus, ProfileRestoreProgress,
 };
+use vrcx_0_application_activity::OverlayActivitySnapshot;
+use vrcx_0_application_core::{
+    BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
+    FriendProjection, HostSessionProjection, ParsedLocation, PrintAutoCleanupEvent,
+    RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeInstanceClosedProjection,
+    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeUserProjection,
+    RuntimeVrchatAuthFailurePayload,
+};
+use vrcx_0_application_game::{
+    AddGameLogEventPayload, GameClientEvent, GameLogPersistenceFallbackPayload, GameLogProjection,
+    GameLogSideEffectEvent, RuntimeWorkerErrorPayload,
+};
+use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_harness::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
-use vrcx_0_host::tts::TtsVoice;
+use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_mcp::McpServerStatus;
+use vrcx_0_runtime_host::RuntimeGroupInstancesProjection;
 
 use crate::commands;
+
+#[derive(serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+struct BackendRuntimeEventPayloadMap {
+    add_game_log_event: AddGameLogEventPayload,
+    authenticated_runtime_phase: AuthenticatedRuntimePhaseSnapshot,
+    app_update_status: AppUpdateStatusSnapshot,
+    app_update_download_progress: AppUpdateDownloadProgressPayload,
+    app_update_installed: AppUpdateInstalledPayload,
+    backend_runtime_telemetry: BackendRuntimeTelemetry,
+    game_log_projection: GameLogProjection,
+    game_log_persistence_fallback: GameLogPersistenceFallbackPayload,
+    game_log_side_effect: GameLogSideEffectEvent,
+    game_client_event: GameClientEvent,
+    runtime_worker_error: RuntimeWorkerErrorPayload,
+    runtime_vrchat_auth_failure: RuntimeVrchatAuthFailurePayload,
+    runtime_group_instances_projection: RuntimeGroupInstancesProjection,
+    overlay_activity_snapshot: OverlayActivitySnapshot,
+    prints_auto_cleanup: PrintAutoCleanupEvent,
+    profile_backup_status: ProfileBackupStatus,
+    profile_restore_progress: ProfileRestoreProgress,
+    favorites_changed: FavoritesChangedPayload,
+    friend_profile_load_status: FriendProfileLoadStatusPayload,
+    realtime_friend_projection: FriendProjection,
+    realtime_user_projection: RealtimeUserProjection,
+    realtime_entry_correction: RealtimeEntryCorrection,
+    realtime_notification_projection: RealtimeNotificationProjection,
+    realtime_ws_status: RealtimeWsStatusPayload,
+    realtime_current_user_projection: RealtimeCurrentUserProjection,
+    realtime_instance_closed_projection: RealtimeInstanceClosedProjection,
+    realtime_instance_queue_projection: RealtimeInstanceQueueProjection,
+    update_is_game_running: HostSessionProjection,
+}
 
 pub fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
@@ -24,6 +70,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<AssistantTurnEntitiesEvent>()
         .typ::<AssistantDoneEvent>()
         .typ::<AssistantErrorEvent>()
+        .typ::<BackendRuntimeEventPayloadMap>()
         .typ::<BackendRuntimeTelemetry>()
         .typ::<crate::deep_link::DeepLinkAction>()
         .typ::<FriendProjection>()
@@ -121,6 +168,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::assistant::app__assistant_runtime_status,
             commands::application::assistant::app__assistant_set_session_runtime,
             commands::application::assistant::app__assistant_set_default_runtime,
+            commands::application::llm_endpoint::app__llm_endpoint_follow_custom_proxy,
+            commands::application::llm_endpoint::app__llm_endpoint_set_follow_custom_proxy,
             commands::application::llm_endpoint::app__llm_endpoint_list,
             commands::application::llm_endpoint::app__llm_endpoint_upsert,
             commands::application::llm_endpoint::app__llm_endpoint_delete,

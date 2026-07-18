@@ -2,7 +2,8 @@ import { commands } from '@/platform/tauri/bindings';
 import type {
     DebugLoggingOutcome,
     GameLogProjection,
-    HostSessionProjection
+    HostSessionProjection,
+    NowPlayingPayload
 } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
@@ -15,9 +16,9 @@ import { handleGameRunningUpdate } from '../gameStateService';
 import { isHostCapabilityAvailable } from '../hostCapabilityService';
 import { pushSharedFeedNotification } from '../sharedFeedNotificationService';
 import { handleBrowserFocus } from '../vrcStatusService';
-import { isRecord } from './guards';
+import type { RuntimeEventPayloadMap } from './types';
 
-function publishNowPlayingSharedFeed(payload: Record<string, unknown>): void {
+function publishNowPlayingSharedFeed(payload: NowPlayingPayload): void {
     const videoUrl = normalizeString(payload.videoUrl || payload.url);
     if (!videoUrl) {
         return;
@@ -70,12 +71,13 @@ function requestGameRunningStateRefresh(source: string): void {
     });
 }
 
-export function handleGameLogPersistenceFallback(payload: unknown): void {
+export function handleGameLogPersistenceFallback(
+    payload: RuntimeEventPayloadMap['gameLogPersistenceFallback']
+): void {
     useRuntimeStore
         .getState()
         .recordRuntimeEvent('gameLogPersistenceFallback', payload);
-    const record = isRecord(payload) ? payload : {};
-    const errorMessage = normalizeString(record.error);
+    const errorMessage = normalizeString(payload.error);
     if (errorMessage) {
         console.warn('Backend GameLog persistence failed:', errorMessage);
     }
@@ -90,44 +92,50 @@ export function handleRuntimeGameLogProjection(
     applyRuntimeGameLogProjection(payload);
 }
 
-export function handleGameLogSideEffect(payload: unknown): void {
+export function handleGameLogSideEffect(
+    event: RuntimeEventPayloadMap['gameLogSideEffect']
+): void {
     if (!isHostCapabilityAvailable('runtimeGameLogSideEffects')) {
         return;
     }
     const runtimeStore = useRuntimeStore.getState();
-    const record = isRecord(payload) ? payload : {};
-    const kind = String(record.kind || '');
-    const sidePayload = isRecord(record.payload) ? record.payload : {};
-    if (kind === 'nowPlaying') {
-        runtimeStore.setNowPlayingState(sidePayload);
-        publishNowPlayingSharedFeed(sidePayload);
-    } else if (kind === 'nowPlayingReset') {
-        runtimeStore.resetNowPlayingState();
-    } else if (kind === 'screenshotProcessed') {
-        runtimeStore.setGameState({
-            lastScreenshotPath: String(sidePayload.path || '')
-        });
-    } else if (kind === 'gameNoVR') {
-        runtimeStore.setGameState({
-            isGameNoVR: Boolean(sidePayload.isGameNoVR)
-        });
-    } else if (kind === 'notification') {
-        useNotificationStore.getState().pushNotification(sidePayload);
+    switch (event.kind) {
+        case 'nowPlaying':
+            runtimeStore.setNowPlayingState(event.payload);
+            publishNowPlayingSharedFeed(event.payload);
+            break;
+        case 'nowPlayingReset':
+            runtimeStore.resetNowPlayingState();
+            break;
+        case 'screenshotProcessed':
+            runtimeStore.setGameState({
+                lastScreenshotPath: event.payload.path
+            });
+            break;
+        case 'gameNoVR':
+            runtimeStore.setGameState({
+                isGameNoVR: event.payload.isGameNoVR
+            });
+            break;
+        case 'notification':
+            useNotificationStore
+                .getState()
+                .pushNotification({ ...event.payload });
+            break;
     }
 }
 
-export function handleGameClientEvent(payload: unknown): void {
+export function handleGameClientEvent(
+    event: RuntimeEventPayloadMap['gameClientEvent']
+): void {
     if (!isHostCapabilityAvailable('runtimeGameClientLifecycle')) {
         return;
     }
-    const record = isRecord(payload) ? payload : {};
-    const kind = String(record.kind || '');
-    const clientPayload = isRecord(record.payload) ? record.payload : {};
-    recordRuntimeGameClientEvent(kind, clientPayload);
-    if (kind === 'notification') {
-        useNotificationStore.getState().pushNotification(clientPayload);
-    } else if (kind === 'debugLoggingOutcome') {
-        handleDebugLoggingOutcome(clientPayload as DebugLoggingOutcome);
+    recordRuntimeGameClientEvent(event.kind, event.payload);
+    if (event.kind === 'notification') {
+        useNotificationStore.getState().pushNotification({ ...event.payload });
+    } else if (event.kind === 'debugLoggingOutcome') {
+        handleDebugLoggingOutcome(event.payload);
     }
 }
 

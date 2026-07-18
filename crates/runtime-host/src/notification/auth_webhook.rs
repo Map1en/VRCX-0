@@ -1,11 +1,10 @@
 use serde_json::{json, Value};
-use vrcx_0_application::{
+use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot, RuntimeDiagnostics, WebClient,
 };
 use vrcx_0_persistence::config::ConfigRepository;
 
-use super::dispatcher::webhook_local_time_string;
-use super::webhook::send_json_webhook_with_retry;
+use super::{send_json_webhook_with_retry, webhook_local_time_string};
 
 const AUTH_WEBHOOK_ENABLED_CONFIG_KEY: &str = "webhookAuthEventsEnabled";
 const AUTH_WEBHOOK_DIAGNOSTICS_KEY: &str = "authWebhook";

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_application::{RuntimeEventBus, TaskSupervisor};
+use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
 use vrcx_0_integrations::llm::ToolDefinition;
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 use vrcx_0_runtime_host::RuntimeHostState;
@@ -47,7 +47,8 @@ pub struct SendResult {
 impl AssistantController {
     pub async fn from_host(state: &RuntimeHostState) -> Result<Self, HarnessError> {
         let config = state.runtime_context.config.clone();
-        let endpoints = EndpointStore::new(config.clone());
+        let endpoints =
+            EndpointStore::new(config.clone(), state.web.proxy_url().map(str::to_string));
         let bus = state.runtime_context.event_bus.clone();
         let tasks = state.runtime_context.tasks.clone();
         let tools = Arc::new(spawn_in_process_tools(McpRuntime::from_host(state)).await?);
@@ -87,6 +88,14 @@ impl AssistantController {
 
     pub fn runtime_status(&self) -> Result<AssistantRuntimeStatus, HarnessError> {
         self.endpoints.runtime_status()
+    }
+
+    pub fn set_follow_custom_proxy(&self, enabled: bool) -> Result<bool, HarnessError> {
+        self.endpoints.set_follow_custom_proxy(enabled)
+    }
+
+    pub fn follow_custom_proxy(&self) -> Result<bool, HarnessError> {
+        self.endpoints.follow_custom_proxy()
     }
 
     pub fn set_session_runtime(
@@ -174,8 +183,9 @@ impl AssistantController {
             .filter(|value| !value.trim().is_empty())
             .ok_or(HarnessError::NotConfigured)?;
         let endpoint = self.endpoints.resolve(endpoint_id)?;
-        let client =
-            vrcx_0_integrations::llm::LlmClient::new(&endpoint.base_url, &endpoint.api_key, model);
+        let client = self
+            .endpoints
+            .llm_client(&endpoint.base_url, &endpoint.api_key, model)?;
         let tool_defs = if session.allow_writes {
             Arc::clone(&self.tool_defs)
         } else {

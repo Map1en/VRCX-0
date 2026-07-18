@@ -26,6 +26,8 @@ jobs:
               with:
                   node-version: 24.x
 
+            - uses: dtolnay/rust-toolchain@stable
+
             - id: version
               name: Read release version
               run: |

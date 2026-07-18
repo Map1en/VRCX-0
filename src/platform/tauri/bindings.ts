@@ -386,6 +386,16 @@ export const commands = {
             playbookMode
         });
     },
+    async appLlmEndpointFollowCustomProxy(): Promise<boolean> {
+        return await TAURI_INVOKE('app__llm_endpoint_follow_custom_proxy');
+    },
+    async appLlmEndpointSetFollowCustomProxy(
+        enabled: boolean
+    ): Promise<boolean> {
+        return await TAURI_INVOKE('app__llm_endpoint_set_follow_custom_proxy', {
+            enabled
+        });
+    },
     async appLlmEndpointList(): Promise<LlmEndpointDto[]> {
         return await TAURI_INVOKE('app__llm_endpoint_list');
     },
@@ -2805,6 +2815,7 @@ export type ActivityViewOutput = {
     builtFromCursor: string;
     builtAt: string;
 };
+export type AddGameLogEventPayload = string | RuntimeGameLogEventPayload;
 export type AppDataDirSource = 'cli' | 'persisted' | 'default';
 export type AppDataDirState = {
     currentDir: string;
@@ -2883,6 +2894,13 @@ export type AppLauncherSnapshot = {
     testRuns: AppLauncherRun[];
 };
 export type AppLauncherStopPolicy = 'keepRunning' | 'closeByVrcx';
+export type AppUpdateDownloadProgressPayload = {
+    version: string;
+    phase: string;
+    downloadedBytes: number;
+    totalBytes: number;
+    percent: number;
+};
 export type AppUpdateDownloadStatusSnapshot = {
     phase: string;
     version: string | null;
@@ -2890,6 +2908,10 @@ export type AppUpdateDownloadStatusSnapshot = {
     totalBytes: number;
     percent: number;
     error: string | null;
+};
+export type AppUpdateInstalledPayload = {
+    version: string;
+    metadata: UpdaterMetadata;
 };
 export type AppUpdateReleaseSnapshot = {
     displayName: string;
@@ -3054,6 +3076,36 @@ export type AvatarTagsPatchInput = {
     nextEntries?: AvatarTagInput[];
 };
 export type AvatarTimeSpentOutput = { avatarId: string; timeSpent: number };
+export type BackendRuntimeEventPayloadMap = {
+    addGameLogEvent: AddGameLogEventPayload;
+    authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
+    appUpdateStatus: AppUpdateStatusSnapshot;
+    appUpdateDownloadProgress: AppUpdateDownloadProgressPayload;
+    appUpdateInstalled: AppUpdateInstalledPayload;
+    backendRuntimeTelemetry: BackendRuntimeTelemetry;
+    gameLogProjection: GameLogProjection;
+    gameLogPersistenceFallback: GameLogPersistenceFallbackPayload;
+    gameLogSideEffect: GameLogSideEffectEvent;
+    gameClientEvent: GameClientEvent;
+    runtimeWorkerError: RuntimeWorkerErrorPayload;
+    runtimeVrchatAuthFailure: RuntimeVrchatAuthFailurePayload;
+    runtimeGroupInstancesProjection: RuntimeGroupInstancesProjection;
+    overlayActivitySnapshot: OverlayActivitySnapshot;
+    printsAutoCleanup: PrintAutoCleanupEvent;
+    profileBackupStatus: ProfileBackupStatus;
+    profileRestoreProgress: ProfileRestoreProgress;
+    favoritesChanged: FavoritesChangedPayload;
+    friendProfileLoadStatus: FriendProfileLoadStatusPayload;
+    realtimeFriendProjection: FriendProjection;
+    realtimeUserProjection: RealtimeUserProjection;
+    realtimeEntryCorrection: RealtimeEntryCorrection;
+    realtimeNotificationProjection: RealtimeNotificationProjection;
+    realtimeWsStatus: RealtimeWsStatusPayload;
+    realtimeCurrentUserProjection: RealtimeCurrentUserProjection;
+    realtimeInstanceClosedProjection: RealtimeInstanceClosedProjection;
+    realtimeInstanceQueueProjection: RealtimeInstanceQueueProjection;
+    updateIsGameRunning: HostSessionProjection;
+};
 export type BackendRuntimeFrontendSessionSnapshot = {
     authenticated: boolean;
     userId: string;
@@ -3172,6 +3224,9 @@ export type CommunityThemeDebugLocalThemeOutput = {
 };
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
+export type CrashRelaunchDecisionPayload =
+    | { handled: boolean; error: string }
+    | { handled: boolean; location: string; delayMs: number | null };
 export type DatabaseUpgradePreflight = {
     status: DatabaseUpgradePreflightStatus;
     fromVersion: number;
@@ -3234,6 +3289,7 @@ export type DebugLoggingOutcomeKind =
 export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
     | { type: 'importCollection'; collectionId: string };
+export type EmptyEventPayload = Record<string, never>;
 export type Entity = { kind: string; id: string; displayName: string };
 export type ExternalApiAvatarSearchInput = { url?: string; vrcxId?: string };
 export type ExternalApiExecuteResponse = {
@@ -3358,6 +3414,11 @@ export type FavoriteTransferTarget = {
     location: FavoriteTransferLocation;
     group?: string;
     favoriteType?: string;
+};
+export type FavoritesChangedPayload = {
+    kind: string;
+    local: boolean;
+    remote: boolean;
 };
 export type FeedCursorInput = {
     createdAt: string;
@@ -3500,6 +3561,49 @@ export type FriendProjectionPatch = {
     stateBucket: string;
     stateBucketAuthority?: string | null;
 };
+export type GameClientEvent =
+    | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
+    | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
+    | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogEventEntry = { created_at: string; data: string };
+export type GameLogExternalEntry = {
+    created_at: string;
+    message: string;
+    display_name: string;
+    user_id: string;
+    location: string;
+};
+export type GameLogJoinLeaveEntry = {
+    created_at: string;
+    event_type: string;
+    display_name: string;
+    location: string;
+    user_id: string;
+    world_name: string;
+    time: number;
+};
+export type GameLogLocationEntry = {
+    created_at: string;
+    location: string;
+    world_id: string;
+    world_name: string;
+    time: number;
+    group_name: string;
+};
+export type GameLogLocationTimeUpdate = { created_at: string; time: number };
+export type GameLogPersistenceFallbackPayload = {
+    batch: GameLogWriteBatch;
+    rawRows: string[][];
+    error: string;
+};
+export type GameLogPortalSpawnEntry = {
+    created_at: string;
+    display_name: string;
+    location: string;
+    user_id: string;
+    instance_id: string;
+    world_name: string;
+};
 export type GameLogProjection = {
     currentLocation: string;
     currentWorldId: string;
@@ -3512,6 +3616,12 @@ export type GameLogProjection = {
     lastGameLogType: string;
 };
 export type GameLogQueryInput = { kind: string; params?: RawJson };
+export type GameLogResourceLoadEntry = {
+    created_at: string;
+    resource_url: string;
+    resource_type: string;
+    location: string;
+};
 export type GameLogSessionDto = {
     id?: number | null;
     created_at: string;
@@ -3553,6 +3663,32 @@ export type GameLogSessionsQueryInput = {
     maxTableSize?: number;
     searchLimit?: number;
 };
+export type GameLogSideEffectEvent =
+    | { kind: 'nowPlaying'; payload: NowPlayingPayload }
+    | { kind: 'nowPlayingReset'; payload: EmptyEventPayload }
+    | { kind: 'screenshotProcessed'; payload: ScreenshotProcessedPayload }
+    | { kind: 'gameNoVR'; payload: GameNoVrPayload }
+    | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogVideoPlayEntry = {
+    created_at: string;
+    video_url: string;
+    video_name: string;
+    video_id: string;
+    location: string;
+    display_name: string;
+    user_id: string;
+};
+export type GameLogWriteBatch = {
+    locations: GameLogLocationEntry[];
+    location_time_updates: GameLogLocationTimeUpdate[];
+    join_leave: GameLogJoinLeaveEntry[];
+    portal_spawns: GameLogPortalSpawnEntry[];
+    video_plays: GameLogVideoPlayEntry[];
+    resource_loads: GameLogResourceLoadEntry[];
+    events: GameLogEventEntry[];
+    externals: GameLogExternalEntry[];
+};
+export type GameNoVrPayload = { isGameNoVR: boolean };
 export type GroupLeaveBatchInput = { groupIds?: string[] };
 export type GroupQuickModerationActionInput = {
     currentUserId?: string;
@@ -3967,6 +4103,24 @@ export type NotificationV2RowOutput = {
     responses: string;
     details: string;
 };
+export type NowPlayingPayload = {
+    url?: string | null;
+    name?: string | null;
+    source?: string | null;
+    displayName?: string | null;
+    userId?: string | null;
+    location?: string | null;
+    thumbnailUrl?: string | null;
+    length?: number | null;
+    position: number;
+    startedAt: string;
+    created_at?: string | null;
+    type?: string | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    updatedAt: string;
+};
 export type OverlayActivityActorRelation = 'none' | 'friend' | 'favorite';
 export type OverlayActivityCategory =
     | 'actionRequired'
@@ -4376,6 +4530,10 @@ export type RealtimeTransportStartResult = {
     clientRunId: number;
     sessionGeneration: number;
 };
+export type RealtimeUserProjection = {
+    users: JsonValue[];
+    source?: RealtimeProjectionSource | null;
+};
 export type RealtimeWsStatusPayload = {
     status: string;
     websocketDomain: string;
@@ -4425,6 +4583,19 @@ export type RuntimeFrontendScheduleJobDueClaimInput = {
     cadenceSeconds: number;
     initialDelaySeconds?: number;
 };
+export type RuntimeGameLogEventPayload = {
+    runtimePersisted: boolean;
+    raw: string[];
+};
+export type RuntimeGroupInstancesProjection = {
+    status: string;
+    userId: string;
+    endpoint: string;
+    fetchedAt?: string | null;
+    error?: string | null;
+    instances?: JsonValue[] | null;
+    groupOrder?: string[] | null;
+};
 export type RuntimeJobRecordInput = {
     name: string;
     owner?: string;
@@ -4432,6 +4603,20 @@ export type RuntimeJobRecordInput = {
     status: string;
     detail?: string;
 };
+export type RuntimeNotificationPayload = {
+    level: string;
+    title: string;
+    message: string;
+};
+export type RuntimeVrchatAuthFailurePayload = {
+    ownerUserId: string;
+    endpoint: string;
+    path: string;
+    reason: string;
+    statusCode: number;
+    authScopeGeneration: number;
+};
+export type RuntimeWorkerErrorPayload = { worker: string; message: string };
 export type ScreenshotFolderInfo = {
     path: string;
     parentPath: string | null;
@@ -4481,6 +4666,7 @@ export type ScreenshotMetadata = {
     sourceFile?: string | null;
     error?: string | null;
 };
+export type ScreenshotProcessedPayload = { path: string };
 export type SendResult = { sessionId: string; turnId: string };
 export type Session = {
     id: string;

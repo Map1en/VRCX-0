@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use serde_json::Value;
-use vrcx_0_application::{RuntimeDiagnostics, WebClient};
+use vrcx_0_application_core::{RuntimeDiagnostics, WebClient};
 use vrcx_0_vrchat_client::web_client::WebExecuteRequest;
 
 const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
 const WEBHOOK_RETRY_DELAYS: &[Duration] = &[Duration::from_millis(750), Duration::from_secs(2)];
 
-pub(crate) async fn send_json_webhook_with_retry(
+pub async fn send_json_webhook_with_retry(
     web: &WebClient,
     diagnostics: &RuntimeDiagnostics,
     url: &str,
@@ -54,6 +54,17 @@ pub(crate) async fn send_json_webhook_with_retry(
         error = %last_error,
         "webhook delivery failed"
     );
+}
+
+pub fn webhook_local_time_string(created_at: &str) -> String {
+    chrono::DateTime::parse_from_rfc3339(created_at)
+        .map(|value| {
+            value
+                .with_timezone(&chrono::Local)
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        })
+        .unwrap_or_default()
 }
 
 async fn send_webhook_once(web: &WebClient, url: &str, body: &str) -> Result<i32, String> {

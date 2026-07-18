@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { LlmEndpointDto } from '@/platform/tauri/bindings';
+import { commands, type LlmEndpointDto } from '@/platform/tauri/bindings';
 import {
     mergeManualModels,
     useLlmEndpointsStore
@@ -33,6 +33,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Switch } from '@/ui/shadcn/switch';
 import {
     Table,
     TableBody,
@@ -112,6 +113,8 @@ export function LlmEndpointsDialog({
     const [draft, setDraft] = useState<EndpointDraft>(
         createEmptyLlmEndpointDraft
     );
+    const [followCustomProxy, setFollowCustomProxy] = useState(true);
+    const [proxyPreferenceLoading, setProxyPreferenceLoading] = useState(false);
     const modelCount = useMemo(
         () =>
             endpoints.reduce(
@@ -133,7 +136,36 @@ export function LlmEndpointsDialog({
                     : t('view.tools.llm_endpoints.load_failed')
             );
         });
+        setProxyPreferenceLoading(true);
+        commands
+            .appLlmEndpointFollowCustomProxy()
+            .then(setFollowCustomProxy)
+            .catch((error: unknown) => {
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.load_failed')
+                );
+            })
+            .finally(() => setProxyPreferenceLoading(false));
     }, [open, load, t]);
+
+    async function updateFollowCustomProxy(enabled: boolean) {
+        setProxyPreferenceLoading(true);
+        try {
+            const saved =
+                await commands.appLlmEndpointSetFollowCustomProxy(enabled);
+            setFollowCustomProxy(saved);
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('view.tools.llm_endpoints.save_failed')
+            );
+        } finally {
+            setProxyPreferenceLoading(false);
+        }
+    }
 
     function openAddView() {
         setDraft(createEmptyLlmEndpointDraft());
@@ -256,6 +288,33 @@ export function LlmEndpointsDialog({
 
                 {view === 'list' ? (
                     <div className="grid gap-3">
+                        <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                            <div className="grid gap-0.5">
+                                <Label
+                                    htmlFor="llm-endpoints-follow-custom-proxy"
+                                    className="text-sm"
+                                >
+                                    {t(
+                                        'view.tools.llm_endpoints.follow_custom_proxy'
+                                    )}
+                                </Label>
+                                <span
+                                    id="llm-endpoints-follow-custom-proxy-description"
+                                    className="text-muted-foreground text-xs"
+                                >
+                                    {t(
+                                        'view.tools.llm_endpoints.follow_custom_proxy_description'
+                                    )}
+                                </span>
+                            </div>
+                            <Switch
+                                id="llm-endpoints-follow-custom-proxy"
+                                aria-describedby="llm-endpoints-follow-custom-proxy-description"
+                                checked={followCustomProxy}
+                                disabled={proxyPreferenceLoading}
+                                onCheckedChange={updateFollowCustomProxy}
+                            />
+                        </div>
                         <div className="flex items-center justify-between gap-2">
                             <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-2 text-sm">
                                 <Badge variant="outline">

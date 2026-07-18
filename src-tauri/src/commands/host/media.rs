@@ -6,7 +6,7 @@ use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::{save_ugc_image_to_file, UgcCategory};
+use vrcx_0_application_core::{save_ugc_image_to_file, UgcCategory};
 use vrcx_0_media::{image_processing, media_files};
 
 #[tauri::command]
@@ -75,6 +75,7 @@ pub fn app__crop_all_prints(
     ugc_folder_path: String,
 ) -> Result<(), AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_write_allowed(&ugc_folder_path, &state.paths)?;
     Ok(image_processing::crop_all_prints(&ugc_folder_path)?)
@@ -84,6 +85,7 @@ pub fn app__crop_all_prints(
 #[specta::specta]
 pub fn app__crop_print_image(state: State<'_, AppState>, path: String) -> Result<bool, AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_write_allowed(&path, &state.paths)?;
     image_processing::crop_print_file(std::path::Path::new(&path))
@@ -99,6 +101,7 @@ async fn save_ugc_category_to_file(
     file_name: String,
 ) -> Result<String, AppError> {
     state
+        .desktop
         .host_file_access
         .ensure_write_allowed(&ugc_folder_path, &state.paths)?;
     Ok(save_ugc_image_to_file(

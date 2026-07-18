@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use tauri::AppHandle;
 
 use crate::error::AppError;
-use vrcx_0_host::calendar;
+use vrcx_0_host_desktop::calendar;
 
 #[tauri::command]
 #[specta::specta]

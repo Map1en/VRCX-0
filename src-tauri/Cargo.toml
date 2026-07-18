@@ -45,12 +45,18 @@ vrcx-0-core = { path = "../crates/core" }
 vrcx-0-persistence = { path = "../crates/persistence" }
 vrcx-0-integrations = { path = "../crates/integrations" }
 vrcx-0-host = { path = "../crates/host" }
+vrcx-0-host-desktop = { path = "../crates/host-desktop" }
 vrcx-0-i18n = { path = "../crates/i18n" }
 vrcx-0-media = { path = "../crates/media" }
 vrcx-0-application = { path = "../crates/application" }
+vrcx-0-application-activity = { path = "../crates/application-activity" }
+vrcx-0-application-core = { path = "../crates/application-core" }
+vrcx-0-application-realtime = { path = "../crates/application-realtime" }
+vrcx-0-application-game = { path = "../crates/application-game" }
 vrcx-0-mcp = { path = "../crates/mcp" }
 vrcx-0-harness = { path = "../crates/harness" }
 vrcx-0-runtime-host = { path = "../crates/runtime-host" }
+vrcx-0-runtime-host-desktop = { path = "../crates/runtime-host-desktop" }
 vrcx-0-vrchat-client = { path = "../crates/vrchat-client" }
 specta-typescript = "0.0.9"
 specta = { workspace = true }
@@ -75,12 +81,10 @@ bindings-export = []
 devtools = ["tauri/devtools"]
 devkit = ["devtools"]
 steamvr-overlay = [
-    "vrcx-0-host/steamvr-overlay",
-    "vrcx-0-runtime-host/steamvr-overlay"
+    "vrcx-0-runtime-host-desktop/steamvr-overlay"
 ]
 openxr-overlay = [
-    "vrcx-0-host/openxr-overlay",
-    "vrcx-0-runtime-host/openxr-overlay"
+    "vrcx-0-runtime-host-desktop/openxr-overlay"
 ]
 
 [build-dependencies]
@@ -92,5 +96,8 @@ vrcx-0-application = { path = "../crates/application", features = [
     "test-utils"
 ] }
 vrcx-0-runtime-host = { path = "../crates/runtime-host", features = [
+    "test-utils"
+] }
+vrcx-0-runtime-host-desktop = { path = "../crates/runtime-host-desktop", features = [
     "test-utils"
 ] }

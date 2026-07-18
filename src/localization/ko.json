@@ -1750,6 +1750,8 @@
             "llm_endpoints": {
                 "title": "LLM 엔드포인트",
                 "description": "Social AI 및 번역에서 공유하는 OpenAI 호환 연결입니다.",
+                "follow_custom_proxy": "VRCX-0 사용자 지정 프록시 사용",
+                "follow_custom_proxy_description": "설정되어 있으면 LLM 요청에 사용하고, 그렇지 않으면 시스템 프록시 설정을 따릅니다.",
                 "endpoint_count": "엔드포인트 {count}개",
                 "model_count": "모델 {count}개",
                 "add": "엔드포인트 추가",

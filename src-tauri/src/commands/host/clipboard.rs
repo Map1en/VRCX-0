@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use crate::error::AppError;
-use vrcx_0_host::clipboard;
+use vrcx_0_host_desktop::clipboard;
 
 #[tauri::command]
 #[specta::specta]

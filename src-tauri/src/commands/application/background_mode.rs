@@ -5,7 +5,7 @@ use tauri::{AppHandle, State};
 use crate::bootstrap;
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::{BackendRuntimeMode, BackendRuntimeSnapshot};
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimeSnapshot};
 use vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot;
 
 #[tauri::command]
