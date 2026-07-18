@@ -12,7 +12,6 @@ import {
     ZoomOut
 } from 'lucide-react';
 import {
-    Fragment,
     type PointerEvent as ReactPointerEvent,
     type ReactNode,
     useCallback,
@@ -168,6 +167,8 @@ export function ImageCropDialog({
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(ZOOM_DEFAULT);
     const [rotation, setRotation] = useState(0);
+    const [rotationEditing, setRotationEditing] = useState(false);
+    const [rotationInput, setRotationInput] = useState('');
     const [mediaSize, setMediaSize] = useState<MediaSize | null>(null);
     const [cropSize, setCropSize] = useState<Size | null>(null);
     const [flipH, setFlipH] = useState(false);
@@ -230,6 +231,7 @@ export function ImageCropDialog({
         setFlipH(false);
         setFlipV(false);
         setFitWhole(false);
+        setRotationEditing(false);
     }, []);
 
     useEffect(() => {
@@ -557,10 +559,25 @@ export function ImageCropDialog({
     const aspectLabel = formatAspect(aspect);
     const rotationDisplay =
         Math.round(normalizeSignedRotation(rotation) * 10) / 10;
-    const hudExtras = [
-        rotationDisplay !== 0 ? `${rotationDisplay}°` : null,
-        flipH || flipV ? `${flipH ? 'H' : ''}${flipV ? 'V' : ''}` : null
-    ].filter(Boolean);
+    const flipDisplay =
+        flipH || flipV ? `${flipH ? 'H' : ''}${flipV ? 'V' : ''}` : '';
+    const rotationLabel = t('dialog.image_crop.rotation_angle', {
+        defaultValue: 'Rotation angle'
+    });
+
+    function startRotationInput() {
+        setRotationInput(String(rotationDisplay));
+        setRotationEditing(true);
+    }
+
+    function commitRotationInput() {
+        const value = Number(rotationInput.trim());
+        if (rotationInput.trim() && Number.isFinite(value)) {
+            triggerTransformAnim();
+            setRotation(normalizeSignedRotation(value));
+        }
+        setRotationEditing(false);
+    }
 
     const tool = (
         onClick: () => void,
@@ -677,20 +694,70 @@ export function ImageCropDialog({
                                     <span className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 left-2 z-10 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none ring-1 backdrop-blur-sm">
                                         {aspectLabel}
                                     </span>
-                                    {hudExtras.length > 0 ? (
-                                        <div className="bg-background/70 text-muted-foreground ring-border pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none tabular-nums ring-1 backdrop-blur-sm">
-                                            {hudExtras.map((seg, index) => (
-                                                <Fragment key={seg}>
-                                                    {index > 0 ? (
-                                                        <span className="opacity-30">
-                                                            ·
-                                                        </span>
-                                                    ) : null}
-                                                    <span>{seg}</span>
-                                                </Fragment>
-                                            ))}
-                                        </div>
-                                    ) : null}
+                                    <div className="bg-background/70 text-muted-foreground ring-border absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] leading-none tabular-nums ring-1 backdrop-blur-sm">
+                                        {rotationEditing ? (
+                                            <span className="flex items-center">
+                                                <Input
+                                                    autoFocus
+                                                    inputMode="decimal"
+                                                    value={rotationInput}
+                                                    onChange={(event) =>
+                                                        setRotationInput(
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                    onFocus={(event) =>
+                                                        event.currentTarget.select()
+                                                    }
+                                                    onBlur={commitRotationInput}
+                                                    onKeyDown={(event) => {
+                                                        if (
+                                                            event.key ===
+                                                            'Enter'
+                                                        ) {
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            event.currentTarget.blur();
+                                                        } else if (
+                                                            event.key ===
+                                                            'Escape'
+                                                        ) {
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            setRotationEditing(
+                                                                false
+                                                            );
+                                                        }
+                                                    }}
+                                                    aria-label={rotationLabel}
+                                                    className="h-4 w-12 rounded-sm border-0 px-0.5 py-0 text-right font-mono text-[11px] shadow-none focus-visible:ring-1"
+                                                />
+                                                <span aria-hidden="true">
+                                                    °
+                                                </span>
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={startRotationInput}
+                                                aria-label={`${rotationLabel}: ${rotationDisplay}°`}
+                                                title={rotationLabel}
+                                                className="hover:text-foreground cursor-text rounded-sm outline-none focus-visible:ring-1"
+                                            >
+                                                {rotationDisplay}°
+                                            </button>
+                                        )}
+                                        {flipDisplay ? (
+                                            <>
+                                                <span className="pointer-events-none opacity-30">
+                                                    ·
+                                                </span>
+                                                <span className="pointer-events-none">
+                                                    {flipDisplay}
+                                                </span>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 </div>
                             ) : previewPending || previewSrc ? (
                                 <div className="flex items-center justify-center">
