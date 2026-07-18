@@ -205,9 +205,8 @@ export function ImageCropDialog({
         cropWhiteBorderField?.defaultChecked !== false;
     const aspect = Number(aspectRatio) || 1;
 
-    // Fixed mode keeps the image covering the crop frame (min zoom == fill); only
-    // free mode lets it shrink below the frame, mirroring the original's
-    // image-restriction stencil/none split.
+    // Keep the crop frame inside the image. Fit mode may show padding at exact
+    // quarter turns, while free rotation still needs the image to cover it.
     const coverZoom =
         mediaSize && cropSize
             ? getRotationCoverZoom(mediaSize, cropSize, rotation)
@@ -605,15 +604,13 @@ export function ImageCropDialog({
                     <div className="flex flex-col gap-4">
                         <div
                             ref={cropWrapperRef}
-                            className="bg-muted/40 ring-border/60 relative flex items-center justify-center overflow-hidden rounded-xl border shadow-inner ring-1 ring-inset"
-                            style={{ minHeight: '30vh' }}
+                            className="bg-muted/60 ring-border/60 relative flex items-center justify-center overflow-hidden rounded-xl border p-2 shadow-inner ring-1 ring-inset"
                         >
                             {previewSrc && cropperReady ? (
                                 <div
-                                    className="bg-background/60 animate-in fade-in-0 zoom-in-[0.98] relative overflow-hidden rounded-lg duration-200 ease-out motion-reduce:animate-none"
+                                    className="animate-in fade-in-0 zoom-in-[0.98] relative w-full overflow-hidden rounded-lg bg-neutral-950 duration-200 ease-out motion-reduce:animate-none"
                                     style={{
-                                        aspectRatio: String(aspect),
-                                        width: `min(100%, calc(50vh * ${aspect}))`
+                                        height: 'clamp(18rem, 50vh, 34rem)'
                                     }}
                                 >
                                     <Cropper
@@ -624,9 +621,7 @@ export function ImageCropDialog({
                                         aspect={aspect}
                                         minZoom={minZoom}
                                         maxZoom={maxZoom}
-                                        objectFit={
-                                            fitWhole ? 'contain' : 'cover'
-                                        }
+                                        objectFit="contain"
                                         restrictPosition={constrainToImage}
                                         showGrid
                                         zoomWithScroll
