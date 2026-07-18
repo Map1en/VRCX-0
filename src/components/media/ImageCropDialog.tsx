@@ -66,6 +66,8 @@ const ZOOM_MAX = 5;
 const ZOOM_DEFAULT = 1;
 const ZOOM_FACTOR = 1.2;
 const ROTATION_DEGREES_PER_PIXEL = 0.35;
+const TRACKPAD_PAN_END_MS = 160;
+const TRACKPAD_PAN_THRESHOLD = 50;
 const TRANSFORM_TRANSITION_MS = 180;
 const TRANSFORM_TRANSITION = `transform 150ms cubic-bezier(0.23, 1, 0.32, 1)`;
 
@@ -188,6 +190,10 @@ export function ImageCropDialog({
         startRotation: number;
         direction: number;
     } | null>(null);
+    const trackpadPanningRef = useRef(false);
+    const trackpadPanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    );
 
     const resolvedTitle = title || t('message.image.label.crop_image');
     const resolvedDescription =
@@ -310,6 +316,9 @@ export function ImageCropDialog({
             if (transformAnimTimerRef.current) {
                 clearTimeout(transformAnimTimerRef.current);
             }
+            if (trackpadPanTimerRef.current) {
+                clearTimeout(trackpadPanTimerRef.current);
+            }
         };
     }, []);
 
@@ -376,21 +385,60 @@ export function ImageCropDialog({
         []
     );
 
-    const onCropChange = useCallback(
-        (position: Point) => {
-            setCrop(
-                constrainToImage && mediaSize && cropSize
-                    ? constrainCropToImage(
-                          position,
-                          mediaSize,
-                          cropSize,
-                          effectiveZoom,
-                          rotation
-                      )
-                    : position
-            );
-        },
+    const limitCropPosition = useCallback(
+        (position: Point) =>
+            constrainToImage && mediaSize && cropSize
+                ? constrainCropToImage(
+                      position,
+                      mediaSize,
+                      cropSize,
+                      effectiveZoom,
+                      rotation
+                  )
+                : position,
         [constrainToImage, cropSize, effectiveZoom, mediaSize, rotation]
+    );
+
+    const onCropChange = useCallback(
+        (position: Point) => setCrop(limitCropPosition(position)),
+        [limitCropPosition]
+    );
+
+    const onWheelRequest = useCallback(
+        (event: WheelEvent) => {
+            if (event.ctrlKey) {
+                trackpadPanningRef.current = false;
+                if (trackpadPanTimerRef.current) {
+                    clearTimeout(trackpadPanTimerRef.current);
+                    trackpadPanTimerRef.current = null;
+                }
+                return true;
+            }
+
+            const startsTrackpadPan =
+                event.deltaMode === 0 &&
+                (event.deltaX !== 0 ||
+                    Math.abs(event.deltaY) < TRACKPAD_PAN_THRESHOLD);
+            if (!trackpadPanningRef.current && !startsTrackpadPan) return true;
+
+            event.preventDefault();
+            trackpadPanningRef.current = true;
+            if (trackpadPanTimerRef.current) {
+                clearTimeout(trackpadPanTimerRef.current);
+            }
+            trackpadPanTimerRef.current = setTimeout(() => {
+                trackpadPanningRef.current = false;
+                trackpadPanTimerRef.current = null;
+            }, TRACKPAD_PAN_END_MS);
+            setCrop((current) =>
+                limitCropPosition({
+                    x: current.x - event.deltaX,
+                    y: current.y - event.deltaY
+                })
+            );
+            return false;
+        },
+        [limitCropPosition]
     );
 
     const rotateBy = useCallback(
@@ -582,12 +630,14 @@ export function ImageCropDialog({
                                         restrictPosition={constrainToImage}
                                         showGrid
                                         zoomWithScroll
+                                        onWheelRequest={onWheelRequest}
                                         onCropChange={onCropChange}
                                         onZoomChange={setZoom}
                                         onRotationChange={setRotation}
                                         setMediaSize={setMediaSize}
                                         setCropSize={setCropSize}
                                         onCropComplete={onCropComplete}
+                                        onCropAreaChange={onCropComplete}
                                         transform={mediaTransform}
                                         style={cropperStyle}
                                         cropperProps={{
