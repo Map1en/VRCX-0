@@ -160,6 +160,7 @@ export function ImageCropDialog({
     const originalImgRef = useRef<HTMLImageElement | null>(null);
     const previewScaleRef = useRef<number>(1);
     const cropWrapperRef = useRef<HTMLDivElement | null>(null);
+    const rotationInputRef = useRef<HTMLInputElement | null>(null);
 
     const [previewSrc, setPreviewSrc] = useState<string>('');
     const [previewPending, setPreviewPending] = useState(false);
@@ -611,7 +612,17 @@ export function ImageCropDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl">
+            <DialogContent
+                className="sm:max-w-3xl"
+                onPointerDownCapture={(event) => {
+                    if (
+                        rotationEditing &&
+                        event.target !== rotationInputRef.current
+                    ) {
+                        rotationInputRef.current?.blur();
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>{resolvedTitle}</DialogTitle>
                     <DialogDescription>{resolvedDescription}</DialogDescription>
@@ -698,6 +709,7 @@ export function ImageCropDialog({
                                         {rotationEditing ? (
                                             <span className="flex items-center">
                                                 <Input
+                                                    ref={rotationInputRef}
                                                     autoFocus
                                                     inputMode="decimal"
                                                     value={rotationInput}
