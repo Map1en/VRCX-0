@@ -8,11 +8,11 @@ import type {
 import { tauriClient } from '@/platform/tauri/client';
 import shareCollectionRepository from '@/repositories/shareCollectionRepository';
 import { isCollectionShortcode } from '@/shared/constants/collectionShare';
-import { isWorldId } from '@/shared/constants/vrchatIds';
+import { isAvatarId, isWorldId } from '@/shared/constants/vrchatIds';
 import { useModalStore } from '@/state/modalStore';
 import { useWorldCollectionImportStore } from '@/state/worldCollectionImportStore';
 
-import { openWorldDialog } from './dialogService';
+import { openAvatarDialog, openWorldDialog } from './dialogService';
 import i18n from './i18nService';
 
 const DEEP_LINK_ARRIVED_EVENT = 'deepLinkArrived';
@@ -78,6 +78,16 @@ export function handleDeepLinkAction(action: DeepLinkAction): void {
                 console.warn(
                     'Ignored deep link with invalid world id:',
                     action.worldId
+                );
+            }
+            break;
+        case 'openAvatar':
+            if (isAvatarId(action.avatarId)) {
+                openAvatarDialog({ avatarId: action.avatarId });
+            } else {
+                console.warn(
+                    'Ignored deep link with invalid avatar id:',
+                    action.avatarId
                 );
             }
             break;

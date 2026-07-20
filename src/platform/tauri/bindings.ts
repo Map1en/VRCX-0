@@ -3413,6 +3413,7 @@ export type DebugLoggingOutcomeKind =
     | 'needsUserAction';
 export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
+    | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type EmptyEventPayload = Record<string, never>;
 export type Entity = { kind: string; id: string; displayName: string };

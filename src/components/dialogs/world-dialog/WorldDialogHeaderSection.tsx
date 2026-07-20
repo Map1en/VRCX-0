@@ -113,15 +113,19 @@ function WorldOverviewFactRow({
 }
 
 function WorldOverviewFacts({
+    onCopyVrcxWorldUrl,
     onCopyWorldId,
     onCopyWorldUrl,
     onOpenWorldPage,
+    vrcxWorldUrl,
     world,
     worldUrl
 }: {
+    onCopyVrcxWorldUrl: () => void;
     onCopyWorldId: () => void;
     onCopyWorldUrl: () => void;
     onOpenWorldPage: () => void;
+    vrcxWorldUrl: string;
     world: WorldProfileRecord;
     worldUrl: string;
 }) {
@@ -216,6 +220,38 @@ function WorldOverviewFacts({
                             />
                             <TooltipContent>
                                 {t('dialog.world.info.copy_url')}
+                            </TooltipContent>
+                        </Tooltip>
+                    </span>
+                </WorldOverviewFactRow>
+            ) : null}
+            {vrcxWorldUrl ? (
+                <WorldOverviewFactRow label={t('dialog.world.info.vrcx_url')}>
+                    <span className="flex min-w-0 items-center justify-end gap-1">
+                        <span
+                            className="text-muted-foreground/80 min-w-0 truncate font-mono text-[11px]"
+                            title={vrcxWorldUrl}
+                        >
+                            {compactUrl(vrcxWorldUrl)}
+                        </span>
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        aria-label={t(
+                                            'dialog.world.info.copy_vrcx_url'
+                                        )}
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        onClick={onCopyVrcxWorldUrl}
+                                    >
+                                        <CopyIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
+                            <TooltipContent>
+                                {t('dialog.world.info.copy_vrcx_url')}
                             </TooltipContent>
                         </Tooltip>
                     </span>
@@ -463,10 +499,12 @@ export function WorldDialogOverviewSection({
         isHomeWorld,
         platformRows,
         visibleTags,
+        vrcxWorldUrl,
         world,
         worldUrl
     } = model;
     const {
+        onCopyVrcxWorldUrl,
         onCopyWorldId,
         onCopyWorldName,
         onCopyWorldUrl,
@@ -661,9 +699,11 @@ export function WorldDialogOverviewSection({
             ) : null}
 
             <WorldOverviewFacts
+                onCopyVrcxWorldUrl={onCopyVrcxWorldUrl}
                 onCopyWorldId={onCopyWorldId}
                 onCopyWorldUrl={onCopyWorldUrl}
                 onOpenWorldPage={onOpenWorldPage}
+                vrcxWorldUrl={vrcxWorldUrl}
                 world={world}
                 worldUrl={worldUrl}
             />
