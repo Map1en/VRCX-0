@@ -7,6 +7,7 @@ import {
 import type { useUserDialogActions } from '../useUserDialogActions';
 import type { useUserDialogMemoState } from '../useUserDialogMemoState';
 import type { useUserDialogSelfActions } from '../useUserDialogSelfActions';
+import { UserDialogGroupInviteDialog } from './UserDialogGroupInviteDialog';
 import { UserDialogGroupQuickModerationDialog } from './UserDialogGroupQuickModerationDialog';
 import { UserNoteMemoDialog } from './UserNoteMemoDialog';
 
@@ -31,6 +32,14 @@ type UserDialogContentDialogsProps = {
         onOpenChange: (open: boolean) => void;
         onDetailedManagement: (groupId: string) => void;
     };
+    groupInviteDialog: {
+        open: boolean;
+        endpoint: string;
+        currentUserId: string;
+        targetUserId: string;
+        targetLabel?: string;
+        onOpenChange: (open: boolean) => void;
+    };
     noteMemoDialog: ReturnType<typeof useUserDialogMemoState>['memoDialog'];
     socialStatusDialog: SelfActionsState['socialStatusDialog'];
     profileDetailsDialog: SelfActionsState['profileDetailsDialog'];
@@ -48,6 +57,7 @@ type UserDialogContentDialogsProps = {
 export function UserDialogContentDialogs({
     actionStatus,
     boopDialog,
+    groupInviteDialog,
     groupQuickModerationDialog,
     noteMemoDialog,
     socialStatusDialog,
@@ -138,6 +148,14 @@ export function UserDialogContentDialogs({
                 sendDisabled={actionStatus !== 'idle'}
                 onOpenChange={boopDialog.onOpenChange}
                 onSend={boopDialog.onSend}
+            />
+            <UserDialogGroupInviteDialog
+                open={Boolean(groupInviteDialog.open)}
+                endpoint={groupInviteDialog.endpoint}
+                currentUserId={groupInviteDialog.currentUserId}
+                targetUserId={groupInviteDialog.targetUserId}
+                targetLabel={groupInviteDialog.targetLabel}
+                onOpenChange={groupInviteDialog.onOpenChange}
             />
             <UserDialogGroupQuickModerationDialog
                 open={Boolean(groupQuickModerationDialog.open)}

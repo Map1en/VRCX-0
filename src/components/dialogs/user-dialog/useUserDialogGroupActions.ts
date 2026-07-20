@@ -32,10 +32,6 @@ type UseUserDialogGroupActionsProps = {
     isCurrentUser: boolean;
     profile: UserDialogProfileRecord;
     profileGroups: EntityRecord[];
-    prompt: (options: Record<string, unknown>) => Promise<{
-        ok: boolean;
-        value?: unknown;
-    }>;
     refreshGroups: () => Promise<unknown>;
     selectedGroupIds: Set<string>;
     selectedUserGroups: EntityRecord[];
@@ -52,7 +48,6 @@ export function useUserDialogGroupActions({
     isCurrentUser,
     profile,
     profileGroups,
-    prompt,
     refreshGroups,
     selectedGroupIds,
     selectedUserGroups,
@@ -67,37 +62,6 @@ export function useUserDialogGroupActions({
         setGroupEditMode(false);
         setSelectedGroupIds(new Set());
     }, [currentUserId, profile.id, setSelectedGroupIds]);
-
-    async function inviteToGroup() {
-        if (!profile.id) {
-            return;
-        }
-        const result = await prompt({
-            title: t('dialog.user.actions.invite_to_group'),
-            description: t(
-                'dialog.user.modal.enter_the_vrchat_group_id_to_invite_this_user_to'
-            ),
-            inputValue: '',
-            confirmText: t('dialog.user.actions.invite'),
-            cancelText: t('common.actions.cancel')
-        });
-        if (!result.ok) {
-            return;
-        }
-        try {
-            await groupProfileRepository.sendGroupInvite({
-                groupId: normalizedText(result.value),
-                userId: profile.id
-            });
-            toast.success(t('dialog.user.success.group_invite_sent'));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_send_group_invite')
-            );
-        }
-    }
 
     async function refreshGroupsAfterMembershipChange() {
         await refreshGroups();
@@ -397,7 +361,6 @@ export function useUserDialogGroupActions({
         exportUserGroups,
         groupActionId,
         groupEditMode,
-        inviteToGroup,
         leaveSelectedGroups,
         leaveUserGroup,
         moveGroupInGameOrder,

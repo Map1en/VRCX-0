@@ -136,6 +136,7 @@ export function UserDialogContent({
     const targetKey = dialogTargetKey(currentEndpoint, normalizedUserId);
     const actionStatusRef = useRef('idle');
     const [actionStatus, setActionStatus] = useState('idle');
+    const [groupInviteOpen, setGroupInviteOpen] = useState(false);
     const [groupQuickModerationOpen, setGroupQuickModerationOpen] =
         useState(false);
     const [recentActionVersion, setRecentActionVersion] = useState(0);
@@ -168,6 +169,7 @@ export function UserDialogContent({
         targetIdentity
     );
     useEffect(() => {
+        setGroupInviteOpen(false);
         setGroupQuickModerationOpen(false);
     }, [targetIdentity]);
 
@@ -484,6 +486,9 @@ export function UserDialogContent({
                     onReportHacking: () => {
                         userActions.reportHacking();
                     },
+                    onInviteToGroup: () => {
+                        setGroupInviteOpen(true);
+                    },
                     onGroupModeration: () => {
                         userActions.openGroupModerationForUser();
                     }
@@ -509,6 +514,14 @@ export function UserDialogContent({
                     allowImageUpload: isLocalUserVrcPlusSupporter,
                     targetLabel: profile?.displayName || profile?.id,
                     onUse: selectInviteMessage
+                }}
+                groupInviteDialog={{
+                    open: groupInviteOpen,
+                    endpoint: currentEndpoint,
+                    currentUserId: normalizedCurrentUserId,
+                    targetUserId: normalizedUserId,
+                    targetLabel: profile?.displayName || profile?.id,
+                    onOpenChange: setGroupInviteOpen
                 }}
                 groupQuickModerationDialog={{
                     open: groupQuickModerationOpen,

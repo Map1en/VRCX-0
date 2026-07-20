@@ -3164,6 +3164,13 @@
                 "unfriend": "Unfriend",
                 "edit_note_memo": "Edit Note and Local Note"
             },
+            "group_invite": {
+                "description": "Choose a group to invite {value} to.",
+                "select_group": "Select a group...",
+                "loading": "Loading groups you can invite to...",
+                "no_groups": "No groups where you can manage invites",
+                "load_failed": "Failed to load groups"
+            },
             "group_moderation": {
                 "title": "Manage in your groups",
                 "target": "Target user",

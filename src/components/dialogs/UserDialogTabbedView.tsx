@@ -33,7 +33,6 @@ import {
 import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData';
 import { useUserDialogAvatarAuthorAction } from './user-dialog/useUserDialogAvatarAuthorAction';
 import { useUserDialogClipboardActions } from './user-dialog/useUserDialogClipboardActions';
-import { useUserDialogGroupActions } from './user-dialog/useUserDialogGroupActions';
 import type { useUserDialogLocationPanel } from './user-dialog/useUserDialogLocationPanel';
 import type {
     AvatarOverrideState,
@@ -123,6 +122,7 @@ interface UserDialogTabbedViewProps {
         ) => void;
         onAvatarOverride: (type: AvatarOverrideType) => void;
         onReportHacking: () => void;
+        onInviteToGroup: () => void;
         onGroupModeration: () => void;
     };
     selfControls: SelfControls;
@@ -217,6 +217,7 @@ export function UserDialogTabbedView({
         onExtendedModeration,
         onAvatarOverride,
         onReportHacking,
+        onInviteToGroup,
         onGroupModeration
     } = friendControls;
     const {
@@ -233,7 +234,6 @@ export function UserDialogTabbedView({
     const { t } = useTranslation();
     const [nowMs, setNowMs] = useState(() => Date.now());
     const {
-        confirm,
         currentAvatarId,
         currentEndpoint,
         currentUserId,
@@ -241,12 +241,9 @@ export function UserDialogTabbedView({
         inGameGroupOrder,
         isLocalUserVrcPlusSupporter,
         openImagePreview,
-        previousAvatarSwapTime,
-        prompt
+        previousAvatarSwapTime
     } = useUserDialogTabbedRuntimeState();
-    const [selectedGroupIds, setSelectedGroupIds] = useState(
-        () => new Set<string>()
-    );
+    const [selectedGroupIds] = useState(() => new Set<string>());
     const [selfPanel, setSelfPanel] = useState('');
     const { copyUserText, openDiscordProfile } =
         useUserDialogClipboardActions();
@@ -310,7 +307,6 @@ export function UserDialogTabbedView({
         profileAvatars,
         profileGroups,
         profileWorlds,
-        refreshGroups,
         remoteData,
         remoteErrors,
         remoteStatus,
@@ -328,23 +324,6 @@ export function UserDialogTabbedView({
         worldOrder,
         worldSort
     } = tabData;
-
-    const groupActions = useUserDialogGroupActions({
-        confirm,
-        currentEndpoint,
-        currentUserId,
-        inGameGroupOrder,
-        isCurrentUser,
-        profile,
-        profileGroups,
-        prompt,
-        refreshGroups,
-        selectedGroupIds,
-        selectedUserGroups,
-        setGroupSort,
-        setSelectedGroupIds,
-        t
-    });
 
     const userUrl = profile.id ? vrchatUserUrl(profile.id) : '';
     const username =
@@ -568,7 +547,7 @@ export function UserDialogTabbedView({
         onInviteMessage,
         onInviteRequest,
         onInviteRequestMessage,
-        onInviteToGroup: groupActions.inviteToGroup,
+        onInviteToGroup,
         onModeration,
         onOpenDiscordProfile: openDiscordProfile,
         onOpenFallbackAvatar: () => openAvatarDialog(fallbackAvatarDialogArgs),

@@ -3164,6 +3164,13 @@
                 "unfriend": "删除好友",
                 "edit_note_memo": "编辑在线备注与本地备注"
             },
+            "group_invite": {
+                "description": "选择要邀请 {value} 加入的群组。",
+                "select_group": "选择群组...",
+                "loading": "正在读取可发送邀请的群组...",
+                "no_groups": "没有你可以管理邀请的群组",
+                "load_failed": "无法加载群组"
+            },
             "group_moderation": {
                 "title": "管理你拥有权限的群组",
                 "target": "目标用户",
