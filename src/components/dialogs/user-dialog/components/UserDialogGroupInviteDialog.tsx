@@ -1,4 +1,4 @@
-import { LoaderCircleIcon } from 'lucide-react';
+import { LoaderCircleIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { isVrchatRequestError } from '@/repositories/vrchatRequest';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
     Combobox,
@@ -101,10 +103,15 @@ export function UserDialogGroupInviteDialog({
         () => groups.map((group) => group.groupId),
         [groups]
     );
+    const groupsById = useMemo(
+        () => new Map(groups.map((group) => [group.groupId, group])),
+        [groups]
+    );
 
     function groupLabel(groupId: string) {
-        const group = groups.find((item) => item.groupId === groupId);
-        return group?.name || groupId;
+        const group = groupsById.get(groupId);
+        const name = group?.name || groupId;
+        return group?.shortCode ? `${name} (${group.shortCode})` : name;
     }
 
     async function invite() {
@@ -172,11 +179,45 @@ export function UserDialogGroupInviteDialog({
                             )}
                         </ComboboxEmpty>
                         <ComboboxList>
-                            {(groupId: string) => (
-                                <ComboboxItem key={groupId} value={groupId}>
-                                    {groupLabel(groupId)}
-                                </ComboboxItem>
-                            )}
+                            {(groupId: string) => {
+                                const group = groupsById.get(groupId);
+                                const iconUrl = group?.iconUrl
+                                    ? convertFileUrlToImageUrl(
+                                          group.iconUrl,
+                                          128
+                                      )
+                                    : '';
+                                return (
+                                    <ComboboxItem
+                                        key={groupId}
+                                        value={groupId}
+                                        className="py-1.5"
+                                    >
+                                        <Avatar className="size-8 shrink-0 rounded-md after:rounded-md">
+                                            {iconUrl ? (
+                                                <AvatarImage
+                                                    src={iconUrl}
+                                                    alt=""
+                                                    className="rounded-md"
+                                                />
+                                            ) : null}
+                                            <AvatarFallback className="rounded-md [&>svg]:size-4">
+                                                <UsersIcon aria-hidden="true" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate font-medium">
+                                                {group?.name || groupId}
+                                            </span>
+                                            {group?.shortCode ? (
+                                                <span className="text-muted-foreground block truncate text-xs">
+                                                    {group.shortCode}
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                    </ComboboxItem>
+                                );
+                            }}
                         </ComboboxList>
                     </ComboboxContent>
                 </Combobox>
