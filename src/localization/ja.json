@@ -3444,6 +3444,7 @@
                 "translation_failed": "翻訳に失敗しました",
                 "failed_to_load_avatar_author": "アバター作者を読み込めませんでした",
                 "failed_to_send_group_invite": "グループ招待を送信できませんでした",
+                "user_already_group_member": "このユーザーはすでにグループのメンバーです",
                 "failed_to_update_group_visibility": "グループの表示設定を更新できませんでした",
                 "failed_to_leave_group": "グループを退出できませんでした",
                 "failed_to_update_group_order": "グループの並び順を更新できませんでした"

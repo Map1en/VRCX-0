@@ -3451,6 +3451,7 @@
                 "translation_failed": "Ошибка перевода",
                 "failed_to_load_avatar_author": "Не удалось загрузить автора аватара",
                 "failed_to_send_group_invite": "Не удалось направить приглашение группы",
+                "user_already_group_member": "Этот пользователь уже состоит в группе",
                 "failed_to_update_group_visibility": "Не удалось обновить видимость группы",
                 "failed_to_leave_group": "Не удалось покинуть группу",
                 "failed_to_update_group_order": "Не удалось обновить порядок группы"

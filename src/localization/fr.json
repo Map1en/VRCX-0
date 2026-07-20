@@ -3449,6 +3449,7 @@
                 "translation_failed": "Échec de la traduction",
                 "failed_to_load_avatar_author": "Échec du chargement de l'auteur de l'avatar",
                 "failed_to_send_group_invite": "Échec de l'envoi de l'invitation de groupe",
+                "user_already_group_member": "Cet utilisateur est déjà membre du groupe",
                 "failed_to_update_group_visibility": "Échec de la mise à jour de la visibilité du groupe",
                 "failed_to_leave_group": "Échec de la sortie du groupe",
                 "failed_to_update_group_order": "Échec de la mise à jour de l'ordre des groupes"

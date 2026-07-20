@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { isVrchatRequestError } from '@/repositories/vrchatRequest';
 import { Button } from '@/ui/shadcn/button';
 import {
     Combobox,
@@ -31,6 +31,15 @@ interface UserDialogGroupInviteDialogProps {
     targetUserId: string;
     targetLabel?: string;
     onOpenChange: (open: boolean) => void;
+}
+
+function isAlreadyGroupMemberError(error: unknown) {
+    return Boolean(
+        isVrchatRequestError(error) &&
+        error.status === 400 &&
+        error.message.startsWith('User ') &&
+        error.message.endsWith(' is already a member of this group.')
+    );
 }
 
 export function UserDialogGroupInviteDialog({
@@ -72,14 +81,9 @@ export function UserDialogGroupInviteDialog({
                     )
                 );
             })
-            .catch((error: unknown) => {
+            .catch(() => {
                 if (active) {
-                    toast.error(
-                        userFacingErrorMessage(
-                            error,
-                            t('dialog.user.group_invite.load_failed')
-                        )
-                    );
+                    toast.error(t('dialog.user.group_invite.load_failed'));
                 }
             })
             .finally(() => {
@@ -117,9 +121,10 @@ export function UserDialogGroupInviteDialog({
             onOpenChange(false);
         } catch (error) {
             toast.error(
-                userFacingErrorMessage(
-                    error,
-                    t('dialog.user.toast.failed_to_send_group_invite')
+                t(
+                    isAlreadyGroupMemberError(error)
+                        ? 'dialog.user.toast.user_already_group_member'
+                        : 'dialog.user.toast.failed_to_send_group_invite'
                 )
             );
         } finally {

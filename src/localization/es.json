@@ -3449,6 +3449,7 @@
                 "translation_failed": "La traducción falló",
                 "failed_to_load_avatar_author": "No se pudo cargar el autor del avatar",
                 "failed_to_send_group_invite": "No se pudo enviar la invitación al grupo",
+                "user_already_group_member": "Este usuario ya es miembro del grupo",
                 "failed_to_update_group_visibility": "No se pudo actualizar la visibilidad del grupo",
                 "failed_to_leave_group": "No se pudo salir del grupo",
                 "failed_to_update_group_order": "No se pudo actualizar el orden de los grupos"

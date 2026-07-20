@@ -3449,6 +3449,7 @@
                 "translation_failed": "翻譯失敗",
                 "failed_to_load_avatar_author": "載入角色作者失敗",
                 "failed_to_send_group_invite": "傳送群組邀請失敗",
+                "user_already_group_member": "該使用者已經是群組成員",
                 "failed_to_update_group_visibility": "更新群組可見性失敗",
                 "failed_to_leave_group": "退出群組失敗",
                 "failed_to_update_group_order": "更新群組排序失敗"

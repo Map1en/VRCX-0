@@ -3456,6 +3456,7 @@
                 "translation_failed": "Translation failed",
                 "failed_to_load_avatar_author": "Failed to load avatar author",
                 "failed_to_send_group_invite": "Failed to send group invite",
+                "user_already_group_member": "This user is already a member of the group",
                 "failed_to_update_group_visibility": "Failed to update group visibility",
                 "failed_to_leave_group": "Failed to leave group",
                 "failed_to_update_group_order": "Failed to update group order"

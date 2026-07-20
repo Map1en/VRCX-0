@@ -3385,6 +3385,7 @@
                 "translation_failed": "번역 실패",
                 "failed_to_load_avatar_author": "아바타 작성자를 로드하지 못했습니다.",
                 "failed_to_send_group_invite": "그룹 초대를 보내지 못했습니다.",
+                "user_already_group_member": "이 사용자는 이미 그룹 멤버입니다.",
                 "failed_to_update_group_visibility": "그룹 공개 상태를 업데이트하지 못했습니다.",
                 "failed_to_leave_group": "그룹에서 탈퇴하지 못했습니다.",
                 "failed_to_update_group_order": "그룹 순서를 업데이트하지 못했습니다.",

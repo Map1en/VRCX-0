@@ -3449,6 +3449,7 @@
                 "translation_failed": "Übersetzung fehlgeschlagen",
                 "failed_to_load_avatar_author": "Avatar-Ersteller konnte nicht geladen werden",
                 "failed_to_send_group_invite": "Gruppeneinladung konnte nicht gesendet werden",
+                "user_already_group_member": "Dieser Benutzer ist bereits Mitglied der Gruppe",
                 "failed_to_update_group_visibility": "Gruppensichtbarkeit konnte nicht aktualisiert werden",
                 "failed_to_leave_group": "Gruppe konnte nicht verlassen werden",
                 "failed_to_update_group_order": "Gruppenreihenfolge konnte nicht aktualisiert werden"

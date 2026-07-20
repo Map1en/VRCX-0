@@ -3451,6 +3451,7 @@
                 "translation_failed": "Překlad se nezdařil",
                 "failed_to_load_avatar_author": "Nepodařilo se načíst autora avataru",
                 "failed_to_send_group_invite": "Nepodařilo se odeslat pozvánku do skupiny",
+                "user_already_group_member": "Tento uživatel je již členem skupiny",
                 "failed_to_update_group_visibility": "Nepodařilo se aktualizovat viditelnost skupiny",
                 "failed_to_leave_group": "Nepodařilo se opustit skupinu",
                 "failed_to_update_group_order": "Nepodařilo se aktualizovat pořadí skupin"

@@ -3449,6 +3449,7 @@
                 "translation_failed": "Falha na tradução",
                 "failed_to_load_avatar_author": "Falha ao carregar o autor do avatar",
                 "failed_to_send_group_invite": "Falha ao enviar o convite de grupo",
+                "user_already_group_member": "Este usuário já é membro do grupo",
                 "failed_to_update_group_visibility": "Falha ao atualizar a visibilidade do grupo",
                 "failed_to_leave_group": "Falha ao sair do grupo",
                 "failed_to_update_group_order": "Falha ao atualizar a ordem dos grupos"
