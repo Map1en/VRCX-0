@@ -60,6 +60,10 @@ impl FriendRecord {
         Some(self)
     }
 
+    pub fn is_placeholder(&self) -> bool {
+        self.extra.get("$profileSource").and_then(Value::as_str) == Some("placeholder")
+    }
+
     pub fn display_name_or_id(&self) -> String {
         first_non_empty([
             self.display_name.as_str(),

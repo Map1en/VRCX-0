@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use vrcx_0_core::vrchat_ids::is_world_id;
+use vrcx_0_core::vrchat_ids::{is_avatar_id, is_world_id};
 
 pub const DEEP_LINK_ARRIVED_EVENT: &str = "deepLinkArrived";
 
@@ -13,6 +13,8 @@ pub const DEEP_LINK_ARRIVED_EVENT: &str = "deepLinkArrived";
 pub enum DeepLinkAction {
     #[specta(rename_all = "camelCase")]
     OpenWorld { world_id: String },
+    #[specta(rename_all = "camelCase")]
+    OpenAvatar { avatar_id: String },
     #[specta(rename_all = "camelCase")]
     ImportCollection { collection_id: String },
 }
@@ -48,6 +50,9 @@ pub fn parse_deep_link(value: &str) -> Option<DeepLinkAction> {
 
     match (url.host_str()?, url.path()) {
         ("world", "/open") if is_world_id(&id) => Some(DeepLinkAction::OpenWorld { world_id: id }),
+        ("avatar", "/open") if is_avatar_id(&id) => {
+            Some(DeepLinkAction::OpenAvatar { avatar_id: id })
+        }
         ("collection", "/import") if is_collection_id(&id) => {
             Some(DeepLinkAction::ImportCollection { collection_id: id })
         }
@@ -89,10 +94,24 @@ mod tests {
     }
 
     #[test]
+    fn parses_open_avatar_deep_link_with_full_avatar_id() {
+        let action =
+            parse_deep_link("vrcx-0://avatar/open?id=avtr_12345678-1234-1234-1234-1234567890ab");
+
+        assert_eq!(
+            action,
+            Some(DeepLinkAction::OpenAvatar {
+                avatar_id: "avtr_12345678-1234-1234-1234-1234567890ab".to_string(),
+            })
+        );
+    }
+
+    #[test]
     fn rejects_malformed_deep_link_inputs() {
         for value in [
             "https://worlds.vrcx-0.dev/c/AbC123z",
             "vrcx-0://world/open?id=wrld_not-a-vrchat-id",
+            "vrcx-0://avatar/open?id=avtr_not-a-vrchat-id",
             "vrcx-0://collection/import?id=abc/../def",
             "vrcx-0://collection/import?id=AbC123z?x=1",
             "vrcx-0://user/open?id=usr_12345678-1234-1234-1234-1234567890ab",
@@ -107,6 +126,9 @@ mod tests {
         pending.push(DeepLinkAction::OpenWorld {
             world_id: "wrld_12345678-1234-1234-1234-1234567890ab".to_string(),
         });
+        pending.push(DeepLinkAction::OpenAvatar {
+            avatar_id: "avtr_12345678-1234-1234-1234-1234567890ab".to_string(),
+        });
         pending.push(DeepLinkAction::ImportCollection {
             collection_id: "AbC123z".to_string(),
         });
@@ -116,6 +138,9 @@ mod tests {
             vec![
                 DeepLinkAction::OpenWorld {
                     world_id: "wrld_12345678-1234-1234-1234-1234567890ab".to_string(),
+                },
+                DeepLinkAction::OpenAvatar {
+                    avatar_id: "avtr_12345678-1234-1234-1234-1234567890ab".to_string(),
                 },
                 DeepLinkAction::ImportCollection {
                     collection_id: "AbC123z".to_string(),

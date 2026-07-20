@@ -2,8 +2,7 @@ const VISIBLE_FRIEND_PROFILE_LOAD_STATUSES = new Set([
     'running',
     'cancelling',
     'completed',
-    'cancelled',
-    'error'
+    'cancelled'
 ]);
 
 export function isFriendProfileLoadStatusVisible(status: unknown): boolean {

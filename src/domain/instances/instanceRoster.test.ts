@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildInstanceRosterRows,
+    mergeInstanceUser,
     mergeInstanceUsers,
+    type InstanceRosterRow,
     userHasExplicitSameInstance
 } from './instanceRoster';
 
@@ -87,6 +89,44 @@ describe('instanceRoster', () => {
         expect(users[0].profilePicOverrideThumbnail).toBe('avatar.webp');
         expect(users[0].status).toBe('ask me');
         expect(users[0].$location_at).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('allows a realtime snapshot to replace only existing presence fields', () => {
+        const rows = new Map<string, InstanceRosterRow>();
+        mergeInstanceUser(rows, {
+            id: 'usr_self',
+            displayName: 'Full profile name',
+            profilePicOverrideThumbnail: 'profile.webp',
+            location: 'wrld_old:11111',
+            state: 'offline',
+            stateBucket: 'offline',
+            status: 'busy',
+            statusDescription: 'Old description'
+        });
+        mergeInstanceUser(
+            rows,
+            {
+                id: 'usr_self',
+                displayName: 'Snapshot name',
+                location: 'wrld_live:22222',
+                state: 'online',
+                stateBucket: 'online',
+                status: 'join me',
+                statusDescription: ''
+            },
+            {},
+            { incomingPresenceWins: true }
+        );
+
+        expect(rows.get('usr_self')).toMatchObject({
+            displayName: 'Full profile name',
+            profilePicOverrideThumbnail: 'profile.webp',
+            location: 'wrld_live:22222',
+            state: 'online',
+            stateBucket: 'online',
+            status: 'join me',
+            statusDescription: ''
+        });
     });
 
     it('recognizes ask me and busy users only when their real instance is explicit', () => {

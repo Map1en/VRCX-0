@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
 use serde_json::Value;
-use vrcx_0_core::location::{parse_location, ParsedLocation};
+use vrcx_0_core::{
+    location::{parse_location, ParsedLocation},
+    vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT,
+};
 
 use crate::{Error, Result};
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
@@ -111,7 +114,7 @@ fn normalize_join_target(input: InstanceLaunchInput) -> Option<JoinTarget> {
     }
     let provided_token = first_non_empty([input.short_name.as_str(), parsed.short_name.as_str()]);
     Some(JoinTarget {
-        endpoint: input.endpoint.trim().to_string(),
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.to_string(),
         location: format!("{}:{}", parsed.world_id, parsed.instance_id),
         world_id: parsed.world_id.clone(),
         instance_id: parsed.instance_id.clone(),

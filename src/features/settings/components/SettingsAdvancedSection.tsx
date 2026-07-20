@@ -26,6 +26,8 @@ export function SettingsAdvancedSection({
         refreshConfigTreeData,
         openAppDataDirSelector,
         resetAppDataDir,
+        cleanupAppDataDir,
+        dismissAppDataDirCleanup,
         setConfigTreeData,
         migrateLegacyVrcxData
     } = advanced;
@@ -108,6 +110,8 @@ export function SettingsAdvancedSection({
         onRefreshConfigTreeData: refreshConfigTreeData,
         onOpenAppDataDirSelector: openAppDataDirSelector,
         onResetAppDataDir: resetAppDataDir,
+        onCleanupAppDataDir: cleanupAppDataDir,
+        onDismissAppDataDirCleanup: dismissAppDataDirCleanup,
         onClearConfigTreeData: () => setConfigTreeData({})
     };
 

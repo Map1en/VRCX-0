@@ -3,11 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const commandMocks = vi.hoisted(() => ({
     appVrchatAuthConfigGet: vi.fn(),
     appVrchatAuthCurrentUserGet: vi.fn(),
-    appVrchatAuthSessionGet: vi.fn(),
     appVrchatAuthSessionStart: vi.fn(),
     appVrchatAuthSessionRespond: vi.fn(),
     appVrchatAuthSessionCancel: vi.fn(),
-    appVrchatAuthAutoLoginThrottleReset: vi.fn(),
     appVrchatAuthVisitsGet: vi.fn(),
     appVrchatAuthFileAnalysisGet: vi.fn()
 }));
@@ -22,19 +20,14 @@ import {
     getConfig,
     getCurrentUser,
     getFileAnalysis,
-    resetAutoLoginThrottle,
     respondLoginSession,
     startLoginSession
 } from './vrchatAuthRepository';
-import { setVrchatAuthFailureHandler } from './vrchatRequest';
 
 function response(status = 200, data: unknown = { id: 'usr_1' }) {
     return {
         status,
-        data: typeof data === 'string' ? data : JSON.stringify(data),
-        raw: {
-            status
-        }
+        data: typeof data === 'string' ? data : JSON.stringify(data)
     };
 }
 
@@ -57,24 +50,18 @@ describe('vrchatAuthRepository', () => {
         commandMocks.appVrchatAuthSessionCancel.mockResolvedValue(
             cancelledState()
         );
-        setVrchatAuthFailureHandler(null);
     });
 
-    it('normalizes default endpoints and unwraps successful auth responses', async () => {
+    it('unwraps auth responses against the canonical VRChat endpoint', async () => {
         await expect(getCurrentUser()).resolves.toMatchObject({
             json: {
                 id: 'usr_1'
             },
             status: 200,
-            endpointDomain: DEFAULT_ENDPOINT_DOMAIN,
-            raw: {
-                status: 200
-            }
+            endpointDomain: DEFAULT_ENDPOINT_DOMAIN
         });
 
-        expect(commandMocks.appVrchatAuthCurrentUserGet).toHaveBeenCalledWith({
-            endpoint: DEFAULT_ENDPOINT_DOMAIN
-        });
+        expect(commandMocks.appVrchatAuthCurrentUserGet).toHaveBeenCalledWith();
     });
 
     it('passes normalized login-session payloads to the Tauri bridge', async () => {
@@ -82,37 +69,36 @@ describe('vrchatAuthRepository', () => {
             mode: 'basic',
             username: 'user@example.test',
             password: 123,
-            saveCredentials: true,
-            endpoint: ' https://api.example.test/api/1 '
+            saveCredentials: true
         });
         await startLoginSession({
             mode: 'savedCredential',
-            userId: 456,
-            endpoint: ''
+            userId: 456
         });
-        await startLoginSession({ mode: 'cookieRestore' });
-        await respondLoginSession({ method: 'totp', code: 111111 });
-        await cancelLoginSession();
+        await respondLoginSession({
+            attemptId: 'attempt-1',
+            method: 'totp',
+            code: 111111
+        });
+        await cancelLoginSession('attempt-1');
 
         expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
             mode: 'basic',
-            endpoint: 'https://api.example.test/api/1',
             username: 'user@example.test',
             password: '123',
             saveCredentials: true
         });
         expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
             mode: 'savedCredential',
-            endpoint: DEFAULT_ENDPOINT_DOMAIN,
             userId: '456'
         });
-        expect(commandMocks.appVrchatAuthSessionStart).toHaveBeenCalledWith({
-            mode: 'cookieRestore',
-            endpoint: DEFAULT_ENDPOINT_DOMAIN
-        });
         expect(commandMocks.appVrchatAuthSessionRespond).toHaveBeenCalledWith({
+            attemptId: 'attempt-1',
             method: 'totp',
             code: '111111'
+        });
+        expect(commandMocks.appVrchatAuthSessionCancel).toHaveBeenCalledWith({
+            attemptId: 'attempt-1'
         });
         expect(commandMocks.appVrchatAuthSessionCancel).toHaveBeenCalledTimes(
             1
@@ -134,14 +120,6 @@ describe('vrchatAuthRepository', () => {
                 password: 'secret'
             })
         ).resolves.toBe(failed);
-    });
-
-    it('resets the backend auto-login throttle through its dedicated command', async () => {
-        await resetAutoLoginThrottle();
-
-        expect(
-            commandMocks.appVrchatAuthAutoLoginThrottleReset
-        ).toHaveBeenCalledTimes(1);
     });
 
     it('builds file-analysis requests with numeric versions and encoded error endpoints', async () => {
@@ -166,16 +144,13 @@ describe('vrchatAuthRepository', () => {
         });
 
         expect(commandMocks.appVrchatAuthFileAnalysisGet).toHaveBeenCalledWith({
-            endpoint: DEFAULT_ENDPOINT_DOMAIN,
             fileId: 'file 1',
             version: 2,
             variant: 'Quest/Android'
         });
     });
 
-    it('throws request errors and notifies the auth failure handler for recoverable auth failures', async () => {
-        const handler = vi.fn();
-        setVrchatAuthFailureHandler(handler);
+    it('throws a structured request error for a rejected config request', async () => {
         commandMocks.appVrchatAuthConfigGet.mockResolvedValueOnce(
             response(403, {
                 error: {
@@ -188,40 +163,6 @@ describe('vrchatAuthRepository', () => {
             message: 'Forbidden',
             status: 403,
             endpoint: 'config'
-        });
-        expect(handler).toHaveBeenCalledWith(
-            expect.objectContaining({
-                message: 'Forbidden',
-                status: 403,
-                endpoint: 'config'
-            })
-        );
-    });
-
-    it('treats payloads containing an error object as failed requests even with a 200 status', async () => {
-        commandMocks.appVrchatAuthSessionGet.mockResolvedValueOnce(
-            response(200, {
-                error: {
-                    message: 'Session rejected'
-                }
-            })
-        );
-
-        await expect(
-            getCurrentUser({
-                endpoint: 'https://api.example.test/api/1/'
-            })
-        ).resolves.toMatchObject({
-            endpointDomain: 'https://api.example.test/api/1/'
-        });
-        await expect(
-            import('./vrchatAuthRepository').then(({ getAuthSession }) =>
-                getAuthSession()
-            )
-        ).rejects.toMatchObject({
-            message: 'Session rejected',
-            status: 200,
-            endpoint: 'auth'
         });
     });
 });

@@ -125,48 +125,6 @@ mod tests {
     }
 
     #[test]
-    fn friend_add_generates_friend_feed_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
-        runtime.set_baseline(
-            FriendRosterBaseline {
-                current_user_id: "usr_self".into(),
-                friends_by_id: Default::default(),
-                ..FriendRosterBaseline::default()
-            },
-            1,
-            0,
-        );
-
-        let RealtimeFriendApplyResult::Output(output) =
-            runtime.apply_ws_message(&RealtimeWsMessagePayload {
-                json: json!({
-                    "type": "friend-add",
-                    "content": {
-                        "userId": "usr_added",
-                        "user": {
-                            "id": "usr_added",
-                            "displayName": "Added Friend",
-                            "state": "online"
-                        }
-                    }
-                }),
-                raw: "{}".into(),
-                received_at: "2026-05-15T00:00:00Z".into(),
-            })
-        else {
-            panic!("friend-add should produce an output");
-        };
-
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Friend");
-        assert_eq!(output.persistence.feed_entries[0]["userId"], "usr_added");
-        assert_eq!(
-            output.persistence.feed_entries[0]["displayName"],
-            "Added Friend"
-        );
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
-    }
-
-    #[test]
     fn friend_add_twice_logs_single_friend_entry() {
         let runtime = RealtimeFriendsRuntime::new();
         runtime.set_baseline(
@@ -490,6 +448,174 @@ mod tests {
             "New Name"
         );
         assert!(output.projection.friend_log_changed);
+    }
+
+    #[test]
+    fn friend_active_with_display_name_change_upserts_friend_log() {
+        let runtime = RealtimeFriendsRuntime::new();
+        runtime.set_baseline(
+            FriendRosterBaseline {
+                current_user_id: "usr_self".into(),
+                friends_by_id: [(
+                    "usr_friend".to_string(),
+                    FriendRecord {
+                        id: "usr_friend".into(),
+                        display_name: "Old Name".into(),
+                        state: "offline".into(),
+                        state_bucket: "offline".into(),
+                        location: "offline".into(),
+                        ..FriendRecord::default()
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                ..FriendRosterBaseline::default()
+            },
+            1,
+            0,
+        );
+
+        let RealtimeFriendApplyResult::Output(output) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-active",
+                    "content": {
+                        "userId": "usr_friend",
+                        "platform": "web",
+                        "user": {
+                            "id": "usr_friend",
+                            "displayName": "New Name",
+                            "state": "offline"
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:00Z".into(),
+            })
+        else {
+            panic!("friend-active should produce an output");
+        };
+
+        assert_eq!(output.persistence.friend_log_upserts.len(), 1);
+        assert_eq!(
+            output.persistence.friend_log_upserts[0].display_name,
+            "New Name"
+        );
+        assert!(output.projection.friend_log_changed);
+        let snapshot = runtime.snapshot().unwrap();
+        let friend = &snapshot.friends_by_id["usr_friend"];
+        assert_eq!(friend.display_name, "New Name");
+        assert_eq!(friend.state_bucket, "active");
+    }
+
+    #[test]
+    fn friend_active_rename_while_online_records_friend_log_and_debounces() {
+        let runtime = RealtimeFriendsRuntime::new();
+        runtime.set_baseline(
+            FriendRosterBaseline {
+                current_user_id: "usr_self".into(),
+                friends_by_id: [(
+                    "usr_friend".to_string(),
+                    FriendRecord {
+                        id: "usr_friend".into(),
+                        display_name: "Old Name".into(),
+                        state: "online".into(),
+                        state_bucket: "online".into(),
+                        location: "wrld_1:123".into(),
+                        ..FriendRecord::default()
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                ..FriendRosterBaseline::default()
+            },
+            1,
+            0,
+        );
+
+        let RealtimeFriendApplyResult::Output(output) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-active",
+                    "content": {
+                        "userId": "usr_friend",
+                        "platform": "web",
+                        "user": {
+                            "id": "usr_friend",
+                            "displayName": "New Name",
+                            "state": "offline"
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:00Z".into(),
+            })
+        else {
+            panic!("friend-active should produce an output");
+        };
+
+        assert!(matches!(
+            output.timer_action,
+            PendingOfflineTimerAction::Schedule { .. }
+        ));
+        assert_eq!(output.persistence.friend_log_upserts.len(), 1);
+        assert_eq!(
+            output.persistence.friend_log_upserts[0].display_name,
+            "New Name"
+        );
+        assert!(output.projection.friend_log_changed);
+        let snapshot = runtime.snapshot().unwrap();
+        let friend = &snapshot.friends_by_id["usr_friend"];
+        assert_eq!(friend.display_name, "Old Name");
+        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(
+            friend.extra.get("pendingOffline").and_then(Value::as_bool),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn friend_active_trust_change_upserts_and_projects() {
+        let runtime = RealtimeFriendsRuntime::new();
+        runtime.set_baseline(
+            FriendRosterBaseline {
+                current_user_id: "usr_self".into(),
+                friends_by_id: [("usr_friend".to_string(), friend_with_trust())]
+                    .into_iter()
+                    .collect(),
+                ..FriendRosterBaseline::default()
+            },
+            1,
+            0,
+        );
+
+        let RealtimeFriendApplyResult::Output(output) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-active",
+                    "content": {
+                        "userId": "usr_friend",
+                        "platform": "web",
+                        "user": {
+                            "id": "usr_friend",
+                            "displayName": "Friend",
+                            "state": "offline",
+                            "tags": [
+                                "system_trust_known",
+                                "system_trust_trusted",
+                                "system_trust_veteran"
+                            ]
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:00Z".into(),
+            })
+        else {
+            panic!("friend-active should produce an output");
+        };
+
+        assert_trust_change(&output);
     }
 
     #[test]
@@ -1079,12 +1205,11 @@ mod tests {
             "usr_friend"
         );
         assert_eq!(deleted.persistence.feed_entries[0]["type"], "Unfriend");
-        assert!(runtime
+        assert!(!runtime
             .snapshot()
             .expect("baseline snapshot")
             .friends_by_id
-            .get("usr_friend")
-            .is_none());
+            .contains_key("usr_friend"));
         assert!(runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .is_none());

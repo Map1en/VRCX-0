@@ -6,10 +6,11 @@ use vrcx_0_application_core::vrchat_api::users::{
     current_user_update_input, user_groups_get_input, user_mutual_counts_get_input,
     user_mutual_friends_get_input, user_represented_group_get_input,
 };
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
     VrchatCurrentUserBadgeInput, VrchatCurrentUserTagsInput, VrchatCurrentUserUpdateInput,
@@ -22,16 +23,8 @@ async fn execute_user_read_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_friend_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 async fn execute_current_user_api(
@@ -40,23 +33,14 @@ async fn execute_current_user_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_auth_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 async fn execute_current_user_api_then_invalidate(
     state: State<'_, AppState>,
     command: &str,
     detail: impl Into<String>,
-    endpoint: String,
     user_id: String,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
@@ -65,7 +49,7 @@ async fn execute_current_user_api_then_invalidate(
     if let Ok(response) = &result {
         if (200..300).contains(&response.status) {
             realtime_runtime
-                .invalidate_user_query_cache(&endpoint, &user_id)
+                .invalidate_user_query_cache(VRCHAT_API_DEFAULT_ENDPOINT, &user_id)
                 .await;
         }
     }
@@ -87,7 +71,7 @@ pub async fn app__vrchat_user_get(
     let result = state
         .realtime_runtime
         .get_user_via_cache(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.user_id,
             input.force,
             input.dialog,
@@ -113,7 +97,8 @@ pub async fn app__vrchat_user_mutual_counts_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = user_mutual_counts_get_input(input.endpoint, input.user_id)?;
+    let (user_id, request) =
+        user_mutual_counts_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
     execute_user_read_api(
         state,
         "app__vrchat_user_mutual_counts_get",
@@ -129,7 +114,8 @@ pub async fn app__vrchat_user_groups_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = user_groups_get_input(input.endpoint, input.user_id)?;
+    let (user_id, request) =
+        user_groups_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
     execute_user_read_api(
         state,
         "app__vrchat_user_groups_get",
@@ -145,7 +131,8 @@ pub async fn app__vrchat_user_represented_group_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = user_represented_group_get_input(input.endpoint, input.user_id)?;
+    let (user_id, request) =
+        user_represented_group_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
     execute_user_read_api(
         state,
         "app__vrchat_user_represented_group_get",
@@ -162,7 +149,7 @@ pub async fn app__vrchat_user_mutual_friends_get(
     input: VrchatUserMutualFriendsInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (user_id, request) = user_mutual_friends_get_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.user_id,
         input.n,
         input.offset,
@@ -186,14 +173,15 @@ pub async fn app__vrchat_current_user_update(
     state: State<'_, AppState>,
     input: VrchatCurrentUserUpdateInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint.clone();
-    let (user_id, request) =
-        current_user_update_input(input.endpoint, input.user_id, input.params)?;
+    let (user_id, request) = current_user_update_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.user_id,
+        input.params,
+    )?;
     execute_current_user_api_then_invalidate(
         state,
         "app__vrchat_current_user_update",
         format!("Updating current user {user_id}."),
-        endpoint,
         user_id,
         request,
     )
@@ -207,7 +195,7 @@ pub async fn app__vrchat_current_user_badge_update(
     input: VrchatCurrentUserBadgeInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (user_id, badge_id, request) = current_user_badge_update_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.user_id,
         input.badge_id,
         input.hidden,
@@ -228,14 +216,15 @@ pub async fn app__vrchat_current_user_tags_add(
     state: State<'_, AppState>,
     input: VrchatCurrentUserTagsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint.clone();
-    let (user_id, request) =
-        current_user_tags_add_input(input.endpoint, input.user_id, input.tags)?;
+    let (user_id, request) = current_user_tags_add_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.user_id,
+        input.tags,
+    )?;
     execute_current_user_api_then_invalidate(
         state,
         "app__vrchat_current_user_tags_add",
         format!("Adding tags to current user {user_id}."),
-        endpoint,
         user_id,
         request,
     )
@@ -248,14 +237,15 @@ pub async fn app__vrchat_current_user_tags_remove(
     state: State<'_, AppState>,
     input: VrchatCurrentUserTagsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint.clone();
-    let (user_id, request) =
-        current_user_tags_remove_input(input.endpoint, input.user_id, input.tags)?;
+    let (user_id, request) = current_user_tags_remove_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.user_id,
+        input.tags,
+    )?;
     execute_current_user_api_then_invalidate(
         state,
         "app__vrchat_current_user_tags_remove",
         format!("Removing tags from current user {user_id}."),
-        endpoint,
         user_id,
         request,
     )

@@ -38,7 +38,7 @@ mod tests {
         let get = player_moderations_get_input("https://api.example.test/api/1".into());
         assert_eq!(get.method.as_deref(), Some("GET"));
         assert_eq!(get.path.as_deref(), Some("auth/user/playermoderations"));
-        assert_eq!(get.json_body, Some(false));
+        assert_eq!(get.body, crate::http_api::HttpApiRequestBody::Empty);
 
         let post = player_moderation_update_input(
             "https://api.example.test/api/1".into(),
@@ -49,7 +49,7 @@ mod tests {
         assert_eq!(post.method.as_deref(), Some("POST"));
         assert_eq!(post.path.as_deref(), Some("auth/user/playermoderations"));
         assert_eq!(
-            post.body.as_ref().and_then(|body| body.get("moderated")),
+            post.body.as_json().and_then(|body| body.get("moderated")),
             Some(&json!("usr_target"))
         );
 
@@ -62,7 +62,7 @@ mod tests {
         assert_eq!(delete.method.as_deref(), Some("PUT"));
         assert_eq!(delete.path.as_deref(), Some("auth/user/unplayermoderate"));
         assert_eq!(
-            delete.body.as_ref().and_then(|body| body.get("type")),
+            delete.body.as_json().and_then(|body| body.get("type")),
             Some(&json!("mute"))
         );
     }

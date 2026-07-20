@@ -5,15 +5,15 @@ import {
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type { PrintFavoriteState } from '@/platform/tauri/bindings';
-import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { normalizePlatformError } from '../platform/tauri/errors';
 import {
-    parseJsonResponse,
+    isVrchatRequestError,
     type QueryParams,
     type QueryValue,
     type VrchatRequestResponse,
-    unwrapErrorMessage
+    unwrapVrchatResponse
 } from './vrchatRequest';
 
 type MediaApiRecord = Record<string, unknown>;
@@ -98,7 +98,6 @@ type InventoryItemsResponse = {
 };
 
 interface MediaApiOptions {
-    endpoint?: string;
     force?: boolean;
 }
 
@@ -106,7 +105,6 @@ interface MediaUploadResponse {
     json: MediaApiRecord;
     params: MediaApiParams;
     status?: number;
-    raw?: unknown;
 }
 
 interface LegacyImageUploadOptions {
@@ -114,13 +112,19 @@ interface LegacyImageUploadOptions {
     worldId?: unknown;
     imageUrl?: string;
     base64File: string;
-    endpoint?: string;
 }
 
-interface MediaAssetUploadOptions extends MediaApiOptions {
+interface MediaAssetUploadOptions {
     assetKind: string;
     cropWhiteBorder?: boolean;
     params?: MediaApiParams;
+}
+
+interface MediaCommandOptions {
+    params?: MediaApiParams;
+    extra?: MediaApiRecord;
+    fallbackMessage?: string;
+    path?: string;
 }
 
 function normalizeParams(params: unknown = {}): MediaApiParams {
@@ -130,88 +134,49 @@ function normalizeParams(params: unknown = {}): MediaApiParams {
     return { ...(params as Record<string, QueryValue | QueryValue[]>) };
 }
 
-function resolveMediaEndpoint(endpoint: unknown = '') {
-    return normalizeVrchatEndpointDomain(endpoint, {
-        allowDebugEndpoint: true
-    });
-}
-
 function unwrapMediaResponse(
-    response: { status: number; data: unknown; raw: unknown },
-    options?: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    }
+    response: { status: number; data: unknown },
+    options?: MediaCommandOptions
 ): VrchatRequestResponse<MediaApiRecord>;
 function unwrapMediaResponse<TJson>(
-    response: { status: number; data: unknown; raw: unknown },
-    options?: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    }
+    response: { status: number; data: unknown },
+    options?: MediaCommandOptions
 ): VrchatRequestResponse<TJson>;
 function unwrapMediaResponse<TJson = MediaApiRecord>(
-    response: { status: number; data: unknown; raw: unknown },
+    response: { status: number; data: unknown },
     {
         params = {},
         extra = {},
-        fallbackMessage = 'Media request failed'
-    }: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    } = {}
+        fallbackMessage = 'Media request failed',
+        path = 'media'
+    }: MediaCommandOptions = {}
 ): VrchatRequestResponse<TJson> {
-    const json = parseJsonResponse(response.data);
-    if (
-        response.status >= 400 ||
-        (json && typeof json === 'object' && 'error' in json)
-    ) {
-        throw new Error(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage
-            })
-        );
-    }
-
     return {
-        json: json as TJson,
+        ...unwrapVrchatResponse<TJson>(response, path, { fallbackMessage }),
         params,
         ...extra,
-        status: response.status,
-        raw: response.raw
+        status: response.status
     };
 }
 
 async function executeMediaCommand(
-    command: () => Promise<{ status: number; data: unknown; raw: unknown }>,
-    options?: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    }
+    command: () => Promise<{ status: number; data: unknown }>,
+    options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<MediaApiRecord>>;
 async function executeMediaCommand<TJson>(
-    command: () => Promise<{ status: number; data: unknown; raw: unknown }>,
-    options?: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    }
+    command: () => Promise<{ status: number; data: unknown }>,
+    options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<TJson>>;
 async function executeMediaCommand<TJson = MediaApiRecord>(
-    command: () => Promise<{ status: number; data: unknown; raw: unknown }>,
-    options: {
-        params?: MediaApiParams;
-        extra?: MediaApiRecord;
-        fallbackMessage?: string;
-    } = {}
+    command: () => Promise<{ status: number; data: unknown }>,
+    options: MediaCommandOptions = {}
 ): Promise<VrchatRequestResponse<TJson>> {
     try {
         return unwrapMediaResponse<TJson>(await command(), options);
     } catch (error) {
+        if (isVrchatRequestError(error)) {
+            throw error;
+        }
         throw normalizePlatformError(
             error,
             options.fallbackMessage ?? 'Media request failed'
@@ -220,14 +185,12 @@ async function executeMediaCommand<TJson = MediaApiRecord>(
 }
 
 async function getFiles(
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
+    params: MediaApiParams = {}
 ): Promise<VrchatRequestResponse<MediaFileRecord[]>> {
     const normalizedParams = normalizeParams(params);
     return executeMediaCommand<MediaFileRecord[]>(
         () =>
             commands.appVrchatMediaFilesGet({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 params: normalizedParams
             }),
         {
@@ -236,14 +199,11 @@ async function getFiles(
     );
 }
 
-async function getFileList(
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
-) {
-    return getFiles(params, options);
+async function getFileList(params: MediaApiParams = {}) {
+    return getFiles(params);
 }
 
-async function deleteFile(fileId: unknown, options: MediaApiOptions = {}) {
+async function deleteFile(fileId: unknown) {
     const normalizedFileId =
         typeof fileId === 'string'
             ? fileId.trim()
@@ -255,7 +215,6 @@ async function deleteFile(fileId: unknown, options: MediaApiOptions = {}) {
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaFileDelete({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 fileId: normalizedFileId
             }),
         {
@@ -266,17 +225,13 @@ async function deleteFile(fileId: unknown, options: MediaApiOptions = {}) {
     );
 }
 
-async function uploadGalleryImage(
-    imageData: string,
-    options: MediaApiOptions = {}
-) {
+async function uploadGalleryImage(imageData: string) {
     const params: MediaApiParams = {
         tag: 'gallery'
     };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaGalleryImageUpload({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 imageData
             }),
         {
@@ -287,8 +242,7 @@ async function uploadGalleryImage(
 
 async function uploadAvatarGalleryImage(
     imageData: string,
-    avatarId: QueryValue,
-    options: MediaApiOptions = {}
+    avatarId: QueryValue
 ) {
     const params: MediaApiParams = {
         tag: 'avatargallery',
@@ -297,7 +251,6 @@ async function uploadAvatarGalleryImage(
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaAvatarGalleryImageUpload({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 imageData,
                 avatarId
             }),
@@ -307,17 +260,13 @@ async function uploadAvatarGalleryImage(
     );
 }
 
-async function uploadVrcPlusIcon(
-    imageData: string,
-    options: MediaApiOptions = {}
-) {
+async function uploadVrcPlusIcon(imageData: string) {
     const params: MediaApiParams = {
         tag: 'icon'
     };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaVrcPlusIconUpload({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 imageData
             }),
         {
@@ -326,16 +275,11 @@ async function uploadVrcPlusIcon(
     );
 }
 
-async function uploadEmoji(
-    imageData: string,
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
-) {
+async function uploadEmoji(imageData: string, params: MediaApiParams = {}) {
     const normalizedParams = normalizeParams(params);
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaEmojiUpload({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 imageData,
                 params: normalizedParams
             }),
@@ -345,7 +289,7 @@ async function uploadEmoji(
     );
 }
 
-async function uploadSticker(imageData: string, options: MediaApiOptions = {}) {
+async function uploadSticker(imageData: string) {
     const params: MediaApiParams = {
         tag: 'sticker',
         maskTag: 'square'
@@ -353,7 +297,6 @@ async function uploadSticker(imageData: string, options: MediaApiOptions = {}) {
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaStickerUpload({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 imageData
             }),
         {
@@ -365,11 +308,9 @@ async function uploadSticker(imageData: string, options: MediaApiOptions = {}) {
 async function uploadPrint(
     imageData: string,
     {
-        endpoint = '',
         cropWhiteBorder = true,
         params = {}
     }: {
-        endpoint?: string;
         cropWhiteBorder?: boolean;
         params?: MediaApiParams;
     } = {}
@@ -378,7 +319,6 @@ async function uploadPrint(
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaPrintUpload({
-                endpoint: resolveMediaEndpoint(endpoint),
                 imageData,
                 cropWhiteBorder: Boolean(cropWhiteBorder),
                 params: normalizedParams
@@ -396,18 +336,12 @@ async function uploadPrint(
 
 async function uploadAssetImage(
     imageData: string,
-    {
-        endpoint = '',
-        assetKind,
-        cropWhiteBorder = false,
-        params = {}
-    }: MediaAssetUploadOptions
+    { assetKind, cropWhiteBorder = false, params = {} }: MediaAssetUploadOptions
 ): Promise<MediaUploadResponse> {
     const normalizedParams = normalizeParams(params);
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaAssetUpload({
-                endpoint: resolveMediaEndpoint(endpoint),
                 assetKind,
                 imageData,
                 cropWhiteBorder: Boolean(cropWhiteBorder),
@@ -424,10 +358,12 @@ async function uploadAssetImage(
     };
 }
 
-async function getPrints(
-    { userId, n = 100 }: { userId?: unknown; n?: number } = {},
-    options: MediaApiOptions = {}
-): Promise<VrchatRequestResponse<MediaPrintRecord[]>> {
+async function getPrints({
+    userId,
+    n = 100
+}: { userId?: unknown; n?: number } = {}): Promise<
+    VrchatRequestResponse<MediaPrintRecord[]>
+> {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -439,7 +375,6 @@ async function getPrints(
     return executeMediaCommand<MediaPrintRecord[]>(
         () =>
             commands.appVrchatMediaPrintsGet({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 userId: normalizedUserId,
                 n
             }),
@@ -454,7 +389,7 @@ async function getPrints(
     );
 }
 
-async function getPrint(printId: unknown, options: MediaApiOptions = {}) {
+async function getPrint(printId: unknown) {
     const normalizedPrintId =
         typeof printId === 'string'
             ? printId.trim()
@@ -466,7 +401,6 @@ async function getPrint(printId: unknown, options: MediaApiOptions = {}) {
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaPrintGet({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 printId: normalizedPrintId
             }),
         {
@@ -477,7 +411,7 @@ async function getPrint(printId: unknown, options: MediaApiOptions = {}) {
     );
 }
 
-async function deletePrint(printId: unknown, options: MediaApiOptions = {}) {
+async function deletePrint(printId: unknown) {
     const normalizedPrintId =
         typeof printId === 'string'
             ? printId.trim()
@@ -489,7 +423,6 @@ async function deletePrint(printId: unknown, options: MediaApiOptions = {}) {
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaPrintDelete({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 printId: normalizedPrintId
             }),
         {
@@ -525,14 +458,12 @@ async function setPrintFavorite(
 }
 
 async function getInventoryItems(
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
+    params: MediaApiParams = {}
 ): Promise<VrchatRequestResponse<InventoryItemsResponse>> {
     const normalizedParams = normalizeParams(params);
     return executeMediaCommand<InventoryItemsResponse>(
         () =>
             commands.appVrchatMediaInventoryItemsGet({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 params: normalizedParams
             }),
         {
@@ -565,7 +496,7 @@ async function getUserInventoryItem(
                 inventoryId: normalizedInventoryId,
                 userId: normalizedUserId
             },
-            options.endpoint
+            DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.inventoryCollection,
         force: Boolean(options.force),
@@ -573,7 +504,6 @@ async function getUserInventoryItem(
             executeMediaCommand(
                 () =>
                     commands.appVrchatMediaUserInventoryItemGet({
-                        endpoint: resolveMediaEndpoint(options.endpoint),
                         userId: normalizedUserId,
                         inventoryId: normalizedInventoryId
                     }),
@@ -589,8 +519,7 @@ async function getUserInventoryItem(
 
 async function updateInventoryItem(
     inventoryId: unknown,
-    params: MediaApiParams = {},
-    options: MediaApiOptions = {}
+    params: MediaApiParams = {}
 ) {
     const normalizedInventoryId =
         typeof inventoryId === 'string'
@@ -606,7 +535,6 @@ async function updateInventoryItem(
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaInventoryItemUpdate({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 inventoryId: normalizedInventoryId,
                 params: normalizedParams
             }),
@@ -616,10 +544,7 @@ async function updateInventoryItem(
     );
 }
 
-async function consumeInventoryBundle(
-    inventoryId: unknown,
-    options: MediaApiOptions = {}
-) {
+async function consumeInventoryBundle(inventoryId: unknown) {
     const normalizedInventoryId =
         typeof inventoryId === 'string'
             ? inventoryId.trim()
@@ -633,7 +558,6 @@ async function consumeInventoryBundle(
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaInventoryBundleConsume({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 inventoryId: normalizedInventoryId
             }),
         {
@@ -644,7 +568,7 @@ async function consumeInventoryBundle(
     );
 }
 
-async function redeemReward(code: unknown, options: MediaApiOptions = {}) {
+async function redeemReward(code: unknown) {
     const normalizedCode =
         typeof code === 'string' ? code.trim() : String(code ?? '').trim();
     if (!normalizedCode) {
@@ -654,7 +578,6 @@ async function redeemReward(code: unknown, options: MediaApiOptions = {}) {
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaRewardRedeem({
-                endpoint: resolveMediaEndpoint(options.endpoint),
                 code: normalizedCode
             }),
         {
@@ -668,8 +591,7 @@ async function redeemReward(code: unknown, options: MediaApiOptions = {}) {
 async function uploadAvatarImageLegacy({
     avatarId,
     imageUrl = '',
-    base64File,
-    endpoint = ''
+    base64File
 }: LegacyImageUploadOptions) {
     const normalizedAvatarId =
         typeof avatarId === 'string'
@@ -684,7 +606,6 @@ async function uploadAvatarImageLegacy({
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaAvatarImageUploadLegacy({
-                endpoint: resolveMediaEndpoint(endpoint),
                 entityId: normalizedAvatarId,
                 imageUrl,
                 base64File,
@@ -706,8 +627,7 @@ async function uploadAvatarImageLegacy({
 async function uploadWorldImageLegacy({
     worldId,
     imageUrl = '',
-    base64File,
-    endpoint = ''
+    base64File
 }: LegacyImageUploadOptions) {
     const normalizedWorldId =
         typeof worldId === 'string'
@@ -722,7 +642,6 @@ async function uploadWorldImageLegacy({
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaWorldImageUploadLegacy({
-                endpoint: resolveMediaEndpoint(endpoint),
                 entityId: normalizedWorldId,
                 imageUrl,
                 base64File,

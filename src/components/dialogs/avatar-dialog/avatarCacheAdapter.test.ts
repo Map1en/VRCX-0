@@ -43,29 +43,24 @@ describe('avatarCacheAdapter', () => {
         });
 
         await expect(
-            readAvatarCacheInfo(
-                {
-                    unityPackages: [
-                        {
-                            platform: 'standalonewindows',
-                            variant: 'security',
-                            unitySortNumber: '20220306000',
-                            assetUrl:
-                                'https://api.vrchat.cloud/api/1/file/file_cache/4/file?v=8'
-                        }
-                    ]
-                },
-                'https://api.example.test'
-            )
+            readAvatarCacheInfo({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        variant: 'security',
+                        unitySortNumber: '20220306000',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_cache/4/file?v=8'
+                    }
+                ]
+            })
         ).resolves.toEqual({
             inCache: true,
             cacheSize: '2.00 MB',
             cacheLocked: true,
             cachePath: 'C:/cache/avatar'
         });
-        expect(vrchatAuthRepository.getConfig).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test'
-        });
+        expect(vrchatAuthRepository.getConfig).toHaveBeenCalledWith();
         expect(assetBundleRepository.checkVRChatCache).toHaveBeenCalledWith(
             'file_cache',
             4,
@@ -79,9 +74,9 @@ describe('avatarCacheAdapter', () => {
             json: { sdkUnityVersion: '' }
         });
 
-        await expect(
-            readAvatarCacheInfo({ assetUrl: '' }, '')
-        ).resolves.toEqual(defaultAvatarSideData().cache);
+        await expect(readAvatarCacheInfo({ assetUrl: '' })).resolves.toEqual(
+            defaultAvatarSideData().cache
+        );
         expect(assetBundleRepository.checkVRChatCache).not.toHaveBeenCalled();
     });
 
@@ -96,20 +91,17 @@ describe('avatarCacheAdapter', () => {
         });
 
         await expect(
-            readAvatarCacheInfo(
-                {
-                    unityPackages: [
-                        {
-                            platform: 'standalonewindows',
-                            variant: 'standard',
-                            unitySortNumber: '20220307000',
-                            assetUrl:
-                                'https://api.vrchat.cloud/api/1/file/file_config-fallback/6/file'
-                        }
-                    ]
-                },
-                'https://api.example.test'
-            )
+            readAvatarCacheInfo({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        variant: 'standard',
+                        unitySortNumber: '20220307000',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_config-fallback/6/file'
+                    }
+                ]
+            })
         ).resolves.toEqual({
             inCache: true,
             cacheSize: '1.00 MB',

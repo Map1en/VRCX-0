@@ -8,6 +8,28 @@ type InstanceRosterRecord = Record<string, unknown>;
 type InstanceRosterSource = InstanceRosterRecord | string | null | undefined;
 type InstanceRosterMap = Map<string, InstanceRosterRow>;
 
+export interface MergeInstanceUserOptions {
+    incomingPresenceWins?: boolean;
+}
+
+const INSTANCE_USER_PRESENCE_FIELDS = [
+    'location',
+    '$location',
+    'locationUpdatedAt',
+    'worldId',
+    'instanceId',
+    'travelingToLocation',
+    'travelingToWorld',
+    'travelingToInstance',
+    '$travelingToLocation',
+    '$travelingToTime',
+    'state',
+    'stateBucket',
+    'status',
+    'statusDescription',
+    'pendingOffline'
+];
+
 interface ResolvePresenceLocationOptions {
     preferTraveling?: boolean;
     requireInstance?: boolean;
@@ -239,7 +261,8 @@ export function createInstanceUserRow(
 
 export function mergeInstanceUserRows(
     existing: InstanceRosterRow | null | undefined,
-    incoming: InstanceRosterRow | null | undefined
+    incoming: InstanceRosterRow | null | undefined,
+    { incomingPresenceWins = false }: MergeInstanceUserOptions = {}
 ): InstanceRosterRow | null | undefined {
     if (!existing) {
         return incoming;
@@ -252,6 +275,13 @@ export function mergeInstanceUserRows(
     for (const [key, value] of Object.entries(incoming)) {
         if (!isPresentValue(merged[key]) && isPresentValue(value)) {
             merged[key] = value;
+        }
+    }
+    if (incomingPresenceWins) {
+        for (const field of INSTANCE_USER_PRESENCE_FIELDS) {
+            if (incoming[field] !== undefined) {
+                merged[field] = incoming[field];
+            }
         }
     }
     return merged;
@@ -269,7 +299,8 @@ function rosterUserKey(user: unknown): string {
 export function mergeInstanceUser(
     rowsByKey: InstanceRosterMap,
     user: InstanceRosterSource,
-    fallback: InstanceRosterRecord = {}
+    fallback: InstanceRosterRecord = {},
+    options: MergeInstanceUserOptions = {}
 ): void {
     const row = createInstanceUserRow(user, fallback);
     const key = rosterUserKey(row);
@@ -277,7 +308,10 @@ export function mergeInstanceUser(
         return;
     }
     const existing = rowsByKey.get(key);
-    rowsByKey.set(key, existing ? mergeInstanceUserRows(existing, row)! : row);
+    rowsByKey.set(
+        key,
+        existing ? mergeInstanceUserRows(existing, row, options)! : row
+    );
 }
 
 export function pushInstanceUserSource(

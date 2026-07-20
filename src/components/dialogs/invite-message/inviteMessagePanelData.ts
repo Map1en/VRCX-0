@@ -20,7 +20,6 @@ export type InviteMessageUsePayload = {
 
 export type InviteMessageSavePayload = {
     currentUserId?: string | null;
-    endpoint?: string;
     messageType: string;
     row: InviteMessageRow;
     message: string;
@@ -182,7 +181,6 @@ export function primaryActionLabel(
 
 export async function saveInviteMessage({
     currentUserId,
-    endpoint,
     messageType,
     row,
     message,
@@ -200,15 +198,12 @@ export async function saveInviteMessage({
         return null;
     }
 
-    const json = await vrchatToolsRepository.editInviteMessage(
-        {
-            currentUserId,
-            messageType,
-            slot,
-            message
-        },
-        { endpoint }
-    );
+    const json = await vrchatToolsRepository.editInviteMessage({
+        currentUserId,
+        messageType,
+        slot,
+        message
+    });
     if (json?.[slot]?.message === previousMessage) {
         throw new Error(t('dialog.edit_invite_messages.error.update_failed'));
     }

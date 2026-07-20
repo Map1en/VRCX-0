@@ -97,6 +97,7 @@ pub struct ProfileRestoreValidation {
 pub enum ProfileRestoreFailureCode {
     OperationBusy,
     PendingRestore,
+    PendingDataDirMigration,
     InvalidArchive,
     InvalidEntries,
     UnsupportedManifestVersion,

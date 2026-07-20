@@ -6,12 +6,14 @@ use super::*;
 impl RealtimeHostRuntime {
     pub fn new(deps: RealtimeHostRuntimeDeps) -> Self {
         let (cancel_tx, _) = watch::channel(0);
+        let (transport_lifecycle_tx, _) = broadcast::channel(32);
         let (friend_profile_bulk_cancel_tx, _) = watch::channel(0);
         let world_cache = Arc::clone(&deps.world_cache);
         Self {
             deps,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
             cancel_tx,
+            transport_lifecycle_tx,
             friends: RealtimeFriendsRuntime::new(),
             current_user: RealtimeCurrentUserRuntime::new(),
             user_cache: UserCacheRuntime::new(),
@@ -23,9 +25,50 @@ impl RealtimeHostRuntime {
                 super::friend_profile_bulk_load::FriendProfileBulkLoadState::default(),
             ),
             friend_profile_bulk_cancel_tx,
-            #[cfg(test)]
-            friend_before_output_hook: Mutex::new(None),
         }
+    }
+
+    pub fn subscribe_transport_lifecycle(
+        &self,
+    ) -> broadcast::Receiver<RealtimeTransportLifecycleEvent> {
+        self.transport_lifecycle_tx.subscribe()
+    }
+
+    pub fn transport_is_active(&self, transport: &RealtimeTransportStartResult) -> bool {
+        self.state
+            .lock()
+            .map(|state| {
+                state
+                    .connection
+                    .active_context
+                    .as_ref()
+                    .is_some_and(|active| {
+                        active.client_run_id == transport.client_run_id
+                            && active.generation == transport.generation
+                            && active.session_generation == transport.session_generation
+                    })
+            })
+            .unwrap_or(false)
+    }
+
+    pub(super) fn current_transport(
+        &self,
+        generation: u64,
+        session_generation: u64,
+        session: &RealtimeSessionContext,
+    ) -> Option<RealtimeTransportStartResult> {
+        self.state.lock().ok().and_then(|state| {
+            state.connection.active_context.as_ref().and_then(|active| {
+                (active.generation == generation
+                    && active.session_generation == session_generation
+                    && active.session == *session)
+                    .then_some(RealtimeTransportStartResult {
+                        generation: active.generation,
+                        client_run_id: active.client_run_id,
+                        session_generation: active.session_generation,
+                    })
+            })
+        })
     }
 
     pub fn start(
@@ -47,18 +90,15 @@ impl RealtimeHostRuntime {
         let mut pending_feed_entries = Vec::new();
         let mut pending_projection = FriendProjection::default();
         let friend_owner = self.lock_friend_owner();
-        let (generation, previous_active) = {
+        let generation = {
             let mut state = self
                 .state
                 .lock()
                 .map_err(|error| Error::Custom(format!("realtime state lock: {error}")))?;
-            let previous_active = state.connection.active_context.clone();
             state.connection.generation = state.connection.generation.saturating_add(1);
-            (state.connection.generation, previous_active)
+            state.connection.generation
         };
-        if let Some(previous_active) = previous_active {
-            self.cancel_friend_profile_bulk_load_for_session(&previous_active);
-        }
+        self.cancel_friend_profile_bulk_load_for_replacement(&session);
         let session_generation = self.deps.session.set_realtime_context(
             vrcx_0_application_core::HostRealtimeSessionContext::new(
                 session.user_id.clone(),
@@ -84,8 +124,6 @@ impl RealtimeHostRuntime {
                     pending_projection = pending.projection;
                 }
             }
-            state.connection.friend_messages_paused = false;
-            state.connection.queued_friend_messages.clear();
             state.friend_profile.refetches.clear();
             state.world_enrichment.fetches.clear();
             state.world_enrichment.inflight.clear();
@@ -146,13 +184,19 @@ impl RealtimeHostRuntime {
             db: Arc::clone(&self.deps.db),
             web: Arc::clone(&self.deps.web),
             event_bus: self.deps.event_bus.clone(),
-            session: self.deps.session.clone(),
         };
         let message_sink: Arc<dyn RealtimeMessageSink> = Arc::new(RealtimeHostRuntimeMessageSink {
             runtime: Arc::clone(self),
         });
         let cancel_rx = self.cancel_tx.subscribe();
         let _ = self.cancel_tx.send(generation);
+        let transport = RealtimeTransportStartResult {
+            generation,
+            client_run_id,
+            session_generation,
+        };
+        let task_transport = transport.clone();
+        let runtime = Arc::clone(self);
         self.deps.sync.record(
             "realtime",
             "running",
@@ -160,7 +204,7 @@ impl RealtimeHostRuntime {
             0,
         );
         self.deps.tasks.spawn(async move {
-            run_realtime_transport(
+            let termination = supervise_realtime_transport(run_realtime_transport(
                 transport_deps,
                 message_sink,
                 client_run_id,
@@ -168,19 +212,102 @@ impl RealtimeHostRuntime {
                 session_generation,
                 session,
                 cancel_rx,
-            )
+            ))
             .await;
+            runtime.finish_realtime_transport(task_transport, termination);
         });
 
         if self.deps.session.snapshot().is_game_running {
             self.sync_current_user_game_running_state(generation, true);
         }
 
-        Ok(RealtimeTransportStartResult {
-            generation,
-            client_run_id,
-            session_generation,
-        })
+        Ok(transport)
+    }
+
+    pub(super) fn finish_realtime_transport(
+        &self,
+        transport: RealtimeTransportStartResult,
+        termination: RealtimeTransportTermination,
+    ) {
+        let preserve_snapshot = matches!(
+            &termination,
+            RealtimeTransportTermination::UnexpectedExit { .. }
+        );
+        self.deps
+            .session
+            .clear_realtime_context_if_generation(transport.session_generation);
+        let friend_owner = self.lock_friend_owner();
+        let finished = match self.state.lock() {
+            Ok(mut state) => {
+                let active = state
+                    .connection
+                    .active_context
+                    .as_ref()
+                    .filter(|active| {
+                        active.generation == transport.generation
+                            && active.client_run_id == transport.client_run_id
+                            && active.session_generation == transport.session_generation
+                    })
+                    .cloned();
+                active.map(|active| {
+                    let final_current_user_output =
+                        self.current_user_game_running_output(active.generation, false);
+                    state.connection.active_context = None;
+                    state.friend_profile.refetches.clear();
+                    if !preserve_snapshot {
+                        self.friends.clear();
+                        self.current_user.clear();
+                    }
+                    (active, final_current_user_output)
+                })
+            }
+            Err(error) => {
+                tracing::warn!("realtime state lock failed: {error}");
+                None
+            }
+        };
+        drop(friend_owner);
+
+        if let Some((active, final_current_user_output)) = finished {
+            if !preserve_snapshot {
+                self.cancel_friend_profile_bulk_load_for_session(&active.session);
+            }
+            if let Some(output) = final_current_user_output {
+                self.apply_current_user_output(output);
+            }
+            let terminal_status = match &termination {
+                RealtimeTransportTermination::AuthExpired {
+                    reason,
+                    status_code,
+                } => Some(("authFailure", reason.clone(), *status_code)),
+                RealtimeTransportTermination::UnexpectedExit { reason } => {
+                    Some(("error", reason.clone(), None))
+                }
+                RealtimeTransportTermination::Stopped => None,
+            };
+            if let Some((status, reason, status_code)) = terminal_status {
+                self.deps.sync.record_failure("realtime", reason.clone());
+                self.deps
+                    .event_bus
+                    .emit_realtime_ws_status(RealtimeWsStatusPayload {
+                        status: status.into(),
+                        websocket_domain: normalize_websocket_domain(&active.session.websocket),
+                        at: chrono::Utc::now().to_rfc3339(),
+                        client_run_id: Some(active.client_run_id),
+                        generation: Some(active.generation),
+                        session_generation: Some(active.session_generation),
+                        reason: Some(reason),
+                        status_code,
+                    });
+            }
+        }
+
+        let _ = self
+            .transport_lifecycle_tx
+            .send(RealtimeTransportLifecycleEvent::Finished {
+                transport,
+                termination,
+            });
     }
 
     pub fn friend_snapshot(&self) -> Option<crate::realtime::RealtimeFriendSnapshot> {
@@ -262,14 +389,7 @@ impl RealtimeHostRuntime {
 
     pub fn stop(&self, request: RealtimeStopRequest) {
         let friend_owner = self.lock_friend_owner();
-        let (
-            stopped_active,
-            websocket_domain,
-            client_run_id,
-            generation,
-            session_generation,
-            final_current_user_output,
-        ) = {
+        let stopped = {
             let mut state = match self.state.lock() {
                 Ok(state) => state,
                 Err(error) => {
@@ -278,53 +398,65 @@ impl RealtimeHostRuntime {
                 }
             };
 
-            let Some(active) = state.connection.active_context.clone() else {
-                if request.has_scope() {
-                    return;
+            match state.connection.active_context.clone() {
+                None => {
+                    if !request.has_scope() {
+                        state.connection.generation = state.connection.generation.saturating_add(1);
+                        let _ = self.cancel_tx.send(state.connection.generation);
+                    }
+                    None
                 }
-                state.connection.generation = state.connection.generation.saturating_add(1);
-                let _ = self.cancel_tx.send(state.connection.generation);
-                return;
-            };
+                Some(active) => {
+                    if !request.matches_active(&active) {
+                        tracing::warn!(
+                            client_run_id = ?request.client_run_id,
+                            generation = ?request.generation,
+                            active_client_run_id = active.client_run_id,
+                            active_generation = active.generation,
+                            "[Realtime] ignored stale stop request"
+                        );
+                        return;
+                    }
 
-            if !request.matches_active(&active) {
-                tracing::warn!(
-                    client_run_id = ?request.client_run_id,
-                    generation = ?request.generation,
-                    active_client_run_id = active.client_run_id,
-                    active_generation = active.generation,
-                    "[Realtime] ignored stale stop request"
-                );
-                return;
+                    let websocket_domain = normalize_websocket_domain(&active.session.websocket);
+                    let final_current_user_output =
+                        self.current_user_game_running_output(active.generation, false);
+                    state.connection.generation = state.connection.generation.saturating_add(1);
+                    state.connection.active_context = None;
+                    state.friend_baseline.pending = None;
+                    state.friend_profile.refetches.clear();
+                    state.world_enrichment.fetches.clear();
+                    state.world_enrichment.inflight.clear();
+                    state.world_enrichment.pending_corrections.clear();
+                    let _ = self.cancel_tx.send(state.connection.generation);
+                    self.deps.session.clear_realtime_context();
+                    self.friends.clear();
+                    self.current_user.clear();
+                    Some((
+                        active.clone(),
+                        websocket_domain,
+                        active.client_run_id,
+                        active.generation,
+                        active.session_generation,
+                        final_current_user_output,
+                    ))
+                }
             }
-
-            let websocket_domain = normalize_websocket_domain(&active.session.websocket);
-            let final_current_user_output =
-                self.current_user_game_running_output(active.generation, false);
-            state.connection.generation = state.connection.generation.saturating_add(1);
-            state.connection.active_context = None;
-            state.friend_baseline.pending = None;
-            state.connection.friend_messages_paused = false;
-            state.connection.queued_friend_messages.clear();
-            state.friend_profile.refetches.clear();
-            state.world_enrichment.fetches.clear();
-            state.world_enrichment.inflight.clear();
-            state.world_enrichment.pending_corrections.clear();
-            let _ = self.cancel_tx.send(state.connection.generation);
-            self.deps.session.clear_realtime_context();
-            self.friends.clear();
-            self.current_user.clear();
-            (
-                active.clone(),
-                websocket_domain,
-                active.client_run_id,
-                active.generation,
-                active.session_generation,
-                final_current_user_output,
-            )
         };
         drop(friend_owner);
-        self.cancel_friend_profile_bulk_load_for_session(&stopped_active);
+        let Some((
+            stopped_active,
+            websocket_domain,
+            client_run_id,
+            generation,
+            session_generation,
+            final_current_user_output,
+        )) = stopped
+        else {
+            self.cancel_friend_profile_bulk_load_for_stop_request(&request);
+            return;
+        };
+        self.cancel_friend_profile_bulk_load_for_session(&stopped_active.session);
 
         self.user_cache.clear();
         self.user_query_cache.clear();

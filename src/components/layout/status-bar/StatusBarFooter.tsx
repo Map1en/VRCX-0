@@ -11,6 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { ProxySettingsEditor } from '@/components/proxy/ProxySettingsEditor';
 import { cn } from '@/lib/utils';
 import {
+    dataDirMigrationErrorKey,
+    dataDirMigrationPhaseKey
+} from '@/services/dataDirMigrationI18n';
+import {
     profileBackupErrorKey,
     profileBackupPhaseKey
 } from '@/services/profileBackupI18n';
@@ -69,9 +73,6 @@ function formatFriendProfileLoadTooltip(
     t: ReturnType<typeof useTranslation>['t']
 ) {
     const status = String(friendProfileLoad.status || 'idle');
-    if (status === 'error') {
-        return t('view.friend_list.error.failed_to_load_friend_details');
-    }
     if (status === 'cancelled') {
         return t('view.friend_list.success.friend_detail_loading_cancelled');
     }
@@ -180,6 +181,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             clockPopoverOpen,
             currentLocationStartedTimestamp,
             currentWorld,
+            dataDirMigration,
             gameStartedAt,
             isGameRunning,
             isSteamVRRunning,
@@ -469,6 +471,47 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                     </div>
 
                     <div className="text-muted-foreground flex shrink-0 items-center justify-end overflow-hidden">
+                        <StatusSegment
+                            visible={
+                                dataDirMigration.status.state === 'running' ||
+                                dataDirMigration.status.state ===
+                                    'cancelling' ||
+                                dataDirMigration.status.state === 'error'
+                            }
+                            active={dataDirMigration.status.state === 'running'}
+                            warn={dataDirMigration.status.state === 'error'}
+                            showDot={false}
+                            label={
+                                dataDirMigration.status.state === 'error'
+                                    ? t('data_dir_migration.error_short')
+                                    : t(
+                                          dataDirMigrationPhaseKey(
+                                              dataDirMigration.status.phase
+                                          )
+                                      )
+                            }
+                            value={
+                                dataDirMigration.status.percent !== null &&
+                                dataDirMigration.status.percent !== undefined
+                                    ? `${dataDirMigration.status.percent}%`
+                                    : undefined
+                            }
+                            tooltip={
+                                dataDirMigration.status.error
+                                    ? t(
+                                          dataDirMigrationErrorKey(
+                                              dataDirMigration.status.error.code
+                                          )
+                                      )
+                                    : undefined
+                            }
+                            className="text-muted-foreground -ml-px border-l"
+                            labelClassName={
+                                dataDirMigration.status.state === 'error'
+                                    ? 'text-destructive'
+                                    : undefined
+                            }
+                        />
                         <StatusSegment
                             visible={profileBackup.status.state !== 'idle'}
                             active={profileBackup.status.state === 'running'}

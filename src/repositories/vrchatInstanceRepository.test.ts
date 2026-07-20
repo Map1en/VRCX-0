@@ -18,8 +18,7 @@ describe('InstanceRepository', () => {
             command.mockReset();
             command.mockResolvedValue({
                 status: 200,
-                data: '{"ok":true}',
-                raw: { ok: true }
+                data: '{"ok":true}'
             });
         }
     });
@@ -30,8 +29,7 @@ describe('InstanceRepository', () => {
                 worldId: ' wrld_test ',
                 ownerId: ' usr_owner ',
                 accessType: 'invite+',
-                region: 'Europe',
-                endpoint: 'https://api.example.test/api/1'
+                region: 'Europe'
             })
         ).resolves.toMatchObject({
             json: { ok: true },
@@ -39,7 +37,6 @@ describe('InstanceRepository', () => {
         });
 
         expect(tauriApp.appVrchatInstanceCreate).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test/api/1',
             params: {
                 type: 'private',
                 canRequestInvite: true,
@@ -113,8 +110,7 @@ describe('InstanceRepository', () => {
                 error: {
                     message: 'Instance create forbidden'
                 }
-            }),
-            raw: {}
+            })
         });
 
         await expect(

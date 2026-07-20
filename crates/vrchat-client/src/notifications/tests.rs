@@ -5,7 +5,10 @@ use super::*;
 const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
 fn post_data(request: &HttpApiRequestInput) -> Value {
-    serde_json::from_str(request.post_data.as_deref().unwrap()).unwrap()
+    let Some(HttpApiUpload::LegacyImage { post_data, .. }) = request.body.as_upload() else {
+        panic!("expected legacy image upload");
+    };
+    serde_json::from_str(post_data.as_deref().unwrap()).unwrap()
 }
 
 #[test]
@@ -56,7 +59,10 @@ fn ignored_friend_request_hide_deletes_sender_request_with_notification_body() {
         request.path.as_deref(),
         Some("user/usr%5Fsender%2Funsafe/friendRequest")
     );
-    assert_eq!(request.body, Some(json!({ "notificationId": "note_1" })));
+    assert_eq!(
+        request.body.as_json(),
+        Some(&json!({ "notificationId": "note_1" }))
+    );
 }
 
 #[test]
@@ -74,7 +80,7 @@ fn ordinary_hide_uses_versioned_method_and_path_without_body() {
         v1.path.as_deref(),
         Some("auth/user/notifications/note%5F1%2Funsafe/hide")
     );
-    assert!(v1.body.is_none());
+    assert_eq!(v1.body, HttpApiRequestBody::Empty);
 
     let (_, v2) = notification_hide_remote_input(
         ENDPOINT.into(),
@@ -86,7 +92,7 @@ fn ordinary_hide_uses_versioned_method_and_path_without_body() {
     .unwrap();
     assert_eq!(v2.method.as_deref(), Some("DELETE"));
     assert_eq!(v2.path.as_deref(), Some("notifications/note%5F1%2Funsafe"));
-    assert!(v2.body.is_none());
+    assert_eq!(v2.body, HttpApiRequestBody::Empty);
 }
 
 #[test]
@@ -106,8 +112,8 @@ fn respond_builds_encoded_path_and_complete_json_body() {
         Some("notifications/note%5F1%2Funsafe/respond")
     );
     assert_eq!(
-        request.body,
-        Some(json!({
+        request.body.as_json(),
+        Some(&json!({
             "notificationId": "note_1/unsafe",
             "responseType": "accept",
             "responseData": { "slot": 2 },
@@ -130,8 +136,10 @@ fn invite_response_photo_builds_legacy_upload_request() {
         request.path.as_deref(),
         Some("invite/note%5F1%2Funsafe/response/photo")
     );
-    assert_eq!(request.upload_image_legacy, Some(true));
-    assert_eq!(request.image_data.as_deref(), Some("image-data"));
+    assert!(matches!(
+        request.body.as_upload(),
+        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "image-data"
+    ));
     assert_eq!(
         post_data(&request),
         json!({ "responseSlot": 3, "rsvp": true })
@@ -153,8 +161,10 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
         invite.path.as_deref(),
         Some("invite/usr%5Ftarget%2Funsafe/photo")
     );
-    assert_eq!(invite.upload_image_legacy, Some(true));
-    assert_eq!(invite.image_data.as_deref(), Some("invite-image"));
+    assert!(matches!(
+        invite.body.as_upload(),
+        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "invite-image"
+    ));
     assert_eq!(post_data(&invite), params);
 
     let (_, request_invite) = request_invite_photo_input(
@@ -169,8 +179,10 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
         request_invite.path.as_deref(),
         Some("requestInvite/usr%5Ftarget%2Funsafe/photo")
     );
-    assert_eq!(request_invite.upload_image_legacy, Some(true));
-    assert_eq!(request_invite.image_data.as_deref(), Some("request-image"));
+    assert!(matches!(
+        request_invite.body.as_upload(),
+        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "request-image"
+    ));
     assert_eq!(post_data(&request_invite), json!({ "message": "please" }));
 }
 

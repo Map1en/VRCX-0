@@ -6,26 +6,13 @@ use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
 
-use super::super::login::{
-    authenticated_response_user_mismatches, response_allows_saved_credential_fallback,
-    response_requires_two_factor,
-};
 use super::super::snapshot::saved_snapshot;
 use super::super::storage::{
-    read_saved_credentials_map, LAST_USER_LOGGED_IN_KEY, SAVED_CREDENTIALS_KEY,
+    read_saved_credentials, LAST_USER_LOGGED_IN_KEY, SAVED_CREDENTIALS_KEY,
 };
 use super::super::types::LoginSuccessRecordInput;
 use super::record_login_success;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_vrchat_client::http_api::HttpApiExecuteResponse;
-
-fn http_response(status: i32, data: serde_json::Value) -> HttpApiExecuteResponse {
-    HttpApiExecuteResponse {
-        status,
-        data: data.to_string(),
-        raw: data,
-    }
-}
 
 struct TestDir {
     path: PathBuf,
@@ -73,6 +60,7 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
                     "id": "usr_1",
                     "displayName": "Example",
                     "username": "example",
+                    "userIcon": "https://example.test/icon.png",
                     "password": "nested-secret",
                     "profile": {
                         "cookies": "nested-cookie"
@@ -90,80 +78,27 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
     config.set_string(LAST_USER_LOGGED_IN_KEY, "usr_1")?;
 
     let snapshot = saved_snapshot(&config)?;
-    assert!(!contains_secret_key(&snapshot));
+    let serialized_snapshot = serde_json::to_value(&snapshot)?;
+    assert!(!contains_secret_key(&serialized_snapshot));
+    let credential = &snapshot.saved_credentials_list[0];
+    assert_eq!(credential.login_params.username, "login@example.com",);
+    assert_eq!(credential.user.id, "usr_1");
+    assert_eq!(credential.user.display_name.as_deref(), Some("Example"));
+    assert_eq!(credential.user.username.as_deref(), Some("example"));
     assert_eq!(
-        snapshot["savedCredentials"]["usr_1"]["loginParams"]["username"],
-        "login@example.com"
+        credential.user.user_icon.as_deref(),
+        Some("https://example.test/icon.png")
     );
-    assert_eq!(
-        snapshot["savedCredentials"]["usr_1"]["hasLoginCredentials"],
-        true
-    );
-    assert_eq!(snapshot["savedCredentials"]["usr_1"]["hasCookies"], true);
-    assert_eq!(snapshot["savedCredentialFallbackAvailable"], true);
+    assert!(credential.has_login_credentials);
+    assert!(credential.has_cookies);
+    assert!(serialized_snapshot
+        .pointer("/savedCredentialsList/0/loginParams/endpoint")
+        .is_none());
+    assert!(serialized_snapshot
+        .pointer("/savedCredentialsList/0/loginParams/websocket")
+        .is_none());
+
     Ok(())
-}
-
-#[test]
-fn response_allows_saved_credential_fallback_requires_401_and_missing_credentials_message() {
-    assert!(response_allows_saved_credential_fallback(&http_response(
-        401,
-        json!({ "error": { "message": "Missing Credentials" } })
-    )));
-    assert!(!response_allows_saved_credential_fallback(&http_response(
-        401,
-        json!({ "error": { "message": "Invalid Username/Email or Password" } })
-    )));
-    assert!(!response_allows_saved_credential_fallback(&http_response(
-        403,
-        json!({ "error": { "message": "Missing Credentials" } })
-    )));
-}
-
-#[test]
-fn response_requires_two_factor_detects_nonempty_methods_array() {
-    assert!(response_requires_two_factor(&http_response(
-        200,
-        json!({ "requiresTwoFactorAuth": ["totp", "otp"] })
-    )));
-    assert!(!response_requires_two_factor(&http_response(
-        200,
-        json!({ "requiresTwoFactorAuth": [] })
-    )));
-    assert!(!response_requires_two_factor(&http_response(
-        200,
-        json!({ "id": "usr_1" })
-    )));
-}
-
-#[test]
-fn authenticated_response_user_mismatches_flags_a_different_authenticated_user() {
-    assert!(authenticated_response_user_mismatches(
-        &http_response(200, json!({ "id": "usr_other" })),
-        "usr_expected"
-    ));
-    assert!(!authenticated_response_user_mismatches(
-        &http_response(200, json!({ "id": "usr_expected" })),
-        "usr_expected"
-    ));
-    assert!(
-        !authenticated_response_user_mismatches(
-            &http_response(
-                200,
-                json!({ "id": "usr_other", "requiresTwoFactorAuth": ["totp"] })
-            ),
-            "usr_expected"
-        ),
-        "an in-progress two-factor challenge is not a user mismatch"
-    );
-    assert!(!authenticated_response_user_mismatches(
-        &http_response(401, json!({ "id": "usr_other" })),
-        "usr_expected"
-    ));
-    assert!(!authenticated_response_user_mismatches(
-        &http_response(200, json!({ "id": "usr_other" })),
-        ""
-    ));
 }
 
 fn test_web_client(dir: &TestDir, db: &Arc<DatabaseService>) -> crate::Result<WebClient> {
@@ -193,7 +128,7 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry() 
         },
     )?;
 
-    let saved_credentials = read_saved_credentials_map(&config)?;
+    let saved_credentials = read_saved_credentials(&config)?;
     assert!(
         !saved_credentials.contains_key("usr_new"),
         "headless/non-interactive logins must never persist a new saved credential"
@@ -239,18 +174,108 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
         },
     )?;
 
-    let saved_credentials = read_saved_credentials_map(&config)?;
+    let saved_credentials = read_saved_credentials(&config)?;
     let record = saved_credentials
         .get("usr_1")
         .expect("existing saved credential must be kept");
-    assert_eq!(record["user"]["displayName"], "New Name");
+    assert_eq!(record.user.display_name.as_deref(), Some("New Name"));
     assert_eq!(
-        record["loginParams"]["password"], "original-secret",
+        record.login_params.password.as_deref(),
+        Some("original-secret"),
         "save_credentials=false must never overwrite the stored password"
     );
     assert!(
-        record.get("cookies").is_none(),
+        record.cookies.is_none(),
         "cookies must be synced from the live WebClient, which has none in this test"
     );
+    Ok(())
+}
+
+#[test]
+fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering() -> crate::Result<()> {
+    let dir = TestDir::new("auth-typed-legacy-decode");
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+    let config = ConfigRepository::new(db);
+    config.set_string(
+        SAVED_CREDENTIALS_KEY,
+        &json!({
+            "legacy-key": {
+                "user": {
+                    "id": "usr_z",
+                    "displayName": "Zulu",
+                    "username": "zulu",
+                    "userIcon": "https://example.test/icon",
+                    "password": "must-not-reach-the-snapshot"
+                },
+                "loginParmas": {
+                    "username": "zulu@example.test",
+                    "password": "zulu-secret"
+                }
+            },
+            "usr_a": {
+                "user": { "id": "usr_a", "displayName": "Alpha" },
+                "loginParams": {
+                    "username": "alpha@example.test",
+                    "password": "alpha-secret",
+                    "endpoint": "https://legacy.example.test",
+                    "websocket": "wss://legacy.example.test"
+                }
+            }
+        })
+        .to_string(),
+    )?;
+    config.set_string(LAST_USER_LOGGED_IN_KEY, "usr_z")?;
+
+    let credentials = read_saved_credentials(&config)?;
+    assert!(!credentials.contains_key("legacy-key"));
+    assert_eq!(
+        credentials["usr_z"].user.display_name.as_deref(),
+        Some("Zulu")
+    );
+    assert_eq!(
+        credentials["usr_z"].user.user_icon.as_deref(),
+        Some("https://example.test/icon")
+    );
+    assert_eq!(
+        credentials["usr_z"].login_params.password.as_deref(),
+        Some("zulu-secret")
+    );
+    assert_eq!(credentials["usr_a"].login_params.endpoint, "");
+    assert_eq!(credentials["usr_a"].login_params.websocket, "");
+
+    let snapshot = saved_snapshot(&config)?;
+    assert_eq!(snapshot.saved_credentials_list[0].user.id, "usr_z");
+    assert_eq!(
+        snapshot.saved_credentials_list[0]
+            .user
+            .display_name
+            .as_deref(),
+        Some("Zulu")
+    );
+    assert_eq!(
+        snapshot.saved_credentials_list[0].user.username.as_deref(),
+        Some("zulu")
+    );
+    assert_eq!(
+        snapshot.saved_credentials_list[0].user.user_icon.as_deref(),
+        Some("https://example.test/icon")
+    );
+    assert_eq!(snapshot.saved_credentials_list[1].user.id, "usr_a");
+    let serialized = serde_json::to_value(snapshot)?;
+    assert!(!contains_secret_key(&serialized));
+
+    let persisted: serde_json::Value = serde_json::from_str(
+        &config
+            .get_raw(SAVED_CREDENTIALS_KEY)?
+            .expect("normalized credentials must be persisted"),
+    )?;
+    assert!(persisted.get("legacy-key").is_none());
+    assert!(persisted["usr_z"].get("loginParmas").is_none());
+    assert_eq!(
+        persisted["usr_z"]["user"]["userIcon"],
+        "https://example.test/icon"
+    );
+    assert_eq!(persisted["usr_a"]["loginParams"]["endpoint"], "");
+    assert_eq!(persisted["usr_a"]["loginParams"]["websocket"], "");
     Ok(())
 }

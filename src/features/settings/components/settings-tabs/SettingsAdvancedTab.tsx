@@ -161,6 +161,8 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
         onRefreshConfigTreeData,
         onOpenAppDataDirSelector,
         onResetAppDataDir,
+        onCleanupAppDataDir,
+        onDismissAppDataDirCleanup,
         onClearConfigTreeData,
         onAnonymousUsageTelemetryChange
     } = advanced;
@@ -170,7 +172,9 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
               `view.settings.advanced.advanced.data_directory.source_${appDataDirState.source}`
           )
         : t('common.loading');
-    const appDataDirActionsDisabled = Boolean(appDataDirState?.cliOverride);
+    const appDataDirActionsDisabled = Boolean(
+        appDataDirState?.cliOverride || appDataDirState?.pendingMigration
+    );
 
     return (
         <SettingsTabContent value="advanced">
@@ -310,7 +314,7 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                         </div>
                     </div>
                 </Field>
-                {appDataDirActionsDisabled ? (
+                {appDataDirState?.cliOverride ? (
                     <Alert className="pr-32">
                         <AlertTitle>
                             {t(
@@ -321,6 +325,59 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                             {t(
                                 'view.settings.advanced.advanced.data_directory.cli_override'
                             )}
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
+                {appDataDirState?.pendingMigration &&
+                !appDataDirState.cliOverride ? (
+                    <Alert>
+                        <AlertTitle>
+                            {t('data_dir_migration.completed_title')}
+                        </AlertTitle>
+                        <AlertDescription>
+                            {t('data_dir_migration.completed_description')}
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
+                {appDataDirState?.cleanupPending ? (
+                    <Alert>
+                        <AlertTitle>
+                            {t('data_dir_migration.cleanup.settings_title')}
+                        </AlertTitle>
+                        <AlertDescription className="space-y-3">
+                            <p className="break-all">
+                                {t(
+                                    'data_dir_migration.cleanup.settings_description',
+                                    {
+                                        path: appDataDirState.cleanupPending
+                                            .oldDir,
+                                        size: appDataDirState.cleanupPending
+                                            .bytes
+                                    }
+                                )}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={onCleanupAppDataDir}
+                                >
+                                    {t('data_dir_migration.cleanup.action')}
+                                </Button>
+                                {!appDataDirState.cleanupPending.dismissed ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={onDismissAppDataDirCleanup}
+                                    >
+                                        {t(
+                                            'data_dir_migration.cleanup.dismiss'
+                                        )}
+                                    </Button>
+                                ) : null}
+                            </div>
                         </AlertDescription>
                     </Alert>
                 ) : null}

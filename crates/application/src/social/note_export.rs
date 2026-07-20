@@ -168,6 +168,7 @@ fn emit_note_export_auth_failure(
         reason: reason.to_string(),
         status_code,
         auth_scope_generation: scope.generation,
+        realtime_transport: None,
     });
 }
 

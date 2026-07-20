@@ -80,13 +80,11 @@ export function buildUserTextMap(rows: unknown, fieldName: string) {
 }
 
 export async function loadQuickSearchCatalog({
-    currentUserId,
-    endpoint
+    currentUserId
 }: {
     currentUserId: string;
     endpoint?: string | null;
 }) {
-    const resolvedEndpoint = endpoint || undefined;
     const [
         ownAvatars,
         ownWorlds,
@@ -96,20 +94,14 @@ export async function loadQuickSearchCatalog({
         userMemos,
         userNotes
     ] = await Promise.allSettled([
-        myAvatarRepository.getMyAvatars({ endpoint: resolvedEndpoint }),
+        myAvatarRepository.getMyAvatars(),
         worldProfileRepository.getAllWorldsByUser({
-            userId: currentUserId,
-            endpoint: resolvedEndpoint
+            userId: currentUserId
         }),
-        vrchatFavoriteRepository.getAllFavoriteAvatars({
-            endpoint: resolvedEndpoint
-        }),
-        vrchatFavoriteRepository.getAllFavoriteWorlds({
-            endpoint: resolvedEndpoint
-        }),
+        vrchatFavoriteRepository.getAllFavoriteAvatars(),
+        vrchatFavoriteRepository.getAllFavoriteWorlds(),
         groupProfileRepository.getUserGroups({
-            userId: currentUserId,
-            endpoint: resolvedEndpoint
+            userId: currentUserId
         }),
         memoPersistenceRepository.getAllUserMemos(),
         memoPersistenceRepository.getAllUserNotes(currentUserId)

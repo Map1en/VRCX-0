@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BackendRuntimeSnapshot } from '@/platform/tauri/bindings';
+import type {
+    AuthenticatedRuntimePhaseSnapshot,
+    BackendRuntimeSnapshot
+} from '@/platform/tauri/bindings';
 
 const mocks = vi.hoisted(() => ({
     subscribe:
@@ -39,8 +42,9 @@ const mocks = vi.hoisted(() => ({
         >(),
     runtimeGroupInstancesRefresh: vi.fn<() => Promise<null>>(),
     appCheckGameRunning: vi.fn<() => Promise<null>>(),
+    appGameClientDebugLoggingStatus: vi.fn<() => Promise<null>>(),
     profileBackupCurrentStatus: vi.fn(),
-    runtimeAuthScopeGet: vi.fn(),
+    dataDirMigrationCurrentStatus: vi.fn(),
     bindDeepLinkEvents: vi.fn<() => Promise<() => void>>(),
     drainPendingDeepLinks: vi.fn<() => Promise<void>>(),
     deepLinkUnsubscribe: vi.fn(),
@@ -53,14 +57,15 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appCheckGameRunning: mocks.appCheckGameRunning,
         appProfileBackupCurrentStatus: mocks.profileBackupCurrentStatus,
+        appDataDirMigrationCurrentStatus: mocks.dataDirMigrationCurrentStatus,
         appGetBackendRuntimeSnapshot: mocks.getBackendRuntimeSnapshot,
         appAuthenticatedRuntimePhaseSnapshotGet:
             mocks.getAuthenticatedRuntimePhaseSnapshot,
-        appRuntimeAuthScopeGet: mocks.runtimeAuthScopeGet,
         appAppUpdateStatusGet: mocks.getAppUpdateStatus,
         appAppUpdateCheckRun: mocks.getAppUpdateStatus,
         appAppUpdateDownloadStatusGet: mocks.getAppUpdateDownloadStatus,
-        appRuntimeGroupInstancesRefresh: mocks.runtimeGroupInstancesRefresh
+        appRuntimeGroupInstancesRefresh: mocks.runtimeGroupInstancesRefresh,
+        appGameClientDebugLoggingStatus: mocks.appGameClientDebugLoggingStatus
     }
 }));
 
@@ -114,6 +119,7 @@ vi.mock('./authSessionRecoveryService', () => ({
     handleRuntimeAuthFailure: mocks.handleRuntimeAuthFailure
 }));
 
+import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -145,9 +151,52 @@ function createBackendRuntimeSnapshot(): BackendRuntimeSnapshot {
             loaded: 0,
             failed: 0,
             startedAt: '',
-            finishedAt: null,
-            lastError: null
+            finishedAt: null
         }
+    };
+}
+
+function createAuthenticatedRuntimePhaseSnapshot(
+    patch: Partial<AuthenticatedRuntimePhaseSnapshot> = {}
+): AuthenticatedRuntimePhaseSnapshot {
+    return {
+        runId: 9,
+        authScopeGeneration: 7,
+        userId: 'usr_owner',
+        endpoint: 'https://api.vrchat.cloud/api/1',
+        websocket: 'wss://pipeline.vrchat.cloud',
+        phase: 'ready',
+        friends: {
+            status: 'ready',
+            attempt: 1,
+            retryDelaySeconds: null,
+            detail: 'Friends ready.',
+            lastError: null
+        },
+        favorites: {
+            status: 'ready',
+            attempt: 1,
+            retryDelaySeconds: null,
+            detail: 'Favorites ready.',
+            lastError: null
+        },
+        realtime: {
+            status: 'ready',
+            attempt: 1,
+            retryDelaySeconds: null,
+            detail: 'Realtime ready.',
+            lastError: null
+        },
+        friendBaselineRevision: 1,
+        friendBaseline: null,
+        favoritesBaseline: null,
+        realtimeTransport: {
+            clientRunId: 9,
+            generation: 12,
+            sessionGeneration: 14
+        },
+        updatedAt: '2026-07-20T00:00:00.000Z',
+        ...patch
     };
 }
 
@@ -189,7 +238,9 @@ function setBackendRealtimeOwner({
     useRuntimeStore.getState().setBackendRuntimeSnapshot(snapshot);
     if (authReady) {
         useRuntimeStore.getState().setAuthBootstrap({
-            currentUserId: userId
+            currentUserId: userId,
+            currentUserEndpoint: 'https://api.vrchat.cloud/api/1',
+            currentUserWebsocket: 'wss://pipeline.vrchat.cloud'
         });
     }
     if (friendProfileLoadStatus) {
@@ -199,7 +250,10 @@ function setBackendRealtimeOwner({
         });
     }
     if (sessionReady) {
-        useSessionStore.getState().setSessionPhase('ready');
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            sessionPhase: 'ready'
+        });
     }
     return snapshot;
 }
@@ -218,39 +272,40 @@ describe('runtimeEventBridgeService', () => {
         mocks.getBackendRuntimeSnapshot.mockResolvedValue(
             createBackendRuntimeSnapshot()
         );
-        mocks.getAuthenticatedRuntimePhaseSnapshot.mockResolvedValue({
-            runId: 0,
-            authScopeGeneration: 0,
-            userId: '',
-            endpoint: '',
-            websocket: '',
-            phase: 'idle',
-            friends: {
-                status: 'pending',
-                attempt: 0,
-                retryDelaySeconds: null,
-                detail: '',
-                lastError: null
-            },
-            favorites: {
-                status: 'pending',
-                attempt: 0,
-                retryDelaySeconds: null,
-                detail: '',
-                lastError: null
-            },
-            realtime: {
-                status: 'pending',
-                attempt: 0,
-                retryDelaySeconds: null,
-                detail: '',
-                lastError: null
-            },
-            friendBaseline: null,
-            favoritesBaseline: null,
-            realtimeTransport: null,
-            updatedAt: ''
-        });
+        mocks.getAuthenticatedRuntimePhaseSnapshot.mockResolvedValue(
+            createAuthenticatedRuntimePhaseSnapshot({
+                runId: 0,
+                authScopeGeneration: 0,
+                userId: '',
+                endpoint: '',
+                websocket: '',
+                phase: 'idle',
+                friends: {
+                    status: 'pending',
+                    attempt: 0,
+                    retryDelaySeconds: null,
+                    detail: '',
+                    lastError: null
+                },
+                favorites: {
+                    status: 'pending',
+                    attempt: 0,
+                    retryDelaySeconds: null,
+                    detail: '',
+                    lastError: null
+                },
+                realtime: {
+                    status: 'pending',
+                    attempt: 0,
+                    retryDelaySeconds: null,
+                    detail: '',
+                    lastError: null
+                },
+                friendBaselineRevision: 0,
+                realtimeTransport: null,
+                updatedAt: ''
+            })
+        );
         mocks.getAppUpdateStatus.mockResolvedValue({
             hasAvailableUpdate: false,
             checkedAt: '',
@@ -269,6 +324,7 @@ describe('runtimeEventBridgeService', () => {
         });
         mocks.runtimeGroupInstancesRefresh.mockResolvedValue(null);
         mocks.appCheckGameRunning.mockResolvedValue(null);
+        mocks.appGameClientDebugLoggingStatus.mockResolvedValue(null);
         mocks.profileBackupCurrentStatus.mockResolvedValue({
             revision: 0,
             state: 'idle',
@@ -278,11 +334,9 @@ describe('runtimeEventBridgeService', () => {
             error: null,
             lastOutcome: null
         });
-        mocks.runtimeAuthScopeGet.mockResolvedValue({
-            currentUserId: 'usr_owner',
-            endpoint: 'https://api.vrchat.cloud/api/1',
-            generation: 7,
-            active: true
+        mocks.dataDirMigrationCurrentStatus.mockResolvedValue({
+            revision: 0,
+            state: 'idle'
         });
         mocks.bindDeepLinkEvents.mockResolvedValue(mocks.deepLinkUnsubscribe);
         mocks.drainPendingDeepLinks.mockResolvedValue(undefined);
@@ -292,6 +346,9 @@ describe('runtimeEventBridgeService', () => {
     it('routes only current-scope structured VRChat 401 events to auth recovery', async () => {
         const { handlers } = await bindCapturedRuntimeEvents();
         setBackendRealtimeOwner();
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot()
+        );
         const handler = handlers.get('runtimeVrchatAuthFailure');
         expect(handler).toBeTypeOf('function');
 
@@ -309,9 +366,10 @@ describe('runtimeEventBridgeService', () => {
         });
         expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledWith(
             expect.objectContaining({
-                message: 'Missing Credentials (401)',
-                status: 401,
-                endpoint: 'user/usr_target/friendRequest'
+                reason: 'Missing Credentials (401)',
+                statusCode: 401,
+                path: 'user/usr_target/friendRequest',
+                authScopeGeneration: 7
             })
         );
 
@@ -325,6 +383,140 @@ describe('runtimeEventBridgeService', () => {
         });
         await Promise.resolve();
         expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores raw backend realtime auth failure telemetry', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        const snapshot = setBackendRealtimeOwner();
+
+        handlers.get('backendRuntimeTelemetry')?.({
+            snapshot: {
+                ...snapshot,
+                wsStatus: 'authFailure'
+            }
+        });
+
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(mocks.handleRuntimeAuthFailure).not.toHaveBeenCalled();
+    });
+
+    it('routes a current typed realtime auth failure without waiting for WS status', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        setBackendRealtimeOwner();
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot()
+        );
+
+        handlers.get('runtimeVrchatAuthFailure')?.({
+            ownerUserId: 'usr_owner',
+            endpoint: 'https://api.vrchat.cloud/api/1',
+            path: 'auth',
+            reason: 'Forbidden',
+            statusCode: 403,
+            authScopeGeneration: 7,
+            realtimeTransport: {
+                clientRunId: 9,
+                generation: 12,
+                sessionGeneration: 14
+            }
+        });
+
+        await vi.waitFor(() => {
+            expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledTimes(1);
+        });
+        expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledWith(
+            expect.objectContaining({
+                reason: 'Forbidden',
+                statusCode: 403,
+                path: 'auth',
+                authScopeGeneration: 7
+            })
+        );
+
+        handlers.get('runtimeVrchatAuthFailure')?.({
+            ownerUserId: 'usr_owner',
+            endpoint: 'https://api.vrchat.cloud/api/1',
+            path: 'auth',
+            reason: 'stale',
+            statusCode: 401,
+            authScopeGeneration: 7,
+            realtimeTransport: {
+                clientRunId: 9,
+                generation: 11,
+                sessionGeneration: 14
+            }
+        });
+        await Promise.resolve();
+        expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores auth failures until their current runtime authority arrives', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        setBackendRealtimeOwner();
+        const failure = {
+            ownerUserId: 'usr_owner',
+            endpoint: 'https://api.vrchat.cloud/api/1',
+            path: 'auth',
+            reason: 'Forbidden',
+            statusCode: 403,
+            authScopeGeneration: 7,
+            realtimeTransport: {
+                clientRunId: 9,
+                generation: 12,
+                sessionGeneration: 14
+            }
+        } as const;
+
+        handlers.get('runtimeVrchatAuthFailure')?.(failure);
+        await Promise.resolve();
+        expect(mocks.handleRuntimeAuthFailure).not.toHaveBeenCalled();
+
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot()
+        );
+        handlers.get('runtimeVrchatAuthFailure')?.(failure);
+
+        await vi.waitFor(() => {
+            expect(mocks.handleRuntimeAuthFailure).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    it('does not let an out-of-order stale phase authorize an old auth failure', async () => {
+        const { handlers } = await bindCapturedRuntimeEvents();
+        setBackendRealtimeOwner();
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot()
+        );
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot({
+                runId: 8,
+                authScopeGeneration: 6,
+                realtimeTransport: {
+                    clientRunId: 8,
+                    generation: 11,
+                    sessionGeneration: 13
+                },
+                updatedAt: '2026-07-19T23:59:59.000Z'
+            })
+        );
+
+        handlers.get('runtimeVrchatAuthFailure')?.({
+            ownerUserId: 'usr_owner',
+            endpoint: 'https://api.vrchat.cloud/api/1',
+            path: 'auth',
+            reason: 'stale',
+            statusCode: 403,
+            authScopeGeneration: 6,
+            realtimeTransport: {
+                clientRunId: 8,
+                generation: 11,
+                sessionGeneration: 13
+            }
+        });
+        await Promise.resolve();
+
+        expect(mocks.handleRuntimeAuthFailure).not.toHaveBeenCalled();
     });
 
     it('drains pending deep links after backend runtime snapshot hydration', async () => {
@@ -376,7 +568,7 @@ describe('runtimeEventBridgeService', () => {
         expect(mocks.bindDeepLinkEvents).not.toHaveBeenCalled();
     });
 
-    it('cleans subscriptions and pending batches when deep-link startup fails', async () => {
+    it('cleans subscriptions when deep-link startup fails', async () => {
         vi.useFakeTimers();
         const handlers = new Map<string, (payload: unknown) => void>();
         const runtimeUnsubscribe = vi.fn();
@@ -385,19 +577,7 @@ describe('runtimeEventBridgeService', () => {
             return Promise.resolve(runtimeUnsubscribe);
         });
         mocks.bindDeepLinkEvents.mockImplementation(async () => {
-            setBackendRealtimeOwner({
-                friendProfileLoadStatus: 'running'
-            });
-            handlers.get('realtimeUserProjection')?.({
-                source: 'friendProfileBulkLoad',
-                users: [
-                    {
-                        id: 'usr_pending',
-                        endpoint: 'api.vrchat.cloud',
-                        displayName: 'Pending Friend'
-                    }
-                ]
-            });
+            setBackendRealtimeOwner();
             return mocks.deepLinkUnsubscribe;
         });
         mocks.drainPendingDeepLinks.mockRejectedValue(
@@ -409,7 +589,7 @@ describe('runtimeEventBridgeService', () => {
         );
         await vi.advanceTimersByTimeAsync(10_000);
 
-        expect(runtimeUnsubscribe).toHaveBeenCalledTimes(29);
+        expect(runtimeUnsubscribe).toHaveBeenCalledTimes(30);
         expect(mocks.deepLinkUnsubscribe).toHaveBeenCalledTimes(1);
         expect(useSessionStore.getState().transportStatus).toBe('disconnected');
         expect(useUserFactsStore.getState().usersByKey).toEqual({});
@@ -471,6 +651,34 @@ describe('runtimeEventBridgeService', () => {
             revision: 9,
             phase: 'extractDatabase',
             percent: 25
+        });
+    });
+
+    it('hydrates and applies data directory migration progress', async () => {
+        const handlers = new Map<string, (payload: unknown) => void>();
+        mocks.subscribe.mockImplementation(async (name, handler) => {
+            handlers.set(name, handler);
+            return () => {};
+        });
+        mocks.dataDirMigrationCurrentStatus.mockResolvedValueOnce({
+            revision: 2,
+            state: 'running',
+            phase: 'copying',
+            percent: 20
+        });
+
+        await bindRuntimeEvents();
+        handlers.get('dataDirMigration')?.({
+            revision: 3,
+            state: 'running',
+            phase: 'copying',
+            percent: 70
+        });
+
+        expect(useDataDirMigrationStore.getState().status).toMatchObject({
+            revision: 3,
+            phase: 'copying',
+            percent: 70
         });
     });
 
@@ -718,245 +926,55 @@ describe('runtimeEventBridgeService', () => {
         secondBinding.cleanup();
     });
 
-    it('batches friend profile projections into one store update', async () => {
-        vi.useFakeTimers();
-        const { handlers, cleanup } = await bindCapturedRuntimeEvents();
-        setBackendRealtimeOwner({
-            friendProfileLoadStatus: 'running'
-        });
-        let rosterUpdates = 0;
-        let userFactUpdates = 0;
-        const unsubscribeRoster = useFriendRosterStore.subscribe(() => {
-            rosterUpdates += 1;
-        });
-        const unsubscribeUserFacts = useUserFactsStore.subscribe(() => {
-            userFactUpdates += 1;
-        });
-
-        for (const userId of ['usr_a', 'usr_b']) {
-            handlers.get('realtimeUserProjection')?.({
-                source: 'friendProfileBulkLoad',
-                users: [
-                    {
-                        id: userId,
-                        endpoint: 'api.vrchat.cloud',
-                        displayName: userId
-                    }
-                ]
-            });
-            handlers.get('realtimeFriendProjection')?.({
-                generation: 1,
-                baselineRevision: 1,
-                source: 'friendProfileBulkLoad',
-                patches: [
-                    {
-                        userId,
-                        patch: {
-                            id: userId,
-                            displayName: userId,
-                            state: 'offline'
-                        },
-                        stateBucket: 'offline',
-                        stateBucketAuthority: 'preserve'
-                    }
-                ],
-                removals: [],
-                feedEntries: [],
-                friendLogChanged: false
-            });
-        }
-
-        expect(rosterUpdates).toBe(0);
-        expect(userFactUpdates).toBe(0);
-        await vi.advanceTimersByTimeAsync(9_999);
-        expect(rosterUpdates).toBe(0);
-        expect(userFactUpdates).toBe(0);
-        await vi.advanceTimersByTimeAsync(1);
-        expect(rosterUpdates).toBe(1);
-        expect(userFactUpdates).toBe(1);
-        expect(
-            Object.keys(useFriendRosterStore.getState().friendsById)
-        ).toEqual(['usr_a', 'usr_b']);
-
-        unsubscribeRoster();
-        unsubscribeUserFacts();
-        cleanup();
-    });
-
-    it('drops pending friend profile projections during unbind', async () => {
-        vi.useFakeTimers();
-        const { handlers, cleanup } = await bindCapturedRuntimeEvents();
-        setBackendRealtimeOwner({
-            friendProfileLoadStatus: 'running'
-        });
-
-        handlers.get('realtimeUserProjection')?.({
-            source: 'friendProfileBulkLoad',
-            users: [
-                {
-                    id: 'usr_pending',
-                    endpoint: 'api.vrchat.cloud',
-                    displayName: 'Pending Friend'
-                }
-            ]
-        });
-        cleanup();
-        await vi.advanceTimersByTimeAsync(10_000);
-
-        expect(useUserFactsStore.getState().usersByKey).toEqual({});
-    });
-
     it.each(['running', 'cancelling'] as const)(
-        'applies normal realtime projections immediately while profile loading is %s',
+        'delivers friend profile projections immediately while profile loading is %s',
         async (status) => {
-            vi.useFakeTimers();
             const { handlers, cleanup } = await bindCapturedRuntimeEvents();
             setBackendRealtimeOwner({
                 friendProfileLoadStatus: status
             });
 
-            handlers.get('realtimeUserProjection')?.({
-                source: 'friendProfileBulkLoad',
-                users: [
-                    {
-                        id: 'usr_bulk',
-                        endpoint: 'api.vrchat.cloud',
-                        displayName: 'Bulk Friend'
-                    }
-                ]
-            });
-            handlers.get('realtimeFriendProjection')?.({
-                generation: 1,
-                baselineRevision: 1,
-                source: 'friendProfileBulkLoad',
-                patches: [
-                    {
-                        userId: 'usr_bulk',
-                        patch: {
-                            id: 'usr_bulk',
-                            displayName: 'Bulk Friend'
-                        },
-                        stateBucket: 'offline',
-                        stateBucketAuthority: 'preserve'
-                    }
-                ],
-                removals: [],
-                feedEntries: [],
-                friendLogChanged: false
-            });
-            expect(useFriendRosterStore.getState().friendsById).toEqual({});
-            expect(useUserFactsStore.getState().usersByKey).toEqual({});
-
-            handlers.get('realtimeUserProjection')?.({
-                users: [
-                    {
-                        id: 'usr_live',
-                        endpoint: 'api.vrchat.cloud',
-                        displayName: 'Live Friend'
-                    }
-                ]
-            });
-            handlers.get('realtimeFriendProjection')?.({
-                generation: 1,
-                baselineRevision: 1,
-                patches: [
-                    {
-                        userId: 'usr_live',
-                        patch: {
-                            id: 'usr_live',
-                            displayName: 'Live Friend',
-                            status: 'offline'
-                        },
-                        stateBucket: 'online',
-                        stateBucketAuthority: 'preserve'
-                    }
-                ],
-                removals: [],
-                feedEntries: [],
-                friendLogChanged: false
-            });
+            for (const userId of ['usr_a', 'usr_b']) {
+                handlers.get('realtimeUserProjection')?.({
+                    users: [
+                        {
+                            id: userId,
+                            endpoint: 'api.vrchat.cloud',
+                            displayName: userId
+                        }
+                    ]
+                });
+                handlers.get('realtimeFriendProjection')?.({
+                    generation: 1,
+                    baselineRevision: 1,
+                    patches: [
+                        {
+                            userId,
+                            patch: {
+                                id: userId,
+                                displayName: userId,
+                                state: 'offline'
+                            },
+                            stateBucket: 'offline',
+                            stateBucketAuthority: 'preserve'
+                        }
+                    ],
+                    removals: [],
+                    feedEntries: [],
+                    friendLogChanged: false
+                });
+            }
 
             expect(
                 Object.keys(useFriendRosterStore.getState().friendsById)
-            ).toEqual(['usr_bulk', 'usr_live']);
+            ).toEqual(['usr_a', 'usr_b']);
             expect(
                 Object.values(useUserFactsStore.getState().usersByKey).map(
                     (user) => user.id
                 )
-            ).toEqual(['usr_bulk', 'usr_live']);
-            await vi.advanceTimersByTimeAsync(10_000);
-            expect(
-                Object.keys(useFriendRosterStore.getState().friendsById)
-            ).toEqual(['usr_bulk', 'usr_live']);
+            ).toEqual(['usr_a', 'usr_b']);
 
             cleanup();
         }
     );
-
-    it('flushes pending friend profile projections when the load becomes terminal', async () => {
-        vi.useFakeTimers();
-        const { handlers, cleanup } = await bindCapturedRuntimeEvents();
-        setBackendRealtimeOwner({
-            friendProfileLoadStatus: 'running',
-            friendProfileLoadRunId: 100
-        });
-
-        handlers.get('realtimeUserProjection')?.({
-            source: 'friendProfileBulkLoad',
-            users: [
-                {
-                    id: 'usr_terminal',
-                    endpoint: 'api.vrchat.cloud',
-                    displayName: 'Terminal Friend'
-                }
-            ]
-        });
-        handlers.get('realtimeFriendProjection')?.({
-            generation: 1,
-            baselineRevision: 1,
-            source: 'friendProfileBulkLoad',
-            patches: [
-                {
-                    userId: 'usr_terminal',
-                    patch: {
-                        id: 'usr_terminal',
-                        displayName: 'Terminal Friend'
-                    },
-                    stateBucket: 'offline',
-                    stateBucketAuthority: 'preserve'
-                }
-            ],
-            removals: [],
-            feedEntries: [],
-            friendLogChanged: false
-        });
-        expect(useFriendRosterStore.getState().friendsById).toEqual({});
-
-        handlers.get('friendProfileLoadStatus')?.({
-            runId: 100,
-            status: 'cancelled',
-            total: 1,
-            processed: 0,
-            loaded: 0,
-            failed: 0,
-            startedAt: '2026-07-11T00:00:00.000Z',
-            finishedAt: '2026-07-11T00:00:01.000Z',
-            lastError: null
-        });
-
-        expect(
-            Object.keys(useFriendRosterStore.getState().friendsById)
-        ).toEqual(['usr_terminal']);
-        expect(
-            Object.values(useUserFactsStore.getState().usersByKey).map(
-                (user) => user.id
-            )
-        ).toEqual(['usr_terminal']);
-        await vi.advanceTimersByTimeAsync(10_000);
-        expect(
-            Object.keys(useFriendRosterStore.getState().friendsById)
-        ).toEqual(['usr_terminal']);
-
-        cleanup();
-    });
 });

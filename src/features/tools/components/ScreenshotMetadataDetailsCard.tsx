@@ -17,7 +17,6 @@ export function ScreenshotMetadataDetailsCard({
     metadata,
     metadataError,
     searchRowsCount,
-    currentEndpoint,
     onBackToResults
 }: any) {
     const { i18n, t } = useTranslation();
@@ -68,10 +67,7 @@ export function ScreenshotMetadataDetailsCard({
                                     {metadata.world?.name || '\u2014'}
                                 </div>
                             )}
-                            <MetadataAuthorLink
-                                author={metadata.author}
-                                endpoint={currentEndpoint}
-                            />
+                            <MetadataAuthorLink author={metadata.author} />
                         </section>
 
                         <section className="flex flex-col gap-2 border-t pt-4">

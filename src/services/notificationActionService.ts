@@ -18,11 +18,11 @@ type NotificationRecord = Record<string, unknown> & {
 
 interface NotificationActionInput {
     currentUserId?: unknown;
-    endpoint?: string;
     notification?: NotificationRecord | null;
 }
 
 interface FriendRequestNotificationInput extends NotificationActionInput {
+    endpoint?: string;
     targetUser?: NotificationRecord | null;
 }
 
@@ -111,7 +111,6 @@ export async function expireNotificationLocally({
 }
 
 async function hideRemoteNotification({
-    endpoint = '',
     notification
 }: NotificationActionInput) {
     const target = requireNotification(notification);
@@ -119,17 +118,15 @@ async function hideRemoteNotification({
         id: target.id,
         version: target.version,
         type: normalizeText(target.type),
-        senderUserId: target.senderUserId,
-        endpoint
+        senderUserId: target.senderUserId
     });
 }
 
 export async function hideRemoteAndExpireNotification({
     currentUserId,
-    endpoint = '',
     notification
 }: NotificationActionInput) {
-    await hideRemoteNotification({ endpoint, notification });
+    await hideRemoteNotification({ notification });
     await expireNotificationLocally({ currentUserId, notification });
 }
 
@@ -175,7 +172,6 @@ export async function acceptFriendRequestNotification({
 
 export async function acceptRequestInviteNotification({
     currentUserId,
-    endpoint = '',
     notification,
     instanceId,
     worldId
@@ -183,21 +179,18 @@ export async function acceptRequestInviteNotification({
     const target = requireNotification(notification);
     await sendInviteToLocation({
         receiverUserId: target.senderUserId,
-        endpoint,
         instanceId,
         worldId,
         rsvp: true
     });
     await hideRemoteAndExpireNotification({
         currentUserId,
-        endpoint,
         notification: target
     });
 }
 
 export async function sendInviteResponseNotification({
     currentUserId,
-    endpoint = '',
     notification,
     responseSlot,
     imageData,
@@ -217,8 +210,7 @@ export async function sendInviteResponseNotification({
             notificationPersistenceRepository.sendInviteResponsePhoto({
                 id: target.id,
                 responseSlot: normalizedResponseSlot,
-                imageData,
-                endpoint
+                imageData
             });
         if (withUploadTimeout) {
             await withUploadTimeout(upload);
@@ -228,14 +220,12 @@ export async function sendInviteResponseNotification({
     } else {
         await notificationPersistenceRepository.sendInviteResponse({
             id: target.id,
-            responseSlot: normalizedResponseSlot,
-            endpoint
+            responseSlot: normalizedResponseSlot
         });
     }
 
     await hideRemoteAndExpireNotification({
         currentUserId,
-        endpoint,
         notification: target
     });
     return { sentPhoto: Boolean(imageData) };
@@ -243,11 +233,9 @@ export async function sendInviteResponseNotification({
 
 export async function dismissBoopNotifications({
     currentUserId,
-    endpoint = '',
     senderUserId
 }: {
     currentUserId?: unknown;
-    endpoint?: string;
     senderUserId?: unknown;
 }) {
     const normalizedSenderUserId = normalizeText(senderUserId);
@@ -271,8 +259,7 @@ export async function dismissBoopNotifications({
                     id: item.id,
                     version: item.version,
                     type: normalizeText(item.type),
-                    senderUserId: item.senderUserId,
-                    endpoint
+                    senderUserId: item.senderUserId
                 });
             } finally {
                 await notificationPersistenceRepository.expireNotification({
@@ -286,7 +273,6 @@ export async function dismissBoopNotifications({
 
 export async function sendBoopReplyNotification({
     currentUserId,
-    endpoint = '',
     notification,
     emojiId = ''
 }: BoopReplyInput) {
@@ -297,23 +283,18 @@ export async function sendBoopReplyNotification({
     }
     await dismissBoopNotifications({
         currentUserId,
-        endpoint,
         senderUserId
     });
     await sendBoopToUser({
         userId: senderUserId,
-        emojiId,
-        endpoint
+        emojiId
     });
-    await hideRemoteNotification({ endpoint, notification: target }).catch(
-        () => {}
-    );
+    await hideRemoteNotification({ notification: target }).catch(() => {});
     await expireNotificationLocally({ currentUserId, notification: target });
 }
 
 export async function sendNotificationButtonResponse({
     currentUserId,
-    endpoint = '',
     notification,
     response
 }: NotificationResponseInput) {
@@ -322,8 +303,7 @@ export async function sendNotificationButtonResponse({
         await notificationPersistenceRepository.sendNotificationResponse({
             id: target.id,
             responseType: response?.type,
-            responseData: response?.data || '',
-            endpoint
+            responseData: response?.data || ''
         });
         await expireNotificationLocally({
             currentUserId,

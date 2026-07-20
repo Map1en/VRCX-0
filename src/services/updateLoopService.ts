@@ -1,13 +1,11 @@
 import { isVrchatMissingCredentialsError } from '@/repositories/vrchatRequest';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { shouldHandleRuntimeAuthFailure } from './authSessionRecoveryService';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
     refreshHostCapabilities
 } from './hostCapabilityService';
-import i18n from './i18nService';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 
 let updateLoopTimer: ReturnType<typeof window.setTimeout> | null = null;
@@ -89,16 +87,6 @@ async function tickRuntimeLoop() {
             );
     } catch (error) {
         if (isVrchatMissingCredentialsError(error)) {
-            if (!shouldHandleRuntimeAuthFailure(error)) {
-                return;
-            }
-            useRuntimeStore
-                .getState()
-                .setStartupTask(
-                    'updateLoop',
-                    'pending',
-                    await i18n.t('message.auth.session_expired')
-                );
             return;
         }
 

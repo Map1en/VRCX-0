@@ -1,10 +1,96 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment jsdom
+
+import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+    getUserProfile: vi.fn()
+}));
+
+vi.mock('@/repositories/userProfileRepository', async (importOriginal) => {
+    const actual =
+        await importOriginal<
+            typeof import('@/repositories/userProfileRepository')
+        >();
+    return {
+        ...actual,
+        default: {
+            ...actual.default,
+            getUserProfile: mocks.getUserProfile
+        }
+    };
+});
 
 import { preserveProfileIdentity } from './userDialogProfileSnapshot';
 import {
     mergeLocalSnapshotIntoProfile,
-    mergeUserDialogLocalSnapshot
+    mergeUserDialogLocalSnapshot,
+    useUserDialogProfileResource
 } from './useUserDialogProfileResource';
+
+describe('useUserDialogProfileResource', () => {
+    beforeEach(() => {
+        mocks.getUserProfile.mockReset();
+        mocks.getUserProfile.mockResolvedValue({
+            id: 'usr_target',
+            displayName: 'Target'
+        });
+    });
+
+    it('bypasses the user query cache whenever the current user dialog loads', async () => {
+        renderHook(() =>
+            useUserDialogProfileResource({
+                currentEndpoint: 'https://api.vrchat.cloud/api/1',
+                currentUserSnapshot: {
+                    id: 'usr_target',
+                    displayName: 'Target'
+                },
+                isTargetCurrentUser: true,
+                localSnapshot: {
+                    id: 'usr_target',
+                    displayName: 'Target'
+                },
+                normalizedUserId: 'usr_target',
+                updateEntityDialogMetadata: vi.fn()
+            })
+        );
+
+        await waitFor(() => {
+            expect(mocks.getUserProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: 'usr_target',
+                    force: true,
+                    dialog: true
+                })
+            );
+        });
+    });
+
+    it('keeps the initial user query cached for other user dialogs', async () => {
+        renderHook(() =>
+            useUserDialogProfileResource({
+                currentEndpoint: 'https://api.vrchat.cloud/api/1',
+                isTargetCurrentUser: false,
+                localSnapshot: {
+                    id: 'usr_target',
+                    displayName: 'Target'
+                },
+                normalizedUserId: 'usr_target',
+                updateEntityDialogMetadata: vi.fn()
+            })
+        );
+
+        await waitFor(() => {
+            expect(mocks.getUserProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: 'usr_target',
+                    force: false,
+                    dialog: true
+                })
+            );
+        });
+    });
+});
 
 describe('mergeLocalSnapshotIntoProfile', () => {
     it('refreshes presence fields without erasing full profile fields', () => {

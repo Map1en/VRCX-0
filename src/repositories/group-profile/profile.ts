@@ -5,7 +5,9 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import type { UserGroupsOverviewOutput } from '@/platform/tauri/bindings';
 import { createDefaultGroupRef } from '@/shared/utils/groupTransforms';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import {
     type GroupInstancesResponse,
@@ -65,7 +67,7 @@ function normalizeGroupProfile(
 
     return {
         ...base,
-        id: normalizeEntityId(base.id || base.groupId),
+        id: normalizeEntityId(base.groupId || base.id),
         name: normalizeText(base.name),
         displayName: normalizeText(base.displayName || base.name),
         description: normalizeText(base.description),
@@ -100,7 +102,6 @@ export function normalize(group: GroupRecord): GroupProfileRecord {
 
 export async function getGroupProfile({
     groupId,
-    endpoint = '',
     includeRoles = true,
     force = false,
     dialog = false
@@ -113,7 +114,11 @@ export async function getGroupProfile({
     }
 
     return fetchCachedData({
-        queryKey: queryKeys.group(normalizedGroupId, includeRoles, endpoint),
+        queryKey: queryKeys.group(
+            normalizedGroupId,
+            includeRoles,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: dialog
             ? entityQueryPolicies.groupDialog
             : entityQueryPolicies.group,
@@ -121,7 +126,6 @@ export async function getGroupProfile({
         queryFn: () =>
             fetchGroupProfile({
                 groupId: normalizedGroupId,
-                endpoint,
                 includeRoles
             })
     });
@@ -129,7 +133,6 @@ export async function getGroupProfile({
 
 export async function fetchGroupProfile({
     groupId,
-    endpoint = '',
     includeRoles = true
 }: GroupProfileInput): Promise<GroupProfileRecord> {
     const normalizedGroupId = normalizeEntityId(groupId);
@@ -142,8 +145,7 @@ export async function fetchGroupProfile({
     const response = unwrapVrchatGroupResponse<GroupRecord>(
         await commands.appVrchatGroupGet({
             groupId: normalizedGroupId,
-            includeRoles: Boolean(includeRoles),
-            endpoint
+            includeRoles: Boolean(includeRoles)
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}`
     );
@@ -151,9 +153,8 @@ export async function fetchGroupProfile({
 }
 
 export async function getUserGroups({
-    userId,
-    endpoint = ''
-}: Pick<GroupUserInput, 'userId' | 'endpoint'>) {
+    userId
+}: Pick<GroupUserInput, 'userId'>) {
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedUserId) {
         throw new Error(
@@ -162,13 +163,15 @@ export async function getUserGroups({
     }
 
     const rows = await fetchCachedData<GroupUserGroupRow[]>({
-        queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
+        queryKey: queryKeys.userGroups(
+            normalizedUserId,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
             const response = unwrapVrchatGroupResponse<GroupUserGroupRow[]>(
                 await commands.appVrchatGroupUserGroupsGet({
-                    userId: normalizedUserId,
-                    endpoint
+                    userId: normalizedUserId
                 }),
                 `users/${encodeURIComponent(normalizedUserId)}/groups`
             );
@@ -178,11 +181,34 @@ export async function getUserGroups({
     return rows.map((group) => normalize(isRecord(group) ? group : {}));
 }
 
-export async function getGroupInstances({
-    groupId,
+export async function getUserGroupsOverview({
     userId,
-    endpoint = ''
-}: GroupUserInput) {
+    endpoint = '',
+    force = false
+}: Pick<GroupUserInput, 'userId'> & {
+    endpoint?: string;
+    force?: boolean;
+}): Promise<UserGroupsOverviewOutput> {
+    const normalizedUserId = normalizeEntityId(userId);
+    if (!normalizedUserId) {
+        throw new Error(
+            'GroupProfileRepository.getUserGroupsOverview requires a user id.'
+        );
+    }
+
+    return fetchCachedData<UserGroupsOverviewOutput>({
+        queryKey: queryKeys.userGroupsOverview(normalizedUserId, endpoint),
+        policy: entityQueryPolicies.groupCollection,
+        force,
+        queryFn: () =>
+            commands.appUserGroupsOverviewGet({
+                currentUserId: normalizedUserId,
+                endpoint
+            })
+    });
+}
+
+export async function getGroupInstances({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -194,17 +220,15 @@ export async function getGroupInstances({
     return unwrapVrchatGroupResponse<GroupInstancesResponse>(
         await commands.appVrchatGroupInstancesGet({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `users/${encodeURIComponent(normalizedUserId)}/instances/groups/${encodeURIComponent(normalizedGroupId)}`
     );
 }
 
 export async function getUsersGroupInstances({
-    userId,
-    endpoint = ''
-}: Pick<GroupUserInput, 'userId' | 'endpoint'>) {
+    userId
+}: Pick<GroupUserInput, 'userId'>) {
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedUserId) {
         throw new Error(
@@ -214,8 +238,7 @@ export async function getUsersGroupInstances({
 
     return unwrapVrchatGroupResponse<GroupInstancesResponse>(
         await commands.appVrchatGroupUserInstancesGet({
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `users/${encodeURIComponent(normalizedUserId)}/instances/groups`
     );

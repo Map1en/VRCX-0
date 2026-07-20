@@ -1,18 +1,14 @@
 use super::*;
 
-pub(super) fn string_or_previous(patch: &Value, previous: &Value, key: &str) -> String {
+use super::event_patch::record_string;
+
+pub(super) fn string_or_previous(patch: &Value, previous: &FriendRecord, key: &str) -> String {
     let value = string_field(patch.get(key));
     if value.is_empty() {
-        string_field(previous.get(key))
+        record_string(previous, key)
     } else {
         value
     }
-}
-
-pub(super) fn object_with_pending_offline(value: Value, pending_offline: bool) -> Value {
-    let mut object = value.as_object().cloned().unwrap_or_default();
-    object.insert("pendingOffline".into(), Value::Bool(pending_offline));
-    Value::Object(object)
 }
 
 pub(super) fn string_field(value: Option<&Value>) -> String {
@@ -40,10 +36,6 @@ pub(super) fn int_field(value: Option<&Value>) -> Option<i64> {
                 .and_then(Value::as_str)
                 .and_then(|value| value.parse().ok())
         })
-}
-
-pub(super) fn bool_field(value: Option<&Value>) -> bool {
-    value.and_then(Value::as_bool).unwrap_or(false)
 }
 
 pub(super) fn first_string<'a>(values: impl IntoIterator<Item = Option<&'a str>>) -> String {

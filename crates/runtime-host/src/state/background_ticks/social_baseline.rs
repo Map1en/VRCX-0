@@ -1,20 +1,18 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serde_json::json;
 use vrcx_0_application_core::FriendProjection;
 use vrcx_0_application_realtime::{
-    apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_friend_roster_baseline_deferred, SocialBaselineDeps, SocialFavoritesBaselineInput,
-    SocialFriendRosterBaselineInput,
+    build_favorites_baseline, build_synced_friend_roster_baseline, SocialBaselineDeps,
+    SocialFavoritesBaselineInput, SocialFriendRosterBaselineInput,
 };
-use vrcx_0_core::{friends::FriendRecord, json::RawJson};
+use vrcx_0_core::json::RawJson;
 
 use crate::authenticated_runtime::favorite_group_membership_from_snapshot;
 
 use super::super::{
-    background_capability_session, emit_background_error, emit_background_info,
-    emit_background_warning, gui_maintenance_runtime_mode,
-    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+    background_capability_session, emit_background_info, emit_background_warning,
+    gui_maintenance_runtime_mode, BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
 };
 use super::BackgroundTickContext;
 
@@ -34,33 +32,15 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         );
         return;
     };
-    let baseline_watermark = match context.realtime_runtime.capture_friend_baseline_watermark() {
-        Ok(watermark) => watermark,
-        Err(error) => {
-            tracing::warn!(
-                runtime_mode = %gui_maintenance_runtime_mode(context.backend_runtime),
-                error = %error,
-                "GUI maintenance friend baseline watermark capture failed"
-            );
-            emit_background_error(
-                context.runtime_context,
-                context.backend_runtime,
-                format!("social baseline refresh failed: {error}."),
-            );
-            context
-                .background_jobs
-                .mark_failed(BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB, error.to_string());
-            return;
-        }
-    };
     let deps = SocialBaselineDeps {
         db: Arc::clone(context.db),
         web: Arc::clone(context.web),
         auth_scope: context.runtime_context.auth_scope.clone(),
         session: context.runtime_context.session.clone(),
     };
-    let friend_output = build_friend_roster_baseline_deferred(
+    let friend_output = build_synced_friend_roster_baseline(
         deps.clone(),
+        context.realtime_runtime,
         SocialFriendRosterBaselineInput {
             user_id: session.current_user_id.clone(),
             endpoint: session.endpoint.clone(),
@@ -71,121 +51,62 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
     )
     .await;
     let friend_count = match friend_output {
-        Ok(mut output) => {
-            if let Some(snapshot) = output.snapshot.as_ref() {
-                let value = snapshot.as_value().clone();
-                let raw_friends_value = value
-                    .get("friendsById")
-                    .cloned()
-                    .unwrap_or_else(|| json!({}));
-                if let Ok(friends_by_id) =
-                    serde_json::from_value::<HashMap<String, FriendRecord>>(raw_friends_value)
+        Ok(baseline) => {
+            let output = baseline.output;
+            if baseline.friends_by_id.is_none() {
+                context.background_jobs.mark_scheduled(
+                    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+                    "Superseded background friend baseline was ignored.",
+                    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+                );
+                return;
+            }
+            if output.friend_log_changed {
+                context
+                    .runtime_context
+                    .event_bus
+                    .emit_realtime_friend_projection(FriendProjection {
+                        friend_log_changed: true,
+                        ..Default::default()
+                    });
+            }
+            if let Some(friends_value) = output
+                .snapshot
+                .as_ref()
+                .and_then(|snapshot| snapshot.as_value().get("friendsById"))
+                .cloned()
+            {
+                if let Ok(favorites_output) = build_favorites_baseline(
+                    deps,
+                    SocialFavoritesBaselineInput {
+                        user_id: session.current_user_id.clone(),
+                        endpoint: session.endpoint.clone(),
+                        current_user_snapshot: RawJson::from(session.current_user_snapshot.clone()),
+                        friend_roster_by_id: RawJson::from(friends_value),
+                    },
+                )
+                .await
                 {
-                    let sync_outcome = context
-                        .realtime_runtime
-                        .sync_friend_snapshot_with_watermark(
-                            session.current_user_id.clone(),
-                            session.endpoint.clone(),
-                            session.websocket.clone(),
-                            baseline_watermark,
-                            friends_by_id,
-                        );
-                    let sync_outcome = match sync_outcome {
-                        Ok(outcome) => outcome,
-                        Err(error) => {
-                            tracing::warn!(
-                                runtime_mode = %gui_maintenance_runtime_mode(context.backend_runtime),
-                                error = %error,
-                                "GUI maintenance friend baseline realtime sync failed"
-                            );
-                            context.background_jobs.mark_scheduled(
-                                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
-                                "Background friend baseline realtime sync failed.",
-                                BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
-                            );
-                            return;
-                        }
-                    };
-                    let applied = match apply_friend_roster_baseline_sync_outcome(
-                        &mut output,
-                        sync_outcome,
-                    ) {
-                        Ok(applied) => applied,
-                        Err(error) => {
-                            tracing::warn!(
-                                runtime_mode = %gui_maintenance_runtime_mode(context.backend_runtime),
-                                error = %error,
-                                "GUI maintenance canonical friend baseline encode failed"
-                            );
-                            context.background_jobs.mark_scheduled(
-                                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
-                                "Background canonical friend snapshot encode failed.",
-                                BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
-                            );
-                            return;
-                        }
-                    };
-                    if !applied {
-                        context.background_jobs.mark_scheduled(
-                            BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
-                            "Superseded background friend baseline was ignored.",
-                            BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
-                        );
-                        return;
-                    }
-                    if output.friend_log_changed {
-                        context
-                            .runtime_context
-                            .event_bus
-                            .emit_realtime_friend_projection(FriendProjection {
-                                friend_log_changed: true,
-                                ..Default::default()
-                            });
-                    }
-                    let friends_value = output
-                        .snapshot
-                        .as_ref()
-                        .and_then(|snapshot| snapshot.as_value().get("friendsById"))
-                        .cloned()
-                        .unwrap_or_else(|| json!({}));
-                    if let Ok(favorites_output) = build_favorites_baseline(
-                        deps,
-                        SocialFavoritesBaselineInput {
-                            user_id: session.current_user_id.clone(),
-                            endpoint: session.endpoint.clone(),
-                            current_user_snapshot: RawJson::from(
-                                session.current_user_snapshot.clone(),
-                            ),
-                            friend_roster_by_id: RawJson::from(friends_value),
-                        },
-                    )
-                    .await
-                    {
+                    context
+                        .authenticated_runtime
+                        .update_favorites_baseline(favorites_output.clone());
+                    if let Some(snapshot) = favorites_output.snapshot {
+                        let value = snapshot.into_value();
+                        let groups = favorite_group_membership_from_snapshot(&value);
                         context
                             .authenticated_runtime
-                            .update_favorites_baseline(favorites_output.clone());
-                        if let Some(snapshot) = favorites_output.snapshot {
-                            let value = snapshot.into_value();
-                            let groups = favorite_group_membership_from_snapshot(&value);
-                            context
-                                .authenticated_runtime
-                                .apply_favorites_snapshot(&value);
-                            *favorite_friend_groups_by_key = groups;
-                        }
+                            .apply_favorites_snapshot(&value);
+                        *favorite_friend_groups_by_key = groups;
                     }
-                    output.count
-                } else {
-                    output.count
                 }
-            } else {
-                output.count
             }
+            output.count
         }
         Err(error) => {
             tracing::warn!(
                 runtime_mode = %gui_maintenance_runtime_mode(context.backend_runtime),
                 error = %error,
-                "GUI maintenance social baseline network request failed"
+                "GUI maintenance friend baseline refresh failed"
             );
             emit_background_warning(
                 context.runtime_context,

@@ -2,9 +2,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
-use serde::Deserialize;
 use serde_json::{json, Map, Value};
-use vrcx_0_core::friends::{normalize_state_bucket, FriendRecord, FriendRosterBaseline};
+use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
 use vrcx_0_persistence::realtime::{FriendLogDelete, FriendLogUpsert};
@@ -18,12 +17,13 @@ use super::super::{
 
 mod event_patch;
 mod persistence;
-mod projection;
 mod state;
 mod utils;
 
 #[cfg(test)]
 mod baseline_tests;
+#[cfg(test)]
+mod event_field_ownership_tests;
 #[cfg(test)]
 mod feed_tests;
 #[cfg(test)]
@@ -38,6 +38,8 @@ mod location_state_tests;
 mod presence_tests;
 #[cfg(test)]
 mod profile_tests;
+#[cfg(test)]
+mod ws_trace_replay_test;
 
 pub use event_patch::is_friend_event_type;
 pub(crate) use persistence::{player_joining_feed_entry, trust_level_feed_entry};

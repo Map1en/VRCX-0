@@ -5,7 +5,8 @@ const commandMocks = vi.hoisted(() => ({
     appNotificationAddV1: vi.fn(),
     appNotificationMarkSeenLocalBulk: vi.fn(),
     appVrchatNotificationMarkSeen: vi.fn(),
-    appVrchatNotificationHideRemote: vi.fn()
+    appVrchatNotificationHideRemote: vi.fn(),
+    appVrchatNotificationRespond: vi.fn()
 }));
 
 const configMocks = vi.hoisted(() => ({
@@ -20,15 +21,14 @@ import {
     hideRemoteNotification,
     markSeen,
     markSeenLocalBulk,
-    queryNotifications
+    queryNotifications,
+    sendNotificationResponse
 } from './notificationPersistenceRepository';
-import { setVrchatAuthFailureHandler } from './vrchatRequest';
 
 function httpResponse(status = 200, data: unknown = { ok: true }) {
     return {
         status,
-        data: typeof data === 'string' ? data : JSON.stringify(data),
-        raw: { transport: 'tauri' }
+        data: typeof data === 'string' ? data : JSON.stringify(data)
     };
 }
 
@@ -50,7 +50,9 @@ describe('notificationPersistenceRepository', () => {
         commandMocks.appVrchatNotificationHideRemote.mockResolvedValue(
             httpResponse()
         );
-        setVrchatAuthFailureHandler(null);
+        commandMocks.appVrchatNotificationRespond.mockResolvedValue(
+            httpResponse()
+        );
     });
 
     it('uses the bounded default list query and normalizes nested row data', async () => {
@@ -163,9 +165,7 @@ describe('notificationPersistenceRepository', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('notifies session recovery with the version-specific mark-seen path', async () => {
-        const authFailure = vi.fn();
-        const unregister = setVrchatAuthFailureHandler(authFailure);
+    it('preserves the version-specific mark-seen path on auth failure', async () => {
         commandMocks.appVrchatNotificationMarkSeen.mockResolvedValueOnce(
             httpResponse(401, {
                 error: { message: 'Missing Credentials' }
@@ -176,18 +176,13 @@ describe('notificationPersistenceRepository', () => {
             markSeen({
                 userId: 'usr_1',
                 id: 'notification/2',
-                version: 2,
-                endpoint: 'https://api.example.test/api/1'
+                version: 2
             })
         ).rejects.toMatchObject({
             message: 'Missing Credentials',
             status: 401,
             endpoint: 'notifications/notification%2F2/see'
         });
-        expect(authFailure).toHaveBeenCalledWith(
-            expect.objectContaining({ status: 401 })
-        );
-        unregister();
     });
 
     it('uses the sender deletion path for ignored friend requests', async () => {
@@ -204,8 +199,20 @@ describe('notificationPersistenceRepository', () => {
             id: 'notification_1',
             version: 1,
             type: 'ignoredFriendRequest',
-            senderUserId: 'usr_sender',
-            endpoint: ''
+            senderUserId: 'usr_sender'
         });
+    });
+
+    it('treats an expired notification response as an idempotent no-op', async () => {
+        commandMocks.appVrchatNotificationRespond.mockResolvedValueOnce(
+            httpResponse(404, { error: { message: 'Not Found' } })
+        );
+
+        await expect(
+            sendNotificationResponse({
+                id: 'notification_1',
+                responseType: 'accept'
+            })
+        ).resolves.toBeNull();
     });
 });

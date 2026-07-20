@@ -1,18 +1,10 @@
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum RealtimeProjectionSource {
-    FriendProfileBulkLoad,
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeUserProjection {
     pub users: Vec<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<RealtimeProjectionSource>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
@@ -30,8 +22,6 @@ pub struct FriendProjectionPatch {
 pub struct FriendProjection {
     pub generation: u64,
     pub baseline_revision: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<RealtimeProjectionSource>,
     #[serde(default)]
     pub patches: Vec<FriendProjectionPatch>,
     #[serde(default)]

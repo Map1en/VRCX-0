@@ -79,7 +79,7 @@ export function usePlayerListProfileData({
         setLanguageOptions([]);
 
         vrchatAuthRepository
-            .getConfig({ endpoint: currentUserEndpoint })
+            .getConfig()
             .then((response) => {
                 if (!active) {
                     return;
@@ -118,7 +118,6 @@ export function usePlayerListProfileData({
                 gcTime: 300_000,
                 queryFn: async () => {
                     const response = await vrchatFriendRepository.getUser({
-                        endpoint: currentUserEndpoint,
                         userId,
                         isFriend: Boolean(knownUsersById[userId]?.isFriend)
                     });

@@ -3,7 +3,6 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
 
-import { startRuntimeAuthFailureRecovery } from './authSessionRecoveryService';
 import { startRuntimeGameClientSync } from './gameClientLifecycle';
 import { stopGameStateService } from './gameStateService';
 import { getTimeUnitLabels, setI18nLanguage } from './i18nService';
@@ -44,9 +43,7 @@ function cleanupReactRuntimeServices() {
 }
 
 function createReactRuntimeStartPromise() {
-    const cleanups: Array<CleanupFn | null | undefined> = [
-        startRuntimeAuthFailureRecovery()
-    ];
+    const cleanups: Array<CleanupFn | null | undefined> = [];
 
     return initializeReactRuntime()
         .then(() => bindRuntimeEvents())

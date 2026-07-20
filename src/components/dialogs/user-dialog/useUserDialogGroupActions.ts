@@ -87,8 +87,7 @@ export function useUserDialogGroupActions({
         try {
             await groupProfileRepository.sendGroupInvite({
                 groupId: normalizedText(result.value),
-                userId: profile.id,
-                endpoint: currentEndpoint
+                userId: profile.id
             });
             toast.success(t('dialog.user.success.group_invite_sent'));
         } catch (error) {
@@ -117,7 +116,6 @@ export function useUserDialogGroupActions({
             await groupProfileRepository.setGroupMemberProps({
                 groupId,
                 userId: currentUserId,
-                endpoint: currentEndpoint,
                 params: { visibility }
             });
             toast.success(t('message.group.visibility_updated'));
@@ -154,8 +152,7 @@ export function useUserDialogGroupActions({
         setGroupActionId(groupId);
         try {
             await groupProfileRepository.leaveGroup({
-                groupId,
-                endpoint: currentEndpoint
+                groupId
             });
             toast.success(t('dialog.user.success.left_group'));
             await refreshGroupsAfterMembershipChange();

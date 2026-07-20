@@ -15,22 +15,17 @@ import {
     createDefaultUserRef,
     type UserRecord
 } from '@/shared/utils/userTransforms';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import {
     VRCHAT_API_DEFAULT_PAGE_SIZE,
     VRCHAT_PROFILE_MAX_PAGES
 } from './paginationConstants';
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
 type UserMutualCounts = {
@@ -85,7 +80,6 @@ interface CollectPagesOptions {
 
 interface UserEndpointInput {
     userId?: unknown;
-    endpoint?: string;
 }
 
 interface UserProfileInput extends UserEndpointInput {
@@ -210,25 +204,7 @@ function unwrapVrchatUserResponse<TJson = unknown>(
     path: string,
     fallbackMessage = 'VRChat user request failed'
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, { fallbackMessage });
 }
 
 function mergeCurrentUserUpdateResponse(
@@ -267,7 +243,6 @@ function mergeCurrentUserUpdateResponse(
 
 async function getUserProfile({
     userId,
-    endpoint = '',
     force = false,
     dialog = false,
     isFriend = null
@@ -284,7 +259,6 @@ async function getUserProfile({
 
     const response = await commands.appVrchatUserGet({
         userId: normalizedUserId,
-        endpoint,
         force,
         dialog,
         isFriend
@@ -296,7 +270,7 @@ async function getUserProfile({
     return normalize(json);
 }
 
-async function getMutualCounts({ userId, endpoint = '' }: UserEndpointInput) {
+async function getMutualCounts({ userId }: UserEndpointInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -308,12 +282,14 @@ async function getMutualCounts({ userId, endpoint = '' }: UserEndpointInput) {
     }
 
     return fetchCachedData({
-        queryKey: queryKeys.mutualCounts(normalizedUserId, endpoint),
+        queryKey: queryKeys.mutualCounts(
+            normalizedUserId,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.mutualCounts,
         queryFn: async () => {
             const response = await commands.appVrchatUserMutualCountsGet({
-                userId: normalizedUserId,
-                endpoint
+                userId: normalizedUserId
             });
             const json = unwrapVrchatUserResponse<UserMutualCounts>(
                 response,
@@ -327,7 +303,7 @@ async function getMutualCounts({ userId, endpoint = '' }: UserEndpointInput) {
     });
 }
 
-async function getUserGroups({ userId, endpoint = '' }: UserEndpointInput) {
+async function getUserGroups({ userId }: UserEndpointInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -339,12 +315,14 @@ async function getUserGroups({ userId, endpoint = '' }: UserEndpointInput) {
     }
 
     return fetchCachedData({
-        queryKey: queryKeys.userGroups(normalizedUserId, endpoint),
+        queryKey: queryKeys.userGroups(
+            normalizedUserId,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         queryFn: async () => {
             const response = await commands.appVrchatUserGroupsGet({
-                userId: normalizedUserId,
-                endpoint
+                userId: normalizedUserId
             });
             const json = unwrapVrchatUserResponse(
                 response,
@@ -355,11 +333,7 @@ async function getUserGroups({ userId, endpoint = '' }: UserEndpointInput) {
     });
 }
 
-async function getRepresentedGroup({
-    userId,
-    endpoint = '',
-    force = false
-}: UserGroupsInput) {
+async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -371,13 +345,15 @@ async function getRepresentedGroup({
     }
 
     return fetchCachedData({
-        queryKey: queryKeys.representedGroup(normalizedUserId, endpoint),
+        queryKey: queryKeys.representedGroup(
+            normalizedUserId,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.representedGroup,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatUserRepresentedGroupGet({
-                userId: normalizedUserId,
-                endpoint
+                userId: normalizedUserId
             });
             const json = unwrapVrchatUserResponse<UserRepresentedGroup>(
                 response,
@@ -390,7 +366,6 @@ async function getRepresentedGroup({
 
 async function getMutualFriends({
     userId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0
 }: MutualFriendsInput) {
@@ -406,7 +381,6 @@ async function getMutualFriends({
 
     const response = await commands.appVrchatUserMutualFriendsGet({
         userId: normalizedUserId,
-        endpoint,
         n,
         offset
     });
@@ -417,18 +391,14 @@ async function getMutualFriends({
     return Array.isArray(json) ? json : [];
 }
 
-async function getAllMutualFriends({
-    userId,
-    endpoint = ''
-}: UserEndpointInput) {
+async function getAllMutualFriends({ userId }: UserEndpointInput) {
     return collectPages(({ n, offset }) =>
-        getMutualFriends({ userId, endpoint, n, offset })
+        getMutualFriends({ userId, n, offset })
     );
 }
 
 async function updateCurrentUser({
     userId,
-    endpoint = '',
     params = {}
 }: CurrentUserUpdateInput) {
     const normalizedUserId =
@@ -441,11 +411,13 @@ async function updateCurrentUser({
         );
     }
 
-    const queryKey = queryKeys.user(normalizedUserId, endpoint);
+    const queryKey = queryKeys.user(
+        normalizedUserId,
+        DEFAULT_VRCHAT_API_ENDPOINT
+    );
     const cachedUser = getCachedQueryData(queryKey);
     const response = await commands.appVrchatCurrentUserUpdate({
         userId: normalizedUserId,
-        endpoint,
         params
     });
     const json = unwrapVrchatUserResponse<UserRecord>(
@@ -456,7 +428,7 @@ async function updateCurrentUser({
     const nextUser = normalize(mergedJson);
     setCachedQueryData(queryKey, mergedJson);
     recordUserProfile(nextUser, {
-        endpoint,
+        endpoint: DEFAULT_VRCHAT_API_ENDPOINT,
         source: 'currentUser',
         isCurrentUser: true
     });
@@ -465,7 +437,6 @@ async function updateCurrentUser({
 
 async function updateCurrentUserBadge({
     userId,
-    endpoint = '',
     badgeId = '',
     hidden = false,
     showcased = false
@@ -487,7 +458,6 @@ async function updateCurrentUserBadge({
     const response = await commands.appVrchatCurrentUserBadgeUpdate({
         userId: normalizedUserId,
         badgeId: normalizedBadgeId,
-        endpoint,
         hidden: Boolean(hidden),
         showcased: Boolean(showcased)
     });
@@ -496,14 +466,10 @@ async function updateCurrentUserBadge({
         `users/${encodeURIComponent(normalizedUserId)}/badges/${encodeURIComponent(normalizedBadgeId)}`
     );
 
-    return getUserProfile({ userId: normalizedUserId, endpoint, force: true });
+    return getUserProfile({ userId: normalizedUserId, force: true });
 }
 
-async function addCurrentUserTags({
-    userId,
-    endpoint = '',
-    tags = []
-}: CurrentUserTagsInput) {
+async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -516,7 +482,6 @@ async function addCurrentUserTags({
 
     const response = await commands.appVrchatCurrentUserTagsAdd({
         userId: normalizedUserId,
-        endpoint,
         tags: Array.isArray(tags) ? tags.map(String) : []
     });
     const json = unwrapVrchatUserResponse(
@@ -525,7 +490,7 @@ async function addCurrentUserTags({
     ).json;
     const nextUser = normalize(json);
     recordUserProfile(nextUser, {
-        endpoint,
+        endpoint: DEFAULT_VRCHAT_API_ENDPOINT,
         source: 'currentUser',
         isCurrentUser: true
     });
@@ -534,7 +499,6 @@ async function addCurrentUserTags({
 
 async function removeCurrentUserTags({
     userId,
-    endpoint = '',
     tags = []
 }: CurrentUserTagsInput) {
     const normalizedUserId =
@@ -549,7 +513,6 @@ async function removeCurrentUserTags({
 
     const response = await commands.appVrchatCurrentUserTagsRemove({
         userId: normalizedUserId,
-        endpoint,
         tags: Array.isArray(tags) ? tags.map(String) : []
     });
     const json = unwrapVrchatUserResponse(
@@ -558,7 +521,7 @@ async function removeCurrentUserTags({
     ).json;
     const nextUser = normalize(json);
     recordUserProfile(nextUser, {
-        endpoint,
+        endpoint: DEFAULT_VRCHAT_API_ENDPOINT,
         source: 'currentUser',
         isCurrentUser: true
     });

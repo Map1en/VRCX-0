@@ -170,7 +170,7 @@ export function AvatarStylesDialog({
 
         setLoadStatus('running');
         myAvatarRepository
-            .getAvailableAvatarStyles({ endpoint })
+            .getAvailableAvatarStyles()
             .then((styles) => {
                 if (!active) {
                     return;
@@ -273,7 +273,6 @@ export function AvatarStylesDialog({
 
             const savedAvatar = await myAvatarRepository.saveAvatar({
                 avatarId,
-                endpoint,
                 params
             });
             if (!isRuntimeAuthTarget(authTarget)) {

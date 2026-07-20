@@ -1,4 +1,3 @@
-use serde_json::Value;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::diagnostics::RuntimeDiagnostics;
@@ -49,10 +48,11 @@ pub mod groups {
         group_get_no_params_input, group_paged_get_input, invite_delete_input, invite_send_input,
         join_input, join_request_respond_input, join_requests_get_input, leave_input,
         logs_get_input, member_ban_input, member_get_input, member_kick_input,
-        member_props_set_input, member_unban_input, members_get_input, members_search_input,
-        post_create_input, post_delete_input, post_edit_input, profile_get_input,
-        representation_set_input, request_cancel_input, unblock_input,
-        user_group_instances_get_input, user_group_permissions_get_input, user_groups_get_input,
+        member_props_set_input, member_role_add_input, member_role_remove_input,
+        member_unban_input, members_get_input, members_search_input, post_create_input,
+        post_delete_input, post_edit_input, profile_get_input, representation_set_input,
+        request_cancel_input, unblock_input, user_group_instances_get_input,
+        user_group_permissions_get_input, user_groups_get_input,
     };
 }
 
@@ -117,27 +117,24 @@ pub mod worlds {
     };
 }
 
-pub use vrcx_0_vrchat_client::http_api::{normalize_text, require_text};
+pub use vrcx_0_vrchat_client::http_api::{classify_api_response, normalize_text, require_text};
 
 pub async fn execute_api_command(
     web: &WebClient,
     db: &DatabaseService,
     diagnostics: &RuntimeDiagnostics,
     sync: &RuntimeSyncEngine,
-    command: &str,
+    command: (&str, impl Into<String>),
     input: VrchatApiRequest,
     scope: VrchatScope,
 ) -> Result<VrchatApiResponse> {
-    diagnostics.record_command(command, "running", "HTTP API request dispatched.");
+    let (command, detail) = command;
+    diagnostics.record_command(command, "running", detail);
     let result = web.execute_api(input, scope, db).await;
     match &result {
         Ok(response) => {
-            let policy_class = response
-                .raw
-                .get("policy")
-                .and_then(|policy| policy.get("class"))
-                .and_then(Value::as_str)
-                .unwrap_or("unknown");
+            let policy_class =
+                vrcx_0_vrchat_client::http_api::classify_api_response(response.status).class;
             diagnostics.record_command(
                 command,
                 "ok",

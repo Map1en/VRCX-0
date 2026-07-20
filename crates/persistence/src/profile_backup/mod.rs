@@ -3,6 +3,10 @@ mod fsutil;
 mod restore;
 mod types;
 
+pub(crate) use archive::sha256_hex;
+pub(crate) use fsutil::replace_file_atomically;
+pub(crate) use restore::{create_private_file, hash_file_with_progress, sync_directory_durable};
+
 pub use archive::{
     commit_file_without_overwrite, create_backup_archive, create_backup_archive_with_progress,
     is_auto_backup_file_name, select_auto_backups_for_removal,

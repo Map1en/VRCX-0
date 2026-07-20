@@ -83,10 +83,10 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
 
     for _ in 0..2 {
         let snapshot = saved_snapshot(&config).unwrap();
-        assert_eq!(
-            snapshot["savedCredentials"]["usr_1"]["hasLoginCredentials"],
-            true
-        );
+        assert!(snapshot
+            .saved_credentials_list
+            .iter()
+            .any(|credential| credential.user.id == "usr_1" && credential.has_login_credentials));
         let raw = raw_saved_credentials(&config);
         assert_eq!(
             raw["usr_1"]["loginParams"]["password"],

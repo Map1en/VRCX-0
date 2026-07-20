@@ -336,8 +336,7 @@ export function InstanceActionBar({
             const opened = await tryOpenLaunchLocation(
                 actionTarget.launchLocation,
                 actionTarget.parsedLaunchLocation.shortName ||
-                    actionTarget.shortName,
-                endpoint
+                    actionTarget.shortName
             );
             if (opened) {
                 toast.success(
@@ -372,8 +371,7 @@ export function InstanceActionBar({
             await selfInviteToInstance(
                 actionTarget.inviteLocation,
                 actionTarget.parsedInviteLocation.shortName ||
-                    actionTarget.shortName,
-                endpoint
+                    actionTarget.shortName
             );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
@@ -413,8 +411,7 @@ export function InstanceActionBar({
             } else {
                 const response = await vrchatInstanceRepository.getInstance({
                     worldId: actionTarget.parsedInstanceLocation.worldId,
-                    instanceId: actionTarget.parsedInstanceLocation.instanceId,
-                    endpoint: requestEndpoint
+                    instanceId: actionTarget.parsedInstanceLocation.instanceId
                 });
                 if (
                     activeContextRef.current.location !== requestLocation ||
@@ -463,8 +460,7 @@ export function InstanceActionBar({
         try {
             const response = await vrchatInstanceRepository.closeInstance({
                 location: requestLocation,
-                hardClose: false,
-                endpoint: requestEndpoint
+                hardClose: false
             });
             if (
                 activeContextRef.current.location !== requestLocation ||

@@ -10,7 +10,6 @@ import { normalizeUserId } from './userProfileFields';
 type CurrentAvatarDetailsInput = {
     avatarId: string;
     currentUserId: string;
-    endpoint?: string;
     profile: UserDialogProfileSnapshot;
 };
 
@@ -136,14 +135,12 @@ export function mergeCurrentUserAvatarFields(
 export async function getCurrentAvatarDetails({
     avatarId,
     currentUserId,
-    endpoint,
     profile
 }: CurrentAvatarDetailsInput) {
     let avatarProfile: UserDialogAvatarRecord | null = null;
     try {
         avatarProfile = await avatarProfileRepository.getAvatarProfile({
             avatarId,
-            endpoint,
             force: true,
             dialog: true,
             allowLocalFallback: true,
@@ -160,8 +157,7 @@ export async function getCurrentAvatarDetails({
     let myAvatar: UserDialogAvatarRecord | null = null;
     try {
         myAvatar = await myAvatarRepository.getMyAvatarById({
-            avatarId,
-            endpoint
+            avatarId
         });
     } catch {
         myAvatar = null;
@@ -179,9 +175,7 @@ export async function getCurrentAvatarDetails({
         normalizedAvatarName(myAvatar?.thumbnailImageUrl);
     if (imageUrl) {
         const imageAvatarInfo =
-            await avatarProfileRepository.getAvatarNameFromImageUrl(imageUrl, {
-                endpoint
-            });
+            await avatarProfileRepository.getAvatarNameFromImageUrl(imageUrl);
         const imageAvatarName = normalizedAvatarName(
             imageAvatarInfo?.avatarName
         );

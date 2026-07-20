@@ -11,10 +11,7 @@ import {
     unwrapVrchatGroupResponse
 } from './shared';
 
-export async function getGroupAuditLogTypes({
-    groupId,
-    endpoint = ''
-}: GroupIdInput) {
+export async function getGroupAuditLogTypes({ groupId }: GroupIdInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -24,8 +21,7 @@ export async function getGroupAuditLogTypes({
 
     const response = unwrapVrchatGroupResponse<unknown[]>(
         await commands.appVrchatGroupAuditLogTypesGet({
-            groupId: normalizedGroupId,
-            endpoint
+            groupId: normalizedGroupId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/auditLogTypes`
     );
@@ -34,14 +30,12 @@ export async function getGroupAuditLogTypes({
 
 export async function getGroupLogs({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     eventTypes = []
 }: GroupLogsInput) {
     const page = await getGroupLogsPage({
         groupId,
-        endpoint,
         n,
         offset,
         eventTypes
@@ -51,7 +45,6 @@ export async function getGroupLogs({
 
 export async function getGroupLogsPage({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     eventTypes = []
@@ -73,8 +66,7 @@ export async function getGroupLogsPage({
             groupId: normalizedGroupId,
             n,
             offset,
-            eventTypes: eventTypesValue,
-            endpoint
+            eventTypes: eventTypesValue
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/auditLogs`
     );
@@ -83,7 +75,6 @@ export async function getGroupLogsPage({
 
 export async function getAllGroupLogs({
     groupId,
-    endpoint = '',
     eventTypes = []
 }: Omit<GroupLogsInput, 'n' | 'offset'>) {
     const rows: GroupAuditLogRow[] = [];
@@ -94,7 +85,6 @@ export async function getAllGroupLogs({
     for (let page = 0; page < maxPages; page += 1) {
         const nextPage = await getGroupLogsPage({
             groupId,
-            endpoint,
             n: pageSize,
             offset: page * pageSize,
             eventTypes

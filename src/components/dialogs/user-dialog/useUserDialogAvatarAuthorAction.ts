@@ -5,11 +5,9 @@ import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 
 export function useUserDialogAvatarAuthorAction({
-    currentAvatarTarget,
-    currentEndpoint
+    currentAvatarTarget
 }: {
     currentAvatarTarget: string;
-    currentEndpoint: string;
 }) {
     const { t } = useTranslation();
 
@@ -19,8 +17,7 @@ export function useUserDialogAvatarAuthorAction({
         }
         try {
             const avatar = await avatarProfileRepository.getAvatarProfile({
-                avatarId: currentAvatarTarget,
-                endpoint: currentEndpoint
+                avatarId: currentAvatarTarget
             });
             if (avatar.authorId) {
                 openUserDialog({

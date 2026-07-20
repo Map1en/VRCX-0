@@ -217,7 +217,6 @@ export function useUserInviteActions({
         try {
             await sendInviteToLocation({
                 receiverUserId: context.rosterUserId,
-                endpoint: context.endpoint ?? undefined,
                 instanceId: context.inviteLocation,
                 worldId: context.parsedLocation.worldId,
                 messageSlot,
@@ -298,7 +297,6 @@ export function useUserInviteActions({
         try {
             await sendRequestInviteToUser({
                 receiverUserId: context.rosterUserId,
-                endpoint: context.endpoint ?? undefined,
                 requestSlot,
                 imageData
             });

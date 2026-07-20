@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    startRuntimeAuthFailureRecovery: vi.fn(),
     startRuntimeGameClientSync: vi.fn(),
     stopGameStateService: vi.fn(),
     getTimeUnitLabels: vi.fn(),
@@ -11,10 +10,6 @@ const mocks = vi.hoisted(() => ({
     applyThemeMode: vi.fn(),
     startRuntimeUpdateLoop: vi.fn(),
     startVrcStatusPolling: vi.fn()
-}));
-
-vi.mock('./authSessionRecoveryService', () => ({
-    startRuntimeAuthFailureRecovery: mocks.startRuntimeAuthFailureRecovery
 }));
 
 vi.mock('./gameClientLifecycle', () => ({
@@ -95,7 +90,6 @@ describe('runtimeBootstrapService', () => {
         mocks.setI18nLanguage.mockResolvedValue(undefined);
         mocks.initializeReactRuntime.mockResolvedValue(undefined);
         mocks.bindRuntimeEvents.mockResolvedValue(undefined);
-        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(undefined);
         mocks.startRuntimeGameClientSync.mockReturnValue(undefined);
         mocks.startRuntimeUpdateLoop.mockReturnValue(undefined);
         mocks.startVrcStatusPolling.mockReturnValue(undefined);
@@ -129,13 +123,11 @@ describe('runtimeBootstrapService', () => {
 
     it('shares React runtime startup across consumers', async () => {
         const initialization = deferred<void>();
-        const authCleanup = vi.fn();
         const eventCleanup = vi.fn();
         const gameClientCleanup = vi.fn();
         const updateLoopCleanup = vi.fn();
         const statusCleanup = vi.fn();
         mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
-        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(authCleanup);
         mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
         mocks.startRuntimeGameClientSync.mockReturnValue(gameClientCleanup);
         mocks.startRuntimeUpdateLoop.mockReturnValue(updateLoopCleanup);
@@ -151,10 +143,8 @@ describe('runtimeBootstrapService', () => {
         );
 
         cleanupFirst();
-        expect(authCleanup).not.toHaveBeenCalled();
         cleanupSecond();
 
-        expect(authCleanup).toHaveBeenCalledTimes(1);
         expect(eventCleanup).toHaveBeenCalledTimes(1);
         expect(gameClientCleanup).toHaveBeenCalledTimes(1);
         expect(updateLoopCleanup).toHaveBeenCalledTimes(1);
@@ -164,10 +154,8 @@ describe('runtimeBootstrapService', () => {
 
     it('cleans up runtime startup after its consumer leaves', async () => {
         const initialization = deferred<void>();
-        const authCleanup = vi.fn();
         const eventCleanup = vi.fn();
         mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
-        mocks.startRuntimeAuthFailureRecovery.mockReturnValue(authCleanup);
         mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
 
         const cleanup = startReactRuntimeServices();
@@ -175,7 +163,6 @@ describe('runtimeBootstrapService', () => {
         initialization.resolve();
 
         await vi.waitFor(() => expect(eventCleanup).toHaveBeenCalledTimes(1));
-        expect(authCleanup).toHaveBeenCalledTimes(1);
         expect(mocks.stopGameStateService).toHaveBeenCalledTimes(1);
     });
 });

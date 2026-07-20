@@ -5,13 +5,15 @@ use tauri_plugin_notification::NotificationExt;
 #[cfg(test)]
 use vrcx_0_application_core::FriendProfileLoadStatusPayload;
 use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
+use vrcx_0_application_core::{RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload};
+use vrcx_0_application_realtime::RealtimeTransportStartResult;
 
 use crate::localization::shell_locale::{
     self, AuthFailureNotificationLabels, BackgroundModeNotificationLabels, TrayLabels,
 };
 use crate::state::AppState;
 
-use super::shared::{app_language, db_config_bool, json_string_field};
+use super::shared::{app_language, db_config_bool};
 
 const AUTH_FAILURE_NOTIFICATION_COOLDOWN: Duration = Duration::from_secs(5);
 
@@ -20,15 +22,16 @@ pub(super) fn handle_runtime_auth_failure_notification(
     event: &str,
     payload: &serde_json::Value,
 ) {
-    let Some(reason) = runtime_auth_failure_reason(event, payload) else {
+    let Some(failure) = runtime_auth_failure(event, payload) else {
         return;
     };
     let Some(state) = app_handle.try_state::<AppState>() else {
         return;
     };
-    if !runtime_auth_failure_matches_scope(&state, event, payload) {
+    if !runtime_auth_failure_matches_active_source(&state, &failure) {
         return;
     }
+    let reason = failure.reason;
     let snapshot = state.snapshot_backend_runtime();
     if !should_show_runtime_auth_failure_notification(&snapshot, &reason) {
         return;
@@ -44,56 +47,87 @@ pub(super) fn handle_runtime_auth_failure_recovery(
     event: &str,
     payload: &serde_json::Value,
 ) {
-    let Some(reason) = runtime_auth_failure_reason(event, payload) else {
+    let Some(failure) = runtime_auth_failure(event, payload) else {
         return;
     };
-    let event = event.to_string();
-    let payload = payload.clone();
+    let Some(state) = app_handle.try_state::<AppState>() else {
+        return;
+    };
+    if !runtime_auth_failure_matches_active_source(&state, &failure) {
+        return;
+    }
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
         let Some(state) = app_handle.try_state::<AppState>() else {
             return;
         };
-        if !runtime_auth_failure_matches_scope(&state, &event, &payload) {
+        if !runtime_auth_failure_matches_scope(&state, &failure) {
             return;
         }
-        state.recover_background_auth_after_failure(reason).await;
+        state
+            .recover_background_auth_after_failure(failure.reason)
+            .await;
     });
 }
 
+#[cfg(test)]
 fn runtime_auth_failure_reason(event: &str, payload: &serde_json::Value) -> Option<String> {
-    match event {
-        "realtimeWsStatus" if json_string_field(payload, "status") == "authFailure" => {
-            Some(json_string_field(payload, "reason"))
-        }
-        "runtimeVrchatAuthFailure"
-            if payload
-                .get("statusCode")
-                .and_then(serde_json::Value::as_i64)
-                == Some(401) =>
-        {
-            Some(json_string_field(payload, "reason"))
-        }
-        _ => None,
+    runtime_auth_failure(event, payload).map(|failure| failure.reason)
+}
+
+fn runtime_auth_failure(
+    event: &str,
+    payload: &serde_json::Value,
+) -> Option<RuntimeVrchatAuthFailurePayload> {
+    if event != "runtimeVrchatAuthFailure" {
+        return None;
     }
+    let failure =
+        serde_json::from_value::<RuntimeVrchatAuthFailurePayload>(payload.clone()).ok()?;
+    (failure.status_code == 401
+        || (failure.status_code == 403 && failure.realtime_transport.is_some()))
+    .then_some(failure)
 }
 
 fn runtime_auth_failure_matches_scope(
     state: &AppState,
-    event: &str,
-    payload: &serde_json::Value,
+    failure: &RuntimeVrchatAuthFailurePayload,
 ) -> bool {
-    if event != "runtimeVrchatAuthFailure" {
-        return true;
-    }
     let scope = state.runtime.runtime_context.auth_scope.snapshot();
     scope.active
-        && scope.current_user_id == json_string_field(payload, "ownerUserId")
-        && scope.endpoint == json_string_field(payload, "endpoint")
-        && payload
-            .get("authScopeGeneration")
-            .and_then(serde_json::Value::as_u64)
-            == Some(scope.generation)
+        && scope.current_user_id == failure.owner_user_id
+        && scope.endpoint == failure.endpoint
+        && scope.generation == failure.auth_scope_generation
+}
+
+fn runtime_auth_failure_matches_active_source(
+    state: &AppState,
+    failure: &RuntimeVrchatAuthFailurePayload,
+) -> bool {
+    runtime_auth_failure_matches_scope(state, failure)
+        && runtime_auth_failure_transport_matches(
+            state
+                .runtime
+                .authenticated_runtime
+                .snapshot()
+                .realtime_transport
+                .as_ref(),
+            failure.realtime_transport.as_ref(),
+        )
+}
+
+fn runtime_auth_failure_transport_matches(
+    active: Option<&RealtimeTransportStartResult>,
+    expected: Option<&RuntimeRealtimeTransportEpoch>,
+) -> bool {
+    match expected {
+        None => true,
+        Some(expected) => active.is_some_and(|active| {
+            active.client_run_id == expected.client_run_id
+                && active.generation == expected.generation
+                && active.session_generation == expected.session_generation
+        }),
+    }
 }
 
 fn should_show_runtime_auth_failure_notification(
@@ -268,8 +302,12 @@ mod tests {
     #[test]
     fn structured_http_401_is_recognized_as_runtime_auth_failure() {
         let payload = serde_json::json!({
+            "ownerUserId": "usr_1",
+            "endpoint": "https://api.example.test/api/1",
+            "path": "runtime/social-baseline/friends",
             "statusCode": 401,
-            "reason": "Missing Credentials (401)"
+            "reason": "Missing Credentials (401)",
+            "authScopeGeneration": 3
         });
 
         assert_eq!(
@@ -278,9 +316,61 @@ mod tests {
         );
         assert!(runtime_auth_failure_reason(
             "runtimeVrchatAuthFailure",
-            &serde_json::json!({ "statusCode": 403, "reason": "Forbidden" })
+            &serde_json::json!({
+                "ownerUserId": "usr_1",
+                "endpoint": "https://api.example.test/api/1",
+                "path": "runtime/social-baseline/friends",
+                "statusCode": 403,
+                "reason": "Forbidden",
+                "authScopeGeneration": 3
+            })
         )
         .is_none());
+        assert!(runtime_auth_failure_reason(
+            "realtimeWsStatus",
+            &serde_json::json!({ "status": "authFailure", "reason": "stale" })
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn realtime_403_requires_the_matching_transport_epoch() {
+        let payload = serde_json::json!({
+            "ownerUserId": "usr_1",
+            "endpoint": "https://api.example.test/api/1",
+            "path": "auth",
+            "statusCode": 403,
+            "reason": "Forbidden",
+            "authScopeGeneration": 3,
+            "realtimeTransport": {
+                "clientRunId": 5,
+                "generation": 7,
+                "sessionGeneration": 11
+            }
+        });
+        let failure = runtime_auth_failure("runtimeVrchatAuthFailure", &payload).unwrap();
+        let active = RealtimeTransportStartResult {
+            client_run_id: 5,
+            generation: 7,
+            session_generation: 11,
+        };
+        let stale = RealtimeTransportStartResult {
+            generation: 6,
+            ..active.clone()
+        };
+
+        assert!(runtime_auth_failure_transport_matches(
+            Some(&active),
+            failure.realtime_transport.as_ref()
+        ));
+        assert!(!runtime_auth_failure_transport_matches(
+            Some(&stale),
+            failure.realtime_transport.as_ref()
+        ));
+        assert!(!runtime_auth_failure_transport_matches(
+            None,
+            failure.realtime_transport.as_ref()
+        ));
     }
 
     #[test]

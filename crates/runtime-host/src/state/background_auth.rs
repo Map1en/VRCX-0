@@ -66,7 +66,7 @@ impl RuntimeHostState {
                         .await;
                     return snapshot;
                 }
-                match self.start_authenticated_runtime_session(session).await {
+                match self.start_authenticated_runtime_session(session) {
                     Ok(snapshot) => snapshot,
                     Err(error) => {
                         let reason = error.to_string();

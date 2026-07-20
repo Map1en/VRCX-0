@@ -208,6 +208,15 @@ export const protectedRoutes: AppRouteDefinition[] = [
         )
     },
     {
+        path: '/tools/group-moderation/:groupId?',
+        titleKey: 'view.tools.group.moderation',
+        descriptionKey: 'view.tools.group.moderation_description',
+        element: lazyRouteElement(
+            () => import('@/features/group-moderation/GroupModerationPage'),
+            'GroupModerationPage'
+        )
+    },
+    {
         path: '/tools',
         titleKey: 'app.routes.tools',
         descriptionKey: 'app.routes.tools_landing_route_and_folder_shortcuts',

@@ -46,7 +46,7 @@ export function SearchSortHead({ label, sortKey, sort, onToggle }: any) {
     );
 }
 
-export function MetadataAuthorLink({ author, endpoint }: any) {
+export function MetadataAuthorLink({ author }: any) {
     const userId = String(author?.id || '').trim();
     const hint = String(author?.displayName || '').trim();
     const [displayName, setDisplayName] = useState(hint || userId);
@@ -61,7 +61,7 @@ export function MetadataAuthorLink({ author, endpoint }: any) {
         }
 
         userProfileRepository
-            .getUserProfile({ userId, endpoint })
+            .getUserProfile({ userId })
             .then((profile: any) => {
                 if (active) {
                     setDisplayName(
@@ -74,7 +74,7 @@ export function MetadataAuthorLink({ author, endpoint }: any) {
         return () => {
             active = false;
         };
-    }, [endpoint, hint, userId]);
+    }, [hint, userId]);
 
     if (!userId) {
         return <div className="text-sm">{hint || '—'}</div>;

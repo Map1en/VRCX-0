@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 base64 = { workspace = true }
+hyper-util = { version = "0.1.20", features = ["client-legacy", "tokio"] }
 percent-encoding = { workspace = true }
 reqwest = { workspace = true, features = [
     "cookies",
@@ -21,7 +22,11 @@ specta.workspace = true
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["net", "io-util"] }
 tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }
+tower-service = "0.3"
 tracing = { workspace = true }
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }
 cookie_store = "0.22.1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "time"] }

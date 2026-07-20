@@ -2,8 +2,8 @@ import { Trash2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type {
-    GenericRecord,
-    SavedCredentialRecord
+    SavedCredentialRecord,
+    SavedCredentialUser
 } from '@/repositories/authRepository';
 import { userImage } from '@/services/entityMediaService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
@@ -13,12 +13,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import { getLoginUserDisplayName as getUserDisplayName } from '../loginDisplay';
 
-function stringField(record: GenericRecord | null | undefined, key: string) {
-    const value = record?.[key];
-    return typeof value === 'string' ? value : '';
-}
-
-function getSavedAccountFallback(user: GenericRecord | null | undefined) {
+function getSavedAccountFallback(user: SavedCredentialUser) {
     const label = getUserDisplayName(user);
     return label.trim().slice(0, 2).toUpperCase() || '?';
 }
@@ -56,7 +51,7 @@ export function SavedAccountsCard({
             <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
                 <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                     {accounts.map((entry, index) => {
-                        const userId = stringField(entry.user, 'id');
+                        const userId = entry.user.id;
                         const canUseSavedCredentials = Boolean(
                             userId && entry.hasLoginCredentials
                         );
@@ -101,10 +96,7 @@ export function SavedAccountsCard({
                                             {getUserDisplayName(entry.user)}
                                         </div>
                                         <div className="text-muted-foreground truncate text-xs">
-                                            {stringField(
-                                                entry.user,
-                                                'username'
-                                            ) || userId}
+                                            {entry.user.username || userId}
                                         </div>
                                     </div>
                                     {isRelogging ? (

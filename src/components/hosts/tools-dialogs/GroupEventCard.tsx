@@ -25,7 +25,7 @@ import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 
-import { getEndpoint, getEventGroupId, getEventId } from './toolsDialogUtils';
+import { getEventGroupId, getEventId } from './toolsDialogUtils';
 
 async function getCalendarIcs(event: any, t: any) {
     const groupId = getEventGroupId(event);
@@ -34,10 +34,10 @@ async function getCalendarIcs(event: any, t: any) {
         return '';
     }
     try {
-        const content = await vrchatToolsRepository.getGroupCalendarIcs(
-            { groupId, eventId },
-            { endpoint: getEndpoint() }
-        );
+        const content = await vrchatToolsRepository.getGroupCalendarIcs({
+            groupId,
+            eventId
+        });
         const normalizedContent = String(content || '')
             .replace(/^\uFEFF/, '')
             .trimStart();

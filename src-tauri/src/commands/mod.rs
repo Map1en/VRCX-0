@@ -7,4 +7,3 @@ pub mod local;
 pub mod log_watcher;
 pub mod storage;
 pub mod vrchat;
-pub mod web;

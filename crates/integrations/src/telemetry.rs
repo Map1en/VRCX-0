@@ -17,8 +17,10 @@ static WINDOWS_PATH_PATTERN: LazyLock<Regex> =
 static SLASH_PATH_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?:^|\s)/[^\s'"`<>]+(?:/[^\s'"`<>]+)+"#).unwrap());
 static VRCHAT_ID_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(?:usr|wrld|avtr|grp|file|vol|inst|auth|not|rgn|prn)_[A-Za-z0-9-]+\b").unwrap()
+    Regex::new(r"\b(?:usr|wrld|avtr|grp|file|vol|inst|auth|rgn|prn)_[A-Za-z0-9-]+\b").unwrap()
 });
+static NOTIFICATION_ID_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\bnot_[A-Za-z0-9-]+\b").unwrap());
 static PROVIDER_ID_PATTERN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\b(?:org|req|key|sk)[_-][A-Za-z0-9_-]{3,}\b").unwrap());
 static UUID_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
@@ -233,6 +235,13 @@ pub fn sanitize_error_summary(value: impl AsRef<str>) -> String {
     let value = WINDOWS_PATH_PATTERN.replace_all(&value, "<path>");
     let value = SLASH_PATH_PATTERN.replace_all(&value, " <path>");
     let value = VRCHAT_ID_PATTERN.replace_all(&value, "<id>");
+    let value = NOTIFICATION_ID_PATTERN.replace_all(&value, |captures: &regex::Captures<'_>| {
+        if &captures[0] == "not_found" {
+            "not_found"
+        } else {
+            "<id>"
+        }
+    });
     let value = PROVIDER_ID_PATTERN.replace_all(&value, "<id>");
     let value = UUID_PATTERN.replace_all(&value, "<uuid>");
     let value = LONG_HEX_PATTERN.replace_all(&value, "<hash>");

@@ -306,7 +306,7 @@ export function resolveSidebarStatusDotClassName(
     friend: SidebarFriendRecord | null | undefined,
     currentUser: SidebarFriendRecord | null | undefined,
     isCurrentUser = false,
-    { hideNonFriend = true, isGameRunning = true }: SidebarStatusOptions = {}
+    { hideNonFriend = true, isGameRunning = false }: SidebarStatusOptions = {}
 ) {
     const source = readFriendStatusSource(friend);
     if (!source) {

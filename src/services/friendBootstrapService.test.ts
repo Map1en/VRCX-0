@@ -5,8 +5,7 @@ const serviceMocks = vi.hoisted(() => ({
     getFriendLogCurrent: vi.fn(),
     socialFriendRosterBaselineGet: vi.fn(),
     vrchatUserGet: vi.fn(),
-    vrchatFriendStatusGet: vi.fn(),
-    notifyRuntimeVrchatAuthFailure: vi.fn()
+    vrchatFriendStatusGet: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -26,10 +25,6 @@ vi.mock('@/repositories/friendLogRepository', () => ({
 
 vi.mock('./domainIngestionService', () => ({
     recordFriendPatch: serviceMocks.recordFriendPatch
-}));
-
-vi.mock('./vrchatAuthErrorService', () => ({
-    notifyRuntimeVrchatAuthFailure: serviceMocks.notifyRuntimeVrchatAuthFailure
 }));
 
 function deferred<T>() {

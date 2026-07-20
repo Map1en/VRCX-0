@@ -58,7 +58,6 @@ type AvatarDetailsSaveParams = Record<string, unknown> & {
 type AvatarDetailsDialogProps = {
     open: boolean;
     avatar?: Partial<AvatarProfileRecord> | null;
-    endpoint?: string;
     onOpenChange(open: boolean): void;
     onSavedCurrentAvatar?(
         avatar: AvatarProfileRecord | Record<string, unknown>
@@ -68,7 +67,6 @@ type AvatarDetailsDialogProps = {
 export function AvatarDetailsDialog({
     open,
     avatar,
-    endpoint,
     onOpenChange,
     onSavedCurrentAvatar
 }: AvatarDetailsDialogProps) {
@@ -160,7 +158,7 @@ export function AvatarDetailsDialog({
 
         setLoadStatus('running');
         avatarProfileRepository
-            .getAvatarStyles({ endpoint })
+            .getAvatarStyles()
             .then((rows) => {
                 if (active) {
                     setStyles(rows);
@@ -184,7 +182,7 @@ export function AvatarDetailsDialog({
         return () => {
             active = false;
         };
-    }, [avatarId, endpoint, open, t]);
+    }, [avatarId, open, t]);
 
     async function save() {
         if (saving || loadStatus === 'running' || !avatarId) {
@@ -249,7 +247,6 @@ export function AvatarDetailsDialog({
         try {
             const response = await avatarProfileRepository.saveAvatar({
                 avatarId,
-                endpoint,
                 params
             });
             onSavedCurrentAvatar?.(

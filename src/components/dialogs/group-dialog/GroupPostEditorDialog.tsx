@@ -42,7 +42,6 @@ export function GroupPostEditorDialog({
     form,
     onFormChange,
     group,
-    endpoint = '',
     submitting = false,
     onSubmit
 }: {
@@ -51,7 +50,6 @@ export function GroupPostEditorDialog({
     form: GroupPostForm | null;
     onFormChange: Dispatch<SetStateAction<GroupPostForm | null>>;
     group: GroupProfileRecord;
-    endpoint?: string;
     submitting?: boolean;
     onSubmit: (form: GroupPostForm) => void;
 }) {
@@ -73,10 +71,10 @@ export function GroupPostEditorDialog({
         setGalleryStatus('running');
         setGalleryError('');
         try {
-            const response = await mediaRepository.getFileList(
-                { n: 100, tag: 'gallery' },
-                { endpoint }
-            );
+            const response = await mediaRepository.getFileList({
+                n: 100,
+                tag: 'gallery'
+            });
             if (galleryRequestIdRef.current !== requestId) {
                 return;
             }
@@ -107,7 +105,7 @@ export function GroupPostEditorDialog({
             setGalleryStatus('idle');
             setGalleryError('');
         }
-    }, [endpoint, open]);
+    }, [open]);
 
     if (!form) {
         return null;

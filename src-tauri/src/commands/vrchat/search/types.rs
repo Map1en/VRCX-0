@@ -7,16 +7,12 @@ use serde_json::Value;
 #[serde(rename_all = "camelCase")]
 pub struct VrchatSearchParamsInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) params: HashMap<String, Value>,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatSearchWorldsInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) params: HashMap<String, Value>,
     pub(crate) option: Option<String>,
@@ -25,8 +21,6 @@ pub struct VrchatSearchWorldsInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatSearchShortNameInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) short_name: String,
 }

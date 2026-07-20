@@ -10,8 +10,6 @@ pub struct VrchatNotificationMarkSeenInput {
     pub(crate) id: String,
     #[serde(default)]
     pub(crate) version: i64,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -19,8 +17,6 @@ pub struct VrchatNotificationMarkSeenInput {
 pub struct VrchatNotificationIdInput {
     #[serde(default)]
     pub(crate) id: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -34,8 +30,6 @@ pub struct VrchatNotificationHideInput {
     pub(crate) type_name: String,
     #[serde(default)]
     pub(crate) sender_user_id: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -47,8 +41,6 @@ pub struct VrchatNotificationRespondInput {
     pub(crate) response_type: String,
     #[serde(default)]
     pub(crate) response_data: Value,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -58,8 +50,6 @@ pub struct VrchatInviteResponseInput {
     pub(crate) id: String,
     #[serde(default)]
     pub(crate) response_slot: i64,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -71,8 +61,6 @@ pub struct VrchatInviteResponsePhotoInput {
     pub(crate) response_slot: i64,
     #[serde(default)]
     pub(crate) image_data: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -82,8 +70,6 @@ pub struct VrchatNotificationSendInput {
     pub(crate) receiver_user_id: String,
     #[serde(default)]
     pub(crate) params: Value,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -95,8 +81,6 @@ pub struct VrchatNotificationPhotoSendInput {
     pub(crate) params: Value,
     #[serde(default)]
     pub(crate) image_data: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -106,6 +90,4 @@ pub struct VrchatBoopInput {
     pub(crate) user_id: String,
     #[serde(default)]
     pub(crate) emoji_id: String,
-    #[serde(default)]
-    pub(crate) endpoint: String,
 }

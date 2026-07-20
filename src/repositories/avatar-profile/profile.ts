@@ -8,13 +8,13 @@ import {
     commands,
     type VrchatAvatarListByUserInput
 } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import avatarCacheRepository from '../avatarCacheRepository';
 import memoPersistenceRepository from '../memoPersistenceRepository';
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
 import { normalize, normalizeLocalTags } from './normalization';
 import {
-    avatarEndpointInput,
     avatarIdInput,
     collectPages,
     normalizeEntityId,
@@ -95,7 +95,6 @@ export async function getLocalSnapshot(
 
 export async function getAvatarProfile({
     avatarId,
-    endpoint = '',
     force = false,
     dialog = false,
     allowLocalFallback = true,
@@ -116,7 +115,10 @@ export async function getAvatarProfile({
     try {
         const [json, localSnapshot] = await Promise.all([
             fetchCachedData({
-                queryKey: queryKeys.avatar(normalizedAvatarId, endpoint),
+                queryKey: queryKeys.avatar(
+                    normalizedAvatarId,
+                    DEFAULT_VRCHAT_API_ENDPOINT
+                ),
                 policy: dialog
                     ? entityQueryPolicies.avatarDialog
                     : entityQueryPolicies.avatar,
@@ -124,7 +126,7 @@ export async function getAvatarProfile({
                 queryFn: async () => {
                     const response = unwrapVrchatAvatarResponse<AvatarRecord>(
                         await commands.appVrchatAvatarGet(
-                            avatarIdInput(normalizedAvatarId, endpoint)
+                            avatarIdInput(normalizedAvatarId)
                         ),
                         `avatars/${encodeURIComponent(normalizedAvatarId)}`
                     );
@@ -148,7 +150,6 @@ export async function getAvatarProfile({
 export async function getAvatarsByUser({
     userId,
     user = '',
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     sort = 'updated',
@@ -163,7 +164,6 @@ export async function getAvatarsByUser({
     }
 
     const input = {
-        endpoint,
         userId: normalizedUserId,
         user,
         n,
@@ -184,7 +184,6 @@ export async function getAvatarsByUser({
 export async function getAllAvatarsByUser({
     userId,
     user = '',
-    endpoint = '',
     sort = 'updated',
     order = 'descending',
     releaseStatus = 'all'
@@ -195,7 +194,6 @@ export async function getAllAvatarsByUser({
         getAvatarsByUser({
             userId,
             user,
-            endpoint,
             n,
             offset,
             sort,
@@ -206,18 +204,15 @@ export async function getAllAvatarsByUser({
 }
 
 export async function getAvatarStyles({
-    endpoint = '',
     force = false
 }: AvatarStylesInput = {}): Promise<AvatarStyleRecord[]> {
     return fetchCachedData({
-        queryKey: queryKeys.avatarStyles(endpoint),
+        queryKey: queryKeys.avatarStyles(DEFAULT_VRCHAT_API_ENDPOINT),
         policy: entityQueryPolicies.avatarStyles,
         force,
         queryFn: async () => {
             const response = unwrapVrchatAvatarResponse<AvatarStyleRecord[]>(
-                await commands.appVrchatAvatarStylesGet(
-                    avatarEndpointInput(endpoint)
-                ),
+                await commands.appVrchatAvatarStylesGet(),
                 'avatarStyles'
             );
             return Array.isArray(response.json) ? response.json : [];

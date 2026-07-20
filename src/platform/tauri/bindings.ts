@@ -24,12 +24,6 @@ export const commands = {
     async appDatabaseUpgradeRun(): Promise<DatabaseUpgradeRunResult> {
         return await TAURI_INVOKE('app__database_upgrade_run');
     },
-    async webClearCookies(): Promise<null> {
-        return await TAURI_INVOKE('web__clear_cookies');
-    },
-    async webClearAuthCookies(): Promise<null> {
-        return await TAURI_INVOKE('web__clear_auth_cookies');
-    },
     async appAppendErrorLog(entry: string): Promise<null> {
         return await TAURI_INVOKE('app__append_error_log', { entry });
     },
@@ -128,19 +122,6 @@ export const commands = {
     },
     async appHostTtsSpeak(text: string, voiceId: string | null): Promise<null> {
         return await TAURI_INVOKE('app__host_tts_speak', { text, voiceId });
-    },
-    async appAuthenticatedRuntimeSessionStart(
-        userId: string,
-        endpoint: string,
-        websocket: string,
-        currentUserSnapshot: JsonValue
-    ): Promise<AuthenticatedRuntimePhaseSnapshot> {
-        return await TAURI_INVOKE('app__authenticated_runtime_session_start', {
-            userId,
-            endpoint,
-            websocket,
-            currentUserSnapshot
-        });
     },
     async appSyncRealtimeCurrentUserSnapshot(
         userId: string,
@@ -1157,6 +1138,38 @@ export const commands = {
     async appClearAppDataDir(): Promise<AppDataDirState> {
         return await TAURI_INVOKE('app__clear_app_data_dir');
     },
+    async appPlanDataDirMigration(path: string): Promise<DataDirMigrationPlan> {
+        return await TAURI_INVOKE('app__plan_data_dir_migration', { path });
+    },
+    async appRequestDataDirMigration(
+        path: string,
+        mode: DataDirMigrationMode
+    ): Promise<DataDirMigrationActionOutcome> {
+        return await TAURI_INVOKE('app__request_data_dir_migration', {
+            path,
+            mode
+        });
+    },
+    async appCancelDataDirMigration(): Promise<DataDirMigrationActionOutcome> {
+        return await TAURI_INVOKE('app__cancel_data_dir_migration');
+    },
+    async appDataDirMigrationCurrentStatus(): Promise<DataDirMigrationStatus> {
+        return await TAURI_INVOKE('app__data_dir_migration_current_status');
+    },
+    async appTakeDataDirMigrationResult(): Promise<DataDirMigrationResult | null> {
+        return await TAURI_INVOKE('app__take_data_dir_migration_result');
+    },
+    async appCleanupMigratedDataDir(): Promise<DataDirCleanupReport | null> {
+        return await TAURI_INVOKE('app__cleanup_migrated_data_dir');
+    },
+    async appDismissDataDirCleanup(): Promise<null> {
+        return await TAURI_INVOKE('app__dismiss_data_dir_cleanup');
+    },
+    async appMarkDataDirCleanupPrompted(promptedAt: string): Promise<null> {
+        return await TAURI_INVOKE('app__mark_data_dir_cleanup_prompted', {
+            promptedAt
+        });
+    },
     async appRuntimeFrontendScheduleJobDueClaim(
         input: RuntimeFrontendScheduleJobDueClaimInput
     ): Promise<boolean> {
@@ -1236,32 +1249,18 @@ export const commands = {
     async appRuntimeAuthScopeGet(): Promise<RuntimeAuthScopeSnapshot> {
         return await TAURI_INVOKE('app__runtime_auth_scope_get');
     },
-    async appRuntimeAuthScopeSet(
-        input: RuntimeAuthScopeSetInput
-    ): Promise<RuntimeAuthScopeSnapshot> {
-        return await TAURI_INVOKE('app__runtime_auth_scope_set', { input });
-    },
-    async appVrchatAuthConfigGet(
-        input: VrchatAuthEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_config_get', { input });
+    async appVrchatAuthConfigGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_auth_config_get');
     },
     async appVrchatAuthAutoLoginStart(
-        input: VrchatAuthAutoLoginStartInput
+        input: AutoLoginStartInput
     ): Promise<AutoLoginOutcome> {
         return await TAURI_INVOKE('app__vrchat_auth_auto_login_start', {
             input
         });
     },
-    async appVrchatAuthAutoLoginThrottleReset(): Promise<void> {
-        await TAURI_INVOKE('app__vrchat_auth_auto_login_throttle_reset');
-    },
-    async appVrchatAuthCurrentUserGet(
-        input: VrchatAuthEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_current_user_get', {
-            input
-        });
+    async appVrchatAuthCurrentUserGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_auth_current_user_get');
     },
     async appVrchatAuthFileAnalysisGet(
         input: VrchatAuthFileAnalysisInput
@@ -1270,45 +1269,40 @@ export const commands = {
             input
         });
     },
-    async appVrchatAuthLogoutRecord(
-        input: VrchatAuthLogoutRecordInput
-    ): Promise<JsonValue> {
-        return await TAURI_INVOKE('app__vrchat_auth_logout_record', { input });
+    async appVrchatAuthSessionEnd(
+        input: LoginSessionEnd
+    ): Promise<SavedAuthSnapshot | null> {
+        return await TAURI_INVOKE('app__vrchat_auth_session_end', { input });
     },
     async appVrchatAuthSavedCredentialDelete(
         input: VrchatAuthSavedCredentialDeleteInput
-    ): Promise<JsonValue> {
+    ): Promise<SavedAuthSnapshot> {
         return await TAURI_INVOKE('app__vrchat_auth_saved_credential_delete', {
             input
         });
     },
-    async appVrchatAuthSavedSnapshotGet(): Promise<JsonValue> {
+    async appVrchatAuthSavedSnapshotGet(): Promise<SavedAuthSnapshot> {
         return await TAURI_INVOKE('app__vrchat_auth_saved_snapshot_get');
     },
-    async appVrchatAuthSessionCancel(): Promise<LoginSessionState> {
-        return await TAURI_INVOKE('app__vrchat_auth_session_cancel');
-    },
-    async appVrchatAuthSessionGet(
-        input: VrchatAuthEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_session_get', { input });
+    async appVrchatAuthSessionCancel(
+        input: LoginSessionCancelInput
+    ): Promise<LoginSessionState> {
+        return await TAURI_INVOKE('app__vrchat_auth_session_cancel', { input });
     },
     async appVrchatAuthSessionRespond(
-        input: VrchatAuthSessionRespondInput
+        input: LoginSessionRespondInput
     ): Promise<LoginSessionState> {
         return await TAURI_INVOKE('app__vrchat_auth_session_respond', {
             input
         });
     },
     async appVrchatAuthSessionStart(
-        input: VrchatAuthSessionStartInput
+        input: LoginSessionStartInput
     ): Promise<LoginSessionState> {
         return await TAURI_INVOKE('app__vrchat_auth_session_start', { input });
     },
-    async appVrchatAuthVisitsGet(
-        input: VrchatAuthEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_auth_visits_get', { input });
+    async appVrchatAuthVisitsGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_auth_visits_get');
     },
     async appVrchatAvatarDelete(
         input: VrchatAvatarIdInput
@@ -1358,12 +1352,8 @@ export const commands = {
             input
         });
     },
-    async appVrchatAvatarModerationsGet(
-        input: VrchatAvatarEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_avatar_moderations_get', {
-            input
-        });
+    async appVrchatAvatarModerationsGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_avatar_moderations_get');
     },
     async appVrchatAvatarModerationSend(
         input: VrchatAvatarModerationInput
@@ -1389,10 +1379,8 @@ export const commands = {
             input
         });
     },
-    async appVrchatAvatarStylesGet(
-        input: VrchatAvatarEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_avatar_styles_get', { input });
+    async appVrchatAvatarStylesGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_avatar_styles_get');
     },
     async appVrchatFavoriteAdd(
         input: VrchatFavoriteAddInput
@@ -1428,10 +1416,8 @@ export const commands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_favorite_group_save', { input });
     },
-    async appVrchatFavoriteLimitsGet(
-        input: VrchatFavoriteEndpointInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_favorite_limits_get', { input });
+    async appVrchatFavoriteLimitsGet(): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_favorite_limits_get');
     },
     async appVrchatFavoriteWorldsGet(
         input: VrchatFavoriteWorldsInput
@@ -1570,6 +1556,20 @@ export const commands = {
         input: VrchatGroupMemberPropsInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_group_member_props_set', {
+            input
+        });
+    },
+    async appVrchatGroupMemberRoleAdd(
+        input: VrchatGroupMemberRoleInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_member_role_add', {
+            input
+        });
+    },
+    async appVrchatGroupMemberRoleRemove(
+        input: VrchatGroupMemberRoleInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_member_role_remove', {
             input
         });
     },
@@ -1857,6 +1857,11 @@ export const commands = {
         return await TAURI_INVOKE('app__user_group_quick_moderation_get', {
             input
         });
+    },
+    async appUserGroupsOverviewGet(
+        input: UserGroupsOverviewInput
+    ): Promise<UserGroupsOverviewOutput> {
+        return await TAURI_INVOKE('app__user_groups_overview_get', { input });
     },
     async appModerationSyncRefresh(
         input: ModerationSyncRefreshInput
@@ -2816,6 +2821,9 @@ export type AppDataDirState = {
     cliDir: string | null;
     source: AppDataDirSource;
     cliOverride: boolean;
+    pendingMigration: boolean;
+    cleanupPending: DataDirCleanupPending | null;
+    migrationStatus: DataDirMigrationStatus;
 };
 export type AppDataDirValidation = {
     path: string;
@@ -2971,6 +2979,7 @@ export type AuthenticatedRuntimePhase =
     | 'idle'
     | 'starting'
     | 'ready'
+    | 'error'
     | 'stopped';
 export type AuthenticatedRuntimePhaseSnapshot = {
     runId: number;
@@ -2982,6 +2991,7 @@ export type AuthenticatedRuntimePhaseSnapshot = {
     friends: AuthenticatedRuntimeStepSnapshot;
     favorites: AuthenticatedRuntimeStepSnapshot;
     realtime: AuthenticatedRuntimeStepSnapshot;
+    friendBaselineRevision: number;
     friendBaseline: SocialFriendRosterBaselineOutput | null;
     favoritesBaseline: SocialFavoritesBaselineOutput | null;
     realtimeTransport: RealtimeTransportStartResult | null;
@@ -3005,28 +3015,18 @@ export type AuthenticatedRuntimeStepStatus =
     | 'pending'
     | 'running'
     | 'retryWaiting'
-    | 'ready';
+    | 'ready'
+    | 'failed';
 export type AuthenticatedSessionMaintenanceOutcome = {
     userId: string;
     avatarCleanup: AvatarAutoCleanupOutcome;
 };
 export type AuthorDetail = { id?: string; displayName?: string | null };
-export type AutoLoginOutcome =
-    | { status: 'throttled'; snapshot: JsonValue }
-    | { status: 'authenticated'; session: AuthenticatedRuntimeSession }
-    | {
-          status: 'challenge';
-          methods: string[];
-          mode: string;
-          error: string | null;
-      }
-    | { status: 'expired'; snapshot: JsonValue }
-    | {
-          status: 'failed';
-          reason: string;
-          kind: LoginFailureKind;
-          snapshot: JsonValue;
-      };
+export type AutoLoginOutcome = LoginSessionState | AutoLoginTerminalOutcome;
+export type AutoLoginStartInput = { userId?: string };
+export type AutoLoginTerminalOutcome =
+    | { status: 'throttled'; snapshot: SavedAuthSnapshot }
+    | { status: 'expired'; snapshot: SavedAuthSnapshot };
 export type AvatarAutoCleanupOutcome = {
     state: AvatarAutoCleanupState;
     retentionDays: number | null;
@@ -3086,6 +3086,7 @@ export type BackendRuntimeEventPayloadMap = {
     printsAutoCleanup: PrintAutoCleanupEvent;
     profileBackupStatus: ProfileBackupStatus;
     profileRestoreProgress: ProfileRestoreProgress;
+    dataDirMigration: DataDirMigrationStatus;
     favoritesChanged: FavoritesChangedPayload;
     friendProfileLoadStatus: FriendProfileLoadStatusPayload;
     realtimeFriendProjection: FriendProjection;
@@ -3219,6 +3220,82 @@ export type ConfigWriteEntry = { key: string; value: string };
 export type CrashRelaunchDecisionPayload =
     | { handled: boolean; error: string }
     | { handled: boolean; location: string; delayMs: number | null };
+export type DataDirCleanupPending = {
+    oldDir: string;
+    bytes: number;
+    migratedAt: string;
+    lastPromptedAt?: string | null;
+    dismissed: boolean;
+    replacedDir?: string | null;
+};
+export type DataDirCleanupReport = { freedBytes: number; skipped: string[] };
+export type DataDirMigrationActionOutcome = {
+    accepted: boolean;
+    status: DataDirMigrationStatus;
+    error?: DataDirMigrationError | null;
+};
+export type DataDirMigrationError = {
+    code: DataDirMigrationErrorCode;
+    path?: string | null;
+};
+export type DataDirMigrationErrorCode =
+    | 'operationBusy'
+    | 'databaseUnavailable'
+    | 'pendingRestore'
+    | 'pendingLegacyMigration'
+    | 'pendingMigration'
+    | 'cleanupConflict'
+    | 'copyFailed'
+    | 'commitFailed'
+    | 'pointerCommitFailed'
+    | 'io';
+export type DataDirMigrationMode = 'migrate' | 'adoptExisting' | 'freshStart';
+export type DataDirMigrationPhase =
+    | 'preparing'
+    | 'freezing'
+    | 'copying'
+    | 'verifying'
+    | 'committing';
+export type DataDirMigrationPlan = {
+    targetPath: string;
+    requiredBytes: number;
+    availableBytes: number;
+    targetState: DataDirMigrationTargetState;
+};
+export type DataDirMigrationResult = {
+    status: DataDirMigrationResultStatus;
+    sourceDir: string;
+    targetDir: string;
+    warnings: DataDirMigrationWarning[];
+};
+export type DataDirMigrationResultStatus =
+    | 'succeeded'
+    | 'interrupted'
+    | 'databaseOpenFailed';
+export type DataDirMigrationState =
+    | 'idle'
+    | 'running'
+    | 'cancelling'
+    | 'completed'
+    | 'cancelled'
+    | 'error';
+export type DataDirMigrationStatus = {
+    revision: number;
+    state: DataDirMigrationState;
+    phase?: DataDirMigrationPhase | null;
+    percent?: number | null;
+    sourceDir?: string | null;
+    targetDir?: string | null;
+    error?: DataDirMigrationError | null;
+};
+export type DataDirMigrationTargetState =
+    | 'empty'
+    | 'existingProfile'
+    | 'foreignContent';
+export type DataDirMigrationWarning =
+    | 'configCopyFailed'
+    | 'galleryCopyFailed'
+    | 'cacheCleanupFailed';
 export type DatabaseUpgradePreflight = {
     status: DatabaseUpgradePreflightStatus;
     fromVersion: number;
@@ -3280,6 +3357,7 @@ export type DebugLoggingOutcomeKind =
     | 'needsUserAction';
 export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
+    | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type EmptyEventPayload = Record<string, never>;
 export type Entity = { kind: string; id: string; displayName: string };
@@ -3525,8 +3603,7 @@ export type FriendProfileBulkLoadStatus =
     | 'running'
     | 'cancelling'
     | 'completed'
-    | 'cancelled'
-    | 'error';
+    | 'cancelled';
 export type FriendProfileLoadStatusPayload = {
     runId: number;
     status: FriendProfileBulkLoadStatus;
@@ -3536,12 +3613,10 @@ export type FriendProfileLoadStatusPayload = {
     failed: number;
     startedAt: string;
     finishedAt: string | null;
-    lastError: string | null;
 };
 export type FriendProjection = {
     generation: number;
     baselineRevision: number;
-    source?: RealtimeProjectionSource | null;
     patches?: FriendProjectionPatch[];
     removals?: string[];
     feedEntries?: JsonValue[];
@@ -3752,11 +3827,7 @@ export type HostSessionProjection = {
     steamvrChanged: boolean;
     changedAt: string;
 };
-export type HttpApiExecuteResponse = {
-    status: number;
-    data: string;
-    raw: JsonValue;
-};
+export type HttpApiExecuteResponse = { status: number; data: string };
 export type ImportPreview = { title: string; worldIds: string[] };
 export type InstanceActivityRowOutput = {
     id: number;
@@ -3770,7 +3841,6 @@ export type InstanceActivityRowOutput = {
 export type InstanceLaunchInput = {
     location?: string;
     shortName?: string;
-    endpoint?: string;
     mode?: InstanceLaunchMode;
 };
 export type InstanceLaunchMode = 'auto' | 'openOnly' | 'selfInviteOnly';
@@ -3846,15 +3916,47 @@ export type LoginFailureKind =
     | 'twoFactorUnavailable'
     | 'network'
     | 'other';
+export type LoginSessionCancelInput = { attemptId?: string };
+export type LoginSessionEnd =
+    | { kind: 'logout' }
+    | {
+          kind: 'invalidated';
+          expectedUserId?: string;
+          expectedAuthScopeGeneration: number;
+          expectedRealtimeTransport?: RuntimeRealtimeTransportEpoch | null;
+      };
+export type LoginSessionRespondInput = {
+    attemptId?: string;
+    method?: string;
+    code?: string;
+};
+export type LoginSessionStartInput =
+    | {
+          mode: 'basic';
+          username?: string;
+          password?: string;
+          saveCredentials?: boolean;
+      }
+    | { mode: 'savedCredential'; userId?: string };
 export type LoginSessionState =
-    | { status: 'authenticated'; session: AuthenticatedRuntimeSession }
+    | {
+          status: 'authenticated';
+          session: AuthenticatedRuntimeSession;
+          snapshot?: SavedAuthSnapshot | null;
+      }
     | {
           status: 'challenge';
+          attemptId: string;
           methods: string[];
           mode: string;
           error: string | null;
       }
-    | { status: 'failed'; reason: string; kind: LoginFailureKind }
+    | {
+          status: 'failed';
+          reason: string;
+          kind: LoginFailureKind;
+          snapshot?: SavedAuthSnapshot | null;
+      }
     | { status: 'cancelled' };
 export type MaintenanceTableSizesOutput = {
     gps: number;
@@ -4347,6 +4449,7 @@ export type ProfileBackupErrorCode =
     | 'operationBusy'
     | 'deliveryPending'
     | 'pendingRestore'
+    | 'pendingDataDirMigration'
     | 'directoryUnavailable'
     | 'permissionDenied'
     | 'localDiskFull'
@@ -4398,6 +4501,7 @@ export type ProfileRestoreFailure = {
 export type ProfileRestoreFailureCode =
     | 'operationBusy'
     | 'pendingRestore'
+    | 'pendingDataDirMigration'
     | 'invalidArchive'
     | 'invalidEntries'
     | 'unsupportedManifestVersion'
@@ -4516,16 +4620,12 @@ export type RealtimeNotificationUpsert = {
     deliverRuntime: boolean;
     runAutomation: boolean;
 };
-export type RealtimeProjectionSource = 'friendProfileBulkLoad';
 export type RealtimeTransportStartResult = {
     generation: number;
     clientRunId: number;
     sessionGeneration: number;
 };
-export type RealtimeUserProjection = {
-    users: JsonValue[];
-    source?: RealtimeProjectionSource | null;
-};
+export type RealtimeUserProjection = { users: JsonValue[] };
 export type RealtimeWsStatusPayload = {
     status: string;
     websocketDomain: string;
@@ -4559,7 +4659,6 @@ export type RemoteModerationRow = {
     created: string;
 };
 export type Role = 'user' | 'assistant';
-export type RuntimeAuthScopeSetInput = { userId?: string; endpoint?: string };
 export type RuntimeAuthScopeSnapshot = {
     currentUserId: string;
     endpoint: string;
@@ -4600,6 +4699,11 @@ export type RuntimeNotificationPayload = {
     title: string;
     message: string;
 };
+export type RuntimeRealtimeTransportEpoch = {
+    clientRunId: number;
+    generation: number;
+    sessionGeneration: number;
+};
 export type RuntimeVrchatAuthFailurePayload = {
     ownerUserId: string;
     endpoint: string;
@@ -4607,8 +4711,40 @@ export type RuntimeVrchatAuthFailurePayload = {
     reason: string;
     statusCode: number;
     authScopeGeneration: number;
+    realtimeTransport?: RuntimeRealtimeTransportEpoch | null;
 };
 export type RuntimeWorkerErrorPayload = { worker: string; message: string };
+export type SavedAuthAutoLoginStatus =
+    | 'not-configured'
+    | 'missing-last-user'
+    | 'missing-credentials'
+    | 'available';
+export type SavedAuthSnapshot = {
+    lastUserLoggedIn: string | null;
+    savedCredentialsList: SavedCredentialSnapshot[];
+    autoLoginDelayEnabled: boolean;
+    autoLoginDelaySeconds: number;
+    autoLoginStatus: SavedAuthAutoLoginStatus;
+    autoLoginReason: string;
+};
+export type SavedCredentialSnapshot = {
+    user: SavedCredentialUser;
+    loginParams: SavedLoginParamsSnapshot;
+    hasLoginCredentials: boolean;
+    hasCookies: boolean;
+};
+export type SavedCredentialUser = {
+    id: string;
+    displayName?: string | null;
+    username?: string | null;
+    userIcon?: string | null;
+    profilePicOverrideThumbnail?: string | null;
+    profilePicOverride?: string | null;
+    thumbnailUrl?: string | null;
+    currentAvatarThumbnailImageUrl?: string | null;
+    currentAvatarImageUrl?: string | null;
+};
+export type SavedLoginParamsSnapshot = { username: string };
 export type ScreenshotFolderInfo = {
     path: string;
     parentPath: string | null;
@@ -4792,6 +4928,23 @@ export type UpdaterMetadata = {
     date: string | null;
     body: string | null;
 };
+export type UserGroupsOverviewGroup = {
+    groupId: string;
+    name: string;
+    shortCode: string | null;
+    iconUrl: string | null;
+    memberCount: number | null;
+    permissions: string[];
+};
+export type UserGroupsOverviewInput = {
+    currentUserId?: string;
+    endpoint?: string;
+};
+export type UserGroupsOverviewOutput = {
+    currentUserId: string;
+    groups: UserGroupsOverviewGroup[];
+    permissionsDegraded: boolean;
+};
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserNoteOutput = {
     userId: string;
@@ -4808,44 +4961,19 @@ export type VrOverlayRuntimeSnapshot = {
     steamvrRunning: boolean;
     activeBackend: string | null;
 };
-export type VrchatAuthAutoLoginStartInput = {
-    endpoint?: string;
-    userId?: string;
-};
-export type VrchatAuthEndpointInput = { endpoint?: string };
 export type VrchatAuthFileAnalysisInput = {
-    endpoint?: string;
     fileId?: string;
     version?: number;
     variant?: string;
 };
-export type VrchatAuthLogoutRecordInput = {
-    userOrUserId?: JsonValue;
-    clearLastUserLoggedIn?: boolean | null;
-    cookies?: JsonValue | null;
-};
 export type VrchatAuthSavedCredentialDeleteInput = { userId?: string };
-export type VrchatAuthSessionRespondInput = { method?: string; code?: string };
-export type VrchatAuthSessionStartInput =
-    | {
-          mode: 'basic';
-          endpoint?: string;
-          username?: string;
-          password?: string;
-          saveCredentials?: boolean;
-      }
-    | { mode: 'savedCredential'; endpoint?: string; userId?: string }
-    | { mode: 'cookieRestore'; endpoint?: string };
-export type VrchatAvatarEndpointInput = { endpoint?: string };
-export type VrchatAvatarFileInput = { endpoint?: string; fileId?: string };
-export type VrchatAvatarIdInput = { endpoint?: string; avatarId?: string };
+export type VrchatAvatarFileInput = { fileId?: string };
+export type VrchatAvatarIdInput = { avatarId?: string };
 export type VrchatAvatarImpostorCreateInput = {
-    endpoint?: string;
     avatarId?: string;
     emptyBody?: boolean;
 };
 export type VrchatAvatarListByUserInput = {
-    endpoint?: string;
     userId?: string;
     user?: string;
     n?: number;
@@ -4854,63 +4982,40 @@ export type VrchatAvatarListByUserInput = {
     order?: string;
     releaseStatus?: string;
 };
-export type VrchatAvatarModerationInput = {
-    endpoint?: string;
-    avatarId?: string;
-    type?: string;
-};
+export type VrchatAvatarModerationInput = { avatarId?: string; type?: string };
 export type VrchatAvatarSaveInput = {
-    endpoint?: string;
     avatarId?: string;
     params: JsonValue | null;
 };
-export type VrchatBoopInput = {
-    userId?: string;
-    emojiId?: string;
-    endpoint?: string;
-};
+export type VrchatBoopInput = { userId?: string; emojiId?: string };
 export type VrchatCurrentUserBadgeInput = {
-    endpoint?: string;
     userId?: string;
     badgeId?: string;
     hidden?: boolean;
     showcased?: boolean;
 };
-export type VrchatCurrentUserTagsInput = {
-    endpoint?: string;
-    userId?: string;
-    tags?: string[];
-};
+export type VrchatCurrentUserTagsInput = { userId?: string; tags?: string[] };
 export type VrchatCurrentUserUpdateInput = {
-    endpoint?: string;
     userId?: string;
     params: JsonValue | null;
 };
 export type VrchatFavoriteAddInput = {
-    endpoint?: string;
     type?: string;
     favoriteId?: string;
     tags?: string;
 };
 export type VrchatFavoriteAvatarsInput = {
-    endpoint?: string;
     n?: number;
     offset?: number;
     tag?: string;
 };
-export type VrchatFavoriteDeleteInput = {
-    endpoint?: string;
-    objectId?: string;
-};
-export type VrchatFavoriteEndpointInput = { endpoint?: string };
+export type VrchatFavoriteDeleteInput = { objectId?: string };
 export type VrchatFavoriteGroupClearInput = {
-    endpoint?: string;
     ownerId?: string;
     type?: string;
     group?: string;
 };
 export type VrchatFavoriteGroupSaveInput = {
-    endpoint?: string;
     ownerId?: string;
     type?: string;
     group?: string;
@@ -4918,68 +5023,60 @@ export type VrchatFavoriteGroupSaveInput = {
     visibility: string | null;
 };
 export type VrchatFavoriteGroupsInput = {
-    endpoint?: string;
     n?: number;
     offset?: number;
     ownerId?: string;
 };
-export type VrchatFavoritePagedInput = {
-    endpoint?: string;
-    n?: number;
-    offset?: number;
-};
+export type VrchatFavoritePagedInput = { n?: number; offset?: number };
 export type VrchatFavoriteWorldsInput = {
-    endpoint?: string;
     n?: number;
     offset?: number;
     ownerId?: string;
     userId?: string;
     tag?: string;
 };
-export type VrchatFriendUserInput = { userId?: string; endpoint?: string };
+export type VrchatFriendUserInput = { userId?: string };
 export type VrchatFriendsGetInput = {
-    endpoint?: string;
     offline?: boolean;
     n?: number;
     offset?: number;
 };
 export type VrchatGroupGalleryInput = {
-    endpoint?: string;
     groupId?: string;
     galleryId?: string;
     n?: number;
     offset?: number;
 };
-export type VrchatGroupIdInput = { endpoint?: string; groupId?: string };
+export type VrchatGroupIdInput = { groupId?: string };
 export type VrchatGroupJoinRequestRespondInput = {
-    endpoint?: string;
     groupId?: string;
     userId?: string;
     action?: string;
     block?: boolean;
 };
 export type VrchatGroupJoinRequestsInput = {
-    endpoint?: string;
     groupId?: string;
     n?: number;
     offset?: number;
     blocked?: boolean;
 };
 export type VrchatGroupLogsInput = {
-    endpoint?: string;
     groupId?: string;
     n?: number;
     offset?: number;
     eventTypes?: string;
 };
 export type VrchatGroupMemberPropsInput = {
-    endpoint?: string;
     groupId?: string;
     userId?: string;
     params: JsonValue | null;
 };
+export type VrchatGroupMemberRoleInput = {
+    groupId?: string;
+    userId?: string;
+    roleId?: string;
+};
 export type VrchatGroupMembersInput = {
-    endpoint?: string;
     groupId?: string;
     n?: number;
     offset?: number;
@@ -4987,86 +5084,60 @@ export type VrchatGroupMembersInput = {
     roleId?: string;
 };
 export type VrchatGroupMembersSearchInput = {
-    endpoint?: string;
     groupId?: string;
     n?: number;
     offset?: number;
     query?: string;
 };
 export type VrchatGroupPagedInput = {
-    endpoint?: string;
     groupId?: string;
     n?: number;
     offset?: number;
 };
 export type VrchatGroupPostCreateInput = {
-    endpoint?: string;
     groupId?: string;
     params: JsonValue | null;
 };
-export type VrchatGroupPostDeleteInput = {
-    endpoint?: string;
-    groupId?: string;
-    postId?: string;
-};
+export type VrchatGroupPostDeleteInput = { groupId?: string; postId?: string };
 export type VrchatGroupPostEditInput = {
-    endpoint?: string;
     groupId?: string;
     postId?: string;
     params: JsonValue | null;
 };
 export type VrchatGroupProfileInput = {
-    endpoint?: string;
     groupId?: string;
     includeRoles?: boolean;
 };
 export type VrchatGroupRepresentationInput = {
-    endpoint?: string;
     groupId?: string;
     isRepresenting?: boolean;
 };
-export type VrchatGroupUserGroupsInput = { endpoint?: string; userId?: string };
-export type VrchatGroupUserInput = {
-    endpoint?: string;
-    groupId?: string;
-    userId?: string;
-};
+export type VrchatGroupUserGroupsInput = { userId?: string };
+export type VrchatGroupUserInput = { groupId?: string; userId?: string };
 export type VrchatInstanceCloseInput = {
-    endpoint?: string;
     location?: string;
     hardClose?: boolean;
 };
-export type VrchatInstanceCreateInput = {
-    endpoint?: string;
-    params: JsonValue | null;
-};
+export type VrchatInstanceCreateInput = { params: JsonValue | null };
 export type VrchatInstanceIdentityInput = {
-    endpoint?: string;
     worldId?: string;
     instanceId?: string;
 };
 export type VrchatInstanceSelfInviteInput = {
-    endpoint?: string;
     worldId?: string;
     instanceId?: string;
     shortName?: string;
 };
 export type VrchatInstanceShortNameInput = {
-    endpoint?: string;
     worldId?: string;
     instanceId?: string;
     shortName?: string;
 };
-export type VrchatInviteResponseInput = {
-    id?: string;
-    responseSlot?: number;
-    endpoint?: string;
-};
+export type VrchatInviteResponseInput = { id?: string; responseSlot?: number };
 export type VrchatInviteResponsePhotoInput = {
     id?: string;
     responseSlot?: number;
     imageData?: string;
-    endpoint?: string;
 };
 export type VrchatLogEntriesReadInput = {
     fileName: string;
@@ -5115,23 +5186,20 @@ export type VrchatLogTailReadInput = {
     categories: string[] | null;
 };
 export type VrchatMediaAssetUploadInput = {
-    endpoint?: string;
     assetKind?: string;
     imageData?: string;
     cropWhiteBorder?: boolean;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
 export type VrchatMediaAvatarGalleryImageUploadInput = {
-    endpoint?: string;
     imageData?: string;
     avatarId: JsonValue;
 };
 export type VrchatMediaEntityImageInput = {
-    endpoint?: string;
     entityId?: string;
     imageUrl?: string;
 };
-export type VrchatMediaFileIdInput = { endpoint?: string; fileId?: string };
+export type VrchatMediaFileIdInput = { fileId?: string };
 export type VrchatMediaFilePutInput = {
     url?: string;
     fileData?: string;
@@ -5139,13 +5207,11 @@ export type VrchatMediaFilePutInput = {
     fileMD5?: string;
 };
 export type VrchatMediaFileUploadStageInput = {
-    endpoint?: string;
     fileId?: string;
     version?: number;
     kind?: string;
 };
 export type VrchatMediaFileVersionCreateInput = {
-    endpoint?: string;
     fileId?: string;
     fileMd5?: string;
     fileSizeInBytes?: number;
@@ -5153,41 +5219,31 @@ export type VrchatMediaFileVersionCreateInput = {
     signatureSizeInBytes?: number;
 };
 export type VrchatMediaImageUploadInput = {
-    endpoint?: string;
     imageData?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
 export type VrchatMediaInventoryItemInput = {
-    endpoint?: string;
     inventoryId?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
 export type VrchatMediaLegacyImageUploadInput = {
-    endpoint?: string;
     entityId?: string;
     imageUrl?: string;
     base64File?: string;
     fileSizeInBytes?: number | null;
 };
 export type VrchatMediaParamsInput = {
-    endpoint?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
-export type VrchatMediaPrintIdInput = { endpoint?: string; printId?: string };
+export type VrchatMediaPrintIdInput = { printId?: string };
 export type VrchatMediaPrintUploadInput = {
-    endpoint?: string;
     imageData?: string;
     cropWhiteBorder?: boolean;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
-export type VrchatMediaPrintsInput = {
-    endpoint?: string;
-    userId?: string;
-    n?: number;
-};
-export type VrchatMediaRewardRedeemInput = { endpoint?: string; code?: string };
+export type VrchatMediaPrintsInput = { userId?: string; n?: number };
+export type VrchatMediaRewardRedeemInput = { code?: string };
 export type VrchatMediaUserInventoryItemInput = {
-    endpoint?: string;
     userId?: string;
     inventoryId?: string;
 };
@@ -5196,109 +5252,86 @@ export type VrchatNotificationHideInput = {
     version?: number;
     type?: string;
     senderUserId?: string;
-    endpoint?: string;
 };
-export type VrchatNotificationIdInput = { id?: string; endpoint?: string };
+export type VrchatNotificationIdInput = { id?: string };
 export type VrchatNotificationMarkSeenInput = {
     userId?: string;
     id?: string;
     version?: number;
-    endpoint?: string;
 };
 export type VrchatNotificationPhotoSendInput = {
     receiverUserId?: string;
     params?: JsonValue;
     imageData?: string;
-    endpoint?: string;
 };
 export type VrchatNotificationRespondInput = {
     id?: string;
     responseType?: string;
     responseData?: JsonValue;
-    endpoint?: string;
 };
 export type VrchatNotificationSendInput = {
     receiverUserId?: string;
     params?: JsonValue;
-    endpoint?: string;
 };
 export type VrchatPrintFavoriteSetInput = {
     printId?: string;
     favorite?: boolean;
 };
 export type VrchatSearchParamsInput = {
-    endpoint?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
-export type VrchatSearchShortNameInput = {
-    endpoint?: string;
-    shortName?: string;
-};
+export type VrchatSearchShortNameInput = { shortName?: string };
 export type VrchatSearchWorldsInput = {
-    endpoint?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
     option: string | null;
 };
 export type VrchatToolsCalendarEventInput = {
-    endpoint?: string;
     groupId?: string;
     eventId?: string;
 };
-export type VrchatToolsCalendarGroupInput = {
-    endpoint?: string;
-    groupId?: string;
-};
+export type VrchatToolsCalendarGroupInput = { groupId?: string };
 export type VrchatToolsCalendarListInput = {
-    endpoint?: string;
     params?: Partial<{ [key in string]: JsonValue }>;
 };
 export type VrchatToolsFollowGroupEventInput = {
-    endpoint?: string;
     groupId?: string;
     eventId?: string;
     isFollowing?: boolean;
 };
 export type VrchatToolsInviteMessageEditInput = {
-    endpoint?: string;
     currentUserId?: string;
     messageType?: string;
     slot?: string;
     message?: string;
 };
 export type VrchatToolsInviteMessagesInput = {
-    endpoint?: string;
     currentUserId?: string;
     messageType?: string;
 };
 export type VrchatToolsUserNoteSaveInput = {
-    endpoint?: string;
     targetUserId?: string;
     note?: string;
 };
 export type VrchatToolsUserReportInput = {
-    endpoint?: string;
     userId?: string;
     contentType?: string;
     reason?: string;
     type?: string;
 };
 export type VrchatUserInput = {
-    endpoint?: string;
     userId?: string;
     force?: boolean;
     dialog?: boolean;
     isFriend?: boolean | null;
 };
 export type VrchatUserMutualFriendsInput = {
-    endpoint?: string;
     userId?: string;
     n?: number;
     offset?: number;
     includeUserIdParam?: boolean;
 };
-export type VrchatWorldIdInput = { endpoint?: string; worldId?: string };
+export type VrchatWorldIdInput = { worldId?: string };
 export type VrchatWorldListByUserInput = {
-    endpoint?: string;
     userId?: string;
     n?: number;
     offset?: number;
@@ -5307,12 +5340,10 @@ export type VrchatWorldListByUserInput = {
     releaseStatus?: string;
 };
 export type VrchatWorldPersistentDataDeleteInput = {
-    endpoint?: string;
     userId?: string;
     worldId?: string;
 };
 export type VrchatWorldSaveInput = {
-    endpoint?: string;
     worldId?: string;
     params: JsonValue | null;
 };
@@ -5342,7 +5373,7 @@ export type WorldSummaryOutput = {
 
 /** tauri-specta globals **/
 
-import { Channel as TAURI_CHANNEL } from '@tauri-apps/api/core';
+import {} from '@tauri-apps/api/core';
 import * as TAURI_API_EVENT from '@tauri-apps/api/event';
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow';
 

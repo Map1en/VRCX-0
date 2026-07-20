@@ -12,12 +12,10 @@ function failedReason(outcome: InstanceLaunchOutcome): string {
 }
 
 async function runJoinAction({
-    endpoint = '',
     location,
     mode,
     shortName = ''
 }: {
-    endpoint?: unknown;
     location: unknown;
     mode: InstanceLaunchMode;
     shortName?: unknown;
@@ -25,21 +23,18 @@ async function runJoinAction({
     return commands.appVrchatInstanceJoin({
         location: normalizeString(location),
         shortName: normalizeString(shortName),
-        endpoint: normalizeString(endpoint),
         mode
     });
 }
 
 async function openInstanceInGame(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ): Promise<boolean> {
     try {
         const outcome = await runJoinAction({
             location,
             shortName,
-            endpoint,
             mode: 'openOnly'
         });
         return outcome.status === 'opened';
@@ -51,13 +46,11 @@ async function openInstanceInGame(
 
 async function sendSelfInviteToInstance(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ): Promise<void> {
     const outcome = await runJoinAction({
         location,
         shortName,
-        endpoint,
         mode: 'selfInviteOnly'
     });
     if (outcome.status !== 'selfInvited') {
@@ -67,13 +60,11 @@ async function sendSelfInviteToInstance(
 
 async function joinInstanceWithFallback(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ): Promise<InstanceLaunchOutcome> {
     return runJoinAction({
         location,
         shortName,
-        endpoint,
         mode: 'auto'
     });
 }

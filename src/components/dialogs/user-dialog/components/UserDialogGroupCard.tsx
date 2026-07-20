@@ -50,7 +50,6 @@ export function UserGroupCard({
         groupProfileRepository
             .getGroupProfile({
                 groupId,
-                endpoint: currentEndpoint,
                 includeRoles: false
             })
             .then((groupProfile) => {

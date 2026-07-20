@@ -18,7 +18,7 @@ use vrcx_0_application_game::{
     GameLogLocalGameContextSource, ProcessMonitor, RegistryBackupMaintenanceMode,
     RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
-use vrcx_0_host::app_paths::{AppDataDirResolution, AppPaths};
+use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_host_desktop::auto_launch::{
     deserialize_app_launcher_entries, normalize_app_launcher_entries, AppLauncherEntry,
     AppLauncherSnapshot, AutoAppLaunchManager, APP_LAUNCHER_ENABLED_CONFIG_KEY,
@@ -133,8 +133,6 @@ impl DesktopRuntimeHostState {
             app_update_build_badge,
             updater_port,
         } = options;
-        let paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
-        cleanup_legacy_updater_files(&paths.app_data);
         let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
             realtime_origin,
             launched_from_autostart,
@@ -142,6 +140,7 @@ impl DesktopRuntimeHostState {
             app_version: app_version.clone(),
             profile: RuntimeHostProfile::Desktop,
         })?;
+        cleanup_legacy_updater_files(&builder.paths.app_data);
         let host_file_access = HostFileAccess::new();
         register_desktop_file_access_grants(
             &host_file_access,

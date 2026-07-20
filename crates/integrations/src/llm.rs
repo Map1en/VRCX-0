@@ -185,8 +185,8 @@ struct ChunkFunction {
 #[derive(Default)]
 struct ToolCallAcc {
     id: String,
-    name: String,
-    arguments: String,
+    name_fragments: Vec<String>,
+    argument_fragments: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -342,63 +342,39 @@ impl LlmClient {
         while let Some(chunk) = stream.next().await {
             buffer.extend_from_slice(&chunk?);
             for line in drain_complete_lines(&mut buffer) {
-                let Some(data) = line.trim_end().strip_prefix("data:") else {
-                    continue;
-                };
-                let data = data.trim();
-                if data.is_empty() || data == "[DONE]" {
-                    continue;
-                }
-                let Ok(parsed) = serde_json::from_str::<ChatChunk>(data) else {
-                    continue;
-                };
-                for choice in parsed.choices {
-                    if let Some(text) = choice.delta.content {
-                        if !text.is_empty() {
-                            on_text(&text);
-                            content.push_str(&text);
-                        }
-                    }
-                    if let Some(calls) = choice.delta.tool_calls {
-                        for call in calls {
-                            if tool_acc.len() <= call.index {
-                                tool_acc.resize_with(call.index + 1, ToolCallAcc::default);
-                            }
-                            let acc = &mut tool_acc[call.index];
-                            if let Some(id) = call.id {
-                                acc.id = id;
-                            }
-                            if let Some(function) = call.function {
-                                if let Some(name) = function.name {
-                                    acc.name.push_str(&name);
-                                }
-                                if let Some(arguments) = function.arguments {
-                                    acc.arguments.push_str(&arguments);
-                                }
-                            }
-                        }
-                    }
-                }
+                apply_chat_stream_line(&line, &mut on_text, &mut content, &mut tool_acc);
             }
         }
+        if let Some(line) = take_remaining_line(&mut buffer) {
+            apply_chat_stream_line(&line, &mut on_text, &mut content, &mut tool_acc);
+        }
 
+        let tool_names = tools
+            .iter()
+            .map(|tool| tool.name.as_str())
+            .collect::<Vec<_>>();
         let tool_calls = tool_acc
             .into_iter()
             .enumerate()
-            .filter(|(_, acc)| !acc.name.is_empty())
-            .map(|(index, acc)| ToolCall {
-                // Some local models omit the id; fall back to the index (not the
-                // name) so two calls to the same tool keep distinct ids.
-                id: if acc.id.is_empty() {
-                    format!("call_{index}")
-                } else {
-                    acc.id
-                },
-                kind: "function".into(),
-                function: FunctionCall {
-                    name: acc.name,
-                    arguments: acc.arguments,
-                },
+            .filter_map(|(index, acc)| {
+                let name = assemble_tool_name(&acc.name_fragments, &tool_names);
+                if name.is_empty() {
+                    return None;
+                }
+                Some(ToolCall {
+                    // Some local models omit the id; fall back to the index (not the
+                    // name) so two calls to the same tool keep distinct ids.
+                    id: if acc.id.is_empty() {
+                        format!("call_{index}")
+                    } else {
+                        acc.id
+                    },
+                    kind: "function".into(),
+                    function: FunctionCall {
+                        name,
+                        arguments: assemble_tool_arguments(&acc.argument_fragments),
+                    },
+                })
             })
             .collect();
 
@@ -407,6 +383,106 @@ impl LlmClient {
             tool_calls,
         })
     }
+}
+
+fn apply_chat_stream_line<F>(
+    line: &str,
+    on_text: &mut F,
+    content: &mut String,
+    tool_acc: &mut Vec<ToolCallAcc>,
+) where
+    F: FnMut(&str),
+{
+    let Some(data) = line.trim_end().strip_prefix("data:") else {
+        return;
+    };
+    let data = data.trim();
+    if data.is_empty() || data == "[DONE]" {
+        return;
+    }
+    let Ok(parsed) = serde_json::from_str::<ChatChunk>(data) else {
+        return;
+    };
+    for choice in parsed.choices {
+        if let Some(text) = choice.delta.content {
+            if !text.is_empty() {
+                on_text(&text);
+                content.push_str(&text);
+            }
+        }
+        if let Some(calls) = choice.delta.tool_calls {
+            for call in calls {
+                if tool_acc.len() <= call.index {
+                    tool_acc.resize_with(call.index + 1, ToolCallAcc::default);
+                }
+                let acc = &mut tool_acc[call.index];
+                if let Some(id) = call.id {
+                    acc.id = id;
+                }
+                if let Some(function) = call.function {
+                    if let Some(name) = function.name {
+                        acc.name_fragments.push(name);
+                    }
+                    if let Some(arguments) = function.arguments {
+                        acc.argument_fragments.push(arguments);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn assemble_tool_name(fragments: &[String], tool_names: &[&str]) -> String {
+    let concatenated = fragments.concat();
+    if tool_names.contains(&concatenated.as_str()) {
+        return concatenated;
+    }
+    if let Some(name) = fragments
+        .last()
+        .filter(|name| tool_names.contains(&name.as_str()))
+    {
+        return name.clone();
+    }
+    let cumulative = merge_cumulative_fragments(fragments);
+    if tool_names.contains(&cumulative.as_str()) {
+        cumulative
+    } else {
+        concatenated
+    }
+}
+
+fn assemble_tool_arguments(fragments: &[String]) -> String {
+    let concatenated = fragments.concat();
+    if is_json_object(&concatenated) {
+        return concatenated;
+    }
+    if let Some(snapshot) = fragments.last().filter(|value| is_json_object(value)) {
+        return snapshot.clone();
+    }
+    let cumulative = merge_cumulative_fragments(fragments);
+    if is_json_object(&cumulative) {
+        cumulative
+    } else {
+        concatenated
+    }
+}
+
+fn merge_cumulative_fragments(fragments: &[String]) -> String {
+    let mut cumulative = String::new();
+    for fragment in fragments {
+        if fragment == &cumulative || cumulative.ends_with(fragment) {
+            continue;
+        }
+        if fragment.starts_with(&cumulative) {
+            cumulative.clear();
+        }
+        cumulative.push_str(fragment);
+    }
+    cumulative
+}
+
+fn is_json_object(value: &str) -> bool {
+    matches!(serde_json::from_str::<Value>(value), Ok(Value::Object(_)))
 }
 
 fn normalize_base_url(raw: String) -> String {
@@ -454,6 +530,14 @@ fn drain_complete_lines(buffer: &mut Vec<u8>) -> Vec<String> {
     // Shift the unconsumed tail down once, instead of once per line.
     buffer.drain(..consumed);
     lines
+}
+
+fn take_remaining_line(buffer: &mut Vec<u8>) -> Option<String> {
+    if buffer.is_empty() {
+        return None;
+    }
+    let remaining = std::mem::take(buffer);
+    Some(String::from_utf8_lossy(&remaining).into_owned())
 }
 
 #[cfg(test)]
@@ -559,5 +643,69 @@ mod tests {
         let mut buffer = b"data: a\ndata: b".to_vec();
         assert_eq!(drain_complete_lines(&mut buffer), vec!["data: a\n"]);
         assert_eq!(buffer, b"data: b");
+    }
+
+    #[test]
+    fn takes_final_stream_line_without_a_trailing_newline() {
+        let mut buffer = b"data: final".to_vec();
+
+        assert_eq!(
+            take_remaining_line(&mut buffer).as_deref(),
+            Some("data: final")
+        );
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn repeated_cumulative_tool_names_are_idempotent() {
+        assert_eq!(
+            assemble_tool_name(
+                &[
+                    "get_best_time_to_play".into(),
+                    "get_best_time_to_play".into()
+                ],
+                &["get_best_time_to_play"]
+            ),
+            "get_best_time_to_play"
+        );
+    }
+
+    #[test]
+    fn fragmented_tool_names_still_append_deltas() {
+        assert_eq!(
+            assemble_tool_name(
+                &["get_best_".into(), "time_to_play".into()],
+                &["get_best_time_to_play"]
+            ),
+            "get_best_time_to_play"
+        );
+    }
+
+    #[test]
+    fn valid_repeated_name_fragments_are_not_deduplicated() {
+        assert_eq!(
+            assemble_tool_name(&["foo".into(), "foo".into()], &["foofoo"]),
+            "foofoo"
+        );
+    }
+
+    #[test]
+    fn tool_arguments_accept_delta_and_cumulative_streams() {
+        assert_eq!(
+            assemble_tool_arguments(&["{\"limit\":".into(), "10}".into()]),
+            r#"{"limit":10}"#
+        );
+        assert_eq!(
+            assemble_tool_arguments(&[r#"{"limit":10}"#.into(), r#"{"limit":10}"#.into()]),
+            r#"{"limit":10}"#
+        );
+        assert_eq!(
+            assemble_tool_arguments(&[r#"{"limit":"#.into(), r#"{"limit":10}"#.into()]),
+            r#"{"limit":10}"#
+        );
+        assert_eq!(
+            assemble_tool_arguments(&["{}".into(), r#"{"limit":"#.into(), "10}".into()]),
+            r#"{}{"limit":10}"#
+        );
     }
 }

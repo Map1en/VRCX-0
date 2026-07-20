@@ -23,37 +23,19 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         session: &RealtimeSessionContext,
         status: &str,
     ) {
-        match status {
-            "reconnecting" => {
-                let mut state = match self.runtime.state.lock() {
-                    Ok(state) => state,
-                    Err(error) => {
-                        tracing::warn!("realtime state lock failed: {error}");
-                        return;
-                    }
-                };
-                if !self.runtime.is_message_current_locked(
-                    &state,
-                    generation,
-                    session_generation,
-                    session,
-                ) {
-                    return;
-                }
-                state.connection.friend_messages_paused = true;
-                state.connection.queued_friend_messages.clear();
+        if status == "connected" {
+            if let Some(activity_sink) = &self.runtime.deps.activity_sink {
+                activity_sink.set_delivery_armed(true);
             }
-            "connected" => {
-                if let Some(activity_sink) = &self.runtime.deps.activity_sink {
-                    activity_sink.set_delivery_armed(true);
-                }
-                self.runtime.resume_friend_messages_after_reconnect(
-                    generation,
-                    session_generation,
-                    session,
-                );
+            if let Some(transport) =
+                self.runtime
+                    .current_transport(generation, session_generation, session)
+            {
+                let _ = self
+                    .runtime
+                    .transport_lifecycle_tx
+                    .send(RealtimeTransportLifecycleEvent::Connected(transport));
             }
-            _ => {}
         }
     }
 
@@ -64,7 +46,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         session: &RealtimeSessionContext,
         payload: &RealtimeWsMessagePayload,
     ) {
-        let mut state = match self.runtime.state.lock() {
+        let state = match self.runtime.state.lock() {
             Ok(state) => state,
             Err(error) => {
                 tracing::warn!("realtime state lock failed: {error}");
@@ -80,11 +62,6 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
 
         let message_type = payload.json.get("type").and_then(serde_json::Value::as_str);
         if message_type.map(is_friend_event_type).unwrap_or(false) {
-            if state.connection.friend_messages_paused {
-                self.runtime
-                    .queue_friend_message_locked(&mut state, generation, payload);
-                return;
-            }
             drop(state);
             self.runtime
                 .handle_friend_ws_message(generation, session_generation, session, payload);
@@ -149,51 +126,6 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         if let Some(output) = apply_instance_closed_ws_message(generation, payload) {
             self.runtime
                 .apply_instance_closed_output(&session.user_id, output);
-        }
-    }
-
-    fn handle_realtime_transport_finished(
-        &self,
-        generation: u64,
-        session_generation: u64,
-        session: &RealtimeSessionContext,
-    ) {
-        let friend_owner = self.runtime.lock_friend_owner();
-        let (final_current_user_output, finished_active) = {
-            let mut state = match self.runtime.state.lock() {
-                Ok(state) => state,
-                Err(error) => {
-                    tracing::warn!("realtime state lock failed: {error}");
-                    return;
-                }
-            };
-            let Some(active) = state.connection.active_context.as_ref() else {
-                return;
-            };
-            if active.generation != generation
-                || active.session_generation != session_generation
-                || active.session != *session
-            {
-                return;
-            }
-            let finished_active = active.clone();
-            let final_current_user_output = self
-                .runtime
-                .current_user_game_running_output(generation, false);
-            state.connection.active_context = None;
-            state.connection.friend_messages_paused = false;
-            state.connection.queued_friend_messages.clear();
-            state.friend_profile.refetches.clear();
-            self.runtime.friends.clear();
-            self.runtime.current_user.clear();
-            (final_current_user_output, finished_active)
-        };
-        drop(friend_owner);
-        self.runtime
-            .cancel_friend_profile_bulk_load_for_session(&finished_active);
-
-        if let Some(output) = final_current_user_output {
-            self.runtime.apply_current_user_output(output);
         }
     }
 }

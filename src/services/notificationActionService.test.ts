@@ -91,7 +91,6 @@ describe('notificationActionService', () => {
 
         const reply = sendBoopReplyNotification({
             currentUserId: 'usr_self',
-            endpoint,
             notification,
             emojiId: 'emoji_wave'
         });
@@ -115,8 +114,7 @@ describe('notificationActionService', () => {
             id: 'notif_previous',
             version: 1,
             type: 'boop',
-            senderUserId: 'usr_sender',
-            endpoint
+            senderUserId: 'usr_sender'
         });
         expect(mocks.expireNotification).toHaveBeenNthCalledWith(1, {
             userId: 'usr_self',
@@ -124,15 +122,13 @@ describe('notificationActionService', () => {
         });
         expect(mocks.sendBoopToUser).toHaveBeenCalledWith({
             userId: 'usr_sender',
-            emojiId: 'emoji_wave',
-            endpoint
+            emojiId: 'emoji_wave'
         });
         expect(mocks.hideRemoteNotification).toHaveBeenNthCalledWith(2, {
             id: 'notif_target',
             version: 2,
             type: 'boop',
-            senderUserId: 'usr_sender',
-            endpoint
+            senderUserId: 'usr_sender'
         });
         expect(mocks.expireNotification).toHaveBeenNthCalledWith(2, {
             userId: 'usr_self',
@@ -161,7 +157,6 @@ describe('notificationActionService', () => {
 
         const reply = sendBoopReplyNotification({
             currentUserId: 'usr_self',
-            endpoint,
             notification
         });
 
@@ -202,7 +197,6 @@ describe('notificationActionService', () => {
             await expect(
                 sendNotificationButtonResponse({
                     currentUserId: 'usr_self',
-                    endpoint,
                     notification: { ...notification, version },
                     response: { type: 'accept', data: 'payload' }
                 })
@@ -211,8 +205,7 @@ describe('notificationActionService', () => {
             expect(mocks.sendNotificationResponse).toHaveBeenCalledWith({
                 id: 'notif_target',
                 responseType: 'accept',
-                responseData: 'payload',
-                endpoint
+                responseData: 'payload'
             });
             expect(mocks.expireNotification).toHaveBeenCalledTimes(
                 expires ? 1 : 0

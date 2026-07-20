@@ -72,7 +72,6 @@ export function createAvatarDialogActions({
         try {
             const nextAvatar = await avatarProfileRepository.getAvatarProfile({
                 avatarId: normalizedAvatarId,
-                endpoint: currentEndpoint,
                 force: true,
                 allowLocalFallback: false
             });
@@ -100,13 +99,10 @@ export function createAvatarDialogActions({
 
         try {
             await avatarProfileRepository.selectAvatar({
-                avatarId: avatar.id,
-                endpoint: currentEndpoint
+                avatarId: avatar.id
             });
             const currentUserResponse =
-                await vrchatAuthRepository.getCurrentUser({
-                    endpoint: currentEndpoint
-                });
+                await vrchatAuthRepository.getCurrentUser();
             const nextUser =
                 currentUserResponse.json &&
                 typeof currentUserResponse.json === 'object'
@@ -136,9 +132,7 @@ export function createAvatarDialogActions({
     }
 
     async function refreshCurrentUserSnapshot() {
-        const currentUserResponse = await vrchatAuthRepository.getCurrentUser({
-            endpoint: currentEndpoint
-        });
+        const currentUserResponse = await vrchatAuthRepository.getCurrentUser();
         const nextUser =
             currentUserResponse.json &&
             typeof currentUserResponse.json === 'object'
@@ -179,8 +173,7 @@ export function createAvatarDialogActions({
 
         try {
             await avatarProfileRepository.selectFallbackAvatar({
-                avatarId: avatar.id,
-                endpoint: currentEndpoint
+                avatarId: avatar.id
             });
             await refreshCurrentUserSnapshot();
             toast.success(t('dialog.avatar.empty.fallback_avatar_updated'));
@@ -225,7 +218,6 @@ export function createAvatarDialogActions({
         try {
             const response = await avatarProfileRepository.saveAvatar({
                 avatarId: avatar.id,
-                endpoint: currentEndpoint,
                 params: {
                     id: avatar.id,
                     releaseStatus: nextStatus
@@ -289,8 +281,7 @@ export function createAvatarDialogActions({
         setActionStatus('delete');
         try {
             await avatarProfileRepository.deleteAvatar({
-                avatarId: avatar.id,
-                endpoint: currentEndpoint
+                avatarId: avatar.id
             });
             let refreshFailed = false;
             try {
@@ -326,7 +317,6 @@ export function createAvatarDialogActions({
     async function refreshAvatarSnapshot({ force = false } = {}) {
         const nextAvatar = await avatarProfileRepository.getAvatarProfile({
             avatarId: avatar.id,
-            endpoint: currentEndpoint,
             force,
             allowLocalFallback: false
         });
@@ -396,7 +386,6 @@ export function createAvatarDialogActions({
             actionStatusRef,
             avatar,
             avatarSideData,
-            currentEndpoint,
             setActionStatus,
             setAvatar,
             setAvatarSideData,
@@ -420,7 +409,6 @@ export function createAvatarDialogActions({
             avatar,
             canManageAvatar,
             confirm,
-            currentEndpoint,
             isCurrentAvatar,
             moderationRevisionRef,
             refreshAvatarSnapshot,

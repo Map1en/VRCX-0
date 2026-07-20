@@ -24,17 +24,12 @@ describe('instanceActionService', () => {
         mocks.appVrchatInstanceJoin.mockResolvedValue({ status: 'opened' });
 
         await expect(
-            openInstanceInGame(
-                'wrld_test:12345~hidden(usr_owner)',
-                'tok123',
-                'https://api.vrchat.cloud/api/1'
-            )
+            openInstanceInGame('wrld_test:12345~hidden(usr_owner)', 'tok123')
         ).resolves.toBe(true);
 
         expect(mocks.appVrchatInstanceJoin).toHaveBeenCalledWith({
             location: 'wrld_test:12345~hidden(usr_owner)',
             shortName: 'tok123',
-            endpoint: 'https://api.vrchat.cloud/api/1',
             mode: 'openOnly'
         });
     });
@@ -45,9 +40,9 @@ describe('instanceActionService', () => {
             reason: 'launch pipe unavailable'
         });
 
-        await expect(
-            openInstanceInGame('wrld_test:12345', '', '')
-        ).resolves.toBe(false);
+        await expect(openInstanceInGame('wrld_test:12345', '')).resolves.toBe(
+            false
+        );
     });
 
     it('sends self invites through the backend join action in self-invite-only mode', async () => {
@@ -58,15 +53,13 @@ describe('instanceActionService', () => {
         await expect(
             sendSelfInviteToInstance(
                 'wrld_test:12345~hidden(usr_owner)',
-                'tok123',
-                ''
+                'tok123'
             )
         ).resolves.toBeUndefined();
 
         expect(mocks.appVrchatInstanceJoin).toHaveBeenCalledWith({
             location: 'wrld_test:12345~hidden(usr_owner)',
             shortName: 'tok123',
-            endpoint: '',
             mode: 'selfInviteOnly'
         });
     });

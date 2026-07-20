@@ -39,15 +39,27 @@ pub struct ProfileBackupRuntime {
     inner: Arc<ProfileBackupRuntimeInner>,
 }
 
+pub struct ProfileBackupRuntimeDeps {
+    pub app_data: PathBuf,
+    pub control_dir: PathBuf,
+    pub db: Arc<DatabaseService>,
+    pub storage: Arc<StorageService>,
+    pub event_bus: RuntimeEventBus,
+    pub tasks: TaskSupervisor,
+    pub background_jobs: RuntimeBackgroundJobs,
+    pub app_version: String,
+}
+
 struct ProfileBackupRuntimeInner {
     app_data: PathBuf,
+    control_dir: PathBuf,
     db: Arc<DatabaseService>,
     storage: Arc<StorageService>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     background_jobs: RuntimeBackgroundJobs,
     app_version: String,
-    operation_running: Arc<AtomicBool>,
+    operation_gate: ProfileOperationGate,
     scheduler_started: AtomicBool,
     auto_check_scheduled: AtomicBool,
     state: Mutex<ProfileBackupRuntimeState>,
@@ -72,16 +84,22 @@ struct PendingDelivery {
     retain_extra: u8,
 }
 
-struct OperationGuard {
+#[derive(Clone, Default)]
+pub struct ProfileOperationGate {
+    flag: Arc<AtomicBool>,
+}
+
+pub(crate) struct OperationGuard {
     flag: Arc<AtomicBool>,
 }
 
 impl OperationGuard {
-    fn try_acquire(flag: &Arc<AtomicBool>) -> Option<Self> {
-        flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+    pub(crate) fn try_acquire(gate: &ProfileOperationGate) -> Option<Self> {
+        gate.flag
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .ok()
             .map(|_| Self {
-                flag: Arc::clone(flag),
+                flag: Arc::clone(&gate.flag),
             })
     }
 }
@@ -93,25 +111,28 @@ impl Drop for OperationGuard {
 }
 
 impl ProfileBackupRuntime {
-    pub fn new(
-        app_data: PathBuf,
-        db: Arc<DatabaseService>,
-        storage: Arc<StorageService>,
-        event_bus: RuntimeEventBus,
-        tasks: TaskSupervisor,
-        background_jobs: RuntimeBackgroundJobs,
-        app_version: String,
-    ) -> Self {
+    pub fn new(deps: ProfileBackupRuntimeDeps) -> Self {
+        let ProfileBackupRuntimeDeps {
+            app_data,
+            control_dir,
+            db,
+            storage,
+            event_bus,
+            tasks,
+            background_jobs,
+            app_version,
+        } = deps;
         Self {
             inner: Arc::new(ProfileBackupRuntimeInner {
                 app_data,
+                control_dir,
                 db,
                 storage,
                 event_bus,
                 tasks,
                 background_jobs,
                 app_version,
-                operation_running: Arc::new(AtomicBool::new(false)),
+                operation_gate: ProfileOperationGate::default(),
                 scheduler_started: AtomicBool::new(false),
                 auto_check_scheduled: AtomicBool::new(false),
                 state: Mutex::new(ProfileBackupRuntimeState::default()),
@@ -127,8 +148,12 @@ impl ProfileBackupRuntime {
             .unwrap_or_default()
     }
 
+    pub fn operation_gate(&self) -> ProfileOperationGate {
+        self.inner.operation_gate.clone()
+    }
+
     pub fn discard_pending(&self) -> ProfileBackupActionOutcome {
-        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return self.rejected_action(ProfileBackupErrorCode::OperationBusy, None);
         };
         let pending = self

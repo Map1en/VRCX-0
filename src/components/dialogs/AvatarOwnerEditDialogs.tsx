@@ -178,7 +178,6 @@ export function AvatarContentTagsDialog({
             .getAllAvatarsByUser({
                 userId: currentUserId,
                 user: 'me',
-                endpoint,
                 releaseStatus: 'all'
             })
             .then((rows: any) => {

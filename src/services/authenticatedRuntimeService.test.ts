@@ -43,6 +43,7 @@ function phaseSnapshot(
             detail: 'Realtime ready.',
             lastError: null
         },
+        friendBaselineRevision: 1,
         friendBaseline: {
             userId: 'usr_self',
             stale: false,
@@ -122,6 +123,49 @@ describe('authenticatedRuntimeService', () => {
         expect(useFavoriteStore.getState().currentUserId).toBe('usr_self');
     });
 
+    it('applies a newer friend baseline revision within the same runtime run', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                friendBaselineRevision: 2,
+                friendBaseline: {
+                    userId: 'usr_self',
+                    stale: false,
+                    count: 1,
+                    detail: 'Friends reloaded.',
+                    snapshot: {
+                        friendsById: {
+                            usr_reloaded: {
+                                id: 'usr_reloaded',
+                                displayName: 'Reloaded Friend',
+                                state: 'online'
+                            }
+                        },
+                        orderedFriendIds: ['usr_reloaded'],
+                        onlineIds: ['usr_reloaded'],
+                        activeIds: [],
+                        offlineIds: []
+                    },
+                    friendLogChanged: false
+                }
+            })
+        );
+
+        expect(
+            Object.keys(useFriendRosterStore.getState().friendsById)
+        ).toEqual(['usr_reloaded']);
+        expect(
+            useFriendRosterStore.getState().friendsById.usr_reloaded
+                ?.displayName
+        ).toBe('Reloaded Friend');
+
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+        expect(
+            Object.keys(useFriendRosterStore.getState().friendsById)
+        ).toEqual(['usr_reloaded']);
+    });
+
     it('ignores a phase snapshot for another authenticated user', () => {
         applyAuthenticatedRuntimePhaseSnapshot(
             phaseSnapshot({ userId: 'usr_other' })
@@ -129,6 +173,16 @@ describe('authenticatedRuntimeService', () => {
 
         expect(useSessionStore.getState().isFriendsLoaded).toBe(false);
         expect(useSessionStore.getState().isFavoritesLoaded).toBe(false);
+    });
+
+    it('does not let another user snapshot block the current session', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({ runId: 8, userId: 'usr_other' })
+        );
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+
+        expect(useSessionStore.getState().isFriendsLoaded).toBe(true);
+        expect(useSessionStore.getState().isFavoritesLoaded).toBe(true);
     });
 
     it('ignores a phase snapshot for another websocket owner', () => {
@@ -242,6 +296,85 @@ describe('authenticatedRuntimeService', () => {
         );
     });
 
+    it('buffers a future transport generation until its same-run snapshot arrives', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+        handleAuthenticatedRuntimeRealtimeStatus({
+            status: 'error',
+            websocketDomain: 'wss://pipeline.example.test',
+            at: '2026-07-17T00:00:01.000Z',
+            clientRunId: 7,
+            generation: 11,
+            sessionGeneration: 4,
+            reason: 'connection lost',
+            statusCode: null
+        });
+        handleAuthenticatedRuntimeRealtimeStatus({
+            status: 'connected',
+            websocketDomain: 'wss://pipeline.example.test',
+            at: '2026-07-17T00:00:02.000Z',
+            clientRunId: 7,
+            generation: 12,
+            sessionGeneration: 5,
+            reason: null,
+            statusCode: null
+        });
+
+        expect(useSessionStore.getState().transportStatus).toBe(
+            'pipeline-error'
+        );
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                realtimeTransport: {
+                    generation: 12,
+                    clientRunId: 7,
+                    sessionGeneration: 5
+                },
+                updatedAt: '2026-07-17T00:00:03.000Z'
+            })
+        );
+
+        expect(useSessionStore.getState().transportStatus).toBe(
+            'pipeline-connected'
+        );
+        expect(useRuntimeStore.getState().transport.websocketConnected).toBe(
+            true
+        );
+    });
+
+    it('shows a new same-run transport attempt as connecting', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+        handleAuthenticatedRuntimeRealtimeStatus({
+            status: 'error',
+            websocketDomain: 'wss://pipeline.example.test',
+            at: '2026-07-17T00:00:01.000Z',
+            clientRunId: 7,
+            generation: 11,
+            sessionGeneration: 4,
+            reason: 'connection lost',
+            statusCode: null
+        });
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                phase: 'starting',
+                realtime: {
+                    status: 'running',
+                    attempt: 2,
+                    retryDelaySeconds: null,
+                    detail: 'Realtime is starting.',
+                    lastError: null
+                },
+                realtimeTransport: null,
+                updatedAt: '2026-07-17T00:00:02.000Z'
+            })
+        );
+
+        expect(useSessionStore.getState().transportStatus).toBe(
+            'pipeline-connecting'
+        );
+    });
+
     it('clears the transport mirror when the runtime stops', () => {
         applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
         handleAuthenticatedRuntimeRealtimeStatus({
@@ -264,6 +397,41 @@ describe('authenticatedRuntimeService', () => {
         );
 
         expect(useSessionStore.getState().transportStatus).toBe('disconnected');
+        expect(useRuntimeStore.getState().transport.websocketConnected).toBe(
+            false
+        );
+    });
+
+    it('keeps a terminal realtime failure visible after the transport is cleared', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+        handleAuthenticatedRuntimeRealtimeStatus({
+            status: 'connected',
+            websocketDomain: 'wss://pipeline.example.test',
+            at: '2026-07-17T00:00:02.000Z',
+            clientRunId: 7,
+            generation: 11,
+            sessionGeneration: 4,
+            reason: null,
+            statusCode: null
+        });
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                phase: 'error',
+                realtime: {
+                    status: 'failed',
+                    attempt: 1,
+                    retryDelaySeconds: null,
+                    detail: 'Realtime transport terminated.',
+                    lastError: 'Forbidden (status 403)'
+                },
+                realtimeTransport: null
+            })
+        );
+
+        expect(useSessionStore.getState().transportStatus).toBe(
+            'pipeline-error'
+        );
         expect(useRuntimeStore.getState().transport.websocketConnected).toBe(
             false
         );

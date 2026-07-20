@@ -168,10 +168,8 @@ type SettingsPreferenceActionsDeps = {
         getState(): Pick<PreferencesStoreState, 'proxyServer' | 'tableLimits'>;
     };
     vrchatAuthRepository: {
-        getConfig(options: { endpoint: string }): Promise<{ json: unknown }>;
-        getOnlineVisits(options: {
-            endpoint: string;
-        }): Promise<{ json: unknown }>;
+        getConfig(): Promise<{ json: unknown }>;
+        getOnlineVisits(): Promise<{ json: unknown }>;
     };
 };
 
@@ -527,9 +525,7 @@ export function useSettingsPreferenceActions({
     }
     async function refreshConfigTreeData() {
         try {
-            const response = await vrchatAuthRepository.getConfig({
-                endpoint: auth.currentUserEndpoint || ''
-            });
+            const response = await vrchatAuthRepository.getConfig();
             setConfigTreeData(
                 response.json && typeof response.json === 'object'
                     ? (response.json as Record<string, unknown>)
@@ -545,9 +541,7 @@ export function useSettingsPreferenceActions({
     }
     async function refreshOnlineVisits() {
         try {
-            const response = await vrchatAuthRepository.getOnlineVisits({
-                endpoint: auth.currentUserEndpoint || ''
-            });
+            const response = await vrchatAuthRepository.getOnlineVisits();
             setOnlineVisitCount(Number(response.json) || 0);
         } catch (error) {
             toast.error(

@@ -4,29 +4,21 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 const FAVORITES_PAGE_SIZE = 300;
 const FAVORITE_GROUPS_PAGE_SIZE = 50;
 const FAVORITE_DETAIL_PAGE_SIZE = 300;
 
-type RequestOptions = {
-    endpoint?: string;
-};
 type RequestPayload = Record<string, unknown>;
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
-interface FavoritePagingInput extends RequestOptions {
+interface FavoritePagingInput {
     n?: number;
     offset?: number;
 }
@@ -45,17 +37,17 @@ interface FavoriteGroupsInput extends FavoritePagingInput {
     ownerId?: string;
 }
 
-interface FavoriteMutationInput extends RequestOptions {
+interface FavoriteMutationInput {
     type?: unknown;
     favoriteId?: unknown;
     tags?: unknown;
 }
 
-interface DeleteFavoriteInput extends RequestOptions {
+interface DeleteFavoriteInput {
     objectId?: unknown;
 }
 
-interface FavoriteGroupMutationInput extends RequestOptions {
+interface FavoriteGroupMutationInput {
     ownerId?: unknown;
     type?: unknown;
     group?: unknown;
@@ -63,49 +55,21 @@ interface FavoriteGroupMutationInput extends RequestOptions {
     visibility?: unknown;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapVrchatFavoriteResponse<TJson = unknown>(
     response: VrchatApiResult,
     path: string,
     fallbackMessage: string
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const message = unwrapErrorMessage(json, response.status, {
-            fallbackMessage
-        });
-        const requestError = createRequestError(
-            message,
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, { fallbackMessage });
 }
 
-async function getFavoriteLimits({
-    endpoint = '',
-    force = false
-}: RequestOptions & { force?: boolean } = {}) {
+async function getFavoriteLimits({ force = false }: { force?: boolean } = {}) {
     return fetchCachedData({
-        queryKey: queryKeys.favoriteLimits(endpoint),
+        queryKey: queryKeys.favoriteLimits(DEFAULT_VRCHAT_API_ENDPOINT),
         policy: entityQueryPolicies.favoriteLimits,
         force,
         queryFn: async () => {
-            const response = await commands.appVrchatFavoriteLimitsGet({
-                endpoint
-            });
+            const response = await commands.appVrchatFavoriteLimitsGet();
             return unwrapVrchatFavoriteResponse(
                 response,
                 'auth/user/favoritelimits',
@@ -116,12 +80,10 @@ async function getFavoriteLimits({
 }
 
 async function getFavorites({
-    endpoint = '',
     n = FAVORITES_PAGE_SIZE,
     offset = 0
 }: FavoritePagingInput = {}) {
     const response = await commands.appVrchatFavoritesGet({
-        endpoint,
         n,
         offset
     });
@@ -132,12 +94,11 @@ async function getFavorites({
     );
 }
 
-async function getAllFavorites({ endpoint = '' }: RequestOptions = {}) {
+async function getAllFavorites() {
     const favorites = [];
 
     for (let offset = 0; ; offset += FAVORITES_PAGE_SIZE) {
         const response = await getFavorites({
-            endpoint,
             n: FAVORITES_PAGE_SIZE,
             offset
         });
@@ -153,13 +114,11 @@ async function getAllFavorites({ endpoint = '' }: RequestOptions = {}) {
 }
 
 async function addFavorite({
-    endpoint = '',
     type,
     favoriteId,
     tags
 }: FavoriteMutationInput = {}) {
     const response = await commands.appVrchatFavoriteAdd({
-        endpoint,
         type: typeof type === 'string' ? type : String(type ?? ''),
         favoriteId:
             typeof favoriteId === 'string'
@@ -174,10 +133,7 @@ async function addFavorite({
     );
 }
 
-async function deleteFavorite({
-    endpoint = '',
-    objectId
-}: DeleteFavoriteInput = {}) {
+async function deleteFavorite({ objectId }: DeleteFavoriteInput = {}) {
     const normalizedObjectId =
         typeof objectId === 'string'
             ? objectId.trim()
@@ -189,7 +145,6 @@ async function deleteFavorite({
     }
 
     const response = await commands.appVrchatFavoriteDelete({
-        endpoint,
         objectId: normalizedObjectId
     });
     return unwrapVrchatFavoriteResponse(
@@ -200,7 +155,6 @@ async function deleteFavorite({
 }
 
 async function getFavoriteWorlds({
-    endpoint = '',
     n = FAVORITE_DETAIL_PAGE_SIZE,
     offset = 0,
     ownerId = '',
@@ -208,7 +162,6 @@ async function getFavoriteWorlds({
     tag = ''
 }: FavoriteWorldsInput = {}) {
     const response = await commands.appVrchatFavoriteWorldsGet({
-        endpoint,
         n,
         offset,
         ownerId,
@@ -223,7 +176,6 @@ async function getFavoriteWorlds({
 }
 
 async function getAllFavoriteWorlds({
-    endpoint = '',
     ownerId = '',
     userId = '',
     tag = ''
@@ -232,7 +184,6 @@ async function getAllFavoriteWorlds({
 
     for (let offset = 0; ; offset += FAVORITE_DETAIL_PAGE_SIZE) {
         const response = await getFavoriteWorlds({
-            endpoint,
             n: FAVORITE_DETAIL_PAGE_SIZE,
             offset,
             ownerId,
@@ -251,13 +202,11 @@ async function getAllFavoriteWorlds({
 }
 
 async function getFavoriteAvatars({
-    endpoint = '',
     n = FAVORITE_DETAIL_PAGE_SIZE,
     offset = 0,
     tag
 }: FavoriteAvatarsInput = {}) {
     const response = await commands.appVrchatFavoriteAvatarsGet({
-        endpoint,
         n,
         offset,
         tag: typeof tag === 'string' ? tag.trim() : ''
@@ -269,10 +218,7 @@ async function getFavoriteAvatars({
     );
 }
 
-async function getAllFavoriteAvatars({
-    endpoint = '',
-    tags = []
-}: RequestOptions & { tags?: unknown[] } = {}) {
+async function getAllFavoriteAvatars({ tags = [] }: { tags?: unknown[] } = {}) {
     const avatars = [];
     const seenIds = new Set();
     const normalizedTags = Array.from(
@@ -287,7 +233,6 @@ async function getAllFavoriteAvatars({
     for (const tag of tagQueue) {
         for (let offset = 0; ; offset += FAVORITE_DETAIL_PAGE_SIZE) {
             const response = await getFavoriteAvatars({
-                endpoint,
                 n: FAVORITE_DETAIL_PAGE_SIZE,
                 offset,
                 tag
@@ -316,13 +261,11 @@ async function getAllFavoriteAvatars({
 }
 
 async function getFavoriteGroups({
-    endpoint = '',
     n = FAVORITE_GROUPS_PAGE_SIZE,
     offset = 0,
     ownerId = ''
 }: FavoriteGroupsInput = {}) {
     const response = await commands.appVrchatFavoriteGroupsGet({
-        endpoint,
         n,
         offset,
         ownerId
@@ -335,14 +278,12 @@ async function getFavoriteGroups({
 }
 
 async function getAllFavoriteGroups({
-    endpoint = '',
     ownerId = ''
-}: RequestOptions & { ownerId?: string } = {}) {
+}: { ownerId?: string } = {}) {
     const groups = [];
 
     for (let offset = 0; ; offset += FAVORITE_GROUPS_PAGE_SIZE) {
         const response = await getFavoriteGroups({
-            endpoint,
             n: FAVORITE_GROUPS_PAGE_SIZE,
             offset,
             ownerId
@@ -359,7 +300,6 @@ async function getAllFavoriteGroups({
 }
 
 async function saveFavoriteGroup({
-    endpoint = '',
     ownerId = '',
     type,
     group,
@@ -393,7 +333,6 @@ async function saveFavoriteGroup({
     }
 
     const response = await commands.appVrchatFavoriteGroupSave({
-        endpoint,
         ownerId: normalizedOwnerId,
         type: normalizedType,
         group: normalizedGroup,
@@ -408,7 +347,6 @@ async function saveFavoriteGroup({
 }
 
 async function clearFavoriteGroup({
-    endpoint = '',
     ownerId = '',
     type,
     group
@@ -429,7 +367,6 @@ async function clearFavoriteGroup({
     }
 
     const response = await commands.appVrchatFavoriteGroupClear({
-        endpoint,
         ownerId: normalizedOwnerId,
         type: normalizedType,
         group: normalizedGroup

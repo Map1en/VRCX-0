@@ -44,8 +44,10 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     commit: SettingsCallback<
         [action: SettingsAction, optimistic?: () => unknown]
     >;
+    cleanupAppDataDir: SettingsCallback;
     deleteAllScreenshotMetadata: SettingsCallback;
     desktopNotificationsDialogOpen: boolean;
+    dismissAppDataDirCleanup: SettingsCallback;
     discordPrefs: SettingsDiscordPrefs;
     handleCropInstancePrintsChange: SettingsCallback<[boolean]>;
     handleGameLogDisabledChange: SettingsCallback<[boolean]>;

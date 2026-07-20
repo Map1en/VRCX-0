@@ -1,13 +1,14 @@
+use std::sync::Arc;
+
 use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_application_core::WebClient;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::auth::{config_get_input, current_user_get_input};
-use vrcx_0_vrchat_client::http_api::{
-    normalize_vrchat_api_endpoint, ApiScope, HttpApiExecuteResponse,
-};
+use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, HttpApiExecuteResponse};
 use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
 
-use crate::WebClient;
+use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage};
+use crate::auth::{LoginApi, WebClientLoginApi};
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -48,142 +49,153 @@ pub enum CookieSessionProbe {
 }
 
 pub async fn probe_current_user_from_cookie(
-    web: &WebClient,
-    db: &DatabaseService,
+    web: Arc<WebClient>,
+    db: Arc<DatabaseService>,
     user_id: String,
     endpoint: String,
     websocket: String,
-    allow_unmatched_two_factor: bool,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let config_response = web
-        .execute_api(config_get_input(endpoint.clone()), ApiScope::Vrchat, db)
+    let api = WebClientLoginApi::new(web, db);
+    probe_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+}
+
+pub(crate) async fn probe_current_user_from_cookie_with_api(
+    api: &dyn LoginApi,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
+    let result = probe_cookie_session(api, &endpoint, &user_id)
         .await
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-    if response_allows_saved_credential_fallback(&config_response) {
+    if matches!(result, CookieProbeResult::RequiresTwoFactor(_)) {
         return Ok(CookieSessionProbe::Fallback);
     }
-    if config_response.status == 403 {
-        return Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id: user_id.clone(),
-            reason: auth_response_error_message(
-                &config_response,
-                format!(
-                    "VRChat config request failed with HTTP {}.",
-                    config_response.status
-                ),
-            ),
-        });
-    }
-    if !(200..=399).contains(&config_response.status) {
-        return Err(NonInteractiveAuthError::Failed(
-            auth_response_error_message(
-                &config_response,
-                format!(
-                    "VRChat config request failed with HTTP {}.",
-                    config_response.status
-                ),
-            ),
+    map_fallback_probe(result, user_id, endpoint, websocket)
+}
+
+pub async fn probe_saved_current_user_from_cookie(
+    web: Arc<WebClient>,
+    db: Arc<DatabaseService>,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
+    let api = WebClientLoginApi::new(web, db);
+    probe_saved_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+}
+
+pub(crate) async fn probe_saved_current_user_from_cookie_with_api(
+    api: &dyn LoginApi,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
+    let result = probe_cookie_session(api, &endpoint, &user_id)
+        .await
+        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
+    if matches!(result, CookieProbeResult::RequiresTwoFactor(_)) {
+        return Err(NonInteractiveAuthError::InteractionRequired(
+            "Re-authentication in the GUI is required because this account requires 2FA/OTP."
+                .into(),
         ));
     }
+    map_fallback_probe(result, user_id, endpoint, websocket)
+}
 
-    let response = web
-        .execute_api(
-            current_user_get_input(endpoint.clone()),
-            ApiScope::Vrchat,
-            db,
-        )
-        .await
-        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-    if response_allows_saved_credential_fallback(&response) {
-        return Ok(CookieSessionProbe::Fallback);
+fn map_fallback_probe(
+    result: CookieProbeResult,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
+    match result {
+        CookieProbeResult::Authenticated { user, .. } => Ok(CookieSessionProbe::Authenticated(
+            AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
+        )),
+        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch => {
+            Ok(CookieSessionProbe::Fallback)
+        }
+        CookieProbeResult::RequiresTwoFactor(_) => unreachable!(),
+        CookieProbeResult::Rejected { response, .. } if response.status == 401 => {
+            Ok(CookieSessionProbe::Fallback)
+        }
+        CookieProbeResult::Rejected { stage, response } => {
+            rejected_probe_error(user_id, stage, response)
+        }
     }
-    if !allow_unmatched_two_factor && response_requires_two_factor(&response) {
-        return Ok(CookieSessionProbe::Fallback);
-    }
-    if response.status == 403 {
-        return Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id,
-            reason: auth_response_error_message(
-                &response,
-                format!(
-                    "VRChat current-user request failed with HTTP {}.",
-                    response.status
-                ),
-            ),
-        });
-    }
-    let user = parse_current_user_response(response)?;
-    let response_user_id = string_field(&user, "id").unwrap_or_default();
-    if !user_id.trim().is_empty() && response_user_id != user_id.trim() {
-        return Ok(CookieSessionProbe::Fallback);
-    }
-    Ok(CookieSessionProbe::Authenticated(
-        AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
-    ))
 }
 
 pub async fn current_user_from_cookie(
-    web: &WebClient,
-    db: &DatabaseService,
+    web: Arc<WebClient>,
+    db: Arc<DatabaseService>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-    let config_response = web
-        .execute_api(config_get_input(endpoint.clone()), ApiScope::Vrchat, db)
-        .await
-        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-    if matches!(config_response.status, 401 | 403) {
-        return Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id: user_id.clone(),
-            reason: auth_response_error_message(
-                &config_response,
-                format!(
-                    "VRChat config request failed with HTTP {}.",
-                    config_response.status
-                ),
-            ),
-        });
-    }
+    let api = WebClientLoginApi::new(web, db);
+    current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+}
 
-    let response = web
-        .execute_api(
-            current_user_get_input(endpoint.clone()),
-            ApiScope::Vrchat,
-            db,
-        )
+pub(crate) async fn current_user_from_cookie_with_api(
+    api: &dyn LoginApi,
+    user_id: String,
+    endpoint: String,
+    websocket: String,
+) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
+    match probe_cookie_session(api, &endpoint, &user_id)
         .await
-        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-    if matches!(response.status, 401 | 403) {
-        return Err(NonInteractiveAuthError::SessionInvalidated {
+        .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?
+    {
+        CookieProbeResult::Authenticated { user, .. } => Ok(
+            AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
+        ),
+        CookieProbeResult::RequiresTwoFactor(_) => {
+            Err(NonInteractiveAuthError::InteractionRequired(
+                "Re-authentication in the GUI is required because this account requires 2FA/OTP."
+                    .into(),
+            ))
+        }
+        CookieProbeResult::MissingCredentials(response) => {
+            Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason: auth_response_error_message(
+                    &response,
+                    format!("VRChat auth request failed with HTTP {}.", response.status),
+                ),
+            })
+        }
+        CookieProbeResult::UserMismatch => Err(NonInteractiveAuthError::SessionInvalidated {
             user_id,
-            reason: auth_response_error_message(
-                &response,
-                format!(
-                    "VRChat current-user request failed with HTTP {}.",
-                    response.status
-                ),
-            ),
-        });
+            reason: "The stored browser session belongs to a different account.".into(),
+        }),
+        CookieProbeResult::Rejected { stage, response } => {
+            rejected_probe_error(user_id, stage, response)
+        }
     }
-    let user = parse_current_user_response(response)?;
-    Ok(AuthenticatedRuntimeSession::from_user(
-        user, endpoint, websocket,
-    ))
 }
 
-fn response_allows_saved_credential_fallback(response: &HttpApiExecuteResponse) -> bool {
-    response.status == 401
-        && auth_response_error_message(response, String::new()).contains("Missing Credentials")
-}
-
-fn response_requires_two_factor(response: &HttpApiExecuteResponse) -> bool {
-    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
-        return false;
+fn rejected_probe_error<T>(
+    user_id: String,
+    stage: CookieProbeStage,
+    response: HttpApiExecuteResponse,
+) -> std::result::Result<T, NonInteractiveAuthError> {
+    let request_name = match stage {
+        CookieProbeStage::Config => "config",
+        CookieProbeStage::CurrentUser => "current-user",
     };
-    json.get("requiresTwoFactorAuth")
-        .and_then(Value::as_array)
-        .is_some_and(|methods| !methods.is_empty())
+    let reason = auth_response_error_message(
+        &response,
+        format!(
+            "VRChat {request_name} request failed with HTTP {}.",
+            response.status
+        ),
+    );
+    if matches!(response.status, 401 | 403) {
+        Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason })
+    } else {
+        Err(NonInteractiveAuthError::Failed(reason))
+    }
 }
 
 pub fn auth_response_error_message(response: &HttpApiExecuteResponse, fallback: String) -> String {
@@ -210,6 +222,14 @@ pub fn parse_current_user_response(
 ) -> std::result::Result<Value, NonInteractiveAuthError> {
     let json = serde_json::from_str::<Value>(&response.data)
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
+    if response.status != 200 {
+        return Err(NonInteractiveAuthError::Failed(
+            auth_response_error_message(
+                &response,
+                format!("VRChat auth request failed with HTTP {}.", response.status),
+            ),
+        ));
+    }
     if json
         .get("requiresTwoFactorAuth")
         .and_then(Value::as_array)
@@ -219,18 +239,6 @@ pub fn parse_current_user_response(
             "Re-authentication in the GUI is required because this account requires 2FA/OTP."
                 .into(),
         ));
-    }
-    if !(200..=399).contains(&response.status) {
-        let message = string_field(&json, "message")
-            .or_else(|| {
-                json.get("error")
-                    .and_then(Value::as_str)
-                    .map(ToOwned::to_owned)
-            })
-            .unwrap_or_else(|| {
-                format!("VRChat auth request failed with HTTP {}.", response.status)
-            });
-        return Err(NonInteractiveAuthError::Failed(message));
     }
     if string_field(&json, "id").unwrap_or_default().is_empty() {
         return Err(NonInteractiveAuthError::Failed(
@@ -258,11 +266,7 @@ mod tests {
     use super::*;
 
     fn response(status: i32, data: serde_json::Value) -> HttpApiExecuteResponse {
-        HttpApiExecuteResponse {
-            status,
-            data: data.to_string(),
-            raw: data,
-        }
+        vrcx_0_vrchat_client::http_api::execute_response(status, data.to_string())
     }
 
     #[test]
@@ -323,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_current_user_response_ignores_nested_error_message_objects() {
+    fn parse_current_user_response_reads_nested_error_message_objects() {
         let result = parse_current_user_response(response(
             401,
             serde_json::json!({
@@ -334,7 +338,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(NonInteractiveAuthError::Failed(message))
-                if message == "VRChat auth request failed with HTTP 401."
+                if message == "Missing Credentials"
         ));
     }
 
@@ -364,5 +368,20 @@ mod tests {
         );
 
         assert_eq!(message, "Missing Credentials");
+    }
+
+    #[test]
+    fn generic_401_cookie_probe_allows_saved_credential_fallback() {
+        let result = map_fallback_probe(
+            CookieProbeResult::Rejected {
+                stage: CookieProbeStage::CurrentUser,
+                response: response(401, serde_json::json!({ "error": "Unauthorized" })),
+            },
+            "usr_1".into(),
+            String::new(),
+            String::new(),
+        );
+
+        assert!(matches!(result, Ok(CookieSessionProbe::Fallback)));
     }
 }

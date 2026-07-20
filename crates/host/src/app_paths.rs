@@ -1,4 +1,5 @@
 use std::ffi::{OsStr, OsString};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::error::Error;
@@ -157,33 +158,60 @@ pub fn app_data_dir_state(resolution: &AppDataDirResolution) -> Result<AppDataDi
 
 pub fn validate_app_data_dir_selection(
     path: impl AsRef<Path>,
+    current_dir: impl AsRef<Path>,
 ) -> Result<AppDataDirValidation, Error> {
-    validate_app_data_dir(path.as_ref(), false)
+    let validation = validate_app_data_dir(path.as_ref(), false)?;
+    ensure_distinct_data_directories(
+        &validation.resolved_path(),
+        &current_dir.as_ref().canonicalize()?,
+    )?;
+    Ok(validation)
 }
 
-pub fn persist_app_data_dir(path: impl AsRef<Path>) -> Result<AppDataDirValidation, Error> {
-    let default_dir = default_app_data_dir()?;
-    let validation = validate_app_data_dir_selection(path.as_ref())?;
-    let selected_path = PathBuf::from(&validation.path);
-    if paths_match(&selected_path, &default_dir) {
-        clear_persisted_app_data_dir()?;
-        return Ok(validation);
-    }
+pub fn prepare_app_data_dir_migration_target(
+    path: impl AsRef<Path>,
+    current_dir: impl AsRef<Path>,
+) -> Result<AppDataDirValidation, Error> {
+    let validation = validate_app_data_dir_for_mode(path.as_ref(), true)?;
+    ensure_distinct_data_directories(
+        &validation.resolved_path(),
+        &current_dir.as_ref().canonicalize()?,
+    )?;
+    Ok(validation)
+}
 
-    std::fs::create_dir_all(&default_dir)?;
-    let pointer = AppDataDirPointer {
-        data_dir: validation.path.clone(),
-    };
-    let json = serde_json::to_string_pretty(&pointer)?;
-    std::fs::write(app_data_dir_pointer_path(&default_dir), json)?;
+pub fn persist_app_data_dir(
+    path: impl AsRef<Path>,
+    current_dir: impl AsRef<Path>,
+) -> Result<AppDataDirValidation, Error> {
+    let default_dir = default_app_data_dir()?;
+    let validation = validate_app_data_dir_selection(path.as_ref(), current_dir)?;
+    let selected_path = PathBuf::from(&validation.path);
+    commit_app_data_dir_pointer(&default_dir, &selected_path)?;
     Ok(validation)
 }
 
 pub fn clear_persisted_app_data_dir() -> Result<(), Error> {
     let default_dir = default_app_data_dir()?;
-    let pointer_path = app_data_dir_pointer_path(&default_dir);
+    clear_app_data_dir_pointer(&default_dir)
+}
+
+pub fn commit_app_data_dir_pointer(default_dir: &Path, path: &Path) -> Result<(), Error> {
+    let resolved_path = path.canonicalize()?;
+    if app_data_paths_match(&resolved_path, default_dir) {
+        return clear_app_data_dir_pointer(default_dir);
+    }
+    let pointer = AppDataDirPointer {
+        data_dir: path_string(&resolved_path),
+    };
+    let json = serde_json::to_string_pretty(&pointer)?;
+    write_app_data_dir_pointer(default_dir, &json)
+}
+
+pub fn clear_app_data_dir_pointer(default_dir: &Path) -> Result<(), Error> {
+    let pointer_path = app_data_dir_pointer_path(default_dir);
     match std::fs::remove_file(&pointer_path) {
-        Ok(()) => Ok(()),
+        Ok(()) => sync_directory_after_pointer_update(default_dir),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(Error::Io(error)),
     }
@@ -229,6 +257,93 @@ fn read_persisted_app_data_dir_from_default(default_dir: &Path) -> Result<Option
     } else {
         Ok(Some(PathBuf::from(data_dir)))
     }
+}
+
+fn write_app_data_dir_pointer(default_dir: &Path, json: &str) -> Result<(), Error> {
+    std::fs::create_dir_all(default_dir)?;
+    let pointer_path = app_data_dir_pointer_path(default_dir);
+    let temporary_path = pointer_path.with_extension("json.tmp");
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut temporary = options.open(&temporary_path)?;
+    temporary.write_all(json.as_bytes())?;
+    temporary.sync_all()?;
+    drop(temporary);
+    replace_file_atomically(&temporary_path, &pointer_path)?;
+    sync_directory_after_pointer_update(default_dir)
+}
+
+#[cfg(not(windows))]
+fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
+    std::fs::rename(source, destination)?;
+    Ok(())
+}
+
+#[cfg(windows)]
+fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
+    use std::os::windows::ffi::OsStrExt;
+
+    const MOVEFILE_REPLACE_EXISTING: u32 = 0x1;
+    const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
+
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn MoveFileExW(
+            existing_file_name: *const u16,
+            new_file_name: *const u16,
+            flags: u32,
+        ) -> i32;
+    }
+
+    let source = source
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let destination = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let replaced = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if replaced == 0 {
+        return Err(Error::Io(std::io::Error::last_os_error()));
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn sync_directory_after_pointer_update(path: &Path) -> Result<(), Error> {
+    std::fs::File::open(path)?.sync_all()?;
+    Ok(())
+}
+
+#[cfg(windows)]
+fn sync_directory_after_pointer_update(path: &Path) -> Result<(), Error> {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+    if let Err(error) = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(path)
+        .and_then(|directory| directory.sync_all())
+    {
+        tracing::warn!(error = %error, "failed to durably sync data directory pointer folder");
+    }
+    Ok(())
 }
 
 fn validate_startup_app_data_dir(
@@ -323,10 +438,57 @@ fn ensure_directory_writable(path: &Path) -> Result<(), Error> {
     }
 }
 
-fn paths_match(left: &Path, right: &Path) -> bool {
+pub fn app_data_paths_match(left: &Path, right: &Path) -> bool {
     let left = left.canonicalize().unwrap_or_else(|_| left.to_path_buf());
     let right = right.canonicalize().unwrap_or_else(|_| right.to_path_buf());
-    left == right
+    #[cfg(windows)]
+    {
+        left.to_string_lossy()
+            .eq_ignore_ascii_case(&right.to_string_lossy())
+    }
+    #[cfg(not(windows))]
+    {
+        left == right
+    }
+}
+
+fn ensure_distinct_data_directories(selected: &Path, current: &Path) -> Result<(), Error> {
+    let selected_components = comparable_path_components(selected);
+    let current_components = comparable_path_components(current);
+    if selected_components == current_components {
+        return Err(Error::Custom(
+            "Selected data directory is the current data directory.".into(),
+        ));
+    }
+    let shared_components = selected_components
+        .iter()
+        .zip(&current_components)
+        .take_while(|(selected, current)| selected == current)
+        .count();
+    if shared_components == selected_components.len()
+        || shared_components == current_components.len()
+    {
+        return Err(Error::Custom(
+            "Selected and current data directories must not contain each other.".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn comparable_path_components(path: &Path) -> Vec<String> {
+    path.components()
+        .map(|component| {
+            let component = component.as_os_str().to_string_lossy();
+            #[cfg(windows)]
+            {
+                component.to_lowercase()
+            }
+            #[cfg(not(windows))]
+            {
+                component.into_owned()
+            }
+        })
+        .collect()
 }
 
 fn path_string(path: &Path) -> String {
@@ -359,5 +521,98 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn selection_rejects_same_and_nested_data_directories() {
+        let dir = TestDir::new("selection-overlap");
+        let current = dir.path.join("current");
+        let child = current.join("child");
+        let parent = dir.path.clone();
+        let sibling = dir.path.join("sibling");
+        for path in [&current, &child, &sibling] {
+            std::fs::create_dir_all(path).unwrap();
+        }
+
+        assert!(validate_app_data_dir_selection(&current, &current).is_err());
+        assert!(validate_app_data_dir_selection(&child, &current).is_err());
+        assert!(validate_app_data_dir_selection(&parent, &current).is_err());
+        assert!(validate_app_data_dir_selection(&sibling, &current).is_ok());
+
+        #[cfg(windows)]
+        {
+            let case_changed = PathBuf::from(path_string(&current).to_uppercase());
+            let extended = current.canonicalize().unwrap();
+            assert!(validate_app_data_dir_selection(case_changed, &current).is_err());
+            assert!(validate_app_data_dir_selection(extended, &current).is_err());
+        }
+    }
+
+    #[test]
+    fn migration_target_preparation_creates_a_missing_directory() {
+        let dir = TestDir::new("migration-target-create");
+        let current = dir.path.join("current");
+        let target = dir.path.join("target");
+        std::fs::create_dir(&current).unwrap();
+
+        let validation = prepare_app_data_dir_migration_target(&target, &current).unwrap();
+
+        assert!(!validation.exists);
+        assert!(target.is_dir());
+        assert_eq!(validation.resolved_path(), target.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn pointer_write_replaces_existing_file_and_ignores_stale_temporary_file() {
+        let dir = TestDir::new("atomic-pointer");
+        let first = serde_json::to_string_pretty(&AppDataDirPointer {
+            data_dir: "first".into(),
+        })
+        .unwrap();
+        write_app_data_dir_pointer(&dir.path, &first).unwrap();
+        std::fs::write(
+            app_data_dir_pointer_path(&dir.path).with_extension("json.tmp"),
+            "stale temporary content",
+        )
+        .unwrap();
+        assert_eq!(
+            read_persisted_app_data_dir_from_default(&dir.path).unwrap(),
+            Some(PathBuf::from("first"))
+        );
+
+        let second = serde_json::to_string_pretty(&AppDataDirPointer {
+            data_dir: "second".into(),
+        })
+        .unwrap();
+        write_app_data_dir_pointer(&dir.path, &second).unwrap();
+        assert_eq!(
+            read_persisted_app_data_dir_from_default(&dir.path).unwrap(),
+            Some(PathBuf::from("second"))
+        );
+    }
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-app-paths-{name}-{}-{nonce}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
     }
 }

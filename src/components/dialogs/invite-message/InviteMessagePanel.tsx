@@ -124,10 +124,10 @@ export function InviteMessagePanel({
         setLoading(true);
         setError('');
         try {
-            const response = await vrchatToolsRepository.getInviteMessages(
-                { currentUserId, messageType: resolvedMessageType },
-                { endpoint: endpoint ?? '' }
-            );
+            const response = await vrchatToolsRepository.getInviteMessages({
+                currentUserId,
+                messageType: resolvedMessageType
+            });
             if (requestIdRef.current !== requestId) {
                 return;
             }
@@ -222,7 +222,6 @@ export function InviteMessagePanel({
         const save = onSave || saveInviteMessage;
         await save({
             currentUserId,
-            endpoint: endpoint ?? '',
             messageType: resolvedMessageType,
             row,
             message,

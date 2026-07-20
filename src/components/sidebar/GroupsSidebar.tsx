@@ -225,7 +225,6 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
         128
     );
     const location = resolveLocation(instance);
-    const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const userCount =
         instance?.userCount ??
         instance?.n_users ??
@@ -254,8 +253,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
         try {
             const opened = await tryOpenLaunchLocation(
                 location,
-                parsedLocation.shortName,
-                endpoint
+                parsedLocation.shortName
             );
             if (opened) {
                 toast.success(
@@ -282,11 +280,7 @@ function GroupInstanceRow({ instance, currentUserId, friendsMap }: any) {
             return;
         }
         try {
-            await selfInviteToInstance(
-                location,
-                parsedLocation.shortName,
-                endpoint
-            );
+            await selfInviteToInstance(location, parsedLocation.shortName);
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
             toast.error(

@@ -1,18 +1,12 @@
 import { commands } from '@/platform/tauri/bindings';
 
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 const PAGE_SIZE = 50;
 
 type FriendRecord = Record<string, unknown> & { id: string };
 
 interface FriendsPageInput {
-    endpoint?: string;
     offline?: boolean;
     n?: number;
     offset?: number;
@@ -20,7 +14,6 @@ interface FriendsPageInput {
 
 interface FriendEndpointInput {
     userId?: unknown;
-    endpoint?: string;
     isFriend?: boolean | null;
 }
 
@@ -34,43 +27,21 @@ function isValidFriendUser(user: unknown): user is FriendRecord {
     );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapVrchatFriendResponse<TJson = unknown>(
-    response: { status: number; data: unknown; raw: unknown },
+    response: { status: number; data: unknown },
     path: string
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat friend request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, {
+        fallbackMessage: 'VRChat friend request failed'
+    });
 }
 
 async function getFriends({
-    endpoint = '',
     offline = false,
     n = PAGE_SIZE,
     offset = 0
 }: FriendsPageInput = {}) {
     const response = await commands.appVrchatFriendsGet({
-        endpoint,
         offline: Boolean(offline),
         n,
         offset
@@ -82,14 +53,12 @@ async function getFriends({
 }
 
 async function getAllFriends({
-    endpoint = '',
     offline = false
-}: Pick<FriendsPageInput, 'endpoint' | 'offline'> = {}) {
+}: Pick<FriendsPageInput, 'offline'> = {}) {
     const friends: FriendRecord[] = [];
 
     for (let offset = 0; ; offset += PAGE_SIZE) {
         const response = await getFriends({
-            endpoint,
             offline,
             n: PAGE_SIZE,
             offset
@@ -106,11 +75,7 @@ async function getAllFriends({
     return friends;
 }
 
-async function getUser({
-    userId,
-    endpoint = '',
-    isFriend = null
-}: FriendEndpointInput) {
+async function getUser({ userId, isFriend = null }: FriendEndpointInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -121,7 +86,6 @@ async function getUser({
 
     const response = await commands.appVrchatUserGet({
         userId: normalizedUserId,
-        endpoint,
         isFriend
     });
     return unwrapVrchatFriendResponse<FriendRecord>(
@@ -130,7 +94,7 @@ async function getUser({
     );
 }
 
-async function getFriendStatus({ userId, endpoint = '' }: FriendEndpointInput) {
+async function getFriendStatus({ userId }: FriendEndpointInput) {
     const normalizedUserId =
         typeof userId === 'string'
             ? userId.trim()
@@ -142,8 +106,7 @@ async function getFriendStatus({ userId, endpoint = '' }: FriendEndpointInput) {
     }
 
     const response = await commands.appVrchatFriendStatusGet({
-        userId: normalizedUserId,
-        endpoint
+        userId: normalizedUserId
     });
     return unwrapVrchatFriendResponse<Record<string, unknown>>(
         response,

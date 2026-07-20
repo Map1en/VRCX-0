@@ -1,12 +1,25 @@
-import { DownloadIcon, RefreshCwIcon } from 'lucide-react';
+import { DownloadIcon, Loader2Icon, RefreshCwIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    DataTableColumnDndProvider,
+    DataTableColumnSizeColGroup,
+    DataTableColumnSortableContext,
+    DataTableEmptyRow,
+    DataTableHeader,
+    DataTablePagination,
+    DataTableScrollArea,
+    DataTableSurface,
+    getDataTableSizingStyle
+} from '@/components/data-table/DataTableView';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import type {
     EntityRecord,
     GroupProfileRecord
 } from '@/domain/entities/profileEntities';
-import { formatDateFilter } from '@/lib/dateTime';
-import { openUserDialog } from '@/services/dialogService';
+import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -17,94 +30,150 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import { downloadJsonFile } from './groupDialogDownloads';
 import { GroupListState } from './GroupListState';
 import {
-    getGroupModerationActions,
-    moderationRowDate,
-    moderationRowLabel,
-    moderationRowRoles,
     moderationRowSearchText,
     moderationRowStatus,
-    moderationRowSubtitle,
     moderationRowUserId,
+    moderationStatusTone,
     type GroupModerationAction,
+    type GroupModerationStatusTone,
     type GroupModerationTab
 } from './groupModerationRows';
+import {
+    getGroupModerationColumnIds,
+    useGroupModerationColumns
+} from './useGroupModerationColumns';
+import { useGroupModerationTable } from './useGroupModerationTable';
 
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
+const ALL_ROLES_VALUE = 'all';
+
+const SELECTED_ROW_ACCENT_CLASS: Record<GroupModerationStatusTone, string> = {
+    neutral: 'border-l-border',
+    active: 'border-l-emerald-500',
+    pending: 'border-l-amber-500',
+    danger: 'border-l-destructive'
+};
+
+export interface GroupModerationServerSelectOption {
+    label: string;
+    value: string;
 }
 
-function record(value: unknown): EntityRecord | null {
-    return isRecord(value) ? value : null;
-}
-
-function text(value: unknown): string {
-    return typeof value === 'string' ? value : '';
+export interface GroupModerationServerControl {
+    query: string;
+    onQueryChange: (value: string) => void;
+    sort: string;
+    onSortChange: (value: string) => void;
+    sortOptions: GroupModerationServerSelectOption[];
+    roleId: string;
+    onRoleChange: (value: string) => void;
+    roleOptions: GroupModerationServerSelectOption[];
+    hasMore: boolean;
+    loadingMore: boolean;
+    onLoadMore: () => void;
+    loadedCount: number;
 }
 
 export function GroupModerationTabPanel({
     actionKey,
-    activeTab,
     error,
     group,
     loading,
-    onPageIndexChange,
-    onPageSizeChange,
+    onOpenUser,
     onReload,
     onRunAction,
-    onSearchChange,
-    pageIndex,
-    pageSize,
+    onToggleAllVisible,
+    onToggleRow,
     rows,
-    search,
-    tab
+    selectable = false,
+    selectedIds,
+    server,
+    tab,
+    toolbarExtra
 }: {
     actionKey: string;
-    activeTab: string;
     error: string;
     group: GroupProfileRecord;
     loading: boolean;
-    onPageIndexChange: (value: number) => void;
-    onPageSizeChange: (value: number) => void;
+    onOpenUser: (row: EntityRecord) => void;
     onReload: () => void;
     onRunAction: (action: GroupModerationAction, row: EntityRecord) => void;
-    onSearchChange: (value: string) => void;
-    pageIndex: number;
-    pageSize: number;
+    onToggleAllVisible?: (userIds: string[], checked: boolean) => void;
+    onToggleRow?: (userId: string, checked: boolean) => void;
     rows: EntityRecord[];
-    search: string;
+    selectable?: boolean;
+    selectedIds?: ReadonlySet<string>;
+    server?: GroupModerationServerControl;
     tab: GroupModerationTab;
+    toolbarExtra?: ReactNode;
 }) {
     const { t } = useTranslation();
-    const filteredRows = rows.filter((row) => {
+    const [search, setSearch] = useState('');
+    const sortable = !server;
+
+    const filteredRows = useMemo(() => {
+        if (server) {
+            return rows;
+        }
         const query = search.trim().toLowerCase();
-        return !query || moderationRowSearchText(row, group).includes(query);
+        if (!query) {
+            return rows;
+        }
+        return rows.filter((row) =>
+            moderationRowSearchText(row, group).includes(query)
+        );
+    }, [group, rows, search, server]);
+
+    const columns = useGroupModerationColumns({
+        actionKey,
+        group,
+        onOpenUser,
+        onRunAction,
+        onToggleAllVisible,
+        onToggleRow,
+        selectable,
+        selectedIds: selectedIds || null,
+        sortable,
+        tab: tab.value
     });
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-    const currentPageIndex = Math.min(pageIndex, totalPages - 1);
-    const visibleRows = filteredRows.slice(
-        currentPageIndex * pageSize,
-        currentPageIndex * pageSize + pageSize
+    const columnIds = useMemo(
+        () => getGroupModerationColumnIds(selectable),
+        [selectable]
     );
+    const { pageSizes, pagination, setPagination, table } =
+        useGroupModerationTable({
+            columnIds,
+            columns,
+            paged: sortable,
+            rows: filteredRows,
+            tableId: `group-moderation:${tab.value}`
+        });
+
+    useEffect(() => {
+        setPagination((current) => ({ ...current, pageIndex: 0 }));
+    }, [search, setPagination]);
+
+    const serverQueryActive = Boolean(server && server.query.trim());
+    const clientQueryActive = !server && Boolean(search.trim());
+    const emptyMessage = server
+        ? serverQueryActive
+            ? t('common.no_matching_records')
+            : t('dialog.group.empty.no_rows')
+        : clientQueryActive && rows.length
+          ? t('common.no_matching_records')
+          : t('dialog.group.empty.no_rows');
 
     return (
         <TabsContent
             value={tab.value}
-            className="m-0 max-h-[65vh] overflow-auto pt-4"
+            className="m-0 flex min-h-0 flex-1 flex-col gap-3 pt-4"
         >
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex shrink-0 items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <Button
                         type="button"
@@ -123,7 +192,7 @@ export function GroupModerationTabPanel({
                         disabled={!rows.length}
                         onClick={() =>
                             downloadJsonFile(
-                                `${group.id}_${activeTab}.json`,
+                                `${group.id}_${tab.value}.json`,
                                 rows
                             )
                         }
@@ -131,40 +200,95 @@ export function GroupModerationTabPanel({
                         <DownloadIcon data-icon="inline-start" />
                         JSON
                     </Button>
-                    <span className="text-muted-foreground text-sm">
-                        {filteredRows.length}/{rows.length}
+                    {toolbarExtra}
+                    <span className="text-muted-foreground text-sm tabular-nums">
+                        {server
+                            ? server.loadedCount
+                            : `${filteredRows.length}/${rows.length}`}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Input
-                        value={search}
-                        onChange={(event) => onSearchChange(event.target.value)}
+                        value={server ? server.query : search}
+                        onChange={(event) =>
+                            server
+                                ? server.onQueryChange(event.target.value)
+                                : setSearch(event.target.value)
+                        }
                         placeholder={t('dialog.group.dynamic.search_value', {
                             value: tab.label.toLowerCase()
                         })}
                         className="h-8 w-64"
                     />
-                    <Select
-                        value={String(pageSize)}
-                        onValueChange={(value) =>
-                            onPageSizeChange(
-                                Number.parseInt(value ?? '', 10) || 25
-                            )
-                        }
-                    >
-                        <SelectTrigger size="sm" className="w-24">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {[10, 25, 50, 100].map((size) => (
-                                    <SelectItem key={size} value={String(size)}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                    {server ? (
+                        <>
+                            <Select
+                                value={server.sort}
+                                items={server.sortOptions}
+                                disabled={serverQueryActive}
+                                onValueChange={(value) =>
+                                    value && server.onSortChange(value)
+                                }
+                            >
+                                <SelectTrigger size="sm" className="w-44">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {server.sortOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            {server.roleOptions.length ? (
+                                <Select
+                                    value={server.roleId || ALL_ROLES_VALUE}
+                                    items={server.roleOptions.map((option) => ({
+                                        value: option.value || ALL_ROLES_VALUE,
+                                        label: option.label
+                                    }))}
+                                    disabled={serverQueryActive}
+                                    onValueChange={(value) =>
+                                        server.onRoleChange(
+                                            value === ALL_ROLES_VALUE
+                                                ? ''
+                                                : (value ?? '')
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger size="sm" className="w-40">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {server.roleOptions.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={
+                                                            option.value ||
+                                                            ALL_ROLES_VALUE
+                                                        }
+                                                        value={
+                                                            option.value ||
+                                                            ALL_ROLES_VALUE
+                                                        }
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                )
+                                            )}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            ) : null}
+                        </>
+                    ) : null}
                 </div>
             </div>
             {loading ? (
@@ -184,186 +308,117 @@ export function GroupModerationTabPanel({
                 />
             ) : null}
             {!loading && !error ? (
-                <div className="overflow-auto rounded-md border">
-                    <Table>
-                        <TableHeader className="vrcx-0-table-header sticky top-0">
-                            <TableRow>
-                                <TableHead className="w-56">
-                                    {t('dialog.group.label.user')}
-                                </TableHead>
-                                <TableHead>
-                                    {t('dialog.group_member_moderation.roles')}{' '}
-                                    /{' '}
-                                    {t(
-                                        'dialog.group_member_moderation.description'
-                                    )}
-                                </TableHead>
-                                <TableHead className="w-44">
-                                    {t('dialog.group.label.status')}
-                                </TableHead>
-                                <TableHead className="w-44">
-                                    {t('dialog.group.label.date')}
-                                </TableHead>
-                                <TableHead className="w-48 text-right">
-                                    {t('dialog.group.label.actions')}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleRows.length ? (
-                                visibleRows.map((row, index) => {
-                                    const user = record(row.user);
-                                    const userId = moderationRowUserId(row);
-                                    const label = moderationRowLabel(row);
-                                    const date = moderationRowDate(row);
-                                    const actions = getGroupModerationActions(
-                                        tab.value,
-                                        row,
-                                        t
-                                    );
-                                    return (
-                                        <TableRow
-                                            key={`${label}:${date}:${index}`}
-                                        >
-                                            <TableCell className="align-top">
-                                                {userId ? (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        className="hover:text-primary h-auto max-w-52 justify-start truncate p-0 text-left font-medium"
-                                                        onClick={() =>
-                                                            openUserDialog({
-                                                                userId,
-                                                                title: label,
-                                                                seedData: user
-                                                            })
-                                                        }
+                <DataTableSurface>
+                    <DataTableScrollArea>
+                        <DataTableColumnDndProvider table={table}>
+                            <Table
+                                className="min-w-full table-fixed"
+                                style={getDataTableSizingStyle(table)}
+                            >
+                                <DataTableColumnSizeColGroup table={table} />
+                                <DataTableHeader table={table} />
+                                <TableBody>
+                                    {table.getRowModel().rows.length ? (
+                                        table.getRowModel().rows.map((row) => {
+                                            const userId = moderationRowUserId(
+                                                row.original
+                                            );
+                                            const isSelected = Boolean(
+                                                selectable &&
+                                                userId &&
+                                                selectedIds?.has(userId)
+                                            );
+                                            return (
+                                                <TableRow
+                                                    key={row.id}
+                                                    data-selected={
+                                                        isSelected || undefined
+                                                    }
+                                                    className={cn(
+                                                        'border-l-2 border-l-transparent',
+                                                        isSelected &&
+                                                            'bg-muted/40',
+                                                        isSelected &&
+                                                            SELECTED_ROW_ACCENT_CLASS[
+                                                                moderationStatusTone(
+                                                                    moderationRowStatus(
+                                                                        row.original
+                                                                    )
+                                                                )
+                                                            ]
+                                                    )}
+                                                >
+                                                    <DataTableColumnSortableContext
+                                                        table={table}
                                                     >
-                                                        {label}
-                                                    </Button>
-                                                ) : (
-                                                    <span className="font-medium">
-                                                        {label}
-                                                    </span>
-                                                )}
-                                                <div className="text-muted-foreground truncate font-mono text-xs">
-                                                    {userId ||
-                                                        text(row.id) ||
-                                                        '—'}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground align-top text-xs whitespace-normal">
-                                                {moderationRowRoles(
-                                                    row,
-                                                    group
-                                                ) ||
-                                                    text(row.description) ||
-                                                    text(row.note) ||
-                                                    text(row.managerNotes) ||
-                                                    moderationRowSubtitle(
-                                                        row
-                                                    ) ||
-                                                    '—'}
-                                            </TableCell>
-                                            <TableCell className="align-top text-xs whitespace-normal">
-                                                {moderationRowStatus(row)}
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground align-top text-xs">
-                                                {date
-                                                    ? formatDateFilter(
-                                                          date,
-                                                          'long'
-                                                      )
-                                                    : '—'}
-                                            </TableCell>
-                                            <TableCell className="align-top">
-                                                <div className="flex justify-end gap-2">
-                                                    {actions.map((action) => {
-                                                        const nextActionKey = `${activeTab}:${action.key}:${userId}`;
-                                                        return (
-                                                            <Button
-                                                                key={action.key}
-                                                                type="button"
-                                                                size="sm"
-                                                                variant={
-                                                                    action.destructive
-                                                                        ? 'outline'
-                                                                        : 'secondary'
-                                                                }
-                                                                disabled={Boolean(
-                                                                    actionKey
-                                                                )}
-                                                                onClick={() => {
-                                                                    onRunAction(
-                                                                        action,
-                                                                        row
-                                                                    );
-                                                                }}
-                                                            >
-                                                                {actionKey ===
-                                                                nextActionKey
-                                                                    ? '...'
-                                                                    : action.label}
-                                                            </Button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        className="text-muted-foreground py-8 text-center text-sm"
-                                    >
-                                        {t('dialog.group.empty.no_rows')}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                                        {row
+                                                            .getVisibleCells()
+                                                            .map((cell) => (
+                                                                <ResizableTableCell
+                                                                    key={
+                                                                        cell.id
+                                                                    }
+                                                                    cell={cell}
+                                                                />
+                                                            ))}
+                                                    </DataTableColumnSortableContext>
+                                                </TableRow>
+                                            );
+                                        })
+                                    ) : (
+                                        <DataTableEmptyRow
+                                            colSpan={
+                                                table.getVisibleLeafColumns()
+                                                    .length || 1
+                                            }
+                                        >
+                                            {emptyMessage}
+                                        </DataTableEmptyRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </DataTableColumnDndProvider>
+                    </DataTableScrollArea>
+                </DataTableSurface>
+            ) : null}
+            {!loading && !error && server ? (
+                <div className="flex shrink-0 items-center justify-between">
+                    <span className="text-muted-foreground text-sm tabular-nums">
+                        {t('dialog.group_member_moderation.loaded_count', {
+                            count: server.loadedCount
+                        })}
+                    </span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!server.hasMore || server.loadingMore}
+                        onClick={server.onLoadMore}
+                    >
+                        {server.loadingMore ? (
+                            <Loader2Icon
+                                data-icon="inline-start"
+                                className="animate-spin"
+                            />
+                        ) : null}
+                        {t('common.load_more')}
+                    </Button>
                 </div>
             ) : null}
-            {!loading && !error ? (
-                <div className="mt-3 flex items-center justify-between">
-                    <span className="text-muted-foreground text-sm">
-                        {t('dialog.group.label.page')} {currentPageIndex + 1} /{' '}
-                        {totalPages}
-                    </span>
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={currentPageIndex <= 0}
-                            onClick={() =>
-                                onPageIndexChange(
-                                    Math.max(0, currentPageIndex - 1)
-                                )
-                            }
-                        >
-                            {t('table.pagination.previous')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={currentPageIndex >= totalPages - 1}
-                            onClick={() =>
-                                onPageIndexChange(
-                                    Math.min(
-                                        totalPages - 1,
-                                        currentPageIndex + 1
-                                    )
-                                )
-                            }
-                        >
-                            {t('table.pagination.next')}
-                        </Button>
-                    </div>
-                </div>
+            {!loading && !error && !server ? (
+                <DataTablePagination
+                    className="shrink-0"
+                    table={table}
+                    pageIndex={pagination.pageIndex}
+                    pageSize={pagination.pageSize}
+                    pageSizes={pageSizes}
+                    onPageSizeChange={(value) =>
+                        setPagination({
+                            pageIndex: 0,
+                            pageSize: Number.parseInt(value, 10) || 25
+                        })
+                    }
+                />
             ) : null}
         </TabsContent>
     );

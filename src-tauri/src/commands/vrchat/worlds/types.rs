@@ -5,16 +5,12 @@ use serde_json::Value;
 #[serde(rename_all = "camelCase")]
 pub struct VrchatWorldIdInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) world_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatWorldListByUserInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
@@ -33,8 +29,6 @@ pub struct VrchatWorldListByUserInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatWorldSaveInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) world_id: String,
     pub(crate) params: Option<Value>,
 }
@@ -42,8 +36,6 @@ pub struct VrchatWorldSaveInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatWorldPersistentDataDeleteInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]

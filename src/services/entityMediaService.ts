@@ -56,9 +56,8 @@ export async function openExternalLink(
 
     const normalizedLink = String(link);
     if (options.directAccess) {
-        const endpoint = useRuntimeStore.getState().auth.currentUserEndpoint;
         try {
-            if (await directAccessParse(normalizedLink, endpoint)) {
+            if (await directAccessParse(normalizedLink)) {
                 return;
             }
         } catch (error) {

@@ -87,7 +87,6 @@ export function VrcNotificationPage({
             />
             <BoopReplyDialog
                 request={dialogs.boopReplyRequest}
-                endpoint={runtime.endpoint}
                 isLocalUserVrcPlusSupporter={
                     runtime.isLocalUserVrcPlusSupporter
                 }

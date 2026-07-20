@@ -1,5 +1,3 @@
-import { safeJsonParse } from './baseRepository';
-
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
 
@@ -8,7 +6,6 @@ export interface VrchatRequestResponse<TJson = unknown> {
     params?: QueryParams;
     status?: number;
     endpointDomain?: string;
-    raw?: unknown;
     [key: string]: unknown;
 }
 
@@ -18,41 +15,37 @@ export interface VrchatRequestError extends Error {
     payload: unknown;
 }
 
-export type VrchatAuthFailureHandler = (
-    error: VrchatRequestError
-) => void | Promise<void>;
+interface VrchatResponseEnvelope {
+    status: number;
+    data: unknown;
+}
 
-let vrchatAuthFailureHandler: VrchatAuthFailureHandler | null = null;
-let vrchatAuthFailureHandlerRegistrationId = 0;
+interface UnwrapResponseOptions {
+    fallbackMessage?: string;
+    responseType?: 'json' | 'text';
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-export function setVrchatAuthFailureHandler(
-    handler: VrchatAuthFailureHandler | null
-): () => void {
-    const registrationId = ++vrchatAuthFailureHandlerRegistrationId;
-    vrchatAuthFailureHandler = typeof handler === 'function' ? handler : null;
-
-    return () => {
-        if (vrchatAuthFailureHandlerRegistrationId === registrationId) {
-            vrchatAuthFailureHandler = null;
-        }
-    };
-}
-
-export function isVrchatMissingCredentialsError(
+export function isVrchatRequestError(
     error: unknown
 ): error is VrchatRequestError {
+    return Boolean(
+        error instanceof Error &&
+        isRecord(error) &&
+        typeof error.status === 'number' &&
+        typeof error.endpoint === 'string'
+    );
+}
+
+export function isVrchatMissingCredentialsError(error: unknown): boolean {
     const status =
-        error && typeof error === 'object'
-            ? (error as Partial<VrchatRequestError>).status
+        isRecord(error) && typeof error.status === 'number'
+            ? error.status
             : undefined;
-    const message =
-        error && typeof error === 'object'
-            ? (error as Error).message
-            : undefined;
+    const message = error instanceof Error ? error.message : undefined;
     return Boolean(
         error &&
         typeof error === 'object' &&
@@ -62,79 +55,27 @@ export function isVrchatMissingCredentialsError(
     );
 }
 
-export function isVrchatInvalidCredentialsError(
-    error: unknown,
-    { credentialSubmission = false }: { credentialSubmission?: boolean } = {}
-): error is VrchatRequestError {
-    if (!error || typeof error !== 'object') {
-        return false;
-    }
-    const message = (error as Error).message;
-    if (
-        typeof message === 'string' &&
-        message.includes('Invalid Username/Email or Password')
-    ) {
-        return true;
-    }
-    return (
-        credentialSubmission &&
-        (error as Partial<VrchatRequestError>).status === 401
-    );
-}
-
-export function isVrchatSessionRecoveryError(
-    error: unknown
-): error is VrchatRequestError {
-    const status =
-        error && typeof error === 'object'
-            ? (error as Partial<VrchatRequestError>).status
-            : undefined;
-    const endpoint =
-        error && typeof error === 'object'
-            ? (error as Partial<VrchatRequestError>).endpoint
-            : undefined;
-    const normalizedEndpoint =
-        typeof endpoint === 'string'
-            ? endpoint.trim().replace(/^\/+/, '').split('?')[0]
-            : '';
-    return Boolean(
-        isVrchatMissingCredentialsError(error) ||
-        (status === 403 &&
-            (normalizedEndpoint === 'config' ||
-                normalizedEndpoint === 'auth' ||
-                normalizedEndpoint === 'auth/user'))
-    );
-}
-
-export function notifyVrchatAuthFailure(error: VrchatRequestError): void {
-    if (!isVrchatSessionRecoveryError(error) || !vrchatAuthFailureHandler) {
-        return;
-    }
-
-    try {
-        Promise.resolve(vrchatAuthFailureHandler(error)).catch(
-            (handlerError: unknown) => {
-                console.warn(
-                    'VRChat auth failure handler failed:',
-                    handlerError
-                );
-            }
-        );
-    } catch (handlerError) {
-        console.warn('VRChat auth failure handler failed:', handlerError);
-    }
-}
-
-export function parseJsonResponse<T = unknown>(data: unknown): T | null {
+function parseResponseData(data: unknown, allowPlainText: boolean): unknown {
     if (data === null || data === undefined || data === '') {
-        return data === '' ? (data as T) : null;
+        return data === '' ? '' : null;
     }
 
     if (typeof data !== 'string') {
-        return data as T;
+        return data;
     }
 
-    return safeJsonParse<T>(data, data as T);
+    if (!data.trim()) {
+        return '';
+    }
+
+    try {
+        return JSON.parse(data);
+    } catch (error) {
+        if (allowPlainText) {
+            return data;
+        }
+        throw error;
+    }
 }
 
 interface ErrorMessageOptions {
@@ -151,13 +92,38 @@ export function unwrapErrorMessage(
     }
 
     const jsonRecord = isRecord(json) ? json : null;
-    const error = isRecord(jsonRecord?.error) ? jsonRecord.error : null;
+    const rawError = jsonRecord?.error;
+    if (typeof rawError === 'string' && rawError.trim()) {
+        return rawError.replace(/^"+|"+$/g, '');
+    }
+
+    const error = isRecord(rawError) ? rawError : null;
     const message = error?.message ?? jsonRecord?.message;
     if (typeof message === 'string' && message.trim()) {
         return message.replace(/^"+|"+$/g, '');
     }
 
     return `${fallbackMessage} (${status})`;
+}
+
+function apiErrorStatus(json: unknown, fallbackStatus: number): number {
+    const record = isRecord(json) ? json : null;
+    const nestedError = isRecord(record?.error) ? record.error : null;
+    const value = nestedError?.status_code ?? record?.status_code;
+    const status = Number(value);
+    return Number.isInteger(status) && status >= 100 && status <= 599
+        ? status
+        : fallbackStatus;
+}
+
+function hasApiError(json: unknown): boolean {
+    if (!isRecord(json)) {
+        return false;
+    }
+    return (
+        isRecord(json.error) ||
+        (typeof json.error === 'string' && Boolean(json.error.trim()))
+    );
 }
 
 export function createRequestError(
@@ -171,4 +137,50 @@ export function createRequestError(
     error.endpoint = endpoint;
     error.payload = payload;
     return error;
+}
+
+export function unwrapVrchatResponse<TJson = unknown>(
+    response: VrchatResponseEnvelope,
+    endpoint: string,
+    {
+        fallbackMessage = 'VRChat request failed',
+        responseType = 'json'
+    }: UnwrapResponseOptions = {}
+): VrchatRequestResponse<TJson> {
+    const requestFailed = response.status < 200 || response.status >= 300;
+    let json: unknown;
+
+    try {
+        json = parseResponseData(
+            response.data,
+            requestFailed || responseType === 'text'
+        );
+    } catch {
+        const requestError = createRequestError(
+            `${fallbackMessage}: invalid JSON response (${response.status})`,
+            response.status,
+            endpoint,
+            response.data
+        );
+        throw requestError;
+    }
+
+    const apiError = hasApiError(json);
+    if (requestFailed || apiError) {
+        const status = apiError
+            ? apiErrorStatus(json, requestFailed ? response.status : 0)
+            : response.status;
+        const requestError = createRequestError(
+            unwrapErrorMessage(json, status, { fallbackMessage }),
+            status,
+            endpoint,
+            json
+        );
+        throw requestError;
+    }
+
+    return {
+        json: json as TJson,
+        status: response.status
+    };
 }

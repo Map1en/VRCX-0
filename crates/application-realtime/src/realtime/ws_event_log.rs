@@ -41,7 +41,7 @@ pub(crate) fn resolve_path(db_path: &Path) -> Option<PathBuf> {
 
 /// Appends a connection boundary marker so a replay tool can segment the file into
 /// independent WebSocket sessions. Emitted once per (re)connect, because the file is
-/// appended across reconnects and process restarts, and each connection starts a fresh
+/// appended across transport generations and process restarts, and each connection starts a fresh
 /// realtime parser whose stream must not be replayed across the boundary.
 pub(crate) fn append_connect_marker(
     path: &Path,

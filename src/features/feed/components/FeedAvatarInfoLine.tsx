@@ -220,7 +220,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         });
 
         avatarProfileRepository
-            .getAvatarNameFromImageUrl(imageUrl, { endpoint: currentEndpoint })
+            .getAvatarNameFromImageUrl(imageUrl)
             .then((nextInfo: any) => {
                 if (!active) {
                     return;
@@ -295,8 +295,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             try {
                 const nextInfo =
                     await avatarProfileRepository.getAvatarNameFromImageUrl(
-                        imageUrl,
-                        { endpoint: currentEndpoint }
+                        imageUrl
                     );
                 nextOwnerId = normalizeId(nextInfo?.ownerId);
                 nextAvatarName = nextInfo?.avatarName || nextAvatarName;

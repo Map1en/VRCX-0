@@ -104,8 +104,7 @@ export function createAvatarImageUploadActions({
                         selectedAvatar.imageUrl ||
                         selectedAvatar.thumbnailImageUrl ||
                         '',
-                    base64File,
-                    endpoint: requestEndpoint
+                    base64File
                 })
             );
             const activeTarget = activeAvatarTargetRef.current;
@@ -157,7 +156,6 @@ export function createAvatarCacheActions({
     actionStatusRef,
     avatar,
     avatarSideData,
-    currentEndpoint,
     setActionStatus,
     setAvatar,
     setAvatarSideData,
@@ -186,7 +184,7 @@ export function createAvatarCacheActions({
             return;
         }
         const configResponse = await vrchatAuthRepository
-            .getConfig({ endpoint: currentEndpoint })
+            .getConfig()
             .catch((): null => null);
         const args = resolveAssetBundleArgs(
             avatar,
@@ -207,7 +205,7 @@ export function createAvatarCacheActions({
                 args.variant,
                 args.variantVersion
             );
-            const cache = await readAvatarCacheInfo(avatar, currentEndpoint);
+            const cache = await readAvatarCacheInfo(avatar);
             setAvatarSideData((current) => ({ ...current, cache }));
             setAvatar((current) =>
                 current ? { ...current, $isCached: cache.inCache } : current
@@ -274,14 +272,10 @@ export function createAvatarGalleryUploadActions({
             const base64Body = await readFileAsBase64(file);
             await mediaRepository.uploadAvatarGalleryImage(
                 base64Body,
-                targetAvatarId,
-                {
-                    endpoint: requestEndpoint
-                }
+                targetAvatarId
             );
             const galleryRows = await avatarProfileRepository.getAvatarGallery({
-                avatarId: targetAvatarId,
-                endpoint: requestEndpoint
+                avatarId: targetAvatarId
             });
             if (
                 activeAvatarTargetRef.current.avatarId === targetAvatarId &&

@@ -1,11 +1,36 @@
 use serde_json::{json, Map, Value};
-use vrcx_0_core::friends::normalize_state_bucket;
+use vrcx_0_core::friends::{normalize_state_bucket, FriendRecord};
 use vrcx_0_core::trust::compute_trust_level;
 
 use super::super::persistence::add_location_metadata;
 use super::super::utils::{first_owned, first_string, parse_location, string_field, EventTime};
 
-pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&Value>) {
+pub(super) fn resolve_state_bucket(
+    content: &Value,
+    previous: Option<&FriendRecord>,
+    trust_event_user_state: bool,
+    fallback: &str,
+) -> String {
+    let user_state = trust_event_user_state
+        .then(|| content.get("user").and_then(|user| user.get("state")))
+        .flatten();
+    if let Some(normalized) = user_state
+        .and_then(Value::as_str)
+        .and_then(normalize_state_bucket)
+    {
+        return normalized;
+    }
+    if let Some(previous) = previous {
+        for candidate in [previous.state_bucket.as_str(), previous.state.as_str()] {
+            if let Some(normalized) = normalize_state_bucket(candidate) {
+                return normalized;
+            }
+        }
+    }
+    fallback.to_string()
+}
+
+pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&FriendRecord>) {
     let Some(object) = patch.as_object_mut() else {
         return;
     };
@@ -21,11 +46,7 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&Value>)
     let tags = object
         .get("tags")
         .and_then(Value::as_array)
-        .or_else(|| {
-            previous
-                .and_then(|value| value.get("tags"))
-                .and_then(Value::as_array)
-        })
+        .or_else(|| previous.and_then(|record| record.extra.get("tags")?.as_array()))
         .map(|values| {
             values
                 .iter()
@@ -36,11 +57,7 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&Value>)
     let developer_type = object
         .get("developerType")
         .and_then(Value::as_str)
-        .or_else(|| {
-            previous
-                .and_then(|value| value.get("developerType"))
-                .and_then(Value::as_str)
-        })
+        .or_else(|| previous.and_then(|record| record.extra.get("developerType")?.as_str()))
         .unwrap_or("");
     let trust = compute_trust_level(&tags, developer_type);
     let trust_level = if has_trust_metadata {
@@ -96,94 +113,12 @@ pub(super) fn has_embedded_location_user(content: &Value) -> bool {
         .unwrap_or(false)
 }
 
-pub(super) fn resolve_location_event_state_bucket(
-    content: &Value,
-    previous: Option<&Value>,
-    has_online_location: bool,
-) -> Option<String> {
-    if has_embedded_location_user(content) && has_online_location {
-        return Some("online".into());
-    }
-    for candidate in [
-        previous.and_then(|previous| previous.get("stateBucket")),
-        previous.and_then(|previous| previous.get("state")),
-    ] {
-        if let Some(normalized) = candidate
-            .and_then(Value::as_str)
-            .and_then(normalize_state_bucket)
-        {
-            return Some(normalized);
-        }
-    }
-    None
-}
-
-pub(super) fn state_bucket_changed(previous: &Value, next_state_bucket: &str) -> bool {
-    [
-        previous.get("stateBucket").and_then(Value::as_str),
-        previous.get("state").and_then(Value::as_str),
-    ]
-    .iter()
-    .flatten()
-    .find_map(|state| normalize_state_bucket(state))
-    .map(|previous_state_bucket| previous_state_bucket != next_state_bucket)
-    .unwrap_or(false)
-}
-
-pub(super) fn location_event_has_online_proof(content: &Value, user_patch: &Value) -> bool {
-    let content_locations = [
-        content.get("location").and_then(Value::as_str),
-        content.get("travelingToLocation").and_then(Value::as_str),
-    ];
-    if content_locations
-        .iter()
-        .flatten()
-        .any(|value| !value.trim().is_empty())
-    {
-        return content_locations
-            .iter()
-            .flatten()
-            .any(|value| is_online_location_proof(value));
-    }
-
-    let user_locations = [
-        user_patch.get("location").and_then(Value::as_str),
-        user_patch
-            .get("travelingToLocation")
-            .and_then(Value::as_str),
-    ];
-    user_locations
-        .iter()
-        .flatten()
-        .any(|value| is_online_location_proof(value))
-}
-
-pub(super) fn location_event_has_offline_proof(content: &Value, user_patch: &Value) -> bool {
-    let content_locations = [
-        content.get("location").and_then(Value::as_str),
-        content.get("travelingToLocation").and_then(Value::as_str),
-    ];
-    if content_locations
-        .iter()
-        .flatten()
-        .any(|value| !value.trim().is_empty())
-    {
-        return content_locations
-            .iter()
-            .flatten()
-            .any(|value| is_offline_location_proof(value));
-    }
-
-    let user_locations = [
-        user_patch.get("location").and_then(Value::as_str),
-        user_patch
-            .get("travelingToLocation")
-            .and_then(Value::as_str),
-    ];
-    user_locations
-        .iter()
-        .flatten()
-        .any(|value| is_offline_location_proof(value))
+pub(super) fn state_bucket_changed(previous: &FriendRecord, next_state_bucket: &str) -> bool {
+    [previous.state_bucket.as_str(), previous.state.as_str()]
+        .into_iter()
+        .find_map(normalize_state_bucket)
+        .map(|previous_state_bucket| previous_state_bucket != next_state_bucket)
+        .unwrap_or(false)
 }
 
 pub(super) fn is_online_location_proof(value: &str) -> bool {
@@ -191,17 +126,10 @@ pub(super) fn is_online_location_proof(value: &str) -> bool {
     !normalized.is_empty() && normalized != "offline" && normalized != "offline:offline"
 }
 
-fn is_offline_location_proof(value: &str) -> bool {
-    matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "offline" | "offline:offline"
-    )
-}
-
 pub(super) fn online_patch(
     content: &Value,
     user_patch: serde_json::Value,
-    previous: Option<&Value>,
+    previous: Option<&FriendRecord>,
     now: &EventTime,
     state_bucket: &str,
 ) -> serde_json::Value {
@@ -225,16 +153,16 @@ pub(super) fn online_patch(
         content.get("worldId").and_then(Value::as_str),
     ]);
     let fallback = previous.filter(|previous| {
-        let location = string_field(previous.get("location")).to_ascii_lowercase();
+        let location = previous.location.to_ascii_lowercase();
         !location.is_empty() && location != "offline" && location != "offline:offline"
     });
     let location = first_string([
         Some(event_location.as_str()),
-        fallback.and_then(|value| value.get("location").and_then(Value::as_str)),
+        fallback.map(|record| record.location.as_str()),
     ]);
     let traveling = first_string([
         Some(event_traveling.as_str()),
-        fallback.and_then(|value| value.get("travelingToLocation").and_then(Value::as_str)),
+        fallback.map(|record| record.traveling_to_location.as_str()),
     ]);
     patch.insert("location".into(), Value::String(location.clone()));
     insert_location_projection(&mut patch, &location, "worldId", "instanceId", "$location");
@@ -274,7 +202,7 @@ fn insert_location_projection(
 
 pub(super) fn normalize_friend_update_location_patch(
     patch: &mut Value,
-    previous: Option<&Value>,
+    previous: Option<&FriendRecord>,
     now: &EventTime,
 ) {
     let Some(patch) = patch.as_object_mut() else {

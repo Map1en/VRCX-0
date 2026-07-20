@@ -163,6 +163,65 @@ fn profile_backup_vacuum_into_rejects_upgrade_mode() -> Result<(), Error> {
 }
 
 #[test]
+fn data_dir_migration_freeze_closes_and_abort_reopens_main_database() -> Result<(), Error> {
+    let dir = TestDir::new("data-dir-migration-freeze");
+    let db_path = dir.path.join("VRCX-0.sqlite3");
+    let db = DatabaseService::new(&db_path)?;
+    let empty = HashMap::new();
+    db.execute_non_query("CREATE TABLE migration_items (value TEXT NOT NULL)", &empty)?;
+    db.execute_non_query(
+        "INSERT INTO migration_items (value) VALUES ('before-freeze')",
+        &empty,
+    )?;
+
+    let frozen = db.freeze_for_migration()?;
+
+    assert_eq!(frozen.db_path, db_path);
+    assert_eq!(frozen.db_bytes, fs::metadata(&frozen.db_path)?.len());
+    assert!(!db.is_main_mode());
+    assert!(db
+        .execute("SELECT value FROM migration_items", &empty)
+        .is_err());
+
+    db.reopen_after_migration_abort()?;
+
+    assert!(db.is_main_mode());
+    let rows = db.execute("SELECT value FROM migration_items", &empty)?;
+    assert_eq!(rows, vec![vec![serde_json::json!("before-freeze")]]);
+    db.execute_non_query(
+        "INSERT INTO migration_items (value) VALUES ('after-reopen')",
+        &empty,
+    )?;
+    Ok(())
+}
+
+#[test]
+fn data_dir_migration_freeze_rejects_upgrade_without_changing_mode() -> Result<(), Error> {
+    let dir = TestDir::new("data-dir-migration-upgrade-mode");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let empty = HashMap::new();
+    db.execute_non_query(
+        "CREATE TABLE configs (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+        &empty,
+    )?;
+    db.execute_non_query(
+        "INSERT INTO configs (key, value) VALUES ('config:vrcx_0_databaseversion', '18')",
+        &empty,
+    )?;
+    db.begin_upgrade(18, 18)?;
+
+    assert!(db.freeze_for_migration().is_err());
+    assert!(!db.is_main_mode());
+    db.execute_non_query(
+        "INSERT INTO configs (key, value) VALUES ('upgrade-session', 'active')",
+        &empty,
+    )?;
+    db.fail_upgrade("test complete".into())?;
+    assert!(db.is_main_mode());
+    Ok(())
+}
+
+#[test]
 fn failed_upgraded_database_reopen_restores_original_and_preserves_work_copy() -> Result<(), Error>
 {
     let dir = TestDir::new("database-upgrade-reopen-rollback");

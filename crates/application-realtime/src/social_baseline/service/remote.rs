@@ -18,7 +18,7 @@ struct PageFetch {
     rows: Vec<Value>,
 }
 
-pub(super) async fn execute_vrchat_json_request(
+pub(crate) async fn execute_vrchat_json_request(
     deps: &SocialBaselineDeps,
     request: HttpApiRequestInput,
 ) -> Result<Value> {
@@ -203,7 +203,7 @@ fn is_rate_limit_error(error: &Error) -> bool {
     message.contains("429") || message.to_ascii_lowercase().contains("ratelimited")
 }
 
-pub(super) async fn refetch_users_concurrent(
+pub(crate) async fn refetch_users_concurrent(
     deps: &SocialBaselineDeps,
     endpoint: &str,
     user_ids: Vec<String>,

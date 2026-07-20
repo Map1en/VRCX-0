@@ -13,6 +13,7 @@ import type {
     GroupProfileRecord,
     UserProfileEntity
 } from '@/domain/entities/profileEntities';
+import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateFilter } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
@@ -353,13 +354,24 @@ export function GroupDialogTabPanels({
                 )}
 
                 {group.description ? (
-                    <GroupOverviewSection
-                        title={t('dialog.group.overview.description')}
+                    <TranslatableText
+                        source={group.description}
+                        entityId={group.id || ''}
+                        density="button"
                     >
-                        <div className="text-muted-foreground max-h-32 overflow-auto text-sm whitespace-pre-wrap">
-                            {group.description}
-                        </div>
-                    </GroupOverviewSection>
+                        {({ action, meta, error, text }) => (
+                            <GroupOverviewSection
+                                title={t('dialog.group.overview.description')}
+                                action={action}
+                            >
+                                {meta}
+                                <div className="text-muted-foreground max-h-32 overflow-auto text-sm whitespace-pre-wrap">
+                                    {text}
+                                </div>
+                                {error}
+                            </GroupOverviewSection>
+                        )}
+                    </TranslatableText>
                 ) : null}
 
                 <GroupOverviewSection title={t('dialog.group.info.instances')}>
@@ -382,11 +394,24 @@ export function GroupDialogTabPanels({
                 ) : null}
 
                 {group.rules ? (
-                    <GroupOverviewSection title={t('dialog.group.info.rules')}>
-                        <pre className="text-muted-foreground max-h-40 overflow-auto font-sans text-sm whitespace-pre-wrap">
-                            {group.rules}
-                        </pre>
-                    </GroupOverviewSection>
+                    <TranslatableText
+                        source={group.rules}
+                        entityId={group.id || ''}
+                        density="button"
+                    >
+                        {({ action, meta, error, text }) => (
+                            <GroupOverviewSection
+                                title={t('dialog.group.info.rules')}
+                                action={action}
+                            >
+                                {meta}
+                                <pre className="text-muted-foreground max-h-40 overflow-auto font-sans text-sm whitespace-pre-wrap">
+                                    {text}
+                                </pre>
+                                {error}
+                            </GroupOverviewSection>
+                        )}
+                    </TranslatableText>
                 ) : null}
 
                 <GroupOverviewSection

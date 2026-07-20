@@ -9,6 +9,7 @@ vi.mock('@/repositories/authRepository', () => ({
     default: repositoryMocks
 }));
 
+import type { SavedAuthSnapshot } from '@/repositories/authRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -17,14 +18,21 @@ import {
     refreshSavedAuthSnapshot
 } from './authSnapshotService';
 
-function snapshot(patch: Record<string, unknown> = {}) {
+function snapshot(patch: Partial<SavedAuthSnapshot> = {}): SavedAuthSnapshot {
     return {
         lastUserLoggedIn: 'usr_1',
-        savedCredentialCount: 1,
         autoLoginStatus: 'available',
         autoLoginReason: 'ready',
         autoLoginDelayEnabled: false,
         autoLoginDelaySeconds: 0,
+        savedCredentialsList: [
+            {
+                user: { id: 'usr_1', displayName: 'User One' },
+                loginParams: { username: 'user@example.test' },
+                hasLoginCredentials: true,
+                hasCookies: false
+            }
+        ],
         ...patch
     };
 }
@@ -37,7 +45,7 @@ describe('authSnapshotService', () => {
         repositoryMocks.deleteSavedCredential.mockResolvedValue(
             snapshot({
                 lastUserLoggedIn: null,
-                savedCredentialCount: 0,
+                savedCredentialsList: [],
                 autoLoginStatus: 'missing-last-user',
                 autoLoginReason: 'missing'
             })
@@ -84,7 +92,7 @@ describe('authSnapshotService', () => {
             lastUserLoggedIn: 'usr_1'
         });
         await expect(deleteSavedAuthSnapshot('usr_1')).resolves.toMatchObject({
-            savedCredentialCount: 0
+            savedCredentialsList: []
         });
 
         expect(repositoryMocks.getSavedAuthSnapshot).toHaveBeenCalledTimes(1);

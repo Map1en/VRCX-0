@@ -69,6 +69,77 @@
         }
     },
     "language": "Русский (ru)",
+    "data_dir_migration": {
+        "title": "Перенос данных VRCX-0",
+        "description": "Выберите, как VRCX-0 будет использовать выбранную папку.",
+        "completed_title": "Данные перенесены",
+        "completed_description": "Перезапустите VRCX-0, чтобы использовать новую папку данных.",
+        "error_short": "Ошибка переноса",
+        "start": "Начать",
+        "restart_now": "Перезапустить сейчас",
+        "restart_later": "Позже",
+        "create_backup_first": "Сначала создать резервную копию",
+        "space_summary": "Требуется: {required} · Доступно: {available}",
+        "insufficient_space": "Недостаточно свободного места.",
+        "contents_notice": "Будут скопированы база данных, настройки, индекс галереи и миниатюры. Кэш изображений загрузится заново. Старые данные сохранятся до очистки.",
+        "unsupported_storage_warning": "Не используйте сетевой диск, папку облачной синхронизации (OneDrive, iCloud и т. п.) или съёмный диск. База данных в таком месте может повредиться; такие конфигурации не поддерживаются.",
+        "mode": {
+            "migrate": "Перенести текущие данные (рекомендуется)",
+            "adoptExisting": "Использовать профиль VRCX-0 из этой папки",
+            "freshStart": "Создать новый профиль в этой папке"
+        },
+        "target": {
+            "empty": "Выбранная папка пуста.",
+            "existingProfile": "В папке уже есть профиль VRCX-0. Перед заменой он будет сохранён.",
+            "foreignContent": "В папке есть другие файлы. VRCX-0 будет управлять только своими файлами."
+        },
+        "phase": {
+            "preparing": "Подготовка переноса",
+            "freezing": "Остановка базы данных",
+            "copying": "Копирование базы данных",
+            "verifying": "Проверка копии",
+            "committing": "Завершение переноса"
+        },
+        "error": {
+            "operationBusy": "Уже выполняется резервное копирование, восстановление или перенос.",
+            "databaseUnavailable": "Сейчас базу данных нельзя перенести.",
+            "pendingRestore": "Сначала завершите или отмените ожидающее восстановление.",
+            "pendingLegacyMigration": "Сначала завершите перенос старых данных.",
+            "pendingMigration": "Ожидается смена папки данных. Перезапустите VRCX-0.",
+            "cleanupConflict": "Перед возвратом в эту папку обработайте старые данные.",
+            "copyFailed": "Не удалось скопировать базу данных. Используются исходные данные.",
+            "commitFailed": "Не удалось установить копию. Используются исходные данные.",
+            "pointerCommitFailed": "Не удалось активировать новую папку. Перезапустите VRCX-0 для безопасной повторной попытки.",
+            "io": "Не удалось прочитать или записать файл папки данных."
+        },
+        "warning": {
+            "configCopyFailed": "Некоторые настройки не удалось скопировать.",
+            "galleryCopyFailed": "Некоторые данные галереи не удалось скопировать; они будут восстановлены при необходимости.",
+            "cacheCleanupFailed": "Некоторые старые файлы кэша не удалось удалить."
+        },
+        "result": {
+            "succeeded": "Папка данных перенесена",
+            "failed_title": "Новую папку данных не удалось использовать",
+            "database_open_failed": "VRCX-0 продолжил использовать исходную папку. Данные не пострадали.",
+            "interrupted_title": "Перенос прерван",
+            "interrupted": "VRCX-0 продолжил использовать исходную папку. Можно повторить попытку."
+        },
+        "cleanup": {
+            "ready_title": "Папка данных перенесена",
+            "ready_description": "Старые данные остались в {path}.",
+            "action": "Очистить старые данные",
+            "action_with_size": "Очистить старые данные ({size})",
+            "confirm_title": "Удалить старые данные VRCX-0 навсегда?",
+            "confirm_description": "Из {path} будет удалено около {size} известных файлов VRCX-0. Неизвестные файлы останутся. Это действие необратимо.",
+            "completed": "Старые данные VRCX-0 очищены",
+            "freed": "Освобождено {size}.",
+            "completed_with_skipped": "Освобождено {size}; не удалось удалить элементов: {count}.",
+            "settings_title": "Старые данные можно очистить",
+            "settings_description": "Старые данные VRCX-0 находятся в {path} ({size} байт).",
+            "dismiss": "Сохранить и больше не напоминать",
+            "dismissed": "Напоминания об очистке отключены"
+        }
+    },
     "profile_backup": {
         "header": "Резервное копирование и восстановление",
         "tools_description": "Создавайте резервные копии данных VRCX-0 и восстанавливайте их при необходимости.",
@@ -1539,7 +1610,9 @@
             "group": {
                 "header": "Группа",
                 "calendar": "Календарь",
-                "calendar_description": "Календарь групповых мероприятий"
+                "calendar_description": "Календарь групповых мероприятий",
+                "moderation": "Модерация группы",
+                "moderation_description": "Управляйте участниками, банами, приглашениями и заявками на вступление в группы, которые вы модерируете."
             },
             "user": {
                 "discord_names_description": "Найти имена пользователей Discord ваших друзей из VRChat",
@@ -3470,6 +3543,8 @@
                 "copy_id": "Скопировать ID",
                 "copy_url": "Скопировать URL",
                 "url": "VRChat Ссылка",
+                "vrcx_url": "Ссылка VRCX-0",
+                "copy_vrcx_url": "Скопировать ссылку VRCX-0",
                 "youtube_preview": "Просмотр превью YouTube",
                 "author_tags": "Теги автора",
                 "players": "Игроки",
@@ -3666,6 +3741,8 @@
                 "copy_id": "Скопировать ID",
                 "url": "VRChat Ссылка",
                 "copy_url": "Скопировать URL",
+                "vrcx_url": "Ссылка VRCX-0",
+                "copy_vrcx_url": "Скопировать ссылку VRCX-0",
                 "created_at": "Дата и время создания",
                 "last_updated": "Последнее обновление",
                 "version": "Версия",
@@ -4506,12 +4583,55 @@
             "kick": "Кик",
             "ban": "Бан",
             "unban": "Разбанить",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "Отображаемое имя",
             "created_at": "Дата и время создания",
             "type": "Тип",
             "description": "Описание",
             "data": "Данные",
-            "roles": "Роли"
+            "roles": "Роли",
+            "select_all": "Выбрать все",
+            "selected_users_count": "Выбрано: {count}",
+            "notes": "Заметки",
+            "note_placeholder": "Добавьте заметку для выбранных участников...",
+            "selected_roles": "Роли",
+            "roles_count": "Выбрано ролей: {count}",
+            "choose_roles_placeholder": "Выберите роли...",
+            "add_roles": "Добавить роли",
+            "remove_roles": "Удалить роли",
+            "save_note": "Сохранить заметку",
+            "progress": "Прогресс",
+            "bulk_action_confirm": "Действие будет применено к {count} выбранным участникам.",
+            "bulk_action_completed": "{value}: завершено для {count} участников",
+            "import_bans": "Импорт банов",
+            "import_bans_description": "Вставьте ID пользователей, ссылки на профили или CSV-данные с ID вида usr_ для массового бана.",
+            "import_bans_warning": "Все найденные пользователи будут забанены немедленно. Это действие необратимо.",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "Начать импорт",
+            "import_bans_clear_errors": "Очистить ошибки",
+            "import_bans_no_ids_found": "Не найдено ни одного действительного ID пользователя (usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+            "import_bans_done": "Готово. Забанено {success}/{total} пользователей.",
+            "import_bans_cancelled": "Отменено. Забанено {success}/{total} пользователей.",
+            "export_logs": "Экспорт логов",
+            "export_logs_copied": "CSV журнала аудита скопирован в буфер обмена",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "Загружено: {count}",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "Member",
+                "invited": "Invited",
+                "banned": "Banned",
+                "requested": "Requested",
+                "blocked": "Blocked",
+                "userblocked": "Blocked",
+                "joined": "Joined",
+                "active": "Active",
+                "pending": "Pending"
+            }
         },
         "group_post_edit": {
             "title": "Заголовок"
@@ -5356,7 +5476,22 @@
                 "failed_to_update_group_event_follow_state": "Не удалось обновить это событие",
                 "failed_to_download_ics_file": "Не удалось загрузить файл .ics",
                 "failed_to_save_ics_file": "Не удалось сохранить файл .ics",
-                "failed_to_copy_event_link": "Не удалось скопировать ссылку на события"
+                "failed_to_copy_event_link": "Не удалось скопировать ссылку на события",
+                "failed_to_load_moderatable_groups": "Не удалось загрузить группы, которые вы модерируете",
+                "failed_to_open_group_moderation": "Не удалось открыть модерацию группы"
+            },
+            "group_moderation": {
+                "picker_description": "Выберите группу для управления участниками, банами, приглашениями и заявками на вступление.",
+                "loading": "Загрузка групп, которые вы модерируете…",
+                "empty_title": "Нет групп для модерации",
+                "empty_description": "У вас пока нет прав модератора ни в одной из ваших групп.",
+                "permissions_degraded": "Не удалось проверить некоторые права группы. Список ниже может быть неполным.",
+                "member_count": "{count} участников",
+                "rail_title": "Groups you moderate",
+                "select_a_group_title": "Select a group",
+                "select_a_group_description": "Choose a group from the list to manage members, bans, invites, and join requests.",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} members · {online} online"
             }
         }
     },
@@ -5435,6 +5570,14 @@
         "avatar": {
             "no_provider": "Провайдер поиска аватаров не настроен"
         }
+    },
+    "translation": {
+        "translate": "Перевести",
+        "show_original": "Показать оригинал",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "Не удалось перевести",
+        "error_network": "Ошибка сети, попробуйте ещё раз",
+        "error_unsupported": "Перевод не настроен"
     },
     "app": {
         "title": "VRCX-0",

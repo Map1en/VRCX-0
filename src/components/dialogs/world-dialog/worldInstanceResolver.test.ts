@@ -29,7 +29,6 @@ describe('worldInstanceResolver', () => {
             resolveCreatedInstanceDetails(
                 'wrld_test:123~region(us)',
                 {},
-                'https://api.example.test',
                 { accessType: 'public', ownerId: 'usr_owner' }
             )
         ).resolves.toMatchObject({
@@ -42,8 +41,7 @@ describe('worldInstanceResolver', () => {
             vrchatInstanceRepository.getInstanceShortName
         ).toHaveBeenCalledWith({
             worldId: 'wrld_test',
-            instanceId: '123~region(us)',
-            endpoint: 'https://api.example.test'
+            instanceId: '123~region(us)'
         });
 
         vi.mocked(
@@ -53,7 +51,6 @@ describe('worldInstanceResolver', () => {
             resolveCreatedInstanceDetails(
                 'wrld_test:124~region(us)',
                 { secureName: 'secure_fallback' },
-                'https://api.example.test',
                 { accessType: 'public' }
             )
         ).resolves.toMatchObject({
@@ -71,7 +68,6 @@ describe('worldInstanceResolver', () => {
                     shortName: 'already_short',
                     accessType: 'invite'
                 },
-                'https://api.example.test',
                 {
                     accessType: 'public',
                     ownerId: 'usr_fallback'

@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const tauriMock = vi.hoisted(() => ({
     commands: {
         appWorldCacheGet: vi.fn(),
-        appVrchatWorldGet: vi.fn()
+        appVrchatWorldGet: vi.fn(),
+        appVrchatWorldPersistentDataExists: vi.fn()
     }
 }));
 
@@ -24,8 +25,7 @@ describe('WorldProfileRepository', () => {
             command.mockReset();
             command.mockResolvedValue({
                 status: 200,
-                data: '{"ok":true}',
-                raw: { source: 'rust-api' }
+                data: '{"ok":true}'
             });
         }
         tauriMock.commands.appWorldCacheGet.mockResolvedValue(null);
@@ -134,8 +134,7 @@ describe('WorldProfileRepository', () => {
                 ],
                 instances: [['123', 4]],
                 unknownLargeField: { nested: true }
-            }),
-            raw: {}
+            })
         });
 
         const world = await worldProfileRepository.fetchWorldProfile({
@@ -233,8 +232,7 @@ describe('WorldProfileRepository', () => {
                         assetUrl: 'https://example.test/world.bundle'
                     }
                 ]
-            }),
-            raw: {}
+            })
         });
 
         const world = await worldProfileRepository.getWorldProfile({
@@ -251,8 +249,7 @@ describe('WorldProfileRepository', () => {
         ]);
         expect(tauriMock.commands.appWorldCacheGet).not.toHaveBeenCalled();
         expect(tauriMock.commands.appVrchatWorldGet).toHaveBeenCalledWith({
-            worldId: 'wrld_full_bypass',
-            endpoint: ''
+            worldId: 'wrld_full_bypass'
         });
     });
 
@@ -267,8 +264,7 @@ describe('WorldProfileRepository', () => {
                 id: 'wrld_dialog',
                 name: 'Remote Dialog World',
                 tags: ['system_labs']
-            }),
-            raw: {}
+            })
         });
 
         const world = await worldProfileRepository.getWorldProfile({
@@ -282,6 +278,23 @@ describe('WorldProfileRepository', () => {
         expect(tauriMock.commands.appVrchatWorldGet).toHaveBeenCalled();
     });
 
+    it('treats a missing persistent-data record as not present', async () => {
+        tauriMock.commands.appVrchatWorldPersistentDataExists.mockResolvedValueOnce(
+            {
+                status: 404,
+                data: JSON.stringify({ error: { message: 'Not Found' } })
+            }
+        );
+
+        await expect(
+            worldProfileRepository.hasWorldPersistentData({
+                userId: 'usr_1',
+                worldId: 'wrld_1',
+                force: true
+            })
+        ).resolves.toBe(false);
+    });
+
     it('fetches remote data for dialog reads instead of mirrored facts', async () => {
         useWorldFactsStore.getState().upsertWorldFacts({
             id: 'wrld_dialog_mirror',
@@ -292,8 +305,7 @@ describe('WorldProfileRepository', () => {
             data: JSON.stringify({
                 id: 'wrld_dialog_mirror',
                 name: 'Fresh Dialog World'
-            }),
-            raw: {}
+            })
         });
 
         const world = await worldProfileRepository.getWorldProfile({
@@ -304,8 +316,7 @@ describe('WorldProfileRepository', () => {
         expect(world.name).toBe('Fresh Dialog World');
         expect(tauriMock.commands.appWorldCacheGet).not.toHaveBeenCalled();
         expect(tauriMock.commands.appVrchatWorldGet).toHaveBeenCalledWith({
-            worldId: 'wrld_dialog_mirror',
-            endpoint: ''
+            worldId: 'wrld_dialog_mirror'
         });
     });
 
@@ -316,8 +327,7 @@ describe('WorldProfileRepository', () => {
                 error: {
                     message: 'World not found'
                 }
-            }),
-            raw: {}
+            })
         });
 
         await expect(

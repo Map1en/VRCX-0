@@ -2,7 +2,8 @@ use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::{
     AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
-    AuthenticatedRuntimePhaseSnapshot, ProfileBackupStatus, ProfileRestoreProgress,
+    AuthenticatedRuntimePhaseSnapshot, DataDirMigrationStatus, ProfileBackupStatus,
+    ProfileRestoreProgress,
 };
 use vrcx_0_application_activity::OverlayActivitySnapshot;
 use vrcx_0_application_core::{
@@ -48,6 +49,7 @@ struct BackendRuntimeEventPayloadMap {
     prints_auto_cleanup: PrintAutoCleanupEvent,
     profile_backup_status: ProfileBackupStatus,
     profile_restore_progress: ProfileRestoreProgress,
+    data_dir_migration: DataDirMigrationStatus,
     favorites_changed: FavoritesChangedPayload,
     friend_profile_load_status: FriendProfileLoadStatusPayload,
     realtime_friend_projection: FriendProjection,
@@ -96,8 +98,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::storage::storage__get_all,
             commands::database::app__database_upgrade_preflight,
             commands::database::app__database_upgrade_run,
-            commands::web::web__clear_cookies,
-            commands::web::web__clear_auth_cookies,
             commands::host::error_log::app__append_error_log,
             commands::host::error_log::app__drain_client_error_log,
             commands::asset_bundle::asset_bundle__get_vrchat_cache_full_location,
@@ -117,7 +117,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::game::app__start_game_from_path,
             commands::host::tts::app__host_tts_voices,
             commands::host::tts::app__host_tts_speak,
-            commands::application::realtime::app__authenticated_runtime_session_start,
             commands::application::realtime::app__sync_realtime_current_user_snapshot,
             commands::application::realtime::app__expire_realtime_notification,
             commands::application::realtime::app__ingest_user_facts,
@@ -309,6 +308,14 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::paths::app__validate_app_data_dir,
             commands::host::paths::app__set_app_data_dir,
             commands::host::paths::app__clear_app_data_dir,
+            commands::host::paths::app__plan_data_dir_migration,
+            commands::host::paths::app__request_data_dir_migration,
+            commands::host::paths::app__cancel_data_dir_migration,
+            commands::host::paths::app__data_dir_migration_current_status,
+            commands::host::paths::app__take_data_dir_migration_result,
+            commands::host::paths::app__cleanup_migrated_data_dir,
+            commands::host::paths::app__dismiss_data_dir_cleanup,
+            commands::host::paths::app__mark_data_dir_cleanup_prompted,
             commands::application::lifecycle::app__runtime_frontend_schedule_job_due_claim,
             commands::application::lifecycle::app__runtime_frontend_schedule_job_defer,
             commands::application::lifecycle::app__runtime_group_instances_refresh,
@@ -322,17 +329,14 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::integrations::external_api::service::app__external_api_vrc_status_json_get,
             commands::integrations::external_api::service::app__external_api_youtube_video_metadata_get,
             commands::application::auth_scope::app__runtime_auth_scope_get,
-            commands::application::auth_scope::app__runtime_auth_scope_set,
             commands::vrchat::auth::service::app__vrchat_auth_config_get,
             commands::vrchat::auth::service::app__vrchat_auth_auto_login_start,
-            commands::vrchat::auth::service::app__vrchat_auth_auto_login_throttle_reset,
             commands::vrchat::auth::service::app__vrchat_auth_current_user_get,
             commands::vrchat::auth::service::app__vrchat_auth_file_analysis_get,
-            commands::vrchat::auth::service::app__vrchat_auth_logout_record,
+            commands::vrchat::auth::service::app__vrchat_auth_session_end,
             commands::vrchat::auth::service::app__vrchat_auth_saved_credential_delete,
             commands::vrchat::auth::service::app__vrchat_auth_saved_snapshot_get,
             commands::vrchat::auth::service::app__vrchat_auth_session_cancel,
-            commands::vrchat::auth::service::app__vrchat_auth_session_get,
             commands::vrchat::auth::service::app__vrchat_auth_session_respond,
             commands::vrchat::auth::service::app__vrchat_auth_session_start,
             commands::vrchat::auth::service::app__vrchat_auth_visits_get,
@@ -383,6 +387,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::groups::service::app__vrchat_group_member_ban,
             commands::vrchat::groups::service::app__vrchat_group_member_kick,
             commands::vrchat::groups::service::app__vrchat_group_member_props_set,
+            commands::vrchat::groups::service::app__vrchat_group_member_role_add,
+            commands::vrchat::groups::service::app__vrchat_group_member_role_remove,
             commands::vrchat::groups::service::app__vrchat_group_member_unban,
             commands::vrchat::groups::service::app__vrchat_group_members_get,
             commands::vrchat::groups::service::app__vrchat_group_members_search,
@@ -430,6 +436,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::media::service::app__vrchat_media_world_image_upload_legacy,
             commands::application::group_quick_moderation::app__user_group_quick_moderation_action,
             commands::application::group_quick_moderation::app__user_group_quick_moderation_get,
+            commands::application::user_groups_overview::app__user_groups_overview_get,
             commands::application::moderation_sync::app__moderation_sync_refresh,
             commands::application::moderation_sync::app__moderation_sync_update,
             commands::vrchat::notifications::service::app__vrchat_boop_send,
@@ -608,7 +615,7 @@ pub fn export_bindings() -> Result<(), String> {
 
 // Post-process the tauri-specta output to fit this app's frontend bridge:
 // - route the generated invoke through the repo error-logging wrapper,
-// - drop the placeholder `TAURI_CHANNEL` type that collides with the import,
+// - drop the placeholder `TAURI_CHANNEL` type and an unused Channel import,
 // - keep `serde_json::Value` compatible with the app's dynamic storage/API paths,
 // - remove `any` from the generated event helper.
 fn patch_bindings(raw: &str) -> String {
@@ -691,6 +698,12 @@ fn patch_bindings(raw: &str) -> String {
             out.push(r#"import { invoke as TAURI_INVOKE } from "./generatedInvoke";"#.to_string());
             routed_invoke = true;
         }
+    }
+    let channel_used = out
+        .iter()
+        .any(|line| !line.contains("Channel as TAURI_CHANNEL") && line.contains("TAURI_CHANNEL"));
+    if !channel_used {
+        out.retain(|line| !line.contains("Channel as TAURI_CHANNEL"));
     }
     let mut result = out.join("\n");
     result.push('\n');

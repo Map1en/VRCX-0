@@ -134,9 +134,7 @@ export function InstanceOwnerCell({
         if (!userId || displayName !== userId) {
             return;
         }
-        userProfileRepository
-            .getUserProfile({ userId, endpoint })
-            .catch(() => {});
+        userProfileRepository.getUserProfile({ userId }).catch(() => {});
     }, [displayName, endpoint, userId]);
 
     if (!userId) {
@@ -398,8 +396,7 @@ export function PreviousInstanceDetailsPanel({
         Promise.allSettled(
             missingPlayerProfileIds.slice(0, 50).map((userId: any) =>
                 userProfileRepository.getUserProfile({
-                    userId,
-                    endpoint: currentEndpoint
+                    userId
                 })
             )
         ).catch(() => {});

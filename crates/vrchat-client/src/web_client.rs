@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use cookie_store::{CookieStore, RawCookie};
-use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER, USER_AGENT};
+use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER};
 use reqwest::multipart::{Form, Part};
 use reqwest::{Client, Method, Proxy};
 use vrcx_0_core::vrchat_endpoints::{VRCHAT_CLOUD_ROOT_HOST, VRCHAT_SITE_HOST};
@@ -66,7 +66,6 @@ pub struct WebExecuteRequest {
     pub headers: Vec<(String, String)>,
     pub body: Option<String>,
     pub upload: WebUploadMode,
-    pub user_agent: Option<String>,
 }
 
 impl WebExecuteRequest {
@@ -77,7 +76,6 @@ impl WebExecuteRequest {
             headers: Vec::new(),
             body: None,
             upload: WebUploadMode::None,
-            user_agent: None,
         }
     }
 }
@@ -208,6 +206,70 @@ pub struct WebClient {
     user_agent: String,
 }
 
+fn build_http_client(
+    jar: Arc<CookieJar>,
+    proxy_url: Option<&str>,
+    user_agent: &str,
+) -> Result<Client> {
+    let mut builder = Client::builder()
+        .cookie_provider(jar)
+        .user_agent(user_agent)
+        .gzip(true)
+        .brotli(true)
+        .deflate(true)
+        .pool_max_idle_per_host(10)
+        .pool_idle_timeout(std::time::Duration::from_secs(300))
+        .tcp_keepalive(std::time::Duration::from_secs(60))
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .read_timeout(std::time::Duration::from_secs(30));
+
+    if let Some(url) = proxy_url {
+        builder = builder
+            .no_proxy()
+            .proxy(Proxy::all(url).map_err(|e| Error::Custom(format!("bad proxy: {e}")))?);
+    }
+
+    builder
+        .build()
+        .map_err(|e| Error::Custom(format!("http client: {e}")))
+}
+
+fn normalize_execute_result(result: Result<(i32, String)>) -> Result<(i32, String)> {
+    match result {
+        Ok(pair) => Ok(pair),
+        Err(error) => Ok((-1, error.to_string())),
+    }
+}
+
+async fn execute_request(client: &Client, request: reqwest::Request) -> Result<(i32, String)> {
+    let response = client
+        .execute(request)
+        .await
+        .map_err(|e| Error::Custom(e.to_string()))?;
+    let status = response.status().as_u16() as i32;
+    let content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    if content_type.contains("image/") || content_type.contains("application/octet-stream") {
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        let b64 = B64.encode(&bytes);
+        Ok((status, format!("data:image/png;base64,{b64}")))
+    } else {
+        let body = response
+            .text()
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        Ok((status, body))
+    }
+}
+
 impl WebClient {
     pub fn new(
         proxy_url: Option<String>,
@@ -217,33 +279,12 @@ impl WebClient {
         let cookie_store = CookieStore::default();
         let jar = Arc::new(CookieJar::new(cookie_store));
         let user_agent = build_vrcx_user_agent(app_version);
-
-        let mut builder = Client::builder()
-            .cookie_provider(jar.clone())
-            .user_agent(&user_agent)
-            .gzip(true)
-            .brotli(true)
-            .deflate(true)
-            .pool_max_idle_per_host(10)
-            .pool_idle_timeout(std::time::Duration::from_secs(300))
-            .tcp_keepalive(std::time::Duration::from_secs(60))
-            .connect_timeout(std::time::Duration::from_secs(10))
-            .read_timeout(std::time::Duration::from_secs(30));
-
-        if let Some(ref url) = proxy_url {
-            builder = builder
-                .no_proxy()
-                .proxy(Proxy::all(url).map_err(|e| Error::Custom(format!("bad proxy: {e}")))?);
-        }
-
-        let client = builder
-            .build()
-            .map_err(|e| Error::Custom(format!("http client: {e}")))?;
+        let client = build_http_client(jar.clone(), proxy_url.as_deref(), &user_agent)?;
 
         let wc = Self {
             client,
             jar,
-            proxy_url: proxy_url.clone(),
+            proxy_url,
             user_agent,
         };
 
@@ -292,10 +333,6 @@ impl WebClient {
         self.proxy_url.as_deref()
     }
 
-    pub fn user_agent(&self) -> &str {
-        &self.user_agent
-    }
-
     pub fn clear_cookies(&self) {
         self.jar.update(|store| store.clear());
     }
@@ -332,10 +369,34 @@ impl WebClient {
     pub async fn execute(&self, request: WebExecuteRequest) -> Result<(i32, String)> {
         let result = self.do_execute(&request).await;
 
-        match result {
-            Ok(pair) => Ok(pair),
-            Err(e) => Ok((-1, e.to_string())),
+        normalize_execute_result(result)
+    }
+
+    pub async fn execute_fresh_standard(
+        &self,
+        request: WebExecuteRequest,
+    ) -> Result<(i32, String)> {
+        let result = self.do_execute_fresh_standard(&request).await;
+
+        normalize_execute_result(result)
+    }
+
+    async fn do_execute_fresh_standard(
+        &self,
+        request: &WebExecuteRequest,
+    ) -> Result<(i32, String)> {
+        if !matches!(&request.upload, WebUploadMode::None) {
+            return Err(Error::Custom(
+                "fresh HTTP client execution does not support uploads".into(),
+            ));
         }
+        let client = build_http_client(
+            Arc::clone(&self.jar),
+            self.proxy_url.as_deref(),
+            &self.user_agent,
+        )?;
+        let request = self.build_standard_request_with(&client, request)?;
+        execute_request(&client, request).await
     }
 
     async fn do_execute(&self, request: &WebExecuteRequest) -> Result<(i32, String)> {
@@ -364,44 +425,22 @@ impl WebClient {
             }
         };
 
-        let response = self
-            .client
-            .execute(request)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-
-        let status = response.status().as_u16() as i32;
-        let content_type = response
-            .headers()
-            .get(CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("")
-            .to_string();
-
-        if content_type.contains("image/") || content_type.contains("application/octet-stream") {
-            let bytes = response
-                .bytes()
-                .await
-                .map_err(|e| Error::Custom(e.to_string()))?;
-            let b64 = B64.encode(&bytes);
-            Ok((status, format!("data:image/png;base64,{b64}")))
-        } else {
-            let body = response
-                .text()
-                .await
-                .map_err(|e| Error::Custom(e.to_string()))?;
-            Ok((status, body))
-        }
+        execute_request(&self.client, request).await
     }
 
     fn build_standard_request(&self, request: &WebExecuteRequest) -> Result<reqwest::Request> {
+        self.build_standard_request_with(&self.client, request)
+    }
+
+    fn build_standard_request_with(
+        &self,
+        client: &Client,
+        request: &WebExecuteRequest,
+    ) -> Result<reqwest::Request> {
         let method = Method::from_bytes(request.method.as_bytes())
             .map_err(|e| Error::Custom(format!("bad method: {e}")))?;
 
-        let mut builder = self.client.request(method.clone(), &request.url);
-        if let Some(user_agent) = request.user_agent.as_deref() {
-            builder = builder.header(USER_AGENT, user_agent);
-        }
+        let mut builder = client.request(method.clone(), &request.url);
 
         let mut content_type_override: Option<String> = None;
         for (key, val_str) in &request.headers {
@@ -410,7 +449,7 @@ impl WebClient {
                 content_type_override = Some(val_str.to_string());
                 continue;
             }
-            if request.user_agent.is_some() && key_lower == "user-agent" {
+            if key_lower == "user-agent" {
                 continue;
             }
             if key_lower == "referer" {
@@ -453,14 +492,12 @@ impl WebClient {
             .put(&request.url)
             .header(CONTENT_TYPE, file_mime)
             .body(bytes.clone());
-        if let Some(user_agent) = request.user_agent.as_deref() {
-            builder = builder.header(USER_AGENT, user_agent);
-        }
 
         if let Some(md5) = file_md5 {
-            if let Ok(md5_bytes) = B64.decode(md5) {
-                builder = builder.header("Content-MD5", B64.encode(&md5_bytes));
-            }
+            let md5_bytes = B64
+                .decode(md5)
+                .map_err(|e| Error::Custom(format!("bad file MD5 base64: {e}")))?;
+            builder = builder.header("Content-MD5", B64.encode(&md5_bytes));
         }
 
         for (key, val_str) in &request.headers {
@@ -468,7 +505,7 @@ impl WebClient {
             if key_lower == "content-type" {
                 continue;
             }
-            if request.user_agent.is_some() && key_lower == "user-agent" {
+            if key_lower == "user-agent" {
                 continue;
             }
             if let (Ok(name), Ok(value)) = (
@@ -506,11 +543,8 @@ impl WebClient {
             form = form.text("data", post_data.to_string());
         }
 
-        let mut builder = self.client.post(&request.url);
-        if let Some(user_agent) = request.user_agent.as_deref() {
-            builder = builder.header(USER_AGENT, user_agent);
-        }
-        builder
+        self.client
+            .post(&request.url)
             .multipart(form)
             .build()
             .map_err(|e| Error::Custom(format!("build legacy upload: {e}")))
@@ -547,11 +581,8 @@ impl WebClient {
             }
         }
 
-        let mut builder = self.client.post(&request.url);
-        if let Some(user_agent) = request.user_agent.as_deref() {
-            builder = builder.header(USER_AGENT, user_agent);
-        }
-        builder
+        self.client
+            .post(&request.url)
             .multipart(form)
             .build()
             .map_err(|e| Error::Custom(format!("build image upload: {e}")))
@@ -582,11 +613,8 @@ impl WebClient {
             }
         }
 
-        let mut builder = self.client.post(&request.url);
-        if let Some(user_agent) = request.user_agent.as_deref() {
-            builder = builder.header(USER_AGENT, user_agent);
-        }
-        builder
+        self.client
+            .post(&request.url)
             .multipart(form)
             .build()
             .map_err(|e| Error::Custom(format!("build print upload: {e}")))
@@ -667,10 +695,94 @@ mod tests {
         assert_eq!(build_vrcx_user_agent("   "), "VRCX-0");
     }
 
-    #[test]
-    fn web_client_exposes_versioned_user_agent() -> Result<()> {
+    #[tokio::test]
+    async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Result<()> {
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut stream = BufReader::new(stream);
+            let mut request = String::new();
+            loop {
+                let mut line = String::new();
+                stream.read_line(&mut line).await.unwrap();
+                request.push_str(&line);
+                if line == "\r\n" {
+                    break;
+                }
+            }
+            stream
+                .get_mut()
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
+                .await
+                .unwrap();
+            request
+        });
+
         let web = WebClient::new(None, None, "2.9.2")?;
-        assert_eq!(web.user_agent(), "VRCX-0/2.9.2");
+        let mut request = WebExecuteRequest::new(format!("http://{address}/config"), "GET".into());
+        request
+            .headers
+            .push(("User-Agent".into(), "caller-override".into()));
+
+        let response = web.execute(request).await?;
+        let captured = server.await.unwrap();
+
+        assert_eq!(response, (200, "ok".into()));
+        assert!(captured
+            .lines()
+            .any(|line| line.eq_ignore_ascii_case("user-agent: VRCX-0/2.9.2")));
+        assert!(!captured.contains("caller-override"));
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_invalid_file_md5_before_building_upload_request() -> Result<()> {
+        let web = WebClient::new(None, None, env!("CARGO_PKG_VERSION"))?;
+        let request = WebExecuteRequest::new(
+            "https://api.vrchat.cloud/api/1/file/file_1/1/file".into(),
+            "PUT".into(),
+        );
+
+        let error = web
+            .build_file_put_request(
+                &request,
+                &B64.encode(b"payload"),
+                "application/octet-stream",
+                Some("not-base64!"),
+            )
+            .expect_err("invalid file MD5 should be rejected");
+
+        assert!(error.to_string().contains("bad file MD5 base64"));
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_http_client_reuses_runtime_cookie_jar() -> Result<()> {
+        let web = WebClient::new(None, None, "2.9.2")?;
+        let initial_references = Arc::strong_count(&web.jar);
+        let fresh = build_http_client(
+            Arc::clone(&web.jar),
+            web.proxy_url.as_deref(),
+            &web.user_agent,
+        )?;
+        let mut request = WebExecuteRequest::new(
+            "https://api.vrchat.cloud/api/1/auth/user".into(),
+            "GET".into(),
+        );
+        request
+            .headers
+            .push(("user-agent".into(), "caller-override".into()));
+        let built = web.build_standard_request_with(&fresh, &request)?;
+
+        assert!(Arc::strong_count(&web.jar) > initial_references);
+        assert_eq!(web.user_agent, "VRCX-0/2.9.2");
+        assert!(built.headers().get(reqwest::header::USER_AGENT).is_none());
+        drop(fresh);
+        assert_eq!(Arc::strong_count(&web.jar), initial_references);
         Ok(())
     }
 

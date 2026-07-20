@@ -114,11 +114,16 @@ async function resolveOpenAiTranslationEndpointId(
     ).trim();
 }
 
-export async function translateText(
+export type TranslationDetailedResult = {
+    text: string;
+    detectedSourceLang: string | null;
+};
+
+export async function translateTextDetailed(
     text: string,
     targetLanguage: unknown = '',
     overrides: TranslationOverrides = {}
-): Promise<string> {
+): Promise<TranslationDetailedResult> {
     const storedConfig = await getTranslationConfig();
     const config: TranslationConfig = {
         ...storedConfig,
@@ -157,9 +162,16 @@ export async function translateText(
         const firstTranslation = isRecord(translations[0])
             ? translations[0]
             : {};
-        return typeof firstTranslation.translatedText === 'string'
-            ? firstTranslation.translatedText
-            : '';
+        return {
+            text:
+                typeof firstTranslation.translatedText === 'string'
+                    ? firstTranslation.translatedText
+                    : '',
+            detectedSourceLang:
+                typeof firstTranslation.detectedSourceLanguage === 'string'
+                    ? firstTranslation.detectedSourceLanguage
+                    : null
+        };
     }
 
     if (config.type === 'deepl') {
@@ -190,9 +202,16 @@ export async function translateText(
         const firstTranslation = isRecord(translations[0])
             ? translations[0]
             : {};
-        return typeof firstTranslation.text === 'string'
-            ? firstTranslation.text.trim()
-            : '';
+        return {
+            text:
+                typeof firstTranslation.text === 'string'
+                    ? firstTranslation.text.trim()
+                    : '',
+            detectedSourceLang:
+                typeof firstTranslation.detected_source_language === 'string'
+                    ? firstTranslation.detected_source_language
+                    : null
+        };
     }
 
     const endpointId = await resolveOpenAiTranslationEndpointId(
@@ -203,11 +222,24 @@ export async function translateText(
         throw new Error('Translation endpoint/model missing.');
     }
 
-    return commands.appLlmTranslate({
+    const translated = await commands.appLlmTranslate({
         endpointId,
         model,
         prompt: config.prompt || null,
         targetLang: target,
         text
     });
+    return {
+        text: translated,
+        detectedSourceLang: null
+    };
+}
+
+export async function translateText(
+    text: string,
+    targetLanguage: unknown = '',
+    overrides: TranslationOverrides = {}
+): Promise<string> {
+    const result = await translateTextDetailed(text, targetLanguage, overrides);
+    return result.text;
 }

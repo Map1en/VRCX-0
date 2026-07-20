@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type FriendsRequest = {
-    endpoint: string;
     offline: boolean;
     n: number;
     offset: number;
@@ -35,19 +34,16 @@ describe('vrchatFriendRepository', () => {
                 data:
                     request.offset === 7550
                         ? [{ id: 'usr_after_legacy_limit' }]
-                        : friendPage(request.offset, request.n),
-                raw: {}
+                        : friendPage(request.offset, request.n)
             })
         );
 
         const friends = await vrchatFriendRepository.getAllFriends({
-            endpoint: 'https://api.example.test',
             offline: false
         });
 
         expect(tauriMock.commands.appVrchatFriendsGet).toHaveBeenLastCalledWith(
             {
-                endpoint: 'https://api.example.test',
                 offline: false,
                 n: 50,
                 offset: 7550

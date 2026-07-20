@@ -78,7 +78,6 @@ describe('useGalleryAssetActions', () => {
         });
 
         expect(uploadAssetImage).toHaveBeenCalledWith('base64-body', {
-            endpoint: 'https://api.vrchat.cloud',
             assetKind: 'prints',
             cropWhiteBorder: false,
             params: {

@@ -11,6 +11,7 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import { vrchatAvatarUrl } from '@/shared/constants/vrchatWebUrls';
+import { vrcxAvatarDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
@@ -108,12 +109,16 @@ function AvatarOverviewReferences({
     avatarUrl,
     onCopyAvatarId,
     onCopyAvatarUrl,
+    onCopyVrcxAvatarUrl,
+    vrcxAvatarUrl,
     onOpenAvatarUrl
 }: {
     avatar: AvatarViewRecord;
     avatarUrl: string;
     onCopyAvatarId(): void;
     onCopyAvatarUrl(): void;
+    onCopyVrcxAvatarUrl(): void;
+    vrcxAvatarUrl: string;
     onOpenAvatarUrl(): void;
 }) {
     const { t } = useTranslation();
@@ -211,6 +216,39 @@ function AvatarOverviewReferences({
                     </span>
                 </AvatarOverviewFactRow>
             ) : null}
+            {vrcxAvatarUrl ? (
+                <AvatarOverviewFactRow label={t('dialog.avatar.info.vrcx_url')}>
+                    <span className="flex min-w-0 items-center justify-end gap-1">
+                        <span
+                            className="text-muted-foreground/80 min-w-0 truncate font-mono text-[11px]"
+                            title={vrcxAvatarUrl}
+                        >
+                            {compactAvatarUrl(vrcxAvatarUrl)}
+                        </span>
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        aria-label={t(
+                                            'dialog.avatar.info.copy_vrcx_url'
+                                        )}
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        className="shrink-0"
+                                        onClick={onCopyVrcxAvatarUrl}
+                                    >
+                                        <CopyIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
+                            <TooltipContent>
+                                {t('dialog.avatar.info.copy_vrcx_url')}
+                            </TooltipContent>
+                        </Tooltip>
+                    </span>
+                </AvatarOverviewFactRow>
+            ) : null}
         </div>
     );
 }
@@ -227,6 +265,8 @@ function AvatarDialogOverviewSection({
     onAuthorClick,
     onCopyAvatarId,
     onCopyAvatarUrl,
+    onCopyVrcxAvatarUrl,
+    vrcxAvatarUrl,
     onOpenAvatarUrl
 }: {
     avatar: AvatarViewRecord;
@@ -240,6 +280,8 @@ function AvatarDialogOverviewSection({
     onAuthorClick(): void;
     onCopyAvatarId(): void;
     onCopyAvatarUrl(): void;
+    onCopyVrcxAvatarUrl(): void;
+    vrcxAvatarUrl: string;
     onOpenAvatarUrl(): void;
 }) {
     const { t } = useTranslation();
@@ -329,6 +371,8 @@ function AvatarDialogOverviewSection({
                 avatarUrl={avatarUrl}
                 onCopyAvatarId={onCopyAvatarId}
                 onCopyAvatarUrl={onCopyAvatarUrl}
+                onCopyVrcxAvatarUrl={onCopyVrcxAvatarUrl}
+                vrcxAvatarUrl={vrcxAvatarUrl}
                 onOpenAvatarUrl={onOpenAvatarUrl}
             />
         </EntityOverviewCard>
@@ -383,6 +427,7 @@ export function AvatarDialogTabbedView({
     const openImagePreview = useAvatarDialogPreview();
     const avatarFallbackLabel = t('view.favorites.empty.avatar_fallback');
     const avatarUrl = avatar.id ? vrchatAvatarUrl(avatar.id) : '';
+    const vrcxAvatarUrl = vrcxAvatarDeepLink(avatar.id);
     const packageUrl = replaceVrcPackageUrl(
         avatar.unityPackageUrl || avatar.unityPackage?.url || ''
     );
@@ -528,6 +573,13 @@ export function AvatarDialogTabbedView({
                                 t('dialog.avatar.info.url')
                             );
                         }}
+                        onCopyVrcxAvatarUrl={() => {
+                            copyAvatarText(
+                                vrcxAvatarUrl,
+                                t('dialog.avatar.info.vrcx_url')
+                            );
+                        }}
+                        vrcxAvatarUrl={vrcxAvatarUrl}
                         onOpenAvatarUrl={() => openExternalLink(avatarUrl)}
                         badges={
                             <AvatarDialogHeaderBadges

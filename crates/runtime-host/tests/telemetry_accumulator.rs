@@ -54,6 +54,57 @@ fn telemetry_accumulator_filters_cancelled_turn_errors() {
 }
 
 #[test]
+fn telemetry_accumulator_keeps_external_llm_failures_out_of_details() {
+    let mut acc = TelemetryAccumulator::default();
+
+    for status in [404, 429, 500] {
+        acc.record(TelemetryClientEvent::AssistantTurnError {
+            code: "llm".into(),
+            summary: Some(format!("LLM API error ({status})")),
+        });
+    }
+    acc.record(TelemetryClientEvent::AssistantTurnError {
+        code: "llm".into(),
+        summary: Some("LLM response parse failed".into()),
+    });
+
+    let health = acc.assistant_health_entry().unwrap();
+    assert_eq!(health.turn_errors, 4);
+    let details = health.details.unwrap();
+    assert_eq!(details.len(), 1);
+    assert_eq!(
+        details[0].summary.as_deref(),
+        Some("LLM response parse failed")
+    );
+}
+
+#[test]
+fn telemetry_accumulator_filters_expected_tool_outcomes() {
+    let mut acc = TelemetryAccumulator::default();
+
+    for summary in [
+        "result=not_found",
+        "bucket=month; result=precondition",
+        "result=<id>",
+    ] {
+        acc.record(TelemetryClientEvent::AssistantToolError {
+            source: Some("find_user".into()),
+            summary: Some(summary.into()),
+        });
+    }
+    acc.record(TelemetryClientEvent::AssistantToolError {
+        source: Some("find_user".into()),
+        summary: Some("result=invalid_args".into()),
+    });
+
+    let health = acc.assistant_health_entry().unwrap();
+    assert_eq!(health.tool_errors, 1);
+    let details = health.details.unwrap();
+    assert_eq!(details.len(), 1);
+    assert_eq!(details[0].summary.as_deref(), Some("result=invalid_args"));
+}
+
+#[test]
 fn telemetry_accumulator_records_rust_error_versions() {
     let mut acc = TelemetryAccumulator::default();
 
@@ -71,4 +122,19 @@ fn telemetry_accumulator_records_rust_error_versions() {
         errors[0].summary.as_deref(),
         Some("panic in <id> at <path>")
     );
+}
+
+#[test]
+fn telemetry_accumulator_keeps_only_sanitized_panic_frame_locations() {
+    let mut acc = TelemetryAccumulator::default();
+
+    acc.record_rust_error(
+        "rust:panic",
+        "2.15.0",
+        "panicked at C:\\cargo\\tao\\runner.rs:371:7:\ncannot move state from Destroyed\n[backtrace]\n0: core::panicking::panic_fmt\n at C:\\rust\\panicking.rs:20:3\n1: tao::platform_impl::windows::event_loop::runner::EventLoopRunner::advance_state\n at C:\\cargo\\tao\\runner.rs:371:7",
+    );
+
+    let summary = acc.client_error_entries()[0].summary.clone().unwrap();
+    assert!(summary.contains("frames: tao::EventLoopRunner::advance_state@runner.rs:371:7"));
+    assert!(!summary.contains("C:\\"));
 }

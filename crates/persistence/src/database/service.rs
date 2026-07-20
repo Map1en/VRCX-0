@@ -59,6 +59,14 @@ pub struct DatabaseService {
     inner: RwLock<DatabaseMode>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FrozenDatabase {
+    pub db_path: PathBuf,
+    pub db_bytes: u64,
+    pub wal_path: Option<PathBuf>,
+    pub wal_bytes: Option<u64>,
+}
+
 pub(crate) struct DatabaseWriteTransaction<'conn> {
     tx: rusqlite::Transaction<'conn>,
 }
@@ -87,6 +95,66 @@ impl DatabaseService {
             .read()
             .map(|inner| matches!(&*inner, DatabaseMode::Main(_)))
             .unwrap_or(false)
+    }
+
+    pub fn freeze_for_migration(&self) -> Result<FrozenDatabase, Error> {
+        let mut inner = self
+            .inner
+            .write()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let main = match &*inner {
+            DatabaseMode::Main(main) => main,
+            DatabaseMode::Upgrade(_) => {
+                return Err(Error::Database(
+                    "Database migration is unavailable while an upgrade is running.".into(),
+                ));
+            }
+            DatabaseMode::Closed => {
+                return Err(Error::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                ));
+            }
+        };
+        {
+            let writer = main
+                .writer
+                .lock()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            checkpoint(&writer)?;
+        }
+        let db_bytes = fs::metadata(&self.db_path)?.len();
+        let wal_path = super::sidecar::sidecar_path(&self.db_path, "wal");
+        let wal_bytes = fs::metadata(&wal_path)
+            .ok()
+            .map(|metadata| metadata.len())
+            .filter(|bytes| *bytes > 0);
+        let wal_path = wal_bytes.map(|_| wal_path);
+
+        let main = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
+            DatabaseMode::Main(main) => main,
+            _ => unreachable!(),
+        };
+        drop(main);
+        Ok(FrozenDatabase {
+            db_path: self.db_path.clone(),
+            db_bytes,
+            wal_path,
+            wal_bytes,
+        })
+    }
+
+    pub fn reopen_after_migration_abort(&self) -> Result<(), Error> {
+        let mut inner = self
+            .inner
+            .write()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        if !matches!(&*inner, DatabaseMode::Closed) {
+            return Err(Error::Database(
+                "Database can only reopen after an aborted migration.".into(),
+            ));
+        }
+        *inner = DatabaseMode::Main(open_main_database(&self.db_path)?);
+        Ok(())
     }
 
     pub fn vacuum_into(&self, dest: &Path) -> Result<(), Error> {

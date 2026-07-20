@@ -5,4 +5,4 @@ mod sidecar;
 mod value;
 
 pub(crate) use service::DatabaseWriteTransaction;
-pub use service::{optimize_database, DatabaseService, DatabaseUpgradeStatus};
+pub use service::{optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase};

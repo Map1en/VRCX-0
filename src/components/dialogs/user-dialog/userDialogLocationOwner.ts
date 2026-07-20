@@ -106,7 +106,6 @@ export function resolveGroupFallback(sourceValue: unknown, ownerId: unknown) {
 type LoadLocationOwnerInput = {
     ownerId: string;
     ownerSeed: unknown;
-    endpoint: string;
     groupFallback: { id: string; name: string };
 };
 
@@ -118,7 +117,6 @@ type LocationOwnerResult = {
 export async function loadLocationOwner({
     ownerId,
     ownerSeed,
-    endpoint,
     groupFallback
 }: LoadLocationOwnerInput): Promise<LocationOwnerResult> {
     if (!ownerId) {
@@ -139,7 +137,6 @@ export async function loadLocationOwner({
         try {
             const groupProfile = await groupProfileRepository.getGroupProfile({
                 groupId: ownerId,
-                endpoint,
                 includeRoles: false
             });
 
@@ -169,8 +166,7 @@ export async function loadLocationOwner({
 
     try {
         const ownerProfile = await userProfileRepository.getUserProfile({
-            userId: ownerId,
-            endpoint
+            userId: ownerId
         });
 
         return {

@@ -57,6 +57,9 @@ function appDataDirState(
         currentDir: 'C:\\VRCX-0',
         defaultDir: 'C:\\VRCX-0',
         persistedDir: null,
+        pendingMigration: false,
+        cleanupPending: null,
+        migrationStatus: { revision: 0, state: 'idle' },
         source: 'default',
         ...overrides
     };
@@ -78,6 +81,8 @@ function createModel(
         onLogResourceLoadChange: vi.fn(),
         onMigrateLegacyVrcxData: vi.fn(),
         onOpenAppDataDirSelector: vi.fn(),
+        onCleanupAppDataDir: vi.fn(),
+        onDismissAppDataDirCleanup: vi.fn(),
         onOpenPurgeDialog: vi.fn(),
         onRefreshConfigTreeData: vi.fn(),
         onRefreshOnlineVisits: vi.fn(),

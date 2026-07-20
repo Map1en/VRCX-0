@@ -25,8 +25,7 @@ describe('GroupProfileRepository', () => {
             command.mockReset();
             command.mockResolvedValue({
                 status: 200,
-                data: '{"ok":true}',
-                raw: {}
+                data: '{"ok":true}'
             });
         }
     });
@@ -145,13 +144,11 @@ describe('GroupProfileRepository', () => {
         ];
         tauriMock.commands.appVrchatGroupInstancesGet.mockResolvedValue({
             status: 200,
-            data: JSON.stringify(directRows),
-            raw: {}
+            data: JSON.stringify(directRows)
         });
         tauriMock.commands.appVrchatGroupUserInstancesGet.mockResolvedValue({
             status: 200,
-            data: JSON.stringify({ instances: wrappedRows }),
-            raw: {}
+            data: JSON.stringify({ instances: wrappedRows })
         });
 
         await expect(
@@ -219,8 +216,7 @@ describe('GroupProfileRepository', () => {
     it('unwraps string error bodies from failed group requests', async () => {
         tauriMock.commands.appVrchatGroupGet.mockResolvedValue({
             status: 403,
-            data: '"Forbidden"',
-            raw: {}
+            data: '"Forbidden"'
         });
 
         await expect(
@@ -249,8 +245,7 @@ describe('GroupProfileRepository', () => {
                         }
                     ],
                     totalCount: 3
-                }),
-                raw: {}
+                })
             })
             .mockResolvedValueOnce({
                 status: 200,
@@ -267,8 +262,7 @@ describe('GroupProfileRepository', () => {
                         }
                     ],
                     totalCount: 3
-                }),
-                raw: {}
+                })
             });
 
         const rows = await groupProfileRepository.getAllGroupLogs({
@@ -286,8 +280,7 @@ describe('GroupProfileRepository', () => {
             groupId: 'grp_123',
             n: 100,
             offset: 0,
-            eventTypes: 'group.member.ban,group.member.kick',
-            endpoint: ''
+            eventTypes: 'group.member.ban,group.member.kick'
         });
         expect(
             tauriMock.commands.appVrchatGroupLogsGet
@@ -295,8 +288,7 @@ describe('GroupProfileRepository', () => {
             groupId: 'grp_123',
             n: 100,
             offset: 100,
-            eventTypes: 'group.member.ban,group.member.kick',
-            endpoint: ''
+            eventTypes: 'group.member.ban,group.member.kick'
         });
     });
 
@@ -312,8 +304,7 @@ describe('GroupProfileRepository', () => {
                     }
                 ],
                 totalCount: 1
-            }),
-            raw: {}
+            })
         });
 
         await expect(
@@ -332,8 +323,7 @@ describe('GroupProfileRepository', () => {
             groupId: 'grp_123',
             n: 100,
             offset: 0,
-            eventTypes: 'group.member.remove',
-            endpoint: ''
+            eventTypes: 'group.member.remove'
         });
     });
 });

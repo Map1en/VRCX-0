@@ -31,8 +31,7 @@ import vrchatMediaRepository from './vrchatMediaRepository';
 function success(data: unknown = { ok: true }) {
     return {
         status: 200,
-        data: typeof data === 'string' ? data : JSON.stringify(data),
-        raw: { transport: 'tauri' }
+        data: typeof data === 'string' ? data : JSON.stringify(data)
     };
 }
 
@@ -55,32 +54,30 @@ describe('vrchatMediaRepository', () => {
         const params = { tag: 'gallery', n: 25 };
 
         await expect(
-            vrchatMediaRepository.getFiles(params, {
-                endpoint: ' https://api.example.test/api/1 '
-            })
+            vrchatMediaRepository.getFiles(params)
         ).resolves.toMatchObject({
             json: [{ id: 'file_1' }],
             params,
-            status: 200,
-            raw: { transport: 'tauri' }
+            status: 200
         });
         expect(commandMocks.appVrchatMediaFilesGet).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test/api/1',
             params
         });
         expect(params).toEqual({ tag: 'gallery', n: 25 });
     });
 
-    it('normalizes API error payloads with the media fallback context', async () => {
+    it('preserves media error context on 401', async () => {
+        const payload = { error: { message: 'Missing credentials' } };
         commandMocks.appVrchatMediaFilesGet.mockResolvedValueOnce({
-            status: 403,
-            data: JSON.stringify({ error: { message: 'Files forbidden' } }),
-            raw: {}
+            status: 401,
+            data: JSON.stringify(payload)
         });
-
-        await expect(vrchatMediaRepository.getFiles()).rejects.toThrow(
-            'Media request failed: Files forbidden'
-        );
+        await expect(vrchatMediaRepository.getFiles()).rejects.toMatchObject({
+            message: 'Missing credentials',
+            status: 401,
+            endpoint: 'media',
+            payload
+        });
     });
 
     it('rejects missing identifiers before invoking destructive commands', async () => {
@@ -97,7 +94,6 @@ describe('vrchatMediaRepository', () => {
 
         await expect(
             vrchatMediaRepository.uploadPrint('data:image/png;base64,abc', {
-                endpoint: 'https://api.example.test/api/1',
                 cropWhiteBorder: false,
                 params: { note: 'hello' }
             })
@@ -106,7 +102,6 @@ describe('vrchatMediaRepository', () => {
             params: { note: 'hello' }
         });
         expect(commandMocks.appVrchatMediaPrintUpload).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test/api/1',
             imageData: 'data:image/png;base64,abc',
             cropWhiteBorder: false,
             params: { note: 'hello' }
@@ -121,7 +116,7 @@ describe('vrchatMediaRepository', () => {
         await expect(
             vrchatMediaRepository.getUserInventoryItem(
                 { inventoryId: ' inv_1 ', userId: ' usr_1 ' },
-                { endpoint: 'https://api.example.test/api/1', force: true }
+                { force: true }
             )
         ).resolves.toMatchObject({ json: { id: 'inv_1' } });
 
@@ -132,7 +127,7 @@ describe('vrchatMediaRepository', () => {
                     'item',
                     'usr_1',
                     'inv_1',
-                    { endpoint: 'https://api.example.test/api/1' }
+                    { endpoint: 'https://api.vrchat.cloud/api/1' }
                 ],
                 force: true
             })
@@ -140,7 +135,6 @@ describe('vrchatMediaRepository', () => {
         expect(
             commandMocks.appVrchatMediaUserInventoryItemGet
         ).toHaveBeenCalledWith({
-            endpoint: 'https://api.example.test/api/1',
             userId: 'usr_1',
             inventoryId: 'inv_1'
         });
@@ -190,7 +184,6 @@ describe('vrchatMediaRepository', () => {
         expect(
             commandMocks.appVrchatMediaAvatarImageUploadLegacy
         ).toHaveBeenCalledWith({
-            endpoint: 'https://api.vrchat.cloud/api/1',
             entityId: 'avtr_1',
             imageUrl: 'old.png',
             base64File: 'abc',

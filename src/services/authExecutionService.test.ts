@@ -1,23 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    appRuntimeAuthScopeSet: vi.fn(),
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
-    recordLogout: vi.fn(),
-    deleteSavedCredential: vi.fn(),
-    getSavedAuthSnapshot: vi.fn(),
-    clearCookies: vi.fn(),
-    clearAuthCookies: vi.fn(),
+    endSession: vi.fn(),
     startLoginSession: vi.fn(),
     respondLoginSession: vi.fn(),
     cancelLoginSession: vi.fn(),
-    resetAutoLoginThrottle: vi.fn(),
     clearEntityQueryCache: vi.fn(),
     clearAvatarNameCache: vi.fn(),
-    runWithRuntimeAuthFailureRecoverySuppressed: vi.fn(),
     applySavedAuthSnapshot: vi.fn(),
-    refreshSavedAuthSnapshot: vi.fn(),
     buildAvatarWearSnapshotUpdate: vi.fn(),
     recordCurrentUserSnapshot: vi.fn(),
     resetDomainFacts: vi.fn(),
@@ -25,12 +17,6 @@ const mocks = vi.hoisted(() => ({
     bootstrapAuthenticatedSession: vi.fn(),
     confirm: vi.fn(),
     otpPrompt: vi.fn()
-}));
-
-vi.mock('@/platform/tauri/bindings', () => ({
-    commands: {
-        appRuntimeAuthScopeSet: mocks.appRuntimeAuthScopeSet
-    }
 }));
 
 vi.mock('sonner', () => ({
@@ -46,9 +32,7 @@ vi.mock('@/lib/entityQueryCache', () => ({
 
 vi.mock('@/repositories/authRepository', () => ({
     default: {
-        recordLogout: mocks.recordLogout,
-        deleteSavedCredential: mocks.deleteSavedCredential,
-        getSavedAuthSnapshot: mocks.getSavedAuthSnapshot
+        endSession: mocks.endSession
     }
 }));
 
@@ -62,26 +46,12 @@ vi.mock('@/repositories/vrchatAuthRepository', () => ({
     default: {
         startLoginSession: mocks.startLoginSession,
         respondLoginSession: mocks.respondLoginSession,
-        cancelLoginSession: mocks.cancelLoginSession,
-        resetAutoLoginThrottle: mocks.resetAutoLoginThrottle
+        cancelLoginSession: mocks.cancelLoginSession
     }
-}));
-
-vi.mock('@/repositories/webRepository', () => ({
-    default: {
-        clearCookies: mocks.clearCookies,
-        clearAuthCookies: mocks.clearAuthCookies
-    }
-}));
-
-vi.mock('./authSessionRecoveryService', () => ({
-    runWithRuntimeAuthFailureRecoverySuppressed:
-        mocks.runWithRuntimeAuthFailureRecoverySuppressed
 }));
 
 vi.mock('./authSnapshotService', () => ({
-    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot,
-    refreshSavedAuthSnapshot: mocks.refreshSavedAuthSnapshot
+    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot
 }));
 
 vi.mock('./avatarWearTimeService', () => ({
@@ -105,7 +75,9 @@ vi.mock('./sessionBootstrapService', () => ({
 
 import type {
     LoginFailureKind,
-    LoginSessionState
+    LoginSessionState,
+    SavedAuthSnapshot,
+    SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -117,15 +89,45 @@ import {
     logoutFromReactShell
 } from './authExecutionService';
 
-function savedSnapshot(patch: Record<string, unknown> = {}) {
+function savedCredential(id: string): SavedCredentialSnapshot {
+    const record = user(id);
     return {
-        lastUserLoggedIn: 'usr_self',
-        savedCredentialCount: 1,
-        autoLoginStatus: 'available',
-        autoLoginReason: 'available',
+        user: record,
+        loginParams: {
+            username:
+                id === 'usr_self' ? 'self@example.test' : 'saved@example.test'
+        },
+        hasLoginCredentials: true,
+        hasCookies: false
+    };
+}
+
+function savedSnapshot({
+    credentialId = 'usr_self',
+    includeCredential = true,
+    lastUserLoggedIn = credentialId
+}: {
+    credentialId?: string;
+    includeCredential?: boolean;
+    lastUserLoggedIn?: string | null;
+} = {}): SavedAuthSnapshot {
+    const credential = savedCredential(credentialId);
+    const hasTarget = includeCredential && lastUserLoggedIn === credentialId;
+    return {
+        lastUserLoggedIn,
+        autoLoginStatus: hasTarget
+            ? 'available'
+            : lastUserLoggedIn
+              ? 'missing-last-user'
+              : 'not-configured',
+        autoLoginReason: hasTarget
+            ? 'Saved credentials are available.'
+            : lastUserLoggedIn
+              ? 'The last logged-in account is missing.'
+              : 'No previous login was recorded.',
         autoLoginDelayEnabled: false,
         autoLoginDelaySeconds: 0,
-        ...patch
+        savedCredentialsList: includeCredential ? [credential] : []
     };
 }
 
@@ -141,11 +143,12 @@ function authenticatedState(id = 'usr_self'): LoginSessionState {
     const record = user(id);
     return {
         status: 'authenticated',
+        snapshot: savedSnapshot({ credentialId: id }),
         session: {
             userId: record.id,
             displayName: record.displayName,
-            endpoint: '',
-            websocket: '',
+            endpoint: 'https://api.vrchat.cloud/api/1',
+            websocket: 'wss://pipeline.vrchat.cloud',
             currentUser: record
         }
     };
@@ -158,6 +161,7 @@ function challengeState(
 ): LoginSessionState {
     return {
         status: 'challenge',
+        attemptId: 'attempt-1',
         methods,
         mode,
         error
@@ -166,13 +170,25 @@ function challengeState(
 
 function failedState(
     reason: string,
-    kind: LoginFailureKind
+    kind: LoginFailureKind,
+    snapshot = savedSnapshot()
 ): LoginSessionState {
     return {
         status: 'failed',
         reason,
-        kind
+        kind,
+        snapshot
     };
+}
+
+function deferred<T>() {
+    let resolve: (value: T) => void = () => {
+        throw new Error('Deferred promise was not initialized.');
+    };
+    const promise = new Promise<T>((next) => {
+        resolve = next;
+    });
+    return { promise, resolve };
 }
 
 describe('authExecutionService characterization', () => {
@@ -186,27 +202,15 @@ describe('authExecutionService characterization', () => {
             otpPrompt: mocks.otpPrompt
         });
 
-        mocks.appRuntimeAuthScopeSet.mockResolvedValue(undefined);
-        mocks.recordLogout.mockResolvedValue(
-            savedSnapshot({ lastUserLoggedIn: null, savedCredentialCount: 0 })
+        mocks.endSession.mockResolvedValue(
+            savedSnapshot({ lastUserLoggedIn: null })
         );
-        mocks.deleteSavedCredential.mockResolvedValue(
-            savedSnapshot({ lastUserLoggedIn: null, savedCredentialCount: 0 })
-        );
-        mocks.getSavedAuthSnapshot.mockResolvedValue(savedSnapshot());
-        mocks.clearCookies.mockResolvedValue(undefined);
-        mocks.clearAuthCookies.mockResolvedValue(undefined);
         mocks.startLoginSession.mockResolvedValue(authenticatedState());
         mocks.respondLoginSession.mockResolvedValue(authenticatedState());
         mocks.cancelLoginSession.mockResolvedValue({ status: 'cancelled' });
-        mocks.resetAutoLoginThrottle.mockResolvedValue(undefined);
-        mocks.runWithRuntimeAuthFailureRecoverySuppressed.mockImplementation(
-            async (task: () => Promise<unknown>) => task()
-        );
         mocks.applySavedAuthSnapshot.mockImplementation(
             (snapshot: unknown) => snapshot
         );
-        mocks.refreshSavedAuthSnapshot.mockResolvedValue(savedSnapshot());
         mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
             ({ nextSnapshot }: { nextSnapshot: unknown }) => ({
                 snapshot: nextSnapshot
@@ -227,7 +231,6 @@ describe('authExecutionService characterization', () => {
         ).rejects.toMatchObject({
             code: 'AUTH_FORM_INVALID'
         });
-        expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
         expect(mocks.startLoginSession).not.toHaveBeenCalled();
     });
 
@@ -240,29 +243,68 @@ describe('authExecutionService characterization', () => {
             })
         ).resolves.toMatchObject(savedSnapshot());
 
-        expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
         expect(mocks.startLoginSession).toHaveBeenCalledWith({
             mode: 'basic',
-            endpoint: '',
             username: 'self@example.test',
             password: 'secret',
             saveCredentials: true
         });
-        expect(mocks.refreshSavedAuthSnapshot).toHaveBeenCalledTimes(1);
         expect(useRuntimeStore.getState().auth).toMatchObject({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Self',
-            currentUserEndpoint: '',
-            currentUserWebsocket: ''
+            currentUserEndpoint: 'https://api.vrchat.cloud/api/1',
+            currentUserWebsocket: 'wss://pipeline.vrchat.cloud'
         });
-        expect(useSessionStore.getState().sessionPhase).toBe('bootstrapping');
+        expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
         expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(
-            user()
+            user(),
+            expect.any(Number)
         );
-        expect(mocks.appRuntimeAuthScopeSet).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            endpoint: ''
+    });
+
+    it('does not expose an authenticated frontend session when the backend commit fails', async () => {
+        mocks.startLoginSession.mockResolvedValueOnce(
+            failedState('session commit failed', 'other')
+        );
+
+        await expect(
+            executeManualLogin({
+                username: 'self@example.test',
+                password: 'secret'
+            })
+        ).rejects.toThrow('session commit failed');
+
+        expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
+        expect(mocks.bootstrapAuthenticatedSession).not.toHaveBeenCalled();
+    });
+
+    it('does not let a superseded login failure clear the newer account', async () => {
+        const oldLogin = deferred<LoginSessionState>();
+        mocks.startLoginSession
+            .mockImplementationOnce(() => oldLogin.promise)
+            .mockResolvedValueOnce(authenticatedState('usr_saved'));
+
+        const oldResult = executeManualLogin({
+            username: 'old@example.test',
+            password: 'secret'
         });
+        await executeSavedCredentialLogin({
+            user: {
+                id: 'usr_saved',
+                displayName: 'Saved User'
+            },
+            loginParams: {
+                username: 'saved@example.test'
+            },
+            hasCookies: false,
+            hasLoginCredentials: true
+        });
+
+        oldLogin.resolve(failedState('superseded', 'other'));
+        await expect(oldResult).rejects.toThrow('superseded');
+
+        expect(useRuntimeStore.getState().auth.currentUserId).toBe('usr_saved');
+        expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
     });
 
     it('prefers email OTP and finishes login after the challenge resolves', async () => {
@@ -283,11 +325,13 @@ describe('authExecutionService characterization', () => {
             })
         );
         expect(mocks.respondLoginSession).toHaveBeenCalledWith({
+            attemptId: 'attempt-1',
             method: 'emailOtp',
             code: '123456'
         });
         expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(
-            user()
+            user(),
+            expect.any(Number)
         );
     });
 
@@ -295,10 +339,13 @@ describe('authExecutionService characterization', () => {
         mocks.startLoginSession.mockResolvedValueOnce(
             failedState(
                 'Invalid Username/Email or Password',
-                'invalidCredentials'
+                'invalidCredentials',
+                savedSnapshot({
+                    includeCredential: false,
+                    lastUserLoggedIn: null
+                })
             )
         );
-
         await expect(
             executeSavedCredentialLogin({
                 user: {
@@ -308,57 +355,26 @@ describe('authExecutionService characterization', () => {
                 loginParams: {
                     username: 'saved@example.test'
                 },
+                hasCookies: false,
                 hasLoginCredentials: true
             })
         ).rejects.toMatchObject({
             code: 'AUTH_SAVED_CREDENTIALS_INVALID',
             authSnapshot: savedSnapshot({
-                lastUserLoggedIn: null,
-                savedCredentialCount: 0
+                includeCredential: false,
+                lastUserLoggedIn: null
             })
         });
 
-        expect(mocks.clearCookies).toHaveBeenCalledTimes(1);
-        expect(mocks.deleteSavedCredential).toHaveBeenCalledWith('usr_saved');
-        expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
-            savedSnapshot({
-                lastUserLoggedIn: null,
-                savedCredentialCount: 0
-            })
-        );
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
-    });
-
-    it('keeps saved credentials when a generic 401 interrupts login', async () => {
-        mocks.startLoginSession.mockResolvedValueOnce(
-            failedState('Unauthorized', 'sessionInvalidated')
-        );
-
-        await expect(
-            executeSavedCredentialLogin({
-                user: {
-                    id: 'usr_saved',
-                    displayName: 'Saved User'
-                },
-                loginParams: {
-                    username: 'saved@example.test'
-                },
-                hasLoginCredentials: true
-            })
-        ).rejects.toMatchObject({
-            message: 'Unauthorized',
-            kind: 'sessionInvalidated'
-        });
-
-        expect(mocks.deleteSavedCredential).not.toHaveBeenCalled();
-        expect(mocks.clearCookies).not.toHaveBeenCalled();
-        expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
     });
 
     it('rejects saved credentials that do not contain stored login data', async () => {
         await expect(
             executeSavedCredentialLogin({
                 user: { id: 'usr_saved' },
+                loginParams: { username: '' },
+                hasCookies: false,
                 hasLoginCredentials: false
             })
         ).rejects.toMatchObject({
@@ -376,9 +392,7 @@ describe('authExecutionService characterization', () => {
 
         await expect(logoutFromReactShell()).resolves.toBe(false);
 
-        expect(mocks.recordLogout).not.toHaveBeenCalled();
-        expect(mocks.resetAutoLoginThrottle).not.toHaveBeenCalled();
-        expect(mocks.clearCookies).not.toHaveBeenCalled();
+        expect(mocks.endSession).not.toHaveBeenCalled();
     });
 
     it('records logout and returns to a signed-out session', async () => {
@@ -389,18 +403,10 @@ describe('authExecutionService characterization', () => {
 
         await expect(logoutFromReactShell()).resolves.toBe(true);
 
-        expect(mocks.recordLogout).toHaveBeenCalledWith('usr_self', {
-            clearLastUserLoggedIn: true
-        });
-        expect(mocks.clearCookies).toHaveBeenCalledTimes(1);
-        expect(mocks.resetAutoLoginThrottle).toHaveBeenCalledTimes(1);
-        expect(mocks.clearCookies.mock.invocationCallOrder[0]).toBeLessThan(
-            mocks.resetAutoLoginThrottle.mock.invocationCallOrder[0]
-        );
+        expect(mocks.endSession).toHaveBeenCalledWith({ kind: 'logout' });
         expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
             savedSnapshot({
-                lastUserLoggedIn: null,
-                savedCredentialCount: 0
+                lastUserLoggedIn: null
             })
         );
         expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
@@ -408,6 +414,97 @@ describe('authExecutionService characterization', () => {
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'
         );
+    });
+
+    it('ends the backend session when logout supersedes an in-flight login', async () => {
+        const login = deferred<LoginSessionState>();
+        mocks.startLoginSession.mockImplementationOnce(() => login.promise);
+
+        const loginResult = executeManualLogin({
+            username: 'self@example.test',
+            password: 'secret'
+        });
+        await vi.waitFor(() => {
+            expect(mocks.startLoginSession).toHaveBeenCalledTimes(1);
+        });
+        expect(useRuntimeStore.getState().auth.currentUserId).toBeNull();
+        expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
+
+        await expect(logoutFromReactShell()).resolves.toBe(true);
+
+        expect(mocks.endSession).toHaveBeenCalledWith({ kind: 'logout' });
+        login.resolve(authenticatedState());
+        await expect(loginResult).rejects.toMatchObject({
+            code: 'AUTH_ATTEMPT_SUPERSEDED'
+        });
+        expect(useRuntimeStore.getState().auth.currentUserId).toBeNull();
+        expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+    });
+
+    it('does not report logout success when the backend end operation fails', async () => {
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: true,
+            sessionPhase: 'ready'
+        });
+        mocks.endSession.mockRejectedValueOnce(new Error('logout failed'));
+
+        await expect(logoutFromReactShell()).rejects.toThrow('logout failed');
+
+        expect(mocks.endSession).toHaveBeenCalledWith({ kind: 'logout' });
+        expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
+        expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+        expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    });
+
+    it('keeps the current mirror when a stale logout becomes a backend no-op', async () => {
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+        mocks.endSession.mockResolvedValueOnce(null);
+
+        await expect(logoutFromReactShell()).resolves.toBe(false);
+
+        expect(useRuntimeStore.getState().auth.currentUserId).toBe('usr_self');
+        expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    });
+
+    it('does not let a stale logout response clear a newer login', async () => {
+        const logout = deferred<ReturnType<typeof savedSnapshot>>();
+        mocks.endSession.mockImplementationOnce(() => logout.promise);
+        mocks.startLoginSession.mockResolvedValueOnce(
+            authenticatedState('usr_saved')
+        );
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+
+        const logoutResult = logoutFromReactShell();
+        await vi.waitFor(() => {
+            expect(mocks.endSession).toHaveBeenCalledTimes(1);
+        });
+        await executeSavedCredentialLogin({
+            user: {
+                id: 'usr_saved',
+                displayName: 'Saved User'
+            },
+            loginParams: {
+                username: 'saved@example.test'
+            },
+            hasCookies: false,
+            hasLoginCredentials: true
+        });
+        logout.resolve(savedSnapshot({ lastUserLoggedIn: null }));
+
+        await expect(logoutResult).rejects.toMatchObject({
+            code: 'AUTH_ATTEMPT_SUPERSEDED'
+        });
+        expect(useRuntimeStore.getState().auth.currentUserId).toBe('usr_saved');
     });
 
     describe('two-factor challenge golden contract', () => {
@@ -429,6 +526,7 @@ describe('authExecutionService characterization', () => {
                 })
             );
             expect(mocks.respondLoginSession).toHaveBeenCalledWith({
+                attemptId: 'attempt-1',
                 method: 'totp',
                 code: '123456'
             });
@@ -455,6 +553,7 @@ describe('authExecutionService characterization', () => {
             expect(mocks.cancelLoginSession).not.toHaveBeenCalled();
             expect(mocks.respondLoginSession).toHaveBeenCalledTimes(1);
             expect(mocks.respondLoginSession).toHaveBeenCalledWith({
+                attemptId: 'attempt-1',
                 method: 'totp',
                 code: '999999'
             });
@@ -477,12 +576,13 @@ describe('authExecutionService characterization', () => {
 
             expect(mocks.startLoginSession).toHaveBeenCalledTimes(2);
             expect(mocks.cancelLoginSession).toHaveBeenCalledTimes(1);
-            expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(2);
+            expect(mocks.cancelLoginSession).toHaveBeenCalledWith('attempt-1');
             expect(mocks.otpPrompt).toHaveBeenCalledTimes(2);
             expect(
                 mocks.otpPrompt.mock.calls.map(([prompt]) => prompt.mode)
             ).toEqual(['emailOtp', 'emailOtp']);
             expect(mocks.respondLoginSession).toHaveBeenCalledWith({
+                attemptId: 'attempt-1',
                 method: 'emailOtp',
                 code: '000000'
             });
@@ -564,6 +664,7 @@ describe('authExecutionService characterization', () => {
             });
 
             expect(mocks.cancelLoginSession).toHaveBeenCalledTimes(1);
+            expect(mocks.cancelLoginSession).toHaveBeenCalledWith('attempt-1');
             expect(mocks.respondLoginSession).not.toHaveBeenCalled();
         });
     });
@@ -582,23 +683,31 @@ describe('authExecutionService characterization', () => {
                 loginParams: {
                     username: 'saved@example.test'
                 },
+                hasCookies: false,
                 hasLoginCredentials: true
             });
 
             expect(mocks.startLoginSession).toHaveBeenCalledWith({
                 mode: 'savedCredential',
-                endpoint: '',
                 userId: 'usr_saved'
             });
-            expect(mocks.appRuntimeAuthScopeSet).toHaveBeenCalledWith({
-                userId: 'usr_saved',
-                endpoint: ''
+            expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
+                savedSnapshot({ credentialId: 'usr_saved' })
+            );
+            expect(useRuntimeStore.getState().auth).toMatchObject({
+                currentUserId: 'usr_saved',
+                currentUserEndpoint: 'https://api.vrchat.cloud/api/1',
+                currentUserWebsocket: 'wss://pipeline.vrchat.cloud'
             });
         });
 
         it('clears the last-logged-in target for a session-recovery failure while keeping the saved credential', async () => {
+            const nextSnapshot = savedSnapshot({
+                credentialId: 'usr_saved',
+                lastUserLoggedIn: null
+            });
             mocks.startLoginSession.mockResolvedValueOnce(
-                failedState('Unauthorized', 'sessionInvalidated')
+                failedState('Unauthorized', 'sessionInvalidated', nextSnapshot)
             );
 
             await expect(
@@ -610,93 +719,18 @@ describe('authExecutionService characterization', () => {
                     loginParams: {
                         username: 'saved@example.test'
                     },
+                    hasCookies: false,
                     hasLoginCredentials: true
                 })
             ).rejects.toMatchObject({
                 message: 'Unauthorized',
-                kind: 'sessionInvalidated'
+                kind: 'sessionInvalidated',
+                authSnapshot: nextSnapshot
             });
 
-            expect(mocks.deleteSavedCredential).not.toHaveBeenCalled();
-            expect(mocks.clearCookies).not.toHaveBeenCalled();
-            expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
-            expect(mocks.recordLogout).toHaveBeenCalledWith('', {
-                clearLastUserLoggedIn: true,
-                cookies: null
-            });
-            expect(mocks.resetAutoLoginThrottle).not.toHaveBeenCalled();
-            expect(mocks.refreshSavedAuthSnapshot).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('manual login failure cleanup granularity', () => {
-        it('treats any 401 during manual login as unrecoverable: full cookie clear and cleared last-logged-in target', async () => {
-            mocks.startLoginSession.mockResolvedValueOnce(
-                failedState('Unauthorized', 'invalidCredentials')
+            expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
+                nextSnapshot
             );
-
-            await expect(
-                executeManualLogin({
-                    username: 'self@example.test',
-                    password: 'secret'
-                })
-            ).rejects.toMatchObject({
-                message: 'Unauthorized',
-                kind: 'invalidCredentials'
-            });
-
-            expect(mocks.clearCookies).toHaveBeenCalledTimes(1);
-            expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
-            expect(mocks.recordLogout).toHaveBeenCalledWith('', {
-                clearLastUserLoggedIn: true,
-                cookies: null
-            });
-            expect(mocks.refreshSavedAuthSnapshot).not.toHaveBeenCalled();
-        });
-
-        it('clears only auth cookies and the last-logged-in target for a 403 session-recovery failure', async () => {
-            mocks.startLoginSession.mockResolvedValueOnce(
-                failedState('Forbidden', 'sessionInvalidated')
-            );
-
-            await expect(
-                executeManualLogin({
-                    username: 'self@example.test',
-                    password: 'secret'
-                })
-            ).rejects.toMatchObject({
-                message: 'Forbidden',
-                kind: 'sessionInvalidated'
-            });
-
-            expect(mocks.clearCookies).not.toHaveBeenCalled();
-            expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(2);
-            expect(mocks.recordLogout).toHaveBeenCalledWith('', {
-                clearLastUserLoggedIn: true,
-                cookies: null
-            });
-            expect(mocks.refreshSavedAuthSnapshot).not.toHaveBeenCalled();
-        });
-
-        it('preserves the last-logged-in target for a non-recovery network failure', async () => {
-            mocks.startLoginSession.mockResolvedValueOnce(
-                failedState('Network timeout', 'network')
-            );
-
-            await expect(
-                executeManualLogin({
-                    username: 'self@example.test',
-                    password: 'secret'
-                })
-            ).rejects.toMatchObject({
-                message: 'Network timeout',
-                kind: 'network'
-            });
-
-            expect(mocks.clearCookies).not.toHaveBeenCalled();
-            expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(2);
-            expect(mocks.recordLogout).not.toHaveBeenCalled();
-            expect(mocks.refreshSavedAuthSnapshot).toHaveBeenCalledTimes(1);
         });
     });
 });

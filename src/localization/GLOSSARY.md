@@ -300,6 +300,7 @@ the app and across releases.
 | VR Overlay Notification Filters    | VR 叠加通知过滤器          | VR 疊加通知過濾器     | VR オーバーレイ通知フィルター        |
 | VRChat Docs                        | VRChat 文档                | VRChat 文件           | VRChat ドキュメント                  |
 | VRChat Favorites                   | VRChat 收藏                | VRChat 收藏           | VRChat のお気に入り                  |
+| VRCX-0 Link                        | VRCX-0 链接                | VRCX-0 連結           | VRCX-0 リンク                        |
 | VRChat Link                        | VRChat 链接                | VRChat 連結           | VRChat リンク                        |
 | VRChat Log Viewer                  | VRChat 日志查看器          | VRChat 紀錄查看器     | VRChat ログビューアー                |
 | VRChat Registry Backup             | VRChat 设置数据备份工具    | VRChat 登錄檔備份     | VRChat レジストリバックアップ        |

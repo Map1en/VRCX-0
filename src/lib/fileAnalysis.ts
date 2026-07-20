@@ -130,7 +130,6 @@ export async function getFileAnalysisForUnityPackages({
                 policy: entityQueryPolicies.fileAnalysis,
                 queryFn: () =>
                     vrchatAuthRepository.getFileAnalysis({
-                        endpoint,
                         fileId,
                         version,
                         variant

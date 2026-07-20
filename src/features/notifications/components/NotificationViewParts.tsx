@@ -183,12 +183,10 @@ export function NotificationTypeFilterDropdown({
 
 export function BoopReplyDialog({
     request,
-    endpoint,
     isLocalUserVrcPlusSupporter,
     onOpenChange,
     onSend
 }: {
-    endpoint?: string;
     isLocalUserVrcPlusSupporter: boolean;
     onOpenChange: (open: boolean) => void;
     onSend: (
@@ -203,7 +201,6 @@ export function BoopReplyDialog({
     return (
         <BoopEmojiDialog
             open={open}
-            endpoint={endpoint}
             isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
             targetLabel={displayName}
             sendDisabled={!notification?.senderUserId}

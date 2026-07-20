@@ -8,6 +8,7 @@ type AssistantToolErrorInput = {
 
 const SAFE_STRING_ARG_KEYS = new Set([
     'access',
+    'bucket',
     'groupBy',
     'group_by',
     'mode',
@@ -83,20 +84,29 @@ function classifyToolResult(summary?: string): string | undefined {
     if (/\b(time(?:d)? out|timeout|deadline|elapsed)\b/.test(normalized)) {
         return 'timeout';
     }
-    if (
-        /\b(not found|no match|no matching|notfound|missing)\b/.test(
-            normalized
-        ) ||
-        /\bno\b.{0,48}\bmatched\b/.test(normalized)
-    ) {
-        return 'not_found';
+    if (/\b(unknown tool|method not found)\b/.test(normalized)) {
+        return 'invalid_tool';
     }
     if (
         /\b(invalid|malformed|bad request|schema|argument|arguments|args)\b/.test(
             normalized
-        )
+        ) ||
+        /\b(missing field|invalid type|unknown variant)\b/.test(normalized)
     ) {
         return 'invalid_args';
+    }
+    if (
+        /\brequires an active realtime vrchat session\b/.test(normalized) ||
+        /\bcurrent user unknown\b/.test(normalized) ||
+        /\bnot configured\b/.test(normalized)
+    ) {
+        return 'precondition';
+    }
+    if (
+        /\b(not found|no match|no matching|notfound)\b/.test(normalized) ||
+        /\bno\b.{0,48}\bmatched\b/.test(normalized)
+    ) {
+        return 'not_found';
     }
     if (/\b(database|sqlite|sql|db|connection)\b/.test(normalized)) {
         return 'db_error';

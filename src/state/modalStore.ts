@@ -49,7 +49,6 @@ type ImageDialogState = {
 };
 type BoopDialogState = {
     open: boolean;
-    endpoint: string;
     targetLabel: string;
     dismissible: boolean;
 };
@@ -144,7 +143,6 @@ const createImageDialogState = (): ImageDialogState => ({
 
 const createBoopDialogState = (): BoopDialogState => ({
     open: false,
-    endpoint: '',
     targetLabel: '',
     dismissible: true
 });
@@ -267,10 +265,6 @@ export const useModalStore = create<ModalStore>((set, get) => {
                 ...createBoopDialogState(),
                 ...options,
                 open: true,
-                endpoint:
-                    typeof options.endpoint === 'string'
-                        ? options.endpoint
-                        : '',
                 targetLabel:
                     typeof options.targetLabel === 'string'
                         ? options.targetLabel

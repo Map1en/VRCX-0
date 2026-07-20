@@ -33,7 +33,6 @@ interface UseGroupDialogPostsInput {
         cancelText: string;
         destructive: boolean;
     }) => Promise<{ ok: boolean }>;
-    currentEndpoint: string;
     group: GroupProfileRecord;
     loadTab: (tab: string, options?: { force?: boolean }) => Promise<void>;
     onPostsSaved: () => void;
@@ -44,7 +43,6 @@ interface UseGroupDialogPostsInput {
 
 export function useGroupDialogPosts({
     confirm,
-    currentEndpoint,
     group,
     loadTab,
     onPostsSaved,
@@ -89,7 +87,6 @@ export function useGroupDialogPosts({
                 await groupProfileRepository.editGroupPost({
                     groupId: group.id,
                     postId: form.post?.id,
-                    endpoint: currentEndpoint,
                     params: {
                         title,
                         text,
@@ -102,7 +99,6 @@ export function useGroupDialogPosts({
             } else {
                 await groupProfileRepository.createGroupPost({
                     groupId: group.id,
-                    endpoint: currentEndpoint,
                     params: {
                         title,
                         text,
@@ -164,8 +160,7 @@ export function useGroupDialogPosts({
         try {
             await groupProfileRepository.deleteGroupPost({
                 groupId: group.id,
-                postId: post.id,
-                endpoint: currentEndpoint
+                postId: post.id
             });
             setRemoteData((current) => ({
                 ...current,

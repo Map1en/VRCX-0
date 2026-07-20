@@ -2,44 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     appCheckGameRunning: vi.fn(),
-    appAuthenticatedSessionMaintenanceRun: vi.fn(),
-    appAuthenticatedRuntimeSessionStart: vi.fn(),
     appRuntimeGroupInstancesRefresh: vi.fn(),
-    applyAuthenticatedRuntimePhaseSnapshot: vi.fn(),
-    ensureUserTables: vi.fn(),
     isHostCapabilityAvailable: vi.fn(),
-    showSQLiteErrorDialog: vi.fn(),
     syncStartupServicesTask: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appCheckGameRunning: mocks.appCheckGameRunning,
-        appAuthenticatedSessionMaintenanceRun:
-            mocks.appAuthenticatedSessionMaintenanceRun,
-        appAuthenticatedRuntimeSessionStart:
-            mocks.appAuthenticatedRuntimeSessionStart,
         appRuntimeGroupInstancesRefresh: mocks.appRuntimeGroupInstancesRefresh
-    }
-}));
-
-vi.mock('./authenticatedRuntimeService', () => ({
-    applyAuthenticatedRuntimePhaseSnapshot:
-        mocks.applyAuthenticatedRuntimePhaseSnapshot
-}));
-
-vi.mock('@/repositories/userSessionRepository', () => ({
-    default: {
-        ensureUserTables: mocks.ensureUserTables
     }
 }));
 
 vi.mock('./hostCapabilityService', () => ({
     isHostCapabilityAvailable: mocks.isHostCapabilityAvailable
-}));
-
-vi.mock('./sqliteErrorDialogService', () => ({
-    showSQLiteErrorDialog: mocks.showSQLiteErrorDialog
 }));
 
 vi.mock('./startupServicesStatus', () => ({
@@ -64,56 +40,67 @@ describe('sessionBootstrapService', () => {
                 displayName: 'Self'
             }
         });
-        mocks.ensureUserTables.mockResolvedValue(undefined);
-        mocks.appAuthenticatedSessionMaintenanceRun.mockResolvedValue({
-            userId: 'usr_self',
-            avatarCleanup: {
-                state: 'disabled',
-                retentionDays: null,
-                removedCount: 0,
-                cutoff: null,
-                completedAt: null
-            }
-        });
         mocks.isHostCapabilityAvailable.mockReturnValue(false);
         mocks.appCheckGameRunning.mockResolvedValue(null);
         mocks.appRuntimeGroupInstancesRefresh.mockResolvedValue(null);
-        mocks.appAuthenticatedRuntimeSessionStart.mockResolvedValue({
-            runId: 1,
-            userId: 'usr_self',
-            phase: 'starting'
-        });
     });
 
-    it('syncs the backend frontend session before friend bootstrap is loaded', async () => {
+    it('hydrates the frontend after the backend session is committed', async () => {
         const { useSessionStore } = await import('@/state/sessionStore');
+        const { beginAuthAttempt } = await import('./authAttempt');
         const { bootstrapAuthenticatedSession } =
             await import('./sessionBootstrapService');
 
-        await bootstrapAuthenticatedSession({
-            id: 'usr_self',
-            displayName: 'Self'
-        });
-
-        expect(
-            mocks.appAuthenticatedSessionMaintenanceRun
-        ).toHaveBeenCalledWith();
-        expect(mocks.appAuthenticatedRuntimeSessionStart).toHaveBeenCalledWith(
-            'usr_self',
-            'https://api.example.test/api/1',
-            'wss://pipeline.example.test',
+        await bootstrapAuthenticatedSession(
             {
                 id: 'usr_self',
                 displayName: 'Self'
-            }
+            },
+            beginAuthAttempt()
         );
+
         expect(mocks.appRuntimeGroupInstancesRefresh).toHaveBeenCalledTimes(1);
-        expect(
-            mocks.appAuthenticatedRuntimeSessionStart.mock
-                .invocationCallOrder[0]
-        ).toBeLessThan(
-            mocks.appRuntimeGroupInstancesRefresh.mock.invocationCallOrder[0]
-        );
+        expect(useSessionStore.getState().isLoggedIn).toBe(true);
+        expect(useSessionStore.getState().sessionPhase).toBe('ready');
         expect(useSessionStore.getState().isFriendsLoaded).toBe(false);
+    });
+
+    it('does not mark an old bootstrap ready after a newer auth action starts', async () => {
+        let finishGameCheck: () => void = () => {
+            throw new Error('Game check was not initialized.');
+        };
+        mocks.isHostCapabilityAvailable.mockReturnValue(true);
+        mocks.appCheckGameRunning.mockImplementationOnce(
+            () =>
+                new Promise<void>((resolve) => {
+                    finishGameCheck = resolve;
+                })
+        );
+        const { useSessionStore } = await import('@/state/sessionStore');
+        const { beginAuthAttempt } = await import('./authAttempt');
+        const { bootstrapAuthenticatedSession } =
+            await import('./sessionBootstrapService');
+        const oldAttempt = beginAuthAttempt();
+        const oldBootstrap = bootstrapAuthenticatedSession(
+            { id: 'usr_self', displayName: 'Self' },
+            oldAttempt
+        );
+        await vi.waitFor(() => {
+            expect(mocks.appCheckGameRunning).toHaveBeenCalledTimes(1);
+        });
+        expect(useSessionStore.getState().sessionPhase).toBe('bootstrapping');
+
+        beginAuthAttempt();
+        useSessionStore.getState().setSessionState({
+            isLoggedIn: false,
+            sessionPhase: 'authenticating'
+        });
+        finishGameCheck();
+
+        await expect(oldBootstrap).rejects.toMatchObject({
+            code: 'AUTH_ATTEMPT_SUPERSEDED'
+        });
+        expect(useSessionStore.getState().isLoggedIn).toBe(false);
+        expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
     });
 });

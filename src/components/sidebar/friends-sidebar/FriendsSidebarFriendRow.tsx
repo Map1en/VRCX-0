@@ -16,6 +16,7 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 
+import { AccountSwitcherPopover } from './AccountSwitcherPopover';
 import {
     CurrentUserActionItems,
     FriendActionItems,
@@ -163,61 +164,68 @@ export function FriendRow({
         ? t('side_panel.pending_offline')
         : String(displaySource?.statusDescription || '');
 
+    const podButton = (
+        <button
+            type="button"
+            data-slot="button"
+            data-variant="ghost"
+            data-size="default"
+            className={buttonVariants({
+                variant: 'ghost',
+                className:
+                    'h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
+            })}
+            onClick={onOpen}
+        >
+            <UserDetailContent
+                imageUrl={imageUrl}
+                statusDotClassName={statusDotClassName}
+                displayName={displayName}
+                nameStyle={nameStyle}
+                subline={
+                    groupByInstanceTimerVisible ? (
+                        <FriendInstanceTimer
+                            epoch={groupByInstanceEpoch}
+                            traveling={isTraveling}
+                        />
+                    ) : showLocationSubline ? (
+                        <StaticSidebarLocation
+                            location={displayLocation}
+                            traveling={displayTraveling}
+                            hint={metadataHint}
+                            metadata={locationMetadata}
+                            tooltips={false}
+                            showInstanceIdInLocation={showInstanceIdInLocation}
+                            ageGatedInstancesVisible={ageGatedInstancesVisible}
+                        />
+                    ) : (
+                        subline
+                    )
+                }
+            />
+        </button>
+    );
+
     return (
         <ContextMenu>
-            <UserHoverCard
-                userId={friend?.id}
-                seed={friend}
-                disabled={isCurrentUser}
-            >
+            {isCurrentUser ? (
                 <ContextMenuTrigger
                     render={
-                        <button
-                            type="button"
-                            data-slot="button"
-                            data-variant="ghost"
-                            data-size="default"
-                            className={buttonVariants({
-                                variant: 'ghost',
-                                className:
-                                    'h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
-                            })}
-                            onClick={onOpen}
-                        >
-                            <UserDetailContent
-                                imageUrl={imageUrl}
-                                statusDotClassName={statusDotClassName}
-                                displayName={displayName}
-                                nameStyle={nameStyle}
-                                subline={
-                                    groupByInstanceTimerVisible ? (
-                                        <FriendInstanceTimer
-                                            epoch={groupByInstanceEpoch}
-                                            traveling={isTraveling}
-                                        />
-                                    ) : showLocationSubline ? (
-                                        <StaticSidebarLocation
-                                            location={displayLocation}
-                                            traveling={displayTraveling}
-                                            hint={metadataHint}
-                                            metadata={locationMetadata}
-                                            tooltips={false}
-                                            showInstanceIdInLocation={
-                                                showInstanceIdInLocation
-                                            }
-                                            ageGatedInstancesVisible={
-                                                ageGatedInstancesVisible
-                                            }
-                                        />
-                                    ) : (
-                                        subline
-                                    )
-                                }
-                            />
-                        </button>
+                        <div className="group flex w-full min-w-0 items-center gap-0.5">
+                            <div className="min-w-0 flex-1">{podButton}</div>
+                            <AccountSwitcherPopover />
+                        </div>
                     }
                 />
-            </UserHoverCard>
+            ) : (
+                <UserHoverCard
+                    userId={friend?.id}
+                    seed={friend}
+                    disabled={isCurrentUser}
+                >
+                    <ContextMenuTrigger render={podButton} />
+                </UserHoverCard>
+            )}
             <ContextMenuContent className="w-56">
                 {isCurrentUser ? (
                     <CurrentUserActionItems

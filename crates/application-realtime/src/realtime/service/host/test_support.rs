@@ -42,9 +42,9 @@ use vrcx_0_application_core::{
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 
-pub(super) use super::state::{ActiveRealtimeContext, RealtimeHostRuntimeState};
 #[cfg(test)]
-pub(super) use super::state::{PendingFriendBaseline, RealtimeHostRuntimeMessageSink};
+pub(super) use super::state::RealtimeHostRuntimeMessageSink;
+pub(super) use super::state::{ActiveRealtimeContext, RealtimeHostRuntimeState};
 use super::*;
 
 impl RealtimeHostRuntime {
@@ -65,6 +65,7 @@ impl RealtimeHostRuntime {
     }
 }
 
+#[derive(Clone)]
 pub struct TestRealtimeHostRuntime {
     runtime: Arc<RealtimeHostRuntime>,
     #[cfg(test)]
@@ -140,6 +141,29 @@ impl TestRealtimeHostRuntime {
         );
     }
 
+    pub fn handle_friend_ws_message_for_transport_for_test(
+        &self,
+        transport: &RealtimeTransportStartResult,
+        session: &RealtimeSessionContext,
+        payload: &RealtimeWsMessagePayload,
+    ) {
+        self.runtime.handle_friend_ws_message(
+            transport.generation,
+            transport.session_generation,
+            session,
+            payload,
+        );
+    }
+
+    pub fn finish_realtime_transport_for_test(
+        &self,
+        transport: &RealtimeTransportStartResult,
+        termination: RealtimeTransportTermination,
+    ) {
+        self.runtime
+            .finish_realtime_transport(transport.clone(), termination);
+    }
+
     #[cfg(test)]
     pub(super) fn activity_sink_for_test(&self) -> &TestActivitySink {
         self.activity_sink.as_ref()
@@ -170,10 +194,6 @@ struct TestActivitySinkState {
 
 #[cfg(test)]
 impl TestActivitySink {
-    pub(super) fn delivery_armed(&self) -> bool {
-        self.lock_state().delivery_armed
-    }
-
     fn lock_state(&self) -> std::sync::MutexGuard<'_, TestActivitySinkState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
@@ -354,6 +374,8 @@ fn runtime_with_active_session_game_context(
     };
     #[cfg(test)]
     let activity_sink = Arc::new(TestActivitySink::default());
+    let auth_scope = RuntimeAuthScope::new();
+    auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
         db,
         web,
@@ -361,7 +383,7 @@ fn runtime_with_active_session_game_context(
         sync: RuntimeSyncEngine::new(),
         tasks: TaskSupervisor::new(),
         session: session.clone(),
-        auth_scope: RuntimeAuthScope::new(),
+        auth_scope,
         local_game_context,
         #[cfg(test)]
         activity_sink: Some(activity_sink.clone()),

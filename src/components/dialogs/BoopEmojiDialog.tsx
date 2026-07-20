@@ -48,7 +48,6 @@ function getFileImageUrl(file: any) {
 
 export function BoopEmojiDialog({
     open,
-    endpoint = '',
     isLocalUserVrcPlusSupporter = false,
     targetLabel = '',
     sendDisabled = false,
@@ -74,10 +73,10 @@ export function BoopEmojiDialog({
         setLoading(true);
         setError('');
         try {
-            const { json } = await mediaRepository.getFileList(
-                { n: 100, tag: 'emoji' },
-                { endpoint }
-            );
+            const { json } = await mediaRepository.getFileList({
+                n: 100,
+                tag: 'emoji'
+            });
             if (requestIdRef.current !== requestId) {
                 return;
             }
@@ -112,7 +111,7 @@ export function BoopEmojiDialog({
             setSending(false);
             setError('');
         }
-    }, [endpoint, isLocalUserVrcPlusSupporter, open]);
+    }, [isLocalUserVrcPlusSupporter, open]);
 
     const selectedDefaultEmojiId = useMemo(
         () =>

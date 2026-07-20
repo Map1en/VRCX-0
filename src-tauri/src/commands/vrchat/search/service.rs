@@ -5,10 +5,11 @@ use vrcx_0_application_core::vrchat_api::search::{
     search_config_get_input, search_groups_get_input, search_groups_strict_get_input,
     search_instance_short_name_get_input, search_users_get_input, search_worlds_get_input,
 };
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{VrchatSearchParamsInput, VrchatSearchShortNameInput, VrchatSearchWorldsInput};
 
@@ -18,16 +19,8 @@ async fn execute_search_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_search_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 #[tauri::command]
@@ -40,7 +33,7 @@ pub async fn app__vrchat_search_config_get(
         state,
         "app__vrchat_search_config_get",
         "Searching config.",
-        search_config_get_input(input.endpoint, input.params),
+        search_config_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -55,7 +48,11 @@ pub async fn app__vrchat_search_worlds_get(
         state,
         "app__vrchat_search_worlds_get",
         "Searching worlds.",
-        search_worlds_get_input(input.endpoint, input.params, input.option),
+        search_worlds_get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.params,
+            input.option,
+        ),
     )
     .await
 }
@@ -70,7 +67,7 @@ pub async fn app__vrchat_search_users_get(
         state,
         "app__vrchat_search_users_get",
         "Searching users.",
-        search_users_get_input(input.endpoint, input.params),
+        search_users_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -85,7 +82,7 @@ pub async fn app__vrchat_search_groups_get(
         state,
         "app__vrchat_search_groups_get",
         "Searching groups.",
-        search_groups_get_input(input.endpoint, input.params),
+        search_groups_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -100,7 +97,7 @@ pub async fn app__vrchat_search_groups_strict_get(
         state,
         "app__vrchat_search_groups_strict_get",
         "Strict searching groups.",
-        search_groups_strict_get_input(input.endpoint, input.params),
+        search_groups_strict_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -112,7 +109,7 @@ pub async fn app__vrchat_search_instance_short_name_get(
     input: VrchatSearchShortNameInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (short_name, request) =
-        search_instance_short_name_get_input(input.endpoint, input.short_name)?;
+        search_instance_short_name_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.short_name)?;
     execute_search_api(
         state,
         "app__vrchat_search_instance_short_name_get",

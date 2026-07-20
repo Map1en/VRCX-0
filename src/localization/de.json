@@ -69,6 +69,77 @@
         }
     },
     "language": "Deutsch (de)",
+    "data_dir_migration": {
+        "title": "VRCX-0-Daten verschieben",
+        "description": "Wähle, wie VRCX-0 den ausgewählten Ordner verwenden soll.",
+        "completed_title": "Daten wurden verschoben",
+        "completed_description": "Starte VRCX-0 neu, um den neuen Datenordner zu verwenden.",
+        "error_short": "Verschieben fehlgeschlagen",
+        "start": "Verschieben",
+        "restart_now": "Jetzt neu starten",
+        "restart_later": "Später",
+        "create_backup_first": "Zuerst Sicherung erstellen",
+        "space_summary": "Benötigt: {required} · Verfügbar: {available}",
+        "insufficient_space": "Nicht genügend freier Speicherplatz.",
+        "contents_notice": "Datenbank, App-Einstellungen sowie Galerieindex und Vorschaubilder werden kopiert. Bild-Caches werden neu geladen. Die alten Daten bleiben bis zur Bereinigung erhalten.",
+        "unsupported_storage_warning": "Keine Netzlaufwerke, Cloud-Synchronisationsordner (z. B. OneDrive oder iCloud) oder Wechseldatenträger verwenden. Datenbanken können dort beschädigt werden; solche Konfigurationen werden nicht unterstützt.",
+        "mode": {
+            "migrate": "Aktuelle Daten verschieben (empfohlen)",
+            "adoptExisting": "Vorhandenes VRCX-0-Profil in diesem Ordner verwenden",
+            "freshStart": "Neues Profil in diesem Ordner erstellen"
+        },
+        "target": {
+            "empty": "Der ausgewählte Ordner ist leer.",
+            "existingProfile": "Der Ordner enthält bereits ein VRCX-0-Profil. Es wird vor dem Ersetzen gesichert.",
+            "foreignContent": "Der Ordner enthält andere Dateien. VRCX-0 verwaltet nur eigene Dateien."
+        },
+        "phase": {
+            "preparing": "Verschieben wird vorbereitet",
+            "freezing": "Datenbank wird angehalten",
+            "copying": "Datenbank wird kopiert",
+            "verifying": "Kopie wird geprüft",
+            "committing": "Verschieben wird abgeschlossen"
+        },
+        "error": {
+            "operationBusy": "Eine andere Sicherung, Wiederherstellung oder Verschiebung läuft bereits.",
+            "databaseUnavailable": "Die Datenbank kann derzeit nicht verschoben werden.",
+            "pendingRestore": "Schließe zuerst die ausstehende Profilwiederherstellung ab oder brich sie ab.",
+            "pendingLegacyMigration": "Schließe zuerst die ausstehende Altdatenmigration ab.",
+            "pendingMigration": "Ein Datenordnerwechsel steht aus. Starte VRCX-0 neu.",
+            "cleanupConflict": "Verarbeite zuerst die alten Daten, bevor du zu diesem Ordner zurückkehrst.",
+            "copyFailed": "Die Datenbank konnte nicht kopiert werden. Die ursprünglichen Daten werden weiter verwendet.",
+            "commitFailed": "Die Datenbankkopie konnte nicht installiert werden. Die ursprünglichen Daten werden weiter verwendet.",
+            "pointerCommitFailed": "Der neue Datenordner konnte nicht aktiviert werden. Starte VRCX-0 neu, um sicher fortzufahren.",
+            "io": "Eine Datei im Datenordner konnte nicht gelesen oder geschrieben werden."
+        },
+        "warning": {
+            "configCopyFailed": "Einige App-Einstellungen konnten nicht kopiert werden.",
+            "galleryCopyFailed": "Einige Galeriedaten konnten nicht kopiert werden und werden bei Bedarf neu erstellt.",
+            "cacheCleanupFailed": "Einige alte Cache-Dateien konnten nicht entfernt werden."
+        },
+        "result": {
+            "succeeded": "Datenordner wurde verschoben",
+            "failed_title": "Der neue Datenordner konnte nicht verwendet werden",
+            "database_open_failed": "VRCX-0 verwendet weiterhin den ursprünglichen Ordner. Deine Daten sind unverändert.",
+            "interrupted_title": "Verschieben wurde unterbrochen",
+            "interrupted": "VRCX-0 verwendet weiterhin den ursprünglichen Ordner. Du kannst es erneut versuchen."
+        },
+        "cleanup": {
+            "ready_title": "Datenordner wurde verschoben",
+            "ready_description": "Die alten Daten liegen noch unter {path}.",
+            "action": "Alte Daten bereinigen",
+            "action_with_size": "Alte Daten bereinigen ({size})",
+            "confirm_title": "Alte VRCX-0-Daten endgültig löschen?",
+            "confirm_description": "Dadurch werden etwa {size} bekannte VRCX-0-Dateien aus {path} gelöscht. Unbekannte Dateien bleiben erhalten. Dies kann nicht rückgängig gemacht werden.",
+            "completed": "Alte VRCX-0-Daten bereinigt",
+            "freed": "{size} freigegeben.",
+            "completed_with_skipped": "{size} freigegeben; {count} Elemente konnten nicht entfernt werden.",
+            "settings_title": "Alte Daten können bereinigt werden",
+            "settings_description": "Alte VRCX-0-Daten liegen noch unter {path} ({size} Byte).",
+            "dismiss": "Behalten und nicht mehr erinnern",
+            "dismissed": "Bereinigungserinnerungen deaktiviert"
+        }
+    },
     "profile_backup": {
         "header": "Sichern & Wiederherstellen",
         "tools_description": "Sichere deine VRCX-0-Daten und stelle sie bei Bedarf wieder her.",
@@ -1537,7 +1608,9 @@
             "group": {
                 "header": "Gruppe",
                 "calendar": "Kalender",
-                "calendar_description": "Kalender für Gruppen-Events"
+                "calendar_description": "Kalender für Gruppen-Events",
+                "moderation": "Gruppenmoderation",
+                "moderation_description": "Verwalte Mitglieder, Sperren, Einladungen und Beitrittsanfragen für Gruppen, die du moderierst."
             },
             "user": {
                 "discord_names_description": "Finde die Discord-Benutzernamen deiner VRChat-Freunde",
@@ -3468,6 +3541,8 @@
                 "copy_id": "ID kopieren",
                 "copy_url": "URL kopieren",
                 "url": "VRChat-Link",
+                "vrcx_url": "VRCX-0-Link",
+                "copy_vrcx_url": "VRCX-0-Link kopieren",
                 "youtube_preview": "YouTube-Vorschau",
                 "author_tags": "Autoren-Tags",
                 "players": "Spieler",
@@ -3664,6 +3739,8 @@
                 "copy_id": "ID kopieren",
                 "url": "VRChat-Link",
                 "copy_url": "URL kopieren",
+                "vrcx_url": "VRCX-0-Link",
+                "copy_vrcx_url": "VRCX-0-Link kopieren",
                 "created_at": "Erstellt am",
                 "last_updated": "Zuletzt aktualisiert",
                 "version": "Version",
@@ -4504,12 +4581,55 @@
             "kick": "Kicken",
             "ban": "Bannen",
             "unban": "Bann aufheben",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "Anzeigename",
             "created_at": "Erstellt am",
             "type": "Typ",
             "description": "Beschreibung",
             "data": "Daten",
-            "roles": "Rollen"
+            "roles": "Rollen",
+            "select_all": "Alle auswählen",
+            "selected_users_count": "{count} ausgewählt",
+            "notes": "Notizen",
+            "note_placeholder": "Notiz für die ausgewählten Mitglieder hinzufügen...",
+            "selected_roles": "Rollen",
+            "roles_count": "{count} Rollen ausgewählt",
+            "choose_roles_placeholder": "Rollen auswählen...",
+            "add_roles": "Rollen hinzufügen",
+            "remove_roles": "Rollen entfernen",
+            "save_note": "Notiz speichern",
+            "progress": "Fortschritt",
+            "bulk_action_confirm": "Dies wird auf {count} ausgewählte Mitglieder angewendet.",
+            "bulk_action_completed": "{value} für {count} Mitglieder abgeschlossen",
+            "import_bans": "Bans importieren",
+            "import_bans_description": "Fügen Sie Benutzer-IDs, Profil-URLs oder CSV-Daten mit usr_ IDs ein, um sie in großer Zahl zu bannen.",
+            "import_bans_warning": "Dadurch werden alle passenden Benutzer sofort gebannt. Diese Aktion kann nicht rückgängig gemacht werden.",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "Import starten",
+            "import_bans_clear_errors": "Fehler löschen",
+            "import_bans_no_ids_found": "Keine gültigen Benutzer-IDs gefunden (usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+            "import_bans_done": "Fertig. {success}/{total} Benutzer gebannt.",
+            "import_bans_cancelled": "Abgebrochen. {success}/{total} Benutzer gebannt.",
+            "export_logs": "Protokolle exportieren",
+            "export_logs_copied": "Audit-Protokoll-CSV in die Zwischenablage kopiert",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "{count} geladen",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "Member",
+                "invited": "Invited",
+                "banned": "Banned",
+                "requested": "Requested",
+                "blocked": "Blocked",
+                "userblocked": "Blocked",
+                "joined": "Joined",
+                "active": "Active",
+                "pending": "Pending"
+            }
         },
         "group_post_edit": {
             "title": "Titel"
@@ -5354,7 +5474,22 @@
                 "failed_to_update_group_event_follow_state": "Dieses Event konnte nicht aktualisiert werden",
                 "failed_to_download_ics_file": ".ics-Datei konnte nicht heruntergeladen werden",
                 "failed_to_save_ics_file": ".ics-Datei konnte nicht gespeichert werden",
-                "failed_to_copy_event_link": "Event-Link konnte nicht kopiert werden"
+                "failed_to_copy_event_link": "Event-Link konnte nicht kopiert werden",
+                "failed_to_load_moderatable_groups": "Gruppen, die du moderierst, konnten nicht geladen werden",
+                "failed_to_open_group_moderation": "Gruppenmoderation konnte nicht geöffnet werden"
+            },
+            "group_moderation": {
+                "picker_description": "Wähle eine Gruppe, um Mitglieder, Sperren, Einladungen und Beitrittsanfragen zu verwalten.",
+                "loading": "Gruppen, die du moderierst, werden geladen …",
+                "empty_title": "Keine Gruppen zu moderieren",
+                "empty_description": "Du hast in keiner deiner Gruppen Moderationsrechte.",
+                "permissions_degraded": "Einige Gruppenberechtigungen konnten nicht überprüft werden. Die Liste unten ist möglicherweise unvollständig.",
+                "member_count": "{count} Mitglieder",
+                "rail_title": "Groups you moderate",
+                "select_a_group_title": "Select a group",
+                "select_a_group_description": "Choose a group from the list to manage members, bans, invites, and join requests.",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} members · {online} online"
             }
         }
     },
@@ -5433,6 +5568,14 @@
         "avatar": {
             "no_provider": "Kein Avatar-Suchanbieter konfiguriert"
         }
+    },
+    "translation": {
+        "translate": "Übersetzen",
+        "show_original": "Original anzeigen",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "Übersetzung fehlgeschlagen",
+        "error_network": "Netzwerkfehler, bitte erneut versuchen",
+        "error_unsupported": "Übersetzung ist nicht konfiguriert"
     },
     "app": {
         "title": "VRCX-0",

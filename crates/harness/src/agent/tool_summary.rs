@@ -23,6 +23,9 @@ pub(super) fn normalize_tool_arguments(
     user_text: &str,
 ) -> Option<Map<String, Value>> {
     let mut arguments = arguments.unwrap_or_default();
+    for key in ["limit", "utcOffsetMinutes", "utc_offset_minutes"] {
+        normalize_integer_string(&mut arguments, key);
+    }
     match tool_name {
         "get_copresence_summary" => {
             ensure_limit(&mut arguments, ranked_limit_for_user_text(user_text));
@@ -36,6 +39,16 @@ pub(super) fn normalize_tool_arguments(
         _ => {}
     }
     (!arguments.is_empty()).then_some(arguments)
+}
+
+fn normalize_integer_string(arguments: &mut Map<String, Value>, key: &str) {
+    let Some(value) = arguments.get(key).and_then(Value::as_str) else {
+        return;
+    };
+    let Ok(value) = value.trim().parse::<i64>() else {
+        return;
+    };
+    arguments.insert(key.to_string(), Value::from(value));
 }
 
 fn ensure_limit(arguments: &mut Map<String, Value>, limit: i64) {
@@ -335,5 +348,39 @@ mod tests {
             tool_call_signature("get_copresence_summary", Some(&first)),
             tool_call_signature("get_copresence_summary", Some(&second))
         );
+    }
+
+    #[test]
+    fn numeric_tool_arguments_accept_integer_strings() {
+        let arguments = normalize_tool_arguments(
+            "get_friend_activity_pattern",
+            Some(
+                serde_json::from_value(serde_json::json!({
+                    "limit": "10",
+                    "utcOffsetMinutes": "600"
+                }))
+                .unwrap(),
+            ),
+            "activity",
+        )
+        .unwrap();
+
+        assert_eq!(arguments.get("limit").and_then(Value::as_i64), Some(10));
+        assert_eq!(
+            arguments.get("utcOffsetMinutes").and_then(Value::as_i64),
+            Some(600)
+        );
+    }
+
+    #[test]
+    fn numeric_tool_arguments_leave_non_integer_strings_unchanged() {
+        let arguments = normalize_tool_arguments(
+            "recall_encounter",
+            Some(serde_json::from_value(serde_json::json!({ "limit": "many" })).unwrap()),
+            "encounters",
+        )
+        .unwrap();
+
+        assert_eq!(arguments.get("limit").and_then(Value::as_str), Some("many"));
     }
 }

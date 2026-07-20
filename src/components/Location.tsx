@@ -42,7 +42,6 @@ export function Location({
     const {
         t,
         currentLocation,
-        currentEndpoint,
         parsedLocation,
         region,
         instanceName: resolvedInstanceName,
@@ -111,7 +110,7 @@ export function Location({
             return;
         }
         if (hasShortNameHint) {
-            directAccessParse(normalizeString(hint), currentEndpoint);
+            directAccessParse(normalizeString(hint));
             return;
         }
         const worldDialogTarget =
@@ -158,8 +157,7 @@ export function Location({
         try {
             await selfInviteToInstance(
                 currentLocation,
-                parsedLocation.shortName || '',
-                currentEndpoint
+                parsedLocation.shortName || ''
             );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {

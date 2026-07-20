@@ -270,7 +270,7 @@ export function useUserDialogSelfActions({
 
         setLanguageOptionsStatus('running');
         vrchatAuthRepository
-            .getConfig({ endpoint: currentEndpoint })
+            .getConfig()
             .then((response) => {
                 if (!active) {
                     return;
@@ -335,7 +335,6 @@ export function useUserDialogSelfActions({
         try {
             const nextUser = await userProfileRepository.updateCurrentUser({
                 userId: currentUserId,
-                endpoint: currentEndpoint,
                 params: patch
             });
             applyCurrentUserSnapshot(nextUser);
@@ -504,7 +503,6 @@ export function useUserDialogSelfActions({
                 const nextProfile =
                     await userProfileRepository.updateCurrentUser({
                         userId: currentUserId,
-                        endpoint: currentEndpoint,
                         params: patch
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -513,7 +511,6 @@ export function useUserDialogSelfActions({
                 const nextProfile =
                     await userProfileRepository.removeCurrentUserTags({
                         userId: currentUserId,
-                        endpoint: currentEndpoint,
                         tags: removeLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -522,7 +519,6 @@ export function useUserDialogSelfActions({
                 const nextProfile =
                     await userProfileRepository.addCurrentUserTags({
                         userId: currentUserId,
-                        endpoint: currentEndpoint,
                         tags: addLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -656,7 +652,6 @@ export function useUserDialogSelfActions({
             task: () =>
                 userProfileRepository.updateCurrentUserBadge({
                     userId: currentUserId,
-                    endpoint: currentEndpoint,
                     badgeId: badge.badgeId,
                     hidden,
                     showcased: hidden ? false : Boolean(badge.showcased)
@@ -681,7 +676,6 @@ export function useUserDialogSelfActions({
             task: () =>
                 userProfileRepository.updateCurrentUserBadge({
                     userId: currentUserId,
-                    endpoint: currentEndpoint,
                     badgeId: badge.badgeId,
                     hidden: showcased ? false : Boolean(badge.hidden),
                     showcased

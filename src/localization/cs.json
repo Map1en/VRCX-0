@@ -69,6 +69,77 @@
         }
     },
     "language": "Čeština (cs)",
+    "data_dir_migration": {
+        "title": "Přesunout data VRCX-0",
+        "description": "Zvolte, jak má VRCX-0 vybranou složku použít.",
+        "completed_title": "Data byla přesunuta",
+        "completed_description": "Restartujte VRCX-0, aby začal používat novou datovou složku.",
+        "error_short": "Přesun se nezdařil",
+        "start": "Spustit",
+        "restart_now": "Restartovat nyní",
+        "restart_later": "Později",
+        "create_backup_first": "Nejprve vytvořit zálohu",
+        "space_summary": "Požadováno: {required} · Dostupné: {available}",
+        "insufficient_space": "Pro přesun dat není dostatek volného místa.",
+        "contents_notice": "Zkopíruje se databáze, nastavení aplikace, index galerie a miniatury. Mezipaměť obrázků se stáhne znovu. Stará data zůstanou zachována až do vyčištění.",
+        "unsupported_storage_warning": "Nepoužívejte síťovou jednotku, složku synchronizovanou s cloudem (OneDrive, iCloud apod.) ani vyměnitelnou jednotku. Databáze se tam může poškodit a takové umístění není podporováno.",
+        "mode": {
+            "migrate": "Přesunout současná data (doporučeno)",
+            "adoptExisting": "Použít profil VRCX-0, který již v této složce je",
+            "freshStart": "Vytvořit v této složce nový profil"
+        },
+        "target": {
+            "empty": "Vybraná složka je prázdná.",
+            "existingProfile": "Složka již obsahuje profil VRCX-0. Před nahrazením bude zachován.",
+            "foreignContent": "Složka obsahuje další soubory. VRCX-0 bude spravovat pouze vlastní soubory."
+        },
+        "phase": {
+            "preparing": "Příprava přesunu",
+            "freezing": "Zastavování databáze",
+            "copying": "Kopírování databáze",
+            "verifying": "Ověřování kopie",
+            "committing": "Dokončování přesunu"
+        },
+        "error": {
+            "operationBusy": "Již probíhá jiné zálohování, obnovení nebo přesun.",
+            "databaseUnavailable": "Databázi nyní nelze přesunout.",
+            "pendingRestore": "Nejprve dokončete nebo zrušte čekající obnovení.",
+            "pendingLegacyMigration": "Nejprve dokončete čekající převod starých dat.",
+            "pendingMigration": "Čeká změna datové složky. Restartujte VRCX-0.",
+            "cleanupConflict": "Před návratem do této složky nejprve vyřešte stará data.",
+            "copyFailed": "Databázi se nepodařilo zkopírovat. Nadále se používají původní data.",
+            "commitFailed": "Kopii se nepodařilo nainstalovat. Nadále se používají původní data.",
+            "pointerCommitFailed": "Novou datovou složku se nepodařilo aktivovat. Restartujte VRCX-0 a zkuste to bezpečně znovu.",
+            "io": "Soubor v datové složce se nepodařilo přečíst nebo zapsat."
+        },
+        "warning": {
+            "configCopyFailed": "Některá nastavení aplikace se nepodařilo zkopírovat.",
+            "galleryCopyFailed": "Některá data galerie se nepodařilo zkopírovat a podle potřeby se znovu vytvoří.",
+            "cacheCleanupFailed": "Některé staré soubory mezipaměti se nepodařilo odstranit."
+        },
+        "result": {
+            "succeeded": "Datová složka byla přesunuta",
+            "failed_title": "Novou datovou složku nebylo možné použít",
+            "database_open_failed": "VRCX-0 nadále používá původní složku. Vaše data nebyla ovlivněna.",
+            "interrupted_title": "Přesun byl přerušen",
+            "interrupted": "VRCX-0 nadále používá původní složku. Můžete to zkusit znovu."
+        },
+        "cleanup": {
+            "ready_title": "Datová složka byla přesunuta",
+            "ready_description": "Stará data jsou stále v {path}.",
+            "action": "Vyčistit stará data",
+            "action_with_size": "Vyčistit stará data ({size})",
+            "confirm_title": "Trvale odstranit stará data VRCX-0?",
+            "confirm_description": "Z {path} se odstraní přibližně {size} známých souborů VRCX-0. Neznámé soubory zůstanou zachovány. Tuto akci nelze vrátit.",
+            "completed": "Stará data VRCX-0 byla vyčištěna",
+            "freed": "Uvolněno {size}.",
+            "completed_with_skipped": "Uvolněno {size}; {count} položek se nepodařilo odstranit.",
+            "settings_title": "Stará data lze vyčistit",
+            "settings_description": "Stará data VRCX-0 jsou stále v {path} ({size} bajtů).",
+            "dismiss": "Ponechat a již nepřipomínat",
+            "dismissed": "Připomínky čištění byly vypnuty"
+        }
+    },
     "profile_backup": {
         "header": "Zálohování a obnovení",
         "tools_description": "Zálohujte data VRCX-0 a v případě potřeby je obnovte.",
@@ -1539,7 +1610,9 @@
             "group": {
                 "header": "Skupina",
                 "calendar": "Kalendář",
-                "calendar_description": "Kalendář skupinových akcí"
+                "calendar_description": "Kalendář skupinových akcí",
+                "moderation": "Moderace skupiny",
+                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete."
             },
             "user": {
                 "discord_names_description": "Najděte Discord uživatelská jména svých přátel z VRChat",
@@ -3470,6 +3543,8 @@
                 "copy_id": "Zkopírovat ID",
                 "copy_url": "Zkopírovat URL",
                 "url": "Odkaz na VRChat",
+                "vrcx_url": "Odkaz na VRCX-0",
+                "copy_vrcx_url": "Zkopírovat odkaz na VRCX-0",
                 "youtube_preview": "Náhled YouTube",
                 "author_tags": "Štítky autora",
                 "players": "Hráči",
@@ -3666,6 +3741,8 @@
                 "copy_id": "Zkopírovat ID",
                 "url": "Odkaz na VRChat",
                 "copy_url": "Zkopírovat URL",
+                "vrcx_url": "Odkaz na VRCX-0",
+                "copy_vrcx_url": "Zkopírovat odkaz na VRCX-0",
                 "created_at": "Vytvořeno",
                 "last_updated": "Naposledy aktualizováno",
                 "version": "Verze",
@@ -4506,12 +4583,55 @@
             "kick": "Vyhodit",
             "ban": "Zakázat",
             "unban": "Zrušit zákaz",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "Zobrazované jméno",
             "created_at": "Vytvořeno",
             "type": "Typ",
             "description": "Popis",
             "data": "Data",
-            "roles": "Role"
+            "roles": "Role",
+            "select_all": "Vybrat vše",
+            "selected_users_count": "Vybráno: {count}",
+            "notes": "Poznámky",
+            "note_placeholder": "Přidejte poznámku pro vybrané členy...",
+            "selected_roles": "Role",
+            "roles_count": "Vybráno rolí: {count}",
+            "choose_roles_placeholder": "Vyberte role...",
+            "add_roles": "Přidat role",
+            "remove_roles": "Odebrat role",
+            "save_note": "Uložit poznámku",
+            "progress": "Průběh",
+            "bulk_action_confirm": "Tato akce se použije na {count} vybraných členů.",
+            "bulk_action_completed": "{value} dokončeno pro {count} členů",
+            "import_bans": "Importovat zákazy",
+            "import_bans_description": "Vložte ID uživatelů, odkazy na profily nebo CSV data obsahující usr_ ID pro hromadné zakázání.",
+            "import_bans_warning": "Tímto okamžitě zakážete všechny odpovídající uživatele. Tuto akci nelze vrátit zpět.",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "Zahájit import",
+            "import_bans_clear_errors": "Vymazat chyby",
+            "import_bans_no_ids_found": "Nebyla nalezena žádná platná ID uživatelů (usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+            "import_bans_done": "Hotovo. Zakázáno {success}/{total} uživatelů.",
+            "import_bans_cancelled": "Zrušeno. Zakázáno {success}/{total} uživatelů.",
+            "export_logs": "Exportovat protokoly",
+            "export_logs_copied": "CSV protokolu auditu zkopírováno do schránky",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "Načteno {count}",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "Member",
+                "invited": "Invited",
+                "banned": "Banned",
+                "requested": "Requested",
+                "blocked": "Blocked",
+                "userblocked": "Blocked",
+                "joined": "Joined",
+                "active": "Active",
+                "pending": "Pending"
+            }
         },
         "group_post_edit": {
             "title": "Název"
@@ -5356,7 +5476,22 @@
                 "failed_to_update_group_event_follow_state": "Událost se nepodařilo aktualizovat",
                 "failed_to_download_ics_file": "Nepodařilo se stáhnout soubor .ics",
                 "failed_to_save_ics_file": "Nepodařilo se uložit soubor .ics",
-                "failed_to_copy_event_link": "Nepodařilo se zkopírovat odkaz na událost"
+                "failed_to_copy_event_link": "Nepodařilo se zkopírovat odkaz na událost",
+                "failed_to_load_moderatable_groups": "Nepodařilo se načíst skupiny, které moderujete",
+                "failed_to_open_group_moderation": "Nepodařilo se otevřít správu skupiny"
+            },
+            "group_moderation": {
+                "picker_description": "Vyberte skupinu pro správu členů, zákazů, pozvánek a žádostí o vstup.",
+                "loading": "Načítání skupin, které moderujete…",
+                "empty_title": "Žádné skupiny ke správě",
+                "empty_description": "V žádné ze svých skupin zatím nemáte moderátorská oprávnění.",
+                "permissions_degraded": "Některá oprávnění skupin se nepodařilo ověřit. Seznam níže může být neúplný.",
+                "member_count": "{count} členů",
+                "rail_title": "Groups you moderate",
+                "select_a_group_title": "Select a group",
+                "select_a_group_description": "Choose a group from the list to manage members, bans, invites, and join requests.",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} members · {online} online"
             }
         }
     },
@@ -5435,6 +5570,14 @@
         "avatar": {
             "no_provider": "Není nastaven žádný poskytovatel vyhledávání avatarů"
         }
+    },
+    "translation": {
+        "translate": "Přeložit",
+        "show_original": "Zobrazit originál",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "Překlad se nezdařil",
+        "error_network": "Chyba sítě, zkuste to znovu",
+        "error_unsupported": "Překlad není nakonfigurován"
     },
     "app": {
         "title": "VRCX-0",

@@ -39,6 +39,7 @@ pub enum ProfileBackupErrorCode {
     OperationBusy,
     DeliveryPending,
     PendingRestore,
+    PendingDataDirMigration,
     DirectoryUnavailable,
     PermissionDenied,
     LocalDiskFull,

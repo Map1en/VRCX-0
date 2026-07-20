@@ -71,9 +71,6 @@ export function ModalHost() {
     const boopDialog = useModalStore((state) => state.boopDialog);
     const otpDialog = useModalStore((state) => state.otpDialog);
     const imageDialog = useModalStore((state) => state.imageDialog);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const isLocalUserVrcPlusSupporter = useRuntimeStore((state) =>
         Boolean(
             state.auth.currentUserSnapshot?.$isVRCPlus ||
@@ -205,7 +202,6 @@ export function ModalHost() {
             </Dialog>
             <BoopEmojiDialog
                 open={boopDialog.open}
-                endpoint={boopDialog.endpoint || currentEndpoint}
                 isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
                 targetLabel={boopDialog.targetLabel}
                 onOpenChange={(open: any) => {

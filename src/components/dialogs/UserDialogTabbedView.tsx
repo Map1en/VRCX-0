@@ -253,6 +253,9 @@ export function UserDialogTabbedView({
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
+    );
 
     useEffect(() => {
         const intervalId = window.setInterval(() => {
@@ -384,7 +387,7 @@ export function UserDialogTabbedView({
         profile,
         currentUserSnapshot,
         isCurrentUser,
-        { hideNonFriend: false }
+        { hideNonFriend: false, isGameRunning }
     );
     const currentAvatarDisplayName = String(
         profile.currentAvatarName || profile.avatarName || ''
@@ -502,8 +505,7 @@ export function UserDialogTabbedView({
         ) : null;
 
     const showAvatarAuthor = useUserDialogAvatarAuthorAction({
-        currentAvatarTarget,
-        currentEndpoint
+        currentAvatarTarget
     });
 
     function openInstanceHistory() {
@@ -723,7 +725,6 @@ export function UserDialogTabbedView({
                 {selfPanel === 'profile-media' && isCurrentUser ? (
                     <UserDialogProfileMediaPanel
                         profile={profile}
-                        endpoint={currentEndpoint}
                         isVrcPlusSupporter={isLocalUserVrcPlusSupporter}
                         actionStatus={actionStatus}
                         onBack={() => setSelfPanel('')}

@@ -1,9 +1,8 @@
-type LoginUserRecord = Record<string, unknown>;
-
-function stringField(record: LoginUserRecord | null | undefined, key: string) {
-    const value = record?.[key];
-    return typeof value === 'string' ? value : '';
-}
+type LoginUserRecord = {
+    displayName?: string | null;
+    id?: string | null;
+    username?: string | null;
+};
 
 export function getLoginErrorMessage(
     error: unknown,
@@ -19,12 +18,7 @@ export function getLoginErrorMessage(
 export function getLoginUserDisplayName(
     user: LoginUserRecord | null | undefined
 ): string {
-    return (
-        stringField(user, 'displayName') ||
-        stringField(user, 'username') ||
-        stringField(user, 'id') ||
-        'account'
-    );
+    return user?.displayName || user?.username || user?.id || 'account';
 }
 
 export function shouldShowLegacyMigrationAction(

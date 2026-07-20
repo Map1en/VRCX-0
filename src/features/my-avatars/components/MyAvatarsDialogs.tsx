@@ -54,7 +54,6 @@ export function MyAvatarsDialogs({
             <AvatarDetailsDialog
                 open={Boolean(editDetailsAvatar)}
                 avatar={editDetailsAvatar}
-                endpoint={currentEndpoint}
                 onOpenChange={onEditDetailsOpenChange}
                 onSavedCurrentAvatar={onEditDetailsSaved}
             />

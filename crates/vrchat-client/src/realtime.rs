@@ -1,20 +1,23 @@
 use std::time::Duration;
 
+use hyper_util::client::legacy::connect::proxy::{SocksV5, Tunnel};
+use hyper_util::client::legacy::connect::HttpConnector;
 use serde_json::Value;
 use socket2::{SockRef, TcpKeepalive};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
+use tokio_tungstenite::tungstenite::http::Uri;
+use tokio_tungstenite::tungstenite::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{client_async_tls, MaybeTlsStream, WebSocketStream};
+use tower_service::Service;
 use url::Url;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 const DEFAULT_WEBSOCKET_DOMAIN: &str = "wss://pipeline.vrchat.cloud";
 const VRCHAT_WEBSOCKET_HOST: &str = "pipeline.vrchat.cloud";
 const BROWSER_WEBSOCKET_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0";
-const MAX_PROXY_CONNECT_RESPONSE: usize = 8192;
 const TCP_KEEPALIVE_IDLE: Duration = Duration::from_secs(30);
 const TCP_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -160,7 +163,7 @@ pub fn auth_token_from_response(status: i32, body: &str) -> Result<String, Error
         });
     }
 
-    if !(0..400).contains(&status) {
+    if status != 200 {
         return Err(Error::Other(format!(
             "auth transport bootstrap failed ({status})"
         )));
@@ -184,7 +187,7 @@ pub async fn connect_websocket(
         return client_async_tls(request, stream)
             .await
             .map(|(stream, _)| stream)
-            .map_err(|error| Error::Other(format!("websocket connect: {error}")));
+            .map_err(|error| websocket_connect_error("websocket connect", error));
     };
 
     let proxy_url = parse_url(proxy_url, "proxy URL")?;
@@ -201,7 +204,20 @@ pub async fn connect_websocket(
     client_async_tls(request, stream)
         .await
         .map(|(stream, _)| stream)
-        .map_err(|error| Error::Other(format!("websocket proxy connect: {error}")))
+        .map_err(|error| websocket_connect_error("websocket proxy connect", error))
+}
+
+fn websocket_connect_error(context: &str, error: TungsteniteError) -> Error {
+    if let TungsteniteError::Http(response) = &error {
+        let status_code = response.status().as_u16() as i32;
+        if matches!(status_code, 401 | 403) {
+            return Error::AuthFailure {
+                reason: format!("{context} failed ({status_code})"),
+                status_code: Some(status_code),
+            };
+        }
+    }
+    Error::Other(format!("{context}: {error}"))
 }
 
 pub fn build_browser_websocket_request(url: &str, origin: &str) -> Result<Request, Error> {
@@ -242,24 +258,14 @@ fn websocket_target(url: &Url) -> Result<(String, u16), Error> {
     Ok((host, port))
 }
 
-fn proxy_target(proxy_url: &Url) -> Result<(String, u16), Error> {
+fn proxy_connector_uri(proxy_url: &Url) -> Result<Uri, Error> {
     let host = proxy_url
         .host_str()
-        .ok_or_else(|| Error::Other("proxy URL is missing a host".into()))?
-        .to_string();
+        .ok_or_else(|| Error::Other("proxy URL is missing a host".into()))?;
     let port = proxy_url
         .port_or_known_default()
         .ok_or_else(|| Error::Other("proxy URL is missing a port".into()))?;
-    Ok((host, port))
-}
-
-async fn open_proxy_tcp_stream(proxy_url: &Url) -> Result<TcpStream, Error> {
-    let (proxy_host, proxy_port) = proxy_target(proxy_url)?;
-    let stream = TcpStream::connect((proxy_host.as_str(), proxy_port))
-        .await
-        .map_err(|error| Error::Other(format!("proxy tcp connect: {error}")))?;
-    apply_tcp_keepalive(&stream);
-    Ok(stream)
+    endpoint_uri("http", host, port, "proxy URL")
 }
 
 fn apply_tcp_keepalive(stream: &TcpStream) {
@@ -274,52 +280,26 @@ fn apply_tcp_keepalive(stream: &TcpStream) {
     }
 }
 
+fn proxy_tcp_connector() -> HttpConnector {
+    let mut connector = HttpConnector::new();
+    connector.set_keepalive(Some(TCP_KEEPALIVE_IDLE));
+    connector.set_keepalive_interval(Some(TCP_KEEPALIVE_INTERVAL));
+    connector
+}
+
 async fn connect_http_proxy(
     proxy_url: &Url,
     target_host: &str,
     target_port: u16,
 ) -> Result<TcpStream, Error> {
-    let mut stream = open_proxy_tcp_stream(proxy_url).await?;
-    let request = build_http_proxy_connect_request(target_host, target_port);
-    stream
-        .write_all(&request)
+    let proxy = proxy_connector_uri(proxy_url)?;
+    let target = endpoint_uri("https", target_host, target_port, "websocket proxy target")?;
+    let stream = Tunnel::new(proxy, proxy_tcp_connector())
+        .call(target)
         .await
-        .map_err(|error| Error::Other(format!("http proxy write: {error}")))?;
-
-    let response = read_http_proxy_connect_response(&mut stream).await?;
-    let status_line = response.lines().next().unwrap_or_default();
-    if status_line.split_whitespace().nth(1) != Some("200") {
-        return Err(Error::Other(format!(
-            "http proxy CONNECT failed: {status_line}"
-        )));
-    }
-
+        .map_err(|error| Error::Other(format!("http proxy CONNECT: {error}")))?
+        .into_inner();
     Ok(stream)
-}
-
-async fn read_http_proxy_connect_response(stream: &mut TcpStream) -> Result<String, Error> {
-    let mut response = Vec::new();
-    let mut buffer = [0u8; 512];
-    loop {
-        let read = stream
-            .read(&mut buffer)
-            .await
-            .map_err(|error| Error::Other(format!("http proxy read: {error}")))?;
-        if read == 0 {
-            return Err(Error::Other(
-                "http proxy closed before CONNECT response".into(),
-            ));
-        }
-        response.extend_from_slice(&buffer[..read]);
-        if response.windows(4).any(|window| window == b"\r\n\r\n") {
-            return Ok(String::from_utf8_lossy(&response).into_owned());
-        }
-        if response.len() > MAX_PROXY_CONNECT_RESPONSE {
-            return Err(Error::Other(
-                "http proxy CONNECT response is too large".into(),
-            ));
-        }
-    }
 }
 
 fn host_for_authority(host: &str) -> String {
@@ -330,9 +310,10 @@ fn host_for_authority(host: &str) -> String {
     }
 }
 
-pub fn build_http_proxy_connect_request(target_host: &str, target_port: u16) -> Vec<u8> {
-    let authority = format!("{}:{target_port}", host_for_authority(target_host));
-    format!("CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n").into_bytes()
+fn endpoint_uri(scheme: &str, host: &str, port: u16, label: &str) -> Result<Uri, Error> {
+    format!("{scheme}://{}:{port}", host_for_authority(host))
+        .parse()
+        .map_err(|error| Error::Other(format!("invalid {label}: {error}")))
 }
 
 async fn connect_socks5_proxy(
@@ -340,99 +321,30 @@ async fn connect_socks5_proxy(
     target_host: &str,
     target_port: u16,
 ) -> Result<TcpStream, Error> {
-    let mut stream = open_proxy_tcp_stream(proxy_url).await?;
-    stream
-        .write_all(&[0x05, 0x01, 0x00])
+    let proxy = proxy_connector_uri(proxy_url)?;
+    let target = endpoint_uri("https", target_host, target_port, "websocket proxy target")?;
+    let stream = SocksV5::new(proxy, proxy_tcp_connector())
+        .local_dns(false)
+        .call(target)
         .await
-        .map_err(|error| Error::Other(format!("socks5 greeting write: {error}")))?;
-    let mut auth_response = [0u8; 2];
-    stream
-        .read_exact(&mut auth_response)
-        .await
-        .map_err(|error| Error::Other(format!("socks5 greeting read: {error}")))?;
-    if auth_response != [0x05, 0x00] {
-        return Err(Error::Other(format!(
-            "socks5 proxy rejected no-auth method: {auth_response:?}"
-        )));
-    }
-
-    let request = build_socks5_connect_request(target_host, target_port)?;
-    stream
-        .write_all(&request)
-        .await
-        .map_err(|error| Error::Other(format!("socks5 connect write: {error}")))?;
-    read_socks5_connect_response(&mut stream).await?;
+        .map_err(|error| Error::Other(format!("socks5 proxy CONNECT: {error}")))?
+        .into_inner();
     Ok(stream)
-}
-
-pub fn build_socks5_connect_request(target_host: &str, target_port: u16) -> Result<Vec<u8>, Error> {
-    let host = target_host.as_bytes();
-    if host.len() > u8::MAX as usize {
-        return Err(Error::Other("socks5 target host is too long".into()));
-    }
-
-    let mut request = Vec::with_capacity(7 + host.len());
-    request.extend_from_slice(&[0x05, 0x01, 0x00, 0x03, host.len() as u8]);
-    request.extend_from_slice(host);
-    request.extend_from_slice(&target_port.to_be_bytes());
-    Ok(request)
-}
-
-async fn read_socks5_connect_response(stream: &mut TcpStream) -> Result<(), Error> {
-    let mut header = [0u8; 4];
-    stream
-        .read_exact(&mut header)
-        .await
-        .map_err(|error| Error::Other(format!("socks5 connect read: {error}")))?;
-    if header[0] != 0x05 {
-        return Err(Error::Other(format!(
-            "invalid socks5 response version: {}",
-            header[0]
-        )));
-    }
-    if header[1] != 0x00 {
-        return Err(Error::Other(format!(
-            "socks5 CONNECT failed with status: {}",
-            header[1]
-        )));
-    }
-
-    match header[3] {
-        0x01 => read_discard(stream, 4).await?,
-        0x03 => {
-            let mut len = [0u8; 1];
-            stream
-                .read_exact(&mut len)
-                .await
-                .map_err(|error| Error::Other(format!("socks5 domain read: {error}")))?;
-            read_discard(stream, len[0] as usize).await?;
-        }
-        0x04 => read_discard(stream, 16).await?,
-        value => {
-            return Err(Error::Other(format!(
-                "unsupported socks5 address type: {value}"
-            )));
-        }
-    }
-    read_discard(stream, 2).await
-}
-
-async fn read_discard(stream: &mut TcpStream, len: usize) -> Result<(), Error> {
-    let mut buffer = vec![0u8; len];
-    stream
-        .read_exact(&mut buffer)
-        .await
-        .map_err(|error| Error::Other(format!("proxy response read: {error}")))?;
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         auth_token_from_response, build_auth_url, build_browser_websocket_request,
-        build_http_proxy_connect_request, build_socks5_connect_request, build_transport_url,
-        encode_uri_component, extract_auth_token, normalize_websocket_domain, Error,
+        build_transport_url, connect_http_proxy, connect_socks5_proxy, encode_uri_component,
+        extract_auth_token, normalize_websocket_domain, websocket_connect_error, Error,
     };
+    use std::time::Duration;
+    use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::TcpListener;
+    use tokio_tungstenite::tungstenite::handshake::client::Response;
+    use tokio_tungstenite::tungstenite::Error as TungstenError;
+    use url::Url;
 
     #[test]
     fn builds_default_transport_url() {
@@ -500,16 +412,41 @@ mod tests {
     }
 
     #[test]
-    fn classifies_unauthorized_auth_response() {
-        match auth_token_from_response(401, r#"{"error":{"message":"Missing Credentials"}}"#) {
-            Err(Error::AuthFailure {
-                status_code,
-                reason,
-            }) => {
-                assert_eq!(status_code, Some(401));
-                assert!(reason.contains("Missing Credentials"));
+    fn classifies_auth_token_bootstrap_statuses() {
+        enum Expected {
+            Success,
+            AuthFailure,
+            TransportFailure,
+        }
+
+        let cases = [
+            (200, Expected::Success),
+            (302, Expected::TransportFailure),
+            (401, Expected::AuthFailure),
+            (403, Expected::AuthFailure),
+            (429, Expected::TransportFailure),
+            (500, Expected::TransportFailure),
+        ];
+
+        for (status, expected) in cases {
+            let result = auth_token_from_response(status, r#"{"ok":true,"token":"abc"}"#);
+            match (expected, result) {
+                (Expected::Success, Ok(token)) => assert_eq!(token, "abc"),
+                (
+                    Expected::AuthFailure,
+                    Err(Error::AuthFailure {
+                        status_code,
+                        reason,
+                    }),
+                ) => {
+                    assert_eq!(status_code, Some(status));
+                    assert!(reason.contains(&status.to_string()));
+                }
+                (Expected::TransportFailure, Err(Error::Other(reason))) => {
+                    assert!(reason.contains(&status.to_string()));
+                }
+                (_, other) => panic!("unexpected classification for {status}: {other:?}"),
             }
-            other => panic!("expected auth failure, got {other:?}"),
         }
     }
 
@@ -524,23 +461,86 @@ mod tests {
     }
 
     #[test]
-    fn builds_http_proxy_connect_request() {
-        assert_eq!(
-            build_http_proxy_connect_request("pipeline.vrchat.cloud", 443),
-            b"CONNECT pipeline.vrchat.cloud:443 HTTP/1.1\r\nHost: pipeline.vrchat.cloud:443\r\n\r\n"
-        );
+    fn classifies_unauthorized_websocket_handshake_as_auth_failure() {
+        let mut response = Response::new(None);
+        *response.status_mut() = tokio_tungstenite::tungstenite::http::StatusCode::FORBIDDEN;
+
+        match websocket_connect_error("websocket connect", TungstenError::Http(Box::new(response)))
+        {
+            Error::AuthFailure {
+                status_code,
+                reason,
+            } => {
+                assert_eq!(status_code, Some(403));
+                assert!(reason.contains("websocket connect"));
+            }
+            other => panic!("expected auth failure, got {other:?}"),
+        }
     }
 
-    #[test]
-    fn builds_socks5_connect_request_with_remote_dns() {
-        assert_eq!(
-            build_socks5_connect_request("pipeline.vrchat.cloud", 443).unwrap(),
-            [
-                vec![0x05, 0x01, 0x00, 0x03, 21],
-                b"pipeline.vrchat.cloud".to_vec(),
-                vec![0x01, 0xbb],
-            ]
-            .concat()
-        );
+    #[tokio::test]
+    async fn http_proxy_connector_establishes_tunnel() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let proxy_url = Url::parse(&format!("http://{}", listener.local_addr().unwrap())).unwrap();
+
+        let result = tokio::time::timeout(Duration::from_secs(2), async {
+            let client = connect_http_proxy(&proxy_url, "pipeline.vrchat.cloud", 443);
+            let server = async {
+                let (stream, _) = listener.accept().await.unwrap();
+                let mut stream = BufReader::new(stream);
+                let mut line = String::new();
+                stream.read_line(&mut line).await.unwrap();
+                assert_eq!(line, "CONNECT pipeline.vrchat.cloud:443 HTTP/1.1\r\n");
+                while line != "\r\n" {
+                    line.clear();
+                    stream.read_line(&mut line).await.unwrap();
+                }
+                stream
+                    .get_mut()
+                    .write_all(b"HTTP/1.1 200 OK\r\n\r\n")
+                    .await
+                    .unwrap();
+            };
+            tokio::join!(client, server).0
+        })
+        .await
+        .expect("HTTP proxy connector timed out");
+
+        result.unwrap();
+    }
+
+    #[tokio::test]
+    async fn socks5_proxy_connector_keeps_target_dns_remote() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let proxy_url =
+            Url::parse(&format!("socks5://{}", listener.local_addr().unwrap())).unwrap();
+
+        let result = tokio::time::timeout(Duration::from_secs(2), async {
+            let client = connect_socks5_proxy(&proxy_url, "pipeline.vrchat.cloud", 443);
+            let server = async {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                let mut greeting = [0u8; 3];
+                stream.read_exact(&mut greeting).await.unwrap();
+                assert_eq!(greeting, [0x05, 0x01, 0x00]);
+                stream.write_all(&[0x05, 0x00]).await.unwrap();
+
+                let mut header = [0u8; 5];
+                stream.read_exact(&mut header).await.unwrap();
+                assert_eq!(header, [0x05, 0x01, 0x00, 0x03, 21]);
+                let mut destination = [0u8; 23];
+                stream.read_exact(&mut destination).await.unwrap();
+                assert_eq!(&destination[..21], b"pipeline.vrchat.cloud");
+                assert_eq!(&destination[21..], &443u16.to_be_bytes());
+                stream
+                    .write_all(&[0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
+                    .await
+                    .unwrap();
+            };
+            tokio::join!(client, server).0
+        })
+        .await
+        .expect("SOCKS5 proxy connector timed out");
+
+        result.unwrap();
     }
 }

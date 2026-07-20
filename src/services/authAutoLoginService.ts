@@ -8,17 +8,19 @@ import {
 import type { SavedAuthSnapshot } from '@/repositories/authRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useSessionStore } from '@/state/sessionStore';
 
+import {
+    beginAuthAttempt,
+    ensureCurrentAuthAttempt,
+    isAuthAttemptSupersededError,
+    isCurrentAuthAttempt
+} from './authAttempt';
 import {
     finalizeSuccessfulLogin,
     resolveLoginSessionState,
-    toAuthUserRecord
+    setSignedOutSessionState
 } from './authExecutionService';
-import {
-    applySavedAuthSnapshot,
-    refreshSavedAuthSnapshot
-} from './authSnapshotService';
+import { applySavedAuthSnapshot } from './authSnapshotService';
 import i18n from './i18nService';
 
 const MAX_AUTO_LOGIN_DELAY_SECONDS = 10;
@@ -47,13 +49,13 @@ function createAutoLoginAbortError() {
 }
 
 function autoLoginOutcomeFailureError(
-    outcome: AutoLoginOutcome & { status: 'failed' }
+    outcome: Extract<AutoLoginOutcome, { status: 'failed' }>
 ): AuthAutoLoginError {
     const error: AuthAutoLoginError = new Error(
         outcome.reason || 'Automatic login failed.'
     );
     error.kind = outcome.kind;
-    error.authSnapshot = outcome.snapshot as SavedAuthSnapshot;
+    error.authSnapshot = outcome.snapshot ?? undefined;
     return error;
 }
 
@@ -213,32 +215,26 @@ async function showAuthFailureNotificationSafely(reason: string) {
     }
 }
 
-function setSignedOutSessionState() {
-    useSessionStore.getState().setSessionState({
-        isLoggedIn: false,
-        isFriendsLoaded: false,
-        isFavoritesLoaded: false,
-        sessionPhase: 'signed_out'
-    });
-}
-
 export async function executeReactAutoLogin(
     snapshot: SavedAuthSnapshot,
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const runtimeStore = useRuntimeStore.getState();
-    const displayName =
-        String(snapshot?.autoLoginDisplayName || '').trim() ||
-        snapshot?.lastUserLoggedIn ||
-        'saved account';
-    const lastUserLoggedIn = String(snapshot?.lastUserLoggedIn || '').trim();
-    const throttleKey =
-        String(snapshot?.autoLoginThrottleKey || '').trim() || lastUserLoggedIn;
-
-    const cookieRestoreEligible = Boolean(snapshot?.cookieRestoreEligible);
-    const savedCredentialFallbackAvailable = Boolean(
-        snapshot?.savedCredentialFallbackAvailable
+    const lastUserLoggedIn = String(snapshot.lastUserLoggedIn || '').trim();
+    const savedCredential = snapshot.savedCredentialsList.find(
+        (credential) => credential.user.id === lastUserLoggedIn
     );
+    const displayName =
+        String(savedCredential?.user.displayName || '').trim() ||
+        String(savedCredential?.user.username || '').trim() ||
+        savedCredential?.user.id ||
+        lastUserLoggedIn ||
+        'saved account';
+    const throttleKey = savedCredential?.user.id || lastUserLoggedIn;
+
+    const cookieRestoreEligible = Boolean(lastUserLoggedIn);
+    const savedCredentialFallbackAvailable =
+        snapshot.autoLoginStatus === 'available' && Boolean(savedCredential);
 
     if (!cookieRestoreEligible && !savedCredentialFallbackAvailable) {
         return {
@@ -246,6 +242,8 @@ export async function executeReactAutoLogin(
             snapshot
         };
     }
+
+    const attempt = beginAuthAttempt();
 
     try {
         if (cookieRestoreEligible) {
@@ -264,6 +262,7 @@ export async function executeReactAutoLogin(
                     onCountdown
                 }
             );
+            ensureCurrentAuthAttempt(attempt);
 
             if (signal?.aborted) {
                 throw createAutoLoginAbortError();
@@ -277,15 +276,12 @@ export async function executeReactAutoLogin(
         }
 
         const outcome = await vrchatAuthRepository.autoLoginStart({
-            endpoint: '',
             userId: throttleKey
         });
-        if (signal?.aborted) {
-            throw createAutoLoginAbortError();
-        }
+        ensureCurrentAuthAttempt(attempt);
 
         if (outcome.status === 'throttled') {
-            applySavedAuthSnapshot(outcome.snapshot as SavedAuthSnapshot);
+            applySavedAuthSnapshot(outcome.snapshot);
             setSignedOutSessionState();
             runtimeStore.setStartupTask(
                 'auth',
@@ -305,7 +301,7 @@ export async function executeReactAutoLogin(
 
         if (outcome.status === 'expired') {
             setSignedOutSessionState();
-            applySavedAuthSnapshot(outcome.snapshot as SavedAuthSnapshot);
+            applySavedAuthSnapshot(outcome.snapshot);
             runtimeStore.setStartupTask(
                 'auth',
                 'completed',
@@ -324,41 +320,47 @@ export async function executeReactAutoLogin(
             throw autoLoginOutcomeFailureError(outcome);
         }
 
-        async function restartChallenge() {
-            await vrchatAuthRepository.cancelLoginSession();
+        async function restartChallenge(challengeAttemptId: string) {
+            await vrchatAuthRepository.cancelLoginSession(challengeAttemptId);
+            ensureCurrentAuthAttempt(attempt);
             return vrchatAuthRepository.startLoginSession({
                 mode: 'savedCredential',
-                endpoint: '',
                 userId: throttleKey
             });
         }
 
-        const session = await resolveLoginSessionState(
+        const resolved = await resolveLoginSessionState(
             outcome,
-            restartChallenge
+            restartChallenge,
+            attempt
         );
-        const refreshedSnapshot = await refreshSavedAuthSnapshot();
         const finalSnapshot = await finalizeSuccessfulLogin(
-            refreshedSnapshot,
+            resolved,
             'Authenticated automatically.',
-            toAuthUserRecord(session),
-            {
-                endpoint: session.endpoint,
-                websocket: session.websocket
-            }
+            attempt
         );
 
-        toast.success(await i18n.t('message.auth.auto_login_success'));
+        const successMessage = await i18n.t('message.auth.auto_login_success');
+        ensureCurrentAuthAttempt(attempt);
+        toast.success(successMessage);
         return {
             status: 'success',
             snapshot: finalSnapshot
         };
     } catch (error) {
-        const authError = error as AuthAutoLoginError;
+        const authError: AuthAutoLoginError =
+            error instanceof Error ? error : new Error(String(error));
         if (
-            signal?.aborted ||
-            authError?.code === 'AUTH_AUTO_LOGIN_CANCELLED'
+            !isCurrentAuthAttempt(attempt) ||
+            isAuthAttemptSupersededError(error)
         ) {
+            return {
+                status: 'cancelled',
+                snapshot
+            };
+        }
+        if (authError.code === 'AUTH_AUTO_LOGIN_CANCELLED') {
+            setSignedOutSessionState();
             runtimeStore.setStartupTask(
                 'auth',
                 'completed',
@@ -370,7 +372,7 @@ export async function executeReactAutoLogin(
             };
         }
 
-        if (authError?.authSnapshot) {
+        if (authError.authSnapshot) {
             applySavedAuthSnapshot(authError.authSnapshot);
         }
 
@@ -397,7 +399,7 @@ export async function executeReactAutoLogin(
 
         return {
             status: 'failed',
-            snapshot: authError?.authSnapshot ?? snapshot,
+            snapshot: authError.authSnapshot ?? snapshot,
             error
         };
     }

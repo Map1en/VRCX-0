@@ -30,6 +30,7 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
+import { vrcxWorldDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { parseLocation } from '@/shared/utils/location';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 
@@ -112,6 +113,7 @@ export interface WorldDialogHeaderModel {
     previousInstances: WorldPreviousInstances;
     visibleTags: ReturnType<typeof visibleWorldTags>;
     world: WorldProfileRecord;
+    vrcxWorldUrl: string;
     worldUrl: string;
 }
 
@@ -124,6 +126,7 @@ export interface WorldDialogHeaderCommands {
     onCopyWorldId: () => void;
     onCopyWorldName: () => void;
     onCopyWorldUrl: () => void;
+    onCopyVrcxWorldUrl: () => void;
     onDelete: () => void;
     onDeleteCache: () => void;
     onDeletePersistentData: () => void;
@@ -609,8 +612,7 @@ export function WorldDialogTabbedView({
                 vrchatInstanceRepository
                     .getInstance({
                         worldId: target.worldId,
-                        instanceId: target.instanceId,
-                        endpoint: currentEndpoint
+                        instanceId: target.instanceId
                     })
                     .then((response) => ({
                         location: target.location,
@@ -677,7 +679,6 @@ export function WorldDialogTabbedView({
                 groupProfileRepository
                     .getGroupProfile({
                         groupId,
-                        endpoint: currentEndpoint,
                         includeRoles: false
                     })
                     .then((groupProfile) => ({ groupId, groupProfile }))
@@ -742,8 +743,7 @@ export function WorldDialogTabbedView({
             vrchatInstanceRepository
                 .getInstance({
                     worldId: parsedLocation.worldId,
-                    instanceId: parsedLocation.instanceId,
-                    endpoint: currentEndpoint
+                    instanceId: parsedLocation.instanceId
                 })
                 .then((response) =>
                     isRecord(response.json) ? response.json : null
@@ -832,7 +832,6 @@ export function WorldDialogTabbedView({
                           ? await groupProfileRepository
                                 .getGroupProfile({
                                     groupId: ownerId,
-                                    endpoint: currentEndpoint,
                                     includeRoles: false
                                 })
                                 .catch(() => ({
@@ -847,8 +846,7 @@ export function WorldDialogTabbedView({
                         : ownerId
                           ? await userProfileRepository
                                 .getUserProfile({
-                                    userId: ownerId,
-                                    endpoint: currentEndpoint
+                                    userId: ownerId
                                 })
                                 .catch(() => ({
                                     id: ownerId,
@@ -927,6 +925,7 @@ export function WorldDialogTabbedView({
     ]);
 
     const worldUrl = world.id ? vrchatWorldUrl(world.id) : '';
+    const vrcxWorldUrl = vrcxWorldDeepLink(world.id);
     const packageUrl = replaceVrcPackageUrl(
         firstText(world.unityPackageUrl, record(world.unityPackage).url)
     );
@@ -974,6 +973,7 @@ export function WorldDialogTabbedView({
         previousInstances,
         visibleTags,
         world,
+        vrcxWorldUrl,
         worldUrl
     };
     const headerCommands: WorldDialogHeaderCommands = {
@@ -985,6 +985,8 @@ export function WorldDialogTabbedView({
         onCopyWorldId: () => copyWorldText(world.id, 'World ID'),
         onCopyWorldName: () => copyWorldText(world.name, 'World name'),
         onCopyWorldUrl: () => copyWorldText(worldUrl, 'World URL'),
+        onCopyVrcxWorldUrl: () =>
+            copyWorldText(vrcxWorldUrl, t('dialog.world.info.vrcx_url')),
         onDelete,
         onDeleteCache,
         onDeletePersistentData,

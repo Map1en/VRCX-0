@@ -42,7 +42,6 @@ export function useMyAvatarsRows() {
         setDetail('');
         myAvatarRepository
             .getMyAvatars({
-                endpoint: currentEndpoint,
                 currentUserId,
                 currentAvatarId,
                 previousAvatarSwapTime

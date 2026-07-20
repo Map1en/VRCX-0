@@ -8,6 +8,7 @@ import {
     type VrchatAvatarImpostorCreateInput,
     type VrchatAvatarSaveInput
 } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import {
     avatarIdInput,
@@ -16,7 +17,7 @@ import {
 } from './shared';
 import type { AvatarIdInput, AvatarRecord, SaveAvatarInput } from './types';
 
-export async function selectAvatar({ avatarId, endpoint = '' }: AvatarIdInput) {
+export async function selectAvatar({ avatarId }: AvatarIdInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -25,24 +26,19 @@ export async function selectAvatar({ avatarId, endpoint = '' }: AvatarIdInput) {
     }
 
     const response = unwrapVrchatAvatarResponse<AvatarRecord>(
-        await commands.appVrchatAvatarSelect(
-            avatarIdInput(normalizedAvatarId, endpoint)
-        ),
+        await commands.appVrchatAvatarSelect(avatarIdInput(normalizedAvatarId)),
         `avatars/${encodeURIComponent(normalizedAvatarId)}/select`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
-            queryKeys.avatar(normalizedAvatarId, endpoint),
+            queryKeys.avatar(normalizedAvatarId, DEFAULT_VRCHAT_API_ENDPOINT),
             response.json
         );
     }
     return response;
 }
 
-export async function selectFallbackAvatar({
-    avatarId,
-    endpoint = ''
-}: AvatarIdInput) {
+export async function selectFallbackAvatar({ avatarId }: AvatarIdInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -52,24 +48,20 @@ export async function selectFallbackAvatar({
 
     const response = unwrapVrchatAvatarResponse<AvatarRecord>(
         await commands.appVrchatAvatarSelectFallback(
-            avatarIdInput(normalizedAvatarId, endpoint)
+            avatarIdInput(normalizedAvatarId)
         ),
         `avatars/${encodeURIComponent(normalizedAvatarId)}/selectfallback`
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
-            queryKeys.avatar(normalizedAvatarId, endpoint),
+            queryKeys.avatar(normalizedAvatarId, DEFAULT_VRCHAT_API_ENDPOINT),
             response.json
         );
     }
     return response;
 }
 
-export async function saveAvatar({
-    avatarId,
-    params = {},
-    endpoint = ''
-}: SaveAvatarInput) {
+export async function saveAvatar({ avatarId, params = {} }: SaveAvatarInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -79,7 +71,6 @@ export async function saveAvatar({
 
     const input = {
         avatarId: normalizedAvatarId,
-        endpoint,
         params
     } satisfies VrchatAvatarSaveInput;
     const response = unwrapVrchatAvatarResponse<AvatarRecord>(
@@ -88,14 +79,14 @@ export async function saveAvatar({
     );
     if (response.json && typeof response.json === 'object') {
         setCachedQueryData(
-            queryKeys.avatar(normalizedAvatarId, endpoint),
+            queryKeys.avatar(normalizedAvatarId, DEFAULT_VRCHAT_API_ENDPOINT),
             response.json
         );
     }
     return response;
 }
 
-export async function deleteAvatar({ avatarId, endpoint = '' }: AvatarIdInput) {
+export async function deleteAvatar({ avatarId }: AvatarIdInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -104,24 +95,24 @@ export async function deleteAvatar({ avatarId, endpoint = '' }: AvatarIdInput) {
     }
 
     const response = unwrapVrchatAvatarResponse<AvatarRecord>(
-        await commands.appVrchatAvatarDelete(
-            avatarIdInput(normalizedAvatarId, endpoint)
-        ),
+        await commands.appVrchatAvatarDelete(avatarIdInput(normalizedAvatarId)),
         `avatars/${encodeURIComponent(normalizedAvatarId)}`
     );
     await Promise.allSettled([
-        invalidateEntityQueries(queryKeys.avatar(normalizedAvatarId, endpoint)),
         invalidateEntityQueries(
-            queryKeys.avatarGallery(normalizedAvatarId, endpoint)
+            queryKeys.avatar(normalizedAvatarId, DEFAULT_VRCHAT_API_ENDPOINT)
+        ),
+        invalidateEntityQueries(
+            queryKeys.avatarGallery(
+                normalizedAvatarId,
+                DEFAULT_VRCHAT_API_ENDPOINT
+            )
         )
     ]);
     return response;
 }
 
-export async function createImposter({
-    avatarId,
-    endpoint = ''
-}: AvatarIdInput) {
+export async function createImposter({ avatarId }: AvatarIdInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -131,7 +122,6 @@ export async function createImposter({
 
     const input = {
         avatarId: normalizedAvatarId,
-        endpoint,
         emptyBody: true
     } satisfies VrchatAvatarImpostorCreateInput;
     return unwrapVrchatAvatarResponse<AvatarRecord>(
@@ -140,10 +130,7 @@ export async function createImposter({
     );
 }
 
-export async function deleteImposter({
-    avatarId,
-    endpoint = ''
-}: AvatarIdInput) {
+export async function deleteImposter({ avatarId }: AvatarIdInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(
@@ -153,7 +140,7 @@ export async function deleteImposter({
 
     return unwrapVrchatAvatarResponse<AvatarRecord>(
         await commands.appVrchatAvatarImpostorDelete(
-            avatarIdInput(normalizedAvatarId, endpoint)
+            avatarIdInput(normalizedAvatarId)
         ),
         `avatars/${encodeURIComponent(normalizedAvatarId)}/impostor`
     );

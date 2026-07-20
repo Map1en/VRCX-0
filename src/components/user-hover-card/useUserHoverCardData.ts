@@ -71,7 +71,6 @@ export function useUserHoverCardData({
         userProfileRepository
             .getUserProfile({
                 userId: normalizedUserId,
-                endpoint,
                 dialog: false,
                 isFriend
             })
@@ -109,8 +108,7 @@ export function useUserHoverCardData({
 
     const worldQuery = useQuery({
         queryKey: queryKeys.world(worldId, endpoint),
-        queryFn: () =>
-            worldProfileRepository.fetchWorldProfile({ worldId, endpoint }),
+        queryFn: () => worldProfileRepository.fetchWorldProfile({ worldId }),
         enabled: Boolean(worldId),
         staleTime: entityQueryPolicies.worldBasic.staleTime,
         gcTime: entityQueryPolicies.worldBasic.gcTime,
@@ -133,7 +131,7 @@ export function useUserHoverCardData({
         }
         setPopulationLoading(true);
         vrchatInstanceRepository
-            .getInstance({ worldId, instanceId, endpoint })
+            .getInstance({ worldId, instanceId })
             .then((response: unknown) => {
                 if (active) {
                     const responseRecord =

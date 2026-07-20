@@ -417,8 +417,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             await notificationPersistenceRepository.markSeen({
                 userId: auth.currentUserId,
                 id: notification.id,
-                version: notification.version,
-                endpoint: auth.currentUserEndpoint
+                version: notification.version
             });
             get().markNotificationsSeen(notification.id);
             await get().loadForCurrentUser();

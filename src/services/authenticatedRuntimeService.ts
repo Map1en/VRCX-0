@@ -1,6 +1,7 @@
 import type {
     AuthenticatedRuntimePhaseSnapshot,
-    RealtimeWsStatusPayload
+    RealtimeWsStatusPayload,
+    RuntimeVrchatAuthFailurePayload
 } from '@/platform/tauri/bindings';
 import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -16,9 +17,9 @@ import { signalFriendLogChanged } from './friendLogMutationService';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 let latestSnapshot: AuthenticatedRuntimePhaseSnapshot | null = null;
-let appliedFriendRunId = 0;
+let appliedFriendBaselineKey = '';
 let appliedFavoritesRunId = 0;
-let initializedTransportRunId = 0;
+let initializedTransportKey = '';
 let friendStepKey = '';
 let favoritesStepKey = '';
 let pendingRealtimeStatus: RealtimeWsStatusPayload | null = null;
@@ -40,6 +41,24 @@ function matchesCurrentSession(
             normalizeVrchatEndpointKey(snapshot.endpoint) &&
         auth.currentUserWebsocket === snapshot.websocket
     );
+}
+
+function replacesLatestSnapshot(
+    snapshot: AuthenticatedRuntimePhaseSnapshot
+): boolean {
+    if (!latestSnapshot || snapshot.runId !== latestSnapshot.runId) {
+        return !latestSnapshot || snapshot.runId > latestSnapshot.runId;
+    }
+    if (
+        snapshot.friendBaselineRevision !==
+        latestSnapshot.friendBaselineRevision
+    ) {
+        return (
+            snapshot.friendBaselineRevision >
+            latestSnapshot.friendBaselineRevision
+        );
+    }
+    return snapshot.updatedAt >= latestSnapshot.updatedAt;
 }
 
 function applyFriendStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
@@ -65,10 +84,11 @@ function applyFriendStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
 
     const output = snapshot.friendBaseline;
     const baseline = isRecord(output?.snapshot) ? output.snapshot : null;
+    const baselineKey = `${snapshot.runId}:${snapshot.friendBaselineRevision}`;
     if (
         snapshot.friends.status !== 'ready' ||
         !baseline ||
-        appliedFriendRunId === snapshot.runId
+        appliedFriendBaselineKey === baselineKey
     ) {
         return;
     }
@@ -86,7 +106,7 @@ function applyFriendStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     if (output?.friendLogChanged) {
         signalFriendLogChanged();
     }
-    appliedFriendRunId = snapshot.runId;
+    appliedFriendBaselineKey = baselineKey;
 }
 
 function applyFavoritesStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
@@ -134,9 +154,20 @@ function applyFavoritesStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
 }
 
 function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
+    if (snapshot.phase === 'error') {
+        pendingRealtimeStatus = null;
+        initializedTransportKey = `${snapshot.runId}:error`;
+        useRuntimeStore.getState().setTransportState({
+            websocketConnected: false,
+            websocketDomain: snapshot.websocket,
+            lastDisconnectedAt: snapshot.updatedAt || new Date().toISOString()
+        });
+        useSessionStore.getState().setTransportStatus('pipeline-error');
+        return;
+    }
     if (snapshot.phase === 'stopped') {
         pendingRealtimeStatus = null;
-        initializedTransportRunId = snapshot.runId;
+        initializedTransportKey = `${snapshot.runId}:stopped`;
         useRuntimeStore.getState().setTransportState({
             websocketConnected: false,
             websocketDomain: snapshot.websocket,
@@ -146,14 +177,20 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         return;
     }
 
-    if (initializedTransportRunId === snapshot.runId) {
+    const transport = snapshot.realtimeTransport;
+    const transportKey = transport
+        ? `${snapshot.runId}:${transport.clientRunId}:${transport.generation}:${transport.sessionGeneration}`
+        : `${snapshot.runId}:pending:${snapshot.realtime.status}:${snapshot.realtime.attempt}`;
+    if (initializedTransportKey === transportKey) {
         return;
     }
-    initializedTransportRunId = snapshot.runId;
+    initializedTransportKey = transportKey;
+    if (!transport && snapshot.realtime.status !== 'running') {
+        return;
+    }
     useRuntimeStore.getState().setTransportState({
         websocketConnected: false,
         websocketDomain: snapshot.websocket,
-        reconnectCount: 0,
         lastConnectedAt: null,
         lastDisconnectedAt: null
     });
@@ -163,6 +200,33 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
 function positiveNumber(value: unknown): number | null {
     const number = Number(value);
     return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+export function matchesAuthenticatedRuntimeAuthFailure(
+    failure: RuntimeVrchatAuthFailurePayload
+): boolean {
+    const snapshot = latestSnapshot;
+    if (
+        !snapshot ||
+        (snapshot.phase !== 'starting' && snapshot.phase !== 'ready') ||
+        snapshot.userId !== failure.ownerUserId.trim() ||
+        normalizeVrchatEndpointKey(snapshot.endpoint) !==
+            normalizeVrchatEndpointKey(failure.endpoint) ||
+        snapshot.authScopeGeneration !== failure.authScopeGeneration
+    ) {
+        return false;
+    }
+    const expected = failure.realtimeTransport;
+    const current = snapshot.realtimeTransport;
+    return (
+        !expected ||
+        Boolean(
+            current &&
+            current.clientRunId === expected.clientRunId &&
+            current.generation === expected.generation &&
+            current.sessionGeneration === expected.sessionGeneration
+        )
+    );
 }
 
 function applyRealtimeStatus(
@@ -186,10 +250,19 @@ function applyRealtimeStatus(
         (sessionGeneration !== null &&
             sessionGeneration !== transport.sessionGeneration)
     ) {
+        if (
+            clientRunId === snapshot.runId &&
+            generation !== null &&
+            generation > transport.generation
+        ) {
+            pendingRealtimeStatus = payload;
+        }
         return;
     }
 
-    pendingRealtimeStatus = null;
+    if (pendingRealtimeStatus === payload) {
+        pendingRealtimeStatus = null;
+    }
     const runtimeStore = useRuntimeStore.getState();
     const sessionStore = useSessionStore.getState();
     const websocketDomain = String(
@@ -208,15 +281,6 @@ function applyRealtimeStatus(
                 lastConnectedAt: at
             });
             sessionStore.setTransportStatus('pipeline-connected');
-            break;
-        case 'reconnecting':
-            runtimeStore.incrementTransportReconnect();
-            runtimeStore.setTransportState({
-                websocketConnected: false,
-                websocketDomain,
-                lastDisconnectedAt: at
-            });
-            sessionStore.setTransportStatus('pipeline-reconnecting');
             break;
         case 'error':
         case 'authFailure':
@@ -241,10 +305,9 @@ function applyRealtimeStatus(
 export function applyAuthenticatedRuntimePhaseSnapshot(
     snapshot: AuthenticatedRuntimePhaseSnapshot
 ): void {
-    if (!matchesCurrentSession(snapshot)) {
+    if (!matchesCurrentSession(snapshot) || !replacesLatestSnapshot(snapshot)) {
         return;
     }
-
     latestSnapshot = snapshot;
     applyFriendStep(snapshot);
     applyFavoritesStep(snapshot);
@@ -274,9 +337,9 @@ export function handleAuthenticatedRuntimeRealtimeStatus(
 
 export function resetAuthenticatedRuntimeMirror(): void {
     latestSnapshot = null;
-    appliedFriendRunId = 0;
+    appliedFriendBaselineKey = '';
     appliedFavoritesRunId = 0;
-    initializedTransportRunId = 0;
+    initializedTransportKey = '';
     friendStepKey = '';
     favoritesStepKey = '';
     pendingRealtimeStatus = null;

@@ -90,6 +90,24 @@ fn writable_group_config_key(kind: &str, owner_user_id: &str) -> Result<String> 
     }
 }
 
+fn group_config_realm_key(
+    db: &DatabaseService,
+    kind: &str,
+    owner_user_id: &str,
+    group_name: &str,
+) -> Result<String> {
+    let account_key = writable_group_config_key(kind, owner_user_id)?;
+    if kind.trim() != "friend"
+        || read_config_string_array(db, &account_key)?
+            .iter()
+            .any(|value| value == group_name)
+    {
+        Ok(account_key)
+    } else {
+        Ok(local_group_config_key(kind)?.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -230,23 +248,5 @@ mod tests {
                 ("usr_shared".into(), "same".into()),
             ]
         );
-    }
-}
-
-fn group_config_realm_key(
-    db: &DatabaseService,
-    kind: &str,
-    owner_user_id: &str,
-    group_name: &str,
-) -> Result<String> {
-    let account_key = writable_group_config_key(kind, owner_user_id)?;
-    if kind.trim() != "friend"
-        || read_config_string_array(db, &account_key)?
-            .iter()
-            .any(|value| value == group_name)
-    {
-        Ok(account_key)
-    } else {
-        Ok(local_group_config_key(kind)?.to_string())
     }
 }

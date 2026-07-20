@@ -161,3 +161,11 @@ fn error_summary_redacts_provider_id_variants() {
         );
     }
 }
+
+#[test]
+fn error_summary_preserves_not_found_without_leaking_notification_ids() {
+    assert_eq!(
+        sanitize_error_summary("result=not_found notification=not_123"),
+        "result=not_found notification=<id>"
+    );
+}

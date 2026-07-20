@@ -1,10 +1,9 @@
 use super::event_patch::{
-    apply_friend_event, apply_patch_to_state, apply_refetched_friend_profile_event,
-    apply_trusted_friend_add_event, is_friend_event_type, record_to_value,
+    apply_friend_event, apply_record_patch_to_state, apply_refetched_friend_profile_event,
+    apply_trusted_friend_add_event, is_friend_event_type, FriendRecordPatch,
 };
 use super::persistence::{is_online_state, offline_feed_entry};
-use super::projection::state_bucket_from_patch;
-use super::utils::{bool_field, object_with_pending_offline, EventTime};
+use super::utils::EventTime;
 use super::*;
 
 pub(super) const PENDING_OFFLINE_DELAY_MS: u64 = 170_000;
@@ -17,7 +16,8 @@ pub(super) struct RecentGps {
 #[derive(Clone, Debug)]
 pub(super) struct PendingOffline {
     pub(super) token: u64,
-    pub(super) patch: serde_json::Value,
+    pub(super) patch: FriendRecordPatch,
+    pub(super) state_bucket: String,
     pub(super) previous: FriendRecord,
 }
 
@@ -145,10 +145,8 @@ impl RealtimeFriendsRuntime {
                 let Some(existing_record) = existing_record else {
                     continue;
                 };
-                let is_placeholder = record.extra.get("$profileSource").and_then(Value::as_str)
-                    == Some("placeholder");
-                if is_placeholder {
-                    preserve_newer_presence_fields(record, existing_record);
+                if record.is_placeholder() {
+                    preserve_fields_over_placeholder(record, existing_record);
                 }
                 if (record.display_name.is_empty() || record.display_name == record.id)
                     && !existing_record.display_name.is_empty()
@@ -199,7 +197,7 @@ impl RealtimeFriendsRuntime {
             .map(|(user_id, record, previous)| {
                 offline_feed_entry(
                     &user_id,
-                    &record_to_value(&record),
+                    &record,
                     &previous,
                     &confirmed_at_iso,
                     confirmed_at.timestamp_millis(),
@@ -214,7 +212,8 @@ impl RealtimeFriendsRuntime {
                 user_id.clone(),
                 PendingOffline {
                     token,
-                    patch: record_to_value(&new_record),
+                    patch: FriendRecordPatch::from_record(&new_record),
+                    state_bucket: new_record.state_bucket.clone(),
                     previous: existing_online,
                 },
             );
@@ -412,16 +411,6 @@ impl RealtimeFriendsRuntime {
         RealtimeFriendApplyResult::Output(Box::new(output))
     }
 
-    pub fn apply_refetched_user_profile(
-        &self,
-        generation: u64,
-        user_id: &str,
-        profile: serde_json::Value,
-        received_at: &str,
-    ) -> RealtimeFriendApplyResult {
-        self.apply_refetched_user_profile_inner(generation, user_id, None, profile, received_at)
-    }
-
     pub(crate) fn apply_refetched_user_profile_if_sequence(
         &self,
         generation: u64,
@@ -499,13 +488,19 @@ impl RealtimeFriendsRuntime {
             .baseline
             .as_ref()
             .and_then(|baseline| baseline.friends_by_id.get(user_id))?;
-        let current_value = record_to_value(current);
-        if is_online_state(current) && !bool_field(current_value.get("pendingOffline")) {
+        if is_online_state(current)
+            && !current
+                .extra
+                .get("pendingOffline")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+        {
             return None;
         }
 
-        let patch = object_with_pending_offline(pending.patch, false);
-        let state_bucket = state_bucket_from_patch(&patch, "offline");
+        let mut patch = pending.patch;
+        patch.set_pending_offline(false);
+        let state_bucket = pending.state_bucket;
         let previous = pending.previous;
         let mut output = RealtimeFriendOutput {
             owner_user_id,
@@ -516,22 +511,22 @@ impl RealtimeFriendsRuntime {
             },
             ..RealtimeFriendOutput::default()
         };
-        apply_patch_to_state(
+        apply_record_patch_to_state(
             &mut state,
             &mut output,
             user_id,
             patch,
             &state_bucket,
+            "explicit",
             &now_iso,
         );
+        let current = state
+            .baseline
+            .as_ref()
+            .and_then(|baseline| baseline.friends_by_id.get(user_id))?;
         output.persistence.feed_entries.push(offline_feed_entry(
             user_id,
-            output
-                .projection
-                .patches
-                .last()
-                .map(|patch| &patch.patch)
-                .unwrap_or(&Value::Null),
+            current,
             &previous,
             &now_iso,
             Utc::now().timestamp_millis(),
@@ -577,7 +572,7 @@ fn record_output_friend_state_sequence(
     }
 }
 
-fn preserve_newer_presence_fields(incoming: &mut FriendRecord, existing: &FriendRecord) {
+fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &FriendRecord) {
     incoming.location = existing.location.clone();
     incoming.traveling_to_location = existing.traveling_to_location.clone();
     incoming.world_id = existing.world_id.clone();
@@ -597,6 +592,15 @@ fn preserve_newer_presence_fields(incoming: &mut FriendRecord, existing: &Friend
         "$travelingToLocation",
         "$travelingToTime",
         "travelingToLocation",
+        "tags",
+        "developerType",
+        "trustLevel",
+        "$trustLevel",
+        "$trustClass",
+        "$trustSortNum",
+        "$isModerator",
+        "$isTroll",
+        "$isProbableTroll",
     ] {
         match existing.extra.get(key) {
             Some(value) => {

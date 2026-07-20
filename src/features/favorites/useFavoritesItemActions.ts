@@ -37,7 +37,6 @@ type FavoriteFriendRecord = Record<string, unknown> & {
 export function useFavoritesItemActions({
     avatarHistoryLoading,
     canInviteFromCurrentLocation,
-    currentEndpoint,
     currentInviteLocation,
     currentUserId,
     friendsById,
@@ -57,7 +56,6 @@ export function useFavoritesItemActions({
 }: {
     avatarHistoryLoading: boolean;
     canInviteFromCurrentLocation: boolean;
-    currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
     friendsById: Record<string, unknown>;
@@ -177,8 +175,7 @@ export function useFavoritesItemActions({
         try {
             const opened = await tryOpenLaunchLocation(
                 location,
-                parsedLocation.shortName || '',
-                currentEndpoint
+                parsedLocation.shortName || ''
             );
             if (opened) {
                 toast.success(
@@ -224,8 +221,7 @@ export function useFavoritesItemActions({
         try {
             await selfInviteToInstance(
                 location,
-                parsedLocation.shortName || '',
-                currentEndpoint
+                parsedLocation.shortName || ''
             );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
@@ -283,7 +279,6 @@ export function useFavoritesItemActions({
             const inviteLocation = parsedLocation.tag || currentInviteLocation;
             await sendInviteToLocation({
                 receiverUserId: friendId,
-                endpoint: currentEndpoint,
                 instanceId: inviteLocation,
                 worldId: parsedLocation.worldId,
                 rsvp: true
@@ -317,8 +312,7 @@ export function useFavoritesItemActions({
         }
         try {
             await sendRequestInviteToUser({
-                receiverUserId: friendId,
-                endpoint: currentEndpoint
+                receiverUserId: friendId
             });
             toast.success(t('view.favorite.success.invite_request_sent'));
         } catch (error) {
@@ -338,7 +332,6 @@ export function useFavoritesItemActions({
         }
         try {
             const result = await boopPrompt({
-                endpoint: currentEndpoint,
                 targetLabel:
                     friendText(friend?.displayName) ||
                     friendText(friend?.username) ||
@@ -349,8 +342,7 @@ export function useFavoritesItemActions({
             }
             await sendBoopToUser({
                 userId: friendId,
-                emojiId: result.value,
-                endpoint: currentEndpoint
+                emojiId: result.value
             });
             toast.success(t('view.favorite.success.boop_sent'));
         } catch (error) {
@@ -380,8 +372,7 @@ export function useFavoritesItemActions({
         }
         try {
             await avatarProfileRepository.selectAvatar({
-                avatarId: item.id,
-                endpoint: currentEndpoint
+                avatarId: item.id
             });
             toast.success(t('view.favorite.success.avatar_selected'));
         } catch (error) {

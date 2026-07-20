@@ -2,28 +2,10 @@
 
 use serde_json::Value;
 use tauri::State;
-use vrcx_0_application::AuthenticatedRuntimePhaseSnapshot;
 use vrcx_0_application_core::FriendProfileLoadStatusPayload;
 
 use crate::error::AppError;
 use crate::state::AppState;
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__authenticated_runtime_session_start(
-    state: State<'_, AppState>,
-    user_id: String,
-    endpoint: String,
-    websocket: String,
-    current_user_snapshot: Value,
-) -> Result<AuthenticatedRuntimePhaseSnapshot, AppError> {
-    Ok(state.start_frontend_authenticated_runtime(
-        user_id,
-        endpoint,
-        websocket,
-        current_user_snapshot,
-    )?)
-}
 
 #[tauri::command]
 #[specta::specta]

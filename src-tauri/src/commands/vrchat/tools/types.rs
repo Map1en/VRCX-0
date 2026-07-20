@@ -7,8 +7,6 @@ use serde_json::Value;
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsCalendarListInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) params: HashMap<String, Value>,
 }
 
@@ -16,16 +14,12 @@ pub struct VrchatToolsCalendarListInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsCalendarGroupInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) group_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsCalendarEventInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) group_id: String,
     #[serde(default)]
@@ -35,8 +29,6 @@ pub struct VrchatToolsCalendarEventInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsFollowGroupEventInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) group_id: String,
     #[serde(default)]
@@ -49,8 +41,6 @@ pub struct VrchatToolsFollowGroupEventInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsUserNoteSaveInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) target_user_id: String,
     #[serde(default)]
     pub(crate) note: String,
@@ -59,8 +49,6 @@ pub struct VrchatToolsUserNoteSaveInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsUserReportInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
@@ -75,8 +63,6 @@ pub struct VrchatToolsUserReportInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsInviteMessagesInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) current_user_id: String,
     #[serde(default)]
     pub(crate) message_type: String,
@@ -85,8 +71,6 @@ pub struct VrchatToolsInviteMessagesInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatToolsInviteMessageEditInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) current_user_id: String,
     #[serde(default)]

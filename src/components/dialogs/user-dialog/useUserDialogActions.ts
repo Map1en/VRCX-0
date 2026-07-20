@@ -410,7 +410,6 @@ export function useUserDialogActions({
                 if (incomingNotification) {
                     await hideRemoteAndExpireNotification({
                         currentUserId,
-                        endpoint: requestEndpoint,
                         notification: incomingNotification
                     });
                 } else {
@@ -512,15 +511,12 @@ export function useUserDialogActions({
         actionStatusRef.current = 'report-hacking';
         setActionStatus('report-hacking');
         try {
-            await vrchatToolsRepository.reportUser(
-                {
-                    userId: rosterUserId,
-                    contentType: 'user',
-                    reason: 'behavior-hacking',
-                    type: 'report'
-                },
-                { endpoint: currentEndpoint }
-            );
+            await vrchatToolsRepository.reportUser({
+                userId: rosterUserId,
+                contentType: 'user',
+                reason: 'behavior-hacking',
+                type: 'report'
+            });
             toast.success(t('dialog.user.success.report_sent'));
         } catch (error) {
             toast.error(
@@ -569,13 +565,11 @@ export function useUserDialogActions({
         try {
             await dismissBoopNotifications({
                 currentUserId,
-                endpoint: context.endpoint,
                 senderUserId: context.userId
             });
             await sendBoopToUser({
                 userId: context.userId,
-                emojiId,
-                endpoint: context.endpoint
+                emojiId
             });
             setBoopDialogRequest(null);
             toast.success(t('dialog.user.success.boop_sent'));

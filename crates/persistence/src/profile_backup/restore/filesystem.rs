@@ -225,7 +225,7 @@ pub(super) fn hash_file(path: &Path) -> Result<(String, u64), Error> {
     hash_file_with_progress(path, |_, _| {})
 }
 
-pub(super) fn hash_file_with_progress(
+pub(crate) fn hash_file_with_progress(
     path: &Path,
     mut progress: impl FnMut(u64, u64),
 ) -> Result<(String, u64), Error> {
@@ -249,7 +249,7 @@ pub(super) fn hash_file_with_progress(
     Ok((sha256_hex(hasher.finalize()), bytes))
 }
 
-pub(super) fn create_private_file(path: &Path) -> Result<File, Error> {
+pub(crate) fn create_private_file(path: &Path) -> Result<File, Error> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
@@ -294,7 +294,7 @@ pub(super) fn sync_directory(path: &Path) {
     }
 }
 
-pub(super) fn sync_directory_durable(path: &Path) -> Result<(), Error> {
+pub(crate) fn sync_directory_durable(path: &Path) -> Result<(), Error> {
     #[cfg(unix)]
     {
         File::open(path)?.sync_all()?;

@@ -46,7 +46,6 @@ import {
 } from './groupCalendarModel';
 import { GroupEventCard } from './GroupEventCard';
 import {
-    getEndpoint,
     getEventGroupId,
     getEventId,
     selectedDateKey,
@@ -232,7 +231,6 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                 try {
                     const group = await groupProfileRepository.getGroupProfile({
                         groupId,
-                        endpoint: getEndpoint(),
                         includeRoles: false
                     });
                     nextNames[groupId] = group.name || groupId;
@@ -267,13 +265,11 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
             const [calendarRows, followingRows, featuredRows] =
                 await Promise.all([
                     vrchatToolsRepository.getAllGroupCalendars(params, {
-                        endpoint: getEndpoint(),
                         force
                     }),
                     vrchatToolsRepository.getAllFollowingGroupCalendars(
                         params,
                         {
-                            endpoint: getEndpoint(),
                             force
                         }
                     ),
@@ -281,7 +277,6 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                         ? vrchatToolsRepository.getAllFeaturedGroupCalendars(
                               params,
                               {
-                                  endpoint: getEndpoint(),
                                   force
                               }
                           )
@@ -356,10 +351,11 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
         }
         const nextFollowing = !followingIds.includes(eventId);
         try {
-            await vrchatToolsRepository.followGroupEvent(
-                { groupId, eventId, isFollowing: nextFollowing },
-                { endpoint: getEndpoint() }
-            );
+            await vrchatToolsRepository.followGroupEvent({
+                groupId,
+                eventId,
+                isFollowing: nextFollowing
+            });
             setFollowingIds((current: any) =>
                 updateArrayValue(current, eventId, nextFollowing)
             );

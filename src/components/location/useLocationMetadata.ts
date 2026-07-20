@@ -102,8 +102,7 @@ export function useLocationMetadataBatch(
             queryKey: queryKeys.world(worldId, currentEndpoint),
             queryFn: () =>
                 worldProfileRepository.fetchWorldProfile({
-                    worldId,
-                    endpoint: currentEndpoint
+                    worldId
                 }),
             enabled: Boolean(worldId),
             staleTime: entityQueryPolicies.worldBasic.staleTime,
@@ -121,7 +120,6 @@ export function useLocationMetadataBatch(
             queryFn: () =>
                 groupProfileRepository.fetchGroupProfile({
                     groupId,
-                    endpoint: currentEndpoint,
                     includeRoles: false
                 }),
             enabled: Boolean(groupId),

@@ -211,8 +211,7 @@ export function LaunchDialogHost() {
         resolveLaunchDialogDetails(
             launchDialog.tag,
             launchDialog.shortName,
-            launchDialog.launchToken,
-            currentEndpoint
+            launchDialog.launchToken
         )
             .then((nextDetails: any) => {
                 if (active) {
@@ -245,7 +244,6 @@ export function LaunchDialogHost() {
             active = false;
         };
     }, [
-        currentEndpoint,
         launchDialog.launchToken,
         launchDialog.open,
         launchDialog.shortName,
@@ -297,20 +295,10 @@ export function LaunchDialogHost() {
             if (!result.ok) {
                 return false;
             }
-            await launchVrchat(
-                actionTag,
-                actionLaunchToken,
-                nextDesktopMode,
-                currentEndpoint
-            );
+            await launchVrchat(actionTag, actionLaunchToken, nextDesktopMode);
             return true;
         }
-        await launchVrchat(
-            actionTag,
-            actionLaunchToken,
-            nextDesktopMode,
-            currentEndpoint
-        );
+        await launchVrchat(actionTag, actionLaunchToken, nextDesktopMode);
         return true;
     }
 
@@ -419,8 +407,7 @@ export function LaunchDialogHost() {
                                         runAction('attach', () =>
                                             attachRunningVrchat(
                                                 actionTag,
-                                                actionLaunchToken,
-                                                currentEndpoint
+                                                actionLaunchToken
                                             )
                                         );
                                     }}
@@ -438,8 +425,7 @@ export function LaunchDialogHost() {
                                     runAction('self-invite', () =>
                                         selfInviteToInstance(
                                             actionTag,
-                                            actionLaunchToken,
-                                            currentEndpoint
+                                            actionLaunchToken
                                         )
                                     );
                                 }}

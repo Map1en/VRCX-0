@@ -59,9 +59,7 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey(`prints:${normalizedPrintId}`);
         try {
-            await mediaRepository.deletePrint(normalizedPrintId, {
-                endpoint: currentEndpoint
-            });
+            await mediaRepository.deletePrint(normalizedPrintId);
             if (isRuntimeAuthTarget(authTarget)) {
                 setAssets((current: any) => ({
                     ...current,
@@ -130,7 +128,6 @@ export function useGalleryInventoryActions({
         try {
             const nextUser = await userProfileRepository.updateCurrentUser({
                 userId: currentUserId,
-                endpoint: currentEndpoint,
                 params: {
                     [fieldName]: nextValue
                 }
@@ -185,12 +182,7 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey(`inventory:${normalizedInventoryId}`);
         try {
-            await mediaRepository.consumeInventoryBundle(
-                normalizedInventoryId,
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            await mediaRepository.consumeInventoryBundle(normalizedInventoryId);
             if (isRuntimeAuthTarget(authTarget)) {
                 setAssets((current: any) => ({
                     ...current,
@@ -233,9 +225,7 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value, {
-                endpoint: currentEndpoint
-            });
+            await mediaRepository.redeemReward(result.value);
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshInventory();

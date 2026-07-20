@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use vrcx_0_persistence::data_dir_migration::has_pending_data_dir_migration;
 use vrcx_0_persistence::profile_backup::{
     cleanup_profile_backup_artifacts, clear_profile_restore_rollbacks,
     discard_staged_profile_restore, has_pending_profile_restore, profile_restore_rollback_count,
@@ -20,7 +21,7 @@ use super::{OperationGuard, ProfileBackupRuntime};
 
 impl ProfileBackupRuntime {
     pub fn validate_restore(&self, source: &Path) -> ProfileRestoreValidationOutcome {
-        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return restore_rejected(ProfileRestoreFailureCode::OperationBusy, None);
         };
         if !self.inner.db.is_main_mode() {
@@ -28,6 +29,9 @@ impl ProfileBackupRuntime {
         }
         if has_pending_profile_restore(&self.inner.app_data) {
             return restore_rejected(ProfileRestoreFailureCode::PendingRestore, None);
+        }
+        if has_pending_data_dir_migration(&self.inner.control_dir) {
+            return restore_rejected(ProfileRestoreFailureCode::PendingDataDirMigration, None);
         }
         self.clear_validated_restore();
         let outcome = match validate_and_stage_profile_restore_with_progress(
@@ -61,7 +65,7 @@ impl ProfileBackupRuntime {
     }
 
     pub fn request_restore(&self, expected_sha256: &str) -> ProfileRestoreValidationOutcome {
-        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return restore_rejected(ProfileRestoreFailureCode::OperationBusy, None);
         };
         if !self.inner.db.is_main_mode() {
@@ -69,6 +73,9 @@ impl ProfileBackupRuntime {
         }
         if has_pending_profile_restore(&self.inner.app_data) {
             return restore_rejected(ProfileRestoreFailureCode::PendingRestore, None);
+        }
+        if has_pending_data_dir_migration(&self.inner.control_dir) {
+            return restore_rejected(ProfileRestoreFailureCode::PendingDataDirMigration, None);
         }
         let validation = self
             .inner
@@ -114,7 +121,7 @@ impl ProfileBackupRuntime {
     }
 
     pub fn discard_staged_restore(&self) -> Result<()> {
-        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return Err(crate::Error::Custom(
                 "A profile backup or restore operation is already running.".into(),
             ));
@@ -136,12 +143,14 @@ impl ProfileBackupRuntime {
         let count = profile_restore_rollback_count(&self.inner.app_data)?;
         Ok(ProfileRestoreRollbackState {
             count,
-            cleanup_allowed: count > 0 && !has_pending_profile_restore(&self.inner.app_data),
+            cleanup_allowed: count > 0
+                && !has_pending_profile_restore(&self.inner.app_data)
+                && !has_pending_data_dir_migration(&self.inner.control_dir),
         })
     }
 
     pub fn clear_restore_rollback(&self) -> ProfileRestoreRollbackCleanupOutcome {
-        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return rollback_cleanup_rejected(
                 self.restore_rollback_state().unwrap_or_default(),
                 ProfileBackupErrorCode::OperationBusy,
@@ -162,6 +171,13 @@ impl ProfileBackupRuntime {
         };
         if has_pending_profile_restore(&self.inner.app_data) {
             return rollback_cleanup_rejected(state, ProfileBackupErrorCode::PendingRestore, None);
+        }
+        if has_pending_data_dir_migration(&self.inner.control_dir) {
+            return rollback_cleanup_rejected(
+                state,
+                ProfileBackupErrorCode::PendingDataDirMigration,
+                None,
+            );
         }
         if let Err(error) = clear_profile_restore_rollbacks(&self.inner.app_data) {
             tracing::warn!(error = %error, "failed to clear profile restore rollbacks");

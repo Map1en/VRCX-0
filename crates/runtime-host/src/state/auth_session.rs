@@ -1,11 +1,123 @@
 use super::*;
 
 impl RuntimeHostState {
-    fn login_api(&self) -> Arc<dyn LoginApi> {
-        Arc::new(WebClientLoginApi::new(
-            Arc::clone(&self.web),
-            Arc::clone(&self.db),
-        ))
+    fn apply_login_transition(
+        &self,
+        transition: LoginRuntimeTransition,
+    ) -> std::result::Result<(), String> {
+        match transition {
+            LoginRuntimeTransition::Authenticating => {
+                self.begin_frontend_authentication();
+                Ok(())
+            }
+            LoginRuntimeTransition::Authenticated(session) => self
+                .start_authenticated_runtime_session(session)
+                .map(|_| ())
+                .map_err(|error| error.to_string()),
+            LoginRuntimeTransition::Unauthenticated(reason) => {
+                self.clear_backend_authenticated_session(reason);
+                Ok(())
+            }
+        }
+    }
+
+    pub async fn start_login_session(&self, input: LoginSessionStartInput) -> LoginSessionState {
+        self.runtime_context
+            .login_session
+            .start(
+                Arc::clone(&self.web),
+                Arc::clone(&self.db),
+                self.runtime_context.config(),
+                input,
+                &|transition| self.apply_login_transition(transition),
+            )
+            .await
+    }
+
+    pub async fn start_auto_login(&self, input: AutoLoginStartInput) -> Result<AutoLoginOutcome> {
+        self.runtime_context
+            .login_session
+            .auto_login_start(
+                Arc::clone(&self.web),
+                Arc::clone(&self.db),
+                self.runtime_context.config(),
+                input,
+                &|transition| self.apply_login_transition(transition),
+            )
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn respond_login_session(
+        &self,
+        input: LoginSessionRespondInput,
+    ) -> LoginSessionState {
+        self.runtime_context
+            .login_session
+            .respond_and_transition(
+                input,
+                self.web.as_ref(),
+                self.db.as_ref(),
+                self.runtime_context.config(),
+                &|transition| self.apply_login_transition(transition),
+            )
+            .await
+    }
+
+    pub async fn cancel_login_session(&self, input: LoginSessionCancelInput) -> LoginSessionState {
+        self.runtime_context
+            .login_session
+            .cancel(
+                input.attempt_id,
+                self.web.as_ref(),
+                self.db.as_ref(),
+                &|transition| self.apply_login_transition(transition),
+            )
+            .await
+    }
+
+    pub async fn end_login_session(
+        &self,
+        kind: LoginSessionEnd,
+    ) -> Result<Option<SavedAuthSnapshot>> {
+        let user_id = match &kind {
+            LoginSessionEnd::Logout => self.runtime_context.auth_scope.snapshot().current_user_id,
+            LoginSessionEnd::Invalidated {
+                expected_user_id, ..
+            } => expected_user_id.clone(),
+        };
+        self.runtime_context
+            .login_session
+            .end_session(
+                self.web.as_ref(),
+                self.db.as_ref(),
+                self.runtime_context.config(),
+                LoginSessionEndRequest { user_id, kind },
+                &|kind| self.login_session_invalidation_matches(kind),
+                &|transition| self.apply_login_transition(transition),
+            )
+            .await
+            .map_err(Into::into)
+    }
+
+    fn login_session_invalidation_matches(&self, kind: &LoginSessionEnd) -> bool {
+        if matches!(kind, LoginSessionEnd::Logout) {
+            return true;
+        }
+        let scope = self.runtime_context.auth_scope.snapshot();
+        if !scope.active {
+            return false;
+        }
+        let active = self
+            .authenticated_runtime
+            .snapshot()
+            .realtime_transport
+            .map(|transport| RuntimeRealtimeTransportEpoch {
+                client_run_id: transport.client_run_id,
+                generation: transport.generation,
+                session_generation: transport.session_generation,
+            });
+        kind.matches_invalidation(&scope.current_user_id, scope.generation, active.as_ref())
     }
 
     pub(super) async fn authenticate_non_interactive(
@@ -13,7 +125,7 @@ impl RuntimeHostState {
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
         let snapshot = saved_snapshot(self.runtime_context.config())
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-        let last_user = string_field(&snapshot, "lastUserLoggedIn").unwrap_or_default();
+        let last_user = snapshot.last_user_logged_in.clone().unwrap_or_default();
         if last_user.is_empty() {
             return Err(NonInteractiveAuthError::Failed(
                 "No saved account is available for headless login.".into(),
@@ -49,7 +161,7 @@ impl RuntimeHostState {
         &self,
         user_id: String,
         endpoint_override: Option<String>,
-        snapshot: serde_json::Value,
+        snapshot: SavedAuthSnapshot,
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
         let saved_record = saved_credential_session_data(self.runtime_context.config(), &user_id)
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
@@ -62,12 +174,11 @@ impl RuntimeHostState {
             .unwrap_or(saved_endpoint);
 
         match probe_current_user_from_cookie(
-            self.web.as_ref(),
-            self.db.as_ref(),
+            Arc::clone(&self.web),
+            Arc::clone(&self.db),
             user_id.clone(),
             endpoint.clone(),
             websocket.clone(),
-            false,
         )
         .await
         {
@@ -91,13 +202,12 @@ impl RuntimeHostState {
             if let Err(error) = self.web.set_cookies(cookies) {
                 tracing::warn!(error = %error, "failed to restore saved auth cookies");
             } else {
-                match probe_current_user_from_cookie(
-                    self.web.as_ref(),
-                    self.db.as_ref(),
+                match probe_saved_current_user_from_cookie(
+                    Arc::clone(&self.web),
+                    Arc::clone(&self.db),
                     user_id.clone(),
                     endpoint.clone(),
                     websocket.clone(),
-                    true,
                 )
                 .await
                 {
@@ -122,21 +232,21 @@ impl RuntimeHostState {
             }
         }
 
-        let fallback_available = snapshot
-            .get("savedCredentialFallbackAvailable")
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(false);
+        let fallback_available = snapshot.auto_login_status == SavedAuthAutoLoginStatus::Available
+            && snapshot
+                .saved_credentials_list
+                .iter()
+                .any(|credential| credential.user.id == user_id);
         if !fallback_available {
             return Err(NonInteractiveAuthError::Failed(
                 "Saved credentials are not available for headless login.".into(),
             ));
         }
 
-        let api = self.login_api();
         let response = saved_credential_login_start(
             self.runtime_context.config(),
-            self.web.as_ref(),
-            api.as_ref(),
+            Arc::clone(&self.web),
+            Arc::clone(&self.db),
             SavedCredentialLoginStartInput {
                 user_id: user_id.clone(),
                 endpoint: endpoint.clone(),
@@ -144,7 +254,7 @@ impl RuntimeHostState {
         )
         .await
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-        if response.status == 403 {
+        if matches!(response.status, 401 | 403) {
             return Err(NonInteractiveAuthError::SessionInvalidated {
                 user_id: user_id.clone(),
                 reason: auth_response_error_message(
@@ -196,9 +306,8 @@ impl RuntimeHostState {
                 self.runtime_context.config(),
                 self.web.as_ref(),
                 LogoutRecordInput {
-                    user_or_user_id: Value::String(user_id.trim().to_string()),
-                    clear_last_user_logged_in: Some(false),
-                    cookies: Some(Value::Null),
+                    user_id: user_id.trim().to_string(),
+                    clear_last_user_logged_in: false,
                 },
             ) {
                 tracing::warn!(
@@ -252,20 +361,23 @@ impl RuntimeHostState {
         &self,
         prompt: Arc<dyn CliLoginPrompt>,
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-        let endpoint = String::new();
-
         let prompt_username = Arc::clone(&prompt);
         let username = run_blocking_prompt(move || prompt_username.prompt_username()).await?;
 
         let prompt_password = Arc::clone(&prompt);
         let password = run_blocking_prompt(move || prompt_password.prompt_password()).await?;
 
-        let api = self.login_api();
-        let mut login = LoginSession::start(api, endpoint, username, password).await;
+        let mut state = self
+            .start_login_session(LoginSessionStartInput::Basic {
+                username,
+                password,
+                save_credentials: false,
+            })
+            .await;
 
         loop {
-            let methods = match login.state() {
-                LoginSessionState::Authenticated { .. } => break,
+            let (attempt_id, methods) = match &state {
+                LoginSessionState::Authenticated { session, .. } => return Ok(session.clone()),
                 LoginSessionState::Failed { reason, .. } => {
                     return Err(NonInteractiveAuthError::Failed(reason.clone()));
                 }
@@ -274,27 +386,31 @@ impl RuntimeHostState {
                         "Login was cancelled.".into(),
                     ));
                 }
-                LoginSessionState::Challenge { methods, .. } => methods.clone(),
+                LoginSessionState::Challenge {
+                    attempt_id,
+                    methods,
+                    ..
+                } => (attempt_id.clone(), methods.clone()),
             };
 
             let prompt_2fa = Arc::clone(&prompt);
             let choice =
                 run_blocking_prompt(move || prompt_2fa.prompt_two_factor(&methods)).await?;
-            login.respond(choice.method, choice.code).await;
+            state = self
+                .respond_login_session(LoginSessionRespondInput {
+                    attempt_id,
+                    method: choice.method,
+                    code: choice.code,
+                })
+                .await;
 
             if let LoginSessionState::Challenge {
                 error: Some(reason),
                 ..
-            } = login.state()
+            } = &state
             {
                 return Err(NonInteractiveAuthError::Failed(reason.clone()));
             }
         }
-
-        let LoginSessionState::Authenticated { session } = login.into_state() else {
-            unreachable!("loop only breaks once the session is Authenticated");
-        };
-        self.record_non_interactive_login_success(&session)?;
-        Ok(session)
     }
 }

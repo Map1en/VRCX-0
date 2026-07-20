@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use serde_json::Value;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_vrchat_client::auth::{
@@ -8,9 +6,11 @@ use vrcx_0_vrchat_client::auth::{
 };
 use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
 
+use crate::auth::auth_credentials::saved_credential_login_start_with_api;
 use crate::{
-    auth_response_error_message, saved_credential_login_start, AuthenticatedRuntimeSession,
-    SavedCredentialLoginStartInput, WebClient,
+    auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
+    auth_response_error_message, AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
+    WebClient,
 };
 
 use super::types::{LoginApi, LoginFailureKind, LoginSessionState, TwoFactorMethod};
@@ -21,24 +21,21 @@ async fn execute_or_fail(
 ) -> std::result::Result<HttpApiExecuteResponse, LoginSessionState> {
     api.execute(request, ApiScope::Vrchat)
         .await
-        .map_err(|error| LoginSessionState::Failed {
-            reason: error.to_string(),
-            kind: LoginFailureKind::Network,
-        })
+        .map_err(|error| LoginSessionState::failed(error.to_string(), LoginFailureKind::Network))
 }
 
 fn parse_json_or_fail(
     response: &HttpApiExecuteResponse,
 ) -> std::result::Result<Value, Box<LoginSessionState>> {
     serde_json::from_str(&response.data).map_err(|error| {
-        Box::new(LoginSessionState::Failed {
-            reason: error.to_string(),
-            kind: LoginFailureKind::Other,
-        })
+        Box::new(LoginSessionState::failed(
+            error.to_string(),
+            LoginFailureKind::Other,
+        ))
     })
 }
 
-pub(super) fn sort_two_factor_methods(methods: &mut [TwoFactorMethod]) {
+fn sort_two_factor_methods(methods: &mut [TwoFactorMethod]) {
     methods.sort_by_key(|method| match method.as_str() {
         "totp" => 0,
         "emailOtp" => 1,
@@ -47,108 +44,10 @@ pub(super) fn sort_two_factor_methods(methods: &mut [TwoFactorMethod]) {
     });
 }
 
-pub struct LoginSession {
-    api: Arc<dyn LoginApi>,
-    endpoint: String,
-    state: LoginSessionState,
-}
-
-impl LoginSession {
-    pub async fn start(
-        api: Arc<dyn LoginApi>,
-        endpoint: String,
-        username: String,
-        password: String,
-    ) -> Self {
-        let state = start_login(api.as_ref(), &endpoint, username, password).await;
-        Self {
-            api,
-            endpoint,
-            state,
-        }
-    }
-
-    pub async fn start_gui_basic(
-        api: Arc<dyn LoginApi>,
-        endpoint: String,
-        username: String,
-        password: String,
-    ) -> Self {
-        let state = start_gui_basic_login(api.as_ref(), &endpoint, username, password).await;
-        Self {
-            api,
-            endpoint,
-            state,
-        }
-    }
-
-    pub async fn start_saved_credential(
-        api: Arc<dyn LoginApi>,
-        config: &ConfigRepository,
-        web: &WebClient,
-        endpoint: String,
-        user_id: String,
-    ) -> Self {
-        let state =
-            start_saved_credential_login(api.as_ref(), config, web, endpoint.clone(), user_id)
-                .await;
-        Self {
-            api,
-            endpoint,
-            state,
-        }
-    }
-
-    pub async fn start_cookie_restore(api: Arc<dyn LoginApi>, endpoint: String) -> Self {
-        let state = start_cookie_restore(api.as_ref(), &endpoint).await;
-        Self {
-            api,
-            endpoint,
-            state,
-        }
-    }
-
-    pub fn state(&self) -> &LoginSessionState {
-        &self.state
-    }
-
-    pub fn into_state(self) -> LoginSessionState {
-        self.state
-    }
-
-    pub async fn respond(&mut self, method: TwoFactorMethod, code: String) -> &LoginSessionState {
-        let LoginSessionState::Challenge { methods, mode, .. } = &self.state else {
-            return &self.state;
-        };
-        let current_methods = methods.clone();
-        let current_mode = mode.clone();
-        self.state = respond_to_challenge(
-            self.api.as_ref(),
-            &self.endpoint,
-            current_methods,
-            current_mode,
-            method,
-            code,
-        )
-        .await;
-        &self.state
-    }
-
-    pub fn cancel(&mut self) -> &LoginSessionState {
-        self.state = LoginSessionState::Cancelled;
-        &self.state
-    }
-}
-
-fn classify_status_failure(
-    response: &HttpApiExecuteResponse,
-    treat_any_401_as_invalid_credentials: bool,
-) -> LoginFailureKind {
+fn classify_status_failure(response: &HttpApiExecuteResponse) -> LoginFailureKind {
     if response.status == 401 {
         let message = auth_response_error_message(response, String::new());
-        if treat_any_401_as_invalid_credentials
-            || message.contains("Invalid Username/Email or Password")
-        {
+        if message.contains("Invalid Username/Email or Password") {
             return LoginFailureKind::InvalidCredentials;
         }
         if message.contains("Missing Credentials") {
@@ -165,15 +64,14 @@ fn classify_status_failure(
 fn interpret_login_response(
     response: HttpApiExecuteResponse,
     endpoint: String,
-    treat_any_401_as_invalid_credentials: bool,
 ) -> LoginSessionState {
     if response.status != 200 {
         let reason = auth_response_error_message(
             &response,
             format!("Login failed with HTTP {}", response.status),
         );
-        let kind = classify_status_failure(&response, treat_any_401_as_invalid_credentials);
-        return LoginSessionState::Failed { reason, kind };
+        let kind = classify_status_failure(&response);
+        return LoginSessionState::failed(reason, kind);
     }
 
     let json = match parse_json_or_fail(&response) {
@@ -202,10 +100,10 @@ fn build_basic_login_request(
     )
     .map(|(_, request)| request)
     .map_err(|error| {
-        Box::new(LoginSessionState::Failed {
-            reason: error.to_string(),
-            kind: LoginFailureKind::Other,
-        })
+        Box::new(LoginSessionState::failed(
+            error.to_string(),
+            LoginFailureKind::Other,
+        ))
     })
 }
 
@@ -219,10 +117,11 @@ async fn execute_basic_login(
         Err(state) => return state,
     };
 
-    interpret_login_response(response, endpoint.to_string(), true)
+    interpret_login_response(response, endpoint.to_string())
 }
 
-async fn start_login(
+#[cfg(test)]
+pub(super) async fn start_login(
     api: &dyn LoginApi,
     endpoint: &str,
     username: String,
@@ -236,7 +135,7 @@ async fn start_login(
     execute_basic_login(api, endpoint, request).await
 }
 
-async fn start_gui_basic_login(
+pub(super) async fn start_gui_basic_login(
     api: &dyn LoginApi,
     endpoint: &str,
     username: String,
@@ -251,7 +150,7 @@ async fn start_gui_basic_login(
         Ok(response) => response,
         Err(state) => return state,
     };
-    if config_response.status == 403 {
+    if config_response.status != 200 {
         let reason = auth_response_error_message(
             &config_response,
             format!(
@@ -259,23 +158,20 @@ async fn start_gui_basic_login(
                 config_response.status
             ),
         );
-        return LoginSessionState::Failed {
-            reason,
-            kind: LoginFailureKind::SessionInvalidated,
-        };
+        return LoginSessionState::failed(reason, classify_status_failure(&config_response));
     }
 
     execute_basic_login(api, endpoint, request).await
 }
 
-async fn start_saved_credential_login(
+pub(super) async fn start_saved_credential_login(
     api: &dyn LoginApi,
     config: &ConfigRepository,
     web: &WebClient,
     endpoint: String,
     user_id: String,
 ) -> LoginSessionState {
-    let response = saved_credential_login_start(
+    let response = saved_credential_login_start_with_api(
         config,
         web,
         api,
@@ -287,74 +183,55 @@ async fn start_saved_credential_login(
     .await;
     let response = match response {
         Ok(response) => response,
-        Err(error) => {
-            return LoginSessionState::Failed {
-                reason: error.to_string(),
-                kind: LoginFailureKind::Other,
-            }
+        Err(error) => return LoginSessionState::failed(error.to_string(), LoginFailureKind::Other),
+    };
+
+    interpret_login_response(response, endpoint)
+}
+
+pub(super) async fn start_cookie_restore(
+    api: &dyn LoginApi,
+    endpoint: &str,
+    expected_user_id: &str,
+) -> LoginSessionState {
+    match probe_cookie_session(api, endpoint, expected_user_id).await {
+        Ok(CookieProbeResult::Authenticated { user, .. }) => {
+            authenticated_from_json(user, endpoint.to_string())
         }
-    };
-
-    interpret_login_response(response, endpoint, false)
+        Ok(CookieProbeResult::RequiresTwoFactor(_)) => LoginSessionState::failed(
+            "The stored browser session still requires interactive verification.",
+            LoginFailureKind::TwoFactorUnavailable,
+        ),
+        Ok(CookieProbeResult::MissingCredentials(response)) => LoginSessionState::failed(
+            auth_response_error_message(
+                &response,
+                format!("VRChat auth request failed with HTTP {}.", response.status),
+            ),
+            LoginFailureKind::MissingCredentials,
+        ),
+        Ok(CookieProbeResult::UserMismatch) => LoginSessionState::failed(
+            "The stored browser session belongs to a different account.",
+            LoginFailureKind::MissingCredentials,
+        ),
+        Ok(CookieProbeResult::Rejected { stage, response }) => {
+            let request_name = match stage {
+                CookieProbeStage::Config => "config",
+                CookieProbeStage::CurrentUser => "current-user",
+            };
+            let reason = auth_response_error_message(
+                &response,
+                format!(
+                    "VRChat {request_name} request failed with HTTP {}.",
+                    response.status
+                ),
+            );
+            LoginSessionState::failed(reason, classify_status_failure(&response))
+        }
+        Err(error) => LoginSessionState::failed(error.to_string(), LoginFailureKind::Network),
+    }
 }
 
-async fn start_cookie_restore(api: &dyn LoginApi, endpoint: &str) -> LoginSessionState {
-    let config_response = match execute_or_fail(api, config_get_input(endpoint.to_string())).await {
-        Ok(response) => response,
-        Err(state) => return state,
-    };
-    if config_response.status == 403 {
-        let reason = auth_response_error_message(
-            &config_response,
-            format!(
-                "VRChat config request failed with HTTP {}.",
-                config_response.status
-            ),
-        );
-        return LoginSessionState::Failed {
-            reason,
-            kind: LoginFailureKind::SessionInvalidated,
-        };
-    }
-
-    let user_response =
-        match execute_or_fail(api, current_user_get_input(endpoint.to_string())).await {
-            Ok(response) => response,
-            Err(state) => return state,
-        };
-
-    if user_response.status != 200 {
-        let reason = auth_response_error_message(
-            &user_response,
-            format!(
-                "VRChat current-user request failed with HTTP {}.",
-                user_response.status
-            ),
-        );
-        let kind = classify_status_failure(&user_response, false);
-        return LoginSessionState::Failed { reason, kind };
-    }
-
-    let json = match parse_json_or_fail(&user_response) {
-        Ok(json) => json,
-        Err(state) => return *state,
-    };
-
-    if json
-        .get("requiresTwoFactorAuth")
-        .and_then(Value::as_array)
-        .is_some_and(|methods| !methods.is_empty())
-    {
-        return LoginSessionState::Failed {
-            reason: "The stored browser session still requires interactive verification.".into(),
-            kind: LoginFailureKind::TwoFactorUnavailable,
-        };
-    }
-
-    authenticated_from_json(json, endpoint.to_string())
-}
-
-async fn respond_to_challenge(
+pub(super) async fn respond_to_challenge(
     api: &dyn LoginApi,
     endpoint: &str,
     current_methods: Vec<TwoFactorMethod>,
@@ -374,7 +251,18 @@ async fn respond_to_challenge(
     };
 
     if verify_response.status != 200 {
+        if matches!(verify_response.status, 401 | 403) {
+            let reason = auth_response_error_message(
+                &verify_response,
+                format!(
+                    "2FA verification failed with HTTP {}",
+                    verify_response.status
+                ),
+            );
+            return LoginSessionState::failed(reason, classify_status_failure(&verify_response));
+        }
         return LoginSessionState::Challenge {
+            attempt_id: String::new(),
             methods: current_methods,
             mode: current_mode,
             error: Some(format!(
@@ -395,8 +283,7 @@ async fn respond_to_challenge(
             "Failed to fetch user profile after 2FA: HTTP {}",
             user_response.status
         );
-        let kind = classify_status_failure(&user_response, false);
-        return LoginSessionState::Failed { reason, kind };
+        return LoginSessionState::failed(reason, classify_status_failure(&user_response));
     }
 
     let json = match parse_json_or_fail(&user_response) {
@@ -431,14 +318,15 @@ fn challenge_from_methods(
     error: Option<String>,
 ) -> LoginSessionState {
     if methods.is_empty() {
-        return LoginSessionState::Failed {
-            reason: "2FA is required but no supported method was returned.".into(),
-            kind: LoginFailureKind::TwoFactorUnavailable,
-        };
+        return LoginSessionState::failed(
+            "2FA is required but no supported method was returned.",
+            LoginFailureKind::TwoFactorUnavailable,
+        );
     }
     sort_two_factor_methods(&mut methods);
     let mode = methods[0].clone();
     LoginSessionState::Challenge {
+        attempt_id: String::new(),
         methods,
         mode,
         error,
@@ -448,10 +336,13 @@ fn challenge_from_methods(
 fn authenticated_from_json(json: Value, endpoint: String) -> LoginSessionState {
     let session = AuthenticatedRuntimeSession::from_user(json, endpoint, String::new());
     if session.user_id.is_empty() {
-        return LoginSessionState::Failed {
-            reason: "The auth request did not return a valid user payload.".into(),
-            kind: LoginFailureKind::Other,
-        };
+        return LoginSessionState::failed(
+            "The auth request did not return a valid user payload.",
+            LoginFailureKind::Other,
+        );
     }
-    LoginSessionState::Authenticated { session }
+    LoginSessionState::Authenticated {
+        session,
+        snapshot: None,
+    }
 }

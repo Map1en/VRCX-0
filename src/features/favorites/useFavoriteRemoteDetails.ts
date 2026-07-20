@@ -170,20 +170,16 @@ function mapEntitiesById(items: unknown): FavoriteRemoteDetailsById {
 
 async function loadRemoteDetails(
     type: FavoriteRemoteDetailKind,
-    endpoint: string,
     tags: string[]
 ): Promise<FavoriteRemoteDetailsById> {
     if (type === 'avatar') {
         const avatars = await vrchatFavoriteRepository.getAllFavoriteAvatars({
-            endpoint,
             tags
         });
         return mapEntitiesById(avatars);
     }
 
-    const worlds = await vrchatFavoriteRepository.getAllFavoriteWorlds({
-        endpoint
-    });
+    const worlds = await vrchatFavoriteRepository.getAllFavoriteWorlds();
     return mapEntitiesById(worlds);
 }
 
@@ -257,7 +253,7 @@ export function useFavoriteRemoteDetails({
         let promise = getFavoriteRemoteDetailsPromise(cacheKey);
         if (!isPromiseLike(promise)) {
             const promiseGeneration = getFavoriteRemoteDetailsCacheGeneration();
-            promise = loadRemoteDetails(type, endpoint, normalizedTags)
+            promise = loadRemoteDetails(type, normalizedTags)
                 .then((data) => {
                     if (
                         promiseGeneration !==

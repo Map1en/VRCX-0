@@ -82,6 +82,8 @@ export function buildAdvancedSection({
     refreshConfigTreeData,
     openAppDataDirSelector,
     resetAppDataDir,
+    cleanupAppDataDir,
+    dismissAppDataDirCleanup,
     setConfigTreeData,
     migrateLegacyVrcxData
 }: BuildSettingsPageStateSectionsInput) {
@@ -102,6 +104,8 @@ export function buildAdvancedSection({
         refreshConfigTreeData,
         openAppDataDirSelector,
         resetAppDataDir,
+        cleanupAppDataDir,
+        dismissAppDataDirCleanup,
         setConfigTreeData,
         migrateLegacyVrcxData,
         onAnonymousUsageTelemetryChange: (checked: unknown) => {

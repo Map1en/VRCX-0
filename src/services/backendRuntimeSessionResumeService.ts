@@ -8,6 +8,7 @@ import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import { beginAuthAttempt, isAuthAttemptSupersededError } from './authAttempt';
 import { recordCurrentUserSnapshot } from './domainIngestionService';
 import { bootstrapAuthenticatedSession } from './sessionBootstrapService';
 
@@ -201,6 +202,7 @@ export async function resumeFrontendSessionFromBackendRuntime(
         return true;
     }
 
+    const attempt = beginAuthAttempt();
     useRuntimeStore.getState().setAuthBootstrap({
         currentUserId: userId,
         currentUserDisplayName:
@@ -213,6 +215,13 @@ export async function resumeFrontendSessionFromBackendRuntime(
     });
     recordCurrentUserSnapshot(currentUserSnapshot, { endpoint });
 
-    await bootstrapAuthenticatedSession(currentUserSnapshot);
+    try {
+        await bootstrapAuthenticatedSession(currentUserSnapshot, attempt);
+    } catch (error) {
+        if (isAuthAttemptSupersededError(error)) {
+            return false;
+        }
+        throw error;
+    }
     return true;
 }

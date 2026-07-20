@@ -426,10 +426,18 @@ fn ensure_screenshot_thumbnail_generates_and_reuses_webp_cache() -> Result<()> {
         ensure_screenshot_thumbnail_in_root(&source_path_string, &thumb_dir, &cache, &dir.path)?;
     assert!(Path::new(&first_thumb).is_file());
     assert!(first_thumb.ends_with(".webp"));
+    let entries = cache.thumbnail_cache_entries();
+    assert_eq!(entries.len(), 1);
+    assert!(!Path::new(&entries[0].thumb_path).is_absolute());
+    let first_modified_at = std::fs::metadata(&first_thumb)?.modified()?;
 
     let second_thumb =
         ensure_screenshot_thumbnail_in_root(&source_path_string, &thumb_dir, &cache, &dir.path)?;
     assert_eq!(first_thumb, second_thumb);
+    assert_eq!(
+        std::fs::metadata(&second_thumb)?.modified()?,
+        first_modified_at
+    );
 
     write_test_png_with_size(&source_path, 65, 32)?;
     let third_thumb =

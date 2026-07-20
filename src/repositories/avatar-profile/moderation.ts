@@ -4,7 +4,6 @@ import {
 } from '@/platform/tauri/bindings';
 
 import {
-    avatarEndpointInput,
     isRecord,
     normalizeEntityId,
     normalizeString,
@@ -13,17 +12,12 @@ import {
 import type {
     AvatarModerationDeleteRecord,
     AvatarModerationInput,
-    AvatarModerationRecord,
-    AvatarRequestOptions
+    AvatarModerationRecord
 } from './types';
 
-export async function getAvatarModerations({
-    endpoint = ''
-}: AvatarRequestOptions = {}) {
+export async function getAvatarModerations() {
     const response = unwrapVrchatAvatarResponse(
-        await commands.appVrchatAvatarModerationsGet(
-            avatarEndpointInput(endpoint)
-        ),
+        await commands.appVrchatAvatarModerationsGet(),
         'auth/user/avatarmoderations'
     );
     return {
@@ -34,8 +28,7 @@ export async function getAvatarModerations({
 
 export async function sendAvatarModeration({
     avatarId,
-    type = 'block',
-    endpoint = ''
+    type = 'block'
 }: AvatarModerationInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     const normalizedType = normalizeString(type) || 'block';
@@ -47,8 +40,7 @@ export async function sendAvatarModeration({
 
     const input = {
         avatarId: normalizedAvatarId,
-        type: normalizedType,
-        endpoint
+        type: normalizedType
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationRecord>(
         await commands.appVrchatAvatarModerationSend(input),
@@ -58,8 +50,7 @@ export async function sendAvatarModeration({
 
 export async function deleteAvatarModeration({
     avatarId,
-    type = 'block',
-    endpoint = ''
+    type = 'block'
 }: AvatarModerationInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     const normalizedType = normalizeString(type) || 'block';
@@ -71,8 +62,7 @@ export async function deleteAvatarModeration({
 
     const input = {
         avatarId: normalizedAvatarId,
-        type: normalizedType,
-        endpoint
+        type: normalizedType
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationDeleteRecord>(
         await commands.appVrchatAvatarModerationDelete(input),

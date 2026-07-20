@@ -42,6 +42,9 @@ export function EntityList({
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
+    );
 
     if (loading) {
         return <EntityListState kind={kind} loading />;
@@ -101,7 +104,7 @@ export function EntityList({
                               row,
                               currentUserSnapshot,
                               isCurrentUserRow,
-                              { hideNonFriend: false }
+                              { hideNonFriend: false, isGameRunning }
                           )
                         : '';
                 const isPrivateWorld =

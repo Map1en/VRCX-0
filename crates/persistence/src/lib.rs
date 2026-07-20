@@ -5,6 +5,7 @@ pub mod cache_entities;
 pub(crate) mod common;
 pub mod config;
 pub mod cookies;
+pub mod data_dir_migration;
 mod database;
 mod error;
 pub mod favorites;
@@ -42,7 +43,7 @@ pub use database::schema::{
     prepare_vrcx0_schema_version, write_database_schema_versions, VRCX0_SCHEMA_VERSION,
     VRCX0_SCHEMA_VERSION_KEY,
 };
-pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus};
+pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase};
 pub use error::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     readFriendRefLocation,
     readFriendStatusSource,
+    resolveSidebarStatusDotClassName,
     toLegacyFriendSortRow
 } from './friendsSidebarModel';
 
@@ -41,5 +42,28 @@ describe('friendsSidebarModel friend status source', () => {
             location: 'wrld_live:123',
             status: 'join me'
         });
+    });
+});
+
+describe('friendsSidebarModel current user status dot', () => {
+    const currentUser = {
+        id: 'usr_self',
+        status: 'active',
+        state: 'online',
+        stateBucket: 'online'
+    };
+
+    it('defaults to the active outline when local game state is unavailable', () => {
+        expect(
+            resolveSidebarStatusDotClassName(currentUser, currentUser, true)
+        ).toBe('border-[var(--status-online)] bg-background');
+    });
+
+    it('uses the solid status colour while the local game is running', () => {
+        expect(
+            resolveSidebarStatusDotClassName(currentUser, currentUser, true, {
+                isGameRunning: true
+            })
+        ).toBe('bg-[var(--status-online)]');
     });
 });

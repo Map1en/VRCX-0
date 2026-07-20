@@ -122,44 +122,6 @@ impl RuntimeHostState {
         }
     }
 
-    pub fn start_frontend_authenticated_runtime(
-        &self,
-        user_id: String,
-        endpoint: String,
-        websocket: String,
-        current_user_snapshot: Value,
-    ) -> Result<vrcx_0_application::AuthenticatedRuntimePhaseSnapshot> {
-        let user_id = user_id.trim().to_string();
-        if user_id.is_empty() {
-            return Err(crate::Error::Custom(
-                "Authenticated runtime requires an authenticated user id.".into(),
-            ));
-        }
-        let display_name = string_field(&current_user_snapshot, "displayName")
-            .or_else(|| string_field(&current_user_snapshot, "username"))
-            .unwrap_or_else(|| user_id.clone());
-        let session =
-            AuthenticatedRuntimeSession::from_user(current_user_snapshot, endpoint, websocket);
-        if session.user_id != user_id {
-            return Err(crate::Error::Custom(
-                "Authenticated runtime user does not match the current user snapshot.".into(),
-            ));
-        }
-        let auth_scope = self
-            .runtime_context
-            .auth_scope
-            .set(&session.user_id, &session.endpoint);
-        self.set_backend_frontend_session(&session);
-        self.backend_runtime
-            .set_auth_success(user_id.clone(), display_name.clone());
-        let snapshot = self.backend_runtime.set_phase(BackendRuntimePhase::Running);
-        self.emit_backend_runtime_telemetry_snapshot("authSuccess", display_name, snapshot);
-        self.schedule_activity_warmup(user_id, auth_scope.generation);
-        self.start_social_maintenance_loops();
-        self.start_profile_maintenance_loops();
-        self.authenticated_runtime.start(session)
-    }
-
     pub fn authenticated_session_maintenance(
         &self,
     ) -> Result<AuthenticatedSessionMaintenanceOutcome> {

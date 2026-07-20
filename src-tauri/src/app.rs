@@ -128,12 +128,6 @@ pub fn run() {
     let _async_runtime = install_adaptive_tauri_async_runtime();
     bootstrap::apply_linux_webkit_workaround();
 
-    let protocol_paths = std::sync::Arc::new(vrcx_0_host::app_paths::AppPaths::from_app_data(
-        app_data_dir.current_dir.clone(),
-    ));
-
-    let image_protocol_paths = protocol_paths.clone();
-    let thumbnail_protocol_paths = protocol_paths.clone();
     let setup_app_data_dir = app_data_dir.clone();
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -152,24 +146,34 @@ pub fn run() {
             });
         }))
         .plugin(tauri_plugin_deep_link::init())
-        .register_asynchronous_uri_scheme_protocol("vrcx-0-img", move |_ctx, request, responder| {
-            let paths = image_protocol_paths.clone();
+        .register_asynchronous_uri_scheme_protocol("vrcx-0-img", move |ctx, request, responder| {
+            let app_handle = ctx.app_handle().clone();
             tauri::async_runtime::spawn_blocking(move || {
-                responder.respond(bootstrap::screenshot_protocol_response(
-                    request,
-                    paths.as_ref(),
-                ));
+                let response = match app_handle.try_state::<AppState>() {
+                    Some(state) => bootstrap::screenshot_protocol_response(request, &state.paths),
+                    None => tauri::http::Response::builder()
+                        .status(tauri::http::StatusCode::SERVICE_UNAVAILABLE)
+                        .body(Vec::new().into())
+                        .unwrap(),
+                };
+                responder.respond(response);
             });
         })
         .register_asynchronous_uri_scheme_protocol(
             "vrcx-0-thumb",
-            move |_ctx, request, responder| {
-                let paths = thumbnail_protocol_paths.clone();
+            move |ctx, request, responder| {
+                let app_handle = ctx.app_handle().clone();
                 tauri::async_runtime::spawn_blocking(move || {
-                    responder.respond(bootstrap::screenshot_thumbnail_protocol_response(
-                        request,
-                        paths.as_ref(),
-                    ));
+                    let response = match app_handle.try_state::<AppState>() {
+                        Some(state) => {
+                            bootstrap::screenshot_thumbnail_protocol_response(request, &state.paths)
+                        }
+                        None => tauri::http::Response::builder()
+                            .status(tauri::http::StatusCode::SERVICE_UNAVAILABLE)
+                            .body(Vec::new().into())
+                            .unwrap(),
+                    };
+                    responder.respond(response);
                 });
             },
         )

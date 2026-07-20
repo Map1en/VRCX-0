@@ -1,6 +1,5 @@
 import type {
     HttpApiExecuteResponse,
-    VrchatAvatarEndpointInput,
     VrchatAvatarIdInput as IpcVrchatAvatarIdInput
 } from '@/platform/tauri/bindings';
 
@@ -8,12 +7,7 @@ import {
     VRCHAT_API_DEFAULT_PAGE_SIZE,
     VRCHAT_PROFILE_MAX_PAGES
 } from '../paginationConstants';
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from '../vrchatRequest';
+import { unwrapVrchatResponse } from '../vrchatRequest';
 import type { CollectPagesOptions } from './types';
 
 export function normalizeEntityId(value: unknown): string {
@@ -57,42 +51,17 @@ export function parseInteger(value: unknown): number {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function avatarIdInput(
-    avatarId: string,
-    endpoint: string
-): IpcVrchatAvatarIdInput {
-    return { avatarId, endpoint };
-}
-
-export function avatarEndpointInput(
-    endpoint: string
-): VrchatAvatarEndpointInput {
-    return { endpoint };
+export function avatarIdInput(avatarId: string): IpcVrchatAvatarIdInput {
+    return { avatarId };
 }
 
 export function unwrapVrchatAvatarResponse<TJson = unknown>(
     response: HttpApiExecuteResponse,
     path: string
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat avatar request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, {
+        fallbackMessage: 'VRChat avatar request failed'
+    });
 }
 
 export async function collectPages<T>(

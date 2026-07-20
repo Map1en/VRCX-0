@@ -4,8 +4,6 @@ use crate::world_enrich::PendingEntryCorrection;
 use std::collections::HashSet;
 use vrcx_0_application_core::WorldCache;
 
-pub(super) const MAX_QUEUED_FRIEND_MESSAGES: usize = 512;
-
 pub(super) struct FriendOwnerGuard<'a> {
     pub(super) _guard: std::sync::MutexGuard<'a, ()>,
 }
@@ -30,8 +28,6 @@ pub(super) struct PendingFriendBaseline {
 pub(super) struct ConnectionState {
     pub(super) generation: u64,
     pub(super) active_context: Option<ActiveRealtimeContext>,
-    pub(super) friend_messages_paused: bool,
-    pub(super) queued_friend_messages: Vec<RealtimeWsMessagePayload>,
 }
 
 #[derive(Default)]
@@ -126,6 +122,7 @@ pub struct RealtimeHostRuntime {
     pub(super) deps: RealtimeHostRuntimeDeps,
     pub(super) state: Mutex<RealtimeHostRuntimeState>,
     pub(super) cancel_tx: watch::Sender<u64>,
+    pub(super) transport_lifecycle_tx: broadcast::Sender<RealtimeTransportLifecycleEvent>,
     pub(super) friends: RealtimeFriendsRuntime,
     pub(super) current_user: RealtimeCurrentUserRuntime,
     pub(super) user_cache: UserCacheRuntime,
@@ -136,8 +133,6 @@ pub struct RealtimeHostRuntime {
     pub(super) friend_profile_bulk_load:
         Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,
     pub(super) friend_profile_bulk_cancel_tx: watch::Sender<u64>,
-    #[cfg(test)]
-    pub(super) friend_before_output_hook: Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 
 pub(super) struct RealtimeHostRuntimeMessageSink {

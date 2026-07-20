@@ -13,7 +13,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function resolveCreatedInstanceDetails(
     location: unknown,
     instance: unknown,
-    endpoint: string,
     fallback: CreatedInstanceFallback = {}
 ) {
     const parsedLocation = parseLocation(location);
@@ -28,8 +27,7 @@ export async function resolveCreatedInstanceDetails(
     try {
         const response = await vrchatInstanceRepository.getInstanceShortName({
             worldId: parsedLocation.worldId,
-            instanceId: parsedLocation.instanceId,
-            endpoint
+            instanceId: parsedLocation.instanceId
         });
         return buildCreatedInstanceDetails(
             location,

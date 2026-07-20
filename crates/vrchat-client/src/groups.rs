@@ -1,40 +1,19 @@
 use std::collections::HashMap;
 
 use serde_json::Value;
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::http_api::{
-    api_input as http_api_input, encode_path_segment, get_input as http_get_input, normalize_text,
-    object_body, require_text, HttpApiError, HttpApiRequestInput,
+    api_input, encode_path_segment, get_input, normalize_text, object_body, require_text,
+    HttpApiError, HttpApiRequestInput,
 };
 
-pub fn group_path(group_id: &str, suffix: &str) -> String {
+fn group_path(group_id: &str, suffix: &str) -> String {
     if suffix.is_empty() {
         format!("groups/{}", encode_path_segment(group_id))
     } else {
         format!("groups/{}/{}", encode_path_segment(group_id), suffix)
     }
-}
-
-pub fn get_input(
-    endpoint: String,
-    path: impl Into<String>,
-    query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    http_get_input(endpoint, path, query_params)
-}
-
-pub fn api_input(
-    endpoint: String,
-    method: &str,
-    path: impl Into<String>,
-    body: Option<Value>,
-) -> HttpApiRequestInput {
-    http_api_input(
-        endpoint,
-        method,
-        path,
-        body.map(|value| object_body(Some(value))),
-    )
 }
 
 pub fn profile_get_input(
@@ -87,7 +66,6 @@ pub fn user_group_permissions_get_input(
 }
 
 pub fn group_paged_get_input(
-    endpoint: String,
     group_id: String,
     suffix: &str,
     n: i64,
@@ -98,7 +76,7 @@ pub fn group_paged_get_input(
     Ok((
         group_id.clone(),
         get_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_path(&group_id, suffix),
             HashMap::from([
                 ("n".to_string(), serde_json::json!(n)),
@@ -109,7 +87,6 @@ pub fn group_paged_get_input(
 }
 
 pub fn group_get_no_params_input(
-    endpoint: String,
     group_id: String,
     suffix: &str,
     message: &str,
@@ -117,7 +94,11 @@ pub fn group_get_no_params_input(
     let group_id = require_text(group_id, message)?;
     Ok((
         group_id.clone(),
-        get_input(endpoint, group_path(&group_id, suffix), HashMap::new()),
+        get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            group_path(&group_id, suffix),
+            HashMap::new(),
+        ),
     ))
 }
 
@@ -143,7 +124,6 @@ pub fn member_get_input(
 }
 
 pub fn members_get_input(
-    endpoint: String,
     group_id: String,
     n: i64,
     offset: i64,
@@ -162,12 +142,15 @@ pub fn members_get_input(
     }
     Ok((
         group_id.clone(),
-        get_input(endpoint, group_path(&group_id, "members"), params),
+        get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            group_path(&group_id, "members"),
+            params,
+        ),
     ))
 }
 
 pub fn members_search_input(
-    endpoint: String,
     group_id: String,
     n: i64,
     offset: i64,
@@ -177,7 +160,7 @@ pub fn members_search_input(
     Ok((
         group_id.clone(),
         get_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_path(&group_id, "members/search"),
             HashMap::from([
                 ("n".to_string(), serde_json::json!(n)),
@@ -189,7 +172,6 @@ pub fn members_search_input(
 }
 
 pub fn gallery_get_input(
-    endpoint: String,
     group_id: String,
     gallery_id: String,
     n: i64,
@@ -201,7 +183,7 @@ pub fn gallery_get_input(
         group_id.clone(),
         gallery_id.clone(),
         get_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_path(
                 &group_id,
                 &format!("galleries/{}", encode_path_segment(&gallery_id)),
@@ -215,7 +197,6 @@ pub fn gallery_get_input(
 }
 
 pub fn user_group_instances_get_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
@@ -225,7 +206,7 @@ pub fn user_group_instances_get_input(
         group_id.clone(),
         user_id.clone(),
         get_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             format!(
                 "users/{}/instances/groups/{}",
                 encode_path_segment(&user_id),
@@ -237,7 +218,6 @@ pub fn user_group_instances_get_input(
 }
 
 pub fn join_requests_get_input(
-    endpoint: String,
     group_id: String,
     n: i64,
     offset: i64,
@@ -247,7 +227,7 @@ pub fn join_requests_get_input(
     Ok((
         group_id.clone(),
         get_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_path(&group_id, "requests"),
             HashMap::from([
                 ("n".to_string(), serde_json::json!(n)),
@@ -259,7 +239,6 @@ pub fn join_requests_get_input(
 }
 
 pub fn logs_get_input(
-    endpoint: String,
     group_id: String,
     n: i64,
     offset: i64,
@@ -276,7 +255,11 @@ pub fn logs_get_input(
     }
     Ok((
         group_id.clone(),
-        get_input(endpoint, group_path(&group_id, "auditLogs"), params),
+        get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            group_path(&group_id, "auditLogs"),
+            params,
+        ),
     ))
 }
 
@@ -296,7 +279,6 @@ pub fn current_user_group_instances_get_input(
 }
 
 pub fn post_create_input(
-    endpoint: String,
     group_id: String,
     params: Option<Value>,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
@@ -304,7 +286,7 @@ pub fn post_create_input(
     Ok((
         group_id.clone(),
         api_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "POST",
             group_path(&group_id, "posts"),
             Some(object_body(params)),
@@ -313,7 +295,6 @@ pub fn post_create_input(
 }
 
 pub fn post_edit_input(
-    endpoint: String,
     group_id: String,
     post_id: String,
     params: Option<Value>,
@@ -324,7 +305,7 @@ pub fn post_edit_input(
         group_id.clone(),
         post_id.clone(),
         api_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "PUT",
             group_path(
                 &group_id,
@@ -336,7 +317,6 @@ pub fn post_edit_input(
 }
 
 pub fn post_delete_input(
-    endpoint: String,
     group_id: String,
     post_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
@@ -346,7 +326,7 @@ pub fn post_delete_input(
         group_id.clone(),
         post_id.clone(),
         api_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "DELETE",
             group_path(
                 &group_id,
@@ -357,7 +337,7 @@ pub fn post_delete_input(
     ))
 }
 
-pub fn simple_group_action_input(
+fn simple_group_action_input(
     endpoint: String,
     group_id: String,
     command_message: &str,
@@ -368,16 +348,18 @@ pub fn simple_group_action_input(
     let group_id = require_text(group_id, command_message)?;
     Ok((
         group_id.clone(),
-        api_input(endpoint, method, group_path(&group_id, suffix), body),
+        api_input(
+            endpoint,
+            method,
+            group_path(&group_id, suffix),
+            body.map(|value| object_body(Some(value))),
+        ),
     ))
 }
 
-pub fn join_input(
-    endpoint: String,
-    group_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+pub fn join_input(group_id: String) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     simple_group_action_input(
-        endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         "VrchatGroupJoin requires groupId.",
         "POST",
@@ -401,11 +383,10 @@ pub fn leave_input(
 }
 
 pub fn request_cancel_input(
-    endpoint: String,
     group_id: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     simple_group_action_input(
-        endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         "VrchatGroupRequestCancel requires groupId.",
         "DELETE",
@@ -414,12 +395,9 @@ pub fn request_cancel_input(
     )
 }
 
-pub fn group_block_input(
-    endpoint: String,
-    group_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+pub fn group_block_input(group_id: String) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     simple_group_action_input(
-        endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         "VrchatGroupBlock requires groupId.",
         "POST",
@@ -457,13 +435,12 @@ fn group_user_action_input(
 }
 
 pub fn invite_send_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let body_user_id = user_id.clone();
     group_user_action_input(GroupUserActionInput {
-        endpoint,
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         user_id,
         group_message: "VrchatGroupInviteSend requires groupId.",
@@ -511,13 +488,12 @@ pub fn member_ban_input(
 }
 
 pub fn member_unban_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let suffix_user_id = user_id.clone();
     group_user_action_input(GroupUserActionInput {
-        endpoint,
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         user_id,
         group_message: "VrchatGroupMemberUnban requires groupId.",
@@ -529,13 +505,12 @@ pub fn member_unban_input(
 }
 
 pub fn invite_delete_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let suffix_user_id = user_id.clone();
     group_user_action_input(GroupUserActionInput {
-        endpoint,
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         user_id,
         group_message: "VrchatGroupInviteDelete requires groupId.",
@@ -547,13 +522,12 @@ pub fn invite_delete_input(
 }
 
 pub fn unblock_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let suffix_user_id = user_id.clone();
     group_user_action_input(GroupUserActionInput {
-        endpoint,
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
         user_id,
         group_message: "VrchatGroupUnblock requires groupId.",
@@ -565,7 +539,6 @@ pub fn unblock_input(
 }
 
 pub fn join_request_respond_input(
-    endpoint: String,
     group_id: String,
     user_id: String,
     action: String,
@@ -582,7 +555,7 @@ pub fn join_request_respond_input(
         group_id.clone(),
         user_id.clone(),
         api_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "PUT",
             group_path(
                 &group_id,
@@ -594,7 +567,6 @@ pub fn join_request_respond_input(
 }
 
 pub fn representation_set_input(
-    endpoint: String,
     group_id: String,
     is_representing: bool,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
@@ -602,7 +574,7 @@ pub fn representation_set_input(
     Ok((
         group_id.clone(),
         api_input(
-            endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "PUT",
             group_path(&group_id, "representation"),
             Some(serde_json::json!({ "isRepresenting": is_representing })),
@@ -631,6 +603,77 @@ pub fn member_props_set_input(
             Some(object_body(params)),
         ),
     ))
+}
+
+struct GroupMemberRoleActionInput<'a> {
+    endpoint: String,
+    group_id: String,
+    user_id: String,
+    role_id: String,
+    group_message: &'a str,
+    user_message: &'a str,
+    role_message: &'a str,
+    method: &'a str,
+}
+
+fn member_role_action_input(
+    input: GroupMemberRoleActionInput<'_>,
+) -> Result<(String, String, String, HttpApiRequestInput), HttpApiError> {
+    let group_id = require_text(input.group_id, input.group_message)?;
+    let user_id = require_text(input.user_id, input.user_message)?;
+    let role_id = require_text(input.role_id, input.role_message)?;
+    Ok((
+        group_id.clone(),
+        user_id.clone(),
+        role_id.clone(),
+        api_input(
+            input.endpoint,
+            input.method,
+            group_path(
+                &group_id,
+                &format!(
+                    "members/{}/roles/{}",
+                    encode_path_segment(&user_id),
+                    encode_path_segment(&role_id)
+                ),
+            ),
+            None,
+        ),
+    ))
+}
+
+pub fn member_role_add_input(
+    group_id: String,
+    user_id: String,
+    role_id: String,
+) -> Result<(String, String, String, HttpApiRequestInput), HttpApiError> {
+    member_role_action_input(GroupMemberRoleActionInput {
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        group_id,
+        user_id,
+        role_id,
+        group_message: "VrchatGroupMemberRoleAdd requires groupId.",
+        user_message: "VrchatGroupMemberRoleAdd requires userId.",
+        role_message: "VrchatGroupMemberRoleAdd requires roleId.",
+        method: "PUT",
+    })
+}
+
+pub fn member_role_remove_input(
+    group_id: String,
+    user_id: String,
+    role_id: String,
+) -> Result<(String, String, String, HttpApiRequestInput), HttpApiError> {
+    member_role_action_input(GroupMemberRoleActionInput {
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        group_id,
+        user_id,
+        role_id,
+        group_message: "VrchatGroupMemberRoleRemove requires groupId.",
+        user_message: "VrchatGroupMemberRoleRemove requires userId.",
+        role_message: "VrchatGroupMemberRoleRemove requires roleId.",
+        method: "DELETE",
+    })
 }
 
 #[cfg(test)]
@@ -670,10 +713,39 @@ mod tests {
 
     #[test]
     fn member_unban_deletes_ban_row_not_member_row() {
-        let (_, _, request) =
-            member_unban_input(endpoint(), "grp 1".into(), "usr 1".into()).unwrap();
+        let (_, _, request) = member_unban_input("grp 1".into(), "usr 1".into()).unwrap();
 
         assert_eq!(request.path.as_deref(), Some("groups/grp%201/bans/usr%201"));
+        assert_eq!(request.method.as_deref(), Some("DELETE"));
+    }
+
+    #[test]
+    fn member_role_add_puts_the_role_onto_the_member() {
+        let (group_id, user_id, role_id, request) =
+            member_role_add_input("grp 1".into(), "usr 1".into(), "grol 1".into()).unwrap();
+
+        assert_eq!(group_id, "grp 1");
+        assert_eq!(user_id, "usr 1");
+        assert_eq!(role_id, "grol 1");
+        assert_eq!(
+            request.path.as_deref(),
+            Some("groups/grp%201/members/usr%201/roles/grol%201")
+        );
+        assert_eq!(request.method.as_deref(), Some("PUT"));
+    }
+
+    #[test]
+    fn member_role_remove_deletes_the_role_from_the_member() {
+        let (group_id, user_id, role_id, request) =
+            member_role_remove_input("grp 1".into(), "usr 1".into(), "grol 1".into()).unwrap();
+
+        assert_eq!(group_id, "grp 1");
+        assert_eq!(user_id, "usr 1");
+        assert_eq!(role_id, "grol 1");
+        assert_eq!(
+            request.path.as_deref(),
+            Some("groups/grp%201/members/usr%201/roles/grol%201")
+        );
         assert_eq!(request.method.as_deref(), Some("DELETE"));
     }
 }

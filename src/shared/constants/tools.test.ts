@@ -43,6 +43,7 @@ describe('tool catalog categories', () => {
                 'presence-room-rules',
                 'presence-invite-requests',
                 'group-calendar',
+                'group-moderation',
                 'edit-invite-message'
             ],
             vrchat: ['vrchat-config', 'launch-options', 'app-launcher'],

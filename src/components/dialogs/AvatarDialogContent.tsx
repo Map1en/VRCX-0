@@ -134,7 +134,6 @@ export function AvatarDialogContent({
             <AvatarDetailsDialog
                 open={ownerEditor === 'details'}
                 avatar={avatar}
-                endpoint={currentEndpoint}
                 onOpenChange={(open) => setOwnerEditor(open ? 'details' : null)}
                 onSavedCurrentAvatar={(nextAvatar) =>
                     applyCurrentAvatarUpdate(nextAvatar)

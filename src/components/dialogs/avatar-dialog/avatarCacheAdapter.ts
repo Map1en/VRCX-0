@@ -3,9 +3,9 @@ import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 
 import { defaultAvatarSideData, resolveAssetBundleArgs } from './avatarAssets';
 
-export async function readAvatarCacheInfo(avatar: unknown, endpoint = '') {
+export async function readAvatarCacheInfo(avatar: unknown) {
     const configResponse = await vrchatAuthRepository
-        .getConfig({ endpoint })
+        .getConfig()
         .catch((): null => null);
     const sdkUnityVersion = String(configResponse?.json?.sdkUnityVersion || '');
     const args = resolveAssetBundleArgs(avatar, sdkUnityVersion);

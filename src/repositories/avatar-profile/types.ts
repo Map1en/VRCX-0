@@ -59,7 +59,6 @@ export interface AvatarProfileExtras extends AvatarRecord {
 export interface AvatarListOptions {
     userId?: unknown;
     user?: string;
-    endpoint?: string;
     n?: number;
     offset?: number;
     sort?: string;
@@ -67,11 +66,7 @@ export interface AvatarListOptions {
     releaseStatus?: string;
 }
 
-export interface AvatarRequestOptions {
-    endpoint?: string;
-}
-
-export interface AvatarIdInput extends AvatarRequestOptions {
+export interface AvatarIdInput {
     avatarId?: unknown;
 }
 
@@ -79,7 +74,7 @@ export interface SaveAvatarInput extends AvatarIdInput {
     params?: Record<string, unknown>;
 }
 
-export interface AvatarStylesInput extends AvatarRequestOptions {
+export interface AvatarStylesInput {
     force?: boolean;
 }
 

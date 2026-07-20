@@ -124,28 +124,21 @@ describe('AvatarProfileRepository', () => {
         }
     });
 
-    it('shares one endpoint-scoped avatar name cache across facade and named exports', async () => {
+    it('shares one avatar name cache across facade and named exports', async () => {
         mocks.appVrchatAvatarFileGet.mockResolvedValue({
             status: 200,
             data: JSON.stringify({
                 name: 'Avatar - Shared cache - Image - 1',
                 ownerId: 'usr_owner',
                 versions: [{ created_at: '2026-01-03T00:00:00.000Z' }]
-            }),
-            raw: ''
+            })
         });
 
         const imageUrl =
             'https://api.vrchat.cloud/api/1/file/file_avatar_profile/1/file';
-        const first = await getAvatarNameFromImageUrl(imageUrl, {
-            endpoint: 'https://api.vrchat.cloud/api/1'
-        });
-        const second = await avatarProfileRepository.getAvatarNameFromImageUrl(
-            imageUrl,
-            {
-                endpoint: 'https://api.vrchat.cloud/api/1/'
-            }
-        );
+        const first = await getAvatarNameFromImageUrl(imageUrl);
+        const second =
+            await avatarProfileRepository.getAvatarNameFromImageUrl(imageUrl);
 
         expect(first).toEqual({
             ownerId: 'usr_owner',

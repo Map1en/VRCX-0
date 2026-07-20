@@ -9,7 +9,6 @@ pub enum FriendProfileBulkLoadStatus {
     Cancelling,
     Completed,
     Cancelled,
-    Error,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, specta::Type)]
@@ -23,7 +22,6 @@ pub struct FriendProfileLoadStatusPayload {
     pub failed: u32,
     pub started_at: String,
     pub finished_at: Option<String>,
-    pub last_error: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]

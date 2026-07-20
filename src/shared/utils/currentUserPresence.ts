@@ -28,7 +28,7 @@ export interface CurrentUserPresencePatch extends CurrentUserPresenceRecord {
     travelingToLocation: string;
     travelingToWorld: string;
     travelingToInstance: string;
-    state: unknown;
+    state: 'online';
     stateBucket: 'online';
 }
 
@@ -47,7 +47,10 @@ const CURRENT_USER_PRESENCE_FIELDS = [
     '$travelingToLocation',
     '$travelingToTime',
     'state',
-    'stateBucket'
+    'stateBucket',
+    'status',
+    'statusDescription',
+    'pendingOffline'
 ];
 
 function normalizeLocationStatus(value: unknown): string {
@@ -106,19 +109,32 @@ function preferVisibleLocation(primary: unknown, fallback: unknown): unknown {
     return normalizeString(primary) || normalizeString(fallback);
 }
 
+function hasExplicitCurrentUserLocation(
+    source: CurrentUserPresenceRecord | null | undefined
+): boolean {
+    if (!source) {
+        return false;
+    }
+    return [
+        'location',
+        '$location',
+        'worldId',
+        'instanceId',
+        'travelingToLocation'
+    ].some((field) => source[field] !== undefined);
+}
+
 function buildPresencePatch({
     location,
     travelingToLocation = '',
     worldId = '',
     instanceId = '',
-    state = '',
     source = null
 }: {
     location: unknown;
     travelingToLocation?: unknown;
     worldId?: unknown;
     instanceId?: unknown;
-    state?: unknown;
     source?: CurrentUserPresenceRecord | null;
 }): CurrentUserPresencePatch | null {
     const normalizedLocation = normalizeLocationValue(location);
@@ -156,7 +172,7 @@ function buildPresencePatch({
         travelingToInstance: parsedTraveling.instanceId || '',
         $location: parsedLocation,
         $travelingToLocation: parsedTraveling,
-        state: source?.state || state || 'online',
+        state: 'online',
         stateBucket: 'online'
     };
 }
@@ -220,9 +236,48 @@ export function buildCurrentUserApiPresencePatch(
         travelingToLocation,
         worldId: presence.world,
         instanceId: presence.instance,
-        state: presence.state,
         source: currentUser
     });
+}
+
+export function mergeCurrentUserSnapshotPresenceFields<
+    TProfile extends CurrentUserPresenceRecord | null | undefined
+>(
+    profile: TProfile,
+    snapshot: CurrentUserPresenceRecord | null | undefined
+): TProfile {
+    if (!profile || !snapshot) {
+        return profile;
+    }
+
+    let merged = profile;
+    for (const field of CURRENT_USER_PRESENCE_FIELDS) {
+        const value = snapshot[field];
+        if (value === undefined || value === profile[field]) {
+            continue;
+        }
+        if (merged === profile) {
+            merged = Object.assign({}, profile);
+        }
+        merged[field] = value;
+    }
+    return merged;
+}
+
+function normalizeCurrentUserSnapshotPresence(
+    snapshot: CurrentUserPresenceRecord | null | undefined
+) {
+    if (
+        !snapshot ||
+        hasExplicitCurrentUserLocation(snapshot) ||
+        normalizeLocationStatus(snapshot.stateBucket || snapshot.state) ===
+            'offline'
+    ) {
+        return snapshot;
+    }
+
+    const apiPresencePatch = buildCurrentUserApiPresencePatch(snapshot);
+    return apiPresencePatch ? { ...snapshot, ...apiPresencePatch } : snapshot;
 }
 
 export function mergeCurrentUserPresenceFields<
@@ -275,31 +330,28 @@ export function buildCurrentUserPresenceView<
         return currentUser;
     }
 
+    const normalizedCurrentUserSnapshot =
+        normalizeCurrentUserSnapshotPresence(currentUserSnapshot);
+    const mergedUser = mergeCurrentUserSnapshotPresenceFields(
+        currentUser,
+        normalizedCurrentUserSnapshot
+    );
+
     if (!gameLogDisabled) {
         const gameStatePatch = buildCurrentUserGameStatePresencePatch(
             gameState,
-            currentUser
+            mergedUser
         );
         if (gameStatePatch) {
-            return { ...currentUser, ...gameStatePatch };
+            return { ...mergedUser, ...gameStatePatch };
         }
     }
 
-    if (hasVisibleCurrentUserPresence(currentUser)) {
-        return currentUser;
-    }
-
-    const mergedUser = mergeCurrentUserPresenceFields(
-        currentUser,
-        currentUserSnapshot
-    );
-    if (hasVisibleCurrentUserPresence(mergedUser)) {
+    if (currentUserSnapshot || hasVisibleCurrentUserPresence(mergedUser)) {
         return mergedUser;
     }
 
-    const apiPresencePatch =
-        buildCurrentUserApiPresencePatch(mergedUser) ||
-        buildCurrentUserApiPresencePatch(currentUserSnapshot);
+    const apiPresencePatch = buildCurrentUserApiPresencePatch(mergedUser);
     return apiPresencePatch
         ? { ...mergedUser, ...apiPresencePatch }
         : mergedUser;

@@ -69,6 +69,77 @@
         }
     },
     "language": "한국어 (ko)",
+    "data_dir_migration": {
+        "title": "VRCX-0 데이터 이동",
+        "description": "선택한 폴더를 사용하는 방법을 선택하세요.",
+        "completed_title": "데이터 이동 완료",
+        "completed_description": "VRCX-0을 다시 시작하면 새 데이터 폴더를 사용합니다.",
+        "error_short": "데이터 이동 실패",
+        "start": "이동 시작",
+        "restart_now": "지금 다시 시작",
+        "restart_later": "나중에",
+        "create_backup_first": "먼저 백업 만들기",
+        "space_summary": "필요: {required} · 사용 가능: {available}",
+        "insufficient_space": "데이터를 이동할 여유 공간이 부족합니다.",
+        "contents_notice": "데이터베이스, 앱 설정, 갤러리 색인과 썸네일을 복사합니다. 이미지 캐시는 새 위치에서 다시 다운로드됩니다. 이전 데이터는 정리할 때까지 보관됩니다.",
+        "unsupported_storage_warning": "네트워크 드라이브, 클라우드 동기화 폴더(OneDrive, iCloud 등), 이동식 드라이브는 사용하지 마세요. 이러한 위치의 데이터베이스는 손상될 수 있으며 지원되지 않습니다.",
+        "mode": {
+            "migrate": "현재 데이터 이동(권장)",
+            "adoptExisting": "이 폴더의 기존 VRCX-0 프로필 사용",
+            "freshStart": "이 폴더에서 새 프로필 시작"
+        },
+        "target": {
+            "empty": "선택한 폴더가 비어 있습니다.",
+            "existingProfile": "VRCX-0 프로필이 이미 있습니다. 교체 전에 보관됩니다.",
+            "foreignContent": "다른 파일이 있습니다. VRCX-0은 자체 파일만 관리합니다."
+        },
+        "phase": {
+            "preparing": "데이터 이동 준비 중",
+            "freezing": "데이터베이스 중지 중",
+            "copying": "데이터베이스 복사 중",
+            "verifying": "복사본 확인 중",
+            "committing": "데이터 이동 완료 중"
+        },
+        "error": {
+            "operationBusy": "다른 백업, 복원 또는 데이터 이동이 진행 중입니다.",
+            "databaseUnavailable": "현재 데이터베이스를 이동할 수 없습니다.",
+            "pendingRestore": "대기 중인 프로필 복원을 먼저 완료하거나 취소하세요.",
+            "pendingLegacyMigration": "대기 중인 이전 데이터 이전을 먼저 완료하세요.",
+            "pendingMigration": "데이터 폴더 이동이 대기 중입니다. VRCX-0을 다시 시작하세요.",
+            "cleanupConflict": "이 폴더로 돌아가기 전에 이전 데이터를 처리하세요.",
+            "copyFailed": "데이터베이스를 복사하지 못했습니다. 원래 데이터를 계속 사용합니다.",
+            "commitFailed": "복사한 데이터베이스를 설치하지 못했습니다. 원래 데이터를 계속 사용합니다.",
+            "pointerCommitFailed": "새 데이터 폴더를 활성화하지 못했습니다. 다시 시작하여 안전하게 재시도하세요.",
+            "io": "데이터 폴더 파일을 읽거나 쓸 수 없습니다."
+        },
+        "warning": {
+            "configCopyFailed": "일부 앱 설정을 복사하지 못해 기본값이 사용될 수 있습니다.",
+            "galleryCopyFailed": "일부 갤러리 색인 또는 썸네일을 복사하지 못했으며 필요할 때 다시 생성됩니다.",
+            "cacheCleanupFailed": "일부 이전 캐시를 삭제하지 못했습니다."
+        },
+        "result": {
+            "succeeded": "데이터 폴더 이동 완료",
+            "failed_title": "새 데이터 폴더를 사용할 수 없습니다",
+            "database_open_failed": "원래 폴더를 계속 사용합니다. 데이터에는 영향이 없습니다.",
+            "interrupted_title": "데이터 폴더 이동이 중단되었습니다",
+            "interrupted": "원래 폴더를 계속 사용합니다. 다시 시도할 수 있습니다."
+        },
+        "cleanup": {
+            "ready_title": "데이터 폴더 이동 완료",
+            "ready_description": "이전 데이터가 {path}에 남아 있습니다.",
+            "action": "이전 데이터 정리",
+            "action_with_size": "이전 데이터 정리({size})",
+            "confirm_title": "이전 VRCX-0 데이터를 영구 삭제할까요?",
+            "confirm_description": "{path}에서 알려진 VRCX-0 파일 약 {size}를 삭제합니다. 알 수 없는 파일은 유지됩니다. 취소할 수 없습니다.",
+            "completed": "이전 VRCX-0 데이터를 정리했습니다",
+            "freed": "{size}를 확보했습니다.",
+            "completed_with_skipped": "{size}를 확보했지만 {count}개 항목을 삭제하지 못했습니다.",
+            "settings_title": "이전 데이터를 정리할 수 있습니다",
+            "settings_description": "이전 VRCX-0 데이터가 {path}에 남아 있습니다({size}바이트).",
+            "dismiss": "보관하고 다시 알리지 않기",
+            "dismissed": "정리 알림을 껐습니다"
+        }
+    },
     "profile_backup": {
         "header": "백업 및 복원",
         "tools_description": "VRCX-0 데이터를 백업하고 필요할 때 복원합니다.",
@@ -1508,7 +1579,9 @@
             "group": {
                 "header": "그룹",
                 "calendar": "달력",
-                "calendar_description": "그룹 이벤트 캘린더"
+                "calendar_description": "그룹 이벤트 캘린더",
+                "moderation": "그룹 중재",
+                "moderation_description": "회원님이 관리하는 그룹의 멤버, 밴, 초대, 가입 요청을 관리하세요."
             },
             "export": {
                 "header": "수출",
@@ -3426,7 +3499,9 @@
                 "visit_count": "방문 횟수",
                 "time_spent": "방문 시간",
                 "persistent_data": "영구 데이터",
-                "url": "VRChat 링크"
+                "url": "VRChat 링크",
+                "vrcx_url": "VRCX-0 링크",
+                "copy_vrcx_url": "VRCX-0 링크 복사"
             },
             "json": {
                 "header": "JSON"
@@ -3618,7 +3693,9 @@
                 "memo_placeholder": "-",
                 "listings": "목록",
                 "gallery": "갤러리",
-                "url": "VRChat 링크"
+                "url": "VRChat 링크",
+                "vrcx_url": "VRCX-0 링크",
+                "copy_vrcx_url": "VRCX-0 링크 복사"
             },
             "json": {
                 "header": "JSON"
@@ -4442,12 +4519,55 @@
             "kick": "킥",
             "ban": "금지",
             "unban": "금지 해제",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "표시 이름",
             "created_at": "최초 업로드",
             "type": "유형",
             "description": "설명",
             "data": "데이터",
-            "roles": "역할"
+            "roles": "역할",
+            "select_all": "전체 선택",
+            "selected_users_count": "{count}개 선택됨",
+            "notes": "메모",
+            "note_placeholder": "선택한 회원에 대한 메모 추가...",
+            "selected_roles": "역할",
+            "roles_count": "역할 {count}개 선택됨",
+            "choose_roles_placeholder": "역할 선택...",
+            "add_roles": "역할 추가",
+            "remove_roles": "역할 제거",
+            "save_note": "메모 저장",
+            "progress": "진행률",
+            "bulk_action_confirm": "선택한 {count}명의 회원에게 적용됩니다.",
+            "bulk_action_completed": "{count}명의 회원에 대해 {value} 완료",
+            "import_bans": "차단 목록 가져오기",
+            "import_bans_description": "일괄 차단할 usr_ ID가 포함된 사용자 ID, 프로필 URL 또는 CSV 데이터를 붙여넣으세요.",
+            "import_bans_warning": "일치하는 모든 사용자가 즉시 차단됩니다. 이 작업은 되돌릴 수 없습니다.",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "가져오기 시작",
+            "import_bans_clear_errors": "오류 지우기",
+            "import_bans_no_ids_found": "유효한 사용자 ID를 찾을 수 없습니다 (usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+            "import_bans_done": "완료됨. {success}/{total}명 차단됨.",
+            "import_bans_cancelled": "취소됨. {success}/{total}명 차단됨.",
+            "export_logs": "로그 내보내기",
+            "export_logs_copied": "감사 로그 CSV가 클립보드에 복사되었습니다",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "{count}개 로드됨",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "Member",
+                "invited": "Invited",
+                "banned": "Banned",
+                "requested": "Requested",
+                "blocked": "Blocked",
+                "userblocked": "Blocked",
+                "joined": "Joined",
+                "active": "Active",
+                "pending": "Pending"
+            }
         },
         "group_post_edit": {
             "title": "제목"
@@ -5282,7 +5402,22 @@
                 "failed_to_update_group_event_follow_state": "이 이벤트를 업데이트하지 못했습니다.",
                 "failed_to_download_ics_file": ".ics 파일을 다운로드하지 못했습니다.",
                 "failed_to_save_ics_file": ".ics 파일을 저장하지 못했습니다.",
-                "failed_to_copy_event_link": "이벤트 링크를 복사하지 못했습니다."
+                "failed_to_copy_event_link": "이벤트 링크를 복사하지 못했습니다.",
+                "failed_to_load_moderatable_groups": "회원님이 관리하는 그룹을 불러오지 못했습니다.",
+                "failed_to_open_group_moderation": "그룹 관리를 열지 못했습니다."
+            },
+            "group_moderation": {
+                "picker_description": "멤버, 밴, 초대, 가입 요청을 관리할 그룹을 선택하세요.",
+                "loading": "회원님이 관리하는 그룹을 불러오는 중...",
+                "empty_title": "관리할 그룹이 없습니다",
+                "empty_description": "아직 어떤 그룹에서도 관리 권한이 없습니다.",
+                "permissions_degraded": "일부 그룹 권한을 확인하지 못했습니다. 아래 목록이 불완전할 수 있습니다.",
+                "member_count": "멤버 {count}명",
+                "rail_title": "Groups you moderate",
+                "select_a_group_title": "Select a group",
+                "select_a_group_description": "Choose a group from the list to manage members, bans, invites, and join requests.",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} members · {online} online"
             }
         }
     },
@@ -5361,6 +5496,14 @@
         "avatar": {
             "no_provider": "구성된 아바타 검색 공급자가 없습니다."
         }
+    },
+    "translation": {
+        "translate": "번역",
+        "show_original": "원본 표시",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "번역 실패",
+        "error_network": "네트워크 오류, 다시 시도해 주세요",
+        "error_unsupported": "번역이 설정되지 않았습니다"
     },
     "app": {
         "routes": {

@@ -1,7 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
-import { createRequestError } from '@/repositories/vrchatRequest';
-import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint';
+import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -9,15 +8,14 @@ import { useSessionStore } from '@/state/sessionStore';
 import {
     applyAuthenticatedRuntimePhaseSnapshot,
     handleAuthenticatedRuntimeRealtimeStatus,
+    matchesAuthenticatedRuntimeAuthFailure,
     resetAuthenticatedRuntimeMirror
 } from './authenticatedRuntimeService';
 import { handleRuntimeAuthFailure } from './authSessionRecoveryService';
 import { handleAppUpdateStatusEvent } from './backgroundMaintenanceUpdateService';
+import { getCurrentDataDirMigrationStatus } from './dataDirMigrationService';
 import { bindDeepLinkEvents, drainPendingDeepLinks } from './deepLinkService';
-import {
-    applyFriendProfileLoadStatusPayload,
-    isFriendProfileLoadTerminalStatus
-} from './friendProfileLoadService';
+import { applyFriendProfileLoadStatusPayload } from './friendProfileLoadService';
 import { getCurrentProfileBackupStatus } from './profileBackupService';
 import { handleRealtimeEntryCorrection } from './realtimePresenceService';
 import { runForegroundUpdateRegistryBackupMaintenance } from './registryBackupMaintenanceService';
@@ -28,7 +26,6 @@ import {
     requestGroupInstancesRefresh
 } from './runtime-event-bridge/auxiliaryEventHandlers';
 import {
-    flushFriendProfileProjectionBatch,
     flushPendingBackendRealtimeProjectionEvents,
     handleBackendRealtimeProjectionEvent,
     prunePendingBackendRealtimeProjectionEvents,
@@ -59,35 +56,13 @@ import {
 
 type RuntimeEventUnsubscribe = () => void;
 
-async function handleRuntimeVrchatAuthFailureEvent(
+function handleRuntimeVrchatAuthFailureEvent(
     failure: RuntimeEventPayloadMap['runtimeVrchatAuthFailure']
-): Promise<void> {
-    if (failure.statusCode !== 401) {
+): void {
+    if (!matchesAuthenticatedRuntimeAuthFailure(failure)) {
         return;
     }
-    const authScope = await commands
-        .appRuntimeAuthScopeGet()
-        .catch((error: unknown) => {
-            console.warn('Failed to verify VRChat auth failure scope:', error);
-            return null;
-        });
-    if (
-        !authScope?.active ||
-        authScope.currentUserId !== failure.ownerUserId.trim() ||
-        normalizeVrchatEndpointKey(authScope.endpoint) !==
-            normalizeVrchatEndpointKey(failure.endpoint) ||
-        authScope.generation !== failure.authScopeGeneration
-    ) {
-        return;
-    }
-    void handleRuntimeAuthFailure(
-        createRequestError(
-            failure.reason,
-            failure.statusCode,
-            failure.path,
-            failure
-        )
-    );
+    void handleRuntimeAuthFailure(failure);
 }
 
 function handleRuntimeEvent(event: RuntimeEvent): void {
@@ -99,9 +74,6 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
     }
 
     if (event.name === 'friendProfileLoadStatus') {
-        if (isFriendProfileLoadTerminalStatus(event.payload.status)) {
-            flushFriendProfileProjectionBatch();
-        }
         runtimeStore.recordRuntimeEvent(event.name, event.payload);
         applyFriendProfileLoadStatusPayload(event.payload);
         return;
@@ -136,6 +108,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'profileRestoreProgress') {
         useProfileBackupStore.getState().applyRestoreProgress(event.payload);
+        return;
+    }
+
+    if (event.name === 'dataDirMigration') {
+        useDataDirMigrationStore.getState().applyStatus(event.payload);
         return;
     }
 
@@ -203,7 +180,7 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
     }
 
     if (event.name === 'runtimeVrchatAuthFailure') {
-        void handleRuntimeVrchatAuthFailureEvent(event.payload);
+        handleRuntimeVrchatAuthFailureEvent(event.payload);
         return;
     }
 
@@ -236,6 +213,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'printsAutoCleanup',
         'profileBackupStatus',
         'profileRestoreProgress',
+        'dataDirMigration',
         'favoritesChanged',
         'friendProfileLoadStatus',
         'gameClientEvent',
@@ -266,6 +244,16 @@ export async function bindRuntimeEvents(): Promise<() => void> {
                 .applyStatus(await getCurrentProfileBackupStatus());
         } catch (error) {
             console.warn('Failed to hydrate profile backup status:', error);
+        }
+        try {
+            useDataDirMigrationStore
+                .getState()
+                .applyStatus(await getCurrentDataDirMigrationStatus());
+        } catch (error) {
+            console.warn(
+                'Failed to hydrate data directory migration status:',
+                error
+            );
         }
         try {
             await handleAppUpdateStatusEvent(

@@ -5,8 +5,6 @@ use serde_json::Value;
 #[serde(rename_all = "camelCase")]
 pub struct VrchatUserInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
     pub(crate) force: bool,
@@ -19,8 +17,6 @@ pub struct VrchatUserInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatUserMutualFriendsInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
@@ -35,8 +31,6 @@ pub struct VrchatUserMutualFriendsInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatCurrentUserUpdateInput {
     #[serde(default)]
-    pub(crate) endpoint: String,
-    #[serde(default)]
     pub(crate) user_id: String,
     pub(crate) params: Option<Value>,
 }
@@ -44,8 +38,6 @@ pub struct VrchatCurrentUserUpdateInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatCurrentUserBadgeInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
@@ -59,8 +51,6 @@ pub struct VrchatCurrentUserBadgeInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatCurrentUserTagsInput {
-    #[serde(default)]
-    pub(crate) endpoint: String,
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]

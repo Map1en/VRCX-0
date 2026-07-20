@@ -43,8 +43,6 @@ pub struct InstanceLaunchInput {
     #[serde(default)]
     pub short_name: String,
     #[serde(default)]
-    pub endpoint: String,
-    #[serde(default)]
     pub mode: InstanceLaunchMode,
 }
 

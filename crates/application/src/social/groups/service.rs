@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde_json::Value;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::Result;
@@ -8,23 +7,25 @@ use vrcx_0_application_core::vrchat_api::groups::{
     current_user_group_instances_get_input, gallery_get_input, group_block_input,
     group_get_no_params_input, group_paged_get_input, invite_delete_input, invite_send_input,
     join_input, join_request_respond_input, join_requests_get_input, leave_input, logs_get_input,
-    member_ban_input, member_kick_input, member_props_set_input, member_unban_input,
-    members_get_input, members_search_input, post_create_input, post_delete_input, post_edit_input,
-    profile_get_input, representation_set_input, request_cancel_input, unblock_input,
-    user_group_instances_get_input, user_groups_get_input,
+    member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
+    member_role_remove_input, member_unban_input, members_get_input, members_search_input,
+    post_create_input, post_delete_input, post_edit_input, profile_get_input,
+    representation_set_input, request_cancel_input, unblock_input, user_group_instances_get_input,
+    user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::RuntimeDiagnostics;
 use vrcx_0_application_core::RuntimeSyncEngine;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use super::types::{
     VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
     VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
-    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupPagedInput,
-    VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput, VrchatGroupPostEditInput,
-    VrchatGroupProfileInput, VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput,
-    VrchatGroupUserInput,
+    VrchatGroupMemberRoleInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 
 #[derive(Clone)]
@@ -57,12 +58,8 @@ async fn execute_group_api(
         Ok(response) => {
             deps.diagnostics
                 .record_command(command, "ok", format!("status={}", response.status));
-            let policy_class = response
-                .raw
-                .get("policy")
-                .and_then(|policy| policy.get("class"))
-                .and_then(Value::as_str)
-                .unwrap_or("unknown");
+            let policy_class =
+                vrcx_0_vrchat_client::http_api::classify_api_response(response.status).class;
             deps.sync.record(
                 "api",
                 "ready",
@@ -86,8 +83,11 @@ pub async fn get_group(
     deps: GroupApiDeps,
     input: VrchatGroupProfileInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) =
-        profile_get_input(input.endpoint, input.group_id, input.include_roles)?;
+    let (group_id, request) = profile_get_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.group_id,
+        input.include_roles,
+    )?;
     execute_group_api(
         &deps,
         "app__vrchat_group_get",
@@ -101,7 +101,8 @@ pub async fn get_user_groups(
     deps: GroupApiDeps,
     input: VrchatGroupUserGroupsInput,
 ) -> Result<VrchatApiResponse> {
-    let (user_id, request) = user_groups_get_input(input.endpoint, input.user_id)?;
+    let (user_id, request) =
+        user_groups_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_user_groups_get",
@@ -116,7 +117,6 @@ pub async fn get_posts(
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, request) = group_paged_get_input(
-        input.endpoint,
         input.group_id,
         "posts",
         input.n,
@@ -137,7 +137,6 @@ pub async fn get_members(
     input: VrchatGroupMembersInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, request) = members_get_input(
-        input.endpoint,
         input.group_id,
         input.n,
         input.offset,
@@ -157,13 +156,8 @@ pub async fn search_members(
     deps: GroupApiDeps,
     input: VrchatGroupMembersSearchInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = members_search_input(
-        input.endpoint,
-        input.group_id,
-        input.n,
-        input.offset,
-        input.query,
-    )?;
+    let (group_id, request) =
+        members_search_input(input.group_id, input.n, input.offset, input.query)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_members_search",
@@ -177,13 +171,8 @@ pub async fn get_gallery(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, gallery_id, request) = gallery_get_input(
-        input.endpoint,
-        input.group_id,
-        input.gallery_id,
-        input.n,
-        input.offset,
-    )?;
+    let (group_id, gallery_id, request) =
+        gallery_get_input(input.group_id, input.gallery_id, input.n, input.offset)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_gallery_get",
@@ -198,7 +187,7 @@ pub async fn get_group_instances(
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, user_id, request) =
-        user_group_instances_get_input(input.endpoint, input.group_id, input.user_id)?;
+        user_group_instances_get_input(input.group_id, input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_instances_get",
@@ -213,7 +202,6 @@ pub async fn get_bans(
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, request) = group_paged_get_input(
-        input.endpoint,
         input.group_id,
         "bans",
         input.n,
@@ -234,7 +222,6 @@ pub async fn get_invites(
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, request) = group_paged_get_input(
-        input.endpoint,
         input.group_id,
         "invites",
         input.n,
@@ -254,13 +241,8 @@ pub async fn get_join_requests(
     deps: GroupApiDeps,
     input: VrchatGroupJoinRequestsInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = join_requests_get_input(
-        input.endpoint,
-        input.group_id,
-        input.n,
-        input.offset,
-        input.blocked,
-    )?;
+    let (group_id, request) =
+        join_requests_get_input(input.group_id, input.n, input.offset, input.blocked)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_join_requests_get",
@@ -275,7 +257,6 @@ pub async fn get_audit_log_types(
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, request) = group_get_no_params_input(
-        input.endpoint,
         input.group_id,
         "auditLogTypes",
         "VrchatGroupAuditLogTypesGet requires groupId.",
@@ -293,13 +274,8 @@ pub async fn get_logs(
     deps: GroupApiDeps,
     input: VrchatGroupLogsInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = logs_get_input(
-        input.endpoint,
-        input.group_id,
-        input.n,
-        input.offset,
-        input.event_types,
-    )?;
+    let (group_id, request) =
+        logs_get_input(input.group_id, input.n, input.offset, input.event_types)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_logs_get",
@@ -313,7 +289,8 @@ pub async fn get_user_instances(
     deps: GroupApiDeps,
     input: VrchatGroupUserGroupsInput,
 ) -> Result<VrchatApiResponse> {
-    let (user_id, request) = current_user_group_instances_get_input(input.endpoint, input.user_id)?;
+    let (user_id, request) =
+        current_user_group_instances_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_user_instances_get",
@@ -327,7 +304,7 @@ pub async fn create_post(
     deps: GroupApiDeps,
     input: VrchatGroupPostCreateInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = post_create_input(input.endpoint, input.group_id, input.params)?;
+    let (group_id, request) = post_create_input(input.group_id, input.params)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_post_create",
@@ -342,7 +319,7 @@ pub async fn edit_post(
     input: VrchatGroupPostEditInput,
 ) -> Result<VrchatApiResponse> {
     let (group_id, post_id, request) =
-        post_edit_input(input.endpoint, input.group_id, input.post_id, input.params)?;
+        post_edit_input(input.group_id, input.post_id, input.params)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_post_edit",
@@ -356,8 +333,7 @@ pub async fn delete_post(
     deps: GroupApiDeps,
     input: VrchatGroupPostDeleteInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, post_id, request) =
-        post_delete_input(input.endpoint, input.group_id, input.post_id)?;
+    let (group_id, post_id, request) = post_delete_input(input.group_id, input.post_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_post_delete",
@@ -371,7 +347,7 @@ pub async fn join_group(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = join_input(input.endpoint, input.group_id)?;
+    let (group_id, request) = join_input(input.group_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_join",
@@ -385,7 +361,7 @@ pub async fn leave_group(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = leave_input(input.endpoint, input.group_id)?;
+    let (group_id, request) = leave_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.group_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_leave",
@@ -399,7 +375,7 @@ pub async fn cancel_request(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = request_cancel_input(input.endpoint, input.group_id)?;
+    let (group_id, request) = request_cancel_input(input.group_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_request_cancel",
@@ -413,8 +389,7 @@ pub async fn send_invite(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        invite_send_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = invite_send_input(input.group_id, input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_invite_send",
@@ -428,8 +403,11 @@ pub async fn kick_member(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        member_kick_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = member_kick_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.group_id,
+        input.user_id,
+    )?;
     execute_group_api(
         &deps,
         "app__vrchat_group_member_kick",
@@ -443,8 +421,11 @@ pub async fn ban_member(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        member_ban_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = member_ban_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.group_id,
+        input.user_id,
+    )?;
     execute_group_api(
         &deps,
         "app__vrchat_group_member_ban",
@@ -458,8 +439,7 @@ pub async fn unban_member(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        member_unban_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = member_unban_input(input.group_id, input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_member_unban",
@@ -469,12 +449,41 @@ pub async fn unban_member(
     .await
 }
 
+pub async fn add_member_role(
+    deps: GroupApiDeps,
+    input: VrchatGroupMemberRoleInput,
+) -> Result<VrchatApiResponse> {
+    let (group_id, user_id, role_id, request) =
+        member_role_add_input(input.group_id, input.user_id, input.role_id)?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_member_role_add",
+        format!("Adding role {role_id} to {user_id} in group {group_id}."),
+        request,
+    )
+    .await
+}
+
+pub async fn remove_member_role(
+    deps: GroupApiDeps,
+    input: VrchatGroupMemberRoleInput,
+) -> Result<VrchatApiResponse> {
+    let (group_id, user_id, role_id, request) =
+        member_role_remove_input(input.group_id, input.user_id, input.role_id)?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_member_role_remove",
+        format!("Removing role {role_id} from {user_id} in group {group_id}."),
+        request,
+    )
+    .await
+}
+
 pub async fn delete_invite(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        invite_delete_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = invite_delete_input(input.group_id, input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_invite_delete",
@@ -488,13 +497,8 @@ pub async fn respond_join_request(
     deps: GroupApiDeps,
     input: VrchatGroupJoinRequestRespondInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) = join_request_respond_input(
-        input.endpoint,
-        input.group_id,
-        input.user_id,
-        input.action,
-        input.block,
-    )?;
+    let (group_id, user_id, request) =
+        join_request_respond_input(input.group_id, input.user_id, input.action, input.block)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_join_request_respond",
@@ -508,8 +512,7 @@ pub async fn set_representation(
     deps: GroupApiDeps,
     input: VrchatGroupRepresentationInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) =
-        representation_set_input(input.endpoint, input.group_id, input.is_representing)?;
+    let (group_id, request) = representation_set_input(input.group_id, input.is_representing)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_representation_set",
@@ -523,8 +526,12 @@ pub async fn set_member_props(
     deps: GroupApiDeps,
     input: VrchatGroupMemberPropsInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        member_props_set_input(input.endpoint, input.group_id, input.user_id, input.params)?;
+    let (group_id, user_id, request) = member_props_set_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.group_id,
+        input.user_id,
+        input.params,
+    )?;
     execute_group_api(
         &deps,
         "app__vrchat_group_member_props_set",
@@ -538,7 +545,7 @@ pub async fn block_group(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, request) = group_block_input(input.endpoint, input.group_id)?;
+    let (group_id, request) = group_block_input(input.group_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_block",
@@ -552,8 +559,7 @@ pub async fn unblock_group(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse> {
-    let (group_id, user_id, request) =
-        unblock_input(input.endpoint, input.group_id, input.user_id)?;
+    let (group_id, user_id, request) = unblock_input(input.group_id, input.user_id)?;
     execute_group_api(
         &deps,
         "app__vrchat_group_unblock",

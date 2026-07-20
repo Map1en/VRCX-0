@@ -3,52 +3,12 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::http_api::{
-    api_input as http_api_input, encode_path_segment, normalize_text,
-    normalize_vrchat_api_endpoint, require_text, HttpApiError, HttpApiRequestInput,
+    api_input, encode_path_segment, get_input, normalize_text, normalize_vrchat_api_endpoint,
+    require_text, HttpApiError, HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload,
 };
-
-fn json_headers() -> HashMap<String, String> {
-    HashMap::from([(
-        "Content-Type".to_string(),
-        "application/json;charset=utf-8".to_string(),
-    )])
-}
 
 pub fn normalize_media_endpoint(endpoint: &str) -> String {
     normalize_vrchat_api_endpoint(Some(endpoint))
-}
-
-pub fn get_input(
-    endpoint: String,
-    path: impl Into<String>,
-    query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
-        endpoint: Some(endpoint),
-        method: Some("GET".into()),
-        path: Some(path.into()),
-        params: Some(query_params.clone()),
-        query_params: Some(query_params),
-        ..Default::default()
-    }
-}
-
-pub fn api_input(
-    endpoint: String,
-    method: &str,
-    path: impl Into<String>,
-    body: Option<Value>,
-) -> HttpApiRequestInput {
-    let has_body = body.is_some();
-    HttpApiRequestInput {
-        endpoint: Some(endpoint),
-        method: Some(method.into()),
-        path: Some(path.into()),
-        headers: body.as_ref().map(|_| json_headers()),
-        body,
-        json_body: Some(has_body),
-        ..Default::default()
-    }
 }
 
 pub fn image_upload_input(
@@ -63,10 +23,11 @@ pub fn image_upload_input(
     Ok(HttpApiRequestInput {
         endpoint: Some(endpoint),
         path: Some(path.into()),
-        upload_image: Some(true),
-        matching_dimensions: Some(matching_dimensions),
-        post_data: Some(post_data),
-        image_data: Some(image_data),
+        body: HttpApiRequestBody::Upload(HttpApiUpload::Image {
+            image_data,
+            post_data: Some(post_data),
+            matching_dimensions,
+        }),
         ..Default::default()
     })
 }
@@ -147,10 +108,11 @@ pub fn print_upload_input(
     Ok(HttpApiRequestInput {
         endpoint: Some(endpoint),
         path: Some("prints".into()),
-        upload_image_print: Some(true),
-        crop_white_border: Some(crop_white_border),
-        post_data: Some(post_data),
-        image_data: Some(image_data),
+        body: HttpApiRequestBody::Upload(HttpApiUpload::PrintImage {
+            image_data,
+            post_data: Some(post_data),
+            crop_white_border,
+        }),
         ..Default::default()
     })
 }
@@ -361,10 +323,11 @@ pub fn file_put_input(
 ) -> HttpApiRequestInput {
     HttpApiRequestInput {
         url: Some(url),
-        upload_file_put: Some(true),
-        file_data: Some(file_data),
-        file_mime: Some(file_mime),
-        file_md5: Some(file_md5),
+        body: HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
+            file_data,
+            file_mime,
+            file_md5: Some(file_md5),
+        }),
         ..Default::default()
     }
 }
@@ -377,7 +340,7 @@ pub fn entity_image_set_input(
     message: &str,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let entity_id = require_text(entity_id, message)?;
-    Ok(http_api_input(
+    Ok(api_input(
         endpoint,
         "PUT",
         format!("{}/{}", entity_path, encode_path_segment(&entity_id)),

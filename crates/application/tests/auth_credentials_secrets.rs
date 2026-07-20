@@ -4,6 +4,7 @@ use std::sync::Arc;
 use serde_json::{json, Value};
 use vrcx_0_application::{
     migrate_saved_credential_secrets, saved_credential_session_data, saved_snapshot,
+    SavedAuthAutoLoginStatus,
 };
 use vrcx_0_persistence::{
     config::ConfigRepository,
@@ -148,15 +149,17 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
     }
 
     let snapshot = saved_snapshot(&config).unwrap();
-    assert_eq!(
-        snapshot["savedCredentials"]["usr_1"]["hasLoginCredentials"],
-        true
-    );
-    assert_eq!(snapshot["savedCredentials"]["usr_1"]["hasCookies"], true);
-    assert_eq!(
-        snapshot["savedCredentials"]["usr_literal"]["hasLoginCredentials"],
-        true
-    );
+    let credential = snapshot
+        .saved_credentials_list
+        .iter()
+        .find(|credential| credential.user.id == "usr_1")
+        .unwrap();
+    assert!(credential.has_login_credentials);
+    assert!(credential.has_cookies);
+    assert!(snapshot
+        .saved_credentials_list
+        .iter()
+        .any(|credential| credential.user.id == "usr_literal" && credential.has_login_credentials));
     let session = saved_credential_session_data(&config, "usr_1")
         .unwrap()
         .unwrap();
@@ -170,12 +173,17 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
         .unwrap();
 
     let snapshot = saved_snapshot(&config).unwrap();
+    let credential = snapshot
+        .saved_credentials_list
+        .iter()
+        .find(|credential| credential.user.id == "usr_1")
+        .unwrap();
+    assert!(!credential.has_login_credentials);
+    assert!(!credential.has_cookies);
     assert_eq!(
-        snapshot["savedCredentials"]["usr_1"]["hasLoginCredentials"],
-        false
+        snapshot.auto_login_status,
+        SavedAuthAutoLoginStatus::MissingCredentials
     );
-    assert_eq!(snapshot["savedCredentials"]["usr_1"]["hasCookies"], false);
-    assert_eq!(snapshot["savedCredentialFallbackAvailable"], false);
     let cleaned = raw_saved_credentials(&config);
     assert!(cleaned["usr_1"].get("cookies").is_none());
     assert!(cleaned["usr_1"]["loginParams"].get("password").is_none());

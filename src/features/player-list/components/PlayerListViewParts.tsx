@@ -73,6 +73,7 @@ export function CurrentWorldHeader({
     currentUserSnapshot,
     fileAnalysis = {},
     friendCount,
+    instanceCapacity,
     instanceCreatedAt = '',
     instanceGroupName = '',
     instanceLocation = '',
@@ -90,6 +91,7 @@ export function CurrentWorldHeader({
     currentUserSnapshot?: PlayerListProfileRecord | null;
     fileAnalysis?: PlayerListFileAnalysis;
     friendCount: number;
+    instanceCapacity?: number | null;
     instanceCreatedAt?: unknown;
     instanceGroupName?: string;
     instanceLocation?: string;
@@ -123,7 +125,7 @@ export function CurrentWorldHeader({
         : [];
     const startedAtMs = parseTimeMs(startedAt || instanceCreatedAt);
     const elapsedMs = startedAtMs ? Math.max(clockNow - startedAtMs, 0) : 0;
-    const capacity = Number(world?.capacity) || 0;
+    const capacity = Number(instanceCapacity) || Number(world?.capacity) || 0;
     const hasAvatarScalingDisabled = Array.isArray(world?.tags)
         ? world.tags.includes('feature_avatar_scaling_disabled')
         : false;

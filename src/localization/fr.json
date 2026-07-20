@@ -69,6 +69,77 @@
         }
     },
     "language": "Français (fr)",
+    "data_dir_migration": {
+        "title": "Déplacer les données VRCX-0",
+        "description": "Choisissez comment VRCX-0 doit utiliser le dossier sélectionné.",
+        "completed_title": "Déplacement terminé",
+        "completed_description": "Redémarrez VRCX-0 pour utiliser le nouveau dossier de données.",
+        "error_short": "Échec du déplacement",
+        "start": "Démarrer",
+        "restart_now": "Redémarrer maintenant",
+        "restart_later": "Plus tard",
+        "create_backup_first": "Créer d’abord une sauvegarde",
+        "space_summary": "Requis : {required} · Disponible : {available}",
+        "insufficient_space": "L’espace disponible est insuffisant.",
+        "contents_notice": "La base de données, les réglages, l’index de la galerie et les miniatures seront copiés. Les caches d’images seront retéléchargés. Les anciennes données restent disponibles jusqu’à leur nettoyage.",
+        "unsupported_storage_warning": "N’utilisez pas de lecteur réseau, de dossier synchronisé dans le cloud (OneDrive, iCloud, etc.) ni de lecteur amovible. Les bases de données peuvent y être endommagées et ces configurations ne sont pas prises en charge.",
+        "mode": {
+            "migrate": "Déplacer mes données actuelles (recommandé)",
+            "adoptExisting": "Utiliser le profil VRCX-0 déjà présent",
+            "freshStart": "Créer un nouveau profil dans ce dossier"
+        },
+        "target": {
+            "empty": "Le dossier sélectionné est vide.",
+            "existingProfile": "Ce dossier contient déjà un profil VRCX-0. Il sera conservé avant son remplacement.",
+            "foreignContent": "Ce dossier contient d’autres fichiers. VRCX-0 ne gérera que les siens."
+        },
+        "phase": {
+            "preparing": "Préparation du déplacement",
+            "freezing": "Arrêt de la base de données",
+            "copying": "Copie de la base de données",
+            "verifying": "Vérification de la copie",
+            "committing": "Finalisation du déplacement"
+        },
+        "error": {
+            "operationBusy": "Une sauvegarde, une restauration ou un déplacement est déjà en cours.",
+            "databaseUnavailable": "La base de données ne peut pas être déplacée actuellement.",
+            "pendingRestore": "Terminez ou annulez d’abord la restauration en attente.",
+            "pendingLegacyMigration": "Terminez d’abord la migration des anciennes données.",
+            "pendingMigration": "Un déplacement du dossier de données est en attente. Redémarrez VRCX-0.",
+            "cleanupConflict": "Traitez d’abord les anciennes données avant de revenir à ce dossier.",
+            "copyFailed": "La base de données n’a pas pu être copiée. Les données d’origine restent utilisées.",
+            "commitFailed": "La copie n’a pas pu être installée. Les données d’origine restent utilisées.",
+            "pointerCommitFailed": "Le nouveau dossier n’a pas pu être activé. Redémarrez VRCX-0 pour réessayer en toute sécurité.",
+            "io": "Impossible de lire ou d’écrire un fichier du dossier de données."
+        },
+        "warning": {
+            "configCopyFailed": "Certains réglages n’ont pas pu être copiés.",
+            "galleryCopyFailed": "Certaines données de galerie n’ont pas pu être copiées et seront recréées si nécessaire.",
+            "cacheCleanupFailed": "Certains anciens fichiers de cache n’ont pas pu être supprimés."
+        },
+        "result": {
+            "succeeded": "Dossier de données déplacé",
+            "failed_title": "Le nouveau dossier de données n’a pas pu être utilisé",
+            "database_open_failed": "VRCX-0 continue d’utiliser le dossier d’origine. Vos données n’ont pas été affectées.",
+            "interrupted_title": "Déplacement interrompu",
+            "interrupted": "VRCX-0 continue d’utiliser le dossier d’origine. Vous pouvez réessayer."
+        },
+        "cleanup": {
+            "ready_title": "Dossier de données déplacé",
+            "ready_description": "Les anciennes données sont toujours dans {path}.",
+            "action": "Nettoyer les anciennes données",
+            "action_with_size": "Nettoyer les anciennes données ({size})",
+            "confirm_title": "Supprimer définitivement les anciennes données VRCX-0 ?",
+            "confirm_description": "Environ {size} de fichiers VRCX-0 connus seront supprimés de {path}. Les fichiers inconnus seront conservés. Cette action est irréversible.",
+            "completed": "Anciennes données VRCX-0 nettoyées",
+            "freed": "{size} libérés.",
+            "completed_with_skipped": "{size} libérés ; {count} éléments n’ont pas pu être supprimés.",
+            "settings_title": "Les anciennes données peuvent être nettoyées",
+            "settings_description": "Les anciennes données VRCX-0 sont encore dans {path} ({size} octets).",
+            "dismiss": "Les conserver et ne plus me le rappeler",
+            "dismissed": "Rappels de nettoyage désactivés"
+        }
+    },
     "profile_backup": {
         "header": "Sauvegarde et restauration",
         "tools_description": "Sauvegardez vos données VRCX-0 et restaurez-les en cas de besoin.",
@@ -1537,7 +1608,9 @@
             "group": {
                 "header": "Groupe",
                 "calendar": "Calendrier",
-                "calendar_description": "Calendrier des événements du groupe"
+                "calendar_description": "Calendrier des événements du groupe",
+                "moderation": "Modération du groupe",
+                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez."
             },
             "user": {
                 "discord_names_description": "Trouvez les noms d'utilisateur Discord de vos amis VRChat",
@@ -3468,6 +3541,8 @@
                 "copy_id": "Copier l'ID",
                 "copy_url": "Copier l'URL",
                 "url": "Lien VRChat",
+                "vrcx_url": "Lien VRCX-0",
+                "copy_vrcx_url": "Copier le lien VRCX-0",
                 "youtube_preview": "Aperçu Youtube",
                 "author_tags": "Tags de l'auteur",
                 "players": "Joueurs",
@@ -3664,6 +3739,8 @@
                 "copy_id": "Copier l'ID",
                 "url": "Lien VRChat",
                 "copy_url": "Copier l'URL",
+                "vrcx_url": "Lien VRCX-0",
+                "copy_vrcx_url": "Copier le lien VRCX-0",
                 "created_at": "Créé le",
                 "last_updated": "Dernière mise à jour",
                 "version": "Version",
@@ -4504,12 +4581,55 @@
             "kick": "Expulser",
             "ban": "Bannir",
             "unban": "Débannir",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "Pseudonyme",
             "created_at": "Créé le",
             "type": "Type",
             "description": "Description",
             "data": "Données",
-            "roles": "Rôles"
+            "roles": "Rôles",
+            "select_all": "Tout sélectionner",
+            "selected_users_count": "{count} sélectionné(s)",
+            "notes": "Notes",
+            "note_placeholder": "Ajouter une note pour les membres sélectionnés...",
+            "selected_roles": "Rôles",
+            "roles_count": "{count} rôles sélectionnés",
+            "choose_roles_placeholder": "Choisir des rôles...",
+            "add_roles": "Ajouter des rôles",
+            "remove_roles": "Retirer des rôles",
+            "save_note": "Enregistrer la note",
+            "progress": "Progression",
+            "bulk_action_confirm": "Cette action s'appliquera à {count} membres sélectionnés.",
+            "bulk_action_completed": "{value} terminé pour {count} membres",
+            "import_bans": "Importer des bannissements",
+            "import_bans_description": "Collez des identifiants d'utilisateurs, des URL de profil ou des données CSV contenant des identifiants usr_ pour bannir en masse.",
+            "import_bans_warning": "Cela bannira immédiatement tous les utilisateurs trouvés. Cette action est irréversible.",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "Démarrer l'import",
+            "import_bans_clear_errors": "Effacer les erreurs",
+            "import_bans_no_ids_found": "Aucun identifiant d'utilisateur valide trouvé (usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+            "import_bans_done": "Terminé. {success}/{total} utilisateurs bannis.",
+            "import_bans_cancelled": "Annulé. {success}/{total} utilisateurs bannis.",
+            "export_logs": "Exporter les journaux",
+            "export_logs_copied": "CSV du journal d'audit copié dans le presse-papiers",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "{count} chargés",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "Member",
+                "invited": "Invited",
+                "banned": "Banned",
+                "requested": "Requested",
+                "blocked": "Blocked",
+                "userblocked": "Blocked",
+                "joined": "Joined",
+                "active": "Active",
+                "pending": "Pending"
+            }
         },
         "group_post_edit": {
             "title": "Titre"
@@ -5354,7 +5474,22 @@
                 "failed_to_update_group_event_follow_state": "Impossible de mettre à jour cet événement",
                 "failed_to_download_ics_file": "Échec du téléchargement du fichier .ics",
                 "failed_to_save_ics_file": "Échec de l'enregistrement du fichier .ics",
-                "failed_to_copy_event_link": "Échec de la copie du lien de l'événement"
+                "failed_to_copy_event_link": "Échec de la copie du lien de l'événement",
+                "failed_to_load_moderatable_groups": "Échec du chargement des groupes que vous modérez",
+                "failed_to_open_group_moderation": "Échec de l'ouverture de la modération du groupe"
+            },
+            "group_moderation": {
+                "picker_description": "Choisissez un groupe pour gérer les membres, bannissements, invitations et demandes d'adhésion.",
+                "loading": "Chargement des groupes que vous modérez…",
+                "empty_title": "Aucun groupe à modérer",
+                "empty_description": "Vous n'avez pas encore de droits de modération dans vos groupes.",
+                "permissions_degraded": "Certaines autorisations de groupe n'ont pas pu être vérifiées. La liste ci-dessous peut être incomplète.",
+                "member_count": "{count} membres",
+                "rail_title": "Groups you moderate",
+                "select_a_group_title": "Select a group",
+                "select_a_group_description": "Choose a group from the list to manage members, bans, invites, and join requests.",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} members · {online} online"
             }
         }
     },
@@ -5433,6 +5568,14 @@
         "avatar": {
             "no_provider": "Aucun fournisseur de recherche d'avatars configuré"
         }
+    },
+    "translation": {
+        "translate": "Traduire",
+        "show_original": "Afficher l'original",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "Échec de la traduction",
+        "error_network": "Erreur réseau, veuillez réessayer",
+        "error_unsupported": "La traduction n'est pas configurée"
     },
     "app": {
         "title": "VRCX-0",

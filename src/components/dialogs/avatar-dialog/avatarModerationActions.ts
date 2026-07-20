@@ -13,7 +13,6 @@ export function createAvatarModerationActions({
     avatar,
     canManageAvatar,
     confirm,
-    currentEndpoint,
     isCurrentAvatar,
     moderationRevisionRef,
     refreshAvatarSnapshot,
@@ -80,22 +79,18 @@ export function createAvatarModerationActions({
         try {
             if (action === 'create') {
                 await avatarProfileRepository.createImposter({
-                    avatarId: avatar.id,
-                    endpoint: currentEndpoint
+                    avatarId: avatar.id
                 });
             } else if (action === 'delete') {
                 await avatarProfileRepository.deleteImposter({
-                    avatarId: avatar.id,
-                    endpoint: currentEndpoint
+                    avatarId: avatar.id
                 });
             } else {
                 await avatarProfileRepository.deleteImposter({
-                    avatarId: avatar.id,
-                    endpoint: currentEndpoint
+                    avatarId: avatar.id
                 });
                 await avatarProfileRepository.createImposter({
-                    avatarId: avatar.id,
-                    endpoint: currentEndpoint
+                    avatarId: avatar.id
                 });
             }
             let refreshFailed = false;
@@ -153,14 +148,12 @@ export function createAvatarModerationActions({
             if (enabled) {
                 await avatarProfileRepository.sendAvatarModeration({
                     avatarId: avatar.id,
-                    type: 'block',
-                    endpoint: currentEndpoint
+                    type: 'block'
                 });
             } else {
                 await avatarProfileRepository.deleteAvatarModeration({
                     avatarId: avatar.id,
-                    type: 'block',
-                    endpoint: currentEndpoint
+                    type: 'block'
                 });
             }
             moderationRevisionRef.current += 1;

@@ -16,11 +16,9 @@ import {
 
 import configRepository from './configRepository';
 import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
+    isVrchatRequestError,
     type QueryParams,
-    unwrapErrorMessage
+    unwrapVrchatResponse
 } from './vrchatRequest';
 
 export type NotificationDetails = Record<string, unknown> & {
@@ -89,7 +87,6 @@ interface NotificationActionOptions {
     userId?: unknown;
     emojiId?: unknown;
     params?: QueryParams;
-    endpoint?: string;
 }
 
 export const NOTIFICATION_TYPES = Object.freeze([
@@ -164,25 +161,9 @@ function unwrapVrchatNotificationResponse<TJson = NotificationRecord>(
     response: HttpApiExecuteResponse,
     path: string
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat notification request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, {
+        fallbackMessage: 'VRChat notification request failed'
+    });
 }
 
 async function queryNotifications({
@@ -350,8 +331,7 @@ async function expireNotification({
 async function markSeen({
     userId,
     id,
-    version,
-    endpoint = ''
+    version
 }: NotificationActionOptions & { version?: unknown } = {}) {
     const normalizedUserId = normalizeUserId(userId);
     const normalizedId =
@@ -364,8 +344,7 @@ async function markSeen({
     const input = {
         userId: normalizedUserId,
         id: normalizedId,
-        version: numericVersion,
-        endpoint
+        version: numericVersion
     } satisfies VrchatNotificationMarkSeenInput;
     const response = await commands.appVrchatNotificationMarkSeen(input);
     const path =
@@ -395,10 +374,7 @@ async function markSeenLocalBulk({
     );
 }
 
-async function acceptFriendRequest({
-    id,
-    endpoint = ''
-}: NotificationActionOptions = {}) {
+async function acceptFriendRequest({ id }: NotificationActionOptions = {}) {
     const normalizedId =
         typeof id === 'string' ? id.trim() : String(id ?? '').trim();
     if (!normalizedId) {
@@ -406,8 +382,7 @@ async function acceptFriendRequest({
     }
 
     const input = {
-        id: normalizedId,
-        endpoint
+        id: normalizedId
     } satisfies VrchatNotificationIdInput;
     const response =
         await commands.appVrchatNotificationAcceptFriendRequest(input);
@@ -421,8 +396,7 @@ async function hideRemoteNotification({
     id,
     version,
     type = '',
-    senderUserId = '',
-    endpoint = ''
+    senderUserId = ''
 }: NotificationActionOptions & {
     version?: unknown;
     type?: string;
@@ -442,8 +416,7 @@ async function hideRemoteNotification({
         id: normalizedId,
         version: Number(version) || 0,
         type,
-        senderUserId: normalizedSenderUserId,
-        endpoint
+        senderUserId: normalizedSenderUserId
     } satisfies VrchatNotificationHideInput;
     const response = await commands.appVrchatNotificationHideRemote(input);
     const path =
@@ -458,8 +431,7 @@ async function hideRemoteNotification({
 async function sendNotificationResponse({
     id,
     responseType,
-    responseData = '',
-    endpoint = ''
+    responseData = ''
 }: NotificationActionOptions = {}) {
     const normalizedId =
         typeof id === 'string' ? id.trim() : String(id ?? '').trim();
@@ -474,20 +446,25 @@ async function sendNotificationResponse({
     const input = {
         id: normalizedId,
         responseType: normalizedResponseType,
-        responseData: responseData ?? '',
-        endpoint
+        responseData: responseData ?? ''
     } satisfies VrchatNotificationRespondInput;
     const response = await commands.appVrchatNotificationRespond(input);
-    return unwrapVrchatNotificationResponse(
-        response,
-        `notifications/${encodeURIComponent(normalizedId)}/respond`
-    );
+    try {
+        return unwrapVrchatNotificationResponse(
+            response,
+            `notifications/${encodeURIComponent(normalizedId)}/respond`
+        );
+    } catch (error) {
+        if (isVrchatRequestError(error) && error.status === 404) {
+            return null;
+        }
+        throw error;
+    }
 }
 
 async function sendInviteResponse({
     id,
-    responseSlot,
-    endpoint = ''
+    responseSlot
 }: NotificationActionOptions = {}) {
     const normalizedId =
         typeof id === 'string' ? id.trim() : String(id ?? '').trim();
@@ -498,8 +475,7 @@ async function sendInviteResponse({
 
     const input = {
         id: normalizedId,
-        responseSlot: normalizedSlot,
-        endpoint
+        responseSlot: normalizedSlot
     } satisfies VrchatInviteResponseInput;
     const response = await commands.appVrchatInviteResponseSend(input);
     return unwrapVrchatNotificationResponse(
@@ -511,8 +487,7 @@ async function sendInviteResponse({
 async function sendInviteResponsePhoto({
     id,
     responseSlot,
-    imageData,
-    endpoint = ''
+    imageData
 }: NotificationActionOptions = {}) {
     const normalizedId =
         typeof id === 'string' ? id.trim() : String(id ?? '').trim();
@@ -533,8 +508,7 @@ async function sendInviteResponsePhoto({
     const input = {
         id: normalizedId,
         responseSlot: normalizedSlot,
-        imageData: normalizedImageData,
-        endpoint
+        imageData: normalizedImageData
     } satisfies VrchatInviteResponsePhotoInput;
     const response = await commands.appVrchatInviteResponsePhotoSend(input);
     return unwrapVrchatNotificationResponse(response, path);
@@ -542,8 +516,7 @@ async function sendInviteResponsePhoto({
 
 async function sendInvite({
     receiverUserId,
-    params = {},
-    endpoint = ''
+    params = {}
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
         typeof receiverUserId === 'string'
@@ -555,8 +528,7 @@ async function sendInvite({
 
     const input = {
         receiverUserId: normalizedReceiverUserId,
-        params,
-        endpoint
+        params
     } satisfies VrchatNotificationSendInput;
     const response = await commands.appVrchatInviteSend(input);
     return unwrapVrchatNotificationResponse(
@@ -568,8 +540,7 @@ async function sendInvite({
 async function sendInvitePhoto({
     receiverUserId,
     params = {},
-    imageData,
-    endpoint = ''
+    imageData
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
         typeof receiverUserId === 'string'
@@ -586,8 +557,7 @@ async function sendInvitePhoto({
     const input = {
         receiverUserId: normalizedReceiverUserId,
         params,
-        imageData: normalizedImageData,
-        endpoint
+        imageData: normalizedImageData
     } satisfies VrchatNotificationPhotoSendInput;
     const response = await commands.appVrchatInvitePhotoSend(input);
     return unwrapVrchatNotificationResponse(
@@ -598,8 +568,7 @@ async function sendInvitePhoto({
 
 async function sendRequestInvite({
     receiverUserId,
-    params = {},
-    endpoint = ''
+    params = {}
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
         typeof receiverUserId === 'string'
@@ -611,8 +580,7 @@ async function sendRequestInvite({
 
     const input = {
         receiverUserId: normalizedReceiverUserId,
-        params,
-        endpoint
+        params
     } satisfies VrchatNotificationSendInput;
     const response = await commands.appVrchatRequestInviteSend(input);
     return unwrapVrchatNotificationResponse(
@@ -624,8 +592,7 @@ async function sendRequestInvite({
 async function sendRequestInvitePhoto({
     receiverUserId,
     params = {},
-    imageData,
-    endpoint = ''
+    imageData
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
         typeof receiverUserId === 'string'
@@ -642,8 +609,7 @@ async function sendRequestInvitePhoto({
     const input = {
         receiverUserId: normalizedReceiverUserId,
         params,
-        imageData: normalizedImageData,
-        endpoint
+        imageData: normalizedImageData
     } satisfies VrchatNotificationPhotoSendInput;
     const response = await commands.appVrchatRequestInvitePhotoSend(input);
     return unwrapVrchatNotificationResponse(
@@ -654,8 +620,7 @@ async function sendRequestInvitePhoto({
 
 async function sendBoop({
     userId,
-    emojiId = '',
-    endpoint = ''
+    emojiId = ''
 }: NotificationActionOptions = {}) {
     const normalizedUserId =
         typeof userId === 'string'
@@ -671,8 +636,7 @@ async function sendBoop({
             : String(emojiId ?? '').trim();
     const input = {
         userId: normalizedUserId,
-        emojiId: normalizedEmojiId,
-        endpoint
+        emojiId: normalizedEmojiId
     } satisfies VrchatBoopInput;
     const response = await commands.appVrchatBoopSend(input);
     return unwrapVrchatNotificationResponse(

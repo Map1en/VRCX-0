@@ -12,16 +12,14 @@ import i18n from './i18nService';
 const TERMINAL_RESET_DELAY_MS = 5000;
 const TERMINAL_STATUSES = new Set<FriendProfileLoadState['status']>([
     'completed',
-    'cancelled',
-    'error'
+    'cancelled'
 ]);
 const STATUS_PHASE: Record<FriendProfileLoadState['status'], number> = {
     idle: 0,
     running: 1,
     cancelling: 2,
     completed: 3,
-    cancelled: 3,
-    error: 3
+    cancelled: 3
 };
 
 let resetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,8 +70,7 @@ function toFriendProfileLoadPatch(
             : payload.failed,
         cancelRequested: payload.status === 'cancelling',
         startedAt: payload.startedAt,
-        finishedAt: payload.finishedAt ?? null,
-        lastError: payload.lastError ?? null
+        finishedAt: payload.finishedAt ?? null
     };
 }
 

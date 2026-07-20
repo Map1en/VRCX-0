@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 use chrono::{DateTime, Utc};
+use vrcx_0_persistence::data_dir_migration::has_pending_data_dir_migration;
 use vrcx_0_persistence::profile_backup::has_pending_profile_restore;
 use vrcx_0_persistence::storage::StorageService;
 
@@ -113,8 +114,9 @@ impl ProfileBackupRuntime {
         {
             return;
         }
-        if self.inner.operation_running.load(Ordering::Acquire)
+        if self.inner.operation_gate.flag.load(Ordering::Acquire)
             || has_pending_profile_restore(&self.inner.app_data)
+            || has_pending_data_dir_migration(&self.inner.control_dir)
         {
             return;
         }

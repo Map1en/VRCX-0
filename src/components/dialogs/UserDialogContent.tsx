@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
-import { openGroupDialog } from '@/services/dialogService';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
+import { useDialogStore } from '@/state/dialogStore';
 
 import { UserDialogContentDialogs } from './user-dialog/components/UserDialogContentDialogs';
 import {
@@ -83,6 +84,8 @@ export function UserDialogContent({
     openNonce?: unknown;
 }) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const closeDialog = useDialogStore((s) => s.closeDialog);
     const openNonce = typeof openNonceValue === 'number' ? openNonceValue : 0;
 
     const normalizedUserId = normalizeUserId(userId);
@@ -516,7 +519,8 @@ export function UserDialogContent({
                     targetImageUrl: imageUrl,
                     onOpenChange: setGroupQuickModerationOpen,
                     onDetailedManagement: (groupId: string) => {
-                        openGroupDialog({ groupId });
+                        closeDialog();
+                        navigate(`/tools/group-moderation/${groupId}`);
                     }
                 }}
             />

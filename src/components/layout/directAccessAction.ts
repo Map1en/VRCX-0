@@ -5,14 +5,10 @@ import { toast } from 'sonner';
 import { directAccessParse } from '@/services/directAccessService';
 import { getClipboardText } from '@/services/shellIntegrationService';
 import { useModalStore } from '@/state/modalStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
 
 export function useDirectAccessAction() {
     const { t } = useTranslation();
     const prompt = useModalStore((state) => state.prompt);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const busyRef = useRef(false);
 
     const tryOpenDirectAccess = useCallback(
@@ -21,7 +17,7 @@ export function useDirectAccessAction() {
                 t('prompt.direct_access_omni.message.opening')
             );
             try {
-                return await directAccessParse(input, currentEndpoint);
+                return await directAccessParse(input);
             } catch (error) {
                 console.warn('Direct access failed:', error);
                 return false;
@@ -29,7 +25,7 @@ export function useDirectAccessAction() {
                 toast.dismiss(toastId);
             }
         },
-        [currentEndpoint, t]
+        [t]
     );
 
     const openPrompt = useCallback(
@@ -74,10 +70,7 @@ export function useDirectAccessAction() {
             );
             const input = (await getClipboardText()).trim();
             try {
-                if (
-                    input &&
-                    (await directAccessParse(input, currentEndpoint))
-                ) {
+                if (input && (await directAccessParse(input))) {
                     return;
                 }
             } catch (error) {
@@ -95,7 +88,7 @@ export function useDirectAccessAction() {
         } finally {
             busyRef.current = false;
         }
-    }, [currentEndpoint, openPrompt, t]);
+    }, [openPrompt, t]);
 
     return {
         openDirectAccessPrompt: openPrompt,

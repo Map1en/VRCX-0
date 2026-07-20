@@ -88,8 +88,7 @@ export function useWorldDialogData({
 
         groupProfileRepository
             .getUserGroups({
-                userId: currentUserId,
-                endpoint: currentEndpoint
+                userId: currentUserId
             })
             .then((groups) => {
                 if (!active) {
@@ -129,11 +128,11 @@ export function useWorldDialogData({
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         vrchatAuthRepository
-            .getConfig({ endpoint: targetEndpoint })
+            .getConfig()
             .catch((): null => null)
             .then((configResponse) =>
                 Promise.allSettled([
-                    readWorldCacheInfo(world, targetEndpoint),
+                    readWorldCacheInfo(world),
                     getFileAnalysisForUnityPackages({
                         unityPackages: world.unityPackages,
                         sdkUnityVersion: String(
@@ -195,7 +194,6 @@ export function useWorldDialogData({
         worldProfileRepository
             .getWorldProfile({
                 worldId: profileWorldId,
-                endpoint: currentEndpoint,
                 dialog: true
             })
             .then((nextWorld) => {
@@ -293,8 +291,7 @@ export function useWorldDialogData({
         worldProfileRepository
             .hasWorldPersistentData({
                 userId: currentUserId,
-                worldId: profileWorldId,
-                endpoint: currentEndpoint
+                worldId: profileWorldId
             })
             .then((exists) => {
                 if (active) {

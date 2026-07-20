@@ -44,9 +44,6 @@ export function ScreenshotMetadataPage() {
     const { i18n, t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const screenshotCacheStatus = useRuntimeStore(
         (state) => state.hostCapabilities.screenshotCache
     );
@@ -340,9 +337,7 @@ export function ScreenshotMetadataPage() {
                 metadata.filePath
             );
             await withUploadTimeout(
-                mediaRepository.uploadGalleryImage(base64Body, {
-                    endpoint: currentEndpoint
-                })
+                mediaRepository.uploadGalleryImage(base64Body)
             );
             toast.success(t('message.gallery.uploaded'));
         } catch (error) {
@@ -617,7 +612,6 @@ export function ScreenshotMetadataPage() {
                                 metadata={metadata}
                                 metadataError={metadataError}
                                 searchRowsCount={searchRows.length}
-                                currentEndpoint={currentEndpoint}
                                 onBackToResults={() =>
                                     setSearchViewMode('table')
                                 }

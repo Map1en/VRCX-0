@@ -126,13 +126,12 @@ export function resolveWorldAssetBundleArgs(
 
 export async function readWorldCacheInfo(
     world: WorldRecord | null | undefined,
-    endpoint: unknown = '',
     sdkUnityVersion?: string
 ): Promise<WorldCacheInfo> {
     let resolvedSdkUnityVersion = sdkUnityVersion;
     if (typeof resolvedSdkUnityVersion !== 'string') {
         const configResponse = await vrchatAuthRepository
-            .getConfig({ endpoint: String(endpoint ?? '') })
+            .getConfig()
             .catch(
                 (): Awaited<
                     ReturnType<typeof vrchatAuthRepository.getConfig>

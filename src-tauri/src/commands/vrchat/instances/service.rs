@@ -13,6 +13,7 @@ use vrcx_0_application_core::vrchat_api::instances::{
 };
 use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 use vrcx_0_persistence::DatabaseService;
 
@@ -31,16 +32,8 @@ async fn execute_instance_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_instance_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 struct TauriInstanceLaunchHttpClient {
@@ -54,6 +47,7 @@ impl TauriInstanceLaunchHttpClient {
     async fn execute_join_request(
         &self,
         command: &'static str,
+        detail: &'static str,
         request: VrchatApiRequest,
     ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
         execute_api_command(
@@ -61,7 +55,7 @@ impl TauriInstanceLaunchHttpClient {
             &self.db,
             &self.diagnostics,
             &self.sync,
-            command,
+            (command, detail),
             request,
             VrchatScope::Vrchat,
         )
@@ -83,8 +77,12 @@ impl InstanceLaunchHttpClient for TauriInstanceLaunchHttpClient {
                 instance_id.to_string(),
                 String::new(),
             )?;
-            self.execute_join_request("app__vrchat_instance_join.short_name", request)
-                .await
+            self.execute_join_request(
+                "app__vrchat_instance_join.short_name",
+                "Getting a short name for the instance launch.",
+                request,
+            )
+            .await
         })
     }
 
@@ -102,8 +100,12 @@ impl InstanceLaunchHttpClient for TauriInstanceLaunchHttpClient {
                 instance_id.to_string(),
                 short_name.to_string(),
             )?;
-            self.execute_join_request("app__vrchat_instance_join.self_invite", request)
-                .await
+            self.execute_join_request(
+                "app__vrchat_instance_join.self_invite",
+                "Sending a self invite for the instance launch.",
+                request,
+            )
+            .await
         })
     }
 }
@@ -127,8 +129,11 @@ pub async fn app__vrchat_instance_get(
     state: State<'_, AppState>,
     input: VrchatInstanceIdentityInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (world_id, instance_id, request) =
-        instance_get_input(input.endpoint, input.world_id, input.instance_id)?;
+    let (world_id, instance_id, request) = instance_get_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.world_id,
+        input.instance_id,
+    )?;
     execute_instance_api(
         state,
         "app__vrchat_instance_get",
@@ -145,7 +150,7 @@ pub async fn app__vrchat_instance_short_name_get(
     input: VrchatInstanceShortNameInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (world_id, instance_id, request) = instance_short_name_get_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.world_id,
         input.instance_id,
         input.short_name,
@@ -169,7 +174,7 @@ pub async fn app__vrchat_instance_create(
         state,
         "app__vrchat_instance_create",
         "Creating instance.",
-        instance_create_input(input.endpoint, input.params),
+        instance_create_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -181,7 +186,7 @@ pub async fn app__vrchat_instance_self_invite(
     input: VrchatInstanceSelfInviteInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (world_id, instance_id, request) = instance_self_invite_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.world_id,
         input.instance_id,
         input.short_name,
@@ -225,8 +230,11 @@ pub async fn app__vrchat_instance_close(
     state: State<'_, AppState>,
     input: VrchatInstanceCloseInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (location, request) =
-        instance_close_input(input.endpoint, input.location, input.hard_close)?;
+    let (location, request) = instance_close_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.location,
+        input.hard_close,
+    )?;
     execute_instance_api(
         state,
         "app__vrchat_instance_close",

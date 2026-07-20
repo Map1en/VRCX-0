@@ -5,6 +5,9 @@ use std::time::{Duration, Instant, SystemTime};
 
 use chrono::{DateTime, Local, TimeZone, Utc};
 use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::data_dir_migration::{
+    write_pending_data_dir_migration, PendingDataDirMigration,
+};
 use vrcx_0_persistence::profile_backup::{
     create_backup_archive, ProfileBackupManifestMetadata, DATABASE_FILE_NAME,
     RESTORE_JOURNAL_FILE_NAME, RESTORE_PENDING_DIRECTORY, RESTORE_ROLLBACK_DIRECTORY,
@@ -24,8 +27,8 @@ use vrcx_0_persistence::VRCX0_SCHEMA_VERSION_KEY as DATABASE_VERSION_KEY;
 use super::super::ProfileBackupErrorCode;
 use super::super::{ProfileRestoreFailureCode, ProfileRestoreProgress};
 use super::{
-    ProfileBackupKind, ProfileBackupPhase, ProfileBackupRuntime, ProfileBackupState,
-    ProfileBackupStatus, AUTO_JOB,
+    ProfileBackupKind, ProfileBackupPhase, ProfileBackupRuntime, ProfileBackupRuntimeDeps,
+    ProfileBackupState, ProfileBackupStatus, AUTO_JOB,
 };
 
 struct TestDir(PathBuf);
@@ -59,15 +62,16 @@ fn test_runtime(dir: &TestDir) -> ProfileBackupRuntime {
         .set_string(DATABASE_VERSION_KEY, "18")
         .unwrap();
     let storage = Arc::new(StorageService::new(&app_data.join("VRCX-0.json")).unwrap());
-    ProfileBackupRuntime::new(
-        app_data,
+    ProfileBackupRuntime::new(ProfileBackupRuntimeDeps {
+        app_data: app_data.clone(),
+        control_dir: app_data,
         db,
         storage,
-        RuntimeEventBus::new(),
-        TaskSupervisor::new(),
-        RuntimeBackgroundJobs::new(),
-        "2.13.0".into(),
-    )
+        event_bus: RuntimeEventBus::new(),
+        tasks: TaskSupervisor::new(),
+        background_jobs: RuntimeBackgroundJobs::new(),
+        app_version: "2.13.0".into(),
+    })
 }
 
 fn create_restore_archive(dir: &TestDir, name: &str) -> PathBuf {
@@ -95,6 +99,34 @@ fn create_restore_archive(dir: &TestDir, name: &str) -> PathBuf {
     )
     .unwrap();
     archive
+}
+
+#[test]
+fn pending_data_dir_migration_blocks_backup_and_restore() {
+    let dir = TestDir::new("pending-data-dir-migration");
+    let runtime = test_runtime(&dir);
+    let app_data = dir.0.join("app-data");
+    write_pending_data_dir_migration(
+        &app_data,
+        &PendingDataDirMigration::copying(
+            app_data.to_string_lossy().into_owned(),
+            dir.0.join("target").to_string_lossy().into_owned(),
+            Utc::now().to_rfc3339(),
+            false,
+        ),
+    )
+    .unwrap();
+
+    let backup = runtime.run_manual(dir.0.join("manual.vrcx0backup"));
+    assert_eq!(
+        backup.error.unwrap().code,
+        ProfileBackupErrorCode::PendingDataDirMigration
+    );
+    let restore = runtime.validate_restore(&dir.0.join("missing.vrcx0backup"));
+    assert_eq!(
+        restore.failure.unwrap().code,
+        ProfileRestoreFailureCode::PendingDataDirMigration
+    );
 }
 
 #[test]
@@ -642,7 +674,8 @@ fn restore_rollback_cleanup_reports_busy_and_io_errors() {
     fs::write(busy_rollback.join(DATABASE_FILE_NAME), b"rollback").unwrap();
     busy_runtime
         .inner
-        .operation_running
+        .operation_gate
+        .flag
         .store(true, std::sync::atomic::Ordering::Release);
 
     let busy = busy_runtime.clear_restore_rollback();
@@ -654,7 +687,8 @@ fn restore_rollback_cleanup_reports_busy_and_io_errors() {
     assert_eq!(busy.state.count, 1);
     busy_runtime
         .inner
-        .operation_running
+        .operation_gate
+        .flag
         .store(false, std::sync::atomic::Ordering::Release);
 
     let io_dir = TestDir::new("rollback-io");

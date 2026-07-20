@@ -6,6 +6,7 @@ import {
     readWorldCacheInfo
 } from '@/lib/worldAssetBundle';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -18,6 +19,7 @@ import { CurrentWorldHeader } from './PlayerListViewParts';
 type CurrentWorldProfile = Awaited<
     ReturnType<typeof worldProfileRepository.getWorldProfile>
 >;
+type CurrentInstanceProfile = Record<string, unknown>;
 type CurrentWorldFileAnalysis = {
     android?: WorldFileAnalysisPlatform;
     standalonewindows?: WorldFileAnalysisPlatform;
@@ -35,6 +37,10 @@ type WorldFileAnalysisPlatform = {
     _uncompressedSize?: string;
     [key: string]: unknown;
 };
+
+function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
 
 type PlayerListWorldHeaderProps = {
     clockNow: number;
@@ -65,8 +71,14 @@ export function PlayerListWorldHeader({
     const parsedLocation = parseLocation(
         normalizeString(instanceSnapshot.location || currentUserLocation || '')
     );
+    const worldId =
+        parsedLocation.worldId || normalizeString(instanceSnapshot.worldId);
+    const instanceId = parsedLocation.instanceId;
     const [currentWorldProfile, setCurrentWorldProfile] =
         useState<CurrentWorldProfile | null>(null);
+    const [currentInstanceCapacity, setCurrentInstanceCapacity] = useState<
+        number | null
+    >(null);
     const [currentWorldFileAnalysis, setCurrentWorldFileAnalysis] =
         useState<CurrentWorldFileAnalysis>({});
     const [currentWorldCacheInfo, setCurrentWorldCacheInfo] = useState(() =>
@@ -75,8 +87,6 @@ export function PlayerListWorldHeader({
 
     useEffect(() => {
         let active = true;
-        const worldId =
-            parsedLocation.worldId || normalizeString(instanceSnapshot.worldId);
 
         if (!isGameRunning || !worldId) {
             setCurrentWorldProfile(null);
@@ -90,7 +100,6 @@ export function PlayerListWorldHeader({
         worldProfileRepository
             .getWorldProfile({
                 worldId,
-                endpoint: currentUserEndpoint,
                 full: true
             })
             .then((world) => {
@@ -98,7 +107,7 @@ export function PlayerListWorldHeader({
                     setCurrentWorldProfile(world);
                 }
                 return vrchatAuthRepository
-                    .getConfig({ endpoint: currentUserEndpoint })
+                    .getConfig()
                     .catch((): null => null)
                     .then((configResponse) => {
                         const sdkUnityVersion = String(
@@ -110,11 +119,7 @@ export function PlayerListWorldHeader({
                                 sdkUnityVersion,
                                 endpoint: currentUserEndpoint
                             }),
-                            readWorldCacheInfo(
-                                world,
-                                currentUserEndpoint,
-                                sdkUnityVersion
-                            )
+                            readWorldCacheInfo(world, sdkUnityVersion)
                         ]);
                     });
             })
@@ -139,11 +144,50 @@ export function PlayerListWorldHeader({
         return () => {
             active = false;
         };
+    }, [currentUserEndpoint, isGameRunning, worldId]);
+
+    useEffect(() => {
+        let active = true;
+
+        setCurrentInstanceCapacity(null);
+        if (
+            !isGameRunning ||
+            !parsedLocation.isRealInstance ||
+            !worldId ||
+            !instanceId
+        ) {
+            return () => {
+                active = false;
+            };
+        }
+
+        vrchatInstanceRepository
+            .getInstance({
+                worldId,
+                instanceId
+            })
+            .then((response) => {
+                if (active && isInstanceProfile(response.json)) {
+                    setCurrentInstanceCapacity(
+                        Number(response.json.capacity) || null
+                    );
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setCurrentInstanceCapacity(null);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
     }, [
         currentUserEndpoint,
-        instanceSnapshot.worldId,
+        instanceId,
         isGameRunning,
-        parsedLocation.worldId
+        parsedLocation.isRealInstance,
+        worldId
     ]);
 
     return (
@@ -153,6 +197,7 @@ export function PlayerListWorldHeader({
             currentUserSnapshot={currentUserSnapshot}
             fileAnalysis={currentWorldFileAnalysis}
             friendCount={friendCount}
+            instanceCapacity={currentInstanceCapacity}
             instanceCreatedAt={instanceSnapshot.createdAt}
             instanceGroupName={normalizeString(instanceSnapshot.groupName)}
             instanceLocation={normalizeString(instanceSnapshot.location)}

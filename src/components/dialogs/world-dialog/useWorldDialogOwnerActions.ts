@@ -71,7 +71,6 @@ export function useWorldDialogOwnerActions({
         try {
             const response = await worldProfileRepository.saveWorld({
                 worldId: targetWorldId,
-                endpoint: targetEndpoint,
                 params: {
                     id: targetWorldId,
                     ...patch
@@ -393,12 +392,10 @@ export function useWorldDialogOwnerActions({
         try {
             const response = nextPublished
                 ? await worldProfileRepository.publishWorld({
-                      worldId: targetWorldId,
-                      endpoint: targetEndpoint
+                      worldId: targetWorldId
                   })
                 : await worldProfileRepository.unpublishWorld({
-                      worldId: targetWorldId,
-                      endpoint: targetEndpoint
+                      worldId: targetWorldId
                   });
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -459,8 +456,7 @@ export function useWorldDialogOwnerActions({
         try {
             await worldProfileRepository.deleteWorldPersistentData({
                 userId: currentUserId,
-                worldId: targetWorldId,
-                endpoint: targetEndpoint
+                worldId: targetWorldId
             });
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -515,8 +511,7 @@ export function useWorldDialogOwnerActions({
         setActionStatus('delete');
         try {
             await worldProfileRepository.deleteWorld({
-                worldId: world.id,
-                endpoint: currentEndpoint
+                worldId: world.id
             });
             toast.success(t('dialog.world.success.world_deleted'));
             closeDialog();

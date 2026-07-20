@@ -9,6 +9,7 @@ const ERROR_LOG_FILE: &str = "error-log.txt";
 pub const HEADLESS_ERROR_LOG_FILE: &str = "error-headless.txt";
 const MAX_ERROR_LOG_BYTES: u64 = 10 * 1024 * 1024;
 const PANIC_BACKTRACE_MARKER: &str = "\n[backtrace]\n";
+const MAX_TELEMETRY_BACKTRACE_FRAMES: usize = 2;
 static ERROR_LOG_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
 pub fn default_app_data_dir() -> Option<PathBuf> {
@@ -82,10 +83,124 @@ pub fn append_panic_error_log_with_version(
     append_error_log_with_version(app_data, "rust:panic", &message, app_version);
 }
 
-pub fn panic_summary_for_telemetry(message: &str) -> &str {
+pub fn panic_summary_for_telemetry(message: &str) -> String {
+    let Some((summary, backtrace)) = message.rsplit_once(PANIC_BACKTRACE_MARKER) else {
+        return message.to_string();
+    };
+    let frames = telemetry_backtrace_frames(backtrace);
+    if frames.is_empty() {
+        summary.to_string()
+    } else {
+        format!("{summary}\nframes: {}", frames.join(" > "))
+    }
+}
+
+pub fn panic_fingerprint_summary(message: &str) -> &str {
     message
         .rsplit_once(PANIC_BACKTRACE_MARKER)
         .map_or(message, |(summary, _)| summary)
+}
+
+fn telemetry_backtrace_frames(backtrace: &str) -> Vec<String> {
+    let mut frames = Vec::new();
+    let mut pending_symbol = None;
+    for line in backtrace.lines() {
+        let line = line.trim();
+        if let Some(symbol) = backtrace_symbol(line) {
+            push_telemetry_frame(&mut frames, pending_symbol.take(), None);
+            pending_symbol = Some(symbol);
+        } else if let Some(location) = line.strip_prefix("at ") {
+            push_telemetry_frame(
+                &mut frames,
+                pending_symbol.take(),
+                backtrace_source_location(location),
+            );
+        }
+        if frames.len() == MAX_TELEMETRY_BACKTRACE_FRAMES {
+            return frames;
+        }
+    }
+    push_telemetry_frame(&mut frames, pending_symbol, None);
+    frames.truncate(MAX_TELEMETRY_BACKTRACE_FRAMES);
+    frames
+}
+
+fn backtrace_symbol(line: &str) -> Option<String> {
+    let (index, symbol) = line.split_once(':')?;
+    if index.is_empty() || !index.chars().all(|value| value.is_ascii_digit()) {
+        return None;
+    }
+    let symbol = symbol
+        .trim()
+        .split_once(" - ")
+        .map_or(symbol.trim(), |(_, symbol)| symbol.trim());
+    if symbol.is_empty() || symbol.starts_with("0x") || is_panic_plumbing(symbol) {
+        return None;
+    }
+    Some(short_backtrace_symbol(strip_rust_symbol_hash(symbol)))
+}
+
+fn strip_rust_symbol_hash(symbol: &str) -> &str {
+    let Some((prefix, hash)) = symbol.rsplit_once("::h") else {
+        return symbol;
+    };
+    if hash.len() == 16 && hash.chars().all(|value| value.is_ascii_hexdigit()) {
+        prefix
+    } else {
+        symbol
+    }
+}
+
+fn short_backtrace_symbol(symbol: &str) -> String {
+    let parts = symbol.split("::").collect::<Vec<_>>();
+    if parts.len() <= 3 {
+        return symbol.to_string();
+    }
+    format!(
+        "{}::{}::{}",
+        parts[0],
+        parts[parts.len() - 2],
+        parts[parts.len() - 1]
+    )
+}
+
+fn is_panic_plumbing(symbol: &str) -> bool {
+    [
+        "std::backtrace",
+        "backtrace::backtrace",
+        "vrcx_0_host::error_log::append_panic_error_log_with_version",
+        "init_error_logging::{{closure}}",
+        "std::panicking",
+        "core::panicking",
+        "rust_begin_unwind",
+        "__rust_end_short_backtrace",
+        "core::ops::function::FnOnce::call_once",
+    ]
+    .iter()
+    .any(|value| symbol.contains(value))
+}
+
+fn backtrace_source_location(location: &str) -> Option<String> {
+    let file = location.replace('\\', "/");
+    file.rsplit('/')
+        .next()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+}
+
+fn push_telemetry_frame(
+    frames: &mut Vec<String>,
+    symbol: Option<String>,
+    location: Option<String>,
+) {
+    let Some(symbol) = symbol else {
+        return;
+    };
+    frames.push(match location {
+        Some(location) => format!("{symbol}@{location}"),
+        None => symbol,
+    });
 }
 
 pub fn append_headless_error_log(app_data: &Path, source: &str, message: &str) {
@@ -419,9 +534,9 @@ mod tests {
     }
 
     #[test]
-    fn keeps_panic_backtrace_local_and_excludes_it_from_telemetry_summary() {
+    fn keeps_only_limited_source_locations_in_panic_telemetry() {
         let dir = test_dir("panic-backtrace");
-        let message = "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed\n[backtrace]\n   0: 0x7ff612340000\n   1: 0x7ff612340123";
+        let message = "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed\n[backtrace]\n   0: std::backtrace::capture\n             at C:\\rust\\backtrace.rs:10:2\n   1: core::panicking::panic_fmt\n             at C:\\rust\\panicking.rs:20:3\n   2: tao::platform_impl::windows::event_loop::runner::EventLoopRunner::advance_state::h0123456789abcdef\n             at C:\\cargo\\tao-0.35.3\\src\\platform_impl\\windows\\event_loop\\runner.rs:371:7\n   3: vrcx_0::bootstrap::window::rebuild_main_window\n             at D:\\Code\\VRCX-0\\src-tauri\\src\\bootstrap\\window.rs:46:9\n   4: vrcx_0::app::restore_or_ensure_main_window\n             at D:\\Code\\VRCX-0\\src-tauri\\src\\app.rs:32:5";
         append_error_log_with_version(&dir, "rust:panic", message, "2.9.2");
 
         let entries = drain_client_error_log(&dir, None, 10);
@@ -430,7 +545,17 @@ mod tests {
         assert_eq!(entries[0].message, message);
         assert_eq!(
             panic_summary_for_telemetry(&entries[0].message),
-            "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed"
+            "panicked at src-tauri/src/app.rs:42:5:\nstate transition failed\nframes: tao::EventLoopRunner::advance_state@runner.rs:371:7 > vrcx_0::window::rebuild_main_window@window.rs:46:9"
+        );
+    }
+
+    #[test]
+    fn panic_telemetry_omits_address_only_backtraces() {
+        assert_eq!(
+            panic_summary_for_telemetry(
+                "panicked at crates/runtime.rs:42\n[backtrace]\n0: 0x1111\n1: 0x2222"
+            ),
+            "panicked at crates/runtime.rs:42"
         );
     }
 }

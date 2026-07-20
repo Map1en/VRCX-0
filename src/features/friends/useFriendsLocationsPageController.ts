@@ -145,7 +145,6 @@ export function useFriendsLocationsPageController() {
     );
     const actions = useFriendsLocationsActions({
         canInviteFromCurrentLocation: derived.canInviteFromCurrentLocation,
-        currentEndpoint: runtime.currentEndpoint,
         currentInviteLocation: derived.currentInviteLocation,
         currentUserId: runtime.currentUserId ?? '',
         setCollapsedGroups,

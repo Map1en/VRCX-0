@@ -131,7 +131,6 @@ export function UserDialogContentDialogs({
             />
             <BoopEmojiDialog
                 open={Boolean(boopDialog.request)}
-                endpoint={boopDialog.request?.endpoint}
                 isLocalUserVrcPlusSupporter={
                     boopDialog.isLocalUserVrcPlusSupporter
                 }

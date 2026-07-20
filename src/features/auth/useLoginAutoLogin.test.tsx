@@ -32,20 +32,22 @@ vi.mock('@/state/runtimeStore', () => ({
 
 import { useLoginAutoLogin } from './useLoginAutoLogin';
 
+const savedCredential = {
+    hasCookies: false,
+    hasLoginCredentials: true,
+    loginParams: {
+        username: 'account'
+    },
+    user: { id: 'usr_1', displayName: 'User One' }
+};
+
 const snapshot: SavedAuthSnapshot = {
     autoLoginDelayEnabled: false,
     autoLoginDelaySeconds: 0,
     autoLoginReason: '',
     autoLoginStatus: 'available',
     lastUserLoggedIn: 'usr_1',
-    savedCredentialCount: 1,
-    savedCredentials: {
-        usr_1: {
-            hasLoginCredentials: true,
-            loginParams: { username: 'account' },
-            user: { id: 'usr_1' }
-        }
-    }
+    savedCredentialsList: [savedCredential]
 };
 
 describe('useLoginAutoLogin', () => {
@@ -55,7 +57,13 @@ describe('useLoginAutoLogin', () => {
     });
 
     it('applies the snapshot returned by automatic login', async () => {
-        const nextSnapshot = { ...snapshot, autoLoginStatus: 'completed' };
+        const nextSnapshot: SavedAuthSnapshot = {
+            ...snapshot,
+            autoLoginDelayEnabled: true,
+            autoLoginDelaySeconds: 5,
+            autoLoginReason:
+                'Saved credentials are available. Auto-login delay is 5 second(s).'
+        };
         const applySnapshot = vi.fn((_value: SavedAuthSnapshot) => undefined);
         mocks.executeAutoLogin.mockResolvedValue({
             snapshot: nextSnapshot,

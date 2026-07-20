@@ -17,6 +17,7 @@ const PROFILE_BACKUP_ERROR_KEYS: Record<ProfileBackupErrorCode, string> = {
     operationBusy: 'profile_backup.error.busy',
     deliveryPending: 'profile_backup.error.delivery_pending',
     pendingRestore: 'profile_backup.error.pending_restore',
+    pendingDataDirMigration: 'data_dir_migration.error.pendingMigration',
     directoryUnavailable: 'profile_backup.error.directory_unavailable',
     permissionDenied: 'profile_backup.error.permission_denied',
     localDiskFull: 'profile_backup.error.local_disk_full',
@@ -35,6 +36,7 @@ const PROFILE_RESTORE_VALIDATION_ERROR_KEYS: Record<
 > = {
     operationBusy: 'profile_backup.error.busy',
     pendingRestore: 'profile_backup.error.pending_restore',
+    pendingDataDirMigration: 'data_dir_migration.error.pendingMigration',
     invalidArchive: 'profile_backup.error.invalid_archive',
     invalidEntries: 'profile_backup.error.invalid_archive',
     unsupportedManifestVersion: 'profile_backup.error.unsupported_manifest',
@@ -82,6 +84,8 @@ export function profileRestoreRollbackErrorKey(
             return 'profile_backup.rollback_error.busy';
         case 'pendingRestore':
             return 'profile_backup.rollback_error.protected';
+        case 'pendingDataDirMigration':
+            return 'data_dir_migration.error.pendingMigration';
         case 'io':
             return 'profile_backup.rollback_error.io';
         default:

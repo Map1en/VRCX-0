@@ -53,12 +53,6 @@ export function FriendProfileLoadHost() {
             );
             return;
         }
-        if (status === 'error') {
-            notifiedRunRef.current = runId;
-            toast.error(
-                t('view.friend_list.error.failed_to_load_friend_details')
-            );
-        }
     }, [loadedFriends, runId, status, t]);
 
     return (

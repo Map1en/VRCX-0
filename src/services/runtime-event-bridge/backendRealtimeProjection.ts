@@ -12,11 +12,6 @@ import {
     handleRealtimeUserCacheProjection
 } from '../realtimePresenceService';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
-import {
-    flushFriendProfileProjectionBatch as flushBatchedFriendProfileProjection,
-    queueFriendProfileLoadProjection,
-    resetFriendProfileProjectionBatch as resetBatchedFriendProfileProjection
-} from './friendProfileProjectionBatch';
 import { isRecord } from './guards';
 import type {
     RuntimeEventName,
@@ -230,30 +225,10 @@ export function handleBackendRealtimeProjectionEvent(
     }
 
     flushPendingBackendRealtimeProjectionEvents();
-    if (
-        queueFriendProfileLoadProjection(
-            name,
-            payload,
-            deliverBackendRealtimeProjectionEvent
-        )
-    ) {
-        return true;
-    }
-    if (
-        name === 'realtimeFriendProjection' ||
-        name === 'realtimeUserProjection'
-    ) {
-        flushFriendProfileProjectionBatch();
-    }
     deliverBackendRealtimeProjectionEvent(name, payload);
     return true;
 }
 
-export function flushFriendProfileProjectionBatch(): void {
-    flushBatchedFriendProfileProjection(deliverBackendRealtimeProjectionEvent);
-}
-
 export function resetBackendRealtimeProjectionState(): void {
     pendingBackendRealtimeProjectionEvents = [];
-    resetBatchedFriendProfileProjection();
 }

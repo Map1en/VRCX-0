@@ -69,6 +69,7 @@ impl RuntimeHostState {
         &self,
         reason: impl Into<String>,
     ) -> BackendRuntimeSnapshot {
+        self.runtime_context.auth_scope.set("", "");
         self.favorite_import.cancel();
         self.shared_collection_import.cancel();
         self.note_export.cancel();
@@ -76,6 +77,11 @@ impl RuntimeHostState {
         let snapshot = self.backend_runtime.clear_authentication();
         self.emit_backend_runtime_telemetry_snapshot("authCleared", reason, snapshot.clone());
         snapshot
+    }
+
+    pub fn begin_frontend_authentication(&self) -> BackendRuntimeSnapshot {
+        self.clear_backend_authenticated_session("Starting a frontend login session.");
+        self.backend_runtime.set_authenticating()
     }
 
     pub async fn refresh_runtime_group_instances(&self) {
@@ -142,12 +148,13 @@ impl RuntimeHostState {
 
         self.backend_runtime.set_authenticating();
         let auth_scope = self.runtime_context.auth_scope.snapshot();
+        let interactive_login = cli_login_prompt.is_some();
         let auth_result = if let Some(prompt) = cli_login_prompt {
             self.authenticate_cli_interactive(prompt).await
         } else if auth_scope.active {
             current_user_from_cookie(
-                self.web.as_ref(),
-                self.db.as_ref(),
+                Arc::clone(&self.web),
+                Arc::clone(&self.db),
                 auth_scope.current_user_id.clone(),
                 auth_scope.endpoint.clone(),
                 String::new(),
@@ -173,10 +180,25 @@ impl RuntimeHostState {
             }
         };
 
-        self.start_authenticated_runtime_session(session).await
+        if interactive_login {
+            Ok(self.backend_runtime.snapshot())
+        } else {
+            self.start_authenticated_runtime_session(session)
+        }
     }
 
-    pub(super) async fn start_authenticated_runtime_session(
+    pub fn start_authenticated_runtime_session(
+        &self,
+        session: AuthenticatedRuntimeSession,
+    ) -> Result<BackendRuntimeSnapshot> {
+        let result = self.start_authenticated_runtime_session_inner(session);
+        if let Err(error) = &result {
+            self.clear_backend_authenticated_session(error.to_string());
+        }
+        result
+    }
+
+    fn start_authenticated_runtime_session_inner(
         &self,
         session: AuthenticatedRuntimeSession,
     ) -> Result<BackendRuntimeSnapshot> {

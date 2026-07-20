@@ -155,8 +155,7 @@ export function useFriendLogResolvedNames(
                 }
                 try {
                     const profile = await userProfileRepository.getUserProfile({
-                        userId,
-                        endpoint
+                        userId
                     });
                     const displayName = resolveDisplayNameCandidate(
                         profile?.displayName,

@@ -163,7 +163,6 @@ export function useNotificationActions({
         async (notification: NotificationRow) => {
             try {
                 await notificationPersistenceRepository.markSeen({
-                    endpoint,
                     id: notification.id,
                     userId: currentUserId,
                     version: notification.version
@@ -305,7 +304,6 @@ export function useNotificationActions({
                 }
                 await hideRemoteAndExpireNotification({
                     currentUserId,
-                    endpoint,
                     notification
                 });
                 reload();
@@ -367,7 +365,6 @@ export function useNotificationActions({
                 }
                 await acceptRequestInviteNotification({
                     currentUserId,
-                    endpoint,
                     instanceId: currentInviteLocation,
                     notification,
                     worldId: parsedLocation.worldId
@@ -420,7 +417,6 @@ export function useNotificationActions({
             }
             const result = await sendInviteResponseNotification({
                 currentUserId,
-                endpoint,
                 imageData,
                 notification,
                 responseSlot: row?.slot,
@@ -441,7 +437,6 @@ export function useNotificationActions({
             await sendBoopReplyNotification({
                 currentUserId,
                 emojiId,
-                endpoint,
                 notification
             });
             reload();
@@ -472,7 +467,6 @@ export function useNotificationActions({
                 }
                 await sendNotificationButtonResponse({
                     currentUserId,
-                    endpoint,
                     notification,
                     response
                 });

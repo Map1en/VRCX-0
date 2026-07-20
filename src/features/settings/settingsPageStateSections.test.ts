@@ -54,6 +54,8 @@ function createInput(
         notificationTtsTestVisible: false,
         onlineVisitCount: null,
         openAppDataDirSelector: callback,
+        cleanupAppDataDir: callback,
+        dismissAppDataDirCleanup: callback,
         openCustomFontDialog: callback,
         openTableLimitsDialog: callback,
         openTablePageSizesDialog: callback,

@@ -184,7 +184,8 @@ export const GROUP_MODERATION_TAB_PERMISSIONS: Record<
     members: [
         'group-members-manage',
         'group-members-remove',
-        'group-bans-manage'
+        'group-bans-manage',
+        'group-roles-assign'
     ],
     bans: ['group-bans-manage'],
     invites: ['group-invites-manage'],
@@ -215,6 +216,21 @@ export function groupModerationTabPermissions(tab: string): readonly string[] {
 export function hasGroupModerationPermission(group: unknown) {
     return Object.values(GROUP_MODERATION_TAB_PERMISSIONS).some((permissions) =>
         permissions.some((permission) => hasGroupPermission(group, permission))
+    );
+}
+
+export function hasAnyGroupModerationPermission(
+    permissions: readonly string[] | null | undefined
+): boolean {
+    const list = Array.isArray(permissions) ? permissions : [];
+    if (list.includes('*')) {
+        return true;
+    }
+    const moderationPermissions = Object.values(
+        GROUP_MODERATION_TAB_PERMISSIONS
+    ).flat();
+    return moderationPermissions.some((permission) =>
+        list.includes(permission)
     );
 }
 

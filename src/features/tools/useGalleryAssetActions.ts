@@ -63,15 +63,10 @@ export function useGalleryAssetActions({
         const authTarget = getAuthTarget();
         setTabLoading(tab, true);
         try {
-            const { json } = await mediaRepository.getFileList(
-                {
-                    n: 100,
-                    tag: definition.tag
-                },
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            const { json } = await mediaRepository.getFileList({
+                n: 100,
+                tag: definition.tag
+            });
             if (isRuntimeAuthTarget(authTarget)) {
                 updateAssets(
                     tab,
@@ -98,15 +93,10 @@ export function useGalleryAssetActions({
         const authTarget = getAuthTarget();
         setTabLoading('prints', true);
         try {
-            const { json } = await mediaRepository.getPrints(
-                {
-                    userId: currentUserId,
-                    n: 100
-                },
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            const { json } = await mediaRepository.getPrints({
+                userId: currentUserId,
+                n: 100
+            });
             const rows = Array.isArray(json) ? [...json] : [];
             rows.sort(
                 (left: any, right: any) =>
@@ -138,16 +128,11 @@ export function useGalleryAssetActions({
         setTabLoading('inventory', true);
         try {
             for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
-                const { json } = await mediaRepository.getInventoryItems(
-                    {
-                        n: 100,
-                        offset: pageIndex * 100,
-                        order: 'newest'
-                    },
-                    {
-                        endpoint: currentEndpoint
-                    }
-                );
+                const { json } = await mediaRepository.getInventoryItems({
+                    n: 100,
+                    offset: pageIndex * 100,
+                    order: 'newest'
+                });
                 const pageRows = Array.isArray(json?.data) ? json.data : [];
                 nextItems.push(...pageRows);
                 if (pageRows.length === 0) {
@@ -224,17 +209,14 @@ export function useGalleryAssetActions({
         settings: any,
         uploadOptions: any = {}
     ) {
-        const endpoint = currentEndpoint;
         if (tab === 'emojis') {
             return mediaRepository.uploadAssetImage(base64Body, {
-                endpoint,
                 assetKind: tab,
                 params: getEmojiUploadParams(settings)
             });
         }
         if (tab === 'prints') {
             return mediaRepository.uploadAssetImage(base64Body, {
-                endpoint,
                 assetKind: tab,
                 cropWhiteBorder: resolvePrintCropWhiteBorder(
                     uploadOptions.cropWhiteBorder
@@ -247,7 +229,6 @@ export function useGalleryAssetActions({
         }
         if (tab === 'gallery' || tab === 'icons' || tab === 'stickers') {
             return mediaRepository.uploadAssetImage(base64Body, {
-                endpoint,
                 assetKind: tab
             });
         }
@@ -374,9 +355,7 @@ export function useGalleryAssetActions({
         }
         setMutatingKey(`${tab}:${normalizedFileId}`);
         try {
-            await mediaRepository.deleteFile(normalizedFileId, {
-                endpoint: currentEndpoint
-            });
+            await mediaRepository.deleteFile(normalizedFileId);
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }

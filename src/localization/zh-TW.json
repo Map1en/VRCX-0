@@ -69,6 +69,77 @@
         }
     },
     "language": "中文（繁體） (zh-TW)",
+    "data_dir_migration": {
+        "title": "移轉 VRCX-0 資料",
+        "description": "選擇 VRCX-0 要如何使用所選資料夾。",
+        "completed_title": "資料移轉完成",
+        "completed_description": "重新啟動 VRCX-0 後會開始使用新的資料目錄。",
+        "error_short": "資料移轉失敗",
+        "start": "開始移轉",
+        "restart_now": "立即重新啟動",
+        "restart_later": "稍後再說",
+        "create_backup_first": "先建立備份",
+        "space_summary": "需要：{required} · 可用：{available}",
+        "insufficient_space": "可用空間不足，無法移轉資料。",
+        "contents_notice": "將複製資料庫、應用程式設定、相簿索引與縮圖；圖片快取會在新目錄重新下載。舊資料會保留到你確認清理為止。",
+        "unsupported_storage_warning": "請勿選擇網路磁碟、雲端同步資料夾（例如 OneDrive 或 iCloud）或卸除式磁碟。資料庫在這些位置可能損毀，且不在支援範圍內。",
+        "mode": {
+            "migrate": "移轉目前資料（建議）",
+            "adoptExisting": "使用此資料夾中現有的 VRCX-0 設定檔",
+            "freshStart": "在此資料夾建立全新設定檔"
+        },
+        "target": {
+            "empty": "所選資料夾是空的。",
+            "existingProfile": "所選資料夾已有 VRCX-0 設定檔；覆寫前會先完整保留。",
+            "foreignContent": "所選資料夾含有其他檔案；VRCX-0 只會管理自己的檔案。"
+        },
+        "phase": {
+            "preparing": "正在準備移轉",
+            "freezing": "正在凍結資料庫",
+            "copying": "正在複製資料庫",
+            "verifying": "正在驗證副本",
+            "committing": "正在完成移轉"
+        },
+        "error": {
+            "operationBusy": "另一個備份、還原或資料移轉作業正在執行。",
+            "databaseUnavailable": "資料庫目前無法移轉。",
+            "pendingRestore": "請先完成或取消待處理的設定檔還原。",
+            "pendingLegacyMigration": "請先完成待處理的舊版資料移轉。",
+            "pendingMigration": "已有待完成的資料目錄移轉，請重新啟動 VRCX-0。",
+            "cleanupConflict": "移回此資料夾前，請先處理保留的舊資料。",
+            "copyFailed": "無法複製資料庫，VRCX-0 仍使用原目錄。",
+            "commitFailed": "無法安裝資料庫副本，VRCX-0 仍使用原目錄。",
+            "pointerCommitFailed": "無法啟用新資料目錄。請重新啟動 VRCX-0 安全重試。",
+            "io": "無法讀取或寫入資料目錄檔案。"
+        },
+        "warning": {
+            "configCopyFailed": "部分應用程式設定未能複製，可能會使用預設值。",
+            "galleryCopyFailed": "部分相簿索引或縮圖未能複製，將視需要自動重建。",
+            "cacheCleanupFailed": "部分舊快取檔案未能移除。"
+        },
+        "result": {
+            "succeeded": "資料目錄移轉完成",
+            "failed_title": "無法使用新的資料目錄",
+            "database_open_failed": "VRCX-0 已繼續使用原目錄，你的資料未受影響。",
+            "interrupted_title": "資料目錄移轉已中斷",
+            "interrupted": "VRCX-0 已繼續使用原目錄，你可以稍後重試。"
+        },
+        "cleanup": {
+            "ready_title": "資料目錄移轉完成",
+            "ready_description": "舊資料仍保留在 {path}。",
+            "action": "清理舊資料",
+            "action_with_size": "清理舊資料（{size}）",
+            "confirm_title": "永久刪除舊的 VRCX-0 資料？",
+            "confirm_description": "將從 {path} 刪除約 {size} 的已知 VRCX-0 檔案，未知檔案不會被變更。此操作無法復原。",
+            "completed": "舊的 VRCX-0 資料已清理",
+            "freed": "已釋放 {size}。",
+            "completed_with_skipped": "已釋放 {size}，另有 {count} 個項目未能移除。",
+            "settings_title": "舊資料可供清理",
+            "settings_description": "舊的 VRCX-0 資料仍位於 {path}（{size} 位元組）。",
+            "dismiss": "保留舊資料，不再提醒",
+            "dismissed": "已停用清理提醒"
+        }
+    },
     "profile_backup": {
         "header": "備份與還原",
         "tools_description": "備份你的 VRCX-0 資料，並在需要時還原。",
@@ -1537,7 +1608,9 @@
             "group": {
                 "header": "群組",
                 "calendar": "行事曆",
-                "calendar_description": "群組活動行事曆"
+                "calendar_description": "群組活動行事曆",
+                "moderation": "群組管理",
+                "moderation_description": "管理你擁有管理權限之群組的成員、封鎖、邀請與加入申請。"
             },
             "user": {
                 "discord_names_description": "尋找你 VRChat 好友的 Discord 用戶名稱",
@@ -3468,6 +3541,8 @@
                 "copy_id": "複製 ID",
                 "copy_url": "複製連結",
                 "url": "VRChat 連結",
+                "vrcx_url": "VRCX-0 連結",
+                "copy_vrcx_url": "複製 VRCX-0 連結",
                 "youtube_preview": "YouTube 預覽",
                 "author_tags": "作者標籤",
                 "players": "用戶人數",
@@ -3664,6 +3739,8 @@
                 "copy_id": "複製 ID",
                 "url": "VRChat 連結",
                 "copy_url": "複製連結",
+                "vrcx_url": "VRCX-0 連結",
+                "copy_vrcx_url": "複製 VRCX-0 連結",
                 "created_at": "創建時間",
                 "last_updated": "最後更新",
                 "version": "版本",
@@ -4504,12 +4581,55 @@
             "kick": "踢出",
             "ban": "封禁",
             "unban": "解除封禁",
+            "delete": "刪除",
+            "accept": "接受",
+            "reject": "拒絕",
+            "block": "封鎖",
             "display_name": "顯示名稱",
             "created_at": "創建時間",
             "type": "類型",
             "description": "敘述",
             "data": "數據",
-            "roles": "身分"
+            "roles": "身分",
+            "select_all": "全選",
+            "selected_users_count": "已選 {count} 人",
+            "notes": "備註",
+            "note_placeholder": "為選取的成員新增備註...",
+            "selected_roles": "身分",
+            "roles_count": "已選 {count} 個身分",
+            "choose_roles_placeholder": "選擇身分...",
+            "add_roles": "新增身分",
+            "remove_roles": "移除身分",
+            "save_note": "儲存備註",
+            "progress": "進度",
+            "bulk_action_confirm": "此操作將套用於已選取的 {count} 名成員。",
+            "bulk_action_completed": "已對 {count} 名成員完成{value}",
+            "import_bans": "匯入封鎖",
+            "import_bans_description": "貼上包含 usr_ ID 的使用者 ID、個人檔案連結或 CSV 資料以批次封鎖。",
+            "import_bans_warning": "此操作將立即封鎖所有符合的使用者,且無法復原。",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "開始匯入",
+            "import_bans_clear_errors": "清除錯誤",
+            "import_bans_no_ids_found": "找不到有效的使用者 ID(usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)。",
+            "import_bans_done": "已完成,共封鎖 {success}/{total} 位使用者。",
+            "import_bans_cancelled": "已取消,共封鎖 {success}/{total} 位使用者。",
+            "export_logs": "匯出 CSV",
+            "export_logs_copied": "稽核記錄 CSV 已複製到剪貼簿",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "已載入 {count} 項",
+            "no_permission": "你沒有該群組的管理權限。",
+            "status": {
+                "member": "成員",
+                "invited": "已邀請",
+                "banned": "已封鎖",
+                "requested": "申請中",
+                "blocked": "已封鎖",
+                "userblocked": "已封鎖",
+                "joined": "已加入",
+                "active": "活躍",
+                "pending": "待處理"
+            }
         },
         "group_post_edit": {
             "title": "標題"
@@ -5358,7 +5478,22 @@
                 "failed_to_update_group_event_follow_state": "無法更新此活動",
                 "failed_to_download_ics_file": "下載 .ics 檔案失敗",
                 "failed_to_save_ics_file": "儲存 .ics 檔案失敗",
-                "failed_to_copy_event_link": "複製活動連結失敗"
+                "failed_to_copy_event_link": "複製活動連結失敗",
+                "failed_to_load_moderatable_groups": "載入你有管理權限的群組失敗",
+                "failed_to_open_group_moderation": "開啟群組管理失敗"
+            },
+            "group_moderation": {
+                "picker_description": "選擇一個群組來管理成員、封鎖、邀請與加入申請。",
+                "loading": "正在載入你有管理權限的群組...",
+                "empty_title": "沒有可管理的群組",
+                "empty_description": "你目前在任何群組中都沒有管理權限。",
+                "permissions_degraded": "部分群組權限無法驗證,以下清單可能不完整。",
+                "member_count": "{count} 位成員",
+                "rail_title": "你管理的群組",
+                "select_a_group_title": "選擇群組",
+                "select_a_group_description": "從列表中選擇一個群組,以管理成員、封鎖、邀請與加入請求。",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "{members} 名成員 · 線上 {online}"
             }
         }
     },
@@ -5437,6 +5572,14 @@
         "avatar": {
             "no_provider": "沒有設定角色搜尋來源"
         }
+    },
+    "translation": {
+        "translate": "翻譯",
+        "show_original": "顯示原文",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "翻譯失敗",
+        "error_network": "網路錯誤，請重試",
+        "error_unsupported": "尚未設定翻譯"
     },
     "app": {
         "title": "VRCX-0",

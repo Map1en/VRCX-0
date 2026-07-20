@@ -8,15 +8,15 @@ use vrcx_0_application_core::vrchat_api::avatars::{
     avatar_save_input, avatar_select_fallback_input, avatar_select_input, avatar_styles_get_input,
     AvatarListByUserGetInput,
 };
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
-    VrchatAvatarEndpointInput, VrchatAvatarFileInput, VrchatAvatarIdInput,
-    VrchatAvatarImpostorCreateInput, VrchatAvatarListByUserInput, VrchatAvatarModerationInput,
-    VrchatAvatarSaveInput,
+    VrchatAvatarFileInput, VrchatAvatarIdInput, VrchatAvatarImpostorCreateInput,
+    VrchatAvatarListByUserInput, VrchatAvatarModerationInput, VrchatAvatarSaveInput,
 };
 
 async fn execute_avatar_api(
@@ -25,16 +25,8 @@ async fn execute_avatar_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_avatar_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status))
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 #[tauri::command]
@@ -43,7 +35,8 @@ pub async fn app__vrchat_avatar_get(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_get_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_get",
@@ -59,7 +52,8 @@ pub async fn app__vrchat_avatar_gallery_get(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_gallery_get_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_gallery_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_gallery_get",
@@ -76,7 +70,7 @@ pub async fn app__vrchat_avatar_list_by_user_get(
     input: VrchatAvatarListByUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (display_user, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
-        endpoint: input.endpoint,
+        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         user_id: input.user_id,
         user: input.user,
         n: input.n,
@@ -98,13 +92,12 @@ pub async fn app__vrchat_avatar_list_by_user_get(
 #[specta::specta]
 pub async fn app__vrchat_avatar_styles_get(
     state: State<'_, AppState>,
-    input: VrchatAvatarEndpointInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_avatar_api(
         state,
         "app__vrchat_avatar_styles_get",
         "Getting avatar styles.",
-        avatar_styles_get_input(input.endpoint),
+        avatar_styles_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
     )
     .await
 }
@@ -113,13 +106,12 @@ pub async fn app__vrchat_avatar_styles_get(
 #[specta::specta]
 pub async fn app__vrchat_avatar_moderations_get(
     state: State<'_, AppState>,
-    input: VrchatAvatarEndpointInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_avatar_api(
         state,
         "app__vrchat_avatar_moderations_get",
         "Getting avatar moderations.",
-        avatar_moderations_get_input(input.endpoint),
+        avatar_moderations_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
     )
     .await
 }
@@ -130,7 +122,8 @@ pub async fn app__vrchat_avatar_file_get(
     state: State<'_, AppState>,
     input: VrchatAvatarFileInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (file_id, request) = avatar_file_get_input(input.endpoint, input.file_id)?;
+    let (file_id, request) =
+        avatar_file_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.file_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_file_get",
@@ -146,7 +139,8 @@ pub async fn app__vrchat_avatar_select(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_select_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_select_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_select",
@@ -162,7 +156,8 @@ pub async fn app__vrchat_avatar_select_fallback(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_select_fallback_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_select_fallback_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_select_fallback",
@@ -178,7 +173,11 @@ pub async fn app__vrchat_avatar_save(
     state: State<'_, AppState>,
     input: VrchatAvatarSaveInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_save_input(input.endpoint, input.avatar_id, input.params)?;
+    let (avatar_id, request) = avatar_save_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.avatar_id,
+        input.params,
+    )?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_save",
@@ -194,7 +193,8 @@ pub async fn app__vrchat_avatar_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_delete_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_delete",
@@ -210,8 +210,11 @@ pub async fn app__vrchat_avatar_impostor_create(
     state: State<'_, AppState>,
     input: VrchatAvatarImpostorCreateInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) =
-        avatar_impostor_create_input(input.endpoint, input.avatar_id, input.empty_body)?;
+    let (avatar_id, request) = avatar_impostor_create_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.avatar_id,
+        input.empty_body,
+    )?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_impostor_create",
@@ -227,7 +230,8 @@ pub async fn app__vrchat_avatar_impostor_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) = avatar_impostor_delete_input(input.endpoint, input.avatar_id)?;
+    let (avatar_id, request) =
+        avatar_impostor_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_impostor_delete",
@@ -243,8 +247,11 @@ pub async fn app__vrchat_avatar_moderation_send(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, type_name, request) =
-        avatar_moderation_send_input(input.endpoint, input.avatar_id, input.type_name)?;
+    let (avatar_id, type_name, request) = avatar_moderation_send_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.avatar_id,
+        input.type_name,
+    )?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_moderation_send",
@@ -260,8 +267,11 @@ pub async fn app__vrchat_avatar_moderation_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, type_name, request) =
-        avatar_moderation_delete_input(input.endpoint, input.avatar_id, input.type_name)?;
+    let (avatar_id, type_name, request) = avatar_moderation_delete_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.avatar_id,
+        input.type_name,
+    )?;
     execute_avatar_api(
         state,
         "app__vrchat_avatar_moderation_delete",

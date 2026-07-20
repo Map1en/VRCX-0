@@ -19,7 +19,7 @@ export function useGroupDialogLanguageRows({
     useEffect(() => {
         let active = true;
         vrchatAuthRepository
-            .getConfig({ endpoint: currentEndpoint })
+            .getConfig()
             .then((response) => {
                 if (active) {
                     setVrchatConfigConstants(response.json.constants || null);

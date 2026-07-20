@@ -29,7 +29,6 @@ type CurrentUserRecord = Record<string, unknown> & {
 type FriendsSidebarActionsInput = {
     canInviteFromCurrentLocation?: boolean;
     confirm: ModalStoreActions['confirm'];
-    currentEndpoint?: string | null;
     currentInviteLocation?: unknown;
     currentUser?: CurrentUserRecord | null;
     currentUserId?: string | null;
@@ -44,7 +43,6 @@ type SaveCurrentUserPatchMessages = {
 export function useFriendsSidebarActions({
     canInviteFromCurrentLocation,
     confirm,
-    currentEndpoint,
     currentInviteLocation,
     currentUser,
     currentUserId,
@@ -73,8 +71,7 @@ export function useFriendsSidebarActions({
         try {
             const opened = await tryOpenLaunchLocation(
                 location,
-                parsedLocation.shortName,
-                currentEndpoint || undefined
+                parsedLocation.shortName
             );
             if (opened) {
                 toast.success(
@@ -106,11 +103,7 @@ export function useFriendsSidebarActions({
             return;
         }
         try {
-            await selfInviteToInstance(
-                location,
-                parsedLocation.shortName,
-                currentEndpoint || undefined
-            );
+            await selfInviteToInstance(location, parsedLocation.shortName);
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
             toast.error(
@@ -166,7 +159,6 @@ export function useFriendsSidebarActions({
             const inviteLocation = parsedLocation.tag || currentInviteLocation;
             await sendInviteToLocation({
                 receiverUserId: friendId,
-                endpoint: currentEndpoint || undefined,
                 instanceId: inviteLocation,
                 worldId: parsedLocation.worldId,
                 rsvp: true
@@ -198,8 +190,7 @@ export function useFriendsSidebarActions({
         }
         try {
             await sendRequestInviteToUser({
-                receiverUserId: friendId,
-                endpoint: currentEndpoint || undefined
+                receiverUserId: friendId
             });
             recordRecentAction(friendId, 'Request Invite');
             toast.success(t('side_panel.success.invite_request_sent'));
@@ -221,7 +212,6 @@ export function useFriendsSidebarActions({
         }
         try {
             const result = await boopPrompt({
-                endpoint: currentEndpoint || undefined,
                 targetLabel: friend?.displayName || friend?.username || friendId
             });
             if (!result.ok) {
@@ -229,8 +219,7 @@ export function useFriendsSidebarActions({
             }
             await sendBoopToUser({
                 userId: friendId,
-                emojiId: result.value,
-                endpoint: currentEndpoint || undefined
+                emojiId: result.value
             });
             toast.success(t('side_panel.success.boop_sent'));
         } catch (error) {
@@ -257,7 +246,6 @@ export function useFriendsSidebarActions({
         try {
             const nextUser = await userProfileRepository.updateCurrentUser({
                 userId: currentUserId,
-                endpoint: currentEndpoint || undefined,
                 params: patch
             });
             if (nextUser?.id) {

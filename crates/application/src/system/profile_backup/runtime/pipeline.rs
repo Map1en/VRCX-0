@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use chrono::{DateTime, Local, Utc};
+use vrcx_0_persistence::data_dir_migration::has_pending_data_dir_migration;
 use vrcx_0_persistence::profile_backup::{
     commit_file_without_overwrite, create_backup_archive_with_progress,
     has_pending_profile_restore, is_auto_backup_file_name, read_profile_database_version,
@@ -65,7 +66,7 @@ impl ProfileBackupRuntime {
     }
 
     pub fn retry_delivery(&self) -> ProfileBackupActionOutcome {
-        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return self.rejected_action(ProfileBackupErrorCode::OperationBusy, None);
         };
         let pending = self
@@ -107,13 +108,20 @@ impl ProfileBackupRuntime {
         target_dir: PathBuf,
         file_name: String,
     ) -> ProfileBackupActionOutcome {
-        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_running) else {
+        let Some(guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
             return self.rejected_action(ProfileBackupErrorCode::OperationBusy, None);
         };
         if has_pending_profile_restore(&self.inner.app_data) {
             return self.rejected_action_with_guard(
                 guard,
                 ProfileBackupErrorCode::PendingRestore,
+                None,
+            );
+        }
+        if has_pending_data_dir_migration(&self.inner.control_dir) {
+            return self.rejected_action_with_guard(
+                guard,
+                ProfileBackupErrorCode::PendingDataDirMigration,
                 None,
             );
         }

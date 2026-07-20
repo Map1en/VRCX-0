@@ -69,6 +69,77 @@
         }
     },
     "language": "日本語 (ja)",
+    "data_dir_migration": {
+        "title": "VRCX-0 のデータを移動",
+        "description": "選択したフォルダーの使用方法を選んでください。",
+        "completed_title": "データの移動が完了しました",
+        "completed_description": "VRCX-0 を再起動すると、新しいデータフォルダーが使用されます。",
+        "error_short": "データの移動に失敗",
+        "start": "移動を開始",
+        "restart_now": "今すぐ再起動",
+        "restart_later": "後で",
+        "create_backup_first": "先にバックアップを作成",
+        "space_summary": "必要：{required}・空き：{available}",
+        "insufficient_space": "データを移動するための空き容量が不足しています。",
+        "contents_notice": "データベース、アプリ設定、ギャラリーの索引とサムネイルをコピーします。画像キャッシュは新しい場所で再取得されます。古いデータは削除を選ぶまで保持されます。",
+        "unsupported_storage_warning": "ネットワークドライブ、クラウド同期フォルダー（OneDrive、iCloud など）、リムーバブルドライブは選択しないでください。これらの場所にあるデータベースは破損する可能性があり、サポート対象外です。",
+        "mode": {
+            "migrate": "現在のデータを移動（推奨）",
+            "adoptExisting": "このフォルダーにある VRCX-0 プロファイルを使用",
+            "freshStart": "このフォルダーで新しいプロファイルを作成"
+        },
+        "target": {
+            "empty": "選択したフォルダーは空です。",
+            "existingProfile": "VRCX-0 プロファイルが既にあります。置き換える前に退避されます。",
+            "foreignContent": "他のファイルがあります。VRCX-0 は自身のファイルだけを管理します。"
+        },
+        "phase": {
+            "preparing": "移動を準備中",
+            "freezing": "データベースを停止中",
+            "copying": "データベースをコピー中",
+            "verifying": "コピーを検証中",
+            "committing": "移動を完了中"
+        },
+        "error": {
+            "operationBusy": "別のバックアップ、復元、またはデータ移動が実行中です。",
+            "databaseUnavailable": "現在データベースを移動できません。",
+            "pendingRestore": "保留中のプロファイル復元を先に完了またはキャンセルしてください。",
+            "pendingLegacyMigration": "保留中の旧データ移行を先に完了してください。",
+            "pendingMigration": "データフォルダーの移動が保留中です。VRCX-0 を再起動してください。",
+            "cleanupConflict": "このフォルダーへ戻す前に古いデータを処理してください。",
+            "copyFailed": "データベースをコピーできませんでした。元のデータはそのまま使用されています。",
+            "commitFailed": "コピーしたデータベースを配置できませんでした。元のデータはそのまま使用されています。",
+            "pointerCommitFailed": "新しいデータフォルダーを有効にできませんでした。再起動して安全に再試行してください。",
+            "io": "データフォルダーのファイルを読み書きできませんでした。"
+        },
+        "warning": {
+            "configCopyFailed": "一部のアプリ設定をコピーできず、既定値に戻る場合があります。",
+            "galleryCopyFailed": "一部のギャラリー索引またはサムネイルをコピーできませんでした。必要に応じて再構築されます。",
+            "cacheCleanupFailed": "一部の古いキャッシュを削除できませんでした。"
+        },
+        "result": {
+            "succeeded": "データフォルダーの移動が完了しました",
+            "failed_title": "新しいデータフォルダーを使用できませんでした",
+            "database_open_failed": "元のフォルダーを引き続き使用しています。データへの影響はありません。",
+            "interrupted_title": "データフォルダーの移動が中断されました",
+            "interrupted": "元のフォルダーを引き続き使用しています。もう一度試せます。"
+        },
+        "cleanup": {
+            "ready_title": "データフォルダーの移動が完了しました",
+            "ready_description": "古いデータは {path} に残っています。",
+            "action": "古いデータを削除",
+            "action_with_size": "古いデータを削除（{size}）",
+            "confirm_title": "古い VRCX-0 データを完全に削除しますか？",
+            "confirm_description": "{path} から既知の VRCX-0 ファイル約 {size} を削除します。不明なファイルは残されます。この操作は取り消せません。",
+            "completed": "古い VRCX-0 データを削除しました",
+            "freed": "{size} を解放しました。",
+            "completed_with_skipped": "{size} を解放しました。{count} 件は削除できませんでした。",
+            "settings_title": "古いデータを削除できます",
+            "settings_description": "古い VRCX-0 データが {path} に残っています（{size} バイト）。",
+            "dismiss": "保持して今後通知しない",
+            "dismissed": "削除の通知を無効にしました"
+        }
+    },
     "profile_backup": {
         "header": "バックアップと復元",
         "tools_description": "VRCX-0 のデータをバックアップし、必要なときに復元できます。",
@@ -1533,7 +1604,9 @@
             "group": {
                 "header": "グループ",
                 "calendar": "カレンダー",
-                "calendar_description": "グループのイベントカレンダー"
+                "calendar_description": "グループのイベントカレンダー",
+                "moderation": "グループの管理",
+                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。"
             },
             "user": {
                 "discord_names_description": "フレンドの Discord ユーザー名を取得",
@@ -3463,6 +3536,8 @@
                 "copy_id": "IDをコピー",
                 "copy_url": "URLをコピー",
                 "url": "VRChat リンク",
+                "vrcx_url": "VRCX-0 リンク",
+                "copy_vrcx_url": "VRCX-0 リンクをコピー",
                 "youtube_preview": "YouTube プレビュー動画",
                 "author_tags": "タグ",
                 "players": "プレイヤー数",
@@ -3659,6 +3734,8 @@
                 "copy_id": "IDをコピー",
                 "url": "VRChat リンク",
                 "copy_url": "URLをコピー",
+                "vrcx_url": "VRCX-0 リンク",
+                "copy_vrcx_url": "VRCX-0 リンクをコピー",
                 "created_at": "作成日時",
                 "last_updated": "最終更新日時",
                 "version": "バージョン",
@@ -4496,12 +4573,55 @@
             "kick": "キック",
             "ban": "BAN",
             "unban": "BAN解除",
+            "delete": "Delete",
+            "accept": "Accept",
+            "reject": "Reject",
+            "block": "Block",
             "display_name": "表示名",
             "created_at": "作成日時",
             "type": "種類",
             "description": "説明",
             "data": "データ",
-            "roles": "ロール"
+            "roles": "ロール",
+            "select_all": "すべて選択",
+            "selected_users_count": "{count} 件選択中",
+            "notes": "メモ",
+            "note_placeholder": "選択したメンバーへのメモを入力...",
+            "selected_roles": "ロール",
+            "roles_count": "{count} 件のロールを選択中",
+            "choose_roles_placeholder": "ロールを選択...",
+            "add_roles": "ロールを追加",
+            "remove_roles": "ロールを削除",
+            "save_note": "メモを保存",
+            "progress": "進行状況",
+            "bulk_action_confirm": "選択した {count} 人のメンバーに適用されます。",
+            "bulk_action_completed": "{count} 人のメンバーに対して{value}が完了しました",
+            "import_bans": "BANのインポート",
+            "import_bans_description": "usr_ ID を含むユーザーID、プロフィールURL、またはCSVデータを貼り付けて一括BANします。",
+            "import_bans_warning": "該当するユーザーは即座にBANされます。この操作は取り消せません。",
+            "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
+            "import_bans_start": "インポート開始",
+            "import_bans_clear_errors": "エラーをクリア",
+            "import_bans_no_ids_found": "有効なユーザーIDが見つかりませんでした(usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)。",
+            "import_bans_done": "完了しました。{success}/{total} 人をBANしました。",
+            "import_bans_cancelled": "キャンセルしました。{success}/{total} 人をBANしました。",
+            "export_logs": "CSV をエクスポート",
+            "export_logs_copied": "監査ログのCSVをクリップボードにコピーしました",
+            "inspector_empty": "Select a row to view details",
+            "view_full_profile": "View full profile",
+            "loaded_count": "{count} 件読み込み済み",
+            "no_permission": "You don't have moderation permission for this group.",
+            "status": {
+                "member": "メンバー",
+                "invited": "招待済み",
+                "banned": "BAN済み",
+                "requested": "リクエスト中",
+                "blocked": "ブロック済み",
+                "userblocked": "ブロック済み",
+                "joined": "参加済み",
+                "active": "アクティブ",
+                "pending": "保留中"
+            }
         },
         "group_post_edit": {
             "title": "タイトル"
@@ -5350,7 +5470,22 @@
                 "failed_to_update_group_event_follow_state": "このイベントを更新できませんでした",
                 "failed_to_download_ics_file": ".ics ファイルをダウンロードできませんでした",
                 "failed_to_save_ics_file": ".ics ファイルを保存できませんでした",
-                "failed_to_copy_event_link": "イベントリンクをコピーできませんでした"
+                "failed_to_copy_event_link": "イベントリンクをコピーできませんでした",
+                "failed_to_load_moderatable_groups": "管理権限を持つグループを読み込めませんでした",
+                "failed_to_open_group_moderation": "グループの管理を開けませんでした"
+            },
+            "group_moderation": {
+                "picker_description": "メンバー、BAN、招待、参加リクエストを管理するグループを選択してください。",
+                "loading": "管理権限を持つグループを読み込み中...",
+                "empty_title": "管理できるグループがありません",
+                "empty_description": "まだどのグループでも管理権限を持っていません。",
+                "permissions_degraded": "一部のグループの権限を確認できませんでした。以下のリストは不完全な場合があります。",
+                "member_count": "メンバー {count} 人",
+                "rail_title": "管理しているグループ",
+                "select_a_group_title": "グループを選択",
+                "select_a_group_description": "リストからグループを選択して、メンバー・BAN・招待・参加リクエストを管理します。",
+                "moderator_hint": "You have moderation access in this group",
+                "member_online_count": "メンバー{members}人・オンライン{online}人"
             }
         }
     },
@@ -5429,6 +5564,14 @@
         "avatar": {
             "no_provider": "アバター検索プロバイダーが設定されていません"
         }
+    },
+    "translation": {
+        "translate": "翻訳",
+        "show_original": "原文を表示",
+        "source_to_target": "{source} → {target}",
+        "error_generic": "翻訳に失敗しました",
+        "error_network": "ネットワークエラーです。もう一度お試しください",
+        "error_unsupported": "翻訳が設定されていません"
     },
     "app": {
         "title": "VRCX-0",

@@ -8,8 +8,7 @@ describe('statusBarFriendProfileLoad', () => {
             'running',
             'cancelling',
             'completed',
-            'cancelled',
-            'error'
+            'cancelled'
         ]) {
             expect(isFriendProfileLoadStatusVisible(status)).toBe(true);
         }

@@ -10,6 +10,7 @@ use vrcx_0_application_core::vrchat_api::media::{
     sticker_upload_input, tagged_image_upload_input, user_inventory_item_get_input,
     world_image_set_input,
 };
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -17,7 +18,7 @@ use vrcx_0_application::{
     self as media_upload, LegacyEntityImageKind, LegacyEntityImageUploadInput,
     LegacyMediaUploadDeps, PrintFavoriteState,
 };
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
     VrchatMediaAssetUploadInput, VrchatMediaAvatarGalleryImageUploadInput,
@@ -35,16 +36,14 @@ async fn execute_media_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_media_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => diagnostics.record_command(command, "error", error.to_string()),
-    }
-    result
+    super::super::execute::execute_vrchat_api(
+        state,
+        command,
+        detail,
+        input,
+        VrchatScope::VrchatMedia,
+    )
+    .await
 }
 
 fn prepare_media_upload_request(input: VrchatApiRequest) -> Result<VrchatApiRequest, AppError> {
@@ -69,7 +68,7 @@ async fn run_legacy_entity_image_upload(
             web: state.web.as_ref(),
         },
         LegacyEntityImageUploadInput {
-            endpoint: input.endpoint,
+            endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
             entity_id: input.entity_id,
             image_url: input.image_url,
             base64_file: input.base64_file,
@@ -97,7 +96,7 @@ pub async fn app__vrchat_media_files_get(
         state,
         "app__vrchat_media_files_get",
         "Getting media files.",
-        files_get_input(input.endpoint, input.params),
+        files_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -113,7 +112,7 @@ pub async fn app__vrchat_media_file_delete(
         state,
         "app__vrchat_media_file_delete",
         format!("Deleting media file {file_id}."),
-        file_delete_input(input.endpoint, input.file_id)?,
+        file_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.file_id)?,
     )
     .await
 }
@@ -129,7 +128,7 @@ pub async fn app__vrchat_media_gallery_image_upload(
         "app__vrchat_media_gallery_image_upload",
         "Uploading gallery image.",
         prepare_media_upload_request(tagged_image_upload_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.image_data,
             "gallery",
             false,
@@ -149,7 +148,7 @@ pub async fn app__vrchat_media_avatar_gallery_image_upload(
         "app__vrchat_media_avatar_gallery_image_upload",
         "Uploading avatar gallery image.",
         prepare_media_upload_request(avatar_gallery_image_upload_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.image_data,
             input.avatar_id,
         )?)?,
@@ -168,7 +167,7 @@ pub async fn app__vrchat_media_vrc_plus_icon_upload(
         "app__vrchat_media_vrc_plus_icon_upload",
         "Uploading VRC+ icon.",
         prepare_media_upload_request(tagged_image_upload_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.image_data,
             "icon",
             true,
@@ -189,7 +188,7 @@ pub async fn app__vrchat_media_emoji_upload(
         "Uploading emoji.",
         prepare_media_upload_request(
             vrcx_0_application_core::vrchat_api::media::image_upload_input(
-                input.endpoint,
+                VRCHAT_API_DEFAULT_ENDPOINT.into(),
                 "file/image",
                 input.image_data,
                 input.params,
@@ -210,7 +209,10 @@ pub async fn app__vrchat_media_sticker_upload(
         state,
         "app__vrchat_media_sticker_upload",
         "Uploading sticker.",
-        prepare_media_upload_request(sticker_upload_input(input.endpoint, input.image_data)?)?,
+        prepare_media_upload_request(sticker_upload_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.image_data,
+        )?)?,
     )
     .await
 }
@@ -226,7 +228,7 @@ pub async fn app__vrchat_media_print_upload(
         "app__vrchat_media_print_upload",
         "Uploading print.",
         prepare_media_upload_request(print_upload_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.image_data,
             input.crop_white_border,
             input.params,
@@ -242,7 +244,7 @@ pub async fn app__vrchat_media_asset_upload(
     input: VrchatMediaAssetUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (asset_kind, request) = asset_upload_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.asset_kind,
         input.image_data,
         input.crop_white_border,
@@ -270,7 +272,7 @@ pub async fn app__vrchat_media_prints_get(
         state,
         "app__vrchat_media_prints_get",
         format!("Getting prints for user {user_id}."),
-        prints_get_input(input.endpoint, input.user_id, input.n)?,
+        prints_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id, input.n)?,
     )
     .await
 }
@@ -286,7 +288,7 @@ pub async fn app__vrchat_media_print_get(
         state,
         "app__vrchat_media_print_get",
         format!("Getting print {print_id}."),
-        print_get_input(input.endpoint, input.print_id)?,
+        print_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.print_id)?,
     )
     .await
 }
@@ -302,7 +304,7 @@ pub async fn app__vrchat_media_print_delete(
         state,
         "app__vrchat_media_print_delete",
         format!("Deleting print {print_id}."),
-        print_delete_input(input.endpoint, input.print_id)?,
+        print_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.print_id)?,
     )
     .await
 }
@@ -338,7 +340,7 @@ pub async fn app__vrchat_media_inventory_items_get(
         state,
         "app__vrchat_media_inventory_items_get",
         "Getting inventory items.",
-        inventory_items_get_input(input.endpoint, input.params),
+        inventory_items_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
     )
     .await
 }
@@ -354,7 +356,11 @@ pub async fn app__vrchat_media_user_inventory_item_get(
         state,
         "app__vrchat_media_user_inventory_item_get",
         format!("Getting inventory item {inventory_id}."),
-        user_inventory_item_get_input(input.endpoint, input.user_id, input.inventory_id)?,
+        user_inventory_item_get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.user_id,
+            input.inventory_id,
+        )?,
     )
     .await
 }
@@ -370,7 +376,11 @@ pub async fn app__vrchat_media_inventory_item_update(
         state,
         "app__vrchat_media_inventory_item_update",
         format!("Updating inventory item {inventory_id}."),
-        inventory_item_update_input(input.endpoint, input.inventory_id, input.params)?,
+        inventory_item_update_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.inventory_id,
+            input.params,
+        )?,
     )
     .await
 }
@@ -386,7 +396,7 @@ pub async fn app__vrchat_media_inventory_bundle_consume(
         state,
         "app__vrchat_media_inventory_bundle_consume",
         format!("Consuming inventory bundle {inventory_id}."),
-        inventory_bundle_consume_input(input.endpoint, input.inventory_id)?,
+        inventory_bundle_consume_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.inventory_id)?,
     )
     .await
 }
@@ -401,7 +411,7 @@ pub async fn app__vrchat_media_reward_redeem(
         state,
         "app__vrchat_media_reward_redeem",
         "Redeeming reward.",
-        reward_redeem_input(input.endpoint, input.code)?,
+        reward_redeem_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.code)?,
     )
     .await
 }
@@ -418,7 +428,7 @@ pub async fn app__vrchat_media_file_version_create(
         "app__vrchat_media_file_version_create",
         format!("Creating file version for {file_id}."),
         file_version_create_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.file_id,
             input.file_md5,
             input.file_size_in_bytes,
@@ -435,13 +445,12 @@ pub async fn app__vrchat_media_file_upload_start(
     state: State<'_, AppState>,
     input: VrchatMediaFileUploadStageInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint;
     let path = file_upload_stage_path(input.file_id, input.version, input.kind)?;
     execute_media_api(
         state,
         "app__vrchat_media_file_upload_start",
         format!("Starting upload stage {path}."),
-        file_upload_start_input(endpoint, path),
+        file_upload_start_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), path),
     )
     .await
 }
@@ -452,13 +461,12 @@ pub async fn app__vrchat_media_file_upload_finish(
     state: State<'_, AppState>,
     input: VrchatMediaFileUploadStageInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let endpoint = input.endpoint;
     let path = file_upload_stage_path(input.file_id, input.version, input.kind)?;
     execute_media_api(
         state,
         "app__vrchat_media_file_upload_finish",
         format!("Finishing upload stage {path}."),
-        file_upload_finish_input(endpoint, path),
+        file_upload_finish_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), path),
     )
     .await
 }
@@ -519,7 +527,11 @@ pub async fn app__vrchat_media_avatar_image_set(
         state,
         "app__vrchat_media_avatar_image_set",
         format!("Setting avatar image {avatar_id}."),
-        avatar_image_set_input(input.endpoint, input.entity_id, input.image_url)?,
+        avatar_image_set_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.entity_id,
+            input.image_url,
+        )?,
     )
     .await
 }
@@ -535,7 +547,11 @@ pub async fn app__vrchat_media_world_image_set(
         state,
         "app__vrchat_media_world_image_set",
         format!("Setting world image {world_id}."),
-        world_image_set_input(input.endpoint, input.entity_id, input.image_url)?,
+        world_image_set_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.entity_id,
+            input.image_url,
+        )?,
     )
     .await
 }

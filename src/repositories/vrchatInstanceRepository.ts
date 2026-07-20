@@ -5,14 +5,9 @@ import {
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage,
-    type QueryParams
-} from './vrchatRequest';
+import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
 
 type InstanceAccessType =
     | 'public'
@@ -24,7 +19,6 @@ type InstanceAccessType =
     | string;
 
 interface InstanceRepositoryOptions {
-    endpoint?: string;
     force?: boolean;
     [key: string]: unknown;
 }
@@ -56,7 +50,6 @@ interface CloseInstanceOptions extends InstanceRepositoryOptions {
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
 type VrchatInstanceIdentity = {
@@ -110,26 +103,11 @@ function unwrapVrchatInstanceResponse(
     path: string,
     params: QueryParams = {}
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const message = unwrapErrorMessage(json, response.status, {
-            fallbackMessage: 'VRChat instance request failed'
-        });
-        const requestError = createRequestError(
-            message,
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
     return {
-        json,
-        params,
-        status: response.status,
-        raw: response.raw
+        ...unwrapVrchatResponse(response, path, {
+            fallbackMessage: 'VRChat instance request failed'
+        }),
+        params
     };
 }
 
@@ -143,8 +121,7 @@ async function createInstance({
     queueEnabled = true,
     roleIds = [],
     ageGate = false,
-    displayName = '',
-    endpoint = ''
+    displayName = ''
 }: CreateInstanceOptions = {}) {
     const normalizedWorldId = normalizeString(worldId);
     const normalizedOwnerId = normalizeString(ownerId);
@@ -187,7 +164,6 @@ async function createInstance({
 
     return unwrapVrchatInstanceResponse(
         await commands.appVrchatInstanceCreate({
-            endpoint,
             params
         }),
         'instances',
@@ -198,7 +174,6 @@ async function createInstance({
 async function getInstance({
     worldId,
     instanceId,
-    endpoint = '',
     force = false
 }: InstanceIdentityOptions = {}) {
     const normalizedWorldId = normalizeString(worldId);
@@ -216,14 +191,13 @@ async function getInstance({
         queryKey: queryKeys.instance(
             normalizedWorldId,
             normalizedInstanceId,
-            endpoint
+            DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
             const response = unwrapVrchatInstanceResponse(
                 await commands.appVrchatInstanceGet({
-                    endpoint,
                     worldId: normalizedWorldId,
                     instanceId: normalizedInstanceId
                 }),
@@ -243,7 +217,6 @@ async function getInstanceShortName({
     worldId,
     instanceId,
     shortName = '',
-    endpoint = '',
     force = false
 }: InstanceIdentityOptions = {}) {
     const normalizedWorldId = normalizeString(worldId);
@@ -262,14 +235,13 @@ async function getInstanceShortName({
         queryKey: queryKeys.instanceShortName(
             normalizedWorldId,
             normalizedInstanceId,
-            endpoint
+            DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.instance,
         force,
         queryFn: async () => {
             const response = unwrapVrchatInstanceResponse(
                 await commands.appVrchatInstanceShortNameGet({
-                    endpoint,
                     worldId: normalizedWorldId,
                     instanceId: normalizedInstanceId,
                     shortName:
@@ -293,8 +265,7 @@ async function getInstanceShortName({
 async function selfInvite({
     worldId,
     instanceId,
-    shortName = '',
-    endpoint = ''
+    shortName = ''
 }: InstanceIdentityOptions = {}) {
     const normalizedWorldId = normalizeString(worldId);
     const normalizedInstanceId = normalizeString(instanceId);
@@ -307,7 +278,6 @@ async function selfInvite({
     const params = shortName ? { shortName } : {};
     return unwrapVrchatInstanceResponse(
         await commands.appVrchatInstanceSelfInvite({
-            endpoint,
             worldId: normalizedWorldId,
             instanceId: normalizedInstanceId,
             shortName
@@ -319,8 +289,7 @@ async function selfInvite({
 
 async function closeInstance({
     location,
-    hardClose = false,
-    endpoint = ''
+    hardClose = false
 }: CloseInstanceOptions = {}) {
     const normalizedLocation = normalizeString(location);
     if (!normalizedLocation) {
@@ -333,7 +302,6 @@ async function closeInstance({
     };
     return unwrapVrchatInstanceResponse(
         await commands.appVrchatInstanceClose({
-            endpoint,
             location: normalizedLocation,
             hardClose: Boolean(hardClose)
         }),

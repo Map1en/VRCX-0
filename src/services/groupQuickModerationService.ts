@@ -5,8 +5,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import { createRequestError } from '@/repositories/vrchatRequest';
 
-import { handleRuntimeAuthFailure } from './authSessionRecoveryService';
-
 export type GroupQuickModerationAction = 'kick' | 'ban';
 
 interface GroupQuickModerationInput {
@@ -40,15 +38,6 @@ function routeGroupQuickModerationAuthFailure(
     path: string
 ): never {
     const normalizedError = normalizeGroupQuickModerationError(error, path);
-    const handled = handleRuntimeAuthFailure(normalizedError);
-    if (handled) {
-        handled.catch((recoveryError: unknown) => {
-            console.warn(
-                'Backend group moderation auth failure recovery failed:',
-                recoveryError
-            );
-        });
-    }
     throw normalizedError;
 }
 

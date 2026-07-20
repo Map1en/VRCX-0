@@ -229,7 +229,6 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.deleteFavorite({
-                endpoint: currentEndpoint,
                 objectId: item.id
             });
             removeRemoteFavorite(item.id);
@@ -287,7 +286,6 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.saveFavoriteGroup({
-                endpoint: currentEndpoint,
                 ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name,
@@ -310,7 +308,6 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.saveFavoriteGroup({
-                endpoint: currentEndpoint,
                 ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name,
@@ -344,7 +341,6 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.clearFavoriteGroup({
-                endpoint: currentEndpoint,
                 ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name

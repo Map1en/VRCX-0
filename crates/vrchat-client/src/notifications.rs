@@ -1,7 +1,8 @@
 use serde_json::{json, Value};
 
 use crate::http_api::{
-    api_input, encode_path_segment, normalize_text, require_text, HttpApiError, HttpApiRequestInput,
+    api_input, encode_path_segment, normalize_text, require_text, HttpApiError, HttpApiRequestBody,
+    HttpApiRequestInput, HttpApiUpload,
 };
 
 pub fn notification_mark_seen_input(
@@ -141,15 +142,16 @@ pub fn invite_response_photo_input(
                 "invite/{}/response/photo",
                 encode_path_segment(&id)
             )),
-            upload_image_legacy: Some(true),
-            post_data: Some(
-                json!({
-                    "responseSlot": response_slot,
-                    "rsvp": true,
-                })
-                .to_string(),
-            ),
-            image_data: Some(image_data),
+            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+                post_data: Some(
+                    json!({
+                        "responseSlot": response_slot,
+                        "rsvp": true,
+                    })
+                    .to_string(),
+                ),
+                image_data,
+            }),
             ..Default::default()
         },
     ))
@@ -200,9 +202,10 @@ pub fn invite_photo_input(
                 "invite/{}/photo",
                 encode_path_segment(&receiver_user_id)
             )),
-            upload_image_legacy: Some(true),
-            post_data: Some(params.to_string()),
-            image_data: Some(image_data),
+            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+                post_data: Some(params.to_string()),
+                image_data,
+            }),
             ..Default::default()
         },
     ))
@@ -256,9 +259,10 @@ pub fn request_invite_photo_input(
                 "requestInvite/{}/photo",
                 encode_path_segment(&receiver_user_id)
             )),
-            upload_image_legacy: Some(true),
-            post_data: Some(params.to_string()),
-            image_data: Some(image_data),
+            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+                post_data: Some(params.to_string()),
+                image_data,
+            }),
             ..Default::default()
         },
     ))

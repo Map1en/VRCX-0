@@ -5,12 +5,7 @@ import {
 } from '@/platform/tauri/bindings';
 
 import { normalizeUserTablePrefix } from './userSessionRepository';
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 type MutualGraphEntryMap = Map<string, string[] | Set<string>>;
 type MutualGraphMeta = {
@@ -27,33 +22,12 @@ type MutualGraphOptions = {
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapRuntimeMutualResponse(response: VrchatApiResult, path: string) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat friend request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse(response, path, {
+        fallbackMessage: 'VRChat friend request failed'
+    });
 }
 
 async function ensureTables(userId: unknown): Promise<string> {

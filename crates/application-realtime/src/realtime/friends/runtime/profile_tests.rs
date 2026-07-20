@@ -67,12 +67,18 @@ mod tests {
             "tags": ["system_trust_veteran"]
         });
 
-        let RealtimeFriendApplyResult::Output(first) = runtime.apply_refetched_user_profile(
-            1,
-            "usr_friend",
-            profile.clone(),
-            "2026-05-15T00:00:01Z",
-        ) else {
+        let first_sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        let RealtimeFriendApplyResult::Output(first) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                first_sequence,
+                profile.clone(),
+                "2026-05-15T00:00:01Z",
+            )
+        else {
             panic!("trust-changing profile should produce an output");
         };
         assert_eq!(first.persistence.friend_log_upserts.len(), 1);
@@ -99,8 +105,17 @@ mod tests {
             1
         );
 
-        if let RealtimeFriendApplyResult::Output(second) =
-            runtime.apply_refetched_user_profile(1, "usr_friend", profile, "2026-05-15T00:00:02Z")
+        let second_sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        if let RealtimeFriendApplyResult::Output(second) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                second_sequence,
+                profile,
+                "2026-05-15T00:00:02Z",
+            )
         {
             assert!(second.persistence.friend_log_upserts.is_empty());
             assert!(second
@@ -136,17 +151,23 @@ mod tests {
             0,
         );
 
-        let RealtimeFriendApplyResult::Output(output) = runtime.apply_refetched_user_profile(
-            1,
-            "usr_friend",
-            json!({
-                "id": "usr_friend",
-                "displayName": "Friend",
-                "state": "online",
-                "location": "wrld_2:456"
-            }),
-            "2026-05-15T00:00:01Z",
-        ) else {
+        let sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        let RealtimeFriendApplyResult::Output(output) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                sequence,
+                json!({
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "online",
+                    "location": "wrld_2:456"
+                }),
+                "2026-05-15T00:00:01Z",
+            )
+        else {
             panic!("refetched friend profile should produce an output");
         };
 
@@ -190,19 +211,25 @@ mod tests {
             0,
         );
 
-        let RealtimeFriendApplyResult::Output(output) = runtime.apply_refetched_user_profile(
-            1,
-            "usr_friend",
-            json!({
-                "id": "usr_friend",
-                "displayName": "Friend",
-                "state": "offline",
-                "location": "offline",
-                "status": "active",
-                "statusDescription": "Fresh REST status"
-            }),
-            "2026-05-15T00:00:01Z",
-        ) else {
+        let sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        let RealtimeFriendApplyResult::Output(output) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                sequence,
+                json!({
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "offline",
+                    "location": "offline",
+                    "status": "active",
+                    "statusDescription": "Fresh REST status"
+                }),
+                "2026-05-15T00:00:01Z",
+            )
+        else {
             panic!("refetched friend profile should produce an output");
         };
 
@@ -272,19 +299,25 @@ mod tests {
             panic!("offline location should schedule pending timer");
         };
 
-        let RealtimeFriendApplyResult::Output(output) = runtime.apply_refetched_user_profile(
-            1,
-            "usr_friend",
-            json!({
-                "id": "usr_friend",
-                "displayName": "Friend",
-                "state": "offline",
-                "location": "offline",
-                "status": "active",
-                "statusDescription": "Fresh REST status"
-            }),
-            "2026-05-15T00:00:01Z",
-        ) else {
+        let sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        let RealtimeFriendApplyResult::Output(output) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                sequence,
+                json!({
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "offline",
+                    "location": "offline",
+                    "status": "active",
+                    "statusDescription": "Fresh REST status"
+                }),
+                "2026-05-15T00:00:01Z",
+            )
+        else {
             panic!("refetched friend profile should produce an output");
         };
 
@@ -345,17 +378,23 @@ mod tests {
             panic!("offline location should schedule pending timer");
         };
 
-        let RealtimeFriendApplyResult::Output(output) = runtime.apply_refetched_user_profile(
-            1,
-            "usr_friend",
-            json!({
-                "id": "usr_friend",
-                "displayName": "Friend",
-                "state": "online",
-                "location": "wrld_fresh:456"
-            }),
-            "2026-05-15T00:00:01Z",
-        ) else {
+        let sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .unwrap_or_default();
+        let RealtimeFriendApplyResult::Output(output) = runtime
+            .apply_refetched_user_profile_if_sequence(
+                1,
+                "usr_friend",
+                sequence,
+                json!({
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "online",
+                    "location": "wrld_fresh:456"
+                }),
+                "2026-05-15T00:00:01Z",
+            )
+        else {
             panic!("refetched friend profile should produce an output");
         };
 
@@ -417,6 +456,109 @@ mod tests {
     }
 
     #[test]
+    fn stale_refetched_profile_does_not_revert_display_name() {
+        let runtime = runtime_with_online_status("active");
+        let refetch_sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .expect("friend should have a causal sequence");
+
+        let RealtimeFriendApplyResult::Output(rename) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-update",
+                    "content": {
+                        "userId": "usr_friend",
+                        "user": {
+                            "id": "usr_friend",
+                            "displayName": "Fresh Name",
+                            "state": "offline",
+                            "status": "active"
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:01Z".into(),
+            })
+        else {
+            panic!("websocket rename should produce an output");
+        };
+        assert_eq!(rename.persistence.friend_log_upserts.len(), 1);
+        assert_eq!(
+            rename.persistence.friend_log_upserts[0].display_name,
+            "Fresh Name"
+        );
+        assert!(rename.projection.friend_log_changed);
+
+        let result = runtime.apply_refetched_user_profile_if_sequence(
+            1,
+            "usr_friend",
+            refetch_sequence,
+            json!({
+                "id": "usr_friend",
+                "displayName": "Friend",
+                "state": "online",
+                "status": "active"
+            }),
+            "2026-05-15T00:00:02Z",
+        );
+
+        assert!(matches!(result, RealtimeFriendApplyResult::Ignored));
+        let snapshot = runtime.snapshot().unwrap();
+        assert_eq!(
+            snapshot.friends_by_id["usr_friend"].display_name,
+            "Fresh Name"
+        );
+    }
+
+    #[test]
+    fn stale_refetched_profile_does_not_overwrite_newer_websocket_location() {
+        let runtime = runtime_with_online_status("active");
+        let refetch_sequence = runtime
+            .friend_state_sequence_for_user(1, "usr_friend")
+            .expect("friend should have a causal sequence");
+
+        let RealtimeFriendApplyResult::Output(_) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-location",
+                    "content": {
+                        "userId": "usr_friend",
+                        "location": "wrld_new:123",
+                        "user": {
+                            "id": "usr_friend",
+                            "displayName": "Friend",
+                            "location": "wrld_new:123"
+                        }
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:01Z".into(),
+            })
+        else {
+            panic!("friend-location should produce an output");
+        };
+
+        let result = runtime.apply_refetched_user_profile_if_sequence(
+            1,
+            "usr_friend",
+            refetch_sequence,
+            json!({
+                "id": "usr_friend",
+                "displayName": "Friend",
+                "state": "offline",
+                "location": "offline"
+            }),
+            "2026-05-15T00:00:02Z",
+        );
+
+        assert!(matches!(result, RealtimeFriendApplyResult::Ignored));
+        let snapshot = runtime.snapshot().unwrap();
+        let friend = &snapshot.friends_by_id["usr_friend"];
+        assert_eq!(friend.location, "wrld_new:123");
+        assert_eq!(friend.state_bucket, "online");
+    }
+
+    #[test]
     fn refetched_profile_applies_when_friend_sequence_is_unchanged() {
         let runtime = runtime_with_online_status("ask me");
         let refetch_sequence = runtime
@@ -459,9 +601,10 @@ mod tests {
             0,
         );
 
-        let result = runtime.apply_refetched_user_profile(
+        let result = runtime.apply_refetched_user_profile_if_sequence(
             1,
             "usr_stranger",
+            0,
             json!({
                 "id": "usr_stranger",
                 "displayName": "Stranger",

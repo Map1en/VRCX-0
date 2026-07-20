@@ -12,6 +12,7 @@ use vrcx_0_application_core::vrchat_api::groups::{
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope};
 
+use super::super::permissions::{has_permission, parse_permission_map, permissions_for_group};
 use super::super::service::{execute_group_api_raw, GroupApiDeps};
 use super::types::{
     GroupQuickModerationActionInput, GroupQuickModerationActionOutput, GroupQuickModerationGroup,
@@ -521,42 +522,8 @@ fn string_array(value: Option<&Value>) -> Vec<String> {
     }
 }
 
-fn parse_permission_map(value: &Value) -> HashMap<String, Vec<String>> {
-    value
-        .as_object()
-        .map(|object| {
-            object
-                .iter()
-                .map(|(group_id, permissions)| (group_id.clone(), string_array(Some(permissions))))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn permissions_for_group(
-    group: &Value,
-    permission_map: &HashMap<String, Vec<String>>,
-    group_id: &str,
-) -> Vec<String> {
-    if let Some(permissions) = permission_map.get(group_id) {
-        return permissions.clone();
-    }
-    group
-        .as_object()
-        .and_then(|object| object.get("myMember"))
-        .and_then(Value::as_object)
-        .map(|member| string_array(member.get("permissions")))
-        .unwrap_or_default()
-}
-
-fn has_permission(permissions: &[String], permission: &str) -> bool {
-    permissions
-        .iter()
-        .any(|value| value == "*" || value == permission)
-}
-
 fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
-    let group_id = object_string(group, &["id", "groupId"]);
+    let group_id = object_string(group, &["groupId", "id"]);
     if group_id.is_empty() {
         return None;
     }
@@ -697,6 +664,26 @@ mod tests {
                 .map(|group| group.group_id.as_str())
                 .collect::<Vec<_>>(),
             vec!["grp_ban"]
+        );
+    }
+
+    #[test]
+    fn prefers_group_id_over_membership_record_id() {
+        let groups = vec![json!({
+            "id": "gmem_11111111-1111-1111-1111-111111111111",
+            "groupId": "grp_1",
+            "name": "Group",
+            "ownerId": "usr_owner"
+        })];
+        let permissions = parse_permission_map(&json!({ "grp_1": ["group-members-remove"] }));
+
+        let kick = groups_for_permission(&groups, &permissions, KICK_PERMISSION, "usr_target");
+
+        assert_eq!(
+            kick.iter()
+                .map(|group| group.group_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["grp_1"]
         );
     }
 

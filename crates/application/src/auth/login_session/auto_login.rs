@@ -1,51 +1,48 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use serde::Serialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{
-    delete_saved_credential, record_login_success, record_logout, saved_snapshot,
-    LoginSuccessRecordInput, LogoutRecordInput, WebClient,
-};
+use crate::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot, WebClient};
 
-use super::runtime::LoginSessionOperation;
-use super::service::LoginSession;
-use super::types::{LoginApi, LoginFailureKind, LoginSessionState, TwoFactorMethod};
+use super::runtime::{
+    apply_login_failure_cleanup, clear_auth_cookies_and_save, LoginAttemptPolicy,
+    LoginSessionOperation,
+};
+use super::service::{start_cookie_restore, start_saved_credential_login};
+use super::types::{LoginApi, LoginFailureKind, LoginSessionState};
 
 const AUTO_LOGIN_WINDOW: Duration = Duration::from_secs(60 * 60);
 const AUTO_LOGIN_MAX_ATTEMPTS: usize = 3;
 
+#[derive(Debug, Clone, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AutoLoginStartInput {
-    pub endpoint: String,
+    #[serde(default)]
     pub user_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
+pub enum AutoLoginTerminalOutcome {
+    Throttled { snapshot: Box<SavedAuthSnapshot> },
+    Expired { snapshot: Box<SavedAuthSnapshot> },
+}
+
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(untagged)]
 pub enum AutoLoginOutcome {
-    Throttled {
-        snapshot: Value,
-    },
-    Authenticated {
-        session: crate::AuthenticatedRuntimeSession,
-    },
-    Challenge {
-        methods: Vec<TwoFactorMethod>,
-        mode: TwoFactorMethod,
-        error: Option<String>,
-    },
-    Expired {
-        snapshot: Value,
-    },
-    Failed {
-        reason: String,
-        kind: LoginFailureKind,
-        snapshot: Value,
-    },
+    Session(LoginSessionState),
+    Terminal(AutoLoginTerminalOutcome),
+}
+
+pub(super) enum AutoLoginDrive {
+    Install(LoginSessionState),
+    Done(Box<AutoLoginOutcome>),
 }
 
 pub(super) struct AutoLoginThrottle {
@@ -105,14 +102,14 @@ impl Default for AutoLoginThrottle {
 }
 
 pub(super) async fn drive_auto_login(
-    api: Arc<dyn LoginApi>,
+    api: &dyn LoginApi,
     config: &ConfigRepository,
     web: &WebClient,
     db: &DatabaseService,
     throttle: &AutoLoginThrottle,
     operation: &LoginSessionOperation,
     input: AutoLoginStartInput,
-) -> crate::Result<(Option<LoginSession>, AutoLoginOutcome)> {
+) -> crate::Result<AutoLoginDrive> {
     let user_id = input.user_id.trim().to_string();
 
     let can_attempt =
@@ -128,7 +125,9 @@ pub(super) async fn drive_auto_login(
             ))
         })?;
         let outcome = match cleanup_result {
-            Ok(snapshot) => AutoLoginOutcome::Throttled { snapshot },
+            Ok(snapshot) => AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Throttled {
+                snapshot: Box::new(snapshot),
+            }),
             Err(error) => failure_outcome(
                 operation,
                 config,
@@ -136,19 +135,18 @@ pub(super) async fn drive_auto_login(
                 LoginFailureKind::Other,
             )?,
         };
-        return Ok((None, outcome));
+        return Ok(AutoLoginDrive::Done(Box::new(outcome)));
     }
     operation.run_if_current(|| {
         throttle.record_attempt(&user_id, Instant::now());
         Ok(())
     })?;
 
-    let cookie_session =
-        LoginSession::start_cookie_restore(Arc::clone(&api), input.endpoint.clone()).await;
+    let cookie_state = start_cookie_restore(api, VRCHAT_API_DEFAULT_ENDPOINT, &user_id).await;
     operation.ensure_current()?;
 
     let is_missing_credentials = matches!(
-        cookie_session.state(),
+        cookie_state,
         LoginSessionState::Failed {
             kind: LoginFailureKind::MissingCredentials,
             ..
@@ -156,7 +154,7 @@ pub(super) async fn drive_auto_login(
     );
 
     if !is_missing_credentials {
-        return finish_terminal(cookie_session, web, db, config, operation, &user_id);
+        return Ok(AutoLoginDrive::Install(cookie_state));
     }
 
     operation.run_if_current(|| {
@@ -165,144 +163,30 @@ pub(super) async fn drive_auto_login(
     })?;
 
     let probe_snapshot = operation.run_if_current(|| saved_snapshot(config))?;
-    let fallback_available = probe_snapshot
-        .get("savedCredentialFallbackAvailable")
-        .and_then(Value::as_bool)
-        .unwrap_or(false);
+    let fallback_available = probe_snapshot.auto_login_status
+        == SavedAuthAutoLoginStatus::Available
+        && probe_snapshot
+            .saved_credentials_list
+            .iter()
+            .any(|credential| credential.user.id == user_id);
     if !fallback_available {
-        return Ok((
-            Some(cookie_session),
-            AutoLoginOutcome::Expired {
-                snapshot: probe_snapshot,
+        return Ok(AutoLoginDrive::Done(Box::new(AutoLoginOutcome::Terminal(
+            AutoLoginTerminalOutcome::Expired {
+                snapshot: Box::new(probe_snapshot),
             },
-        ));
+        ))));
     }
 
-    let saved_session = LoginSession::start_saved_credential(
-        Arc::clone(&api),
+    let saved_state = start_saved_credential_login(
+        api,
         config,
         web,
-        input.endpoint.clone(),
+        VRCHAT_API_DEFAULT_ENDPOINT.to_string(),
         user_id.clone(),
     )
     .await;
     operation.ensure_current()?;
-
-    match saved_session.state() {
-        LoginSessionState::Authenticated { session } => {
-            let session = session.clone();
-            let record_result = operation.run_if_current(|| {
-                Ok(record_login_success(
-                    config,
-                    web,
-                    LoginSuccessRecordInput {
-                        user: session.current_user.clone(),
-                        login_params: Value::Null,
-                        stored_login_params: None,
-                        save_credentials: false,
-                    },
-                ))
-            })?;
-            if let Err(error) = record_result {
-                let outcome = failure_outcome(
-                    operation,
-                    config,
-                    error.to_string(),
-                    LoginFailureKind::Other,
-                )?;
-                return Ok((None, outcome));
-            }
-            Ok((
-                Some(saved_session),
-                AutoLoginOutcome::Authenticated { session },
-            ))
-        }
-        LoginSessionState::Challenge {
-            methods,
-            mode,
-            error,
-        } => {
-            let outcome = AutoLoginOutcome::Challenge {
-                methods: methods.clone(),
-                mode: mode.clone(),
-                error: error.clone(),
-            };
-            Ok((Some(saved_session), outcome))
-        }
-        LoginSessionState::Failed { .. } | LoginSessionState::Cancelled => {
-            finish_terminal(saved_session, web, db, config, operation, &user_id)
-        }
-    }
-}
-
-fn finish_terminal(
-    session: LoginSession,
-    web: &WebClient,
-    db: &DatabaseService,
-    config: &ConfigRepository,
-    operation: &LoginSessionOperation,
-    user_id: &str,
-) -> crate::Result<(Option<LoginSession>, AutoLoginOutcome)> {
-    match session.state().clone() {
-        LoginSessionState::Authenticated { session: authed } => Ok((
-            Some(session),
-            AutoLoginOutcome::Authenticated { session: authed },
-        )),
-        LoginSessionState::Challenge {
-            methods,
-            mode,
-            error,
-        } => Ok((
-            Some(session),
-            AutoLoginOutcome::Challenge {
-                methods,
-                mode,
-                error,
-            },
-        )),
-        LoginSessionState::Failed { reason, kind } => {
-            let outcome = failure_after_cleanup(operation, config, web, db, user_id, reason, kind)?;
-            Ok((Some(session), outcome))
-        }
-        LoginSessionState::Cancelled => {
-            let outcome = failure_after_cleanup(
-                operation,
-                config,
-                web,
-                db,
-                user_id,
-                "The login session was cancelled.".into(),
-                LoginFailureKind::Other,
-            )?;
-            Ok((Some(session), outcome))
-        }
-    }
-}
-
-fn failure_after_cleanup(
-    operation: &LoginSessionOperation,
-    config: &ConfigRepository,
-    web: &WebClient,
-    db: &DatabaseService,
-    user_id: &str,
-    reason: String,
-    kind: LoginFailureKind,
-) -> crate::Result<AutoLoginOutcome> {
-    let cleanup_result =
-        operation.run_if_current(|| Ok(apply_failure_cleanup(web, db, config, user_id, kind)))?;
-    match cleanup_result {
-        Ok(snapshot) => Ok(AutoLoginOutcome::Failed {
-            reason,
-            kind,
-            snapshot,
-        }),
-        Err(error) => failure_outcome(
-            operation,
-            config,
-            error.to_string(),
-            LoginFailureKind::Other,
-        ),
-    }
+    Ok(AutoLoginDrive::Install(saved_state))
 }
 
 fn failure_outcome(
@@ -312,16 +196,11 @@ fn failure_outcome(
     kind: LoginFailureKind,
 ) -> crate::Result<AutoLoginOutcome> {
     let snapshot = operation.run_if_current(|| saved_snapshot(config))?;
-    Ok(AutoLoginOutcome::Failed {
+    Ok(AutoLoginOutcome::Session(LoginSessionState::Failed {
         reason,
         kind,
-        snapshot,
-    })
-}
-
-fn clear_auth_cookies_and_save(web: &WebClient, db: &DatabaseService) {
-    web.clear_auth_cookies();
-    web.save_cookies(db);
+        snapshot: Some(Box::new(snapshot)),
+    }))
 }
 
 fn apply_failure_cleanup(
@@ -330,42 +209,23 @@ fn apply_failure_cleanup(
     config: &ConfigRepository,
     user_id: &str,
     kind: LoginFailureKind,
-) -> crate::Result<Value> {
-    match kind {
-        LoginFailureKind::InvalidCredentials => {
-            web.clear_cookies();
-            web.save_cookies(db);
-            if user_id.is_empty() {
-                saved_snapshot(config)
-            } else {
-                delete_saved_credential(config, user_id.to_string())
-            }
-        }
-        LoginFailureKind::SessionInvalidated | LoginFailureKind::MissingCredentials => {
-            clear_auth_cookies_and_save(web, db);
-            record_logout(
-                config,
-                web,
-                LogoutRecordInput {
-                    user_or_user_id: Value::String(user_id.to_string()),
-                    clear_last_user_logged_in: Some(true),
-                    cookies: None,
-                },
-            )
-        }
-        LoginFailureKind::TwoFactorUnavailable
-        | LoginFailureKind::Network
-        | LoginFailureKind::Other => {
-            clear_auth_cookies_and_save(web, db);
-            saved_snapshot(config)
-        }
-    }
+) -> crate::Result<SavedAuthSnapshot> {
+    apply_login_failure_cleanup(
+        web,
+        db,
+        config,
+        &LoginAttemptPolicy::SavedCredential {
+            user_id: user_id.to_string(),
+        },
+        kind,
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+    use std::sync::Arc;
 
     use super::super::test_support::{seed_saved_credential, test_env, user_json, FakeLoginApi};
 
@@ -376,12 +236,33 @@ mod tests {
         db: &DatabaseService,
         throttle: &AutoLoginThrottle,
         input: AutoLoginStartInput,
-    ) -> (Option<LoginSession>, AutoLoginOutcome) {
+    ) -> AutoLoginDrive {
         let runtime = crate::LoginSessionRuntime::new();
-        let operation = runtime.begin_operation();
-        drive_auto_login(api, config, web, db, throttle, &operation, input)
+        let operation = runtime.begin_operation(&|_| Ok(())).unwrap();
+        drive_auto_login(api.as_ref(), config, web, db, throttle, &operation, input)
             .await
             .unwrap()
+    }
+
+    #[test]
+    fn session_outcome_preserves_the_login_state_wire_shape() {
+        let outcome = AutoLoginOutcome::Session(LoginSessionState::Challenge {
+            attempt_id: "attempt-1".into(),
+            methods: vec!["totp".into(), "otp".into()],
+            mode: "totp".into(),
+            error: None,
+        });
+
+        assert_eq!(
+            serde_json::to_value(outcome).unwrap(),
+            json!({
+                "status": "challenge",
+                "attemptId": "attempt-1",
+                "methods": ["totp", "otp"],
+                "mode": "totp",
+                "error": null
+            })
+        );
     }
 
     #[test]
@@ -437,36 +318,77 @@ mod tests {
     async fn cookie_restore_success_never_attempts_saved_credential() {
         let (_dir, config, web, db) = test_env("cookie-success");
         seed_saved_credential(&config, &web, "usr_saved");
-        let throttle = AutoLoginThrottle::new();
-
         let api = Arc::new(FakeLoginApi::new(vec![
             (200, json!({})),
-            (200, user_json()),
+            (
+                200,
+                json!({ "id": "usr_saved", "displayName": "Saved User" }),
+            ),
         ]));
 
-        let (session, outcome) = drive_test_auto_login(
-            Arc::clone(&api) as Arc<dyn LoginApi>,
+        let runtime = crate::LoginSessionRuntime::new();
+        let outcome = runtime
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_saved".into(),
+                },
+            )
+            .await
+            .unwrap();
+
+        assert!(matches!(
+            outcome,
+            AutoLoginOutcome::Session(LoginSessionState::Authenticated { .. })
+        ));
+        assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
+    }
+
+    #[tokio::test]
+    async fn cookie_restore_for_another_user_falls_back_to_the_target_account() {
+        let (_dir, config, web, db) = test_env("cookie-user-mismatch");
+        seed_saved_credential(&config, &web, "usr_saved");
+        let throttle = AutoLoginThrottle::new();
+        let api = Arc::new(FakeLoginApi::new(vec![
+            (200, json!({})),
+            (200, json!({ "id": "usr_other", "displayName": "Other" })),
+            (200, json!({})),
+            (
+                200,
+                json!({ "id": "usr_saved", "displayName": "Saved User" }),
+            ),
+        ]));
+
+        let drive = drive_test_auto_login(
+            api.clone() as Arc<dyn LoginApi>,
             &config,
             &web,
             db.as_ref(),
             &throttle,
             AutoLoginStartInput {
-                endpoint: String::new(),
                 user_id: "usr_saved".into(),
             },
         )
         .await;
 
-        assert!(matches!(outcome, AutoLoginOutcome::Authenticated { .. }));
-        assert!(session.is_some());
-        assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
+        assert!(matches!(
+            drive,
+            AutoLoginDrive::Install(LoginSessionState::Authenticated { ref session, .. })
+                if session.user_id == "usr_saved"
+        ));
+        assert_eq!(
+            api.call_paths(),
+            vec!["config", "auth/user", "config", "auth/user"]
+        );
     }
 
     #[tokio::test]
     async fn missing_credentials_falls_back_to_saved_credential_and_records_login_success() {
         let (_dir, config, web, db) = test_env("missing-creds-fallback");
         seed_saved_credential(&config, &web, "usr_saved");
-        let throttle = AutoLoginThrottle::new();
 
         let api = Arc::new(FakeLoginApi::new(vec![
             (200, json!({})),
@@ -488,31 +410,80 @@ mod tests {
             (200, user_json()),
         ]));
 
-        let (session, outcome) = drive_test_auto_login(
-            Arc::clone(&api) as Arc<dyn LoginApi>,
-            &config,
-            &web,
-            db.as_ref(),
-            &throttle,
-            AutoLoginStartInput {
-                endpoint: String::new(),
-                user_id: "usr_saved".into(),
-            },
-        )
-        .await;
+        let runtime = crate::LoginSessionRuntime::new();
+        let outcome = runtime
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_saved".into(),
+                },
+            )
+            .await
+            .unwrap();
 
         match &outcome {
-            AutoLoginOutcome::Authenticated { session } => {
+            AutoLoginOutcome::Session(LoginSessionState::Authenticated { session, .. }) => {
                 assert_eq!(session.user_id, "usr_123");
             }
             other => panic!("expected Authenticated, got {other:?}"),
         }
-        assert!(session.is_some());
         assert_eq!(
             config
                 .get_string("lastUserLoggedIn", "")
                 .unwrap_or_default(),
             "usr_123"
+        );
+    }
+
+    #[tokio::test]
+    async fn config_missing_credentials_also_falls_back_to_the_saved_account() {
+        let (_dir, config, web, db) = test_env("config-missing-creds-fallback");
+        seed_saved_credential(&config, &web, "usr_saved");
+
+        let api = Arc::new(FakeLoginApi::new(vec![
+            (
+                401,
+                json!({ "error": { "message": "Missing Credentials" } }),
+            ),
+            (200, json!({})),
+            (
+                401,
+                json!({ "error": { "message": "Missing Credentials" } }),
+            ),
+            (200, json!({})),
+            (
+                401,
+                json!({ "error": { "message": "Missing Credentials" } }),
+            ),
+            (200, json!({})),
+            (200, user_json()),
+        ]));
+
+        let outcome = crate::LoginSessionRuntime::new()
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_saved".into(),
+                },
+            )
+            .await
+            .unwrap();
+
+        assert!(matches!(
+            outcome,
+            AutoLoginOutcome::Session(LoginSessionState::Authenticated { ref session, .. })
+                if session.user_id == "usr_123"
+        ));
+        assert_eq!(api.call_paths().first().map(String::as_str), Some("config"));
+        assert_eq!(
+            api.call_paths().last().map(String::as_str),
+            Some("auth/user")
         );
     }
 
@@ -542,36 +513,30 @@ mod tests {
             (200, json!({ "requiresTwoFactorAuth": ["totp", "otp"] })),
         ]));
 
-        let (session, outcome) = drive_test_auto_login(
+        let drive = drive_test_auto_login(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
             db.as_ref(),
             &throttle,
             AutoLoginStartInput {
-                endpoint: String::new(),
                 user_id: "usr_saved".into(),
             },
         )
         .await;
 
-        match &outcome {
-            AutoLoginOutcome::Challenge { methods, mode, .. } => {
+        match &drive {
+            AutoLoginDrive::Install(LoginSessionState::Challenge { methods, mode, .. }) => {
                 assert_eq!(methods, &vec!["totp".to_string(), "otp".to_string()]);
                 assert_eq!(mode, "totp");
             }
-            other => panic!("expected Challenge, got {other:?}"),
+            _ => panic!("expected an installable Challenge"),
         }
-        assert!(
-            session.is_some(),
-            "the mid-flight session must stay installable for a follow-up respond()"
-        );
     }
 
     #[tokio::test]
     async fn missing_credentials_without_fallback_available_reports_expired() {
         let (_dir, config, web, db) = test_env("missing-creds-no-fallback");
-        let throttle = AutoLoginThrottle::new();
 
         let api = Arc::new(FakeLoginApi::new(vec![
             (200, json!({})),
@@ -581,48 +546,78 @@ mod tests {
             ),
         ]));
 
-        let (_session, outcome) = drive_test_auto_login(
-            Arc::clone(&api) as Arc<dyn LoginApi>,
-            &config,
-            &web,
-            db.as_ref(),
-            &throttle,
-            AutoLoginStartInput {
-                endpoint: String::new(),
-                user_id: "usr_unknown".into(),
-            },
-        )
-        .await;
+        let outcome = crate::LoginSessionRuntime::new()
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_unknown".into(),
+                },
+            )
+            .await
+            .unwrap();
 
-        assert!(matches!(outcome, AutoLoginOutcome::Expired { .. }));
+        assert!(matches!(
+            outcome,
+            AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Expired { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn config_missing_credentials_without_a_saved_login_reports_expired() {
+        let (_dir, config, web, db) = test_env("config-missing-creds-no-fallback");
+        let api = Arc::new(FakeLoginApi::new(vec![(
+            401,
+            json!({ "error": { "message": "Missing Credentials" } }),
+        )]));
+
+        let outcome = crate::LoginSessionRuntime::new()
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_unknown".into(),
+                },
+            )
+            .await
+            .unwrap();
+
+        assert!(matches!(
+            outcome,
+            AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Expired { .. })
+        ));
+        assert_eq!(api.call_paths(), vec!["config"]);
     }
 
     #[tokio::test]
     async fn a_non_missing_credentials_cookie_failure_never_attempts_a_fallback() {
         let (_dir, config, web, db) = test_env("cookie-network-failure");
         seed_saved_credential(&config, &web, "usr_saved");
-        let throttle = AutoLoginThrottle::new();
 
         let api = Arc::new(FakeLoginApi::new(vec![(
             403,
             json!({ "error": { "message": "Forbidden" } }),
         )]));
 
-        let (_session, outcome) = drive_test_auto_login(
-            Arc::clone(&api) as Arc<dyn LoginApi>,
-            &config,
-            &web,
-            db.as_ref(),
-            &throttle,
-            AutoLoginStartInput {
-                endpoint: String::new(),
-                user_id: "usr_saved".into(),
-            },
-        )
-        .await;
+        let outcome = crate::LoginSessionRuntime::new()
+            .auto_login_start_with(
+                Arc::clone(&api) as Arc<dyn LoginApi>,
+                &config,
+                &web,
+                db.as_ref(),
+                AutoLoginStartInput {
+                    user_id: "usr_saved".into(),
+                },
+            )
+            .await
+            .unwrap();
 
         match &outcome {
-            AutoLoginOutcome::Failed { kind, .. } => {
+            AutoLoginOutcome::Session(LoginSessionState::Failed { kind, .. }) => {
                 assert_eq!(*kind, LoginFailureKind::SessionInvalidated);
             }
             other => panic!("expected Failed, got {other:?}"),
@@ -642,21 +637,26 @@ mod tests {
 
         let api = Arc::new(FakeLoginApi::new(vec![]));
 
-        let (session, outcome) = drive_test_auto_login(
+        let drive = drive_test_auto_login(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
             db.as_ref(),
             &throttle,
             AutoLoginStartInput {
-                endpoint: String::new(),
                 user_id: "usr_saved".into(),
             },
         )
         .await;
 
-        assert!(session.is_none());
-        assert!(matches!(outcome, AutoLoginOutcome::Throttled { .. }));
+        assert!(matches!(
+            drive,
+            AutoLoginDrive::Done(outcome)
+                if matches!(
+                    *outcome,
+                    AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Throttled { .. })
+                )
+        ));
         assert!(api.call_paths().is_empty());
         assert_eq!(
             config
@@ -680,11 +680,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(snapshot.get("lastUserLoggedIn"), Some(&Value::Null));
-        assert_eq!(
-            snapshot.get("savedCredentialCount").and_then(Value::as_u64),
-            Some(0)
-        );
+        assert_eq!(snapshot.last_user_logged_in, None);
+        assert!(snapshot.saved_credentials_list.is_empty());
     }
 
     #[test]
@@ -701,11 +698,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(snapshot.get("lastUserLoggedIn"), Some(&Value::Null));
-        assert_eq!(
-            snapshot.get("savedCredentialCount").and_then(Value::as_u64),
-            Some(1)
-        );
+        assert_eq!(snapshot.last_user_logged_in, None);
+        assert_eq!(snapshot.saved_credentials_list.len(), 1);
     }
 
     #[test]
@@ -722,7 +716,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(snapshot.get("lastUserLoggedIn"), Some(&Value::Null));
+        assert_eq!(snapshot.last_user_logged_in, None);
     }
 
     #[test]
@@ -739,10 +733,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            snapshot.get("lastUserLoggedIn"),
-            Some(&Value::String("usr_saved".into()))
-        );
+        assert_eq!(snapshot.last_user_logged_in.as_deref(), Some("usr_saved"));
     }
 
     #[test]
@@ -759,9 +750,6 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            snapshot.get("lastUserLoggedIn"),
-            Some(&Value::String("usr_saved".into()))
-        );
+        assert_eq!(snapshot.last_user_logged_in.as_deref(), Some("usr_saved"));
     }
 }

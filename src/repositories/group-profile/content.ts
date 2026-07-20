@@ -4,6 +4,7 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
 import type { QueryParams } from '../vrchatRequest';
@@ -22,7 +23,6 @@ import {
 
 export async function getGroupPosts({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0
 }: GroupPageInput) {
@@ -37,28 +37,23 @@ export async function getGroupPosts({
         await commands.appVrchatGroupPostsGet({
             groupId: normalizedGroupId,
             n,
-            offset,
-            endpoint
+            offset
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
     return responseRows<GroupRecord>(response.json, 'posts');
 }
 
-export async function getAllGroupPosts({
-    groupId,
-    endpoint = ''
-}: GroupIdInput) {
+export async function getAllGroupPosts({ groupId }: GroupIdInput) {
     return collectPages(({ n, offset }) =>
-        getGroupPosts({ groupId, endpoint, n, offset })
+        getGroupPosts({ groupId, n, offset })
     );
 }
 
 export async function createGroupPost({
     groupId,
-    params = {},
-    endpoint = ''
-}: Pick<GroupPostInput, 'groupId' | 'params' | 'endpoint'>) {
+    params = {}
+}: Pick<GroupPostInput, 'groupId' | 'params'>) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -69,8 +64,7 @@ export async function createGroupPost({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupPostCreate({
             groupId: normalizedGroupId,
-            params,
-            endpoint
+            params
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
@@ -79,8 +73,7 @@ export async function createGroupPost({
 export async function editGroupPost({
     groupId,
     postId,
-    params = {},
-    endpoint = ''
+    params = {}
 }: GroupPostInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedPostId = normalizeEntityId(postId);
@@ -94,18 +87,13 @@ export async function editGroupPost({
         await commands.appVrchatGroupPostEdit({
             groupId: normalizedGroupId,
             postId: normalizedPostId,
-            params,
-            endpoint
+            params
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`
     );
 }
 
-export async function deleteGroupPost({
-    groupId,
-    postId,
-    endpoint = ''
-}: GroupPostInput) {
+export async function deleteGroupPost({ groupId, postId }: GroupPostInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedPostId = normalizeEntityId(postId);
     if (!normalizedGroupId || !normalizedPostId) {
@@ -117,8 +105,7 @@ export async function deleteGroupPost({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupPostDelete({
             groupId: normalizedGroupId,
-            postId: normalizedPostId,
-            endpoint
+            postId: normalizedPostId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts/${encodeURIComponent(normalizedPostId)}`
     );
@@ -127,7 +114,6 @@ export async function deleteGroupPost({
 export async function getGroupGallery({
     groupId,
     galleryId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     force = false
@@ -148,7 +134,7 @@ export async function getGroupGallery({
                 galleryId: normalizedGalleryId,
                 ...params
             },
-            endpoint
+            DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.groupCollection,
         force,
@@ -158,8 +144,7 @@ export async function getGroupGallery({
                     groupId: normalizedGroupId,
                     galleryId: normalizedGalleryId,
                     n,
-                    offset,
-                    endpoint
+                    offset
                 }),
                 `groups/${encodeURIComponent(normalizedGroupId)}/galleries/${encodeURIComponent(normalizedGalleryId)}`
             );
@@ -171,10 +156,9 @@ export async function getGroupGallery({
 export async function getAllGroupGallery({
     groupId,
     galleryId,
-    endpoint = '',
     force = false
 }: Omit<GroupGalleryInput, 'n' | 'offset'>) {
     return collectPages(({ n, offset }) =>
-        getGroupGallery({ groupId, galleryId, endpoint, n, offset, force })
+        getGroupGallery({ groupId, galleryId, n, offset, force })
     );
 }

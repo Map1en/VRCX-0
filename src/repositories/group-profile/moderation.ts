@@ -9,17 +9,14 @@ import {
     type GroupModerationRow,
     type GroupPageInput,
     type GroupUserInput,
+    type GroupUserRoleInput,
     normalizeEntityId,
     normalizeString,
     responseRows,
     unwrapVrchatGroupResponse
 } from './shared';
 
-export async function kickGroupMember({
-    groupId,
-    userId,
-    endpoint = ''
-}: GroupUserInput) {
+export async function kickGroupMember({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -31,18 +28,13 @@ export async function kickGroupMember({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupMemberKick({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
-export async function banGroupMember({
-    groupId,
-    userId,
-    endpoint = ''
-}: GroupUserInput) {
+export async function banGroupMember({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -54,18 +46,13 @@ export async function banGroupMember({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupMemberBan({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/bans`
     );
 }
 
-export async function unbanGroupMember({
-    groupId,
-    userId,
-    endpoint = ''
-}: GroupUserInput) {
+export async function unbanGroupMember({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -77,17 +64,63 @@ export async function unbanGroupMember({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupMemberUnban({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/bans/${encodeURIComponent(normalizedUserId)}`
     );
 }
 
-export async function deleteSentGroupInvite({
+export async function addGroupMemberRole({
     groupId,
     userId,
-    endpoint = ''
+    roleId
+}: GroupUserRoleInput) {
+    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedUserId = normalizeEntityId(userId);
+    const normalizedRoleId = normalizeEntityId(roleId);
+    if (!normalizedGroupId || !normalizedUserId || !normalizedRoleId) {
+        throw new Error(
+            'GroupProfileRepository.addGroupMemberRole requires group, user, and role ids.'
+        );
+    }
+
+    return unwrapVrchatGroupResponse(
+        await commands.appVrchatGroupMemberRoleAdd({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            roleId: normalizedRoleId
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}/roles/${encodeURIComponent(normalizedRoleId)}`
+    );
+}
+
+export async function removeGroupMemberRole({
+    groupId,
+    userId,
+    roleId
+}: GroupUserRoleInput) {
+    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedUserId = normalizeEntityId(userId);
+    const normalizedRoleId = normalizeEntityId(roleId);
+    if (!normalizedGroupId || !normalizedUserId || !normalizedRoleId) {
+        throw new Error(
+            'GroupProfileRepository.removeGroupMemberRole requires group, user, and role ids.'
+        );
+    }
+
+    return unwrapVrchatGroupResponse(
+        await commands.appVrchatGroupMemberRoleRemove({
+            groupId: normalizedGroupId,
+            userId: normalizedUserId,
+            roleId: normalizedRoleId
+        }),
+        `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}/roles/${encodeURIComponent(normalizedRoleId)}`
+    );
+}
+
+export async function deleteSentGroupInvite({
+    groupId,
+    userId
 }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
@@ -100,8 +133,7 @@ export async function deleteSentGroupInvite({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupInviteDelete({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/invites/${encodeURIComponent(normalizedUserId)}`
     );
@@ -111,8 +143,7 @@ export async function respondGroupJoinRequest({
     groupId,
     userId,
     action,
-    block = false,
-    endpoint = ''
+    block = false
 }: GroupJoinRequestResponseInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
@@ -128,8 +159,7 @@ export async function respondGroupJoinRequest({
             groupId: normalizedGroupId,
             userId: normalizedUserId,
             action: normalizedAction,
-            block: Boolean(block),
-            endpoint
+            block: Boolean(block)
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/requests/${encodeURIComponent(normalizedUserId)}`
     );
@@ -137,15 +167,13 @@ export async function respondGroupJoinRequest({
 
 export async function deleteBlockedGroupRequest({
     groupId,
-    userId,
-    endpoint = ''
+    userId
 }: GroupUserInput) {
-    return kickGroupMember({ groupId, userId, endpoint });
+    return kickGroupMember({ groupId, userId });
 }
 
 export async function getGroupBans({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0
 }: GroupPageInput) {
@@ -160,26 +188,21 @@ export async function getGroupBans({
         await commands.appVrchatGroupBansGet({
             groupId: normalizedGroupId,
             n,
-            offset,
-            endpoint
+            offset
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/bans`
     );
     return responseRows<GroupModerationRow>(response.json, 'bans');
 }
 
-export async function getAllGroupBans({
-    groupId,
-    endpoint = ''
-}: GroupIdInput) {
+export async function getAllGroupBans({ groupId }: GroupIdInput) {
     return collectPages(({ n, offset }) =>
-        getGroupBans({ groupId, endpoint, n, offset })
+        getGroupBans({ groupId, n, offset })
     );
 }
 
 export async function getGroupInvites({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0
 }: GroupPageInput) {
@@ -194,26 +217,21 @@ export async function getGroupInvites({
         await commands.appVrchatGroupInvitesGet({
             groupId: normalizedGroupId,
             n,
-            offset,
-            endpoint
+            offset
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/invites`
     );
     return responseRows<GroupModerationRow>(response.json, 'invites');
 }
 
-export async function getAllGroupInvites({
-    groupId,
-    endpoint = ''
-}: GroupIdInput) {
+export async function getAllGroupInvites({ groupId }: GroupIdInput) {
     return collectPages(({ n, offset }) =>
-        getGroupInvites({ groupId, endpoint, n, offset })
+        getGroupInvites({ groupId, n, offset })
     );
 }
 
 export async function getGroupJoinRequests({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     blocked = false
@@ -230,8 +248,7 @@ export async function getGroupJoinRequests({
             groupId: normalizedGroupId,
             n,
             offset,
-            blocked: Boolean(blocked),
-            endpoint
+            blocked: Boolean(blocked)
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/requests`
     );
@@ -240,15 +257,14 @@ export async function getGroupJoinRequests({
 
 export async function getAllGroupJoinRequests({
     groupId,
-    endpoint = '',
     blocked = false
 }: Omit<GroupJoinRequestInput, 'n' | 'offset'>) {
     return collectPages(({ n, offset }) =>
-        getGroupJoinRequests({ groupId, endpoint, n, offset, blocked })
+        getGroupJoinRequests({ groupId, n, offset, blocked })
     );
 }
 
-export async function blockGroup({ groupId, endpoint = '' }: GroupIdInput) {
+export async function blockGroup({ groupId }: GroupIdInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -258,18 +274,13 @@ export async function blockGroup({ groupId, endpoint = '' }: GroupIdInput) {
 
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupBlock({
-            groupId: normalizedGroupId,
-            endpoint
+            groupId: normalizedGroupId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/block`
     );
 }
 
-export async function unblockGroup({
-    groupId,
-    userId,
-    endpoint = ''
-}: GroupUserInput) {
+export async function unblockGroup({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -281,8 +292,7 @@ export async function unblockGroup({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupUnblock({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/bans/${encodeURIComponent(normalizedUserId)}`
     );

@@ -146,25 +146,21 @@ describe('UserProfileRepository', () => {
                 status: 200,
                 data: Array.from({ length: 100 }, (_, index) => ({
                     id: `usr_page_1_${index}`
-                })),
-                raw: {}
+                }))
             })
             .mockResolvedValueOnce({
                 status: 200,
-                data: [{ id: 'usr_last' }],
-                raw: {}
+                data: [{ id: 'usr_last' }]
             });
 
         const rows = await userProfileRepository.getAllMutualFriends({
-            userId: 'usr_target',
-            endpoint: 'https://api.example.test'
+            userId: 'usr_target'
         });
 
         expect(
             tauriMock.commands.appVrchatUserMutualFriendsGet
         ).toHaveBeenNthCalledWith(1, {
             userId: 'usr_target',
-            endpoint: 'https://api.example.test',
             n: 100,
             offset: 0
         });
@@ -172,7 +168,6 @@ describe('UserProfileRepository', () => {
             tauriMock.commands.appVrchatUserMutualFriendsGet
         ).toHaveBeenNthCalledWith(2, {
             userId: 'usr_target',
-            endpoint: 'https://api.example.test',
             n: 100,
             offset: 100
         });

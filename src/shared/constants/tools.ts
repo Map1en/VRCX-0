@@ -14,7 +14,8 @@ type ToolAction =
               | 'screenshot-metadata'
               | 'gallery'
               | 'inventory'
-              | 'vrchat-log';
+              | 'vrchat-log'
+              | 'group-moderation';
       }
     | {
           type: 'app-api';
@@ -329,6 +330,16 @@ const toolDefinitions: ToolDefinition[] = [
         descriptionKey: 'view.tools.group.calendar_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'group-calendar' }
+    },
+    {
+        key: 'group-moderation',
+        category: 'social',
+        iconKey: 'shield-user',
+        navIcon: 'lucide:ShieldUser',
+        titleKey: 'view.tools.group.moderation',
+        descriptionKey: 'view.tools.group.moderation_description',
+        navEligible: true,
+        action: { type: 'route', routeName: 'group-moderation' }
     },
     {
         key: 'discord-names',

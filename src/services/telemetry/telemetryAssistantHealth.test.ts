@@ -63,6 +63,19 @@ describe('assistant health telemetry', () => {
             source: 'get_friend_log',
             summary: 'sqlite database is unavailable'
         });
+        mod.recordAssistantToolError({
+            source: 'find_user',
+            summary: 'missing field `name`'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_best_time_to_playget_best_time_to_play',
+            summary: 'tool error: method not found'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_activity_timeline',
+            summary:
+                'This tool requires an active realtime VRChat session (current user unknown).'
+        });
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
             type: 'assistantToolError',
@@ -83,6 +96,38 @@ describe('assistant health telemetry', () => {
             type: 'assistantToolError',
             source: 'get_friend_log',
             summary: 'result=db_error'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(5, {
+            type: 'assistantToolError',
+            source: 'find_user',
+            summary: 'result=invalid_args'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(6, {
+            type: 'assistantToolError',
+            source: 'get_best_time_to_playget_best_time_to_play',
+            summary: 'result=invalid_tool'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(7, {
+            type: 'assistantToolError',
+            source: 'get_activity_timeline',
+            summary: 'result=precondition'
+        });
+    });
+
+    it('keeps safe bucket values in tool diagnostics', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryAssistantHealth');
+
+        mod.recordAssistantToolError({
+            source: 'get_activity_timeline',
+            args: JSON.stringify({ bucket: 'day', utcOffsetMinutes: 600 }),
+            summary: 'unknown variant `day`'
+        });
+
+        expect(appTelemetryRecordEvent).toHaveBeenCalledWith({
+            type: 'assistantToolError',
+            source: 'get_activity_timeline',
+            summary: 'bucket=day, utcOffsetMinutes=600; result=invalid_args'
         });
     });
 

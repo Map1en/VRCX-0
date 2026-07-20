@@ -5,8 +5,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import { createRequestError } from '@/repositories/vrchatRequest';
 
-import { handleRuntimeAuthFailure } from './authSessionRecoveryService';
-
 interface ModerationSyncRefreshInput {
     userId: string;
     endpoint?: string;
@@ -35,15 +33,6 @@ function normalizeModerationError(error: unknown, path: string): unknown {
 
 function routeModerationAuthFailure(error: unknown, path: string): never {
     const normalizedError = normalizeModerationError(error, path);
-    const handled = handleRuntimeAuthFailure(normalizedError);
-    if (handled) {
-        handled.catch((recoveryError: unknown) => {
-            console.warn(
-                'Backend moderation auth failure recovery failed:',
-                recoveryError
-            );
-        });
-    }
     throw normalizedError;
 }
 

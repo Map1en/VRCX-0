@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
-use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use serde_json::{json, Value};
+use serde_json::json;
 
-use crate::http_api::{normalize_text, require_text, HttpApiError, HttpApiRequestInput};
-
-pub fn encode_path_segment(value: &str) -> String {
-    utf8_percent_encode(value, NON_ALPHANUMERIC).to_string()
-}
+use crate::http_api::{
+    api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
+    HttpApiRequestInput,
+};
 
 pub fn encode_uri_component(value: &str) -> String {
     let mut output = String::new();
@@ -32,57 +30,16 @@ pub fn encode_uri_component(value: &str) -> String {
     output
 }
 
-fn json_headers() -> HashMap<String, String> {
-    HashMap::from([(
-        "Content-Type".to_string(),
-        "application/json;charset=utf-8".to_string(),
-    )])
-}
-
-pub fn get_input(
-    endpoint: String,
-    path: impl Into<String>,
-    headers: HashMap<String, String>,
-    query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
-        endpoint: Some(endpoint),
-        method: Some("GET".into()),
-        path: Some(path.into()),
-        headers: (!headers.is_empty()).then_some(headers),
-        params: Some(query_params.clone()),
-        query_params: Some(query_params),
-        ..Default::default()
-    }
-}
-
-pub fn api_input(
-    endpoint: String,
-    method: &str,
-    path: impl Into<String>,
-    body: Value,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
-        endpoint: Some(endpoint),
-        method: Some(method.into()),
-        path: Some(path.into()),
-        headers: Some(json_headers()),
-        body: Some(body),
-        json_body: Some(true),
-        ..Default::default()
-    }
-}
-
 pub fn config_get_input(endpoint: String) -> HttpApiRequestInput {
-    get_input(endpoint, "config", HashMap::new(), HashMap::new())
+    get_input(endpoint, "config", HashMap::new())
 }
 
 pub fn current_user_get_input(endpoint: String) -> HttpApiRequestInput {
-    get_input(endpoint, "auth/user", HashMap::new(), HashMap::new())
+    get_input(endpoint, "auth/user", HashMap::new())
 }
 
 pub fn session_get_input(endpoint: String) -> HttpApiRequestInput {
-    get_input(endpoint, "auth", HashMap::new(), HashMap::new())
+    get_input(endpoint, "auth", HashMap::new())
 }
 
 pub fn login_basic_input(
@@ -102,12 +59,13 @@ pub fn login_basic_input(
     let authorization = format!("Basic {}", B64.encode(credentials.as_bytes()));
     Ok((
         username.clone(),
-        get_input(
-            endpoint,
-            "auth/user",
-            HashMap::from([("Authorization".to_string(), authorization)]),
-            HashMap::new(),
-        ),
+        HttpApiRequestInput {
+            headers: Some(HashMap::from([(
+                "Authorization".to_string(),
+                authorization,
+            )])),
+            ..get_input(endpoint, "auth/user", HashMap::new())
+        },
     ))
 }
 
@@ -116,7 +74,7 @@ pub fn totp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput 
         endpoint,
         "POST",
         "auth/twofactorauth/totp/verify",
-        json!({ "code": normalize_text(code) }),
+        Some(json!({ "code": normalize_text(code) })),
     )
 }
 
@@ -131,7 +89,7 @@ pub fn otp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput {
         endpoint,
         "POST",
         "auth/twofactorauth/otp/verify",
-        json!({ "code": formatted_code }),
+        Some(json!({ "code": formatted_code })),
     )
 }
 
@@ -140,12 +98,12 @@ pub fn email_otp_verify_input(endpoint: String, code: String) -> HttpApiRequestI
         endpoint,
         "POST",
         "auth/twofactorauth/emailotp/verify",
-        json!({ "code": normalize_text(code) }),
+        Some(json!({ "code": normalize_text(code) })),
     )
 }
 
 pub fn visits_get_input(endpoint: String) -> HttpApiRequestInput {
-    get_input(endpoint, "visits", HashMap::new(), HashMap::new())
+    get_input(endpoint, "visits", HashMap::new())
 }
 
 pub fn file_analysis_get_input(
@@ -166,7 +124,6 @@ pub fn file_analysis_get_input(
                 version,
                 encode_path_segment(&variant)
             ),
-            HashMap::new(),
             HashMap::new(),
         ),
     ))

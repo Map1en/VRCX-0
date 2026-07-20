@@ -594,7 +594,10 @@ async fn delete_remote_favorite(
         deps.db,
         deps.diagnostics,
         deps.sync,
-        "app__favorites_transfer.delete_remote",
+        (
+            "app__favorites_transfer.delete_remote",
+            "Deleting a remote favorite.",
+        ),
         request,
         VrchatScope::Vrchat,
     )
@@ -631,7 +634,10 @@ async fn add_remote_favorite_with_group(
         deps.db,
         deps.diagnostics,
         deps.sync,
-        "app__favorites_transfer.add_remote",
+        (
+            "app__favorites_transfer.add_remote",
+            "Adding a remote favorite.",
+        ),
         request,
         VrchatScope::Vrchat,
     )
@@ -744,7 +750,10 @@ async fn fetch_online_favorite_index(
             deps.db,
             deps.diagnostics,
             deps.sync,
-            "app__favorites_transfer.precheck_list",
+            (
+                "app__favorites_transfer.precheck_list",
+                "Loading remote favorites for transfer validation.",
+            ),
             request,
             VrchatScope::Vrchat,
         )
@@ -797,7 +806,10 @@ async fn fetch_favorite_group_capacity(
         deps.db,
         deps.diagnostics,
         deps.sync,
-        "app__favorites_transfer.precheck_limits",
+        (
+            "app__favorites_transfer.precheck_limits",
+            "Loading remote favorite limits for transfer validation.",
+        ),
         request,
         VrchatScope::Vrchat,
     )

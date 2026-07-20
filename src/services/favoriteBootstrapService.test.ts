@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     appSocialFavoritesBaselineGet: vi.fn(),
-    syncStartupServicesTask: vi.fn(),
-    notifyRuntimeVrchatAuthFailure: vi.fn()
+    syncStartupServicesTask: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -14,10 +13,6 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 vi.mock('./startupServicesStatus', () => ({
     syncStartupServicesTask: mocks.syncStartupServicesTask
-}));
-
-vi.mock('./vrchatAuthErrorService', () => ({
-    notifyRuntimeVrchatAuthFailure: mocks.notifyRuntimeVrchatAuthFailure
 }));
 
 function deferred<T>() {
@@ -238,7 +233,7 @@ describe('favoriteBootstrapService', () => {
         expect(mocks.syncStartupServicesTask).not.toHaveBeenCalled();
     });
 
-    it('records rejection state and reports auth failures', async () => {
+    it('records rejection state without interpreting transport errors', async () => {
         const failure = new Error('baseline rejected');
         mocks.appSocialFavoritesBaselineGet.mockRejectedValue(failure);
         const { useFavoriteStore } = await import('@/state/favoriteStore');
@@ -249,11 +244,6 @@ describe('favoriteBootstrapService', () => {
 
         await expect(bootstrapFavorites(options)).rejects.toBe(failure);
 
-        expect(mocks.notifyRuntimeVrchatAuthFailure).toHaveBeenCalledWith(
-            failure,
-            endpoint,
-            'favorites baseline'
-        );
         expect(useFavoriteStore.getState()).toMatchObject({
             loadStatus: 'error',
             detail: 'baseline rejected'

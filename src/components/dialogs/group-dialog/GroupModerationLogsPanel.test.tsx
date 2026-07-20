@@ -140,13 +140,16 @@ vi.mock('@/ui/shadcn/tabs', async () => {
     };
 });
 
+import type { CellContext } from '@tanstack/react-table';
+
 import { openUserDialog } from '@/services/dialogService';
 
 import {
+    createGroupAuditLogColumns,
     filterGroupAuditLogs,
     formatGroupAuditLogTypeName,
+    type GroupAuditLogRow,
     groupAuditLogActorDialogArgs,
-    GroupModerationLogsTable,
     openGroupAuditLogActor,
     toggleGroupAuditLogType
 } from './GroupModerationLogsPanel';
@@ -213,27 +216,27 @@ describe('GroupModerationLogsPanel', () => {
     });
 
     it('renders dedicated log columns including target location and raw data', () => {
-        const html = renderToStaticMarkup(
-            React.createElement(GroupModerationLogsTable, {
-                auditLogTypes: ['group.member.ban'],
-                error: '',
-                group: { id: 'grp_test' },
-                loading: false,
-                onEventTypesChange: vi.fn(),
-                onPageIndexChange: vi.fn(),
-                onPageSizeChange: vi.fn(),
-                onReload: vi.fn(),
-                onSearchChange: vi.fn(),
-                pageIndex: 0,
-                pageSize: 25,
-                rows: [row],
-                search: '',
-                selectedEventTypes: ['group.member.ban']
+        const columns = createGroupAuditLogColumns((key: string) => key);
+        const html = columns
+            .map((column) => {
+                const cell = column.cell;
+                if (typeof cell !== 'function') {
+                    return '';
+                }
+                return renderToStaticMarkup(
+                    React.createElement(
+                        React.Fragment,
+                        null,
+                        cell({
+                            row: { original: row }
+                        } as unknown as CellContext<GroupAuditLogRow, unknown>)
+                    )
+                );
             })
-        );
+            .join('');
 
         expect(html).toContain('formatted:2026-06-29T10:00:00Z');
-        expect(html).toContain('group.member.ban');
+        expect(html).toContain('Member Ban');
         expect(html).toContain('Moderator Alice');
         expect(html).toContain('Banned Bob from the group');
         expect(html).toContain('&quot;reason&quot;:&quot;spam&quot;');

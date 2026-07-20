@@ -3,17 +3,11 @@ import {
     type AutoLoginOutcome,
     type LoginSessionState
 } from '@/platform/tauri/bindings';
-import {
-    DEFAULT_VRCHAT_API_ENDPOINT,
-    normalizeVrchatEndpoint
-} from '@/shared/vrchatEndpoint';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
     type VrchatRequestResponse,
-    unwrapErrorMessage
+    unwrapVrchatResponse
 } from './vrchatRequest';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
@@ -22,96 +16,50 @@ export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 type AuthRecord = Record<string, unknown>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapVrchatAuthResponse<TJson = unknown>(
     response: VrchatApiResult,
-    path: string,
-    endpoint: string
+    path: string
 ): VrchatRequestResponse<TJson> {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
     return {
-        json: json as TJson,
-        status: response.status,
-        endpointDomain: normalizeVrchatEndpoint(endpoint),
-        raw: response.raw
+        ...unwrapVrchatResponse<TJson>(response, path),
+        endpointDomain: DEFAULT_VRCHAT_API_ENDPOINT
     };
 }
 
-interface EndpointOptions {
-    endpoint?: string;
-}
-
-interface FileAnalysisInput extends EndpointOptions {
+interface FileAnalysisInput {
     fileId?: unknown;
     version?: unknown;
     variant?: unknown;
 }
 
-async function getConfig({ endpoint = '' }: EndpointOptions = {}) {
-    const response = await commands.appVrchatAuthConfigGet({
-        endpoint: normalizeVrchatEndpoint(endpoint)
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'config', endpoint);
+async function getConfig() {
+    const response = await commands.appVrchatAuthConfigGet();
+    return unwrapVrchatAuthResponse<AuthRecord>(response, 'config');
 }
 
-async function getCurrentUser({ endpoint = '' }: EndpointOptions = {}) {
-    const response = await commands.appVrchatAuthCurrentUserGet({
-        endpoint: normalizeVrchatEndpoint(endpoint)
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(
-        response,
-        'auth/user',
-        endpoint
-    );
+async function getCurrentUser() {
+    const response = await commands.appVrchatAuthCurrentUserGet();
+    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user');
 }
 
-async function getAuthSession({ endpoint = '' }: EndpointOptions = {}) {
-    const response = await commands.appVrchatAuthSessionGet({
-        endpoint: normalizeVrchatEndpoint(endpoint)
-    });
-    return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth', endpoint);
-}
-
-interface StartBasicLoginSessionInput extends EndpointOptions {
+interface StartBasicLoginSessionInput {
     mode: 'basic';
     username?: unknown;
     password?: unknown;
     saveCredentials?: boolean;
 }
 
-interface StartSavedCredentialLoginSessionInput extends EndpointOptions {
+interface StartSavedCredentialLoginSessionInput {
     mode: 'savedCredential';
     userId?: unknown;
 }
 
-interface StartCookieRestoreLoginSessionInput extends EndpointOptions {
-    mode: 'cookieRestore';
-}
-
 type StartLoginSessionInput =
     | StartBasicLoginSessionInput
-    | StartSavedCredentialLoginSessionInput
-    | StartCookieRestoreLoginSessionInput;
+    | StartSavedCredentialLoginSessionInput;
 
 function normalizeString(value: unknown): string {
     return typeof value === 'string' ? value : String(value ?? '');
@@ -120,12 +68,10 @@ function normalizeString(value: unknown): string {
 async function startLoginSession(
     input: StartLoginSessionInput
 ): Promise<LoginSessionState> {
-    const endpoint = normalizeVrchatEndpoint(input.endpoint ?? '');
     switch (input.mode) {
         case 'basic':
             return commands.appVrchatAuthSessionStart({
                 mode: 'basic',
-                endpoint,
                 username: normalizeString(input.username),
                 password: normalizeString(input.password),
                 saveCredentials: input.saveCredentials === true
@@ -133,87 +79,75 @@ async function startLoginSession(
         case 'savedCredential':
             return commands.appVrchatAuthSessionStart({
                 mode: 'savedCredential',
-                endpoint,
                 userId: normalizeString(input.userId)
-            });
-        default:
-            return commands.appVrchatAuthSessionStart({
-                mode: 'cookieRestore',
-                endpoint
             });
     }
 }
 
 async function respondLoginSession({
+    attemptId,
     method,
     code
 }: {
+    attemptId: string;
     method?: unknown;
     code?: unknown;
 }): Promise<LoginSessionState> {
     return commands.appVrchatAuthSessionRespond({
+        attemptId: normalizeString(attemptId),
         method: normalizeString(method),
         code: normalizeString(code)
     });
 }
 
-async function cancelLoginSession(): Promise<LoginSessionState> {
-    return commands.appVrchatAuthSessionCancel();
+async function cancelLoginSession(
+    attemptId: string
+): Promise<LoginSessionState> {
+    return commands.appVrchatAuthSessionCancel({
+        attemptId: normalizeString(attemptId)
+    });
 }
 
-interface AutoLoginStartInput extends EndpointOptions {
+interface AutoLoginStartInput {
     userId?: unknown;
 }
 
 async function autoLoginStart({
-    endpoint = '',
     userId
 }: AutoLoginStartInput): Promise<AutoLoginOutcome> {
     return commands.appVrchatAuthAutoLoginStart({
-        endpoint: normalizeVrchatEndpoint(endpoint),
         userId: normalizeString(userId)
     });
 }
 
-async function resetAutoLoginThrottle(): Promise<void> {
-    await commands.appVrchatAuthAutoLoginThrottleReset();
-}
-
-async function getOnlineVisits({ endpoint = '' }: EndpointOptions = {}) {
-    const response = await commands.appVrchatAuthVisitsGet({
-        endpoint: normalizeVrchatEndpoint(endpoint)
-    });
-    return unwrapVrchatAuthResponse<unknown[]>(response, 'visits', endpoint);
+async function getOnlineVisits() {
+    const response = await commands.appVrchatAuthVisitsGet();
+    return unwrapVrchatAuthResponse<unknown[]>(response, 'visits');
 }
 
 async function getFileAnalysis({
-    endpoint = '',
     fileId,
     version,
     variant
 }: FileAnalysisInput) {
     const response = await commands.appVrchatAuthFileAnalysisGet({
-        endpoint: normalizeVrchatEndpoint(endpoint),
         fileId: typeof fileId === 'string' ? fileId : String(fileId ?? ''),
         version: Number(version) || 0,
         variant: typeof variant === 'string' ? variant : String(variant ?? '')
     });
     return unwrapVrchatAuthResponse(
         response,
-        `analysis/${encodeURIComponent(String(fileId ?? ''))}/${Number(version) || 0}/${encodeURIComponent(String(variant ?? ''))}`,
-        endpoint
+        `analysis/${encodeURIComponent(String(fileId ?? ''))}/${Number(version) || 0}/${encodeURIComponent(String(variant ?? ''))}`
     );
 }
 
 const vrchatAuthRepository = Object.freeze({
     getConfig,
     getCurrentUser,
-    getAuthSession,
     startLoginSession,
     respondLoginSession,
     cancelLoginSession,
     autoLoginStart,
-    resetAutoLoginThrottle,
     getOnlineVisits,
     getFileAnalysis
 });
@@ -221,12 +155,10 @@ const vrchatAuthRepository = Object.freeze({
 export {
     getConfig,
     getCurrentUser,
-    getAuthSession,
     startLoginSession,
     respondLoginSession,
     cancelLoginSession,
     autoLoginStart,
-    resetAutoLoginThrottle,
     getOnlineVisits,
     getFileAnalysis
 };

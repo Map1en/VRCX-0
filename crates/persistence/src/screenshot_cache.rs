@@ -56,7 +56,7 @@ pub struct MetadataCacheDb {
 
 impl MetadataCacheDb {
     pub fn new(db_path: &Path) -> Result<Self> {
-        let conn = Connection::open(db_path)
+        let mut conn = Connection::open(db_path)
             .map_err(|e| Error::Database(format!("open cache db: {e}")))?;
         conn.execute_batch(
             "PRAGMA locking_mode=NORMAL;
@@ -120,6 +120,11 @@ impl MetadataCacheDb {
                  ON screenshot_thumbnail_cache(source_path);",
         )
         .map_err(|e| Error::Database(format!("init screenshot db indexes: {e}")))?;
+        let thumbnail_dir = db_path
+            .parent()
+            .unwrap_or_else(|| Path::new(""))
+            .join("ScreenshotThumbs");
+        normalize_thumbnail_cache_paths(&mut conn, &thumbnail_dir)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
             scan_status: Arc::new(Mutex::new(ScreenshotLibraryScanStatus::default())),
@@ -625,6 +630,100 @@ impl MetadataCacheDb {
     }
 }
 
+fn normalize_thumbnail_cache_paths(conn: &mut Connection, thumbnail_dir: &Path) -> Result<()> {
+    let absolute_paths = {
+        let mut stmt = conn
+            .prepare("SELECT thumb_path FROM screenshot_thumbnail_cache")
+            .map_err(|error| {
+                Error::Database(format!("prepare thumbnail path normalization: {error}"))
+            })?;
+        let rows = stmt
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|error| {
+                Error::Database(format!("read thumbnail paths for normalization: {error}"))
+            })?;
+        rows.collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(|error| Error::Database(format!("read thumbnail path row: {error}")))?
+            .into_iter()
+            .filter(|path| Path::new(path).is_absolute())
+            .collect::<Vec<_>>()
+    };
+    if absolute_paths.is_empty() {
+        return Ok(());
+    }
+
+    let transaction = conn
+        .transaction()
+        .map_err(|error| Error::Database(format!("begin thumbnail path normalization: {error}")))?;
+    for absolute_path in absolute_paths {
+        let path = Path::new(&absolute_path);
+        let Some(relative_path) = path
+            .strip_prefix(thumbnail_dir)
+            .ok()
+            .filter(|relative| !relative.as_os_str().is_empty())
+        else {
+            transaction
+                .execute(
+                    "DELETE FROM screenshot_thumbnail_cache WHERE thumb_path = ?1",
+                    [&absolute_path],
+                )
+                .map_err(|error| {
+                    Error::Database(format!("remove stale thumbnail path: {error}"))
+                })?;
+            continue;
+        };
+        let relative_path = path_string(relative_path);
+        let relative_exists = transaction
+            .query_row(
+                "SELECT EXISTS(
+                    SELECT 1 FROM screenshot_thumbnail_cache WHERE thumb_path = ?1
+                 )",
+                [&relative_path],
+                |row| row.get::<_, bool>(0),
+            )
+            .map_err(|error| {
+                Error::Database(format!("check normalized thumbnail path: {error}"))
+            })?;
+        if relative_exists {
+            transaction
+                .execute(
+                    "UPDATE screenshot_thumbnail_cache
+                     SET last_used_at = MAX(
+                         last_used_at,
+                         (SELECT last_used_at
+                          FROM screenshot_thumbnail_cache
+                          WHERE thumb_path = ?2)
+                     )
+                     WHERE thumb_path = ?1",
+                    rusqlite::params![relative_path, absolute_path],
+                )
+                .map_err(|error| {
+                    Error::Database(format!("merge normalized thumbnail path: {error}"))
+                })?;
+            transaction
+                .execute(
+                    "DELETE FROM screenshot_thumbnail_cache WHERE thumb_path = ?1",
+                    [&absolute_path],
+                )
+                .map_err(|error| {
+                    Error::Database(format!("remove duplicate thumbnail path: {error}"))
+                })?;
+        } else {
+            transaction
+                .execute(
+                    "UPDATE screenshot_thumbnail_cache
+                     SET thumb_path = ?1
+                     WHERE thumb_path = ?2",
+                    rusqlite::params![relative_path, absolute_path],
+                )
+                .map_err(|error| Error::Database(format!("normalize thumbnail path: {error}")))?;
+        }
+    }
+    transaction
+        .commit()
+        .map_err(|error| Error::Database(format!("commit thumbnail path normalization: {error}")))
+}
+
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -634,4 +733,74 @@ fn now_unix_seconds() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs() as i64
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(name: &str) -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-screenshot-cache-{name}-{}-{nonce}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn insert_thumbnail_record(db_path: &Path, thumb_path: &Path, last_used_at: i64) {
+        let conn = Connection::open(db_path).unwrap();
+        conn.execute(
+            "INSERT INTO screenshot_thumbnail_cache (
+                thumb_path, source_path, cache_key, size_bytes, modified_at, created_at, last_used_at
+             ) VALUES (?1, 'source.png', 'cache-key', 10, 20, 30, ?2)",
+            rusqlite::params![path_string(thumb_path), last_used_at],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn opening_cache_normalizes_current_absolute_thumbnail_paths() -> Result<()> {
+        let dir = TestDir::new("normalize-current");
+        let db_path = dir.path.join("metadataCache.db");
+        drop(MetadataCacheDb::new(&db_path)?);
+        let absolute_path = dir.path.join("ScreenshotThumbs").join("cached.webp");
+        insert_thumbnail_record(&db_path, &absolute_path, 42);
+
+        let cache = MetadataCacheDb::new(&db_path)?;
+        let entries = cache.thumbnail_cache_entries();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].thumb_path, "cached.webp");
+        assert_eq!(entries[0].last_used_at, 42);
+        Ok(())
+    }
+
+    #[test]
+    fn opening_cache_removes_absolute_thumbnail_paths_from_another_directory() -> Result<()> {
+        let dir = TestDir::new("normalize-mismatched");
+        let db_path = dir.path.join("metadataCache.db");
+        drop(MetadataCacheDb::new(&db_path)?);
+        let absolute_path = dir.path.join("old-thumbnails").join("cached.webp");
+        insert_thumbnail_record(&db_path, &absolute_path, 42);
+
+        let cache = MetadataCacheDb::new(&db_path)?;
+        assert!(cache.thumbnail_cache_entries().is_empty());
+        Ok(())
+    }
 }

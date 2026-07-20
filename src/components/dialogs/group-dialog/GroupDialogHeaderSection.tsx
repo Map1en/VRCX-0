@@ -8,10 +8,10 @@ import {
     LogOutIcon,
     MessageSquareIcon,
     RefreshCwIcon,
-    SettingsIcon,
     Share2Icon,
     ShieldIcon,
     ShieldOffIcon,
+    ShieldUserIcon,
     TagIcon,
     TicketIcon,
     UserIcon,
@@ -296,6 +296,17 @@ export function GroupDialogHeaderSection({
                         </Tooltip>
                     ) : null}
                 </div>
+                {canModerateGroup ? (
+                    <Button
+                        type="button"
+                        size="lg"
+                        variant="outline"
+                        onClick={onOpenModeration}
+                    >
+                        <ShieldUserIcon data-icon="inline-start" />
+                        {t('dialog.group.actions.moderation_tools')}
+                    </Button>
+                ) : null}
                 <EntityActionDropdown busy={actionStatus !== 'idle'}>
                     <EntityActionItem
                         icon={RefreshCwIcon}
@@ -384,14 +395,6 @@ export function GroupDialogHeaderSection({
                                     }}
                                 >
                                     {t('dialog.group.actions.create_post')}
-                                </EntityActionItem>
-                            ) : null}
-                            {canModerateGroup ? (
-                                <EntityActionItem
-                                    icon={SettingsIcon}
-                                    onClick={onOpenModeration}
-                                >
-                                    {t('dialog.group.actions.moderation_tools')}
                                 </EntityActionItem>
                             ) : null}
                             {canSetVisibility ? (

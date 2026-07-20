@@ -115,7 +115,7 @@ describe('group dialog permissions', () => {
                     permissions: ['group-roles-assign']
                 }
             })
-        ).toBe(false);
+        ).toBe(true);
 
         expect(
             hasGroupModerationPermission({

@@ -5,14 +5,9 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    type QueryParams,
-    unwrapErrorMessage
-} from './vrchatRequest';
+import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
 
 const PAGE_SIZE = 100;
 
@@ -31,7 +26,6 @@ type CalendarListParams = QueryParams & {
     n?: number;
 };
 type RepositoryOptions = {
-    endpoint?: string;
     force?: boolean;
 };
 type GroupCalendarIdentity = {
@@ -88,7 +82,6 @@ type InviteMessagesRecord = InviteMessageRecord[];
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
 async function processAllPages<TRow = unknown>(
@@ -118,46 +111,31 @@ async function processAllPages<TRow = unknown>(
     return results;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapVrchatToolsResponse<TJson = Record<string, unknown>>(
     response: VrchatApiResult,
-    path: string
+    path: string,
+    responseType: 'json' | 'text' = 'json'
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat tool request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw new Error(requestError.message);
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, {
+        fallbackMessage: 'VRChat tool request failed',
+        responseType
+    });
 }
 
 async function getGroupCalendars(
     params: CalendarListParams = {},
-    { endpoint = '', force = false }: RepositoryOptions = {}
+    { force = false }: RepositoryOptions = {}
 ) {
     return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList('all', params, endpoint),
+        queryKey: queryKeys.groupCalendarList(
+            'all',
+            params,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatToolsCalendarsGet({
-                endpoint,
                 params
             });
             return unwrapVrchatToolsResponse<GroupCalendarListResponse>(
@@ -170,15 +148,18 @@ async function getGroupCalendars(
 
 async function getGroupCalendar(
     { groupId }: GroupCalendarIdentity,
-    { endpoint = '', force = false }: RepositoryOptions = {}
+    { force = false }: RepositoryOptions = {}
 ) {
     return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList('group', { groupId }, endpoint),
+        queryKey: queryKeys.groupCalendarList(
+            'group',
+            { groupId },
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatToolsGroupCalendarGet({
-                endpoint,
                 groupId
             });
             return unwrapVrchatToolsResponse<GroupCalendarListResponse>(
@@ -191,16 +172,19 @@ async function getGroupCalendar(
 
 async function getFollowingGroupCalendars(
     params: CalendarListParams = {},
-    { endpoint = '', force = false }: RepositoryOptions = {}
+    { force = false }: RepositoryOptions = {}
 ) {
     return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList('following', params, endpoint),
+        queryKey: queryKeys.groupCalendarList(
+            'following',
+            params,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatToolsFollowingCalendarsGet(
                 {
-                    endpoint,
                     params
                 }
             );
@@ -214,15 +198,18 @@ async function getFollowingGroupCalendars(
 
 async function getFeaturedGroupCalendars(
     params: CalendarListParams = {},
-    { endpoint = '', force = false }: RepositoryOptions = {}
+    { force = false }: RepositoryOptions = {}
 ) {
     return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList('featured', params, endpoint),
+        queryKey: queryKeys.groupCalendarList(
+            'featured',
+            params,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCollection,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatToolsFeaturedCalendarsGet({
-                endpoint,
                 params
             });
             return unwrapVrchatToolsResponse<GroupCalendarListResponse>(
@@ -266,16 +253,12 @@ async function getAllFeaturedGroupCalendars(
     );
 }
 
-async function followGroupEvent(
-    {
-        groupId,
-        eventId,
-        isFollowing
-    }: GroupCalendarEventIdentity & { isFollowing: boolean },
-    { endpoint = '' }: RepositoryOptions = {}
-) {
+async function followGroupEvent({
+    groupId,
+    eventId,
+    isFollowing
+}: GroupCalendarEventIdentity & { isFollowing: boolean }) {
     const response = await commands.appVrchatToolsGroupEventFollow({
-        endpoint,
         groupId,
         eventId,
         isFollowing: Boolean(isFollowing)
@@ -289,54 +272,55 @@ async function followGroupEvent(
 
 async function getGroupCalendarIcs(
     { groupId, eventId }: GroupCalendarEventIdentity,
-    { endpoint = '', force = false }: RepositoryOptions = {}
+    { force = false }: RepositoryOptions = {}
 ) {
     return fetchCachedData({
-        queryKey: queryKeys.groupCalendarEvent({ groupId, eventId }, endpoint),
+        queryKey: queryKeys.groupCalendarEvent(
+            { groupId, eventId },
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.groupCalendarEvent,
         force,
         queryFn: async () => {
             const response = await commands.appVrchatToolsGroupCalendarIcsGet({
-                endpoint,
                 groupId,
                 eventId
             });
             return unwrapVrchatToolsResponse<string>(
                 response,
-                `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}.ics`
+                `calendar/${encodeURIComponent(groupId)}/${encodeURIComponent(eventId)}.ics`,
+                'text'
             ).json;
         }
     });
 }
 
-async function saveUserNote(
-    { targetUserId, note }: { targetUserId: string; note: string },
-    { endpoint = '' }: RepositoryOptions = {}
-) {
+async function saveUserNote({
+    targetUserId,
+    note
+}: {
+    targetUserId: string;
+    note: string;
+}) {
     const response = await commands.appVrchatToolsUserNoteSave({
-        endpoint,
         targetUserId,
         note
     });
     return unwrapVrchatToolsResponse(response, 'userNotes').json;
 }
 
-async function reportUser(
-    {
-        userId,
-        contentType = 'user',
-        reason,
-        type = 'report'
-    }: {
-        userId: string;
-        contentType?: string;
-        reason: string;
-        type?: string;
-    },
-    { endpoint = '' }: RepositoryOptions = {}
-) {
+async function reportUser({
+    userId,
+    contentType = 'user',
+    reason,
+    type = 'report'
+}: {
+    userId: string;
+    contentType?: string;
+    reason: string;
+    type?: string;
+}) {
     const response = await commands.appVrchatToolsUserReport({
-        endpoint,
         userId,
         contentType,
         reason,
@@ -348,15 +332,14 @@ async function reportUser(
     ).json;
 }
 
-async function getInviteMessages(
-    {
-        currentUserId,
-        messageType
-    }: { currentUserId: string; messageType: string },
-    { endpoint = '' }: RepositoryOptions = {}
-) {
+async function getInviteMessages({
+    currentUserId,
+    messageType
+}: {
+    currentUserId: string;
+    messageType: string;
+}) {
     const response = await commands.appVrchatToolsInviteMessagesGet({
-        endpoint,
         currentUserId,
         messageType
     });
@@ -366,22 +349,18 @@ async function getInviteMessages(
     ).json;
 }
 
-async function editInviteMessage(
-    {
-        currentUserId,
-        messageType,
-        slot,
-        message
-    }: {
-        currentUserId: string;
-        messageType: string;
-        slot: number | string;
-        message: string;
-    },
-    { endpoint = '' }: RepositoryOptions = {}
-) {
+async function editInviteMessage({
+    currentUserId,
+    messageType,
+    slot,
+    message
+}: {
+    currentUserId: string;
+    messageType: string;
+    slot: number | string;
+    message: string;
+}) {
     const response = await commands.appVrchatToolsInviteMessageEdit({
-        endpoint,
         currentUserId,
         messageType,
         slot: String(slot),

@@ -2,7 +2,8 @@ use super::*;
 use std::sync::Mutex;
 
 use serde::Deserialize;
-use vrcx_0_vrchat_client::http_api::{execute_response, ApiScope};
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_vrchat_client::http_api::execute_response;
 
 struct MockApi {
     short_name_calls: Mutex<Vec<(String, String, String)>>,
@@ -42,7 +43,6 @@ impl InstanceLaunchHttpClient for MockApi {
             Ok(execute_response(
                 self.short_name_status,
                 self.short_name_body.clone(),
-                ApiScope::Vrchat,
             ))
         })
     }
@@ -64,7 +64,6 @@ impl InstanceLaunchHttpClient for MockApi {
             Ok(execute_response(
                 self.self_invite_status,
                 self.self_invite_body.clone(),
-                ApiScope::Vrchat,
             ))
         })
     }
@@ -136,7 +135,6 @@ async fn auto_join_stops_after_launch_pipe_success() {
         InstanceLaunchInput {
             location: "wrld_test:12345~hidden(usr_owner)".to_string(),
             short_name: "tok123".to_string(),
-            endpoint: "https://api.vrchat.cloud/api/1".to_string(),
             mode: InstanceLaunchMode::Auto,
         },
     )
@@ -164,7 +162,6 @@ async fn auto_join_self_invites_after_launch_pipe_false() {
         InstanceLaunchInput {
             location: "wrld_test:12345~hidden(usr_owner)".to_string(),
             short_name: "tok123".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::Auto,
         },
     )
@@ -175,7 +172,7 @@ async fn auto_join_self_invites_after_launch_pipe_false() {
     assert_eq!(
         api.self_invite_calls.lock().unwrap().as_slice(),
         [(
-            "".to_string(),
+            VRCHAT_API_DEFAULT_ENDPOINT.to_string(),
             "wrld_test".to_string(),
             "12345~hidden(usr_owner)".to_string(),
             "tok123".to_string()
@@ -195,7 +192,6 @@ async fn open_only_returns_failed_without_self_invite_fallback() {
         InstanceLaunchInput {
             location: "wrld_test:12345~hidden(usr_owner)".to_string(),
             short_name: "tok123".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::OpenOnly,
         },
     )
@@ -223,7 +219,6 @@ async fn self_invite_only_skips_launch_pipe() {
         InstanceLaunchInput {
             location: "wrld_test:12345~hidden(usr_owner)".to_string(),
             short_name: "tok123".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::SelfInviteOnly,
         },
     )
@@ -247,7 +242,6 @@ async fn invalid_join_location_returns_failed_outcome() {
         InstanceLaunchInput {
             location: "private".to_string(),
             short_name: "".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::Auto,
         },
     )
@@ -280,7 +274,6 @@ async fn self_invite_api_error_maps_to_failed_outcome() {
         InstanceLaunchInput {
             location: "wrld_test:12345~hidden(usr_owner)".to_string(),
             short_name: "tok123".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::SelfInviteOnly,
         },
     )
@@ -307,7 +300,6 @@ async fn public_launch_resolves_short_name_even_when_token_is_provided() {
         InstanceLaunchInput {
             location: "wrld_test:12345".to_string(),
             short_name: "providedTok".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::OpenOnly,
         },
     )
@@ -337,7 +329,6 @@ async fn launch_url_omits_short_name_when_none_is_available() {
         InstanceLaunchInput {
             location: "wrld_test:12345".to_string(),
             short_name: "".to_string(),
-            endpoint: "".to_string(),
             mode: InstanceLaunchMode::OpenOnly,
         },
     )
@@ -384,13 +375,13 @@ fn gate_batch_evaluates_basic_invite_permissions() {
         ],
     });
 
-    assert_eq!(output.targets[0].can_join, true);
-    assert_eq!(output.targets[0].can_open_in_game, true);
-    assert_eq!(output.targets[0].can_self_invite, true);
-    assert_eq!(output.targets[0].can_request_invite, true);
-    assert_eq!(output.targets[0].can_invite, true);
-    assert_eq!(output.targets[1].can_self_invite, false);
-    assert_eq!(output.targets[2].can_join, false);
+    assert!(output.targets[0].can_join);
+    assert!(output.targets[0].can_open_in_game);
+    assert!(output.targets[0].can_self_invite);
+    assert!(output.targets[0].can_request_invite);
+    assert!(output.targets[0].can_invite);
+    assert!(!output.targets[1].can_self_invite);
+    assert!(!output.targets[2].can_join);
 }
 
 #[test]
@@ -474,9 +465,9 @@ fn gate_batch_blocks_invite_when_game_is_not_running() {
         }],
     });
 
-    assert_eq!(output.targets[0].can_join, true);
-    assert_eq!(output.targets[0].can_open_in_game, false);
-    assert_eq!(output.targets[0].can_invite, false);
+    assert!(output.targets[0].can_join);
+    assert!(!output.targets[0].can_open_in_game);
+    assert!(!output.targets[0].can_invite);
 }
 
 #[test]
@@ -496,8 +487,8 @@ fn gate_batch_allows_join_for_non_online_presence_but_not_request_invite() {
         }],
     });
 
-    assert_eq!(output.targets[0].can_join, true);
-    assert_eq!(output.targets[0].can_self_invite, true);
-    assert_eq!(output.targets[0].can_open_in_game, true);
-    assert_eq!(output.targets[0].can_request_invite, false);
+    assert!(output.targets[0].can_join);
+    assert!(output.targets[0].can_self_invite);
+    assert!(output.targets[0].can_open_in_game);
+    assert!(!output.targets[0].can_request_invite);
 }

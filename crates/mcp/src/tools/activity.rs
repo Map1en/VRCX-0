@@ -602,7 +602,9 @@ impl From<ActivityTimelineBucketParam> for ActivityTimeBucket {
 #[serde(rename_all = "snake_case")]
 enum ActivityBucketParam {
     #[default]
+    #[serde(alias = "hourOfDay")]
     HourOfDay,
+    #[serde(alias = "dayOfWeek")]
     DayOfWeek,
 }
 
@@ -851,6 +853,18 @@ mod activity_output_tests {
         config::ConfigRepository, game_log::ensure_game_log_tables, storage::StorageService,
         DatabaseService,
     };
+
+    #[test]
+    fn activity_bucket_accepts_camel_case_aliases() {
+        assert!(matches!(
+            serde_json::from_str::<ActivityBucketParam>(r#""hourOfDay""#).unwrap(),
+            ActivityBucketParam::HourOfDay
+        ));
+        assert!(matches!(
+            serde_json::from_str::<ActivityBucketParam>(r#""dayOfWeek""#).unwrap(),
+            ActivityBucketParam::DayOfWeek
+        ));
+    }
 
     struct TestDir {
         path: PathBuf,

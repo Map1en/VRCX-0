@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::backend_runtime::BackendRuntimeTelemetry;
@@ -28,7 +28,15 @@ pub struct FavoritesChangedPayload {
     pub remote: bool,
 }
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeRealtimeTransportEpoch {
+    pub client_run_id: u64,
+    pub generation: u64,
+    pub session_generation: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeVrchatAuthFailurePayload {
     pub owner_user_id: String,
@@ -37,6 +45,8 @@ pub struct RuntimeVrchatAuthFailurePayload {
     pub reason: String,
     pub status_code: i32,
     pub auth_scope_generation: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub realtime_transport: Option<RuntimeRealtimeTransportEpoch>,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]

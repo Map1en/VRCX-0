@@ -1,8 +1,4 @@
-import {
-    ChevronRightIcon,
-    ExternalLinkIcon,
-    LanguagesIcon
-} from 'lucide-react';
+import { ChevronRightIcon, ExternalLinkIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +11,7 @@ import type {
     UserProfileEntity
 } from '@/domain/entities/profileEntities';
 import { AvatarInfoLine } from '@/features/feed/components/FeedAvatarInfoLine';
+import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
@@ -23,14 +20,18 @@ import {
 } from '@/services/entityMediaService';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardHeader,
+    CardTitle
+} from '@/ui/shadcn/card';
 import { Separator } from '@/ui/shadcn/separator';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
 import { formatStatsDuration } from '../userDialogRows';
 import { EntityList } from '../UserDialogViewParts';
-import { useUserBioTranslation } from '../useUserBioTranslation';
 
 type OpenAvatarDialog =
     (typeof import('@/services/dialogService'))['openAvatarDialog'];
@@ -133,11 +134,13 @@ export type UserDialogInfoTabProps = {
 
 function InfoPanel({
     title,
+    action,
     children,
     className,
     contentClassName
 }: {
     title: ReactNode;
+    action?: ReactNode;
     children?: ReactNode;
     className?: string;
     contentClassName?: string;
@@ -148,7 +151,10 @@ function InfoPanel({
             className={cn('min-w-0 border shadow-none ring-0', className)}
         >
             <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm">{title}</CardTitle>
+                <CardTitle className="min-w-0 truncate text-sm">
+                    {title}
+                </CardTitle>
+                {action ? <CardAction>{action}</CardAction> : null}
             </CardHeader>
             <CardContent
                 className={cn('flex flex-col gap-3', contentClassName)}
@@ -584,81 +590,55 @@ function UserDialogProfileLinksPanel({
     );
 }
 
-function UserDialogBioPanel({
-    profile,
-    bioLinks,
-    visibleBio,
-    bioTranslationLoading,
-    translatedBioActive,
-    toggleBioTranslation
-}: UserDialogBioSectionProps & {
-    visibleBio: string;
-    bioTranslationLoading: boolean;
-    translatedBioActive: boolean;
-    toggleBioTranslation: () => void;
-}) {
+function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
     const { t } = useTranslation();
-    const translateBioLabel = t('dialog.user.info.translate_bio');
-    const showOriginalBioLabel = t('dialog.user.info.show_original_bio');
-    const bioActionLabel = translatedBioActive
-        ? showOriginalBioLabel
-        : translateBioLabel;
 
     return (
-        <InfoPanel title={t('dialog.user.info.bio')}>
-            <div className="relative min-w-0">
-                <TextScroll className="h-52 min-w-0 pr-8">
-                    {visibleBio}
-                </TextScroll>
-                {profile.bio ? (
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="ghost"
-                        className="absolute top-1 right-1"
-                        disabled={bioTranslationLoading}
-                        aria-label={bioActionLabel}
-                        title={bioActionLabel}
-                        onClick={() => {
-                            toggleBioTranslation();
-                        }}
-                    >
-                        {bioTranslationLoading ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <LanguagesIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                ) : null}
-            </div>
-            {bioLinks.length ? (
-                <div className="flex flex-wrap gap-1.5">
-                    {bioLinks.map((link) => (
-                        <Button
-                            key={link}
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={t('dialog.user.info.open_bio_link', {
-                                link
-                            })}
-                            title={link}
-                            onClick={() => openExternalLink(link)}
-                        >
-                            {getFaviconUrl(link) ? (
-                                <FadeInImage
-                                    src={getFaviconUrl(link)}
-                                    alt=""
-                                    className="size-4"
-                                />
-                            ) : (
-                                <ExternalLinkIcon data-icon="inline-start" />
-                            )}
-                        </Button>
-                    ))}
-                </div>
-            ) : null}
-        </InfoPanel>
+        <TranslatableText
+            source={profile.bio || ''}
+            entityId={profile.id || ''}
+            density="button"
+        >
+            {({ action, meta, error, text }) => (
+                <InfoPanel title={t('dialog.user.info.bio')} action={action}>
+                    {meta}
+                    <div className="min-w-0">
+                        <TextScroll className="h-52 min-w-0">{text}</TextScroll>
+                        {error}
+                    </div>
+                    {bioLinks.length ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {bioLinks.map((link) => (
+                                <Button
+                                    key={link}
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        'dialog.user.info.open_bio_link',
+                                        {
+                                            link
+                                        }
+                                    )}
+                                    title={link}
+                                    onClick={() => openExternalLink(link)}
+                                >
+                                    {getFaviconUrl(link) ? (
+                                        <FadeInImage
+                                            src={getFaviconUrl(link)}
+                                            alt=""
+                                            className="size-4"
+                                        />
+                                    ) : (
+                                        <ExternalLinkIcon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            ))}
+                        </div>
+                    ) : null}
+                </InfoPanel>
+            )}
+        </TranslatableText>
     );
 }
 
@@ -755,12 +735,6 @@ export function UserDialogInfoTab({
     activitySummarySection
 }: UserDialogInfoTabProps) {
     const { profile, bioLinks } = bioSection;
-    const {
-        visibleBio,
-        bioTranslationLoading,
-        translatedBioActive,
-        toggleBioTranslation
-    } = useUserBioTranslation({ profile });
 
     return (
         <EntityDialogTabContent value="info" className="px-px pt-3 pb-px">
@@ -778,14 +752,7 @@ export function UserDialogInfoTab({
                         hideUserMemos={notesSection.hideUserMemos}
                         onEditMemo={notesSection.onEditMemo}
                     />
-                    <UserDialogBioPanel
-                        profile={profile}
-                        bioLinks={bioLinks}
-                        visibleBio={visibleBio}
-                        bioTranslationLoading={bioTranslationLoading}
-                        translatedBioActive={translatedBioActive}
-                        toggleBioTranslation={toggleBioTranslation}
-                    />
+                    <UserDialogBioPanel profile={profile} bioLinks={bioLinks} />
                 </div>
                 <div className="flex min-w-0 flex-col gap-4">
                     <UserDialogProfileLinksPanel

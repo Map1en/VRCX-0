@@ -27,8 +27,7 @@ function hasWorldName(world: unknown): world is { name: string } {
 
 async function loadMissingWorldProfiles(
     worldIds: string[],
-    worldDetailsById: WorldDetailsById,
-    endpoint: string
+    worldDetailsById: WorldDetailsById
 ): Promise<WorldDetailsById> {
     const missingWorldIds = worldIds.filter(
         (worldId) => !hasWorldName(worldDetailsById[worldId])
@@ -39,7 +38,7 @@ async function loadMissingWorldProfiles(
 
     const results = await Promise.allSettled(
         missingWorldIds.map((worldId) =>
-            worldProfileRepository.getWorldProfile({ worldId, endpoint })
+            worldProfileRepository.getWorldProfile({ worldId })
         )
     );
     const nextWorldDetailsById: WorldDetailsById = { ...worldDetailsById };
@@ -158,8 +157,7 @@ export function useInstanceActivityData({
                     );
                 const resolvedWorldDetailsById = await loadMissingWorldProfiles(
                     worldIds,
-                    nextWorldDetailsById,
-                    currentEndpoint
+                    nextWorldDetailsById
                 );
 
                 if (!active) {

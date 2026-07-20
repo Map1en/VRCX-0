@@ -209,7 +209,6 @@ export function useUserDialogSupplementalData({
         userProfileRepository
             .getRepresentedGroup({
                 userId: targetUserId,
-                endpoint: targetEndpoint,
                 force: reloadToken > 0
             })
             .then((group) => {
@@ -391,8 +390,7 @@ export function useUserDialogSupplementalData({
 
         userProfileRepository
             .getMutualCounts({
-                userId: profile.id,
-                endpoint: currentEndpoint
+                userId: profile.id
             })
             .then((counts) => {
                 if (!active) {

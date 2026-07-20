@@ -129,7 +129,6 @@ describe('modalStore', () => {
 
     it('keeps non-dismissible boop prompts open and resolves explicit values', async () => {
         const result = useModalStore.getState().boopPrompt({
-            endpoint: 'api',
             targetLabel: 'Target',
             dismissible: false
         });

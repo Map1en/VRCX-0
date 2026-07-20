@@ -118,8 +118,7 @@ export function InstanceInviteDialog({
 
         worldProfileRepository
             .getWorldProfile({
-                worldId: parsedLocation.worldId,
-                endpoint
+                worldId: parsedLocation.worldId
             })
             .then((world: any) => {
                 if (active) {
@@ -283,13 +282,11 @@ export function InstanceInviteDialog({
                     if (receiverUserId === currentUserId) {
                         await selfInviteToInstance(
                             parsedLocation.tag || location,
-                            launchToken || parsedLocation.shortName,
-                            endpoint
+                            launchToken || parsedLocation.shortName
                         );
                     } else {
                         await sendInviteToLocation({
                             receiverUserId,
-                            endpoint,
                             instanceId: parsedLocation.tag || location,
                             worldId: parsedLocation.worldId,
                             worldName:

@@ -121,8 +121,7 @@ export function useWorldImageUpload({
                         selectedWorld.imageUrl ||
                         selectedWorld.thumbnailImageUrl ||
                         '',
-                    base64File,
-                    endpoint: requestEndpoint
+                    base64File
                 })
             );
             const activeTarget = activeWorldTargetRef.current;

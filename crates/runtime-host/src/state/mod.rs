@@ -19,20 +19,32 @@ use crate::{
 };
 use vrcx_0_application::{
     auth_response_error_message, current_user_from_cookie, parse_current_user_response,
-    probe_current_user_from_cookie, record_login_success, record_logout,
-    saved_credential_login_start, saved_credential_session_data, saved_snapshot,
-    AuthenticatedRuntimeSession, AuthenticatedSessionMaintenanceOutcome, CookieSessionProbe,
-    FavoriteImportRuntime, LoginApi, LoginSession, LoginSessionState, LoginSuccessRecordInput,
+    probe_current_user_from_cookie, probe_saved_current_user_from_cookie, record_login_success,
+    record_logout, saved_credential_login_start, saved_credential_session_data, saved_snapshot,
+    AuthenticatedRuntimeSession, AuthenticatedSessionMaintenanceOutcome, AutoLoginOutcome,
+    AutoLoginStartInput, CookieSessionProbe, DataDirMigrationRuntime, FavoriteImportRuntime,
+    LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest,
+    LoginSessionRespondInput, LoginSessionStartInput, LoginSessionState, LoginSuccessRecordInput,
     LogoutRecordInput, NonInteractiveAuthError, PrintCleanupDeps, PrintCleanupQueueSink,
-    PrintCleanupTrigger, ProfileBackupRuntime, SavedCredentialLoginStartInput, WebClientLoginApi,
+    PrintCleanupTrigger, ProfileBackupRuntime, ProfileBackupRuntimeDeps, SavedAuthAutoLoginStatus,
+    SavedAuthSnapshot, SavedCredentialLoginStartInput,
 };
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot,
     BackendRuntimeTelemetry, BackgroundCapabilitySession, ImageCache, RuntimeBackgroundJobs,
-    RuntimeEventSink, UnavailableLocalGameContextSource, WebClient,
+    RuntimeEventSink, RuntimeRealtimeTransportEpoch, UnavailableLocalGameContextSource, WebClient,
 };
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
-use vrcx_0_host::app_paths::{AppDataDirResolution, AppPaths};
+use vrcx_0_host::app_paths::{
+    app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
+    AppPaths,
+};
+use vrcx_0_persistence::data_dir_migration::{
+    cleanup_interrupted_data_dir_migration, complete_data_dir_migration,
+    finalize_data_dir_migration, read_pending_data_dir_migration,
+    record_data_dir_migration_database_open_failure, DataDirMigrationFinalizeOutcome,
+    DataDirMigrationJournalPhase, PendingDataDirMigration,
+};
 use vrcx_0_persistence::legacy_migration::{
     consume_pending_legacy_migration, LegacyMigrationPaths,
 };
@@ -59,8 +71,8 @@ mod startup;
 use auth_session::string_field;
 pub use auth_session::{CliLoginPrompt, CliTwoFactorChoice};
 use background::{
-    background_capability_session, background_capability_session_matches, emit_background_error,
-    emit_background_info, emit_background_warning, gui_maintenance_runtime_mode,
+    background_capability_session, background_capability_session_matches, emit_background_info,
+    emit_background_warning, gui_maintenance_runtime_mode,
 };
 use background_ticks::{
     run_background_current_user_refresh, run_background_group_instance_refresh,

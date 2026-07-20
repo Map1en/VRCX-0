@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use image::GenericImageView;
-use vrcx_0_vrchat_client::http_api::HttpApiRequestInput;
+use vrcx_0_vrchat_client::http_api::{HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload};
 
 use super::*;
 
@@ -38,74 +38,73 @@ fn print_canvas_png() -> Result<String> {
     encode_png(image)
 }
 
+fn image_request(image_data: String, matching_dimensions: bool) -> HttpApiRequestInput {
+    HttpApiRequestInput {
+        body: HttpApiRequestBody::Upload(HttpApiUpload::Image {
+            image_data,
+            post_data: None,
+            matching_dimensions,
+        }),
+        ..Default::default()
+    }
+}
+
+fn legacy_image_request(image_data: String) -> HttpApiRequestInput {
+    HttpApiRequestInput {
+        body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+            image_data,
+            post_data: None,
+        }),
+        ..Default::default()
+    }
+}
+
+fn print_request(image_data: String, crop_white_border: bool) -> HttpApiRequestInput {
+    HttpApiRequestInput {
+        body: HttpApiRequestBody::Upload(HttpApiUpload::PrintImage {
+            image_data,
+            post_data: None,
+            crop_white_border,
+        }),
+        ..Default::default()
+    }
+}
+
 #[test]
-fn request_without_image_data_is_unchanged() -> Result<()> {
+fn request_without_image_upload_is_unchanged() -> Result<()> {
     let input = HttpApiRequestInput {
         path: Some("file/image".into()),
-        upload_image: Some(true),
-        matching_dimensions: Some(true),
-        crop_white_border: Some(true),
-        post_data: Some("payload".into()),
         ..Default::default()
     };
 
     let output = prepare_media_upload_request(input)?;
 
     assert_eq!(output.path.as_deref(), Some("file/image"));
-    assert_eq!(output.upload_image, Some(true));
-    assert_eq!(output.matching_dimensions, Some(true));
-    assert_eq!(output.crop_white_border, Some(true));
-    assert_eq!(output.post_data.as_deref(), Some("payload"));
-    assert!(output.image_data.is_none());
+    assert_eq!(output.body, HttpApiRequestBody::Empty);
     Ok(())
 }
 
 #[test]
-fn upload_image_and_legacy_consume_matching_dimensions() -> Result<()> {
+fn regular_and_legacy_images_use_their_matching_dimension_mode() -> Result<()> {
     let image_data = solid_png(3, 2)?;
-    let regular = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image: Some(true),
-        matching_dimensions: Some(false),
-        image_data: Some(image_data.clone()),
-        ..Default::default()
-    })?;
-    let legacy = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image_legacy: Some(true),
-        matching_dimensions: Some(true),
-        image_data: Some(image_data),
-        ..Default::default()
-    })?;
+    let regular = prepare_media_upload_request(image_request(image_data.clone(), false))?;
+    let legacy = prepare_media_upload_request(legacy_image_request(image_data))?;
 
-    assert_eq!(regular.matching_dimensions, None);
     assert_eq!(
         decode_image(require_prepared_image_data(&regular)?)?.dimensions(),
         (3, 2)
     );
-    assert_eq!(legacy.matching_dimensions, None);
     assert_eq!(
         decode_image(require_prepared_image_data(&legacy)?)?.dimensions(),
-        (3, 3)
+        (3, 2)
     );
     Ok(())
 }
 
 #[test]
-fn print_upload_routes_crop_flag_and_consumes_it() -> Result<()> {
-    let cropped = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image_print: Some(true),
-        crop_white_border: Some(true),
-        image_data: Some(print_canvas_png()?),
-        ..Default::default()
-    })?;
-    let uncropped = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image_print: Some(true),
-        crop_white_border: Some(false),
-        image_data: Some(solid_png(320, 180)?),
-        ..Default::default()
-    })?;
-
-    assert_eq!(cropped.crop_white_border, None);
-    assert_eq!(uncropped.crop_white_border, None);
+fn print_upload_applies_crop_before_resize() -> Result<()> {
+    let cropped = prepare_media_upload_request(print_request(print_canvas_png()?, true))?;
+    let uncropped = prepare_media_upload_request(print_request(solid_png(320, 180)?, false))?;
 
     let cropped = decode_image(require_prepared_image_data(&cropped)?)?.to_rgba8();
     let uncropped = decode_image(require_prepared_image_data(&uncropped)?)?.to_rgba8();
@@ -117,68 +116,10 @@ fn print_upload_routes_crop_flag_and_consumes_it() -> Result<()> {
 }
 
 #[test]
-fn upload_mode_priority_matches_web_request_builder() -> Result<()> {
-    let regular = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image: Some(true),
-        upload_image_legacy: Some(true),
-        upload_image_print: Some(true),
-        matching_dimensions: Some(true),
-        crop_white_border: Some(true),
-        image_data: Some(solid_png(3, 2)?),
-        ..Default::default()
-    })?;
-    let print = prepare_media_upload_request(HttpApiRequestInput {
-        upload_image_legacy: Some(true),
-        upload_image_print: Some(true),
-        matching_dimensions: Some(true),
-        crop_white_border: Some(false),
-        image_data: Some(solid_png(320, 180)?),
-        ..Default::default()
-    })?;
-
-    assert_eq!(regular.matching_dimensions, None);
-    assert_eq!(regular.crop_white_border, Some(true));
-    assert_eq!(
-        decode_image(require_prepared_image_data(&regular)?)?.dimensions(),
-        (3, 3)
-    );
-    assert_eq!(print.matching_dimensions, Some(true));
-    assert_eq!(print.crop_white_border, None);
-    assert_eq!(
-        decode_image(require_prepared_image_data(&print)?)?.dimensions(),
-        (2048, 1440)
-    );
-    Ok(())
-}
-
-#[test]
-fn request_without_upload_flag_preserves_image_data() -> Result<()> {
-    let input = HttpApiRequestInput {
-        image_data: Some("not processed".into()),
-        matching_dimensions: Some(true),
-        crop_white_border: Some(true),
-        ..Default::default()
-    };
-
-    let output = prepare_media_upload_request(input)?;
-
-    assert_eq!(output.image_data.as_deref(), Some("not processed"));
-    assert_eq!(output.matching_dimensions, Some(true));
-    assert_eq!(output.crop_white_border, Some(true));
-    Ok(())
-}
-
-#[test]
-fn require_prepared_image_data_rejects_missing_and_blank_values() {
+fn require_prepared_image_data_rejects_non_image_and_blank_uploads() {
     let missing = HttpApiRequestInput::default();
-    let blank = HttpApiRequestInput {
-        image_data: Some(" \t\r\n ".into()),
-        ..Default::default()
-    };
-    let valid = HttpApiRequestInput {
-        image_data: Some(" prepared ".into()),
-        ..Default::default()
-    };
+    let blank = image_request(" \t\r\n ".into(), false);
+    let valid = image_request(" prepared ".into(), false);
 
     assert_eq!(
         require_prepared_image_data(&missing)

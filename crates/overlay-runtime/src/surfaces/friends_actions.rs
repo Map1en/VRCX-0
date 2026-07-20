@@ -165,6 +165,7 @@ impl InstanceLaunchHttpClient for RuntimeFriendsPanelActionApi {
             execute_friends_panel_api_command(
                 self.services.as_ref(),
                 "vr_overlay.friends_panel.short_name",
+                "Getting a short name for a friends panel launch.",
                 request,
             )
             .await
@@ -188,6 +189,7 @@ impl InstanceLaunchHttpClient for RuntimeFriendsPanelActionApi {
             execute_friends_panel_api_command(
                 self.services.as_ref(),
                 "vr_overlay.friends_panel.self_invite",
+                "Sending a self invite for a friends panel launch.",
                 request,
             )
             .await
@@ -230,7 +232,6 @@ async fn run_friends_panel_action(
                 },
                 InstanceLaunchInput {
                     location,
-                    endpoint,
                     short_name: String::new(),
                     mode: InstanceLaunchMode::Auto,
                 },
@@ -258,6 +259,7 @@ async fn run_friends_panel_action(
             match execute_friends_panel_vrchat_request(
                 services.as_ref(),
                 "vr_overlay.friends_panel.request_invite",
+                "Sending a request invite from the friends panel.",
                 request,
             )
             .await
@@ -279,6 +281,7 @@ async fn run_friends_panel_action(
             match execute_friends_panel_vrchat_request(
                 services.as_ref(),
                 "vr_overlay.friends_panel.invite",
+                "Sending an invite from the friends panel.",
                 request,
             )
             .await
@@ -293,9 +296,10 @@ async fn run_friends_panel_action(
 async fn execute_friends_panel_vrchat_request(
     services: &dyn VrOverlayRuntimeServices,
     command: &'static str,
+    detail: &'static str,
     request: VrchatApiRequest,
 ) -> std::result::Result<(), String> {
-    let response = execute_friends_panel_api_command(services, command, request)
+    let response = execute_friends_panel_api_command(services, command, detail, request)
         .await
         .map_err(|error| error.to_string())?;
     if (200..=299).contains(&response.status) {
@@ -308,6 +312,7 @@ async fn execute_friends_panel_vrchat_request(
 async fn execute_friends_panel_api_command(
     services: &dyn VrOverlayRuntimeServices,
     command: &'static str,
+    detail: &'static str,
     request: VrchatApiRequest,
 ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
     execute_api_command(
@@ -315,7 +320,7 @@ async fn execute_friends_panel_api_command(
         services.data().db.as_ref(),
         &services.data().diagnostics,
         &services.data().sync,
-        command,
+        (command, detail),
         request,
         VrchatScope::Vrchat,
     )

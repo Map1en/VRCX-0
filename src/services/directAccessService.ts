@@ -78,8 +78,7 @@ function shouldUseProvidedLaunchToken(
 
 export async function resolveInstanceLaunchToken(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ) {
     const { parsed } = normalizeLaunchLocation(location);
     let launchToken = normalizeString(shortName || parsed.shortName);
@@ -93,8 +92,7 @@ export async function resolveInstanceLaunchToken(
             const response =
                 await vrchatInstanceRepository.getInstanceShortName({
                     worldId: parsed.worldId,
-                    instanceId: parsed.instanceId,
-                    endpoint: normalizeString(endpoint)
+                    instanceId: parsed.instanceId
                 });
             launchToken = normalizeString(
                 response.json?.shortName || response.json?.secureName
@@ -112,41 +110,32 @@ export async function resolveInstanceLaunchToken(
 
 export async function resolveVrcLaunchUrl(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ) {
     const { location: normalizedLocation, parsed } =
         normalizeLaunchLocation(location);
     const launchToken = await resolveInstanceLaunchToken(
         normalizedLocation,
-        shortName || parsed.shortName,
-        endpoint
+        shortName || parsed.shortName
     );
     return buildVrcLaunchUrl(normalizedLocation, launchToken);
 }
 
 export async function tryOpenLaunchLocation(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: unknown = ''
+    shortName: unknown = ''
 ) {
     const normalizedLocation = normalizeString(location);
     if (!normalizedLocation || !normalizedLocation.includes(':')) {
         return false;
     }
 
-    return openInstanceInGame(normalizedLocation, shortName, endpoint);
+    return openInstanceInGame(normalizedLocation, shortName);
 }
 
-async function verifyShortName(
-    location: unknown,
-    shortName: string,
-    endpoint: unknown = ''
-) {
-    const response = await vrchatSearchRepository.getInstanceFromShortName(
-        shortName,
-        { endpoint: normalizeString(endpoint) }
-    );
+async function verifyShortName(location: unknown, shortName: string) {
+    const response =
+        await vrchatSearchRepository.getInstanceFromShortName(shortName);
     const json = isRecord(response.json) ? response.json : {};
     const nextLocation = json?.location || location;
     if (!nextLocation) {
@@ -154,11 +143,7 @@ async function verifyShortName(
     }
 
     if (
-        await tryOpenLaunchLocation(
-            nextLocation,
-            json?.shortName || shortName,
-            endpoint
-        )
+        await tryOpenLaunchLocation(nextLocation, json?.shortName || shortName)
     ) {
         return true;
     }
@@ -171,13 +156,10 @@ async function verifyShortName(
     return true;
 }
 
-async function openGroupByShortCode(shortCode: string, endpoint: unknown = '') {
-    const response = await vrchatSearchRepository.getGroupsStrictSearch(
-        {
-            query: shortCode
-        },
-        { endpoint: normalizeString(endpoint) }
-    );
+async function openGroupByShortCode(shortCode: string) {
+    const response = await vrchatSearchRepository.getGroupsStrictSearch({
+        query: shortCode
+    });
     const group = emptyRecordArray(response.json).find(
         (entry) =>
             `${normalizeString(entry.shortCode)}.${normalizeString(entry.discriminator)}` ===
@@ -195,7 +177,7 @@ async function openGroupByShortCode(shortCode: string, endpoint: unknown = '') {
     return true;
 }
 
-async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
+async function directAccessWorld(rawInput: unknown) {
     let input = normalizeString(rawInput);
     if (!input) {
         return false;
@@ -206,14 +188,14 @@ async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
     }
 
     if (/^[A-Za-z0-9]{8}$/.test(input)) {
-        return verifyShortName('', input, endpoint);
+        return verifyShortName('', input);
     }
 
     if (input.startsWith('https://vrch.at/')) {
         const shortName = new URL(input).pathname
             .replace(/^\//, '')
             .slice(0, 8);
-        return shortName ? verifyShortName('', shortName, endpoint) : false;
+        return shortName ? verifyShortName('', shortName) : false;
     }
 
     if (input.startsWith('https://vrchat.')) {
@@ -230,20 +212,12 @@ async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
             const shortName = url.searchParams.get('shortName');
             if (worldId && instanceId) {
                 const location = `${worldId}:${instanceId}`;
-                if (
-                    await tryOpenLaunchLocation(
-                        location,
-                        shortName || '',
-                        endpoint
-                    )
-                ) {
+                if (await tryOpenLaunchLocation(location, shortName || '')) {
                     return true;
                 }
                 if (shortName) {
                     try {
-                        if (
-                            await verifyShortName(location, shortName, endpoint)
-                        ) {
+                        if (await verifyShortName(location, shortName)) {
                             return true;
                         }
                     } catch (error) {
@@ -270,8 +244,7 @@ async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
     ) {
         if (input.includes('&instanceId=')) {
             return directAccessWorld(
-                `${VRCHAT_WEB_BASE}/home/launch?worldId=${input}`,
-                endpoint
+                `${VRCHAT_WEB_BASE}/home/launch?worldId=${input}`
             );
         }
 
@@ -282,16 +255,13 @@ async function directAccessWorld(rawInput: unknown, endpoint: unknown = '') {
     return false;
 }
 
-export async function directAccessParse(
-    input: unknown,
-    endpoint: unknown = ''
-) {
+export async function directAccessParse(input: unknown) {
     const value = normalizeString(input).trim();
     if (!value) {
         return false;
     }
 
-    if (await directAccessWorld(value, endpoint)) {
+    if (await directAccessWorld(value)) {
         return true;
     }
 
@@ -320,13 +290,12 @@ export async function directAccessParse(
 
     if (value.startsWith('https://vrc.group/')) {
         return openGroupByShortCode(
-            value.substring('https://vrc.group/'.length),
-            endpoint
+            value.substring('https://vrc.group/'.length)
         );
     }
 
     if (/^[A-Za-z0-9]{3,6}\.[0-9]{4}$/.test(value)) {
-        return openGroupByShortCode(value, endpoint);
+        return openGroupByShortCode(value);
     }
 
     if (hasUserIdPrefix(value) || /^[A-Za-z0-9]{10}$/.test(value)) {

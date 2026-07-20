@@ -248,7 +248,6 @@ export function VrcNotificationCenterHost() {
             }
             await hideRemoteAndExpireNotification({
                 currentUserId,
-                endpoint,
                 notification
             });
             await refreshCenter();
@@ -304,7 +303,6 @@ export function VrcNotificationCenterHost() {
 
             await acceptRequestInviteNotification({
                 currentUserId,
-                endpoint,
                 instanceId: currentInviteLocation,
                 worldId: parsedLocation.worldId,
                 notification
@@ -343,7 +341,6 @@ export function VrcNotificationCenterHost() {
     }: InviteResponseSlotPayload) {
         await sendInviteResponseNotification({
             currentUserId,
-            endpoint,
             notification,
             responseSlot: row?.slot
         });
@@ -361,7 +358,6 @@ export function VrcNotificationCenterHost() {
         await sendBoopReplyNotification({
             currentUserId,
             emojiId,
-            endpoint,
             notification
         });
         await refreshCenter();
@@ -383,7 +379,6 @@ export function VrcNotificationCenterHost() {
             }
             await sendNotificationButtonResponse({
                 currentUserId,
-                endpoint,
                 notification,
                 response
             });
@@ -588,7 +583,6 @@ export function VrcNotificationCenterHost() {
             />
             <BoopReplyDialog
                 request={boopReplyRequest}
-                endpoint={endpoint}
                 isLocalUserVrcPlusSupporter={isLocalUserVrcPlusSupporter}
                 onOpenChange={(open: boolean) => {
                     if (!open) {

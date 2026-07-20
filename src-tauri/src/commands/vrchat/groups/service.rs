@@ -4,10 +4,10 @@ use tauri::State;
 use vrcx_0_application::{
     self as application, GroupApiDeps, VrchatGroupGalleryInput, VrchatGroupIdInput,
     VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput, VrchatGroupLogsInput,
-    VrchatGroupMemberPropsInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
-    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
-    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
-    VrchatGroupUserGroupsInput, VrchatGroupUserInput,
+    VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput, VrchatGroupMembersInput,
+    VrchatGroupMembersSearchInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
+    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
+    VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
@@ -272,6 +272,28 @@ pub async fn app__vrchat_group_member_unban(
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
     application::unban_member(deps(&state), input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_member_role_add(
+    state: State<'_, AppState>,
+    input: VrchatGroupMemberRoleInput,
+) -> Result<VrchatApiResponse, AppError> {
+    application::add_member_role(deps(&state), input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_member_role_remove(
+    state: State<'_, AppState>,
+    input: VrchatGroupMemberRoleInput,
+) -> Result<VrchatApiResponse, AppError> {
+    application::remove_member_role(deps(&state), input)
         .await
         .map_err(AppError::from)
 }

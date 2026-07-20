@@ -23,7 +23,6 @@ import {
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
 import { syncStartupServicesTask } from './startupServicesStatus';
-import { notifyRuntimeVrchatAuthFailure } from './vrchatAuthErrorService';
 
 const activeBootstraps = new Map<string, Promise<FriendBootstrapResult>>();
 
@@ -141,21 +140,13 @@ async function runFriendBootstrap({
         });
     }
 
-    const result: SocialFriendRosterBaselineOutput = await commands
-        .appSocialFriendRosterBaselineGet({
+    const result: SocialFriendRosterBaselineOutput =
+        await commands.appSocialFriendRosterBaselineGet({
             userId: normalizedUserId,
             endpoint: normalizedEndpoint,
             websocket: realtimeWebsocket,
             currentUserSnapshot: currentSnapshot,
             isFirstLoad: !preserveLoadedState
-        })
-        .catch((error: unknown) => {
-            notifyRuntimeVrchatAuthFailure(
-                error,
-                normalizedEndpoint,
-                'friend roster baseline'
-            );
-            throw error;
         });
 
     const snapshot: FriendBootstrapSnapshot | null = isRecord(result.snapshot)

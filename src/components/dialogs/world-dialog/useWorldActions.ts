@@ -98,7 +98,6 @@ export function useWorldActions({
         try {
             const nextWorld = await worldProfileRepository.getWorldProfile({
                 worldId: targetWorldId,
-                endpoint: targetEndpoint,
                 force: true
             });
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
@@ -132,8 +131,7 @@ export function useWorldActions({
         try {
             const opened = await tryOpenLaunchLocation(
                 normalizedWorldId,
-                worldDialogShortName,
-                currentEndpoint
+                worldDialogShortName
             );
             if (opened) {
                 toast.success(
@@ -189,7 +187,6 @@ export function useWorldActions({
         try {
             const nextUser = await userProfileRepository.updateCurrentUser({
                 userId: currentUserId,
-                endpoint: currentEndpoint,
                 params: {
                     homeLocation: nextHomeLocation
                 }
@@ -278,7 +275,7 @@ export function useWorldActions({
         setActionStatus('cache');
         try {
             const configResponse = await vrchatAuthRepository
-                .getConfig({ endpoint: targetEndpoint })
+                .getConfig()
                 .catch((): null => null);
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
@@ -299,7 +296,7 @@ export function useWorldActions({
                 args.variant,
                 args.variantVersion
             );
-            const cache = await readWorldCacheInfo(targetWorld, targetEndpoint);
+            const cache = await readWorldCacheInfo(targetWorld);
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }

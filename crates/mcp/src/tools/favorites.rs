@@ -130,26 +130,59 @@ impl VrcxMcpServer {
             self.runtime.db.as_ref(),
             &self.runtime.diagnostics,
             &self.runtime.sync,
-            "mcp__favorite_vrchat",
+            (
+                "mcp__favorite_vrchat",
+                "Adding a VRChat favorite through MCP.",
+            ),
             request,
             VrchatScope::Vrchat,
         )
         .await
         .map_err(|error| error.to_string())?;
-        self.runtime
-            .realtime_runtime
-            .notify_favorites_changed(&kind, false, true);
-        Ok(FavoriteVrchatOutput {
+        let notification_kind = kind.clone();
+        Ok(finish_remote_favorite_write(
             kind,
             entity_id,
             tags,
-            dry_run: false,
-            status: Some(response.status),
-            response: Some(response.raw),
-            caveats: vrchat_favorite_caveats(false),
-        })
+            response,
+            || {
+                self.runtime.realtime_runtime.notify_favorites_changed(
+                    &notification_kind,
+                    false,
+                    true,
+                );
+            },
+        ))
     }
 }
+
+fn finish_remote_favorite_write(
+    kind: String,
+    entity_id: String,
+    tags: String,
+    response: vrchat_api::VrchatApiResponse,
+    notify: impl FnOnce(),
+) -> FavoriteVrchatOutput {
+    let status = response.status;
+    let policy = vrchat_api::classify_api_response(status);
+    if policy.class == "ok" {
+        notify();
+    }
+    FavoriteVrchatOutput {
+        kind,
+        entity_id,
+        tags,
+        dry_run: false,
+        status: Some(status),
+        response: Some(serde_json::json!({
+            "status": status,
+            "data": response.data,
+            "policy": policy,
+        })),
+        caveats: vrchat_favorite_caveats(false),
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct FavoriteLocalParams {
@@ -306,5 +339,40 @@ mod favorite_kind_tests {
     fn rejects_unknown_kind() {
         assert!(normalize_favorite_kind("group").is_err());
         assert!(normalize_favorite_kind("").is_err());
+    }
+
+    #[test]
+    fn remote_change_notification_requires_a_successful_write() {
+        let notifications = std::cell::Cell::new(0);
+        for (status, should_notify) in [
+            (200, true),
+            (204, true),
+            (302, false),
+            (401, false),
+            (429, false),
+            (500, false),
+        ] {
+            let previous = notifications.get();
+            let output = finish_remote_favorite_write(
+                "world".into(),
+                "wrld_test".into(),
+                "worlds1".into(),
+                vrchat_api::VrchatApiResponse {
+                    status,
+                    data: "{}".into(),
+                },
+                || {
+                    notifications.set(notifications.get() + 1);
+                },
+            );
+
+            assert_eq!(output.status, Some(status));
+            assert_eq!(output.response.unwrap()["status"], status);
+            assert_eq!(
+                notifications.get(),
+                previous + i32::from(should_notify),
+                "status {status}"
+            );
+        }
     }
 }

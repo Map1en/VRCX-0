@@ -5,16 +5,12 @@ use serde_json::Value;
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupIdInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupProfileInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default = "default_true")]
@@ -25,16 +21,12 @@ pub struct VrchatGroupProfileInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupUserGroupsInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) user_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupPagedInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -46,8 +38,6 @@ pub struct VrchatGroupPagedInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupMembersInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -64,8 +54,6 @@ pub struct VrchatGroupMembersInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupMembersSearchInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) n: i64,
@@ -78,8 +66,6 @@ pub struct VrchatGroupMembersSearchInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupGalleryInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -94,8 +80,6 @@ pub struct VrchatGroupGalleryInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupJoinRequestsInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) n: i64,
@@ -108,8 +92,6 @@ pub struct VrchatGroupJoinRequestsInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupLogsInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -124,8 +106,6 @@ pub struct VrchatGroupLogsInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupPostCreateInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     pub(super) params: Option<Value>,
 }
@@ -133,8 +113,6 @@ pub struct VrchatGroupPostCreateInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupPostEditInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -146,8 +124,6 @@ pub struct VrchatGroupPostEditInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupPostDeleteInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) post_id: String,
@@ -157,8 +133,6 @@ pub struct VrchatGroupPostDeleteInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupUserInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) user_id: String,
@@ -166,9 +140,18 @@ pub struct VrchatGroupUserInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct VrchatGroupJoinRequestRespondInput {
+pub struct VrchatGroupMemberRoleInput {
     #[serde(default)]
-    pub(super) endpoint: String,
+    pub(super) group_id: String,
+    #[serde(default)]
+    pub(super) user_id: String,
+    #[serde(default)]
+    pub(super) role_id: String,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VrchatGroupJoinRequestRespondInput {
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
@@ -183,8 +166,6 @@ pub struct VrchatGroupJoinRequestRespondInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupRepresentationInput {
     #[serde(default)]
-    pub(super) endpoint: String,
-    #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) is_representing: bool,
@@ -193,8 +174,6 @@ pub struct VrchatGroupRepresentationInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatGroupMemberPropsInput {
-    #[serde(default)]
-    pub(super) endpoint: String,
     #[serde(default)]
     pub(super) group_id: String,
     #[serde(default)]

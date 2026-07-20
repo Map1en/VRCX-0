@@ -8,7 +8,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { syncStartupServicesTask } from './startupServicesStatus';
-import { notifyRuntimeVrchatAuthFailure } from './vrchatAuthErrorService';
 
 type FavoriteSnapshotRecord = Record<string, unknown> & {
     detail?: unknown;
@@ -103,20 +102,12 @@ async function runFavoriteBootstrap({
             `Loading favorites baseline for ${displayName}.`
         );
 
-    const result: SocialFavoritesBaselineOutput = await commands
-        .appSocialFavoritesBaselineGet({
+    const result: SocialFavoritesBaselineOutput =
+        await commands.appSocialFavoritesBaselineGet({
             userId: normalizedUserId,
             endpoint: String(endpoint || ''),
             currentUserSnapshot: currentSnapshot,
             friendRosterById
-        })
-        .catch((error: unknown) => {
-            notifyRuntimeVrchatAuthFailure(
-                error,
-                String(endpoint || ''),
-                'favorites baseline'
-            );
-            throw error;
         });
     const snapshot: FavoriteSnapshotRecord | null = isRecord(result.snapshot)
         ? result.snapshot

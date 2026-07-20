@@ -7,16 +7,17 @@ use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_limits_get_input, favorite_worlds_get_input, favorites_get_input,
 };
 use vrcx_0_application_core::vrchat_api::require_text;
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
     LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput, LocalFavoriteInput,
     VrchatFavoriteAddInput, VrchatFavoriteAvatarsInput, VrchatFavoriteDeleteInput,
-    VrchatFavoriteEndpointInput, VrchatFavoriteGroupClearInput, VrchatFavoriteGroupSaveInput,
-    VrchatFavoriteGroupsInput, VrchatFavoritePagedInput, VrchatFavoriteWorldsInput,
+    VrchatFavoriteGroupClearInput, VrchatFavoriteGroupSaveInput, VrchatFavoriteGroupsInput,
+    VrchatFavoritePagedInput, VrchatFavoriteWorldsInput,
 };
 
 async fn execute_favorite_api(
@@ -25,31 +26,20 @@ async fn execute_favorite_api(
     detail: impl Into<String>,
     input: VrchatApiRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(command, "running", detail.into());
-    let result = super::super::execute::execute_vrchat_favorite_api(state, input).await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(command, "ok", format!("status={}", response.status));
-        }
-        Err(error) => {
-            diagnostics.record_command(command, "error", error.to_string());
-        }
-    }
-    result
+    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
+        .await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn app__vrchat_favorite_limits_get(
     state: State<'_, AppState>,
-    input: VrchatFavoriteEndpointInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_favorite_api(
         state,
         "app__vrchat_favorite_limits_get",
         "Getting favorite limits.",
-        favorite_limits_get_input(input.endpoint),
+        favorite_limits_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
     )
     .await
 }
@@ -64,7 +54,7 @@ pub async fn app__vrchat_favorites_get(
         state,
         "app__vrchat_favorites_get",
         format!("Getting favorites offset {}.", input.offset),
-        favorites_get_input(input.endpoint, input.n, input.offset),
+        favorites_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.n, input.offset),
     )
     .await
 }
@@ -80,7 +70,7 @@ pub async fn app__vrchat_favorite_worlds_get(
         "app__vrchat_favorite_worlds_get",
         format!("Getting favorite worlds offset {}.", input.offset),
         favorite_worlds_get_input(
-            input.endpoint,
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
             input.n,
             input.offset,
             input.owner_id,
@@ -101,7 +91,12 @@ pub async fn app__vrchat_favorite_avatars_get(
         state,
         "app__vrchat_favorite_avatars_get",
         format!("Getting favorite avatars offset {}.", input.offset),
-        favorite_avatars_get_input(input.endpoint, input.n, input.offset, input.tag),
+        favorite_avatars_get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.n,
+            input.offset,
+            input.tag,
+        ),
     )
     .await
 }
@@ -116,7 +111,12 @@ pub async fn app__vrchat_favorite_groups_get(
         state,
         "app__vrchat_favorite_groups_get",
         format!("Getting favorite groups offset {}.", input.offset),
-        favorite_groups_get_input(input.endpoint, input.n, input.offset, input.owner_id),
+        favorite_groups_get_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            input.n,
+            input.offset,
+            input.owner_id,
+        ),
     )
     .await
 }
@@ -128,7 +128,7 @@ pub async fn app__vrchat_favorite_add(
     input: VrchatFavoriteAddInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (type_name, favorite_id, request) = favorite_add_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.type_name,
         input.favorite_id,
         input.tags,
@@ -153,7 +153,8 @@ pub async fn app__vrchat_favorite_delete(
     state: State<'_, AppState>,
     input: VrchatFavoriteDeleteInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (object_id, request) = favorite_delete_input(input.endpoint, input.object_id)?;
+    let (object_id, request) =
+        favorite_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.object_id)?;
     let realtime_runtime = state.realtime_runtime.clone();
     let result = execute_favorite_api(
         state,
@@ -176,7 +177,7 @@ pub async fn app__vrchat_favorite_group_save(
 ) -> Result<VrchatApiResponse, AppError> {
     let kind = input.type_name.clone();
     let (group, request) = favorite_group_save_input(
-        input.endpoint,
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.owner_id,
         input.type_name,
         input.group,
@@ -204,8 +205,12 @@ pub async fn app__vrchat_favorite_group_clear(
     input: VrchatFavoriteGroupClearInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let kind = input.type_name.clone();
-    let (group, request) =
-        favorite_group_clear_input(input.endpoint, input.owner_id, input.type_name, input.group)?;
+    let (group, request) = favorite_group_clear_input(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        input.owner_id,
+        input.type_name,
+        input.group,
+    )?;
     let realtime_runtime = state.realtime_runtime.clone();
     let result = execute_favorite_api(
         state,

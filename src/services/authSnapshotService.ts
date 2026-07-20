@@ -37,7 +37,7 @@ export function applySavedAuthSnapshot(
     const runtimeStore = useRuntimeStore.getState();
     runtimeStore.setAuthBootstrap({
         lastUserLoggedIn: snapshot.lastUserLoggedIn,
-        savedCredentialCount: snapshot.savedCredentialCount,
+        savedCredentialCount: snapshot.savedCredentialsList.length,
         autoLoginStatus: snapshot.autoLoginStatus,
         autoLoginReason: snapshot.autoLoginReason,
         autoLoginDelayEnabled: snapshot.autoLoginDelayEnabled,

@@ -1,147 +1,136 @@
 import { toast } from 'sonner';
 
+import type { RuntimeVrchatAuthFailurePayload } from '@/platform/tauri/bindings';
 import authRepository from '@/repositories/authRepository';
-import {
-    isVrchatSessionRecoveryError,
-    setVrchatAuthFailureHandler
-} from '@/repositories/vrchatRequest';
-import webRepository from '@/repositories/webRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
-    applySavedAuthSnapshot,
-    refreshSavedAuthSnapshot
-} from './authSnapshotService';
+    beginAuthAttempt,
+    isCurrentAuthAttempt,
+    type AuthAttempt
+} from './authAttempt';
+import {
+    resetCurrentUserRuntimeAuth,
+    setSignedOutSessionState
+} from './authExecutionService';
+import { applySavedAuthSnapshot } from './authSnapshotService';
 import i18n from './i18nService';
 
-type AuthExecutionServiceModule = {
-    resetCurrentUserRuntimeAuth: () => void | Promise<unknown>;
-    setSignedOutSessionState: () => void;
-};
+let recoveryRun: {
+    attempt: AuthAttempt;
+    key: string;
+    promise: Promise<void>;
+} | null = null;
 
-const authExecutionServiceLoaders =
-    import.meta.glob<AuthExecutionServiceModule>('./authExecutionService.ts');
+type AuthSessionEndInput = Parameters<typeof authRepository.endSession>[0];
 
-let recoveryPromise: Promise<void> | null = null;
-let runtimeAuthFailureRecoverySuppressionCount = 0;
-
-export function shouldHandleRuntimeAuthFailure(error: unknown): boolean {
-    if (isRuntimeAuthFailureRecoverySuppressed()) {
-        return false;
+function recoveryKey(input: AuthSessionEndInput): string {
+    if (input.kind !== 'invalidated') {
+        return input.kind;
     }
+    const scopeKey = `${input.expectedUserId}:${input.expectedAuthScopeGeneration}`;
+    const transport = input.expectedRealtimeTransport;
+    return transport
+        ? `${scopeKey}:${transport.clientRunId}:${transport.generation}:${transport.sessionGeneration}`
+        : `${scopeKey}:session`;
+}
 
-    if (!isVrchatSessionRecoveryError(error)) {
-        return false;
+function currentRecoveryInput(
+    failure: RuntimeVrchatAuthFailurePayload
+): AuthSessionEndInput | null {
+    const realtimeTransport = failure.realtimeTransport ?? null;
+    if (
+        failure.statusCode !== 401 &&
+        !(failure.statusCode === 403 && realtimeTransport)
+    ) {
+        return null;
     }
 
     const sessionState = useSessionStore.getState();
     const runtimeState = useRuntimeStore.getState();
-    return Boolean(
-        sessionState.sessionPhase === 'ready' &&
-        sessionState.isLoggedIn &&
-        runtimeState.auth.currentUserId
-    );
+    const userId = runtimeState.auth.currentUserId;
+    if (
+        sessionState.sessionPhase !== 'ready' ||
+        !sessionState.isLoggedIn ||
+        !userId ||
+        failure.ownerUserId !== userId
+    ) {
+        return null;
+    }
+    return {
+        kind: 'invalidated',
+        expectedUserId: userId,
+        expectedAuthScopeGeneration: failure.authScopeGeneration,
+        expectedRealtimeTransport: realtimeTransport
+    };
 }
 
-async function runRuntimeAuthRecovery(error: unknown): Promise<void> {
-    if (!shouldHandleRuntimeAuthFailure(error)) {
+async function runRuntimeAuthRecovery(
+    endInput: AuthSessionEndInput,
+    attempt: AuthAttempt
+): Promise<void> {
+    if (endInput.kind !== 'invalidated') {
         return;
     }
 
     const runtimeStore = useRuntimeStore.getState();
-    const shouldClearAutoLoginTarget = isVrchatSessionRecoveryError(error);
-    const failedUserId = String(
-        runtimeStore.auth.currentUserId ||
-            runtimeStore.auth.lastUserLoggedIn ||
-            ''
-    );
+    if (
+        runtimeStore.auth.currentUserId !== endInput.expectedUserId ||
+        !isCurrentAuthAttempt(attempt)
+    ) {
+        return;
+    }
     const [title, description] = await Promise.all([
         i18n.t('message.auth.session_expired'),
         i18n.t('message.auth.session_restore_available')
     ]);
+    if (!isCurrentAuthAttempt(attempt)) {
+        return;
+    }
 
     runtimeStore.setStartupTask('auth', 'running', title);
     toast.warning(title, {
         description
     });
 
+    let snapshot: Awaited<ReturnType<typeof authRepository.endSession>>;
     try {
-        await webRepository.clearAuthCookies();
-    } catch (clearError) {
-        console.warn(
-            'Failed to clear cookies after VRChat session expired:',
-            clearError
-        );
+        snapshot = await authRepository.endSession(endInput);
+    } catch (endError) {
+        console.warn('Failed to end the invalid VRChat session:', endError);
+        return;
     }
-
-    const loadAuthExecutionService =
-        authExecutionServiceLoaders['./authExecutionService.ts'];
-    if (typeof loadAuthExecutionService !== 'function') {
-        throw new Error('Auth execution service is unavailable.');
+    if (!isCurrentAuthAttempt(attempt)) {
+        return;
     }
-    const { resetCurrentUserRuntimeAuth, setSignedOutSessionState } =
-        await loadAuthExecutionService();
-    await resetCurrentUserRuntimeAuth();
+    if (!snapshot) {
+        return;
+    }
+    resetCurrentUserRuntimeAuth();
     setSignedOutSessionState();
-
-    try {
-        if (shouldClearAutoLoginTarget) {
-            applySavedAuthSnapshot(
-                await authRepository.recordLogout(failedUserId, {
-                    clearLastUserLoggedIn: false,
-                    cookies: null
-                })
-            );
-        } else {
-            await refreshSavedAuthSnapshot();
-        }
-    } catch (snapshotError) {
-        console.warn(
-            'Failed to refresh saved auth snapshot after VRChat session expired:',
-            snapshotError
-        );
-    }
+    applySavedAuthSnapshot(snapshot);
 }
 
 export function handleRuntimeAuthFailure(
-    error: unknown
+    failure: RuntimeVrchatAuthFailurePayload
 ): Promise<void> | undefined {
-    if (!shouldHandleRuntimeAuthFailure(error)) {
+    const endInput = currentRecoveryInput(failure);
+    if (!endInput) {
         return;
     }
 
-    if (!recoveryPromise) {
-        recoveryPromise = runRuntimeAuthRecovery(error).finally(() => {
-            recoveryPromise = null;
-        });
+    const key = recoveryKey(endInput);
+    if (recoveryRun?.key === key && isCurrentAuthAttempt(recoveryRun.attempt)) {
+        return recoveryRun.promise;
     }
 
-    return recoveryPromise;
-}
-
-function isRuntimeAuthFailureRecoverySuppressed(): boolean {
-    return runtimeAuthFailureRecoverySuppressionCount > 0;
-}
-
-export async function runWithRuntimeAuthFailureRecoverySuppressed<T>(
-    task: () => Promise<T>
-): Promise<T> {
-    runtimeAuthFailureRecoverySuppressionCount += 1;
-    try {
-        return await task();
-    } finally {
-        runtimeAuthFailureRecoverySuppressionCount = Math.max(
-            0,
-            runtimeAuthFailureRecoverySuppressionCount - 1
-        );
-    }
-}
-
-export function startRuntimeAuthFailureRecovery(): () => void {
-    const unsubscribe = setVrchatAuthFailureHandler(handleRuntimeAuthFailure);
-
-    return () => {
-        unsubscribe();
-    };
+    const attempt = beginAuthAttempt();
+    const promise = runRuntimeAuthRecovery(endInput, attempt).finally(() => {
+        if (recoveryRun?.promise === promise) {
+            recoveryRun = null;
+        }
+    });
+    recoveryRun = { attempt, key, promise };
+    return promise;
 }

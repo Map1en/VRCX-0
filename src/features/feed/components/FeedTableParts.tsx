@@ -160,9 +160,7 @@ function FeedUserLink({
             return;
         }
 
-        userProfileRepository
-            .getUserProfile({ userId, endpoint: currentEndpoint })
-            .catch(() => {});
+        userProfileRepository.getUserProfile({ userId }).catch(() => {});
     }, [currentEndpoint, displayName, userId]);
 
     const userLabel = displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
@@ -400,9 +398,7 @@ function FeedUserAvatarButton({
             return;
         }
 
-        userProfileRepository
-            .getUserProfile({ userId, endpoint: currentEndpoint })
-            .catch(() => {});
+        userProfileRepository.getUserProfile({ userId }).catch(() => {});
     }, [currentEndpoint, displayName, userId]);
 
     const userLabel = displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;

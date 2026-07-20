@@ -5,7 +5,27 @@ use super::paths::{
 };
 use super::*;
 
-fn remove_thumbnail_file(path: &Path, cache_dir: &Path, cache: &MetadataCacheDb) -> u64 {
+fn thumbnail_path(cache_dir: &Path, stored_path: &str) -> PathBuf {
+    let stored_path = Path::new(stored_path);
+    if stored_path.is_absolute() {
+        stored_path.to_path_buf()
+    } else {
+        cache_dir.join(stored_path)
+    }
+}
+
+fn thumbnail_record_path(path: &Path, cache_dir: &Path) -> String {
+    path.strip_prefix(cache_dir)
+        .map(path_string)
+        .unwrap_or_else(|_| path_string(path))
+}
+
+fn remove_thumbnail_file(
+    path: &Path,
+    record_path: &str,
+    cache_dir: &Path,
+    cache: &MetadataCacheDb,
+) -> u64 {
     if path.exists() && !is_path_inside_directory(path, cache_dir) {
         return 0;
     }
@@ -13,7 +33,7 @@ fn remove_thumbnail_file(path: &Path, cache_dir: &Path, cache: &MetadataCacheDb)
         .map(|metadata| metadata.len())
         .unwrap_or(0);
     let _ = std::fs::remove_file(path);
-    cache.delete_thumbnail_cache_record(&path_string(path));
+    cache.delete_thumbnail_cache_record(record_path);
     size
 }
 
@@ -31,7 +51,8 @@ pub(super) fn delete_thumbnail_cache_for_source_paths(
         .collect::<HashSet<_>>();
     for entry in cache.thumbnail_cache_entries() {
         if source_path_set.contains(entry.source_path.as_str()) {
-            remove_thumbnail_file(&PathBuf::from(entry.thumb_path), cache_dir, cache);
+            let path = thumbnail_path(cache_dir, &entry.thumb_path);
+            remove_thumbnail_file(&path, &entry.thumb_path, cache_dir, cache);
         }
     }
 }
@@ -44,14 +65,16 @@ fn delete_stale_thumbnail_cache_for_source(
 ) {
     for entry in cache.thumbnail_cache_entries_for_source(source_path) {
         if entry.cache_key != current_cache_key {
-            remove_thumbnail_file(&PathBuf::from(entry.thumb_path), cache_dir, cache);
+            let path = thumbnail_path(cache_dir, &entry.thumb_path);
+            remove_thumbnail_file(&path, &entry.thumb_path, cache_dir, cache);
         }
     }
 }
 
 pub(super) fn delete_all_thumbnail_cache_files(cache_dir: &Path, cache: &MetadataCacheDb) {
     for file in screenshot_thumbnail_files(cache_dir) {
-        remove_thumbnail_file(&file.path, cache_dir, cache);
+        let record_path = thumbnail_record_path(&file.path, cache_dir);
+        remove_thumbnail_file(&file.path, &record_path, cache_dir, cache);
     }
 }
 
@@ -60,7 +83,7 @@ fn cleanup_screenshot_thumbnail_cache(cache_dir: &Path, cache: &MetadataCacheDb)
     let mut total_size = screenshot_thumbnail_cache_size(cache_dir);
 
     for entry in cache.thumbnail_cache_entries() {
-        let thumb_path = PathBuf::from(&entry.thumb_path);
+        let thumb_path = thumbnail_path(cache_dir, &entry.thumb_path);
         let source_path = PathBuf::from(&entry.source_path);
         let source_state = screenshot_thumbnail_source_state(&source_path).ok();
         let source_stale = source_state
@@ -72,8 +95,12 @@ fn cleanup_screenshot_thumbnail_cache(cache_dir: &Path, cache: &MetadataCacheDb)
             })
             .unwrap_or(true);
         if source_stale || !thumb_path.is_file() {
-            total_size =
-                total_size.saturating_sub(remove_thumbnail_file(&thumb_path, cache_dir, cache));
+            total_size = total_size.saturating_sub(remove_thumbnail_file(
+                &thumb_path,
+                &entry.thumb_path,
+                cache_dir,
+                cache,
+            ));
         }
     }
 
@@ -88,8 +115,9 @@ fn cleanup_screenshot_thumbnail_cache(cache_dir: &Path, cache: &MetadataCacheDb)
     let last_used_by_path = cache.thumbnail_last_used_map();
     let mut files = screenshot_thumbnail_files(cache_dir);
     files.sort_by_key(|file| {
+        let record_path = thumbnail_record_path(&file.path, cache_dir);
         last_used_by_path
-            .get(&path_string(&file.path))
+            .get(&record_path)
             .copied()
             .unwrap_or(file.modified_at)
     });
@@ -98,7 +126,13 @@ fn cleanup_screenshot_thumbnail_cache(cache_dir: &Path, cache: &MetadataCacheDb)
         if total_size <= SCREENSHOT_THUMBNAIL_TARGET_BYTES {
             break;
         }
-        total_size = total_size.saturating_sub(remove_thumbnail_file(&file.path, cache_dir, cache));
+        let record_path = thumbnail_record_path(&file.path, cache_dir);
+        total_size = total_size.saturating_sub(remove_thumbnail_file(
+            &file.path,
+            &record_path,
+            cache_dir,
+            cache,
+        ));
     }
 }
 
@@ -160,17 +194,12 @@ fn ensure_screenshot_thumbnail_in_root(
     validate_screenshot_thumbnail_source(&source_path, source_root, size_bytes)?;
 
     let cache_key = screenshot_thumbnail_cache_key(path, size_bytes, modified_at);
-    let thumb_path = cache_dir.join(format!("{cache_key}.webp"));
+    let thumb_file_name = format!("{cache_key}.webp");
+    let thumb_path = cache_dir.join(&thumb_file_name);
     let thumb_path_string = path_string(&thumb_path);
 
     if thumb_path.is_file() {
-        cache.record_thumbnail_cache(
-            path,
-            &thumb_path_string,
-            &cache_key,
-            size_bytes,
-            modified_at,
-        );
+        cache.record_thumbnail_cache(path, &thumb_file_name, &cache_key, size_bytes, modified_at);
         cleanup_screenshot_thumbnail_cache_if_due(cache_dir, cache);
         return Ok(thumb_path_string);
     }
@@ -181,13 +210,7 @@ fn ensure_screenshot_thumbnail_in_root(
     let encoded_bytes = encode_screenshot_thumbnail_webp(&source_path)?;
     write_thumbnail_atomically(&thumb_path, &encoded_bytes)?;
 
-    cache.record_thumbnail_cache(
-        path,
-        &thumb_path_string,
-        &cache_key,
-        size_bytes,
-        modified_at,
-    );
+    cache.record_thumbnail_cache(path, &thumb_file_name, &cache_key, size_bytes, modified_at);
     cleanup_screenshot_thumbnail_cache_if_due(cache_dir, cache);
 
     Ok(thumb_path_string)

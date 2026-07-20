@@ -38,7 +38,7 @@ impl FakeLoginApi {
             responses: Mutex::new(
                 responses
                     .into_iter()
-                    .map(|(status, body)| Ok(execute_response(status, body, ApiScope::Vrchat)))
+                    .map(|(status, body)| Ok(execute_response(status, body)))
                     .collect(),
             ),
             calls: Mutex::new(Vec::new()),
@@ -77,7 +77,7 @@ impl LoginApi for FakeLoginApi {
         Box::pin(async move {
             self.calls.lock().unwrap().push(RecordedCall {
                 path: input.path.clone().unwrap_or_default(),
-                body: input.body.clone(),
+                body: input.body.as_json().cloned(),
             });
             let next = self
                 .responses

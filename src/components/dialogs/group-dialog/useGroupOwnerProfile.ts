@@ -35,8 +35,7 @@ export function useGroupOwnerProfile({
 
         userProfileRepository
             .getUserProfile({
-                userId: ownerId,
-                endpoint: currentEndpoint
+                userId: ownerId
             })
             .then((profile) => {
                 if (active) {

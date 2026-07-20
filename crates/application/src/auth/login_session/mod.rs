@@ -7,16 +7,13 @@ mod types;
 mod test_support;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-use service::sort_two_factor_methods;
 
-pub use auto_login::{AutoLoginOutcome, AutoLoginStartInput};
+pub use auto_login::{AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome};
 pub use runtime::{
-    LoginSessionRuntime, LoginSessionStartBasicInput, LoginSessionStartCookieRestoreInput,
-    LoginSessionStartSavedCredentialInput,
+    LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest,
+    LoginSessionRespondInput, LoginSessionRuntime, LoginSessionStartInput,
 };
-pub use service::LoginSession;
-pub use types::{
-    LoginApi, LoginApiFuture, LoginFailureKind, LoginSessionState, TwoFactorMethod,
-    WebClientLoginApi,
-};
+#[cfg(test)]
+pub(crate) use types::LoginApiFuture;
+pub(crate) use types::{LoginApi, WebClientLoginApi};
+pub use types::{LoginFailureKind, LoginSessionState, TwoFactorMethod};

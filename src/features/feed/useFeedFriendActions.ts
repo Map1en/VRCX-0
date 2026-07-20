@@ -169,8 +169,7 @@ export function useFeedFriendActions(): FeedFriendActions {
             try {
                 const opened = await tryOpenLaunchLocation(
                     normalizedLocation,
-                    parsedLocation.shortName || '',
-                    currentEndpoint
+                    parsedLocation.shortName || ''
                 );
                 if (opened) {
                     toast.success(
@@ -189,7 +188,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 );
             }
         },
-        [currentEndpoint, t]
+        [t]
     );
 
     const selfInviteFeedFriendLocation = useCallback(
@@ -206,8 +205,7 @@ export function useFeedFriendActions(): FeedFriendActions {
             try {
                 await selfInviteToInstance(
                     normalizedLocation,
-                    parsedLocation.shortName || '',
-                    currentEndpoint
+                    parsedLocation.shortName || ''
                 );
                 toast.success(t('message.invite.self_sent'));
             } catch (error) {
@@ -218,7 +216,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 );
             }
         },
-        [currentEndpoint, t]
+        [t]
     );
 
     const sendFeedFriendInvite = useCallback(
@@ -269,7 +267,6 @@ export function useFeedFriendActions(): FeedFriendActions {
                     parsedLocation.tag || currentInviteLocation;
                 await sendInviteToLocation({
                     receiverUserId: friendId,
-                    endpoint: currentEndpoint,
                     instanceId: inviteLocation,
                     worldId: parsedLocation.worldId,
                     rsvp: true
@@ -321,8 +318,7 @@ export function useFeedFriendActions(): FeedFriendActions {
             }
             try {
                 await sendRequestInviteToUser({
-                    receiverUserId: friendId,
-                    endpoint: currentEndpoint
+                    receiverUserId: friendId
                 });
                 toast.success(t('view.feed.success.invite_request_sent'));
             } catch (error) {
@@ -350,7 +346,6 @@ export function useFeedFriendActions(): FeedFriendActions {
             }
             try {
                 const result = await boopPrompt({
-                    endpoint: currentEndpoint,
                     targetLabel:
                         normalizeId(friend?.displayName || friend?.username) ||
                         friendId
@@ -360,8 +355,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 }
                 await sendBoopToUser({
                     userId: friendId,
-                    emojiId: normalizeId(result.value),
-                    endpoint: currentEndpoint
+                    emojiId: normalizeId(result.value)
                 });
                 toast.success(t('view.feed.success.boop_sent'));
             } catch (error) {
@@ -372,7 +366,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 );
             }
         },
-        [boopPrompt, currentEndpoint, normalizedCurrentUserId, t]
+        [boopPrompt, normalizedCurrentUserId, t]
     );
 
     const openFeedNewInstance = useCallback(

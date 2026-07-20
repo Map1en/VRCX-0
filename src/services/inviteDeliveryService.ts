@@ -4,7 +4,6 @@ import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 
 interface SendInviteToLocationInput {
     receiverUserId?: unknown;
-    endpoint?: string;
     instanceId?: unknown;
     worldId?: unknown;
     worldName?: unknown;
@@ -15,7 +14,6 @@ interface SendInviteToLocationInput {
 
 interface SendRequestInviteToUserInput {
     receiverUserId?: unknown;
-    endpoint?: string;
     platform?: string;
     requestSlot?: unknown;
     imageData?: unknown;
@@ -23,7 +21,6 @@ interface SendRequestInviteToUserInput {
 
 interface SendBoopToUserInput {
     userId?: unknown;
-    endpoint?: string;
     emojiId?: unknown;
 }
 
@@ -35,7 +32,6 @@ function normalizeText(value: unknown): string {
 
 export async function sendInviteToLocation({
     receiverUserId,
-    endpoint = '',
     instanceId,
     worldId,
     worldName,
@@ -57,9 +53,7 @@ export async function sendInviteToLocation({
     const normalizedWorldName = normalizeText(worldName);
     const worldResponse = normalizedWorldName
         ? null
-        : await vrchatSearchRepository.getWorlds({}, normalizedWorldId, {
-              endpoint
-          });
+        : await vrchatSearchRepository.getWorlds({}, normalizedWorldId);
     const params: QueryParams = {
         instanceId: normalizedInstanceId,
         worldId: normalizedWorldId,
@@ -83,7 +77,6 @@ export async function sendInviteToLocation({
     if (normalizedImageData) {
         return notificationPersistenceRepository.sendInvitePhoto({
             receiverUserId: normalizedReceiverUserId,
-            endpoint,
             params,
             imageData: normalizedImageData
         });
@@ -91,14 +84,12 @@ export async function sendInviteToLocation({
 
     return notificationPersistenceRepository.sendInvite({
         receiverUserId: normalizedReceiverUserId,
-        endpoint,
         params
     });
 }
 
 export async function sendRequestInviteToUser({
     receiverUserId,
-    endpoint = '',
     platform = 'standalonewindows',
     requestSlot = null,
     imageData = ''
@@ -121,7 +112,6 @@ export async function sendRequestInviteToUser({
     if (normalizedImageData) {
         return notificationPersistenceRepository.sendRequestInvitePhoto({
             receiverUserId: normalizedReceiverUserId,
-            endpoint,
             params,
             imageData: normalizedImageData
         });
@@ -129,14 +119,12 @@ export async function sendRequestInviteToUser({
 
     return notificationPersistenceRepository.sendRequestInvite({
         receiverUserId: normalizedReceiverUserId,
-        endpoint,
         params
     });
 }
 
 export async function sendBoopToUser({
     userId,
-    endpoint = '',
     emojiId = ''
 }: SendBoopToUserInput = {}) {
     const normalizedUserId = normalizeText(userId);
@@ -146,7 +134,6 @@ export async function sendBoopToUser({
 
     return notificationPersistenceRepository.sendBoop({
         userId: normalizedUserId,
-        emojiId,
-        endpoint
+        emojiId
     });
 }

@@ -25,7 +25,9 @@ function getAutoLoginSnapshotKey(snapshot: SavedAuthSnapshot | null): string {
     if (!snapshot || !userId) {
         return '';
     }
-    const savedCredential = snapshot.savedCredentials?.[userId];
+    const savedCredential = snapshot.savedCredentialsList.find(
+        (credential) => credential.user.id === userId
+    );
 
     return JSON.stringify({
         userId,

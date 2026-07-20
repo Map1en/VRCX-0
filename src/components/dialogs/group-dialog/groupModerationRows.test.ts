@@ -8,7 +8,6 @@ import {
     moderationRowRoles,
     moderationRowSearchText,
     moderationRowStatus,
-    moderationRowSubtitle,
     moderationRowUserId,
     resolveGroupModerationActiveTab
 } from './groupModerationRows';
@@ -123,7 +122,6 @@ describe('groupModerationRows', () => {
         expect(moderationRowRoles(row, group)).toBe('Member, Role');
         expect(moderationRowStatus(row)).toBe('ban');
         expect(moderationRowDate(row)).toBe('2026-06-22T10:00:00Z');
-        expect(moderationRowSubtitle(row)).toBe('ban | 2026-06-22T10:00:00Z');
         expect(moderationRowSearchText(row, group)).toBe(
             'nested user usr_direct member, role ban 2026-06-22t10:00:00z repeated reports'
         );

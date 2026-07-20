@@ -303,17 +303,6 @@ impl RealtimeHostRuntime {
         };
         if let Some(snapshot) = canonical_snapshot.as_ref() {
             self.set_activity_friend_user_ids(snapshot.friends_by_id.keys().cloned().collect());
-            #[cfg(test)]
-            {
-                let hook = self
-                    .friend_before_output_hook
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .take();
-                if let Some(hook) = hook {
-                    hook();
-                }
-            }
         }
         let reconcile_outcome = if reconcile_friend_log {
             canonical_snapshot
@@ -372,7 +361,6 @@ impl RealtimeHostRuntime {
             });
         }
         drop(owner);
-        self.drain_queued_friend_messages(active.clone());
         let final_snapshot = if result.accepted {
             let _owner = self.lock_friend_owner();
             let snapshot = self

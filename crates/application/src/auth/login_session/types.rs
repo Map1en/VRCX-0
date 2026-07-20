@@ -6,24 +6,24 @@ use serde::Serialize;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
 
-use crate::{AuthenticatedRuntimeSession, Result, WebClient};
+use crate::{AuthenticatedRuntimeSession, Result, SavedAuthSnapshot, WebClient};
 
 pub type TwoFactorMethod = String;
 
-pub type LoginApiFuture<'a> =
+pub(crate) type LoginApiFuture<'a> =
     Pin<Box<dyn Future<Output = Result<HttpApiExecuteResponse>> + Send + 'a>>;
 
-pub trait LoginApi: Send + Sync {
+pub(crate) trait LoginApi: Send + Sync {
     fn execute<'a>(&'a self, input: HttpApiRequestInput, scope: ApiScope) -> LoginApiFuture<'a>;
 }
 
-pub struct WebClientLoginApi {
+pub(crate) struct WebClientLoginApi {
     web: Arc<WebClient>,
     db: Arc<DatabaseService>,
 }
 
 impl WebClientLoginApi {
-    pub fn new(web: Arc<WebClient>, db: Arc<DatabaseService>) -> Self {
+    pub(crate) fn new(web: Arc<WebClient>, db: Arc<DatabaseService>) -> Self {
         Self { web, db }
     }
 }
@@ -50,8 +50,12 @@ pub enum LoginFailureKind {
 pub enum LoginSessionState {
     Authenticated {
         session: AuthenticatedRuntimeSession,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        snapshot: Option<Box<SavedAuthSnapshot>>,
     },
     Challenge {
+        #[serde(rename = "attemptId")]
+        attempt_id: String,
         methods: Vec<TwoFactorMethod>,
         mode: TwoFactorMethod,
         error: Option<String>,
@@ -59,6 +63,18 @@ pub enum LoginSessionState {
     Failed {
         reason: String,
         kind: LoginFailureKind,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        snapshot: Option<Box<SavedAuthSnapshot>>,
     },
     Cancelled,
+}
+
+impl LoginSessionState {
+    pub(super) fn failed(reason: impl Into<String>, kind: LoginFailureKind) -> Self {
+        Self::Failed {
+            reason: reason.into(),
+            kind,
+            snapshot: None,
+        }
+    }
 }

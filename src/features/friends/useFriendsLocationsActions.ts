@@ -39,14 +39,12 @@ function getFriendActionLabel(friend: FriendRecord, fallback: string): string {
 
 export function useFriendsLocationsActions({
     canInviteFromCurrentLocation,
-    currentEndpoint,
     currentInviteLocation,
     currentUserId,
     setCollapsedGroups,
     instanceActionGatesByLocation
 }: {
     canInviteFromCurrentLocation: boolean;
-    currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
     setCollapsedGroups: Dispatch<SetStateAction<Set<string>>>;
@@ -92,8 +90,7 @@ export function useFriendsLocationsActions({
         try {
             const opened = await tryOpenLaunchLocation(
                 location,
-                parsedLocation.shortName || '',
-                currentEndpoint
+                parsedLocation.shortName || ''
             );
             if (opened) {
                 toast.success(
@@ -127,8 +124,7 @@ export function useFriendsLocationsActions({
         try {
             await selfInviteToInstance(
                 location,
-                parsedLocation.shortName || '',
-                currentEndpoint
+                parsedLocation.shortName || ''
             );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
@@ -183,7 +179,6 @@ export function useFriendsLocationsActions({
             const inviteLocation = parsedLocation.tag || currentInviteLocation;
             await sendInviteToLocation({
                 receiverUserId: friendId,
-                endpoint: currentEndpoint,
                 instanceId: inviteLocation,
                 worldId: parsedLocation.worldId,
                 rsvp: true
@@ -214,8 +209,7 @@ export function useFriendsLocationsActions({
         }
         try {
             await sendRequestInviteToUser({
-                receiverUserId: friendId,
-                endpoint: currentEndpoint
+                receiverUserId: friendId
             });
             toast.success(t('view.friend_list.success.invite_request_sent'));
         } catch (error) {
@@ -234,7 +228,6 @@ export function useFriendsLocationsActions({
         }
         try {
             const result = await boopPrompt({
-                endpoint: currentEndpoint,
                 targetLabel: getFriendActionLabel(friend, friendId)
             });
             if (!result.ok) {
@@ -242,8 +235,7 @@ export function useFriendsLocationsActions({
             }
             await sendBoopToUser({
                 userId: friendId,
-                emojiId: result.value,
-                endpoint: currentEndpoint
+                emojiId: result.value
             });
             toast.success(t('view.friend_list.success.boop_sent'));
         } catch (error) {

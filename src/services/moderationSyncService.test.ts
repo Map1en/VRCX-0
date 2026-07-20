@@ -7,20 +7,12 @@ const runtimeState = vi.hoisted(() => ({
     }
 }));
 
-const authRecoveryState = vi.hoisted(() => ({
-    handleRuntimeAuthFailure: vi.fn()
-}));
-
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: runtimeState.commands
 }));
 
-vi.mock('./authSessionRecoveryService', () => ({
-    handleRuntimeAuthFailure: authRecoveryState.handleRuntimeAuthFailure
-}));
-
 describe('moderationSyncService', () => {
-    it('routes refresh missing credentials through runtime auth recovery', async () => {
+    it('preserves a typed missing-credentials refresh error', async () => {
         runtimeState.commands.appModerationSyncRefresh.mockRejectedValueOnce(
             new Error('Missing Credentials')
         );
@@ -33,15 +25,9 @@ describe('moderationSyncService', () => {
             status: 401,
             endpoint: 'auth/user/playermoderations'
         });
-        expect(authRecoveryState.handleRuntimeAuthFailure).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 401,
-                endpoint: 'auth/user/playermoderations'
-            })
-        );
     });
 
-    it('routes mutation missing credentials through runtime auth recovery', async () => {
+    it('preserves a typed missing-credentials mutation error', async () => {
         runtimeState.commands.appModerationSyncUpdate.mockRejectedValueOnce(
             new Error('Missing Credentials')
         );
@@ -59,11 +45,5 @@ describe('moderationSyncService', () => {
             status: 401,
             endpoint: 'auth/user/unplayermoderate'
         });
-        expect(authRecoveryState.handleRuntimeAuthFailure).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 401,
-                endpoint: 'auth/user/unplayermoderate'
-            })
-        );
     });
 });

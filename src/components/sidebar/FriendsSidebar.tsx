@@ -182,7 +182,6 @@ export function FriendsSidebar({
     } = useFriendsSidebarActions({
         canInviteFromCurrentLocation,
         confirm,
-        currentEndpoint,
         currentInviteLocation,
         currentUser,
         currentUserId,

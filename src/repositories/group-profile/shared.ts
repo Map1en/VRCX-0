@@ -6,12 +6,7 @@ import type {
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
-import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
-    unwrapErrorMessage
-} from '../vrchatRequest';
+import { unwrapVrchatResponse } from '../vrchatRequest';
 
 export type GroupRecord = Record<string, unknown>;
 
@@ -71,7 +66,6 @@ export type GroupModerationRow = Partial<GroupMemberRow> & {
 export type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
 
 export interface PageRequest {
@@ -86,7 +80,6 @@ export interface CollectPagesOptions {
 
 export interface GroupProfileInput {
     groupId?: unknown;
-    endpoint?: string;
     includeRoles?: boolean;
     force?: boolean;
     dialog?: boolean;
@@ -94,11 +87,14 @@ export interface GroupProfileInput {
 
 export interface GroupIdInput {
     groupId?: unknown;
-    endpoint?: string;
 }
 
 export interface GroupUserInput extends GroupIdInput {
     userId?: unknown;
+}
+
+export interface GroupUserRoleInput extends GroupUserInput {
+    roleId?: unknown;
 }
 
 export interface GroupPostInput extends GroupIdInput {
@@ -155,25 +151,9 @@ export function unwrapVrchatGroupResponse<TJson = GroupRecord>(
     response: VrchatApiResult,
     path: string
 ) {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage: 'VRChat group request failed'
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw requestError;
-    }
-
-    return {
-        json: json as TJson,
-        status: response.status,
-        raw: response.raw
-    };
+    return unwrapVrchatResponse<TJson>(response, path, {
+        fallbackMessage: 'VRChat group request failed'
+    });
 }
 
 export function normalizeEntityId(value: unknown): string {

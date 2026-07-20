@@ -326,8 +326,7 @@ export function useWorldInstanceActions({
                 queueEnabled: Boolean(form.queueEnabled),
                 ageGate: Boolean(form.ageGate),
                 roleIds: parseRoleIds(form.roleIds),
-                displayName: normalizeEntityId(form.displayName),
-                endpoint: currentEndpoint
+                displayName: normalizeEntityId(form.displayName)
             });
             const location = resolveInstanceLocation(
                 targetWorldId,
@@ -343,7 +342,6 @@ export function useWorldInstanceActions({
             const created = await resolveCreatedInstanceDetails(
                 location,
                 response.json,
-                currentEndpoint,
                 {
                     accessType: form.accessType || 'public',
                     ownerId:
@@ -381,10 +379,7 @@ export function useWorldInstanceActions({
                     try {
                         await selfInviteToInstance(
                             location,
-                            created.shortName ||
-                                created.secureOrShortName ||
-                                '',
-                            currentEndpoint
+                            created.shortName || created.secureOrShortName || ''
                         );
                         toast.success(
                             t(
@@ -426,14 +421,12 @@ export function useWorldInstanceActions({
     ) {
         const opened = await tryOpenLaunchLocation(
             created.location,
-            created.shortName || created.secureOrShortName || '',
-            currentEndpoint
+            created.shortName || created.secureOrShortName || ''
         );
         if (!opened) {
             await selfInviteToInstance(
                 created.location,
-                created.shortName || created.secureOrShortName || '',
-                currentEndpoint
+                created.shortName || created.secureOrShortName || ''
             );
             toast.warning(
                 t(
@@ -470,8 +463,7 @@ export function useWorldInstanceActions({
         try {
             await selfInviteToInstance(
                 created.location,
-                created.shortName || created.secureOrShortName || '',
-                currentEndpoint
+                created.shortName || created.secureOrShortName || ''
             );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {

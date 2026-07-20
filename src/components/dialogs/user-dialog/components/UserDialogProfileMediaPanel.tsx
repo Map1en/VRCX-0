@@ -232,14 +232,12 @@ function ProfileMediaSection({
 
 export function UserDialogProfileMediaPanel({
     profile,
-    endpoint,
     isVrcPlusSupporter,
     actionStatus,
     onBack,
     onSetProfileMediaField
 }: {
     profile: UserDialogProfileRecord;
-    endpoint: string;
     isVrcPlusSupporter: boolean;
     actionStatus: string;
     onBack: () => void;
@@ -270,15 +268,10 @@ export function UserDialogProfileMediaPanel({
             [section.assetKey]: true
         }));
         try {
-            const { json } = await mediaRepository.getFileList(
-                {
-                    n: 100,
-                    tag: section.fileTag
-                },
-                {
-                    endpoint
-                }
-            );
+            const { json } = await mediaRepository.getFileList({
+                n: 100,
+                tag: section.fileTag
+            });
             setFilesBySection((current) => ({
                 ...current,
                 [section.assetKey]: Array.isArray(json)
@@ -305,7 +298,7 @@ export function UserDialogProfileMediaPanel({
         for (const section of MEDIA_SECTIONS) {
             refreshSection(section);
         }
-    }, [endpoint, profile?.id]);
+    }, [profile?.id]);
 
     async function useProfileMedia(
         fieldName: ProfileMediaFieldName,

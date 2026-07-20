@@ -137,13 +137,10 @@ export function useUserDialogMemoState({
                 !dialog.editingCurrentUser &&
                 nextNote !== dialog.originalNote
             ) {
-                await vrchatToolsRepository.saveUserNote(
-                    {
-                        targetUserId,
-                        note: nextNote
-                    },
-                    { endpoint: targetEndpoint }
-                );
+                await vrchatToolsRepository.saveUserNote({
+                    targetUserId,
+                    note: nextNote
+                });
             }
             const nextEntry = await memoPersistenceRepository.saveUserMemo({
                 userId: targetUserId,

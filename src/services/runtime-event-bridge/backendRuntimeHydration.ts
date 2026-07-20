@@ -1,8 +1,6 @@
 import type { FriendProfileLoadStatusPayload } from '@/platform/tauri/bindings';
-import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { handleRuntimeAuthFailure } from '../authSessionRecoveryService';
 import { resumeFrontendSessionFromBackendRuntime } from '../backendRuntimeSessionResumeService';
 import { applyFriendProfileLoadStatusPayload } from '../friendProfileLoadService';
 import { isRecord } from './guards';
@@ -37,41 +35,6 @@ function applyBackendRuntimeSnapshot(
     }
 }
 
-function isBackendRuntimeAuthFailureSnapshot(
-    snapshot: RuntimeSnapshotPayload
-): boolean {
-    return Boolean(
-        isRecord(snapshot) &&
-        snapshot.phase === 'running' &&
-        snapshot.authStatus === 'authenticated' &&
-        normalizeString(snapshot.authUserId) &&
-        normalizeString(snapshot.wsStatus) === 'authFailure'
-    );
-}
-
-function handleBackendRuntimeAuthFailureSnapshot(
-    snapshot: RuntimeSnapshotPayload
-): void {
-    if (!isBackendRuntimeAuthFailureSnapshot(snapshot)) {
-        return;
-    }
-
-    const error = Object.assign(new Error('Backend realtime auth failed.'), {
-        status: 401,
-        endpoint: 'auth',
-        payload: { snapshot }
-    });
-    const handled = handleRuntimeAuthFailure(error);
-    if (handled) {
-        handled.catch((recoveryError: unknown) => {
-            console.warn(
-                'Backend runtime auth failure recovery failed:',
-                recoveryError
-            );
-        });
-    }
-}
-
 export function hydrateBackendRuntimeSnapshot(
     snapshot: RuntimeSnapshotPayload,
     flushPendingProjectionEvents: () => void
@@ -94,7 +57,6 @@ export function hydrateBackendRuntimeSnapshot(
                 });
                 try {
                     await resumeFrontendSessionFromBackendRuntime(nextSnapshot);
-                    handleBackendRuntimeAuthFailureSnapshot(nextSnapshot);
                     flushPendingProjectionEvents();
                 } catch (error) {
                     console.warn(
@@ -132,7 +94,6 @@ export function handleBackendRuntimeTelemetrySnapshot(
             );
         })
         .then(() => {
-            handleBackendRuntimeAuthFailureSnapshot(snapshot);
             flushPendingProjectionEvents();
         });
 }

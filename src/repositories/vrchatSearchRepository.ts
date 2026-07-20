@@ -1,18 +1,10 @@
 import { commands } from '@/platform/tauri/bindings';
-import { normalizeVrchatEndpoint } from '@/shared/vrchatEndpoint';
 
 import {
-    createRequestError,
-    notifyVrchatAuthFailure,
-    parseJsonResponse,
     type QueryParams,
     type VrchatRequestResponse,
-    unwrapErrorMessage
+    unwrapVrchatResponse
 } from './vrchatRequest';
-
-interface SearchRequestOptions {
-    endpoint?: string;
-}
 
 type SearchWorldJson = Record<string, unknown> & {
     name?: string;
@@ -28,12 +20,7 @@ function normalizeParams(params: QueryParams = {}): QueryParams {
 type VrchatApiResult = {
     status: number;
     data: unknown;
-    raw: unknown;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function unwrapVrchatSearchResponse<TJson = unknown>(
     response: VrchatApiResult,
@@ -41,51 +28,27 @@ function unwrapVrchatSearchResponse<TJson = unknown>(
     params: QueryParams,
     extra: Record<string, unknown> = {},
     fallbackMessage: string = 'VRChat request failed'
-): Promise<VrchatRequestResponse<TJson>> {
-    const json = parseJsonResponse(response.data);
-    if (response.status >= 400 || (isRecord(json) && 'error' in json)) {
-        const requestError = createRequestError(
-            unwrapErrorMessage(json, response.status, {
-                fallbackMessage
-            }),
-            response.status,
-            path,
-            json
-        );
-        notifyVrchatAuthFailure(requestError);
-        throw new Error(requestError.message);
-    }
-
-    return Promise.resolve({
-        json: json as TJson,
+): VrchatRequestResponse<TJson> {
+    return {
+        ...unwrapVrchatResponse<TJson>(response, path, { fallbackMessage }),
         params,
-        ...extra,
-        status: response.status,
-        raw: response.raw
-    });
+        ...extra
+    };
 }
 
 async function getConfig(params: QueryParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchConfigGet({
-        endpoint: normalizeVrchatEndpoint('', { allowDebugEndpoint: true }),
         params: normalizedParams
     });
     return unwrapVrchatSearchResponse(response, 'config', normalizedParams);
 }
 
-async function getWorlds(
-    params: QueryParams = {},
-    option?: unknown,
-    options: SearchRequestOptions = {}
-) {
+async function getWorlds(params: QueryParams = {}, option?: unknown) {
     const normalizedParams = normalizeParams(params);
     const normalizedOption =
         typeof option === 'undefined' || option === null ? '' : String(option);
     const response = await commands.appVrchatSearchWorldsGet({
-        endpoint: normalizeVrchatEndpoint(options.endpoint, {
-            allowDebugEndpoint: true
-        }),
         params: normalizedParams,
         option: normalizedOption
     });
@@ -102,15 +65,9 @@ async function getWorlds(
     );
 }
 
-async function getUsers(
-    params: QueryParams = {},
-    options: SearchRequestOptions = {}
-) {
+async function getUsers(params: QueryParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchUsersGet({
-        endpoint: normalizeVrchatEndpoint(options.endpoint, {
-            allowDebugEndpoint: true
-        }),
         params: normalizedParams
     });
     return unwrapVrchatSearchResponse(response, 'users', normalizedParams);
@@ -119,21 +76,14 @@ async function getUsers(
 async function getGroups(params: QueryParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchGroupsGet({
-        endpoint: normalizeVrchatEndpoint('', { allowDebugEndpoint: true }),
         params: normalizedParams
     });
     return unwrapVrchatSearchResponse(response, 'groups', normalizedParams);
 }
 
-async function getGroupsStrictSearch(
-    params: QueryParams = {},
-    options: SearchRequestOptions = {}
-) {
+async function getGroupsStrictSearch(params: QueryParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchGroupsStrictGet({
-        endpoint: normalizeVrchatEndpoint(options.endpoint, {
-            allowDebugEndpoint: true
-        }),
         params: normalizedParams
     });
     return unwrapVrchatSearchResponse(
@@ -143,15 +93,9 @@ async function getGroupsStrictSearch(
     );
 }
 
-async function getInstanceFromShortName(
-    shortName: unknown,
-    options: SearchRequestOptions = {}
-) {
+async function getInstanceFromShortName(shortName: unknown) {
     const normalizedShortName = String(shortName || '').trim();
     const response = await commands.appVrchatSearchInstanceShortNameGet({
-        endpoint: normalizeVrchatEndpoint(options.endpoint, {
-            allowDebugEndpoint: true
-        }),
         shortName: normalizedShortName
     });
     return unwrapVrchatSearchResponse(

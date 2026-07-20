@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const commandMocks = vi.hoisted(() => ({
     appVrchatAuthSavedSnapshotGet: vi.fn(),
     appVrchatAuthSavedCredentialDelete: vi.fn(),
-    appVrchatAuthLogoutRecord: vi.fn()
+    appVrchatAuthSessionEnd: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -12,21 +12,18 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 import authRepository, {
     deleteSavedCredential,
-    getSavedCredential,
-    getSavedCredentialsMap,
-    recordLogout
+    endSession
 } from './authRepository';
 
 function savedSnapshot(patch: Record<string, unknown> = {}) {
     return {
         lastUserLoggedIn: 'usr_1',
-        savedCredentialCount: 1,
         autoLoginStatus: 'available',
         autoLoginReason: 'available',
         autoLoginDelayEnabled: false,
         autoLoginDelaySeconds: 0,
-        savedCredentials: {
-            usr_1: {
+        savedCredentialsList: [
+            {
                 user: {
                     id: 'usr_1',
                     displayName: 'User One'
@@ -34,9 +31,10 @@ function savedSnapshot(patch: Record<string, unknown> = {}) {
                 loginParams: {
                     username: 'user@example.test'
                 },
-                hasLoginCredentials: true
+                hasLoginCredentials: true,
+                hasCookies: false
             }
-        },
+        ],
         ...patch
     };
 }
@@ -48,44 +46,31 @@ describe('authRepository', () => {
             savedSnapshot()
         );
         commandMocks.appVrchatAuthSavedCredentialDelete.mockResolvedValue(
-            savedSnapshot({ lastUserLoggedIn: null, savedCredentialCount: 0 })
+            savedSnapshot({
+                lastUserLoggedIn: null,
+                savedCredentialsList: []
+            })
         );
-        commandMocks.appVrchatAuthLogoutRecord.mockResolvedValue(
+        commandMocks.appVrchatAuthSessionEnd.mockResolvedValue(
             savedSnapshot({ lastUserLoggedIn: null })
         );
     });
 
-    it('extracts saved credential maps and single credential records from the saved snapshot', async () => {
-        await expect(getSavedCredentialsMap()).resolves.toEqual(
-            savedSnapshot().savedCredentials
-        );
-        await expect(getSavedCredential('usr_1')).resolves.toMatchObject({
-            user: {
-                id: 'usr_1',
-                displayName: 'User One'
-            },
-            hasLoginCredentials: true
-        });
-        await expect(getSavedCredential('')).resolves.toBeNull();
-        expect(
-            commandMocks.appVrchatAuthSavedSnapshotGet
-        ).toHaveBeenCalledTimes(2);
-    });
-
-    it('falls back to an empty saved credential map when the snapshot shape is missing', async () => {
+    it('returns the generated snapshot contract without reshaping it', async () => {
+        const snapshot = savedSnapshot();
         commandMocks.appVrchatAuthSavedSnapshotGet.mockResolvedValueOnce(
-            savedSnapshot({ savedCredentials: null })
+            snapshot
         );
 
-        await expect(authRepository.getSavedCredentialsMap()).resolves.toEqual(
-            {}
+        await expect(authRepository.getSavedAuthSnapshot()).resolves.toBe(
+            snapshot
         );
     });
 
-    it('normalizes saved credential delete input and returns the next snapshot', async () => {
+    it('deletes a saved credential and returns the next snapshot', async () => {
         await expect(deleteSavedCredential('usr_2')).resolves.toMatchObject({
             lastUserLoggedIn: null,
-            savedCredentialCount: 0
+            savedCredentialsList: []
         });
 
         expect(
@@ -95,16 +80,11 @@ describe('authRepository', () => {
         });
     });
 
-    it('records logout with boolean-normalized options and explicit cookies', async () => {
-        await recordLogout('usr_1', {
-            clearLastUserLoggedIn: 1,
-            cookies: null
-        });
+    it('ends auth sessions through the single typed command', async () => {
+        await endSession({ kind: 'logout' });
 
-        expect(commandMocks.appVrchatAuthLogoutRecord).toHaveBeenCalledWith({
-            userOrUserId: 'usr_1',
-            clearLastUserLoggedIn: true,
-            cookies: null
+        expect(commandMocks.appVrchatAuthSessionEnd).toHaveBeenCalledWith({
+            kind: 'logout'
         });
     });
 

@@ -15,12 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { ToolTextarea } from './ToolsDialogControls';
-import {
-    csvEscape,
-    getEndpoint,
-    getFriendIds,
-    getUserMemoMap
-} from './toolsDialogUtils';
+import { csvEscape, getFriendIds, getUserMemoMap } from './toolsDialogUtils';
 
 export function ExportDiscordNamesDialog({ open, onOpenChange }: any) {
     const { t } = useTranslation();
@@ -161,7 +156,7 @@ export function ExportAvatarsListDialog({ open, onOpenChange }: any) {
         let active = true;
         setLoading(true);
         myAvatarRepository
-            .getMyAvatars({ endpoint: getEndpoint() })
+            .getMyAvatars()
             .then((avatars: any) => {
                 if (!active) {
                     return;

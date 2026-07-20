@@ -171,8 +171,7 @@ describe('runtimeStore render mirrors', () => {
         });
         expect(useRuntimeStore.getState().transport).toMatchObject({
             websocketConnected: false,
-            websocketDomain: '',
-            reconnectCount: 0
+            websocketDomain: ''
         });
         expect(
             useRuntimeStore.getState().runtimeEvents.backendRuntimeTelemetry

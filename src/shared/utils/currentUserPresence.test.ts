@@ -98,7 +98,11 @@ describe('buildCurrentUserPresenceView', () => {
     });
 
     it('applies game state patch when game is running at a real location', () => {
-        const user = { location: 'private', state: 'online' };
+        const user = {
+            location: 'private',
+            state: 'offline',
+            stateBucket: 'offline'
+        };
         const gameState = {
             isGameRunning: true,
             currentLocation: 'wrld_game:99999',
@@ -110,7 +114,111 @@ describe('buildCurrentUserPresenceView', () => {
         }) as Record<string, unknown>;
 
         expect(result['location']).toBe('wrld_game:99999');
+        expect(result['state']).toBe('online');
         expect(result['stateBucket']).toBe('online');
+    });
+
+    it('keeps local game location above the realtime snapshot while running', () => {
+        const result = buildCurrentUserPresenceView(
+            {
+                location: 'wrld_profile:11111',
+                state: 'offline',
+                stateBucket: 'offline'
+            },
+            {
+                currentUserSnapshot: {
+                    location: 'wrld_snapshot:22222',
+                    state: 'online',
+                    stateBucket: 'online'
+                },
+                gameState: {
+                    isGameRunning: true,
+                    currentLocation: 'wrld_game:33333',
+                    currentWorldId: 'wrld_game'
+                }
+            }
+        ) as Record<string, unknown>;
+
+        expect(result['location']).toBe('wrld_game:33333');
+        expect(result['state']).toBe('online');
+        expect(result['stateBucket']).toBe('online');
+    });
+
+    it('overlays realtime snapshot presence onto a profile with a visible location', () => {
+        const user = {
+            location: 'wrld_old:11111',
+            state: 'offline',
+            stateBucket: 'offline',
+            status: 'busy',
+            bio: 'Profile bio'
+        };
+        const snapshot = {
+            location: 'wrld_live:22222',
+            state: 'online',
+            stateBucket: 'online',
+            status: 'join me'
+        };
+
+        const result = buildCurrentUserPresenceView(user, {
+            currentUserSnapshot: snapshot
+        }) as Record<string, unknown>;
+
+        expect(result).toMatchObject({
+            location: 'wrld_live:22222',
+            state: 'online',
+            stateBucket: 'online',
+            status: 'join me',
+            bio: 'Profile bio'
+        });
+    });
+
+    it('keeps an explicit offline snapshot from reviving stale nested API presence', () => {
+        const user = {
+            location: 'wrld_old:11111',
+            state: 'online',
+            stateBucket: 'online',
+            presence: {
+                world: 'wrld_old',
+                instance: '11111'
+            }
+        };
+        const snapshot = {
+            location: 'offline',
+            state: 'offline',
+            stateBucket: 'offline'
+        };
+
+        const result = buildCurrentUserPresenceView(user, {
+            currentUserSnapshot: snapshot
+        }) as Record<string, unknown>;
+
+        expect(result['location']).toBe('offline');
+        expect(result['stateBucket']).toBe('offline');
+    });
+
+    it('normalizes nested API presence when the snapshot has no explicit location', () => {
+        const result = buildCurrentUserPresenceView(
+            {
+                location: 'private',
+                bio: 'Profile bio'
+            },
+            {
+                currentUserSnapshot: {
+                    state: 'online',
+                    presence: {
+                        world: 'wrld_snapshot',
+                        instance: '33333'
+                    }
+                }
+            }
+        ) as Record<string, unknown>;
+
+        expect(result).toMatchObject({
+            location: 'wrld_snapshot:33333',
+            state: 'online',
+            stateBucket: 'online',
+            bio: 'Profile bio'
+        });
     });
 
     it('skips game state when gameLogDisabled is true', () => {

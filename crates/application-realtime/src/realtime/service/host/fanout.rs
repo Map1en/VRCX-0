@@ -111,7 +111,7 @@ impl RealtimeHostRuntime {
                 .iter()
                 .map(|patch| patch.patch.clone())
                 .collect();
-            self.record_users_into_cache_with_source(
+            self.record_users_into_cache(
                 &values,
                 &UserFactMergeOptions {
                     endpoint: self.active_endpoint(),
@@ -120,7 +120,6 @@ impl RealtimeHostRuntime {
                     is_friend: true,
                     ..Default::default()
                 },
-                projection.source,
             );
         }
         self.deps

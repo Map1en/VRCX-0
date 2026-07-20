@@ -143,15 +143,10 @@ export function useInventoryPageState() {
     async function loadFileRows(definition: any, authTarget: any) {
         const nextRows: InventoryRow[] = [];
         for (const tag of definition.fileTags || []) {
-            const { json } = await mediaRepository.getFileList(
-                {
-                    n: VRCHAT_API_DEFAULT_PAGE_SIZE,
-                    tag
-                },
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            const { json } = await mediaRepository.getFileList({
+                n: VRCHAT_API_DEFAULT_PAGE_SIZE,
+                tag
+            });
             if (Array.isArray(json)) {
                 nextRows.push(...json);
             }
@@ -179,17 +174,12 @@ export function useInventoryPageState() {
             pageIndex < VRCHAT_INVENTORY_MAX_PAGES;
             pageIndex += 1
         ) {
-            const { json } = await mediaRepository.getInventoryItems(
-                {
-                    n: VRCHAT_API_DEFAULT_PAGE_SIZE,
-                    offset: pageIndex * VRCHAT_API_DEFAULT_PAGE_SIZE,
-                    order: 'newest',
-                    ...(definition.params || {})
-                },
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            const { json } = await mediaRepository.getInventoryItems({
+                n: VRCHAT_API_DEFAULT_PAGE_SIZE,
+                offset: pageIndex * VRCHAT_API_DEFAULT_PAGE_SIZE,
+                order: 'newest',
+                ...(definition.params || {})
+            });
             const pageRows = Array.isArray(json?.data) ? json.data : [];
             nextRows.push(...pageRows);
             if (!pageRows.length) {
@@ -285,16 +275,11 @@ export function useInventoryPageState() {
         if (target === 'emojis') {
             return mediaRepository.uploadEmoji(
                 base64Body,
-                getEmojiUploadParams(settings),
-                {
-                    endpoint: currentEndpoint
-                }
+                getEmojiUploadParams(settings)
             );
         }
         if (target === 'stickers') {
-            return mediaRepository.uploadSticker(base64Body, {
-                endpoint: currentEndpoint
-            });
+            return mediaRepository.uploadSticker(base64Body);
         }
         throw new Error(`Unsupported inventory upload target: ${target}`);
     }
@@ -417,9 +402,7 @@ export function useInventoryPageState() {
         const authTarget = getAuthTarget();
         setMutatingKey(`file:${normalizedFileId}`);
         try {
-            await mediaRepository.deleteFile(normalizedFileId, {
-                endpoint: currentEndpoint
-            });
+            await mediaRepository.deleteFile(normalizedFileId);
             if (isCurrentAuthTarget(authTarget)) {
                 setRowsByScope((current: any) => ({
                     ...current,
@@ -455,13 +438,9 @@ export function useInventoryPageState() {
         const authTarget = getAuthTarget();
         setMutatingKey(`inventory:${normalizedInventoryId}`);
         try {
-            await mediaRepository.updateInventoryItem(
-                normalizedInventoryId,
-                { isArchived: Boolean(archived) },
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            await mediaRepository.updateInventoryItem(normalizedInventoryId, {
+                isArchived: Boolean(archived)
+            });
             if (isCurrentAuthTarget(authTarget)) {
                 toast.success(
                     archived
@@ -496,12 +475,7 @@ export function useInventoryPageState() {
         const authTarget = getAuthTarget();
         setMutatingKey(`inventory:${normalizedInventoryId}`);
         try {
-            await mediaRepository.consumeInventoryBundle(
-                normalizedInventoryId,
-                {
-                    endpoint: currentEndpoint
-                }
-            );
+            await mediaRepository.consumeInventoryBundle(normalizedInventoryId);
             if (isCurrentAuthTarget(authTarget)) {
                 toast.success(t('view.tools.label.inventory_bundle_consumed'));
                 await refreshScope(activeCategory, activeSubTab);
@@ -539,9 +513,7 @@ export function useInventoryPageState() {
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value, {
-                endpoint: currentEndpoint
-            });
+            await mediaRepository.redeemReward(result.value);
             if (isCurrentAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshScope(activeCategory, activeSubTab);

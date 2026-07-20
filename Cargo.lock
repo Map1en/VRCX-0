@@ -9113,6 +9113,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "cookie_store",
+ "hyper-util",
  "percent-encoding",
  "reqwest",
  "serde",
@@ -9122,6 +9123,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-tungstenite",
+ "tower-service",
  "tracing",
  "url",
  "vrcx-0-core",

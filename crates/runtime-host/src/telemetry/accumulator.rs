@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use vrcx_0_integrations::telemetry::{build_error_detail, RouteUsageEntry, TelemetryErrorDetail};
+use vrcx_0_integrations::telemetry::{
+    build_error_detail, sanitize_error_summary, RouteUsageEntry, TelemetryErrorDetail,
+};
 
 use super::event::TelemetryClientEvent;
 
@@ -78,6 +80,9 @@ impl TelemetryAccumulator {
             } => self.record_route_error(error_class, name, summary),
             TelemetryClientEvent::ViewModeSwitch { .. } => {}
             TelemetryClientEvent::AssistantToolError { source, summary } => {
+                if !should_record_assistant_tool_detail(summary.as_deref()) {
+                    return;
+                }
                 self.assistant.tool_errors = increment(self.assistant.tool_errors);
                 self.assistant.details.record(build_error_detail(
                     "tool_error",
@@ -95,14 +100,16 @@ impl TelemetryAccumulator {
                     return;
                 }
                 self.assistant.turn_errors = increment(self.assistant.turn_errors);
-                self.assistant.details.record(build_error_detail(
-                    "turn_error",
-                    None,
-                    Some(code.as_str()),
-                    None,
-                    summary.as_deref(),
-                    None,
-                ));
+                if should_record_assistant_turn_detail(&code, summary.as_deref()) {
+                    self.assistant.details.record(build_error_detail(
+                        "turn_error",
+                        None,
+                        Some(code.as_str()),
+                        None,
+                        summary.as_deref(),
+                        None,
+                    ));
+                }
                 let revision = self.advance_revision();
                 self.assistant.revision = revision;
             }
@@ -110,22 +117,31 @@ impl TelemetryAccumulator {
     }
 
     pub fn record_rust_error(&mut self, source: &str, app_version: &str, message: &str) {
-        let (kind, summary) = match source {
-            "rust:panic" => (
-                "panic",
-                vrcx_0_host::error_log::panic_summary_for_telemetry(message),
+        let detail = match source {
+            "rust:panic" => {
+                let mut detail = build_error_detail(
+                    "panic",
+                    Some(source),
+                    None,
+                    None,
+                    Some(vrcx_0_host::error_log::panic_fingerprint_summary(message)),
+                    Some(app_version),
+                );
+                detail.summary = Some(sanitize_error_summary(
+                    vrcx_0_host::error_log::panic_summary_for_telemetry(message),
+                ));
+                detail
+            }
+            "rust:tracing" => build_error_detail(
+                "rust_error",
+                Some(source),
+                None,
+                None,
+                Some(message),
+                Some(app_version),
             ),
-            "rust:tracing" => ("rust_error", message),
             _ => return,
         };
-        let detail = build_error_detail(
-            kind,
-            Some(source),
-            None,
-            None,
-            Some(summary),
-            Some(app_version),
-        );
         if self.client_errors.record(detail) {
             let revision = self.advance_revision();
             self.client_errors_revision = revision;
@@ -339,17 +355,45 @@ fn increment(value: u32) -> u32 {
     value.saturating_add(1).min(MAX_COUNT)
 }
 
+fn should_record_assistant_tool_detail(summary: Option<&str>) -> bool {
+    !matches!(
+        assistant_result_category(summary),
+        Some("not_found" | "precondition" | "<id>")
+    )
+}
+
+fn assistant_result_category(summary: Option<&str>) -> Option<&str> {
+    summary?
+        .split("; ")
+        .find_map(|part| part.strip_prefix("result="))
+}
+
+fn should_record_assistant_turn_detail(code: &str, summary: Option<&str>) -> bool {
+    code != "llm" || !is_llm_http_error_summary(summary)
+}
+
+fn is_llm_http_error_summary(summary: Option<&str>) -> bool {
+    let Some(status) = summary
+        .and_then(|value| value.strip_prefix("LLM API error ("))
+        .and_then(|value| value.strip_suffix(')'))
+        .and_then(|value| value.parse::<u16>().ok())
+    else {
+        return false;
+    };
+    (400..=599).contains(&status)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn panic_backtrace_addresses_do_not_split_telemetry_identity() {
+    fn panic_backtrace_frames_do_not_split_telemetry_identity() {
         let mut acc = TelemetryAccumulator::default();
         acc.record_rust_error(
             "rust:panic",
             "2.9.2",
-            "panicked at crates/runtime.rs:42\n[backtrace]\n0: 0x1111",
+            "panicked at crates/runtime.rs:42\n[backtrace]\n0: core::panicking::panic_fmt\n at C:\\rust\\panicking.rs:20:3\n1: tao::runner::advance_state\n at C:\\cargo\\tao\\runner.rs:371:7",
         );
         acc.record_rust_error(
             "rust:panic",
@@ -361,7 +405,7 @@ mod tests {
         assert_eq!(entries.len(), 1);
         assert_eq!(
             entries[0].summary.as_deref(),
-            Some("panicked at crates/runtime.rs:42")
+            Some("panicked at crates/runtime.rs:42 frames: tao::runner::advance_state@runner.rs:371:7")
         );
         assert_eq!(entries[0].count, 2);
     }

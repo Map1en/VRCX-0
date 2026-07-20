@@ -9,7 +9,7 @@ import {
 } from '@/platform/tauri/bindings';
 import { storeAvatarImage } from '@/shared/utils/avatar';
 import { extractFileId } from '@/shared/utils/fileUtils';
-import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { normalizeFileResponse } from './normalization';
 import {
@@ -21,7 +21,6 @@ import {
 import type {
     AvatarFileRecord,
     AvatarGalleryFile,
-    AvatarRequestOptions,
     CachedAvatarImage
 } from './types';
 
@@ -39,11 +38,9 @@ export function getAvatarNameCacheSize() {
 
 export async function getAvatarGallery({
     avatarId,
-    endpoint = '',
     force = false
 }: {
     avatarId?: unknown;
-    endpoint?: string;
     force?: boolean;
 }): Promise<AvatarGalleryFile[]> {
     const normalizedAvatarId = normalizeEntityId(avatarId);
@@ -54,13 +51,16 @@ export async function getAvatarGallery({
     }
 
     const rows = await fetchCachedData({
-        queryKey: queryKeys.avatarGallery(normalizedAvatarId, endpoint),
+        queryKey: queryKeys.avatarGallery(
+            normalizedAvatarId,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
         policy: entityQueryPolicies.avatarGallery,
         force,
         queryFn: async () => {
             const response = unwrapVrchatAvatarResponse(
                 await commands.appVrchatAvatarGalleryGet(
-                    avatarIdInput(normalizedAvatarId, endpoint)
+                    avatarIdInput(normalizedAvatarId)
                 ),
                 'files'
             );
@@ -80,10 +80,7 @@ export async function getAvatarGallery({
     });
 }
 
-export async function getAvatarNameFromImageUrl(
-    imageUrl: unknown,
-    { endpoint = '' }: AvatarRequestOptions = {}
-) {
+export async function getAvatarNameFromImageUrl(imageUrl: unknown) {
     const fileId = extractFileId(String(imageUrl || ''));
     if (!fileId) {
         return {
@@ -92,20 +89,19 @@ export async function getAvatarNameFromImageUrl(
         };
     }
 
-    const cacheKey = `${normalizeVrchatEndpointDomain(endpoint)}\u0000${fileId}`;
+    const cacheKey = `${DEFAULT_VRCHAT_API_ENDPOINT}\u0000${fileId}`;
     if (cachedAvatarNames.has(cacheKey)) {
         return cachedAvatarNames.get(cacheKey);
     }
 
     try {
         const response = await fetchCachedData({
-            queryKey: queryKeys.file(fileId, endpoint),
+            queryKey: queryKeys.file(fileId, DEFAULT_VRCHAT_API_ENDPOINT),
             policy: entityQueryPolicies.fileObject,
             queryFn: async () => {
                 return unwrapVrchatAvatarResponse<AvatarFileRecord>(
                     await commands.appVrchatAvatarFileGet({
-                        fileId,
-                        endpoint
+                        fileId
                     } satisfies VrchatAvatarFileInput),
                     `file/${encodeURIComponent(fileId)}`
                 );

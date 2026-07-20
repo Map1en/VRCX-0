@@ -414,7 +414,7 @@ pub(super) fn advance_journal_phase(
     file.write_all(&bytes)?;
     file.sync_all()?;
     drop(file);
-    fs::rename(&temporary, path)?;
+    crate::profile_backup::fsutil::replace_file_atomically(&temporary, path)?;
     if let Some(parent) = path.parent() {
         sync_directory_durable(parent)?;
     }

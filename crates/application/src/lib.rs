@@ -12,21 +12,22 @@ pub use vrcx_0_application_core::{ports, vrchat_api};
 
 pub use auth::{
     auth_response_error_message, current_user_from_cookie, parse_current_user_response,
-    probe_current_user_from_cookie, AuthenticatedRuntimeSession, CookieSessionProbe,
-    NonInteractiveAuthError,
+    probe_current_user_from_cookie, probe_saved_current_user_from_cookie,
+    AuthenticatedRuntimeSession, CookieSessionProbe, NonInteractiveAuthError,
 };
 pub use auth::{
     delete_saved_credential, migrate_saved_credential_secrets, record_login_success, record_logout,
     saved_credential_login_start, saved_credential_session_data, saved_snapshot,
-    LoginSuccessRecordInput, LogoutRecordInput, SavedCredentialLoginStartInput,
-    SavedCredentialSessionData,
+    LoginSuccessRecordInput, LogoutRecordInput, SavedAuthAutoLoginStatus, SavedAuthSnapshot,
+    SavedCredentialLoginStartInput, SavedCredentialSessionData, SavedCredentialSnapshot,
+    SavedCredentialUser, SavedLoginParamsSnapshot,
 };
 pub use auth::{run_authenticated_session_maintenance, AuthenticatedSessionMaintenanceOutcome};
 pub use auth::{
-    AutoLoginOutcome, AutoLoginStartInput, LoginApi, LoginApiFuture, LoginFailureKind,
-    LoginSession, LoginSessionRuntime, LoginSessionStartBasicInput,
-    LoginSessionStartCookieRestoreInput, LoginSessionStartSavedCredentialInput, LoginSessionState,
-    TwoFactorMethod, WebClientLoginApi,
+    AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome, LoginFailureKind,
+    LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest,
+    LoginSessionRespondInput, LoginSessionRuntime, LoginSessionStartInput, LoginSessionState,
+    TwoFactorMethod,
 };
 pub use authenticated_runtime::{
     AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeStepSnapshot,
@@ -73,25 +74,29 @@ pub use social::{
     SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput, SocialMutationDeps,
 };
 pub use social::{
-    ban_member, block_group, cancel_request, create_post, delete_invite, delete_post, edit_post,
-    get_audit_log_types, get_bans, get_gallery, get_group, get_group_instances,
-    get_group_quick_moderation, get_invites, get_join_requests, get_logs, get_members, get_posts,
-    get_user_groups, get_user_instances, join_group, kick_member, leave_group,
-    respond_join_request, run_group_quick_moderation_action, search_members, send_invite,
-    set_member_props, set_representation, unban_member, unblock_group, GroupApiDeps,
-    GroupQuickModerationActionInput, GroupQuickModerationActionOutput, GroupQuickModerationDeps,
-    GroupQuickModerationGroup, GroupQuickModerationInput, GroupQuickModerationOutput,
-    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
-    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
-    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupPagedInput,
-    VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput, VrchatGroupPostEditInput,
-    VrchatGroupProfileInput, VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput,
-    VrchatGroupUserInput,
+    add_member_role, ban_member, block_group, cancel_request, create_post, delete_invite,
+    delete_post, edit_post, get_audit_log_types, get_bans, get_gallery, get_group,
+    get_group_instances, get_group_quick_moderation, get_invites, get_join_requests, get_logs,
+    get_members, get_posts, get_user_groups, get_user_instances, join_group, kick_member,
+    leave_group, remove_member_role, respond_join_request, run_group_quick_moderation_action,
+    search_members, send_invite, set_member_props, set_representation, unban_member, unblock_group,
+    GroupApiDeps, GroupQuickModerationActionInput, GroupQuickModerationActionOutput,
+    GroupQuickModerationDeps, GroupQuickModerationGroup, GroupQuickModerationInput,
+    GroupQuickModerationOutput, VrchatGroupGalleryInput, VrchatGroupIdInput,
+    VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput, VrchatGroupLogsInput,
+    VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput, VrchatGroupMembersInput,
+    VrchatGroupMembersSearchInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
+    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
+    VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 pub use social::{
     favorite_state, is_print_created_content_refresh, run_print_auto_cleanup, set_print_favorite,
     CleanupWarningKind, PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue,
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
+};
+pub use social::{
+    get_user_groups_overview, UserGroupsOverviewDeps, UserGroupsOverviewGroup,
+    UserGroupsOverviewInput, UserGroupsOverviewOutput,
 };
 pub use social::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
@@ -109,6 +114,7 @@ pub use social::{
     MutualGraphFetchStatus,
 };
 pub use system::DatabaseUpgradeRuntime;
+pub use system::ProfileOperationGate;
 pub use system::{
     database_upgrade_preflight, run_database_upgrade, DatabaseUpgradePreflight,
     DatabaseUpgradePreflightStatus, DatabaseUpgradeRunResult, DatabaseUpgradeRunStatus,
@@ -138,13 +144,18 @@ pub use system::{
     AppUpdateTargetResolver,
 };
 pub use system::{
+    DataDirMigrationActionOutcome, DataDirMigrationError, DataDirMigrationErrorCode,
+    DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan, DataDirMigrationRuntime,
+    DataDirMigrationState, DataDirMigrationStatus, DataDirPointerCommitter,
+};
+pub use system::{
     ProfileBackupActionOutcome, ProfileBackupError, ProfileBackupErrorCode, ProfileBackupKind,
-    ProfileBackupOutcome, ProfileBackupPhase, ProfileBackupRuntime, ProfileBackupSettings,
-    ProfileBackupState, ProfileBackupStatus, ProfileRestoreDataDisposition, ProfileRestoreFailure,
-    ProfileRestoreFailureCode, ProfileRestoreProgress, ProfileRestoreProgressOperation,
-    ProfileRestoreProgressPhase, ProfileRestoreResult, ProfileRestoreResultStatus,
-    ProfileRestoreRollbackCleanupOutcome, ProfileRestoreRollbackState, ProfileRestoreValidation,
-    ProfileRestoreValidationOutcome,
+    ProfileBackupOutcome, ProfileBackupPhase, ProfileBackupRuntime, ProfileBackupRuntimeDeps,
+    ProfileBackupSettings, ProfileBackupState, ProfileBackupStatus, ProfileRestoreDataDisposition,
+    ProfileRestoreFailure, ProfileRestoreFailureCode, ProfileRestoreProgress,
+    ProfileRestoreProgressOperation, ProfileRestoreProgressPhase, ProfileRestoreResult,
+    ProfileRestoreResultStatus, ProfileRestoreRollbackCleanupOutcome, ProfileRestoreRollbackState,
+    ProfileRestoreValidation, ProfileRestoreValidationOutcome,
 };
 pub use vrcx_0_application_core::validate_config_writes;
 pub use vrcx_0_application_core::OverlayActivityInputSink;
@@ -201,9 +212,9 @@ pub use vrcx_0_application_realtime::{
     RealtimeFriendsRuntime, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection,
     RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
-    RealtimeNotificationUpsert, RealtimeProjectionSource, RealtimeSessionContext,
-    RealtimeStopRequest, RealtimeTransportStartResult, RealtimeWsMessagePayload,
-    RealtimeWsStatusPayload, SyntheticFriendEventOutcome,
+    RealtimeNotificationUpsert, RealtimeSessionContext, RealtimeStopRequest,
+    RealtimeTransportStartResult, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
+    SyntheticFriendEventOutcome,
 };
 
 pub use vrcx_0_application_core::Result;

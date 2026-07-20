@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::state::PendingFriendBaseline;
+use super::state::{FriendOwnerGuard, PendingFriendBaseline};
 use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -116,7 +116,9 @@ impl RealtimeHostRuntime {
         content: Value,
         received_at: String,
     ) -> SyntheticFriendEventOutcome {
-        self.apply_synthetic_friend_event_inner(
+        let owner = self.lock_friend_owner();
+        self.apply_synthetic_friend_event_with_owner(
+            &owner,
             expected_owner_user_id,
             expected_endpoint,
             message_type,
@@ -133,7 +135,9 @@ impl RealtimeHostRuntime {
         content: Value,
         received_at: String,
     ) -> SyntheticFriendEventOutcome {
-        self.apply_synthetic_friend_event_inner(
+        let owner = self.lock_friend_owner();
+        self.apply_synthetic_friend_event_with_owner(
+            &owner,
             expected_owner_user_id,
             expected_endpoint,
             "friend-add",
@@ -143,8 +147,52 @@ impl RealtimeHostRuntime {
         )
     }
 
-    fn apply_synthetic_friend_event_inner(
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_synthetic_friend_event_if_sequence(
         self: &Arc<Self>,
+        expected_owner_user_id: &str,
+        expected_endpoint: &str,
+        expected_generation: u64,
+        user_id: &str,
+        expected_sequence: Option<u64>,
+        message_type: &str,
+        content: Value,
+        received_at: String,
+        trust_friend_add_profile_state: bool,
+    ) -> SyntheticFriendEventOutcome {
+        let owner = self.lock_friend_owner();
+        let current_generation = self.state.lock().ok().and_then(|state| {
+            state
+                .connection
+                .active_context
+                .as_ref()
+                .map(|active| active.generation)
+        });
+        if current_generation != Some(expected_generation) {
+            return SyntheticFriendEventOutcome::MissingBaseline;
+        }
+        if self
+            .friends
+            .friend_state_sequence_for_user(expected_generation, user_id)
+            != expected_sequence
+        {
+            return SyntheticFriendEventOutcome::Ignored;
+        }
+        self.apply_synthetic_friend_event_with_owner(
+            &owner,
+            expected_owner_user_id,
+            expected_endpoint,
+            message_type,
+            content,
+            received_at,
+            trust_friend_add_profile_state,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_synthetic_friend_event_with_owner(
+        self: &Arc<Self>,
+        owner: &FriendOwnerGuard<'_>,
         expected_owner_user_id: &str,
         expected_endpoint: &str,
         message_type: &str,
@@ -152,7 +200,6 @@ impl RealtimeHostRuntime {
         received_at: String,
         trust_friend_add_profile_state: bool,
     ) -> SyntheticFriendEventOutcome {
-        let owner = self.lock_friend_owner();
         let payload = RealtimeWsMessagePayload {
             json: json!({
                 "type": message_type,
@@ -168,7 +215,7 @@ impl RealtimeHostRuntime {
             trust_friend_add_profile_state,
         ) {
             RealtimeFriendApplyResult::Output(output) => {
-                if self.apply_friend_output_owned(&owner, *output) {
+                if self.apply_friend_output_owned(owner, *output) {
                     SyntheticFriendEventOutcome::Applied
                 } else {
                     SyntheticFriendEventOutcome::PersistFailed

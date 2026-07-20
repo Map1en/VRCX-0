@@ -1,18 +1,19 @@
-import type {
-    AppDataDirState,
-    AppDataDirValidation
-} from '@/platform/tauri/bindings';
+import type { AppDataDirState } from '@/platform/tauri/bindings';
+import { formatDataDirMigrationBytes } from '@/services/dataDirMigrationI18n';
+import {
+    cleanupMigratedDataDir,
+    dismissDataDirCleanup,
+    planDataDirMigration
+} from '@/services/dataDirMigrationService';
 import { promptLegacyVrcxForceMigration } from '@/services/legacyVrcxMigrationService';
 import type { IntConfigPreferenceKey } from '@/services/preferencesService';
 import {
-    clearAppDataDir,
     deleteAllScreenshotMetadata as deleteAllScreenshotMetadataFromShell,
     getAppDataDirState,
     openFolderSelectorDialog,
-    restartApplication,
-    setAppDataDir,
-    validateAppDataDir
+    restartApplication
 } from '@/services/shellIntegrationService';
+import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { normalizeBackgroundModeDelayMinutes } from '@/state/preferencesStore';
 
 import { normalizeCheckedState } from './settingsValues';
@@ -73,6 +74,7 @@ type SettingsMaintenanceActionsDeps = {
     gameState: {
         isGameRunning: boolean | null;
     };
+    language?: string;
     mediaRepository: {
         cropAllPrints(path: string): Promise<unknown>;
         getUgcPhotoLocation(path: unknown): Promise<string>;
@@ -106,6 +108,7 @@ export function useSettingsMaintenanceActions({
     databaseMaintenanceRepository,
     feedRepository,
     gameState,
+    language,
     mediaRepository,
     prefs,
     prompt,
@@ -171,30 +174,6 @@ export function useSettingsMaintenanceActions({
         await deleteAllScreenshotMetadataFromShell();
         toast.success(t('view.settings.success.screenshot_metadata_removed'));
     }
-    function appDataDirConfirmDescription(validation: AppDataDirValidation) {
-        const description = [
-            t(
-                'view.settings.advanced.advanced.data_directory.confirm_description',
-                {
-                    path: validation.path
-                }
-            )
-        ];
-        if (validation.warningKind === 'empty') {
-            description.push(
-                t(
-                    'view.settings.advanced.advanced.data_directory.confirm_empty'
-                )
-            );
-        } else if (validation.warningKind === 'missingProfileFiles') {
-            description.push(
-                t(
-                    'view.settings.advanced.advanced.data_directory.confirm_missing_profile'
-                )
-            );
-        }
-        return description.join(' ');
-    }
     async function refreshAppDataDirState() {
         try {
             const state = await getAppDataDirState();
@@ -225,31 +204,9 @@ export function useSettingsMaintenanceActions({
         if (!selectedPath) {
             return;
         }
-        let validation;
         try {
-            validation = await validateAppDataDir(selectedPath);
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
-            return;
-        }
-        const result = await confirm({
-            title: t(
-                'view.settings.advanced.advanced.data_directory.confirm_title'
-            ),
-            description: appDataDirConfirmDescription(validation),
-            confirmText: t('common.actions.save'),
-            cancelText: t('common.actions.cancel')
-        });
-        if (!result.ok) {
-            return;
-        }
-        try {
-            setAppDataDirState(await setAppDataDir(validation.path));
-            toast.success(
-                t(
-                    'view.settings.advanced.advanced.data_directory.saved_restart_required'
-                )
-            );
+            const plan = await planDataDirMigration(selectedPath);
+            useDataDirMigrationStore.getState().openDialog(plan);
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
         }
@@ -265,24 +222,48 @@ export function useSettingsMaintenanceActions({
             );
             return;
         }
+        try {
+            const plan = await planDataDirMigration(state.defaultDir);
+            useDataDirMigrationStore.getState().openDialog(plan);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : String(error));
+        }
+    }
+    async function cleanupAppDataDir() {
+        const state = await refreshAppDataDirState();
+        const pending = state?.cleanupPending;
+        if (!pending) {
+            return;
+        }
         const result = await confirm({
-            title: t(
-                'view.settings.advanced.advanced.data_directory.reset_confirm_title'
-            ),
-            description: t(
-                'view.settings.advanced.advanced.data_directory.reset_confirm_description'
-            ),
-            confirmText: t('common.actions.reset'),
-            cancelText: t('common.actions.cancel')
+            title: t('data_dir_migration.cleanup.confirm_title'),
+            description: t('data_dir_migration.cleanup.confirm_description', {
+                path: pending.oldDir,
+                size: formatDataDirMigrationBytes(
+                    pending.bytes,
+                    language ?? 'en'
+                )
+            }),
+            confirmText: t('data_dir_migration.cleanup.action'),
+            cancelText: t('common.actions.cancel'),
+            destructive: true
         });
         if (!result.ok) {
             return;
         }
         try {
-            setAppDataDirState(await clearAppDataDir());
-            toast.success(
-                t('view.settings.advanced.advanced.data_directory.reset_saved')
-            );
+            await cleanupMigratedDataDir();
+            await refreshAppDataDirState();
+            toast.success(t('data_dir_migration.cleanup.completed'));
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : String(error));
+        }
+    }
+    async function dismissAppDataDirCleanup() {
+        try {
+            await dismissDataDirCleanup();
+            await refreshAppDataDirState();
+            toast.success(t('data_dir_migration.cleanup.dismissed'));
         } catch (error) {
             toast.error(error instanceof Error ? error.message : String(error));
         }
@@ -496,6 +477,8 @@ export function useSettingsMaintenanceActions({
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
         deleteAllScreenshotMetadata,
+        cleanupAppDataDir,
+        dismissAppDataDirCleanup,
         openAppDataDirSelector,
         resetAppDataDir,
         promptAutoLoginDelaySeconds,

@@ -5,6 +5,7 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
 import type { QueryParams } from '../vrchatRequest';
@@ -24,7 +25,6 @@ import {
 
 export async function getGroupMembers({
     groupId,
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0,
     sort = 'joinedAt:desc',
@@ -46,7 +46,7 @@ export async function getGroupMembers({
     return fetchCachedData({
         queryKey: queryKeys.groupMembers(
             { groupId: normalizedGroupId, ...params },
-            endpoint
+            DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.groupCollection,
         force,
@@ -57,8 +57,7 @@ export async function getGroupMembers({
                     n,
                     offset,
                     sort,
-                    roleId,
-                    endpoint
+                    roleId
                 }),
                 `groups/${encodeURIComponent(normalizedGroupId)}/members`
             );
@@ -70,7 +69,6 @@ export async function getGroupMembers({
 export async function getGroupMembersSearch({
     groupId,
     query = '',
-    endpoint = '',
     n = VRCHAT_API_DEFAULT_PAGE_SIZE,
     offset = 0
 }: GroupMembersSearchInput) {
@@ -87,8 +85,7 @@ export async function getGroupMembersSearch({
             groupId: normalizedGroupId,
             n,
             offset,
-            query: normalizedQuery,
-            endpoint
+            query: normalizedQuery
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/members/search`
     );
@@ -97,17 +94,16 @@ export async function getGroupMembersSearch({
 
 export async function getAllGroupMembers({
     groupId,
-    endpoint = '',
     sort = 'joinedAt:desc',
     roleId = '',
     force = false
 }: Omit<GroupMembersInput, 'n' | 'offset'>) {
     return collectPages(({ n, offset }) =>
-        getGroupMembers({ groupId, endpoint, n, offset, sort, roleId, force })
+        getGroupMembers({ groupId, n, offset, sort, roleId, force })
     );
 }
 
-export async function joinGroup({ groupId, endpoint = '' }: GroupIdInput) {
+export async function joinGroup({ groupId }: GroupIdInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -117,14 +113,13 @@ export async function joinGroup({ groupId, endpoint = '' }: GroupIdInput) {
 
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupJoin({
-            groupId: normalizedGroupId,
-            endpoint
+            groupId: normalizedGroupId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/join`
     );
 }
 
-export async function leaveGroup({ groupId, endpoint = '' }: GroupIdInput) {
+export async function leaveGroup({ groupId }: GroupIdInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -134,17 +129,13 @@ export async function leaveGroup({ groupId, endpoint = '' }: GroupIdInput) {
 
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupLeave({
-            groupId: normalizedGroupId,
-            endpoint
+            groupId: normalizedGroupId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/leave`
     );
 }
 
-export async function cancelGroupRequest({
-    groupId,
-    endpoint = ''
-}: GroupIdInput) {
+export async function cancelGroupRequest({ groupId }: GroupIdInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -154,18 +145,13 @@ export async function cancelGroupRequest({
 
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupRequestCancel({
-            groupId: normalizedGroupId,
-            endpoint
+            groupId: normalizedGroupId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/requests`
     );
 }
 
-export async function sendGroupInvite({
-    groupId,
-    userId,
-    endpoint = ''
-}: GroupUserInput) {
+export async function sendGroupInvite({ groupId, userId }: GroupUserInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedGroupId || !normalizedUserId) {
@@ -177,8 +163,7 @@ export async function sendGroupInvite({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupInviteSend({
             groupId: normalizedGroupId,
-            userId: normalizedUserId,
-            endpoint
+            userId: normalizedUserId
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/invites`
     );
@@ -186,8 +171,7 @@ export async function sendGroupInvite({
 
 export async function setGroupRepresentation({
     groupId,
-    isRepresenting,
-    endpoint = ''
+    isRepresenting
 }: GroupRepresentationInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
@@ -199,8 +183,7 @@ export async function setGroupRepresentation({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupRepresentationSet({
             groupId: normalizedGroupId,
-            isRepresenting: Boolean(isRepresenting),
-            endpoint
+            isRepresenting: Boolean(isRepresenting)
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/representation`
     );
@@ -209,8 +192,7 @@ export async function setGroupRepresentation({
 export async function setGroupMemberProps({
     groupId,
     userId,
-    params = {},
-    endpoint = ''
+    params = {}
 }: GroupMemberPropsInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
@@ -224,8 +206,7 @@ export async function setGroupMemberProps({
         await commands.appVrchatGroupMemberPropsSet({
             groupId: normalizedGroupId,
             userId: normalizedUserId,
-            params,
-            endpoint
+            params
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/members/${encodeURIComponent(normalizedUserId)}`
     );

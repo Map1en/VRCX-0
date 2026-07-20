@@ -1,4 +1,5 @@
 use super::*;
+use std::path::PathBuf;
 
 pub struct RuntimeHostOptions {
     pub realtime_origin: String,
@@ -34,6 +35,7 @@ pub struct RuntimeHostStateBuilder {
     pub storage: Arc<StorageService>,
     pub db: Arc<DatabaseService>,
     pub profile_backup: ProfileBackupRuntime,
+    pub data_dir_migration: DataDirMigrationRuntime,
     pub runtime_context: Arc<RuntimeHostContext>,
     pub backend_runtime: BackendRuntime,
     pub web: Arc<WebClient>,
@@ -52,6 +54,7 @@ pub struct RuntimeHostState {
     pub storage: Arc<StorageService>,
     pub db: Arc<DatabaseService>,
     pub profile_backup: ProfileBackupRuntime,
+    pub data_dir_migration: DataDirMigrationRuntime,
     pub runtime_context: Arc<RuntimeHostContext>,
     pub backend_runtime: BackendRuntime,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
@@ -154,52 +157,166 @@ fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfil
     );
 }
 
+struct PreparedDataDirMigration {
+    journal: PendingDataDirMigration,
+    outcome: DataDirMigrationFinalizeOutcome,
+}
+
+struct OpenedProfile {
+    storage: Arc<StorageService>,
+    db: Arc<DatabaseService>,
+    legacy_vrcx_available: bool,
+    legacy_vrcx_source: Option<LegacyVrcxSource>,
+    legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
+}
+
+fn set_active_data_dir(resolution: &mut AppDataDirResolution, path: PathBuf) {
+    resolution.current_dir = path.clone();
+    if app_data_paths_match(&path, &resolution.default_dir) {
+        resolution.persisted_dir = None;
+        resolution.source = AppDataDirSource::Default;
+    } else {
+        resolution.persisted_dir = Some(path);
+        resolution.source = AppDataDirSource::Persisted;
+    }
+}
+
+fn prepare_data_dir_migration_startup(
+    resolution: &mut AppDataDirResolution,
+) -> Result<Option<PreparedDataDirMigration>> {
+    if resolution.source == AppDataDirSource::Cli {
+        return Ok(None);
+    }
+    let Some(journal) = read_pending_data_dir_migration(&resolution.default_dir)? else {
+        return Ok(None);
+    };
+    match journal.phase {
+        DataDirMigrationJournalPhase::Copying => {
+            if !app_data_paths_match(&resolution.current_dir, Path::new(&journal.source_dir)) {
+                return Err(crate::Error::Custom(format!(
+                    "Interrupted data directory migration does not match the active directory: {}",
+                    resolution.current_dir.display()
+                )));
+            }
+            cleanup_interrupted_data_dir_migration(&resolution.default_dir, &journal)?;
+            Ok(None)
+        }
+        DataDirMigrationJournalPhase::Switched => {
+            let source_dir = PathBuf::from(&journal.source_dir);
+            let target_dir = PathBuf::from(&journal.target_dir).canonicalize()?;
+            if app_data_paths_match(&resolution.current_dir, &source_dir) {
+                commit_app_data_dir_pointer(&resolution.default_dir, &target_dir)?;
+                set_active_data_dir(resolution, target_dir);
+            } else if !app_data_paths_match(&resolution.current_dir, &target_dir) {
+                return Err(crate::Error::Custom(format!(
+                    "Pending data directory migration does not match the active directory: {}",
+                    resolution.current_dir.display()
+                )));
+            }
+            let outcome = finalize_data_dir_migration(&resolution.default_dir, &journal)?;
+            Ok(Some(PreparedDataDirMigration { journal, outcome }))
+        }
+    }
+}
+
+fn open_profile(paths: &AppPaths) -> Result<OpenedProfile> {
+    let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
+    consume_pending_legacy_migration(&migration_paths)?;
+    let pending_profile_restore = consume_pending_profile_restore(&paths.app_data, &paths.db_file)?;
+    if let Err(error) = cleanup_profile_backup_artifacts(&paths.app_data) {
+        tracing::warn!(error = %error, "failed to clean up profile backup artifacts");
+    }
+    let (legacy_vrcx_source, legacy_vrcx_migration_status) =
+        vrcx_0_persistence::legacy_vrcx::discover_legacy_vrcx_migration(
+            &paths.db_file,
+            &paths.config_file,
+        );
+    let legacy_vrcx_available = legacy_vrcx_migration_status.available;
+    let storage = Arc::new(StorageService::new(&paths.config_file)?);
+    let db = match DatabaseService::new(&paths.db_file) {
+        Ok(db) => {
+            if let Some(pending) = pending_profile_restore {
+                if let Err(error) = pending.finalize() {
+                    tracing::warn!(
+                        error = %error,
+                        "failed to finalize profile restore; journal remains for the next start"
+                    );
+                }
+            }
+            db
+        }
+        Err(error) => {
+            let Some(pending) = pending_profile_restore else {
+                return Err(error.into());
+            };
+            pending.rollback(ProfileRestoreFailureCode::DatabaseOpenFailed)?;
+            DatabaseService::new(&paths.db_file)?
+        }
+    };
+    Ok(OpenedProfile {
+        storage,
+        db: Arc::new(db),
+        legacy_vrcx_available,
+        legacy_vrcx_source,
+        legacy_vrcx_migration_status,
+    })
+}
+
+fn rollback_failed_data_dir_migration_startup(
+    resolution: &mut AppDataDirResolution,
+    prepared: &PreparedDataDirMigration,
+) -> Result<()> {
+    let source_dir = PathBuf::from(&prepared.journal.source_dir).canonicalize()?;
+    commit_app_data_dir_pointer(&resolution.default_dir, &source_dir)?;
+    record_data_dir_migration_database_open_failure(&resolution.default_dir, &prepared.journal)?;
+    set_active_data_dir(resolution, source_dir);
+    Ok(())
+}
+
 impl RuntimeHostStateBuilder {
     pub fn new(options: RuntimeHostOptions) -> Result<Self> {
         let RuntimeHostOptions {
             realtime_origin,
             launched_from_autostart,
-            app_data_dir,
+            mut app_data_dir,
             app_version,
             profile,
         } = options;
-        let paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
-        let profile_lock = ProfileLock::acquire(&paths.app_data)?;
-        let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
-        consume_pending_legacy_migration(&migration_paths)?;
-        let pending_profile_restore =
-            consume_pending_profile_restore(&paths.app_data, &paths.db_file)?;
-        if let Err(error) = cleanup_profile_backup_artifacts(&paths.app_data) {
-            tracing::warn!(error = %error, "failed to clean up profile backup artifacts");
-        }
-        let (legacy_vrcx_source, legacy_vrcx_migration_status) =
-            vrcx_0_persistence::legacy_vrcx::discover_legacy_vrcx_migration(
-                &paths.db_file,
-                &paths.config_file,
-            );
-        let legacy_vrcx_available = legacy_vrcx_migration_status.available;
-        let storage = Arc::new(StorageService::new(&paths.config_file)?);
-        let db = match DatabaseService::new(&paths.db_file) {
-            Ok(db) => {
-                if let Some(pending) = pending_profile_restore {
-                    if let Err(error) = pending.finalize() {
-                        tracing::warn!(
-                            error = %error,
-                            "failed to finalize profile restore; journal remains for the next start"
-                        );
-                    }
-                }
-                db
-            }
+        let prepared_migration = prepare_data_dir_migration_startup(&mut app_data_dir)?;
+        let mut paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
+        let mut profile_lock = ProfileLock::acquire(&paths.app_data)?;
+        let opened = match open_profile(&paths) {
+            Ok(opened) => opened,
             Err(error) => {
-                let Some(pending) = pending_profile_restore else {
-                    return Err(error.into());
+                let Some(prepared) = prepared_migration.as_ref() else {
+                    return Err(error);
                 };
-                pending.rollback(ProfileRestoreFailureCode::DatabaseOpenFailed)?;
-                DatabaseService::new(&paths.db_file)?
+                tracing::warn!(error = %error, "migrated database failed to open; rolling back data directory pointer");
+                drop(profile_lock);
+                rollback_failed_data_dir_migration_startup(&mut app_data_dir, prepared)?;
+                paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
+                profile_lock = ProfileLock::acquire(&paths.app_data)?;
+                open_profile(&paths)?
             }
         };
-        let db = Arc::new(db);
+        if let Some(prepared) = prepared_migration.as_ref() {
+            if app_data_paths_match(&paths.app_data, Path::new(&prepared.journal.target_dir)) {
+                if let Err(error) = complete_data_dir_migration(
+                    &app_data_dir.default_dir,
+                    &prepared.journal,
+                    &prepared.outcome,
+                ) {
+                    tracing::warn!(error = %error, "failed to complete data directory migration startup journal");
+                }
+            }
+        }
+        let OpenedProfile {
+            storage,
+            db,
+            legacy_vrcx_available,
+            legacy_vrcx_source,
+            legacy_vrcx_migration_status,
+        } = opened;
         prepare_secrets_at_rest(&db, profile);
         let web = Arc::new(WebClient::new(
             &storage,
@@ -214,14 +331,27 @@ impl RuntimeHostStateBuilder {
             Arc::clone(&web),
             Arc::clone(&image_cache),
         ));
-        let profile_backup = ProfileBackupRuntime::new(
+        let profile_backup = ProfileBackupRuntime::new(ProfileBackupRuntimeDeps {
+            app_data: paths.app_data.clone(),
+            control_dir: app_data_dir.default_dir.clone(),
+            db: Arc::clone(&db),
+            storage: Arc::clone(&storage),
+            event_bus: runtime_context.event_bus.clone(),
+            tasks: runtime_context.tasks.clone(),
+            background_jobs: runtime_context.background_jobs.clone(),
+            app_version: app_version.clone(),
+        });
+        let pointer_control_dir = app_data_dir.default_dir.clone();
+        let data_dir_migration = DataDirMigrationRuntime::new(
             paths.app_data.clone(),
+            app_data_dir.default_dir.clone(),
             Arc::clone(&db),
-            Arc::clone(&storage),
             runtime_context.event_bus.clone(),
-            runtime_context.tasks.clone(),
-            runtime_context.background_jobs.clone(),
-            app_version.clone(),
+            profile_backup.operation_gate(),
+            Arc::new(move |target| {
+                commit_app_data_dir_pointer(&pointer_control_dir, target)
+                    .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))
+            }),
         );
 
         Ok(Self {
@@ -232,6 +362,7 @@ impl RuntimeHostStateBuilder {
             storage,
             db,
             profile_backup,
+            data_dir_migration,
             runtime_context,
             backend_runtime: BackendRuntime::new(),
             web,
@@ -344,6 +475,7 @@ impl RuntimeHostStateBuilder {
             storage: self.storage,
             db: self.db,
             profile_backup: self.profile_backup,
+            data_dir_migration: self.data_dir_migration,
             runtime_context: self.runtime_context,
             backend_runtime: self.backend_runtime,
             realtime_runtime,
@@ -525,6 +657,11 @@ mod profile_bundle_tests {
     use std::path::PathBuf;
     use std::sync::atomic::AtomicUsize;
     use vrcx_0_host::app_paths::AppDataDirSource;
+    use vrcx_0_persistence::data_dir_migration::{
+        read_pending_data_dir_migration, take_data_dir_migration_result,
+        write_pending_data_dir_migration, DataDirMigrationResultStatus, PendingDataDirMigration,
+        StagedDataDirMigration,
+    };
 
     #[derive(Default)]
     struct TestProfileExtension {
@@ -560,6 +697,150 @@ mod profile_bundle_tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.path);
         }
+    }
+
+    fn switched_journal(source: &Path, target: &Path) -> PendingDataDirMigration {
+        let mut journal = PendingDataDirMigration::copying(
+            source.to_string_lossy().into_owned(),
+            target.to_string_lossy().into_owned(),
+            "2026-07-18T00:00:00Z".into(),
+            false,
+        );
+        journal.mark_switched(
+            &StagedDataDirMigration {
+                db_sha256: "test".into(),
+                db_bytes: 1,
+                wal_bytes: None,
+            },
+            None,
+        );
+        journal
+    }
+
+    fn persisted_resolution(source: &Path) -> AppDataDirResolution {
+        AppDataDirResolution {
+            current_dir: source.to_path_buf(),
+            default_dir: source.to_path_buf(),
+            persisted_dir: None,
+            cli_dir: None,
+            source: AppDataDirSource::Default,
+        }
+    }
+
+    #[test]
+    fn switched_data_dir_migration_finishes_before_profile_startup() -> Result<()> {
+        let dir = TestDir::new("data-dir-migration-success");
+        let source = dir.path.join("source");
+        let target = dir.path.join("target");
+        std::fs::create_dir_all(&source)?;
+        std::fs::create_dir_all(&target)?;
+        drop(DatabaseService::new(&source.join("VRCX-0.sqlite3"))?);
+        drop(DatabaseService::new(&target.join("VRCX-0.sqlite3"))?);
+        write_pending_data_dir_migration(&source, &switched_journal(&source, &target))?;
+
+        let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
+            realtime_origin: "http://localhost:9000".into(),
+            launched_from_autostart: false,
+            app_data_dir: persisted_resolution(&source),
+            app_version: "0.0.0-test".into(),
+            profile: RuntimeHostProfile::HeadlessData,
+        })?;
+
+        assert!(app_data_paths_match(&builder.paths.app_data, &target));
+        assert_eq!(
+            take_data_dir_migration_result(&source)?
+                .expect("migration result")
+                .status,
+            DataDirMigrationResultStatus::Succeeded
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn migrated_database_open_failure_rolls_back_to_source() -> Result<()> {
+        let dir = TestDir::new("data-dir-migration-rollback");
+        let source = dir.path.join("source");
+        let target = dir.path.join("target");
+        std::fs::create_dir_all(&source)?;
+        std::fs::create_dir_all(target.join("VRCX-0.sqlite3"))?;
+        drop(DatabaseService::new(&source.join("VRCX-0.sqlite3"))?);
+        write_pending_data_dir_migration(&source, &switched_journal(&source, &target))?;
+
+        let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
+            realtime_origin: "http://localhost:9000".into(),
+            launched_from_autostart: false,
+            app_data_dir: persisted_resolution(&source),
+            app_version: "0.0.0-test".into(),
+            profile: RuntimeHostProfile::HeadlessData,
+        })?;
+
+        assert!(app_data_paths_match(&builder.paths.app_data, &source));
+        assert_eq!(
+            take_data_dir_migration_result(&source)?
+                .expect("migration result")
+                .status,
+            DataDirMigrationResultStatus::DatabaseOpenFailed
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn interrupted_copy_is_cleaned_before_profile_startup() -> Result<()> {
+        let dir = TestDir::new("data-dir-migration-interrupted");
+        let source = dir.path.join("source");
+        let target = dir.path.join("target");
+        let staging = target.join(".migrate-staging");
+        std::fs::create_dir_all(&source)?;
+        std::fs::create_dir_all(&staging)?;
+        std::fs::write(staging.join("VRCX-0.sqlite3"), b"partial")?;
+        write_pending_data_dir_migration(
+            &source,
+            &PendingDataDirMigration::copying(
+                source.to_string_lossy().into_owned(),
+                target.to_string_lossy().into_owned(),
+                "2026-07-18T00:00:00Z".into(),
+                false,
+            ),
+        )?;
+
+        let mut resolution = persisted_resolution(&source);
+        assert!(prepare_data_dir_migration_startup(&mut resolution)?.is_none());
+        assert!(app_data_paths_match(&resolution.current_dir, &source));
+        assert!(!staging.exists());
+        assert!(read_pending_data_dir_migration(&source)?.is_none());
+        assert_eq!(
+            take_data_dir_migration_result(&source)?
+                .expect("migration result")
+                .status,
+            DataDirMigrationResultStatus::Interrupted
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cli_override_leaves_switched_migration_pending() -> Result<()> {
+        let dir = TestDir::new("data-dir-migration-cli-override");
+        let control = dir.path.join("control");
+        let source = dir.path.join("source");
+        let target = dir.path.join("target");
+        let cli = dir.path.join("cli");
+        for path in [&control, &source, &target, &cli] {
+            std::fs::create_dir_all(path)?;
+        }
+        write_pending_data_dir_migration(&control, &switched_journal(&source, &target))?;
+        let mut resolution = AppDataDirResolution {
+            current_dir: cli.clone(),
+            default_dir: control.clone(),
+            persisted_dir: Some(source),
+            cli_dir: Some(cli.clone()),
+            source: AppDataDirSource::Cli,
+        };
+
+        assert!(prepare_data_dir_migration_startup(&mut resolution)?.is_none());
+        assert!(app_data_paths_match(&resolution.current_dir, &cli));
+        assert!(read_pending_data_dir_migration(&control)?.is_some());
+        assert!(take_data_dir_migration_result(&control)?.is_none());
+        Ok(())
     }
 
     #[test]

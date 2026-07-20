@@ -232,7 +232,6 @@ export function useMyAvatarsActions({
         try {
             const nextAvatar = await myAvatarRepository.saveAvatar({
                 avatarId,
-                endpoint: currentEndpoint,
                 params
             });
             if (!isRuntimeAuthTarget(authTarget)) {
@@ -274,8 +273,7 @@ export function useMyAvatarsActions({
         setUpdatingAvatarId(avatarId);
         try {
             await avatarProfileRepository.selectAvatar({
-                avatarId,
-                endpoint: currentEndpoint
+                avatarId
             });
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -368,8 +366,7 @@ export function useMyAvatarsActions({
         setUpdatingAvatarId(avatarId);
         try {
             await myAvatarRepository.createImpostor({
-                avatarId,
-                endpoint: currentEndpoint
+                avatarId
             });
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -512,8 +509,7 @@ export function useMyAvatarsActions({
                 mediaRepository.uploadAvatarImageLegacy({
                     avatarId,
                     imageUrl: avatar.imageUrl || avatar.thumbnailImageUrl || '',
-                    base64File,
-                    endpoint: currentEndpoint
+                    base64File
                 })
             );
             if (!isRuntimeAuthTarget(authTarget)) {

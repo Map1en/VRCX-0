@@ -144,7 +144,6 @@ export function useGroupDialogState({
         groupProfileRepository
             .getGroupProfile({
                 groupId: normalizedGroupId,
-                endpoint: currentEndpoint,
                 dialog: true
             })
             .then((nextGroup) => {
@@ -239,8 +238,7 @@ export function useGroupDialogState({
         groupProfileRepository
             .getGroupInstances({
                 groupId: normalizedGroupId,
-                userId: currentUserId,
-                endpoint: currentEndpoint
+                userId: currentUserId
             })
             .then((response) => {
                 if (!active) {
@@ -316,7 +314,6 @@ export function useGroupDialogState({
     async function refreshGroupProfile() {
         const nextGroup = await groupProfileRepository.getGroupProfile({
             groupId: normalizedGroupId,
-            endpoint: currentEndpoint,
             force: true
         });
         if (
@@ -349,8 +346,7 @@ export function useGroupDialogState({
         setActionStatus('join');
         try {
             const response = await groupProfileRepository.joinGroup({
-                groupId: normalizedGroupId,
-                endpoint: currentEndpoint
+                groupId: normalizedGroupId
             });
             const nextStatus = normalizeEntityId(
                 response.json?.membershipStatus
@@ -402,8 +398,7 @@ export function useGroupDialogState({
 
         try {
             const response = await groupProfileRepository.leaveGroup({
-                groupId: normalizedGroupId,
-                endpoint: currentEndpoint
+                groupId: normalizedGroupId
             });
             await refreshGroupProfile().catch(() => {
                 if (response.json && typeof response.json === 'object') {
@@ -435,8 +430,7 @@ export function useGroupDialogState({
         setActionStatus('cancel-request');
         try {
             await groupProfileRepository.cancelGroupRequest({
-                groupId: normalizedGroupId,
-                endpoint: currentEndpoint
+                groupId: normalizedGroupId
             });
             await refreshGroupProfile();
             toast.success(
@@ -488,8 +482,7 @@ export function useGroupDialogState({
         try {
             await groupProfileRepository.setGroupRepresentation({
                 groupId: normalizedGroupId,
-                isRepresenting: enabled,
-                endpoint: currentEndpoint
+                isRepresenting: enabled
             });
             await refreshGroupProfile();
             toast.success(
@@ -529,8 +522,7 @@ export function useGroupDialogState({
             await groupProfileRepository.setGroupMemberProps({
                 groupId: normalizedGroupId,
                 userId: currentUserId,
-                params,
-                endpoint: currentEndpoint
+                params
             });
             await refreshGroupProfile();
             toast.success(label);
@@ -577,14 +569,12 @@ export function useGroupDialogState({
         try {
             if (enabled) {
                 await groupProfileRepository.blockGroup({
-                    groupId: normalizedGroupId,
-                    endpoint: currentEndpoint
+                    groupId: normalizedGroupId
                 });
             } else {
                 await groupProfileRepository.unblockGroup({
                     groupId: normalizedGroupId,
-                    userId: currentUserId,
-                    endpoint: currentEndpoint
+                    userId: currentUserId
                 });
             }
             await refreshGroupProfile();

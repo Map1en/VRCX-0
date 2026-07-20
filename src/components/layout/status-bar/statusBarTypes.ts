@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
+import type { DataDirMigrationStatus } from '@/services/dataDirMigrationService';
 import type { ProfileBackupStatus } from '@/services/profileBackupService';
 import type { VrcStatusState } from '@/state/runtimeStore';
 
@@ -63,6 +64,10 @@ export type StatusBarProfileBackup = {
     onOpenDetails: () => unknown;
 };
 
+export type StatusBarDataDirMigration = {
+    status: DataDirMigrationStatus;
+};
+
 export type StatusBarNowPlaying = {
     length?: unknown;
     name?: string | null;
@@ -97,6 +102,7 @@ export type StatusBarFooterModel = {
     clockPopoverOpen: boolean[];
     currentLocationStartedTimestamp: number;
     currentWorld: string;
+    dataDirMigration: StatusBarDataDirMigration;
     formatAppUptime: (ms: number) => string;
     formatClock: (nowMs: number, offset: unknown) => string;
     formatDuration: (ms: unknown) => string;

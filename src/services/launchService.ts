@@ -48,8 +48,7 @@ function resolveLaunchLocation(location: unknown): string {
 export async function resolveLaunchDialogDetails(
     tag: unknown,
     shortName: unknown = '',
-    launchToken: unknown = '',
-    endpoint: string = ''
+    launchToken: unknown = ''
 ): Promise<LaunchDialogDetails> {
     const normalizedTag = normalizeString(tag);
     const parsed = parseLocation(normalizedTag);
@@ -78,15 +77,14 @@ export async function resolveLaunchDialogDetails(
     if (!secureOrShortName) {
         const response = (await vrchatInstanceRepository.getInstanceShortName({
             worldId: parsed.worldId,
-            instanceId: parsed.instanceId,
-            endpoint
+            instanceId: parsed.instanceId
         })) as InstanceShortNameResponse;
         nextShortName = normalizeString(response.json?.shortName);
         secureOrShortName =
             nextShortName || normalizeString(response.json?.secureName);
     }
 
-    const launchParsed: any = {
+    const launchParsed = {
         ...parsed,
         shortName: nextShortName
     };
@@ -95,11 +93,7 @@ export async function resolveLaunchDialogDetails(
         tag: normalizedTag,
         location: resolveLaunchLocation(normalizedTag),
         url: getLaunchURL(launchParsed),
-        vrcUrl: await resolveVrcLaunchUrl(
-            normalizedTag,
-            secureOrShortName,
-            endpoint
-        ),
+        vrcUrl: await resolveVrcLaunchUrl(normalizedTag, secureOrShortName),
         shortName: nextShortName,
         launchToken: secureOrShortName,
         shortUrl: nextShortName ? `https://vrch.at/${nextShortName}` : '',
@@ -111,15 +105,13 @@ export async function resolveLaunchDialogDetails(
 
 export async function attachRunningVrchat(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: string = ''
+    shortName: unknown = ''
 ): Promise<void> {
     const launchLocation = normalizeString(location);
     const launchShortName = normalizeString(shortName);
     const outcome = await joinInstanceWithFallback(
         launchLocation,
-        launchShortName,
-        endpoint
+        launchShortName
     );
     if (outcome.status === 'opened') {
         return;
@@ -138,8 +130,7 @@ export async function attachRunningVrchat(
 
 export async function selfInviteToInstance(
     location: unknown,
-    shortName: unknown = '',
-    endpoint: string = ''
+    shortName: unknown = ''
 ): Promise<void> {
     const launchLocation = normalizeString(location);
     const launchShortName = normalizeString(shortName);
@@ -149,22 +140,20 @@ export async function selfInviteToInstance(
             'Cannot self invite: location is not a concrete instance.'
         );
     }
-    await sendSelfInviteToInstance(launchLocation, launchShortName, endpoint);
+    await sendSelfInviteToInstance(launchLocation, launchShortName);
 }
 
 export async function launchVrchat(
     location: unknown,
     shortName: unknown = '',
-    desktopMode: any = false,
-    endpoint: string = ''
+    desktopMode: unknown = false
 ): Promise<void> {
     requireHostCapabilitySupported('gameLaunch');
     const launchLocation = normalizeString(location);
     const launchShortName = normalizeString(shortName);
     const launchUrl = await resolveVrcLaunchUrl(
         launchLocation,
-        launchShortName,
-        endpoint
+        launchShortName
     );
     const args = [launchUrl];
     const launchArguments = normalizeString(

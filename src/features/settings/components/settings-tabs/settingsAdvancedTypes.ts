@@ -22,7 +22,9 @@ export type SettingsAdvancedModel = {
     onAutoSweepVRChatCacheChange: (checked: boolean) => unknown;
     onAvatarAutoCleanupChange: (value: string) => unknown;
     onClearConfigTreeData: () => void;
+    onCleanupAppDataDir: SettingsAdvancedAction;
     onDefaultLaunchModeChange: (value: string) => unknown;
+    onDismissAppDataDirCleanup: SettingsAdvancedAction;
     onGameLogDisabledChange: (disabled: boolean) => unknown;
     onLogResourceLoadChange: (checked: boolean) => unknown;
     onMigrateLegacyVrcxData: SettingsAdvancedAction;

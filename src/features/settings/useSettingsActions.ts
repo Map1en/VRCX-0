@@ -96,7 +96,7 @@ type SettingsActionsDeps = Pick<
     > & { setPrefs: SettingsPagePrefsSetter };
 
 export function useSettingsActions(deps: SettingsActionsDeps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -155,6 +155,7 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         feedRepository,
         gameState,
         isValidFontFamilyList,
+        language: i18n.language,
         loadTrustColorPreference,
         mediaRepository,
         normalizeAppCjkFontPack,

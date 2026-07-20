@@ -17,7 +17,6 @@ import type {
     FavoriteStore
 } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -157,9 +156,6 @@ export function FavoriteActionMenu({
     const { t } = useTranslation();
 
     const normalizedEntityId = normalizeEntityId(entityId);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const confirm = useModalStore((state) => state.confirm);
     const groups = useFavoriteStore((state) => resolveGroups(kind, state));
     const storedLocalGroups = useFavoriteStore((state) =>
@@ -213,7 +209,6 @@ export function FavoriteActionMenu({
         setActionStatus('favorite');
         try {
             const response = await vrchatFavoriteRepository.addFavorite({
-                endpoint: currentEndpoint,
                 type: group.type || kind,
                 favoriteId: normalizedEntityId,
                 tags: group.name
@@ -272,7 +267,6 @@ export function FavoriteActionMenu({
 
         try {
             await vrchatFavoriteRepository.deleteFavorite({
-                endpoint: currentEndpoint,
                 objectId: normalizedEntityId
             });
             removeRemoteFavorite(normalizedEntityId);

@@ -129,38 +129,23 @@ export function moderationRowLabel(row: unknown) {
     );
 }
 
-export function moderationRowSubtitle(row: unknown) {
-    const source = record(row);
-    const roleIds = Array.isArray(source.roleIds)
-        ? source.roleIds.filter(
-              (value): value is string => typeof value === 'string'
-          )
-        : [];
-    return [
-        roleIds.join(', '),
-        text(
-            source.action,
-            source.eventType,
-            source.type,
-            source.membershipStatus
-        ),
-        text(source.createdAt, source.updatedAt, source.joinedAt)
-    ]
-        .filter(Boolean)
-        .join(' | ');
-}
-
-export function moderationRowRoles(row: unknown, group: unknown) {
+export function moderationRowRoleIds(row: unknown): string[] {
     const source = record(row);
     const user = record(source.user);
-    const roles = getGroupRoleNameMap(group);
     const roleIds = Array.isArray(source.roleIds)
         ? source.roleIds
         : Array.isArray(user.roleIds)
           ? user.roleIds
           : [];
     return roleIds
-        .map((roleId) => roles.get(text(roleId)) || 'Role')
+        .map((roleId) => text(roleId))
+        .filter((roleId): roleId is string => Boolean(roleId));
+}
+
+export function moderationRowRoles(row: unknown, group: unknown) {
+    const roles = getGroupRoleNameMap(group);
+    return moderationRowRoleIds(row)
+        .map((roleId) => roles.get(roleId) || 'Role')
         .filter(Boolean)
         .join(', ');
 }
@@ -178,6 +163,39 @@ export function moderationRowStatus(row: unknown) {
     );
 }
 
+export type GroupModerationStatusTone =
+    | 'neutral'
+    | 'active'
+    | 'pending'
+    | 'danger';
+
+export function moderationStatusTone(
+    status: string
+): GroupModerationStatusTone {
+    const value = status.toLowerCase();
+    if (!value || value === '—') {
+        return 'neutral';
+    }
+    if (value.includes('banned')) {
+        return 'danger';
+    }
+    if (
+        value.includes('invited') ||
+        value.includes('request') ||
+        value.includes('pending')
+    ) {
+        return 'pending';
+    }
+    if (
+        value.includes('member') ||
+        value.includes('active') ||
+        value.includes('joined')
+    ) {
+        return 'active';
+    }
+    return 'neutral';
+}
+
 export function moderationRowDate(row: unknown) {
     const source = record(row);
     return text(
@@ -188,6 +206,32 @@ export function moderationRowDate(row: unknown) {
         source.joinedAt,
         source.joined_at
     );
+}
+
+export function moderationRowNote(row: unknown): string {
+    const source = record(row);
+    return (
+        text(source.description) ||
+        text(source.note) ||
+        text(source.managerNotes)
+    );
+}
+
+const GROUP_MODERATION_STATUS_LABEL_KEYS: Record<string, string> = {
+    member: 'dialog.group_member_moderation.status.member',
+    invited: 'dialog.group_member_moderation.status.invited',
+    banned: 'dialog.group_member_moderation.status.banned',
+    requested: 'dialog.group_member_moderation.status.requested',
+    blocked: 'dialog.group_member_moderation.status.blocked',
+    userblocked: 'dialog.group_member_moderation.status.userblocked',
+    joined: 'dialog.group_member_moderation.status.joined',
+    active: 'dialog.group_member_moderation.status.active',
+    pending: 'dialog.group_member_moderation.status.pending'
+};
+
+export function moderationStatusLabel(status: string, t: TranslateFn): string {
+    const key = GROUP_MODERATION_STATUS_LABEL_KEYS[status.trim().toLowerCase()];
+    return key ? t(key) : status;
 }
 
 export function moderationRowSearchText(row: unknown, group: unknown) {

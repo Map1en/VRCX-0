@@ -33,8 +33,7 @@ function runningPayload() {
         loaded: 0,
         failed: 0,
         startedAt: '2026-01-01T00:00:00.000Z',
-        finishedAt: null,
-        lastError: null
+        finishedAt: null
     };
 }
 

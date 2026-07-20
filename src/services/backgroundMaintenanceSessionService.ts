@@ -302,9 +302,7 @@ async function refreshCurrentUserForTarget({
         return null;
     }
 
-    const response = await vrchatAuthRepository.getCurrentUser({
-        endpoint: target.currentUserEndpoint
-    });
+    const response = await vrchatAuthRepository.getCurrentUser();
     const responseUser =
         response.json && isRecord(response.json) ? response.json : null;
     if (!responseUser?.id) {

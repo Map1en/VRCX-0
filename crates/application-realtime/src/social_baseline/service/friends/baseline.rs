@@ -268,12 +268,16 @@ fn init_friend_roster_records(
         .enumerate()
         .map(|(index, friend_id)| {
             let entry = &friends_by_id[friend_id];
-            let trust_level = entry
-                .extra
-                .get("$trustLevel")
-                .or_else(|| entry.extra.get("trustLevel"))
-                .map(value_as_string)
-                .unwrap_or_default();
+            let trust_level = if entry.is_placeholder() {
+                String::new()
+            } else {
+                entry
+                    .extra
+                    .get("$trustLevel")
+                    .or_else(|| entry.extra.get("trustLevel"))
+                    .map(value_as_string)
+                    .unwrap_or_default()
+            };
             FriendLogCurrentEntryInput {
                 user_id: friend_id.clone(),
                 display_name: entry.display_name.clone(),
@@ -338,6 +342,9 @@ pub(crate) fn reconcile_friend_roster_records(
         if friend_id == user_id {
             continue;
         }
+        if entry.is_placeholder() {
+            continue;
+        }
         let trust_level = entry
             .extra
             .get("$trustLevel")
@@ -349,9 +356,11 @@ pub(crate) fn reconcile_friend_roster_records(
         let meaningful_name = !next_name.is_empty() && next_name != "Unknown";
         let name_changed =
             existing_row.is_some_and(|row| meaningful_name && next_name != row.display_name.trim());
-        let trust_differs =
-            existing_row.is_some_and(|row| trust_level_differs(&row.trust_level, &trust_level));
-        if existing_row.is_some() && !name_changed && !trust_differs {
+        let trust_needs_update = existing_row.is_some_and(|row| {
+            trust_level_differs(&row.trust_level, &trust_level)
+                || (row.trust_level.trim().is_empty() && !trust_level.trim().is_empty())
+        });
+        if existing_row.is_some() && !name_changed && !trust_needs_update {
             continue;
         }
         let display_name = if meaningful_name {

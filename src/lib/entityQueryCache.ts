@@ -187,6 +187,8 @@ export const queryKeys = Object.freeze({
         withEndpoint(['user', userId, 'mutualCounts'], endpoint),
     userGroups: (userId: unknown, endpoint: unknown = '') =>
         withEndpoint(['user', userId, 'groups'], endpoint),
+    userGroupsOverview: (userId: unknown, endpoint: unknown = '') =>
+        withEndpoint(['user', userId, 'groupsOverview'], endpoint),
     instance: (worldId: unknown, instanceId: unknown, endpoint: unknown = '') =>
         withEndpoint(['instance', worldId, instanceId], endpoint),
     instanceShortName: (

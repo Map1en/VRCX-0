@@ -136,10 +136,9 @@ export function useAvatarDialogState({
         }));
 
         Promise.allSettled([
-            vrchatAuthRepository.getConfig({ endpoint: currentEndpoint }),
+            vrchatAuthRepository.getConfig(),
             avatarProfileRepository.getAvatarGallery({
-                avatarId: avatar.id,
-                endpoint: currentEndpoint
+                avatarId: avatar.id
             })
         ]).then(([configResult, galleryResult]) => {
             if (!active) {
@@ -153,7 +152,7 @@ export function useAvatarDialogState({
             const galleryRows =
                 galleryResult.status === 'fulfilled' ? galleryResult.value : [];
             return Promise.allSettled([
-                readAvatarCacheInfo(avatar, currentEndpoint),
+                readAvatarCacheInfo(avatar),
                 getFileAnalysisForUnityPackages({
                     unityPackages: avatar.unityPackages,
                     sdkUnityVersion,
@@ -197,7 +196,7 @@ export function useAvatarDialogState({
 
         const revision = moderationRevisionRef.current;
         avatarProfileRepository
-            .getAvatarModerations({ endpoint: currentEndpoint })
+            .getAvatarModerations()
             .then((response) => {
                 if (!active || moderationRevisionRef.current !== revision) {
                     return;
@@ -251,7 +250,6 @@ export function useAvatarDialogState({
         avatarProfileRepository
             .getAvatarProfile({
                 avatarId: normalizedAvatarId,
-                endpoint: currentEndpoint,
                 dialog: true,
                 currentUserId
             })

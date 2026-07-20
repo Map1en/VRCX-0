@@ -299,14 +299,6 @@ pub(super) fn emit_background_info(
     emit_background_output(runtime_context, backend_runtime, "backgroundInfo", detail);
 }
 
-pub(super) fn emit_background_error(
-    runtime_context: &Arc<RuntimeHostContext>,
-    backend_runtime: &BackendRuntime,
-    detail: impl Into<String>,
-) {
-    emit_background_output(runtime_context, backend_runtime, "backgroundError", detail);
-}
-
 pub(super) fn emit_background_warning(
     runtime_context: &Arc<RuntimeHostContext>,
     backend_runtime: &BackendRuntime,

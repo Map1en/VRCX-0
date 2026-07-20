@@ -171,11 +171,10 @@ pub async fn upload_legacy_entity_image(
     payload.insert("fileId".into(), Value::String(uploaded_file_id));
     payload.insert("fileVersion".into(), json!(file_version));
     let payload = Value::Object(payload);
-    Ok(HttpApiExecuteResponse {
-        status: 200,
-        data: payload.to_string(),
-        raw: payload,
-    })
+    Ok(vrcx_0_vrchat_client::http_api::execute_response(
+        200,
+        payload.to_string(),
+    ))
 }
 
 fn require_text(value: impl AsRef<str>, message: &str) -> Result<String> {

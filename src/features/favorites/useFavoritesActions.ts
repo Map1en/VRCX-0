@@ -95,7 +95,6 @@ export function useFavoritesActions({
     const itemActions = useFavoritesItemActions({
         avatarHistoryLoading,
         canInviteFromCurrentLocation,
-        currentEndpoint,
         currentInviteLocation,
         currentUserId,
         friendsById,

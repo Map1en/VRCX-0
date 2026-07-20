@@ -110,6 +110,9 @@ export function InstanceUserTiles({ instance }: { instance: unknown }) {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
+    );
     const source = record(instance);
     const creatorUser = record(source.creatorUser);
     const creatorUserId = firstText(source.creatorUserId);
@@ -204,7 +207,7 @@ export function InstanceUserTiles({ instance }: { instance: unknown }) {
                     statusUser,
                     currentUserSnapshot,
                     isCurrentUser,
-                    { hideNonFriend: false }
+                    { hideNonFriend: false, isGameRunning }
                 );
                 const displayName = firstText(
                     user.displayName,

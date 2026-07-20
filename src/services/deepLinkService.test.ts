@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
         >(),
     eventHandlers: new Map<string, (payload: unknown) => void>(),
     prompt: vi.fn(),
+    openAvatarDialog: vi.fn(),
     openWorldDialog: vi.fn(),
     previewSharedCollection: vi.fn(),
     toastSuccess: vi.fn(),
@@ -68,6 +69,7 @@ vi.mock('@/repositories/shareCollectionRepository', () => ({
 }));
 
 vi.mock('@/services/dialogService', () => ({
+    openAvatarDialog: mocks.openAvatarDialog,
     openWorldDialog: mocks.openWorldDialog
 }));
 
@@ -103,6 +105,7 @@ import {
 } from './deepLinkService';
 
 const WORLD_ID = 'wrld_12345678-1234-1234-1234-1234567890ab';
+const AVATAR_ID = 'avtr_12345678-1234-1234-1234-1234567890ab';
 
 function importStatus(
     overrides: Partial<SharedCollectionImportStatus> = {}
@@ -368,6 +371,14 @@ describe('deepLinkService', () => {
         });
     });
 
+    it('opens avatars from actions', () => {
+        handleDeepLinkAction({ type: 'openAvatar', avatarId: AVATAR_ID });
+
+        expect(mocks.openAvatarDialog).toHaveBeenCalledWith({
+            avatarId: AVATAR_ID
+        });
+    });
+
     it('shows a toast when a shared collection has no importable worlds', () => {
         mocks.previewSharedCollection.mockResolvedValueOnce({
             title: 'Empty',
@@ -387,6 +398,7 @@ describe('deepLinkService', () => {
 
     it('ignores malformed action payloads defensively', async () => {
         handleDeepLinkAction({ type: 'openWorld', worldId: 'bad' });
+        handleDeepLinkAction({ type: 'openAvatar', avatarId: 'bad' });
         handleDeepLinkAction({
             type: 'importCollection',
             collectionId: 'bad/value'
@@ -398,6 +410,7 @@ describe('deepLinkService', () => {
         await drainPendingDeepLinks();
 
         expect(mocks.openWorldDialog).not.toHaveBeenCalled();
+        expect(mocks.openAvatarDialog).not.toHaveBeenCalled();
         expect(mocks.previewSharedCollection).not.toHaveBeenCalled();
     });
 });
