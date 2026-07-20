@@ -4278,8 +4278,10 @@
             "empty_description": "Aktualisiere diesen Bereich, um verfügbare Items zu laden."
         },
         "image_crop": {
+            "crop_area": "Zuschneidebereich. An einer Kante oder Ecke ziehen, um die Größe zu ändern. Knapp außerhalb einer Ecke ziehen, um das Bild zu drehen.",
             "rotate_left": "Nach links drehen",
             "rotate_right": "Nach rechts drehen",
+            "rotation_angle": "Drehwinkel",
             "flip_h": "Horizontal spiegeln",
             "flip_v": "Vertikal spiegeln",
             "zoom_in": "Vergrößern",

@@ -58,6 +58,7 @@ import {
     constrainCropSizeToZoom,
     constrainCropToImage,
     cropImage,
+    getContinuousRotationDeltaDegrees,
     getRotationCoverZoom,
     prepareImage,
     resizeCropSize,
@@ -265,8 +266,8 @@ export function ImageCropDialog({
         pointerId: number;
         centerX: number;
         centerY: number;
-        startAngle: number;
-        startRotation: number;
+        previousAngleRadians: number;
+        rotationDegrees: number;
     } | null>(null);
     const cropResizeDragRef = useRef<{
         pointerId: number;
@@ -443,11 +444,11 @@ export function ImageCropDialog({
                 pointerId: event.pointerId,
                 centerX,
                 centerY,
-                startAngle: Math.atan2(
+                previousAngleRadians: Math.atan2(
                     event.clientY - centerY,
                     event.clientX - centerX
                 ),
-                startRotation: rotation
+                rotationDegrees: rotation
             };
         },
         [rotation]
@@ -459,16 +460,16 @@ export function ImageCropDialog({
             if (!drag || drag.pointerId !== event.pointerId) return;
             event.preventDefault();
             event.stopPropagation();
-            const angle = Math.atan2(
+            const angleRadians = Math.atan2(
                 event.clientY - drag.centerY,
                 event.clientX - drag.centerX
             );
-            setRotation(
-                drag.startRotation +
-                    normalizeSignedRotation(
-                        ((angle - drag.startAngle) * 180) / Math.PI
-                    )
+            drag.rotationDegrees += getContinuousRotationDeltaDegrees(
+                drag.previousAngleRadians,
+                angleRadians
             );
+            drag.previousAngleRadians = angleRadians;
+            setRotation(drag.rotationDegrees);
         },
         []
     );
@@ -746,9 +747,7 @@ export function ImageCropDialog({
         Math.round(normalizeSignedRotation(rotation) * 10) / 10;
     const flipDisplay =
         flipH || flipV ? `${flipH ? 'H' : ''}${flipV ? 'V' : ''}` : '';
-    const rotationLabel = t('dialog.image_crop.rotation_angle', {
-        defaultValue: 'Rotation angle'
-    });
+    const rotationLabel = t('dialog.image_crop.rotation_angle');
 
     function startRotationInput() {
         setRotationInput(String(rotationDisplay));
@@ -851,11 +850,7 @@ export function ImageCropDialog({
                                         style={cropperStyle}
                                         cropperProps={{
                                             'aria-label': t(
-                                                'dialog.image_crop.crop_area',
-                                                {
-                                                    defaultValue:
-                                                        'Image crop area. Drag an edge or corner to resize. Drag just outside a corner to rotate.'
-                                                }
+                                                'dialog.image_crop.crop_area'
                                             ),
                                             children: (
                                                 <>

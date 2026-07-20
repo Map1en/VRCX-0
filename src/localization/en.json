@@ -4278,8 +4278,10 @@
             "empty_description": "Refresh this section to load available items."
         },
         "image_crop": {
+            "crop_area": "Crop area. Drag an edge or corner to resize. Drag just outside a corner to rotate.",
             "rotate_left": "Rotate Left",
             "rotate_right": "Rotate Right",
+            "rotation_angle": "Rotation angle",
             "flip_h": "Flip Horizontal",
             "flip_v": "Flip Vertical",
             "zoom_in": "Zoom In",

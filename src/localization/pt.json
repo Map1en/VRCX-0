@@ -4278,8 +4278,10 @@
             "empty_description": "Atualize esta seção para carregar os itens disponíveis."
         },
         "image_crop": {
+            "crop_area": "Área de recorte. Arraste uma borda ou um canto para redimensioná-la. Arraste logo do lado de fora de um canto para girar a imagem.",
             "rotate_left": "Girar para a Esquerda",
             "rotate_right": "Girar para a Direita",
+            "rotation_angle": "Ângulo de rotação",
             "flip_h": "Espelhar Horizontalmente",
             "flip_v": "Espelhar Verticalmente",
             "zoom_in": "Ampliar",

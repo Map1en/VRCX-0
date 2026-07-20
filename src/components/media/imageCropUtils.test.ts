@@ -5,11 +5,32 @@ import {
     constrainCropSizeToZoom,
     constrainCropToImage,
     computeCropRect,
+    getContinuousRotationDeltaDegrees,
     getRotationCoverZoom,
     isNoopCrop,
     resizeCropSize,
     resizeCropSizeFromCorner
 } from './imageCropUtils';
+
+describe('getContinuousRotationDeltaDegrees', () => {
+    it('unwraps the atan2 boundary while rotating clockwise', () => {
+        expect(
+            getContinuousRotationDeltaDegrees(
+                (179 * Math.PI) / 180,
+                (-179 * Math.PI) / 180
+            )
+        ).toBeCloseTo(2);
+    });
+
+    it('unwraps the atan2 boundary while rotating counterclockwise', () => {
+        expect(
+            getContinuousRotationDeltaDegrees(
+                (-179 * Math.PI) / 180,
+                (179 * Math.PI) / 180
+            )
+        ).toBeCloseTo(-2);
+    });
+});
 
 describe('resizeCropSize', () => {
     it('resizes from a horizontal edge while preserving aspect ratio', () => {

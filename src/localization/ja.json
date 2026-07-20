@@ -4273,8 +4273,10 @@
             "empty_description": "このセクションを更新すると利用可能なアイテムを読み込めます。"
         },
         "image_crop": {
+            "crop_area": "トリミング枠。辺または角をドラッグするとサイズを変更できます。角の少し外側をドラッグすると回転できます。",
             "rotate_left": "左に回転",
             "rotate_right": "右に回転",
+            "rotation_angle": "回転角度",
             "flip_h": "左右を反転",
             "flip_v": "上下を反転",
             "zoom_in": "拡大",

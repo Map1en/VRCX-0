@@ -4219,8 +4219,10 @@
             "empty_description": "사용 가능한 항목을 로드하려면 이 섹션을 새로 고치세요."
         },
         "image_crop": {
+            "crop_area": "자르기 영역입니다. 가장자리나 모서리를 드래그하여 크기를 조절할 수 있습니다. 모서리 바깥쪽을 드래그하면 회전할 수 있습니다.",
             "rotate_left": "왼쪽으로 회전",
             "rotate_right": "오른쪽으로 회전",
+            "rotation_angle": "회전 각도",
             "flip_h": "수평 뒤집기",
             "flip_v": "수직 뒤집기",
             "zoom_in": "확대",

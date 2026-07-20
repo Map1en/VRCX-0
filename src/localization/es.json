@@ -4278,8 +4278,10 @@
             "empty_description": "Actualiza esta sección para cargar los objetos disponibles."
         },
         "image_crop": {
+            "crop_area": "Área de recorte. Arrastra un borde o una esquina para cambiar su tamaño. Arrastra justo fuera de una esquina para girar la imagen.",
             "rotate_left": "Girar a la izquierda",
             "rotate_right": "Girar a la derecha",
+            "rotation_angle": "Ángulo de rotación",
             "flip_h": "Voltear horizontalmente",
             "flip_v": "Voltear verticalmente",
             "zoom_in": "Acercar",

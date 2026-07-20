@@ -11,6 +11,17 @@ export interface CropRect {
 
 export type CropResizeAxis = 'horizontal' | 'vertical';
 
+export function getContinuousRotationDeltaDegrees(
+    previousAngleRadians: number,
+    currentAngleRadians: number
+): number {
+    const delta =
+        ((currentAngleRadians - previousAngleRadians) * 180) / Math.PI;
+    if (delta > 180) return delta - 360;
+    if (delta < -180) return delta + 360;
+    return delta;
+}
+
 function clampCropWidth(
     width: number,
     bounds: Size,
