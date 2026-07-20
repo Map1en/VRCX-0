@@ -9,6 +9,83 @@ export interface CropRect {
     height: number;
 }
 
+export type CropResizeAxis = 'horizontal' | 'vertical';
+
+function clampCropWidth(
+    width: number,
+    bounds: Size,
+    aspect: number,
+    minShortEdge: number
+): Size {
+    const maxWidth = Math.min(bounds.width, bounds.height * aspect);
+    const minWidth = Math.min(
+        maxWidth,
+        aspect >= 1 ? minShortEdge * aspect : minShortEdge
+    );
+    const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+    return { width: clampedWidth, height: clampedWidth / aspect };
+}
+
+export function resizeCropSize(
+    startSize: Size,
+    axis: CropResizeAxis,
+    outwardDelta: number,
+    bounds: Size,
+    aspect: number,
+    minShortEdge: number
+): Size {
+    if (bounds.width <= 0 || bounds.height <= 0 || aspect <= 0) {
+        return startSize;
+    }
+
+    if (axis === 'horizontal') {
+        return clampCropWidth(
+            startSize.width + outwardDelta * 2,
+            bounds,
+            aspect,
+            minShortEdge
+        );
+    }
+
+    return clampCropWidth(
+        (startSize.height + outwardDelta * 2) * aspect,
+        bounds,
+        aspect,
+        minShortEdge
+    );
+}
+
+export function resizeCropSizeFromCorner(
+    startSize: Size,
+    pointerDelta: Point,
+    cornerDirection: Point,
+    bounds: Size,
+    aspect: number,
+    minShortEdge: number
+): Size {
+    if (bounds.width <= 0 || bounds.height <= 0 || aspect <= 0) {
+        return startSize;
+    }
+
+    const corner = {
+        x: (cornerDirection.x * startSize.width) / 2,
+        y: (cornerDirection.y * startSize.height) / 2
+    };
+    const distanceSquared = corner.x ** 2 + corner.y ** 2;
+    if (distanceSquared === 0) return startSize;
+
+    const scale =
+        1 +
+        (pointerDelta.x * corner.x + pointerDelta.y * corner.y) /
+            distanceSquared;
+    return clampCropWidth(
+        startSize.width * scale,
+        bounds,
+        aspect,
+        minShortEdge
+    );
+}
+
 export function computeCropRect(
     croppedAreaPixels: Area,
     previewScale: number
@@ -55,6 +132,22 @@ export function getRotationCoverZoom(
         (extents.x * 2) / mediaSize.width,
         (extents.y * 2) / mediaSize.height
     );
+}
+
+export function constrainCropSizeToZoom(
+    cropSize: Size,
+    mediaSize: Size,
+    zoom: number,
+    rotation: number
+): Size {
+    const coverZoom = getRotationCoverZoom(mediaSize, cropSize, rotation);
+    if (coverZoom <= zoom) return cropSize;
+
+    const scale = zoom / coverZoom;
+    return {
+        width: cropSize.width * scale,
+        height: cropSize.height * scale
+    };
 }
 
 export function constrainCropToImage(

@@ -12,6 +12,7 @@ import {
     ZoomOut
 } from 'lucide-react';
 import {
+    Fragment,
     type PointerEvent as ReactPointerEvent,
     type ReactNode,
     useCallback,
@@ -54,27 +55,100 @@ import {
 
 import {
     buildMediaTransform,
+    constrainCropSizeToZoom,
     constrainCropToImage,
     cropImage,
     getRotationCoverZoom,
-    prepareImage
+    prepareImage,
+    resizeCropSize,
+    resizeCropSizeFromCorner,
+    type CropResizeAxis
 } from './imageCropUtils';
 
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 5;
 const ZOOM_DEFAULT = 1;
 const ZOOM_FACTOR = 1.2;
-const ROTATION_DEGREES_PER_PIXEL = 0.35;
 const TRACKPAD_PAN_END_MS = 160;
 const TRACKPAD_PAN_THRESHOLD = 50;
 const TRANSFORM_TRANSITION_MS = 180;
 const TRANSFORM_TRANSITION = `transform 150ms cubic-bezier(0.23, 1, 0.32, 1)`;
+const MIN_CROP_SHORT_EDGE = 56;
 
-const ROTATION_HANDLES = [
-    ['top-0 left-0 rounded-tl-sm border-t-2 border-l-2', -1],
-    ['top-0 right-0 rounded-tr-sm border-t-2 border-r-2', 1],
-    ['bottom-0 left-0 rounded-bl-sm border-b-2 border-l-2', -1],
-    ['right-0 bottom-0 rounded-br-sm border-r-2 border-b-2', 1]
+type CropResizeHandle =
+    | { kind: 'edge'; axis: CropResizeAxis; direction: 1 | -1 }
+    | { kind: 'corner'; direction: Point };
+
+const CROP_EDGE_HANDLES: ReadonlyArray<{
+    side: 'top' | 'right' | 'bottom' | 'left';
+    axis: CropResizeAxis;
+    direction: 1 | -1;
+    className: string;
+    gripClassName: string;
+}> = [
+    {
+        side: 'top',
+        axis: 'vertical',
+        direction: -1,
+        className:
+            'top-[-0.5px] left-1/2 h-5 w-12 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize',
+        gripClassName: 'h-1 w-7'
+    },
+    {
+        side: 'right',
+        axis: 'horizontal',
+        direction: 1,
+        className:
+            'top-1/2 right-[-0.5px] h-12 w-5 translate-x-1/2 -translate-y-1/2 cursor-ew-resize',
+        gripClassName: 'h-7 w-1'
+    },
+    {
+        side: 'bottom',
+        axis: 'vertical',
+        direction: 1,
+        className:
+            'bottom-[-0.5px] left-1/2 h-5 w-12 -translate-x-1/2 translate-y-1/2 cursor-ns-resize',
+        gripClassName: 'h-1 w-7'
+    },
+    {
+        side: 'left',
+        axis: 'horizontal',
+        direction: -1,
+        className:
+            'top-1/2 left-[-0.5px] h-12 w-5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize',
+        gripClassName: 'h-7 w-1'
+    }
+];
+
+const CROP_CORNER_HANDLES = [
+    {
+        corner: 'top-left',
+        direction: { x: -1, y: -1 },
+        resizeClassName:
+            'top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize',
+        rotateClassName: 'top-0 left-0 -translate-x-1/2 -translate-y-1/2'
+    },
+    {
+        corner: 'top-right',
+        direction: { x: 1, y: -1 },
+        resizeClassName:
+            'top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize',
+        rotateClassName: 'top-0 right-0 translate-x-1/2 -translate-y-1/2'
+    },
+    {
+        corner: 'bottom-right',
+        direction: { x: 1, y: 1 },
+        resizeClassName:
+            'right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize',
+        rotateClassName: 'right-0 bottom-0 translate-x-1/2 translate-y-1/2'
+    },
+    {
+        corner: 'bottom-left',
+        direction: { x: -1, y: 1 },
+        resizeClassName:
+            'bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize',
+        rotateClassName: 'bottom-0 left-0 -translate-x-1/2 translate-y-1/2'
+    }
 ] as const;
 
 const ASPECT_PRESETS: ReadonlyArray<readonly [number, number]> = [
@@ -160,6 +234,7 @@ export function ImageCropDialog({
     const originalImgRef = useRef<HTMLImageElement | null>(null);
     const previewScaleRef = useRef<number>(1);
     const cropWrapperRef = useRef<HTMLDivElement | null>(null);
+    const cropStageRef = useRef<HTMLDivElement | null>(null);
     const rotationInputRef = useRef<HTMLInputElement | null>(null);
 
     const [previewSrc, setPreviewSrc] = useState<string>('');
@@ -188,9 +263,17 @@ export function ImageCropDialog({
     );
     const rotationDragRef = useRef<{
         pointerId: number;
-        startY: number;
+        centerX: number;
+        centerY: number;
+        startAngle: number;
         startRotation: number;
-        direction: number;
+    } | null>(null);
+    const cropResizeDragRef = useRef<{
+        pointerId: number;
+        startX: number;
+        startY: number;
+        startSize: Size;
+        handle: CropResizeHandle;
     } | null>(null);
     const trackpadPanningRef = useRef(false);
     const trackpadPanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -233,13 +316,13 @@ export function ImageCropDialog({
         setFlipV(false);
         setFitWhole(false);
         setRotationEditing(false);
+        setCropSize(null);
     }, []);
 
     useEffect(() => {
         resetTransforms();
         setCroppedAreaPixels(null);
         setMediaSize(null);
-        setCropSize(null);
         if (!open || !file || !validateImageUploadFile(file).ok) {
             setPreviewSrc('');
             setPreviewPending(false);
@@ -268,6 +351,10 @@ export function ImageCropDialog({
             cancelled = true;
         };
     }, [file, open, resetTransforms]);
+
+    useEffect(() => {
+        setCropSize(null);
+    }, [aspect]);
 
     useEffect(() => {
         setNote('');
@@ -336,43 +423,57 @@ export function ImageCropDialog({
         }, TRANSFORM_TRANSITION_MS);
     }, []);
 
-    const startCornerRotation = useCallback(
-        (direction: number, event: ReactPointerEvent<HTMLSpanElement>) => {
+    const startCropRotation = useCallback(
+        (event: ReactPointerEvent<HTMLSpanElement>) => {
             event.preventDefault();
             event.stopPropagation();
+            const cropBounds =
+                event.currentTarget.parentElement?.getBoundingClientRect();
+            if (!cropBounds) return;
+
             if (transformAnimTimerRef.current) {
                 clearTimeout(transformAnimTimerRef.current);
                 transformAnimTimerRef.current = null;
             }
             setTransformAnimating(false);
             event.currentTarget.setPointerCapture(event.pointerId);
+            const centerX = cropBounds.left + cropBounds.width / 2;
+            const centerY = cropBounds.top + cropBounds.height / 2;
             rotationDragRef.current = {
                 pointerId: event.pointerId,
-                startY: event.clientY,
-                startRotation: rotation,
-                direction
+                centerX,
+                centerY,
+                startAngle: Math.atan2(
+                    event.clientY - centerY,
+                    event.clientX - centerX
+                ),
+                startRotation: rotation
             };
         },
         [rotation]
     );
 
-    const moveCornerRotation = useCallback(
+    const moveCropRotation = useCallback(
         (event: ReactPointerEvent<HTMLSpanElement>) => {
             const drag = rotationDragRef.current;
             if (!drag || drag.pointerId !== event.pointerId) return;
             event.preventDefault();
             event.stopPropagation();
+            const angle = Math.atan2(
+                event.clientY - drag.centerY,
+                event.clientX - drag.centerX
+            );
             setRotation(
                 drag.startRotation +
-                    (event.clientY - drag.startY) *
-                        ROTATION_DEGREES_PER_PIXEL *
-                        drag.direction
+                    normalizeSignedRotation(
+                        ((angle - drag.startAngle) * 180) / Math.PI
+                    )
             );
         },
         []
     );
 
-    const stopCornerRotation = useCallback(
+    const stopCropRotation = useCallback(
         (event: ReactPointerEvent<HTMLSpanElement>) => {
             const drag = rotationDragRef.current;
             if (!drag || drag.pointerId !== event.pointerId) return;
@@ -383,6 +484,88 @@ export function ImageCropDialog({
                 event.currentTarget.releasePointerCapture(event.pointerId);
             }
             setRotation((value) => normalizeSignedRotation(value));
+        },
+        []
+    );
+
+    const startCropResize = useCallback(
+        (
+            handle: CropResizeHandle,
+            event: ReactPointerEvent<HTMLSpanElement>
+        ) => {
+            if (!cropSize) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            cropResizeDragRef.current = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                startSize: cropSize,
+                handle
+            };
+        },
+        [cropSize]
+    );
+
+    const moveCropResize = useCallback(
+        (event: ReactPointerEvent<HTMLSpanElement>) => {
+            const drag = cropResizeDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            const bounds = cropStageRef.current?.getBoundingClientRect();
+            if (!bounds) return;
+
+            const delta = {
+                x: event.clientX - drag.startX,
+                y: event.clientY - drag.startY
+            };
+            const resized =
+                drag.handle.kind === 'corner'
+                    ? resizeCropSizeFromCorner(
+                          drag.startSize,
+                          delta,
+                          drag.handle.direction,
+                          bounds,
+                          aspect,
+                          MIN_CROP_SHORT_EDGE
+                      )
+                    : resizeCropSize(
+                          drag.startSize,
+                          drag.handle.axis,
+                          (drag.handle.axis === 'horizontal'
+                              ? delta.x
+                              : delta.y) * drag.handle.direction,
+                          bounds,
+                          aspect,
+                          MIN_CROP_SHORT_EDGE
+                      );
+            setCropSize(
+                constrainToImage && mediaSize
+                    ? constrainCropSizeToZoom(
+                          resized,
+                          mediaSize,
+                          effectiveZoom,
+                          rotation
+                      )
+                    : resized
+            );
+        },
+        [aspect, constrainToImage, effectiveZoom, mediaSize, rotation]
+    );
+
+    const stopCropResize = useCallback(
+        (event: ReactPointerEvent<HTMLSpanElement>) => {
+            const drag = cropResizeDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            event.preventDefault();
+            event.stopPropagation();
+            cropResizeDragRef.current = null;
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+            }
         },
         []
     );
@@ -542,6 +725,7 @@ export function ImageCropDialog({
     const cropperStyle = useMemo(
         () => ({
             containerStyle: { borderRadius: '0.5rem' },
+            cropAreaStyle: { overflow: 'visible' },
             ...(transformAnimating
                 ? { mediaStyle: { transition: TRANSFORM_TRANSITION } }
                 : {})
@@ -636,6 +820,7 @@ export function ImageCropDialog({
                         >
                             {previewSrc && cropperReady ? (
                                 <div
+                                    ref={cropStageRef}
                                     className="animate-in fade-in-0 zoom-in-[0.98] relative w-full overflow-hidden rounded-lg bg-neutral-950 duration-200 ease-out motion-reduce:animate-none"
                                     style={{
                                         height: 'clamp(18rem, 50vh, 34rem)'
@@ -647,6 +832,7 @@ export function ImageCropDialog({
                                         zoom={effectiveZoom}
                                         rotation={rotation}
                                         aspect={aspect}
+                                        cropSize={cropSize ?? undefined}
                                         minZoom={minZoom}
                                         maxZoom={maxZoom}
                                         objectFit="contain"
@@ -668,36 +854,125 @@ export function ImageCropDialog({
                                                 'dialog.image_crop.crop_area',
                                                 {
                                                     defaultValue:
-                                                        'Image crop area. Drag a corner up or down to rotate.'
+                                                        'Image crop area. Drag an edge or corner to resize. Drag just outside a corner to rotate.'
                                                 }
                                             ),
-                                            children: ROTATION_HANDLES.map(
-                                                ([className, direction]) => (
-                                                    <span
-                                                        key={className}
-                                                        className={cn(
-                                                            'border-primary absolute z-10 size-5 cursor-ns-resize touch-none',
-                                                            className
-                                                        )}
-                                                        onPointerDown={(
-                                                            event
-                                                        ) =>
-                                                            startCornerRotation(
-                                                                direction,
-                                                                event
-                                                            )
-                                                        }
-                                                        onPointerMove={
-                                                            moveCornerRotation
-                                                        }
-                                                        onPointerUp={
-                                                            stopCornerRotation
-                                                        }
-                                                        onPointerCancel={
-                                                            stopCornerRotation
-                                                        }
-                                                    />
-                                                )
+                                            children: (
+                                                <>
+                                                    {CROP_CORNER_HANDLES.map(
+                                                        ({
+                                                            corner,
+                                                            direction,
+                                                            resizeClassName,
+                                                            rotateClassName
+                                                        }) => (
+                                                            <Fragment
+                                                                key={corner}
+                                                            >
+                                                                <span
+                                                                    data-crop-resize-handle={
+                                                                        corner
+                                                                    }
+                                                                    className={cn(
+                                                                        'group absolute z-30 flex size-7 touch-none items-center justify-center',
+                                                                        resizeClassName
+                                                                    )}
+                                                                    onPointerDown={(
+                                                                        event
+                                                                    ) =>
+                                                                        startCropResize(
+                                                                            {
+                                                                                kind: 'corner',
+                                                                                direction
+                                                                            },
+                                                                            event
+                                                                        )
+                                                                    }
+                                                                    onPointerMove={
+                                                                        moveCropResize
+                                                                    }
+                                                                    onPointerUp={
+                                                                        stopCropResize
+                                                                    }
+                                                                    onPointerCancel={
+                                                                        stopCropResize
+                                                                    }
+                                                                >
+                                                                    <span className="group-hover:bg-primary size-3 rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.65)] transition-colors" />
+                                                                </span>
+                                                                <span
+                                                                    data-crop-rotation-handle={
+                                                                        corner
+                                                                    }
+                                                                    className={cn(
+                                                                        'absolute z-20 size-11 cursor-grab touch-none active:cursor-grabbing',
+                                                                        rotateClassName
+                                                                    )}
+                                                                    onPointerDown={
+                                                                        startCropRotation
+                                                                    }
+                                                                    onPointerMove={
+                                                                        moveCropRotation
+                                                                    }
+                                                                    onPointerUp={
+                                                                        stopCropRotation
+                                                                    }
+                                                                    onPointerCancel={
+                                                                        stopCropRotation
+                                                                    }
+                                                                />
+                                                            </Fragment>
+                                                        )
+                                                    )}
+                                                    {CROP_EDGE_HANDLES.map(
+                                                        ({
+                                                            side,
+                                                            axis,
+                                                            direction,
+                                                            className,
+                                                            gripClassName
+                                                        }) => (
+                                                            <span
+                                                                key={side}
+                                                                data-crop-resize-handle={
+                                                                    side
+                                                                }
+                                                                className={cn(
+                                                                    'group absolute z-20 flex touch-none items-center justify-center',
+                                                                    className
+                                                                )}
+                                                                onPointerDown={(
+                                                                    event
+                                                                ) =>
+                                                                    startCropResize(
+                                                                        {
+                                                                            kind: 'edge',
+                                                                            axis,
+                                                                            direction
+                                                                        },
+                                                                        event
+                                                                    )
+                                                                }
+                                                                onPointerMove={
+                                                                    moveCropResize
+                                                                }
+                                                                onPointerUp={
+                                                                    stopCropResize
+                                                                }
+                                                                onPointerCancel={
+                                                                    stopCropResize
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={cn(
+                                                                        'group-hover:bg-primary rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.65)] transition-colors',
+                                                                        gripClassName
+                                                                    )}
+                                                                />
+                                                            </span>
+                                                        )
+                                                    )}
+                                                </>
                                             )
                                         }}
                                     />

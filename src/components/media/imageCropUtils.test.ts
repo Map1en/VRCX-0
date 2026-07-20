@@ -2,11 +2,80 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildMediaTransform,
+    constrainCropSizeToZoom,
     constrainCropToImage,
     computeCropRect,
     getRotationCoverZoom,
-    isNoopCrop
+    isNoopCrop,
+    resizeCropSize,
+    resizeCropSizeFromCorner
 } from './imageCropUtils';
+
+describe('resizeCropSize', () => {
+    it('resizes from a horizontal edge while preserving aspect ratio', () => {
+        expect(
+            resizeCropSize(
+                { width: 200, height: 100 },
+                'horizontal',
+                25,
+                { width: 500, height: 300 },
+                2,
+                50
+            )
+        ).toEqual({ width: 250, height: 125 });
+    });
+
+    it('resizes from a vertical edge while preserving aspect ratio', () => {
+        expect(
+            resizeCropSize(
+                { width: 200, height: 100 },
+                'vertical',
+                -20,
+                { width: 500, height: 300 },
+                2,
+                50
+            )
+        ).toEqual({ width: 120, height: 60 });
+    });
+
+    it('resizes from a corner along the crop diagonal', () => {
+        expect(
+            resizeCropSizeFromCorner(
+                { width: 200, height: 100 },
+                { x: 25, y: 12.5 },
+                { x: 1, y: 1 },
+                { width: 500, height: 300 },
+                2,
+                50
+            )
+        ).toEqual({ width: 250, height: 125 });
+    });
+
+    it('clamps the crop to its container and minimum short edge', () => {
+        const bounds = { width: 320, height: 180 };
+
+        expect(
+            resizeCropSize(
+                { width: 240, height: 135 },
+                'horizontal',
+                100,
+                bounds,
+                16 / 9,
+                54
+            )
+        ).toEqual({ width: 320, height: 180 });
+        expect(
+            resizeCropSize(
+                { width: 240, height: 135 },
+                'vertical',
+                -100,
+                bounds,
+                16 / 9,
+                54
+            )
+        ).toEqual({ width: 96, height: 54 });
+    });
+});
 
 describe('computeCropRect', () => {
     it('returns preview-space pixels unchanged when previewScale is 1', () => {
@@ -80,6 +149,24 @@ describe('buildMediaTransform', () => {
 });
 
 describe('rotated crop constraints', () => {
+    it('does not enlarge the minimum zoom when a crop edge is dragged outward', () => {
+        const mediaSize = { width: 300, height: 400 };
+        const resized = resizeCropSize(
+            { width: 200, height: 200 },
+            'horizontal',
+            100,
+            { width: 700, height: 400 },
+            1,
+            56
+        );
+
+        expect(getRotationCoverZoom(mediaSize, resized, 0)).toBeCloseTo(4 / 3);
+        expect(constrainCropSizeToZoom(resized, mediaSize, 1, 0)).toEqual({
+            width: 300,
+            height: 300
+        });
+    });
+
     it('zooms a square image enough to cover its crop at 45 degrees', () => {
         expect(
             getRotationCoverZoom(
