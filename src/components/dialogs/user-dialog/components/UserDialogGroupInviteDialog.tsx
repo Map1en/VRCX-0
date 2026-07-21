@@ -164,7 +164,7 @@ export function UserDialogGroupInviteDialog({
                                 : 'dialog.user.group_invite.select_group'
                         )}
                     />
-                    <ComboboxContent>
+                    <ComboboxContent className="bg-popover!">
                         <ComboboxEmpty>
                             {t(
                                 groupIds.length
