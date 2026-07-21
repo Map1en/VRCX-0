@@ -47,8 +47,8 @@ export async function deleteAllCache(): Promise<void> {
     await commands.assetBundleDeleteAllCache();
 }
 
-export async function sweepCache(): Promise<string[]> {
-    return commands.assetBundleSweepCache();
+export async function sweepCache(maxSizeBytes: number): Promise<string[]> {
+    return commands.assetBundleSweepCacheToSize(maxSizeBytes);
 }
 
 export async function getCacheSize(): Promise<number> {

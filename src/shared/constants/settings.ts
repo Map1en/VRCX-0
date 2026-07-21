@@ -39,6 +39,7 @@ const SEARCH_LIMIT_MAX = 100000;
 
 const DEFAULT_MAX_TABLE_SIZE = 500;
 const DEFAULT_SEARCH_LIMIT = 50000;
+const VRCHAT_MIN_CACHE_SIZE_GB = 30;
 
 export {
     VRChatScreenshotResolutions,
@@ -49,6 +50,7 @@ export {
     SEARCH_LIMIT_MIN,
     SEARCH_LIMIT_MAX,
     DEFAULT_MAX_TABLE_SIZE,
-    DEFAULT_SEARCH_LIMIT
+    DEFAULT_SEARCH_LIMIT,
+    VRCHAT_MIN_CACHE_SIZE_GB
 };
 export type { ReleaseBranchKey, VRChatResolution };

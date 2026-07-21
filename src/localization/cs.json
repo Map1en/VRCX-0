@@ -4396,7 +4396,7 @@
             "old_cache_cleanup_description": "Stará mezipaměť zabírá {size}. Po změně ji VRChat již nebude používat. Chcete ji vyčistit?",
             "clean_old_cache": "Vyčistit starou mezipaměť",
             "keep_old_cache": "Ponechat starou mezipaměť",
-            "close_vrchat_before_cleanup": "Před vyčištěním staré mezipaměti ukončete VRChat.",
+            "close_vrchat_before_cleanup": "Před vyčištěním mezipaměti ukončete VRChat.",
             "picture_directory": "Vlastní umístění složky obrázků",
             "fpv_steadycam_fov": "Zorné pole steadycamu z pohledu první osoby",
             "camera_resolution": "Rozlišení fotoaparátu",

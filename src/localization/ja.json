@@ -4389,7 +4389,7 @@
             "old_cache_cleanup_description": "古いキャッシュは {size} 使用しています。場所の変更後は VRChat から使用されません。削除しますか？",
             "clean_old_cache": "古いキャッシュを削除",
             "keep_old_cache": "古いキャッシュを保持",
-            "close_vrchat_before_cleanup": "古いキャッシュを削除する前に VRChat を終了してください。",
+            "close_vrchat_before_cleanup": "キャッシュを削除する前に VRChat を終了してください。",
             "picture_directory": "カスタム写真フォルダ",
             "fpv_steadycam_fov": "一人称ステディカムの視野角",
             "camera_resolution": "カメラの解像度",

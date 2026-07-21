@@ -4394,7 +4394,7 @@
             "old_cache_cleanup_description": "舊快取占用 {size}。變更位置後，VRChat 將不再使用這些檔案。是否清理舊快取？",
             "clean_old_cache": "清理舊快取",
             "keep_old_cache": "保留舊快取",
-            "close_vrchat_before_cleanup": "請先關閉 VRChat，再清理舊快取。",
+            "close_vrchat_before_cleanup": "請先關閉 VRChat，再清理快取。",
             "picture_directory": "覆蓋圖片資料夾位置",
             "fpv_steadycam_fov": "第一人稱平滑鏡頭視野範圍",
             "camera_resolution": "相機解析度",

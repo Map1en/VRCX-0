@@ -4396,7 +4396,7 @@
             "old_cache_cleanup_description": "Старый кэш занимает {size}. После изменения VRChat больше не будет его использовать. Очистить его?",
             "clean_old_cache": "Очистить старый кэш",
             "keep_old_cache": "Сохранить старый кэш",
-            "close_vrchat_before_cleanup": "Закройте VRChat перед очисткой старого кэша.",
+            "close_vrchat_before_cleanup": "Закройте VRChat перед очисткой кэша.",
             "picture_directory": "Местоположение папки картинок",
             "fpv_steadycam_fov": "Угол обзора Steadycam от первого лица",
             "camera_resolution": "Разрешение камеры",

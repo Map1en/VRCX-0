@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use serde::Serialize;
 
@@ -170,17 +171,22 @@ fn delete_all_cache_in(cache_path: &Path) {
 
 pub fn sweep_cache() -> Vec<String> {
     let cache_path = PathBuf::from(vrchat_paths::vrchat_cache_location());
-    sweep_cache_in(&cache_path)
+    sweep_cache_in(&cache_path, None)
 }
 
-fn sweep_cache_in(cache_path: &Path) -> Vec<String> {
+pub fn sweep_cache_to_size(max_size_bytes: i64) -> Vec<String> {
+    let cache_path = PathBuf::from(vrchat_paths::vrchat_cache_location());
+    sweep_cache_in(&cache_path, Some(max_size_bytes))
+}
+
+fn sweep_cache_in(cache_path: &Path, max_size_bytes: Option<i64>) -> Vec<String> {
     let mut output = Vec::new();
 
     if !cache_path.exists() {
         return output;
     }
 
-    let Ok(entries) = fs::read_dir(&cache_path) else {
+    let Ok(entries) = fs::read_dir(cache_path) else {
         return output;
     };
 
@@ -227,17 +233,7 @@ fn sweep_cache_in(cache_path: &Path) -> Vec<String> {
                 continue;
             }
 
-            let rel = format!(
-                "{}\\{}",
-                cache_dir
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or_default(),
-                version_dir
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or_default()
-            );
+            let rel = cache_relative_path(&cache_dir, version_dir);
             if fs::remove_dir_all(version_dir).is_ok() {
                 output.push(rel);
             }
@@ -252,7 +248,87 @@ fn sweep_cache_in(cache_path: &Path) -> Vec<String> {
         }
     }
 
+    if let Some(max_size_bytes) = max_size_bytes {
+        trim_cache_to_size(cache_path, max_size_bytes, &mut output);
+    }
     output
+}
+
+struct CacheTrimCandidate {
+    path: PathBuf,
+    relative_path: String,
+    modified: SystemTime,
+    size: i64,
+}
+
+fn trim_cache_to_size(cache_path: &Path, max_size_bytes: i64, output: &mut Vec<String>) {
+    let mut total_size = cache_size_in(cache_path);
+    if max_size_bytes < 0 || total_size <= max_size_bytes {
+        return;
+    }
+
+    let Ok(cache_dirs) = fs::read_dir(cache_path) else {
+        return;
+    };
+    let mut candidates = Vec::new();
+    for cache_dir in cache_dirs.flatten().map(|entry| entry.path()) {
+        let Ok(version_dirs) = fs::read_dir(&cache_dir) else {
+            continue;
+        };
+        for version_dir in version_dirs.flatten().map(|entry| entry.path()) {
+            if !version_dir.is_dir() || version_dir.join("__lock").exists() {
+                continue;
+            }
+            let modified = fs::metadata(version_dir.join("__data"))
+                .or_else(|_| fs::metadata(&version_dir))
+                .and_then(|metadata| metadata.modified())
+                .unwrap_or(SystemTime::UNIX_EPOCH);
+            candidates.push(CacheTrimCandidate {
+                relative_path: cache_relative_path(&cache_dir, &version_dir),
+                size: dir_size(&version_dir),
+                path: version_dir,
+                modified,
+            });
+        }
+    }
+    candidates.sort_by(|left, right| {
+        left.modified
+            .cmp(&right.modified)
+            .then_with(|| left.relative_path.cmp(&right.relative_path))
+    });
+
+    for candidate in candidates {
+        if total_size <= max_size_bytes {
+            break;
+        }
+        if fs::remove_dir_all(&candidate.path).is_ok() {
+            total_size = total_size.saturating_sub(candidate.size);
+            output.push(candidate.relative_path);
+            if let Some(cache_dir) = candidate.path.parent() {
+                let is_empty = fs::read_dir(cache_dir)
+                    .ok()
+                    .and_then(|mut entries| entries.next())
+                    .is_none();
+                if is_empty {
+                    let _ = fs::remove_dir(cache_dir);
+                }
+            }
+        }
+    }
+}
+
+fn cache_relative_path(cache_dir: &Path, version_dir: &Path) -> String {
+    format!(
+        "{}\\{}",
+        cache_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default(),
+        version_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+    )
 }
 
 pub fn cache_size() -> i64 {
@@ -377,6 +453,16 @@ mod tests {
         path
     }
 
+    fn set_cache_entry_modified(path: &Path, seconds: u64) {
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(path.join("__data"))
+            .unwrap();
+        let modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(seconds);
+        file.set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+    }
+
     #[test]
     fn checks_cache_size_lock_and_location_without_touching_real_vrchat_cache() {
         let dir = TestDir::new("asset-cache-check");
@@ -423,6 +509,64 @@ mod tests {
     }
 
     #[test]
+    fn sweep_cache_trims_oldest_entries_to_size_limit() {
+        let dir = TestDir::new("asset-cache-trim");
+        let oldest = write_cache_entry(&dir.path, "file_oldest", 1, "", 0, b"123456", false);
+        let middle = write_cache_entry(&dir.path, "file_middle", 1, "", 0, b"12345", false);
+        let newest = write_cache_entry(&dir.path, "file_newest", 1, "", 0, b"1234", false);
+        set_cache_entry_modified(&oldest, 1);
+        set_cache_entry_modified(&middle, 2);
+        set_cache_entry_modified(&newest, 3);
+
+        let removed = sweep_cache_in(&dir.path, Some(9));
+
+        assert!(!oldest.exists());
+        assert!(middle.exists());
+        assert!(newest.exists());
+        assert_eq!(cache_size_in(&dir.path), 9);
+        assert_eq!(
+            removed,
+            vec![cache_relative_path(oldest.parent().unwrap(), &oldest)]
+        );
+    }
+
+    #[test]
+    fn sweep_cache_without_size_limit_keeps_current_entries() {
+        let dir = TestDir::new("asset-cache-sweep-without-limit");
+        let first = write_cache_entry(&dir.path, "file_first", 1, "", 0, b"123456", false);
+        let second = write_cache_entry(&dir.path, "file_second", 1, "", 0, b"12345", false);
+
+        let removed = sweep_cache_in(&dir.path, None);
+
+        assert!(removed.is_empty());
+        assert!(first.exists());
+        assert!(second.exists());
+        assert_eq!(cache_size_in(&dir.path), 11);
+    }
+
+    #[test]
+    fn sweep_cache_skips_locked_entries_when_trimming() {
+        let dir = TestDir::new("asset-cache-trim-locked");
+        let locked = write_cache_entry(&dir.path, "file_locked", 1, "", 0, b"123456", true);
+        let middle = write_cache_entry(&dir.path, "file_middle", 1, "", 0, b"12345", false);
+        let newest = write_cache_entry(&dir.path, "file_newest", 1, "", 0, b"1234", false);
+        set_cache_entry_modified(&locked, 1);
+        set_cache_entry_modified(&middle, 2);
+        set_cache_entry_modified(&newest, 3);
+
+        let removed = sweep_cache_in(&dir.path, Some(10));
+
+        assert!(locked.exists());
+        assert!(!middle.exists());
+        assert!(newest.exists());
+        assert_eq!(cache_size_in(&dir.path), 10);
+        assert_eq!(
+            removed,
+            vec![cache_relative_path(middle.parent().unwrap(), &middle)]
+        );
+    }
+
+    #[test]
     fn delete_all_cache_recreates_empty_cache_root() {
         let dir = TestDir::new("asset-cache-delete-all");
         write_cache_entry(&dir.path, "file_world", 1, "", 0, b"cache", false);
@@ -446,7 +590,7 @@ mod tests {
         let empty_path = cache_dir.join(asset_version(2, 0));
         std::fs::create_dir_all(&empty_path).unwrap();
 
-        let removed = sweep_cache_in(&dir.path);
+        let removed = sweep_cache_in(&dir.path, None);
 
         assert!(valid_path.exists());
         assert!(!empty_path.exists());

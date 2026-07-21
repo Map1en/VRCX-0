@@ -79,6 +79,11 @@ export const commands = {
     async assetBundleSweepCache(): Promise<string[]> {
         return await TAURI_INVOKE('asset_bundle__sweep_cache');
     },
+    async assetBundleSweepCacheToSize(maxSizeBytes: number): Promise<string[]> {
+        return await TAURI_INVOKE('asset_bundle__sweep_cache_to_size', {
+            maxSizeBytes
+        });
+    },
     async assetBundleGetCacheSize(): Promise<number> {
         return await TAURI_INVOKE('asset_bundle__get_cache_size');
     },

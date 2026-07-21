@@ -4335,7 +4335,7 @@
             "old_cache_cleanup_description": "이전 캐시가 {size}를 사용 중입니다. 위치를 변경하면 VRChat에서 더 이상 사용하지 않습니다. 정리할까요?",
             "clean_old_cache": "이전 캐시 정리",
             "keep_old_cache": "이전 캐시 유지",
-            "close_vrchat_before_cleanup": "이전 캐시를 정리하기 전에 VRChat을 종료하세요.",
+            "close_vrchat_before_cleanup": "캐시를 정리하기 전에 VRChat을 종료하세요.",
             "picture_directory": "사용자 정의 사진 폴더 위치",
             "fpv_steadycam_fov": "1인칭 스테디캠 시야각",
             "camera_resolution": "카메라 해상도",

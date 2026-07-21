@@ -4394,7 +4394,7 @@
             "old_cache_cleanup_description": "Der alte Cache belegt {size}. VRChat verwendet ihn nach der Änderung nicht mehr. Soll er bereinigt werden?",
             "clean_old_cache": "Alten Cache bereinigen",
             "keep_old_cache": "Alten Cache behalten",
-            "close_vrchat_before_cleanup": "Schließe VRChat, bevor der alte Cache bereinigt wird.",
+            "close_vrchat_before_cleanup": "Schließe VRChat, bevor der Cache bereinigt wird.",
             "picture_directory": "Benutzerdefinierter Bilderordner",
             "fpv_steadycam_fov": "First-Person-Steadycam-FOV",
             "camera_resolution": "Kameraauflösung",

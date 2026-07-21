@@ -105,6 +105,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::asset_bundle::asset_bundle__delete_cache,
             commands::asset_bundle::asset_bundle__delete_all_cache,
             commands::asset_bundle::asset_bundle__sweep_cache,
+            commands::asset_bundle::asset_bundle__sweep_cache_to_size,
             commands::asset_bundle::asset_bundle__get_cache_size,
             commands::log_watcher::log_watcher__get_current_location,
             commands::log_watcher::log_watcher__vrc_closed_gracefully,

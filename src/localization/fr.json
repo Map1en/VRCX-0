@@ -4394,7 +4394,7 @@
             "old_cache_cleanup_description": "L’ancien cache occupe {size}. VRChat ne l’utilisera plus après le changement. Voulez-vous le nettoyer ?",
             "clean_old_cache": "Nettoyer l’ancien cache",
             "keep_old_cache": "Conserver l’ancien cache",
-            "close_vrchat_before_cleanup": "Fermez VRChat avant de nettoyer l’ancien cache.",
+            "close_vrchat_before_cleanup": "Fermez VRChat avant de nettoyer le cache.",
             "picture_directory": "Emplacement du dossier de photos personnalisé",
             "fpv_steadycam_fov": "Angle de vue à la première personne",
             "camera_resolution": "Résolution de l'appareil photo",

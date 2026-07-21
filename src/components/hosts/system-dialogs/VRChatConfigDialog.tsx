@@ -23,6 +23,7 @@ import { links } from '@/shared/constants/link';
 import {
     VRChatCameraResolutions,
     VRChatScreenshotResolutions,
+    VRCHAT_MIN_CACHE_SIZE_GB,
     type VRChatResolution
 } from '@/shared/constants/settings';
 import { useModalStore } from '@/state/modalStore';
@@ -165,7 +166,7 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
             [
                 'cache_size',
                 t('dialog.config_json.max_cache_size'),
-                '30',
+                String(VRCHAT_MIN_CACHE_SIZE_GB),
                 'number'
             ],
             [
@@ -268,9 +269,25 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
     }
 
     async function handleSweepCache() {
+        const configuredCacheSize = Number.parseInt(
+            String(config.cache_size ?? ''),
+            10
+        );
+        const maxSizeGb = Math.max(
+            Number.isFinite(configuredCacheSize)
+                ? configuredCacheSize
+                : VRCHAT_MIN_CACHE_SIZE_GB,
+            VRCHAT_MIN_CACHE_SIZE_GB
+        );
+        const maxSizeBytes = maxSizeGb * 1024 ** 3;
+        if (cacheSizeBytes > maxSizeBytes && isGameRunning) {
+            toast.error(t('dialog.config_json.close_vrchat_before_cleanup'));
+            return;
+        }
         setLoading(true);
         try {
-            const removed = await assetBundleRepository.sweepCache();
+            const removed =
+                await assetBundleRepository.sweepCache(maxSizeBytes);
             toast.success(
                 Array.isArray(removed)
                     ? t(
