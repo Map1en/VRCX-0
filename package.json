@@ -92,7 +92,7 @@
         "browserslist": "^4.28.6",
         "husky": "^9.1.7",
         "jsdom": "^29.1.1",
-        "lightningcss": "^1.32.0",
+        "lightningcss": "^1.33.0",
         "lint-staged": "^17.0.8",
         "oxfmt": "^0.58.0",
         "oxlint": "^1.74.0",
