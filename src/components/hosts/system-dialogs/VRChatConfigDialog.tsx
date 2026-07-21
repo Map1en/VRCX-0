@@ -26,6 +26,7 @@ import {
     type VRChatResolution
 } from '@/shared/constants/settings';
 import { useModalStore } from '@/state/modalStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -147,11 +148,16 @@ function ResolutionSelect({
 export function VRChatConfigDialog({ open, onOpenChange }: any) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
+    const isGameRunning = useRuntimeStore((state) =>
+        Boolean(state.gameState.isGameRunning)
+    );
     const loadRequestRef = useRef(0);
+    const originalCacheDirectoryRef = useRef('');
     const [config, setConfig] = useState<Record<string, any>>({
         picture_output_split_by_date: true
     });
     const [cacheSize, setCacheSize] = useState('');
+    const [cacheSizeBytes, setCacheSizeBytes] = useState(0);
     const [loading, setLoading] = useState(false);
 
     const configFields = useMemo(
@@ -203,11 +209,15 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
                 return;
             }
             const parsed = configJson ? JSON.parse(configJson) : {};
+            originalCacheDirectoryRef.current = String(
+                parsed.cache_directory ?? ''
+            );
             setConfig({
                 picture_output_split_by_date: true,
                 ...parsed
             });
             const cacheBytes = Number(nextCacheSize) || 0;
+            setCacheSizeBytes(cacheBytes);
             setCacheSize(
                 cacheBytes > 0
                     ? `${(cacheBytes / 1024 / 1024 / 1024).toFixed(2)} GB`
@@ -313,11 +323,38 @@ export function VRChatConfigDialog({ open, onOpenChange }: any) {
     async function handleSave() {
         setLoading(true);
         try {
-            const json = JSON.stringify(
-                normalizeVrchatConfigForSave(config),
-                null,
-                '\t'
-            );
+            const normalizedConfig = normalizeVrchatConfigForSave(config);
+            const cacheDirectoryChanged =
+                originalCacheDirectoryRef.current !==
+                String(normalizedConfig.cache_directory ?? '');
+
+            if (cacheDirectoryChanged && cacheSizeBytes > 0) {
+                const result = await confirm({
+                    title: t('dialog.config_json.cache_location_changed'),
+                    description: t(
+                        'dialog.config_json.old_cache_cleanup_description',
+                        { size: cacheSize }
+                    ),
+                    confirmText: t('dialog.config_json.clean_old_cache'),
+                    alternativeText: t('dialog.config_json.keep_old_cache'),
+                    cancelText: t('dialog.config_json.cancel'),
+                    dismissible: false
+                });
+                if (!result.ok) {
+                    return;
+                }
+                if (result.reason === 'ok') {
+                    if (isGameRunning) {
+                        toast.error(
+                            t('dialog.config_json.close_vrchat_before_cleanup')
+                        );
+                        return;
+                    }
+                    await assetBundleRepository.deleteAllCache();
+                }
+            }
+
+            const json = JSON.stringify(normalizedConfig, null, '\t');
             await writeVrchatConfigFile(json);
             toast.success(t('dialog.system.success.saved_vrchat_config'));
             onOpenChange(false);

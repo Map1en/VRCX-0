@@ -81,6 +81,7 @@ export function ModalHost() {
         )
     );
     const handleOk = useModalStore((state) => state.handleOk);
+    const handleAlternative = useModalStore((state) => state.handleAlternative);
     const handleCancel = useModalStore((state) => state.handleCancel);
     const handleDismiss = useModalStore((state) => state.handleDismiss);
     const handlePromptOk = useModalStore((state) => state.handlePromptOk);
@@ -130,6 +131,15 @@ export function ModalHost() {
                                 onClick={handleCancel}
                             >
                                 {alertDialog.cancelText}
+                            </Button>
+                        ) : null}
+                        {alertDialog.alternativeText ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleAlternative}
+                            >
+                                {alertDialog.alternativeText}
                             </Button>
                         ) : null}
                         <Button

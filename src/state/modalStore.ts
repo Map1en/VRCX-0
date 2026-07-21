@@ -14,6 +14,7 @@ type AlertDialogState = {
     title: string;
     description: string;
     confirmText: string;
+    alternativeText: string;
     cancelText: string;
     dismissible: boolean;
     destructive: boolean;
@@ -79,6 +80,7 @@ type ModalStore = {
     updatePromptValue(value: string): void;
     updateOtpValue(value: string): void;
     handleOk(): void;
+    handleAlternative(): void;
     handleCancel(): void;
     handleDismiss(): void;
     handlePromptOk(value?: string): void;
@@ -104,6 +106,7 @@ const createAlertDialogState = (): AlertDialogState => ({
     title: '',
     description: '',
     confirmText: 'OK',
+    alternativeText: '',
     cancelText: 'Cancel',
     dismissible: true,
     destructive: false
@@ -362,6 +365,14 @@ export const useModalStore = create<ModalStore>((set, get) => {
 
             set({ alertDialog: createAlertDialogState() });
             resolveAlert(createResult(true, 'ok'));
+        },
+        handleAlternative() {
+            if (!pendingAlert) {
+                return;
+            }
+
+            set({ alertDialog: createAlertDialogState() });
+            resolveAlert(createResult(true, 'alternative'));
         },
         handleCancel() {
             const { alertDialog } = get();

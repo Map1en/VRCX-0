@@ -50,6 +50,19 @@ describe('modalStore', () => {
         await expect(second).resolves.toMatchObject({ ok: true, reason: 'ok' });
     });
 
+    it('resolves an optional alternative confirm action', async () => {
+        const result = useModalStore.getState().confirm({
+            alternativeText: 'Keep cache'
+        });
+
+        useModalStore.getState().handleAlternative();
+
+        await expect(result).resolves.toMatchObject({
+            ok: true,
+            reason: 'alternative'
+        });
+    });
+
     it('keeps non-dismissible alerts open until an explicit action', async () => {
         const result = useModalStore.getState().confirm({ dismissible: false });
         const resolved = vi.fn();
