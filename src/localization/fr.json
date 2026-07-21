@@ -3164,6 +3164,14 @@
                 "unfriend": "Retirer de mes amis",
                 "edit_note_memo": "Modifier la note et la note locale"
             },
+            "group_invite": {
+                "description": "Choisissez le groupe dans lequel inviter {value}.",
+                "select_group": "Sélectionner un groupe...",
+                "loading": "Chargement des groupes pour lesquels vous pouvez envoyer des invitations...",
+                "no_groups": "Vous n’avez aucun groupe pour lequel vous pouvez envoyer des invitations",
+                "load_failed": "Impossible de charger les groupes",
+                "permissions_degraded": "Certaines autorisations de groupe n’ont pas pu être vérifiées. La liste peut contenir des groupes pour lesquels vous ne pouvez pas envoyer d’invitations."
+            },
             "group_moderation": {
                 "title": "Gérer dans vos groupes",
                 "target": "Utilisateur cible",

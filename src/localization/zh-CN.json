@@ -3169,7 +3169,8 @@
                 "select_group": "选择群组...",
                 "loading": "正在读取可发送邀请的群组...",
                 "no_groups": "没有你可以管理邀请的群组",
-                "load_failed": "无法加载群组"
+                "load_failed": "无法加载群组",
+                "permissions_degraded": "部分群组权限无法确认，列表中可能包含你无法发送邀请的群组。"
             },
             "group_moderation": {
                 "title": "管理你拥有权限的群组",

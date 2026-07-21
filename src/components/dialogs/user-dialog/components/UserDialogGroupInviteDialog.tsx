@@ -1,12 +1,12 @@
-import { LoaderCircleIcon, UsersIcon } from 'lucide-react';
+import { AlertTriangleIcon, LoaderCircleIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { isVrchatRequestError } from '@/repositories/vrchatRequest';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -25,6 +25,8 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+
+import { useUserDialogGroupInviteGroups } from '../useUserDialogGroupInviteGroups';
 
 interface UserDialogGroupInviteDialogProps {
     open: boolean;
@@ -53,51 +55,20 @@ export function UserDialogGroupInviteDialog({
     onOpenChange
 }: UserDialogGroupInviteDialogProps) {
     const { t } = useTranslation();
-    const [groups, setGroups] = useState<UserGroupsOverviewGroup[]>([]);
     const [selectedGroupId, setSelectedGroupId] = useState('');
-    const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
+    const { groups, loading, permissionsDegraded, reload } =
+        useUserDialogGroupInviteGroups({
+            open,
+            currentUserId,
+            endpoint
+        });
 
     useEffect(() => {
-        if (!open) {
-            return;
+        if (open) {
+            setSelectedGroupId('');
         }
-
-        let active = true;
-        setGroups([]);
-        setSelectedGroupId('');
-        setLoading(true);
-        groupProfileRepository
-            .getUserGroupsOverview({ userId: currentUserId, endpoint })
-            .then((result) => {
-                if (!active) {
-                    return;
-                }
-                setGroups(
-                    result.groups.filter((group) =>
-                        group.permissions?.some(
-                            (permission) =>
-                                permission === '*' ||
-                                permission === 'group-invites-manage'
-                        )
-                    )
-                );
-            })
-            .catch(() => {
-                if (active) {
-                    toast.error(t('dialog.user.group_invite.load_failed'));
-                }
-            })
-            .finally(() => {
-                if (active) {
-                    setLoading(false);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentUserId, endpoint, open, t]);
+    }, [currentUserId, endpoint, open]);
 
     const groupIds = useMemo(
         () => groups.map((group) => group.groupId),
@@ -152,6 +123,29 @@ export function UserDialogGroupInviteDialog({
                         })}
                     </DialogDescription>
                 </DialogHeader>
+
+                {permissionsDegraded ? (
+                    <Alert>
+                        <AlertTriangleIcon />
+                        <AlertDescription>
+                            {t('dialog.user.group_invite.permissions_degraded')}
+                        </AlertDescription>
+                        <AlertAction>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={loading || sending}
+                                onClick={() => {
+                                    setSelectedGroupId('');
+                                    reload();
+                                }}
+                            >
+                                {t('common.action.retry')}
+                            </Button>
+                        </AlertAction>
+                    </Alert>
+                ) : null}
 
                 <Combobox
                     items={groupIds}

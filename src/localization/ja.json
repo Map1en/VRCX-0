@@ -3159,6 +3159,14 @@
                 "unfriend": "フレンドを解除",
                 "edit_note_memo": "ノートとローカルノートを編集"
             },
+            "group_invite": {
+                "description": "{value} を招待するグループを選択してください。",
+                "select_group": "グループを選択",
+                "loading": "招待を送信できるグループを読み込み中...",
+                "no_groups": "招待を送信できるグループがありません",
+                "load_failed": "グループを読み込めませんでした",
+                "permissions_degraded": "一部のグループ権限を確認できませんでした。招待を送信できないグループも表示される場合があります。"
+            },
             "group_moderation": {
                 "title": "自分のグループで管理",
                 "target": "対象ユーザー",

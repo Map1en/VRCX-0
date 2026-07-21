@@ -243,7 +243,6 @@ export function UserDialogTabbedView({
         openImagePreview,
         previousAvatarSwapTime
     } = useUserDialogTabbedRuntimeState();
-    const [selectedGroupIds] = useState(() => new Set<string>());
     const [selfPanel, setSelfPanel] = useState('');
     const { copyUserText, openDiscordProfile } =
         useUserDialogClipboardActions();
@@ -274,7 +273,6 @@ export function UserDialogTabbedView({
         currentUserHasSharedConnectionsOptOut,
         friendsById,
         inGameGroupOrder,
-        selectedGroupIds,
         t
     });
 
@@ -312,7 +310,6 @@ export function UserDialogTabbedView({
         remoteStatus,
         remoteTabCounts,
         search,
-        selectedUserGroups,
         setGroupSort,
         setMutualSort,
         setSearch,
@@ -354,7 +351,6 @@ export function UserDialogTabbedView({
         profile,
         userStats,
         sortedProfileGroups,
-        selectedUserGroups,
         isCurrentUser,
         vrchatConfigConstants,
         currentUserSnapshot: isLocalUserVrcPlusSupporter

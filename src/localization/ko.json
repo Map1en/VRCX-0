@@ -3106,6 +3106,14 @@
                 "unfriend": "친구 끊기",
                 "edit_note_memo": "메모 및 로컬 메모 편집"
             },
+            "group_invite": {
+                "description": "{value}을(를) 초대할 그룹을 선택하세요.",
+                "select_group": "그룹 선택...",
+                "loading": "초대를 보낼 수 있는 그룹을 불러오는 중...",
+                "no_groups": "초대를 보낼 수 있는 그룹이 없습니다",
+                "load_failed": "그룹을 불러오지 못했습니다",
+                "permissions_degraded": "일부 그룹 권한을 확인하지 못했습니다. 초대를 보낼 수 없는 그룹도 목록에 표시될 수 있습니다."
+            },
             "group_moderation": {
                 "title": "내 그룹에서 관리",
                 "target": "대상 사용자",

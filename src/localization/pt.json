@@ -3164,6 +3164,14 @@
                 "unfriend": "Desfazer Amizade",
                 "edit_note_memo": "Editar Nota e Memo"
             },
+            "group_invite": {
+                "description": "Escolha o grupo para o qual deseja convidar {value}.",
+                "select_group": "Selecionar um grupo...",
+                "loading": "Carregando grupos para os quais você pode enviar convites...",
+                "no_groups": "Você não tem nenhum grupo para o qual possa enviar convites",
+                "load_failed": "Não foi possível carregar os grupos",
+                "permissions_degraded": "Não foi possível verificar algumas permissões de grupo. A lista pode incluir grupos para os quais você não pode enviar convites."
+            },
             "group_moderation": {
                 "title": "Gerenciar nos seus grupos",
                 "target": "Usuário alvo",

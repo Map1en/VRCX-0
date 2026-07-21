@@ -3164,6 +3164,14 @@
                 "unfriend": "Eliminar amigo",
                 "edit_note_memo": "Editar nota y nota local"
             },
+            "group_invite": {
+                "description": "Elige el grupo al que quieres invitar a {value}.",
+                "select_group": "Selecciona un grupo...",
+                "loading": "Cargando los grupos para los que puedes enviar invitaciones...",
+                "no_groups": "No tienes ningún grupo para el que puedas enviar invitaciones",
+                "load_failed": "No se pudieron cargar los grupos",
+                "permissions_degraded": "No se pudieron comprobar algunos permisos de grupo. La lista puede incluir grupos en los que no puedes enviar invitaciones."
+            },
             "group_moderation": {
                 "title": "Gestionar en tus grupos",
                 "target": "Usuario objetivo",

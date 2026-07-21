@@ -3134,7 +3134,7 @@
             "actions": {
                 "invite": "Pozvat",
                 "request_invite": "Požádat o pozvánku",
-                "invite_to_group": "Invite To Group",
+                "invite_to_group": "Pozvat do skupiny",
                 "group_actions": "Skupina...",
                 "group_moderation": "Moderace skupiny",
                 "send_boop": "Poslat boop",
@@ -3165,6 +3165,14 @@
                 "report_hacking": "Report For Hacking",
                 "unfriend": "Odebrat z přátel",
                 "edit_note_memo": "Upravit poznámku a lokální poznámku"
+            },
+            "group_invite": {
+                "description": "Vyberte skupinu, do které chcete pozvat {value}.",
+                "select_group": "Vyberte skupinu...",
+                "loading": "Načítání skupin, do kterých můžete posílat pozvánky...",
+                "no_groups": "Nemáte žádnou skupinu, do které můžete posílat pozvánky",
+                "load_failed": "Skupiny se nepodařilo načíst",
+                "permissions_degraded": "Některá oprávnění skupin se nepodařilo ověřit. Seznam může obsahovat skupiny, do kterých nemůžete zvát."
             },
             "group_moderation": {
                 "title": "Spravovat ve vašich skupinách",

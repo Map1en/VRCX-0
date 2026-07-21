@@ -163,11 +163,8 @@ export function useUserDialogTabbedRuntimeState() {
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
-    const prompt = useModalStore((state) => state.prompt);
-    const confirm = useModalStore((state) => state.confirm);
 
     return {
-        confirm,
         currentAvatarId,
         currentEndpoint,
         currentUserId,
@@ -175,7 +172,6 @@ export function useUserDialogTabbedRuntimeState() {
         inGameGroupOrder,
         isLocalUserVrcPlusSupporter,
         openImagePreview,
-        previousAvatarSwapTime,
-        prompt
+        previousAvatarSwapTime
     };
 }

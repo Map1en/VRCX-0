@@ -98,7 +98,6 @@ interface UseUserDialogTabDataInput {
     currentUserHasSharedConnectionsOptOut: boolean;
     friendsById: FriendRosterById;
     inGameGroupOrder: readonly unknown[];
-    selectedGroupIds: Set<string>;
     t: TFunction;
 }
 
@@ -137,7 +136,6 @@ export function useUserDialogTabData({
     currentUserHasSharedConnectionsOptOut,
     friendsById,
     inGameGroupOrder,
-    selectedGroupIds,
     t
 }: UseUserDialogTabDataInput) {
     const [activeTab, setActiveTab] = useState('info');
@@ -209,7 +207,6 @@ export function useUserDialogTabData({
                 groupSort,
                 isCurrentUser,
                 inGameGroupOrder,
-                selectedGroupIds,
                 effectiveAvatarReleaseStatus,
                 avatarSort,
                 currentUserHasSharedConnectionsOptOut,
@@ -228,7 +225,6 @@ export function useUserDialogTabData({
             remoteData,
             remoteStatus,
             search,
-            selectedGroupIds,
             t
         ]
     );

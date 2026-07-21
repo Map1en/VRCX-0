@@ -1,5 +1,4 @@
 import {
-    groupIdForRow,
     normalizeUserGroupMembershipRows,
     sortUserGroupRows,
     splitUserGroups
@@ -208,7 +207,6 @@ export function buildUserDialogListViewData({
     groupSort,
     isCurrentUser,
     inGameGroupOrder,
-    selectedGroupIds,
     effectiveAvatarReleaseStatus,
     avatarSort,
     currentUserHasSharedConnectionsOptOut,
@@ -223,7 +221,6 @@ export function buildUserDialogListViewData({
     groupSort: string;
     isCurrentUser: boolean;
     inGameGroupOrder: readonly unknown[];
-    selectedGroupIds: Set<string>;
     effectiveAvatarReleaseStatus: string;
     avatarSort: unknown;
     currentUserHasSharedConnectionsOptOut: boolean;
@@ -283,9 +280,6 @@ export function buildUserDialogListViewData({
         sortedProfileGroups,
         search.groups
     );
-    const selectedUserGroups = sortedProfileGroups.filter((group) =>
-        selectedGroupIds.has(groupIdForRow(group))
-    );
     const filteredProfileWorlds = filterRows(profileWorlds, search.worlds);
     const filteredFavoriteWorlds = filterRows(
         favoriteWorlds,
@@ -320,7 +314,6 @@ export function buildUserDialogListViewData({
         effectiveGroupSort,
         sortedProfileGroups,
         filteredProfileGroups,
-        selectedUserGroups,
         filteredProfileWorlds,
         filteredFavoriteWorlds,
         filteredProfileAvatars,
@@ -334,7 +327,6 @@ export function buildUserDialogProfileSummary({
     profile,
     userStats,
     sortedProfileGroups,
-    selectedUserGroups,
     isCurrentUser,
     vrchatConfigConstants,
     currentUserSnapshot,
@@ -343,7 +335,6 @@ export function buildUserDialogProfileSummary({
     profile: DialogRecord;
     userStats: DialogRecord;
     sortedProfileGroups: ReturnType<typeof normalizeUserGroupMembershipRows>;
-    selectedUserGroups: ReturnType<typeof normalizeUserGroupMembershipRows>;
     isCurrentUser: boolean;
     vrchatConfigConstants: unknown;
     currentUserSnapshot: DialogRecord | null;
@@ -372,7 +363,6 @@ export function buildUserDialogProfileSummary({
         profile.id,
         isCurrentUser
     );
-    const selectedGroupCount = selectedUserGroups.length;
     const groupLimits = record(record(vrchatConfigConstants).GROUPS);
     const currentUserTags = Array.isArray(currentUserSnapshot?.tags)
         ? currentUserSnapshot.tags
@@ -431,7 +421,6 @@ export function buildUserDialogProfileSummary({
         previousDisplayNamesTitle,
         statusStateText,
         userGroupSections,
-        selectedGroupCount,
         ownGroupCountText,
         remainingGroupCountText,
         userTimeSpent,

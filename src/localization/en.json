@@ -3167,9 +3167,10 @@
             "group_invite": {
                 "description": "Choose a group to invite {value} to.",
                 "select_group": "Select a group...",
-                "loading": "Loading groups you can invite to...",
-                "no_groups": "No groups where you can manage invites",
-                "load_failed": "Failed to load groups"
+                "loading": "Loading groups you can send invites for...",
+                "no_groups": "You don't have any groups you can send invites for",
+                "load_failed": "Failed to load groups",
+                "permissions_degraded": "Some group permissions couldn't be verified. This list may include groups you can't send invites for."
             },
             "group_moderation": {
                 "title": "Manage in your groups",

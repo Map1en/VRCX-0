@@ -49,8 +49,7 @@ describe('userDialogViewData', () => {
         ]);
     });
 
-    it('prepares visible list rows from remote data, search, selection, and sort choices', () => {
-        const selectedGroupIds = new Set(['grp_beta']);
+    it('prepares visible list rows from remote data, search, and sort choices', () => {
         const viewData = buildUserDialogListViewData({
             profile: {
                 groups: [{ id: 'grp_profile', name: 'Profile Group' }],
@@ -107,7 +106,6 @@ describe('userDialogViewData', () => {
             groupSort: 'inGame',
             isCurrentUser: false,
             inGameGroupOrder: ['grp_beta'],
-            selectedGroupIds,
             effectiveAvatarReleaseStatus: 'public',
             avatarSort: 'name',
             currentUserHasSharedConnectionsOptOut: false
@@ -121,9 +119,6 @@ describe('userDialogViewData', () => {
         expect(viewData.filteredProfileGroups.map((group) => group.id)).toEqual(
             ['grp_beta']
         );
-        expect(viewData.selectedUserGroups.map((group) => group.id)).toEqual([
-            'grp_beta'
-        ]);
         expect(
             viewData.visibleMutualFriends.map((friend) => friend.displayName)
         ).toEqual(['Alice']);
@@ -173,7 +168,6 @@ describe('userDialogViewData', () => {
                 groupSort: 'inGame',
                 isCurrentUser: true,
                 inGameGroupOrder: [],
-                selectedGroupIds: new Set(),
                 effectiveAvatarReleaseStatus,
                 avatarSort: 'name',
                 currentUserHasSharedConnectionsOptOut: false
@@ -221,7 +215,6 @@ describe('userDialogViewData', () => {
                 { id: 'grp_mutual', name: 'Mutual', mutualGroup: true },
                 { id: 'grp_regular', name: 'Regular' }
             ],
-            selectedUserGroups: [{ id: 'grp_owned' }, { id: 'grp_regular' }],
             mutualFriends: [{ id: 'usr_one' }, { id: 'usr_two' }],
             isCurrentUser: true,
             vrchatConfigConstants: {
@@ -250,7 +243,6 @@ describe('userDialogViewData', () => {
         expect(
             summary.userGroupSections.remainingGroups.map((group) => group.id)
         ).toEqual(['grp_mutual', 'grp_regular']);
-        expect(summary.selectedGroupCount).toBe(2);
         expect(summary.ownGroupCountText).toBe('1/3');
         expect(summary.remainingGroupCountText).toBe('2/10');
         expect(summary.userTimeSpent).toBe(3000);

@@ -3164,6 +3164,14 @@
                 "unfriend": "Freundschaft beenden",
                 "edit_note_memo": "Notiz und lokale Notiz bearbeiten"
             },
+            "group_invite": {
+                "description": "Wähle eine Gruppe aus, in die du {value} einladen möchtest.",
+                "select_group": "Gruppe auswählen...",
+                "loading": "Gruppen, für die du Einladungen senden kannst, werden geladen...",
+                "no_groups": "Du hast keine Gruppen, für die du Einladungen senden kannst",
+                "load_failed": "Gruppen konnten nicht geladen werden",
+                "permissions_degraded": "Einige Gruppenberechtigungen konnten nicht geprüft werden. Die Liste kann Gruppen enthalten, für die du keine Einladungen senden darfst."
+            },
             "group_moderation": {
                 "title": "In deinen Gruppen verwalten",
                 "target": "Zielnutzer",
