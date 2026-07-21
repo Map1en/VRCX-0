@@ -14,6 +14,7 @@ function endpoint(id: string): LlmEndpointDto {
         baseUrl: 'https://example.com/v1',
         hasKey: false,
         models: [],
+        modelReasoning: [],
         lastDetectedAt: null
     };
 }

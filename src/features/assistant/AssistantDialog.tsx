@@ -3,6 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import {
+    getEffectiveReasoningEffort,
+    getModelReasoning,
+    getValidReasoningEfforts,
+    shouldShowReasoningEffortSelector
+} from '@/features/llm/reasoning';
 import { cn } from '@/lib/utils';
 import {
     commands,
@@ -118,6 +124,8 @@ export function AssistantDialog() {
     );
     const [runtimeSelection, setRuntimeSelection] =
         useState<AssistantRuntimeSelection>(DEFAULT_RUNTIME_SELECTION);
+    const [assistantReasoningEffort, setAssistantReasoningEffort] =
+        useState('');
 
     const open = useAssistantChatStore((state) => state.open);
     const setOpen = useAssistantChatStore((state) => state.setOpen);
@@ -141,6 +149,27 @@ export function AssistantDialog() {
     const modelOptions = selectedEndpoint?.models ?? [];
     const hasRuntime =
         Boolean(runtimeSelection.endpointId) && Boolean(runtimeSelection.model);
+    const showReasoningEffort = shouldShowReasoningEffortSelector(
+        selectedEndpoint ?? null,
+        runtimeSelection.model ?? null
+    );
+    const reasoningEffortOptions = showReasoningEffort
+        ? getValidReasoningEfforts(
+              getModelReasoning(
+                  selectedEndpoint ?? null,
+                  runtimeSelection.model ?? null
+              )
+          )
+        : [];
+    const effectiveAssistantEffort = showReasoningEffort
+        ? (getEffectiveReasoningEffort(
+              assistantReasoningEffort,
+              getModelReasoning(
+                  selectedEndpoint ?? null,
+                  runtimeSelection.model ?? null
+              )
+          ) ?? '')
+        : '';
     const health = useAssistantHealth(
         hasRuntime ? runtimeSelection.endpointId : null
     );
@@ -150,6 +179,10 @@ export function AssistantDialog() {
         if (open) {
             refreshSessions();
             loadEndpoints().catch(() => {});
+            commands
+                .appAssistantReasoningEffort()
+                .then((effort) => setAssistantReasoningEffort(effort))
+                .catch(() => {});
         }
     }, [loadEndpoints, open]);
 
@@ -234,6 +267,16 @@ export function AssistantDialog() {
             apiKey: null,
             persist: true
         }).catch(() => {});
+    }
+
+    async function updateReasoningEffort(effort: string) {
+        const next = effort;
+        setAssistantReasoningEffort(next);
+        try {
+            await commands.appAssistantSetReasoningEffort(next);
+        } catch (error) {
+            toast.error(errorMessage(error));
+        }
     }
 
     function openEndpointManager() {
@@ -428,6 +471,62 @@ export function AssistantDialog() {
                                             </div>
                                         )}
                                     </div>
+                                    {showReasoningEffort ? (
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="assistant-runtime-reasoning-effort">
+                                                {t(
+                                                    'assistant.runtime.reasoning_effort'
+                                                )}
+                                            </Label>
+                                            <Select
+                                                value={effectiveAssistantEffort}
+                                                items={reasoningEffortOptions.map(
+                                                    (effort) => ({
+                                                        value: effort,
+                                                        label: effort
+                                                    })
+                                                )}
+                                                onValueChange={(value) =>
+                                                    updateReasoningEffort(
+                                                        value ?? ''
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="assistant-runtime-reasoning-effort"
+                                                    className="data-placeholder:text-foreground w-full"
+                                                >
+                                                    <SelectValue>
+                                                        {effectiveAssistantEffort ||
+                                                            t(
+                                                                'assistant.runtime.reasoning_effort_provider_default'
+                                                            )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="">
+                                                            {t(
+                                                                'assistant.runtime.reasoning_effort_provider_default'
+                                                            )}
+                                                        </SelectItem>
+                                                        {reasoningEffortOptions.map(
+                                                            (effort) => (
+                                                                <SelectItem
+                                                                    key={effort}
+                                                                    value={
+                                                                        effort
+                                                                    }
+                                                                >
+                                                                    {effort}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ) : null}
                                     <div className="grid gap-1.5">
                                         <Label htmlFor="assistant-runtime-playbook">
                                             {t(

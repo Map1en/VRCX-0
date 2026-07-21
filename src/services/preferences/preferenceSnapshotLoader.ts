@@ -202,6 +202,7 @@ export async function loadPreferenceSnapshot() {
         translationAPIEndpoint,
         translationAPIModel,
         translationAPIPrompt,
+        translationAPIReasoningEffort,
         customFontPrimary,
         customFontSecondary,
         customFontOverride,
@@ -341,6 +342,7 @@ export async function loadPreferenceSnapshot() {
             DEFAULT_TRANSLATION_MODEL
         ),
         configRepository.getString('translationAPIPrompt', ''),
+        configRepository.getString('translationAPIReasoningEffort', ''),
         configRepository.getString('customFontPrimary', ''),
         configRepository.getString('customFontSecondary', ''),
         configRepository.getString('customFontOverride', ''),
@@ -547,6 +549,7 @@ export async function loadPreferenceSnapshot() {
             translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
         translationAPIModel: translationAPIModel || DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: translationAPIPrompt || '',
+        translationAPIReasoningEffort: translationAPIReasoningEffort || '',
         customFontPrimary: customFontPrimary || '',
         customFontSecondary: customFontSecondary || '',
         customFontOverride: customFontOverride || '',

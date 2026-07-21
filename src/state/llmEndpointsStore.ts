@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import {
     commands,
     type LlmEndpointDetectModelsInput,
+    type LlmEndpointDetectModelsResult,
     type LlmEndpointDto,
     type LlmEndpointUpsertInput
 } from '@/platform/tauri/bindings';
@@ -19,7 +20,9 @@ type LlmEndpointsStoreState = {
     load: () => Promise<LlmEndpointDto[]>;
     upsert: (input: LlmEndpointUpsertInput) => Promise<LlmEndpointDto>;
     deleteEndpoint: (id: string) => Promise<void>;
-    detectModels: (input: LlmEndpointDetectModelsInput) => Promise<string[]>;
+    detectModels: (
+        input: LlmEndpointDetectModelsInput
+    ) => Promise<LlmEndpointDetectModelsResult>;
 };
 
 export function mergeManualModels(
@@ -109,14 +112,15 @@ export const useLlmEndpointsStore = create<LlmEndpointsStoreState>((set) => ({
     async detectModels(input) {
         set({ loading: true, error: null });
         try {
-            const models = await commands.appLlmEndpointDetectModels(input);
+            const result = await commands.appLlmEndpointDetectModels(input);
             if (input.id) {
                 set((state) => ({
                     endpoints: state.endpoints.map((endpoint) =>
                         endpoint.id === input.id
                             ? {
                                   ...endpoint,
-                                  models,
+                                  models: result.models,
+                                  modelReasoning: result.modelReasoning,
                                   lastDetectedAt: new Date().toISOString()
                               }
                             : endpoint
@@ -126,7 +130,7 @@ export const useLlmEndpointsStore = create<LlmEndpointsStoreState>((set) => ({
             } else {
                 set({ loading: false });
             }
-            return models;
+            return result;
         } catch (error) {
             const message = errorMessage(error);
             set({ error: message, loading: false });

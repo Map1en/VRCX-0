@@ -138,6 +138,8 @@ export const ConfigKeys = defineConfigKeys({
     translationAPIEndpoint: { type: 'string', default: '' },
     translationAPIModel: { type: 'string', default: '' },
     translationAPIPrompt: { type: 'string', default: '' },
+    translationAPIReasoningEffort: { type: 'string', default: '' },
+    assistantReasoningEffort: { type: 'string', default: '' },
 
     // ── Settings - Notifications ─────────────────────
     desktopToast: { type: 'string', default: 'Never' },

@@ -44,6 +44,7 @@ export type TranslationApiConfigPreferenceInput = {
     translationAPIEndpoint?: unknown;
     translationAPIModel?: unknown;
     translationAPIPrompt?: unknown;
+    translationAPIReasoningEffort?: unknown;
 };
 
 export type { PreferencesSnapshot, TableLimitsPreference };

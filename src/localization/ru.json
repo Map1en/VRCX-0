@@ -36,7 +36,9 @@
             "model_unset": "Для этого эндпоинта не сохранено ни одной модели",
             "playbook_mode": "Режим анализа",
             "allow_writes": "Разрешить действия записи",
-            "manage_endpoints": "Управление LLM-эндпоинтами"
+            "manage_endpoints": "Управление LLM-эндпоинтами",
+            "reasoning_effort": "Уровень рассуждений",
+            "reasoning_effort_provider_default": "По умолчанию"
         }
     },
     "user_hover_card": {
@@ -4438,7 +4440,9 @@
                 "prompt_optional_description": "Необязательный системный промпт для OpenAI-совместимых API перевода.",
                 "connection": "LLM Эндпоинт",
                 "connection_description": "Используется OpenAI-совместимым переводом.",
-                "connection_placeholder": "Выберите эндпоинт"
+                "connection_placeholder": "Выберите эндпоинт",
+                "reasoning_effort": "Уровень рассуждений",
+                "reasoning_effort_provider_default": "По умолчанию"
             },
             "deepl": {
                 "api_key": "DeepL API ключ"

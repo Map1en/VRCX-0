@@ -5,7 +5,7 @@
 //! semantically in any language. Unmatched queries fall through to the normal
 //! agent loop.
 
-use vrcx_0_integrations::llm::{ChatMessage, LlmClient, ToolDefinition};
+use vrcx_0_integrations::llm::{ChatMessage, LlmClient, LlmRequestOptions, ToolDefinition};
 
 #[derive(Clone, Copy)]
 pub(crate) struct Playbook {
@@ -214,7 +214,8 @@ pub(crate) fn classify_keyword(user_text: &str) -> Option<Playbook> {
 /// falls back to the full toolset.
 pub(crate) async fn classify_llm(client: &LlmClient, user_text: &str) -> Option<Playbook> {
     let messages = classify_messages(user_text);
-    let turn = match client.stream_chat(&messages, &[], |_| {}).await {
+    let options = LlmRequestOptions::default();
+    let turn = match client.stream_chat(&messages, &[], &options, |_| {}).await {
         Ok(turn) => turn,
         Err(error) => {
             tracing::warn!(%error, "assistant: intent classify call failed");

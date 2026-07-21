@@ -36,7 +36,9 @@
             "model_unset": "此端點尚未儲存任何模型。",
             "playbook_mode": "分析模式",
             "allow_writes": "允許寫入操作",
-            "manage_endpoints": "管理 LLM 端點"
+            "manage_endpoints": "管理 LLM 端點",
+            "reasoning_effort": "推理強度",
+            "reasoning_effort_provider_default": "預設"
         }
     },
     "user_hover_card": {
@@ -4436,7 +4438,9 @@
                 "prompt_optional_description": "OpenAI 兼容翻譯 API 的可選系統提示詞。",
                 "connection": "LLM 端點",
                 "connection_description": "用於與 OpenAI 相容的翻譯功能。",
-                "connection_placeholder": "選擇一個端點"
+                "connection_placeholder": "選擇一個端點",
+                "reasoning_effort": "推理強度",
+                "reasoning_effort_provider_default": "預設"
             },
             "deepl": {
                 "api_key": "DeepL API 金鑰"

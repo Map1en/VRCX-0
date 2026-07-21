@@ -417,6 +417,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     translationAPIEndpoint: DEFAULT_TRANSLATION_ENDPOINT,
     translationAPIModel: DEFAULT_TRANSLATION_MODEL,
     translationAPIPrompt: '',
+    translationAPIReasoningEffort: '',
     customFontPrimary: '',
     customFontSecondary: '',
     customFontOverride: '',
@@ -641,6 +642,9 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         translationAPIModel:
             next.translationAPIModel || DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: String(next.translationAPIPrompt || ''),
+        translationAPIReasoningEffort: String(
+            next.translationAPIReasoningEffort || ''
+        ),
         customFontPrimary: String(next.customFontPrimary || ''),
         customFontSecondary: String(next.customFontSecondary || ''),
         customFontOverride: String(next.customFontOverride || ''),

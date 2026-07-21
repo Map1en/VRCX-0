@@ -1,5 +1,11 @@
 import { useTranslation } from 'react-i18next';
 
+import {
+    getEffectiveReasoningEffort,
+    getModelReasoning,
+    getValidReasoningEfforts,
+    shouldShowReasoningEffortSelector
+} from '@/features/llm/reasoning';
 import { getLanguageName, languageCodes } from '@/localization/index';
 import type { LlmEndpointDto } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
@@ -36,6 +42,7 @@ type TranslationDraft = {
     translationAPIEndpoint: string;
     translationAPIModel: string;
     translationAPIPrompt: string;
+    translationAPIReasoningEffort: string;
 };
 
 type TranslationProviderOption = readonly [value: string, labelKey: string];
@@ -75,6 +82,24 @@ export function TranslationApiDialog({
         (endpoint) => endpoint.id === translationDraft.translationEndpointId
     );
     const modelOptions = selectedEndpoint?.models ?? [];
+    const selectedModel = translationDraft.translationAPIModel;
+    const showReasoningEffort = shouldShowReasoningEffortSelector(
+        selectedEndpoint ?? null,
+        selectedModel || null
+    );
+    const reasoningEffortOptions = showReasoningEffort
+        ? getValidReasoningEfforts(
+              (selectedEndpoint?.modelReasoning ?? []).find(
+                  (r) => r.modelId === selectedModel
+              ) ?? null
+          )
+        : [];
+    const effectiveReasoningEffort = showReasoningEffort
+        ? (getEffectiveReasoningEffort(
+              translationDraft.translationAPIReasoningEffort,
+              getModelReasoning(selectedEndpoint ?? null, selectedModel || null)
+          ) ?? '')
+        : '';
     const apiKeyLabel =
         translationProvider === 'deepl'
             ? t('dialog.translation_api.deepl.api_key')
@@ -206,25 +231,38 @@ export function TranslationApiDialog({
                                     }))}
                                     disabled={!endpoints.length}
                                     onValueChange={(value) => {
+                                        const endpointId = value ?? '';
                                         setTranslationDraftValue(
                                             'translationEndpointId',
-                                            value ?? ''
+                                            endpointId
                                         );
                                         const endpoint = endpoints.find(
-                                            (item) => item.id === value
+                                            (item) => item.id === endpointId
                                         );
-                                        if (
-                                            endpoint?.models.length &&
-                                            !endpoint.models.includes(
-                                                translationDraft.translationAPIModel
-                                            )
-                                        ) {
-                                            setTranslationDraftValue(
-                                                'translationAPIModel',
-                                                endpoint.models[0]
+                                        if (endpoint) {
+                                            const currentModel =
+                                                translationDraft.translationAPIModel;
+                                            const nextModel =
+                                                endpoint.models.length > 0 &&
+                                                !endpoint.models.includes(
+                                                    currentModel
+                                                )
+                                                    ? endpoint.models[0]
+                                                    : currentModel;
+                                            if (nextModel !== currentModel) {
+                                                setTranslationDraftValue(
+                                                    'translationAPIModel',
+                                                    nextModel
+                                                );
+                                            }
+                                            normalizeReasoningEffortForModel(
+                                                endpoint,
+                                                nextModel,
+                                                translationDraft.translationAPIReasoningEffort,
+                                                setTranslationDraftValue
                                             );
                                         }
-                                        fetchTranslationModels(value ?? '');
+                                        fetchTranslationModels(endpointId);
                                     }}
                                 >
                                     <SelectTrigger
@@ -265,12 +303,20 @@ export function TranslationApiDialog({
                                             value: model,
                                             label: model
                                         }))}
-                                        onValueChange={(value) =>
+                                        onValueChange={(value) => {
                                             setTranslationDraftValue(
                                                 'translationAPIModel',
                                                 value ?? ''
-                                            )
-                                        }
+                                            );
+                                            if (selectedEndpoint) {
+                                                normalizeReasoningEffortForModel(
+                                                    selectedEndpoint,
+                                                    value ?? '',
+                                                    translationDraft.translationAPIReasoningEffort,
+                                                    setTranslationDraftValue
+                                                );
+                                            }
+                                        }}
                                         onOpenChange={(open) => {
                                             if (
                                                 open &&
@@ -328,6 +374,61 @@ export function TranslationApiDialog({
                                     />
                                 )}
                             </Field>
+                            {showReasoningEffort ? (
+                                <Field
+                                    label={t(
+                                        'dialog.translation_api.openai.reasoning_effort'
+                                    )}
+                                    controlId="settings-translation-reasoning-effort"
+                                >
+                                    <Select
+                                        value={effectiveReasoningEffort}
+                                        items={reasoningEffortOptions.map(
+                                            (effort) => ({
+                                                value: effort,
+                                                label: effort
+                                            })
+                                        )}
+                                        onValueChange={(value) =>
+                                            setTranslationDraftValue(
+                                                'translationAPIReasoningEffort',
+                                                value ?? ''
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="settings-translation-reasoning-effort"
+                                            className="data-placeholder:text-foreground w-96 max-w-full"
+                                        >
+                                            <SelectValue>
+                                                {effectiveReasoningEffort ||
+                                                    t(
+                                                        'dialog.translation_api.openai.reasoning_effort_provider_default'
+                                                    )}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem value="">
+                                                    {t(
+                                                        'dialog.translation_api.openai.reasoning_effort_provider_default'
+                                                    )}
+                                                </SelectItem>
+                                                {reasoningEffortOptions.map(
+                                                    (effort) => (
+                                                        <SelectItem
+                                                            key={effort}
+                                                            value={effort}
+                                                        >
+                                                            {effort}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            ) : null}
                             <Field
                                 label={t(
                                     'dialog.translation_api.openai.prompt_optional'
@@ -444,4 +545,20 @@ export function TranslationApiDialog({
             </DialogContent>
         </Dialog>
     );
+}
+
+function normalizeReasoningEffortForModel(
+    endpoint: LlmEndpointDto,
+    modelId: string,
+    currentEffort: string,
+    setDraftValue: (key: 'translationAPIReasoningEffort', value: string) => void
+): void {
+    if (!currentEffort.trim()) {
+        return;
+    }
+    const reasoning = getModelReasoning(endpoint, modelId);
+    const effective = getEffectiveReasoningEffort(currentEffort, reasoning);
+    if (effective === null) {
+        setDraftValue('translationAPIReasoningEffort', '');
+    }
 }

@@ -5,15 +5,16 @@ use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
-use vrcx_0_integrations::llm::ToolDefinition;
+use vrcx_0_integrations::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, ToolDefinition};
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 use vrcx_0_runtime_host::RuntimeHostState;
 
 use crate::agent::{run_turn, TurnContext};
 use crate::config::{should_apply_playbook, PlaybookMode};
 use crate::endpoints::{
-    AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore, LlmEndpointDetectModelsInput,
-    LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
+    resolve_assistant_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus,
+    EndpointStore, LlmEndpointDetectModelsInput, LlmEndpointDto, LlmEndpointUpsertInput,
+    LlmTranslateInput,
 };
 
 /// Tools that mutate state (local DB or the VRChat account). They are hidden
@@ -84,7 +85,7 @@ impl AssistantController {
     pub async fn endpoint_detect_models(
         &self,
         input: LlmEndpointDetectModelsInput,
-    ) -> Result<Vec<String>, HarnessError> {
+    ) -> Result<LlmEndpointDetectModelsResult, HarnessError> {
         self.endpoints.detect_models(input).await
     }
 
@@ -98,6 +99,22 @@ impl AssistantController {
 
     pub fn follow_custom_proxy(&self) -> Result<bool, HarnessError> {
         self.endpoints.follow_custom_proxy()
+    }
+
+    pub fn translation_reasoning_effort(&self) -> Result<String, HarnessError> {
+        self.endpoints.translation_reasoning_effort()
+    }
+
+    pub fn set_translation_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
+        self.endpoints.set_translation_reasoning_effort(effort)
+    }
+
+    pub fn assistant_reasoning_effort(&self) -> Result<String, HarnessError> {
+        self.endpoints.assistant_reasoning_effort()
+    }
+
+    pub fn set_assistant_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
+        self.endpoints.set_assistant_reasoning_effort(effort)
     }
 
     pub fn set_session_runtime(
@@ -208,6 +225,20 @@ impl AssistantController {
         let client = self
             .endpoints
             .llm_client(&endpoint.base_url, &endpoint.api_key, model)?;
+
+        let stored_effort = self
+            .endpoints
+            .assistant_reasoning_effort()
+            .unwrap_or_default();
+        let options = LlmRequestOptions {
+            reasoning_effort: resolve_assistant_reasoning_effort(
+                &endpoint.base_url,
+                &endpoint.model_reasoning,
+                model,
+                &stored_effort,
+            ),
+        };
+
         let tool_defs = visible_tool_defs(&self.tool_defs, session.allow_writes);
 
         let session_id = session.id.clone();
@@ -249,6 +280,7 @@ impl AssistantController {
             locale,
             cancel,
             apply_playbook: should_apply_playbook(session.playbook_mode, &endpoint.base_url),
+            options,
         };
 
         let cleanup = CancelCleanup {

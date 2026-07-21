@@ -2,7 +2,8 @@
 
 use tauri::State;
 use vrcx_0_harness::{
-    LlmEndpointDetectModelsInput, LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
+    LlmEndpointDetectModelsInput, LlmEndpointDetectModelsResult, LlmEndpointDto,
+    LlmEndpointUpsertInput, LlmTranslateInput,
 };
 
 use crate::error::AppError;
@@ -76,7 +77,7 @@ pub async fn app__llm_endpoint_delete(
 pub async fn app__llm_endpoint_detect_models(
     state: State<'_, AppState>,
     input: LlmEndpointDetectModelsInput,
-) -> Result<Vec<String>, AppError> {
+) -> Result<LlmEndpointDetectModelsResult, AppError> {
     state
         .assistant()
         .await?
@@ -96,5 +97,55 @@ pub async fn app__llm_translate(
         .await?
         .translate(input)
         .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__llm_translation_reasoning_effort(
+    state: State<'_, AppState>,
+) -> Result<String, AppError> {
+    state
+        .assistant()
+        .await?
+        .translation_reasoning_effort()
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__llm_set_translation_reasoning_effort(
+    state: State<'_, AppState>,
+    effort: String,
+) -> Result<String, AppError> {
+    state
+        .assistant()
+        .await?
+        .set_translation_reasoning_effort(&effort)
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__assistant_reasoning_effort(
+    state: State<'_, AppState>,
+) -> Result<String, AppError> {
+    state
+        .assistant()
+        .await?
+        .assistant_reasoning_effort()
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__assistant_set_reasoning_effort(
+    state: State<'_, AppState>,
+    effort: String,
+) -> Result<String, AppError> {
+    state
+        .assistant()
+        .await?
+        .set_assistant_reasoning_effort(&effort)
         .map_err(AppError::from)
 }

@@ -94,7 +94,8 @@ describe('translationService', () => {
                 translationAPIEndpoint:
                     'https://api.openai.com/v1/chat/completions',
                 translationAPIModel: 'gpt-4o-mini',
-                translationAPIPrompt: 'Translate only.'
+                translationAPIPrompt: 'Translate only.',
+                translationAPIReasoningEffort: 'xhigh'
             };
             return Promise.resolve(values[key] ?? String(fallback ?? ''));
         });
@@ -107,7 +108,8 @@ describe('translationService', () => {
             model: 'gpt-4o-mini',
             prompt: 'Translate only.',
             targetLang: 'ja',
-            text: 'Hello'
+            text: 'Hello',
+            reasoningEffort: 'xhigh'
         });
         expect(mocks.executeTranslationRequest).not.toHaveBeenCalled();
     });
@@ -142,7 +144,8 @@ describe('translationService', () => {
             model: 'gpt-4o-mini',
             prompt: null,
             targetLang: 'ja',
-            text: 'Hello'
+            text: 'Hello',
+            reasoningEffort: null
         });
         expect(mocks.executeTranslationRequest).not.toHaveBeenCalled();
     });

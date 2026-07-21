@@ -36,7 +36,9 @@
             "model_unset": "Pro tento endpoint nejsou uloženy žádné modely",
             "playbook_mode": "Režim analýzy",
             "allow_writes": "Povolit zápisové akce",
-            "manage_endpoints": "Spravovat LLM endpointy"
+            "manage_endpoints": "Spravovat LLM endpointy",
+            "reasoning_effort": "Úsilí při uvažování",
+            "reasoning_effort_provider_default": "Výchozí"
         }
     },
     "user_hover_card": {
@@ -4438,7 +4440,9 @@
                 "prompt_optional_description": "Volitelný systémový prompt pro překladová API kompatibilní s OpenAI.",
                 "connection": "LLM endpoint",
                 "connection_description": "Používá se překladem kompatibilním s OpenAI.",
-                "connection_placeholder": "Vyberte endpoint"
+                "connection_placeholder": "Vyberte endpoint",
+                "reasoning_effort": "Úsilí při uvažování",
+                "reasoning_effort_provider_default": "Výchozí"
             },
             "deepl": {
                 "api_key": "API klíč DeepL"

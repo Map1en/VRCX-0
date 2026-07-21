@@ -684,7 +684,8 @@ describe('preferencesService characterization', () => {
                 translationAPIKey: '  key  ',
                 translationAPIEndpoint: '',
                 translationAPIModel: '',
-                translationAPIPrompt: null
+                translationAPIPrompt: null,
+                translationAPIReasoningEffort: ''
             })
         ).resolves.toEqual({
             bioLanguage: 'ja',
@@ -694,7 +695,8 @@ describe('preferencesService characterization', () => {
             translationAPIEndpoint:
                 'https://api.openai.com/v1/chat/completions',
             translationAPIModel: 'gpt-4o-mini',
-            translationAPIPrompt: ''
+            translationAPIPrompt: '',
+            translationAPIReasoningEffort: ''
         });
 
         expect(mocks.setMany).toHaveBeenCalledWith([
@@ -707,7 +709,8 @@ describe('preferencesService characterization', () => {
                 'https://api.openai.com/v1/chat/completions'
             ],
             ['translationAPIModel', 'gpt-4o-mini'],
-            ['translationAPIPrompt', '']
+            ['translationAPIPrompt', ''],
+            ['translationAPIReasoningEffort', '']
         ]);
     });
 

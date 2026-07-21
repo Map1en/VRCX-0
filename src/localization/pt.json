@@ -36,7 +36,9 @@
             "model_unset": "Nenhum modelo salvo para este endpoint",
             "playbook_mode": "Modo de análise",
             "allow_writes": "Permitir ações de escrita",
-            "manage_endpoints": "Gerenciar endpoints LLM"
+            "manage_endpoints": "Gerenciar endpoints LLM",
+            "reasoning_effort": "Esforço de raciocínio",
+            "reasoning_effort_provider_default": "Padrão"
         }
     },
     "user_hover_card": {
@@ -4436,7 +4438,9 @@
                 "prompt_optional_description": "Prompt de sistema opcional para APIs de tradução compatíveis com OpenAI.",
                 "connection": "Endpoint LLM",
                 "connection_description": "Usado pela tradução compatível com OpenAI.",
-                "connection_placeholder": "Selecione um endpoint"
+                "connection_placeholder": "Selecione um endpoint",
+                "reasoning_effort": "Esforço de raciocínio",
+                "reasoning_effort_provider_default": "Padrão"
             },
             "deepl": {
                 "api_key": "Chave de API do DeepL"

@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_integrations::llm::{ChatMessage, LlmClient, LlmError, ToolDefinition};
+use vrcx_0_integrations::llm::{
+    ChatMessage, LlmClient, LlmError, LlmRequestOptions, ToolDefinition,
+};
 use vrcx_0_mcp::{InProcessMcpTools, ToolCallOutcome};
 
 use crate::entities::{extract_entities, surfaced_entities, Entity};
@@ -81,6 +83,7 @@ pub(crate) struct TurnContext {
     pub locale: Option<String>,
     pub cancel: CancellationToken,
     pub apply_playbook: bool,
+    pub options: LlmRequestOptions,
 }
 
 pub(crate) async fn run_turn(ctx: TurnContext) {
@@ -126,9 +129,11 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx.client.stream_chat(&working, tool_defs, |delta| {
-                emitter.delta(delta);
-            });
+            let stream = ctx
+                .client
+                .stream_chat(&working, tool_defs, &ctx.options, |delta| {
+                    emitter.delta(delta);
+                });
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,
@@ -197,9 +202,11 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         working.push(ChatMessage::user(FINAL_ANSWER_PROMPT));
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx.client.stream_chat(&working, &[], |delta| {
-                emitter.delta(delta);
-            });
+            let stream = ctx
+                .client
+                .stream_chat(&working, &[], &ctx.options, |delta| {
+                    emitter.delta(delta);
+                });
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,

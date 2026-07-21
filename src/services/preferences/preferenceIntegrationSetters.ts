@@ -46,7 +46,8 @@ export async function setTranslationApiConfigPreference({
     translationEndpointId,
     translationAPIEndpoint,
     translationAPIModel,
-    translationAPIPrompt
+    translationAPIPrompt,
+    translationAPIReasoningEffort
 }: TranslationApiConfigPreferenceInput) {
     const nextBioLanguage = normalizeBioLanguage(bioLanguage);
     const nextType = normalizeTranslationApiType(translationAPIType);
@@ -59,6 +60,7 @@ export async function setTranslationApiConfigPreference({
         String(translationAPIModel || DEFAULT_TRANSLATION_MODEL).trim() ||
         DEFAULT_TRANSLATION_MODEL;
     const nextPrompt = String(translationAPIPrompt ?? '');
+    const nextReasoningEffort = String(translationAPIReasoningEffort ?? '');
     await configRepository.setMany([
         ['bioLanguage', nextBioLanguage],
         ['translationAPIType', nextType],
@@ -66,7 +68,8 @@ export async function setTranslationApiConfigPreference({
         ['translationEndpointId', nextEndpointId],
         ['translationAPIEndpoint', nextEndpoint],
         ['translationAPIModel', nextModel],
-        ['translationAPIPrompt', nextPrompt]
+        ['translationAPIPrompt', nextPrompt],
+        ['translationAPIReasoningEffort', nextReasoningEffort]
     ]);
     patchPreferences({
         bioLanguage: nextBioLanguage,
@@ -74,7 +77,8 @@ export async function setTranslationApiConfigPreference({
         translationEndpointId: nextEndpointId,
         translationAPIEndpoint: nextEndpoint,
         translationAPIModel: nextModel,
-        translationAPIPrompt: nextPrompt
+        translationAPIPrompt: nextPrompt,
+        translationAPIReasoningEffort: nextReasoningEffort
     });
     publishPreferenceChanged('bioLanguage', nextBioLanguage);
     publishPreferenceChanged('translationAPIType', nextType);
@@ -83,6 +87,10 @@ export async function setTranslationApiConfigPreference({
     publishPreferenceChanged('translationAPIEndpoint', nextEndpoint);
     publishPreferenceChanged('translationAPIModel', nextModel);
     publishPreferenceChanged('translationAPIPrompt', nextPrompt);
+    publishPreferenceChanged(
+        'translationAPIReasoningEffort',
+        nextReasoningEffort
+    );
     return {
         bioLanguage: nextBioLanguage,
         translationAPIType: nextType,
@@ -90,7 +98,8 @@ export async function setTranslationApiConfigPreference({
         translationEndpointId: nextEndpointId,
         translationAPIEndpoint: nextEndpoint,
         translationAPIModel: nextModel,
-        translationAPIPrompt: nextPrompt
+        translationAPIPrompt: nextPrompt,
+        translationAPIReasoningEffort: nextReasoningEffort
     };
 }
 

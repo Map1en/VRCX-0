@@ -4,7 +4,10 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
-use vrcx_0_integrations::llm::{ChatMessage, LlmClient};
+use vrcx_0_integrations::llm::{
+    is_openrouter_base_url, ChatMessage, LlmClient, LlmEndpointDetectModelsResult,
+    LlmModelReasoning, LlmRequestOptions,
+};
 use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::config::{deobfuscate_api_key, normalize_llm_base_url, obfuscate_api_key, PlaybookMode};
@@ -22,6 +25,8 @@ const TRANSLATION_API_TYPE_CONFIG_KEY: &str = "translationAPIType";
 const TRANSLATION_API_ENDPOINT_CONFIG_KEY: &str = "translationAPIEndpoint";
 const TRANSLATION_API_KEY_CONFIG_KEY: &str = "translationAPIKey";
 const TRANSLATION_API_MODEL_CONFIG_KEY: &str = "translationAPIModel";
+const TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY: &str = "translationAPIReasoningEffort";
+const ASSISTANT_REASONING_EFFORT_CONFIG_KEY: &str = "assistantReasoningEffort";
 const DEFAULT_TRANSLATION_SYSTEM_PROMPT: &str =
     "You are a translation assistant. Translate the user message into {targetLang}. Only return the translated text.";
 
@@ -45,6 +50,8 @@ struct StoredLlmEndpoint {
     #[serde(default)]
     models: Vec<String>,
     #[serde(default)]
+    model_reasoning: Vec<LlmModelReasoning>,
+    #[serde(default)]
     last_detected_at: Option<String>,
 }
 
@@ -52,6 +59,7 @@ struct StoredLlmEndpoint {
 pub struct ResolvedLlmEndpoint {
     pub base_url: String,
     pub api_key: String,
+    pub model_reasoning: Vec<LlmModelReasoning>,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -62,6 +70,7 @@ pub struct LlmEndpointDto {
     pub base_url: String,
     pub has_key: bool,
     pub models: Vec<String>,
+    pub model_reasoning: Vec<LlmModelReasoning>,
     pub last_detected_at: Option<String>,
 }
 
@@ -108,6 +117,7 @@ pub struct LlmTranslateInput {
     pub text: String,
     pub target_lang: String,
     pub prompt: Option<String>,
+    pub reasoning_effort: Option<String>,
 }
 
 impl Default for AssistantRuntimeSelection {
@@ -180,12 +190,21 @@ impl EndpointStore {
                 name.to_string()
             }
         };
+
+        let model_reasoning = match &existing {
+            Some(endpoint) if normalize_llm_base_url(&endpoint.base_url) == base_url => {
+                retain_reasoning_for_models(endpoint.model_reasoning.clone(), &models)
+            }
+            _ => Vec::new(),
+        };
+
         let endpoint = StoredLlmEndpoint {
             id: id.clone(),
             name,
             base_url,
             api_key,
             models,
+            model_reasoning,
             last_detected_at: existing.and_then(|endpoint| endpoint.last_detected_at),
         };
 
@@ -231,11 +250,13 @@ impl EndpointStore {
     pub async fn detect_models(
         &self,
         input: LlmEndpointDetectModelsInput,
-    ) -> Result<Vec<String>, HarnessError> {
+    ) -> Result<LlmEndpointDetectModelsResult, HarnessError> {
         self.ensure_migrated()?;
         let resolved = self.resolve_detect_target(&input)?;
         let client = self.llm_client(&resolved.base_url, &resolved.api_key, "")?;
-        let models = normalize_models(client.list_models().await?);
+        let result = client.list_models().await?;
+        let models = normalize_models(result.models);
+        let model_reasoning = normalize_model_reasoning(result.model_reasoning, &models);
 
         if input.persist.unwrap_or(true) {
             if let Some(id) = input
@@ -248,13 +269,17 @@ impl EndpointStore {
                 let mut endpoints = self.load_endpoints()?;
                 if let Some(endpoint) = endpoints.iter_mut().find(|endpoint| endpoint.id == id) {
                     endpoint.models = models.clone();
+                    endpoint.model_reasoning = model_reasoning.clone();
                     endpoint.last_detected_at = Some(chrono::Utc::now().to_rfc3339());
                     self.save_endpoints(&endpoints)?;
                 }
             }
         }
 
-        Ok(models)
+        Ok(LlmEndpointDetectModelsResult {
+            models,
+            model_reasoning,
+        })
     }
 
     pub fn resolve(&self, id: &str) -> Result<ResolvedLlmEndpoint, HarnessError> {
@@ -268,6 +293,18 @@ impl EndpointStore {
             .find(|endpoint| endpoint.id == id)
             .ok_or_else(|| HarnessError::EndpointRemoved(id.to_string()))?;
         Ok(resolve_endpoint(endpoint))
+    }
+
+    fn resolve_stored(&self, id: &str) -> Result<StoredLlmEndpoint, HarnessError> {
+        self.ensure_migrated()?;
+        let value = self
+            .config
+            .get_json(LLM_ENDPOINTS_CONFIG_KEY, Value::Null)?;
+        let endpoints: Vec<StoredLlmEndpoint> = serde_json::from_value(value).unwrap_or_default();
+        endpoints
+            .into_iter()
+            .find(|endpoint| endpoint.id == id)
+            .ok_or_else(|| HarnessError::EndpointRemoved(id.to_string()))
     }
 
     pub fn runtime_status(&self) -> Result<AssistantRuntimeStatus, HarnessError> {
@@ -316,8 +353,19 @@ impl EndpointStore {
         }
         let prompt = translation_system_prompt(input.prompt.as_deref(), &input.target_lang);
         let client = self.llm_client(&endpoint.base_url, &endpoint.api_key, model)?;
+        let options = LlmRequestOptions {
+            reasoning_effort: resolve_translation_reasoning_effort(
+                &endpoint.base_url,
+                &endpoint.model_reasoning,
+                model,
+                input.reasoning_effort.as_deref(),
+            ),
+        };
         Ok(client
-            .complete_chat(&[ChatMessage::system(prompt), ChatMessage::user(input.text)])
+            .complete_chat(
+                &[ChatMessage::system(prompt), ChatMessage::user(input.text)],
+                &options,
+            )
             .await?)
     }
 
@@ -335,6 +383,44 @@ impl EndpointStore {
         self.config
             .get_bool(LLM_FOLLOW_CUSTOM_PROXY_CONFIG_KEY, true)
             .map_err(HarnessError::from)
+    }
+
+    pub fn translation_reasoning_effort(&self) -> Result<String, HarnessError> {
+        self.config
+            .get_string(TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY, "")
+            .map_err(HarnessError::from)
+    }
+
+    pub fn set_translation_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
+        let value = effort.to_string();
+        self.config
+            .set_string(TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY, &value)?;
+        Ok(value)
+    }
+
+    pub fn assistant_reasoning_effort(&self) -> Result<String, HarnessError> {
+        self.config
+            .get_string(ASSISTANT_REASONING_EFFORT_CONFIG_KEY, "")
+            .map_err(HarnessError::from)
+    }
+
+    pub fn set_assistant_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
+        let value = effort.to_string();
+        self.config
+            .set_string(ASSISTANT_REASONING_EFFORT_CONFIG_KEY, &value)?;
+        Ok(value)
+    }
+
+    pub fn model_reasoning(
+        &self,
+        endpoint_id: &str,
+        model_id: &str,
+    ) -> Result<Option<LlmModelReasoning>, HarnessError> {
+        let endpoint = self.resolve_stored(endpoint_id)?;
+        Ok(endpoint
+            .model_reasoning
+            .into_iter()
+            .find(|r| r.model_id == model_id))
     }
 
     fn explicit_proxy_url(&self) -> Result<Option<&str>, HarnessError> {
@@ -377,6 +463,7 @@ impl EndpointStore {
                 .map(str::trim)
                 .unwrap_or("")
                 .to_string(),
+            model_reasoning: Vec::new(),
         })
     }
 
@@ -409,6 +496,7 @@ fn to_dto(endpoint: StoredLlmEndpoint) -> LlmEndpointDto {
         base_url: endpoint.base_url,
         has_key: !deobfuscate_api_key(&endpoint.api_key).is_empty(),
         models: endpoint.models,
+        model_reasoning: endpoint.model_reasoning,
         last_detected_at: endpoint.last_detected_at,
     }
 }
@@ -417,6 +505,7 @@ fn resolve_endpoint(endpoint: StoredLlmEndpoint) -> ResolvedLlmEndpoint {
     ResolvedLlmEndpoint {
         base_url: normalize_llm_base_url(&endpoint.base_url),
         api_key: deobfuscate_api_key(&endpoint.api_key),
+        model_reasoning: endpoint.model_reasoning,
     }
 }
 
@@ -460,6 +549,7 @@ fn ensure_endpoint(
         base_url: base_url.to_string(),
         api_key: obfuscate_api_key(api_key.trim()),
         models,
+        model_reasoning: Vec::new(),
         last_detected_at: None,
     });
     id
@@ -487,6 +577,79 @@ fn normalize_models(models: Vec<String>) -> Vec<String> {
     models.sort();
     models.dedup();
     models
+}
+
+fn retain_reasoning_for_models(
+    reasoning: Vec<LlmModelReasoning>,
+    models: &[String],
+) -> Vec<LlmModelReasoning> {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    reasoning
+        .into_iter()
+        .filter(|r| models.iter().any(|m| m == &r.model_id) && seen.insert(r.model_id.clone()))
+        .collect()
+}
+
+fn normalize_model_reasoning(
+    reasoning: Vec<LlmModelReasoning>,
+    models: &[String],
+) -> Vec<LlmModelReasoning> {
+    retain_reasoning_for_models(reasoning, models)
+}
+
+fn resolve_translation_reasoning_effort(
+    base_url: &str,
+    model_reasoning: &[LlmModelReasoning],
+    model: &str,
+    stored_effort: Option<&str>,
+) -> Option<String> {
+    if !is_openrouter_base_url(base_url) {
+        return None;
+    }
+    let reasoning = model_reasoning.iter().find(|r| r.model_id == model)?;
+    let stored = stored_effort.filter(|value| !value.is_empty())?;
+    let valid = valid_reasoning_efforts(reasoning);
+    if valid.iter().any(|effort| *effort == stored) {
+        Some(stored.to_string())
+    } else {
+        None
+    }
+}
+
+pub fn resolve_assistant_reasoning_effort(
+    base_url: &str,
+    model_reasoning: &[LlmModelReasoning],
+    model: &str,
+    stored_effort: &str,
+) -> Option<String> {
+    if !is_openrouter_base_url(base_url) {
+        return None;
+    }
+    let reasoning = model_reasoning.iter().find(|r| r.model_id == model)?;
+    let stored = stored_effort;
+    if stored.is_empty() {
+        return None;
+    }
+    let valid = valid_reasoning_efforts(reasoning);
+    if valid.iter().any(|effort| effort == stored) {
+        Some(stored.to_string())
+    } else {
+        None
+    }
+}
+
+fn valid_reasoning_efforts(reasoning: &LlmModelReasoning) -> Vec<String> {
+    reasoning
+        .supported_efforts
+        .iter()
+        .filter(|effort| !effort.is_empty())
+        .filter(|effort| !reasoning.mandatory || !is_reasoning_disabling_effort(effort))
+        .cloned()
+        .collect()
+}
+
+fn is_reasoning_disabling_effort(effort: &str) -> bool {
+    effort == "none"
 }
 
 #[cfg(test)]

@@ -36,7 +36,9 @@
             "model_unset": "이 엔드포인트에 저장된 모델이 없습니다",
             "playbook_mode": "분석 모드",
             "allow_writes": "쓰기 작업 허용",
-            "manage_endpoints": "LLM 엔드포인트 관리"
+            "manage_endpoints": "LLM 엔드포인트 관리",
+            "reasoning_effort": "추론 강도",
+            "reasoning_effort_provider_default": "기본값"
         }
     },
     "user_hover_card": {
@@ -4375,7 +4377,9 @@
                 "prompt_optional_description": "OpenAI 호환 번역 API에 대한 선택적 시스템 프롬프트.",
                 "connection": "LLM 엔드포인트",
                 "connection_description": "OpenAI 호환 번역에서 사용합니다.",
-                "connection_placeholder": "엔드포인트를 선택하세요"
+                "connection_placeholder": "엔드포인트를 선택하세요",
+                "reasoning_effort": "추론 강도",
+                "reasoning_effort_provider_default": "기본값"
             },
             "deepl": {
                 "api_key": "DeepL API 키"

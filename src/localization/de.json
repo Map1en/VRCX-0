@@ -36,7 +36,9 @@
             "model_unset": "Für diesen Endpunkt sind keine Modelle gespeichert",
             "playbook_mode": "Analysemodus",
             "allow_writes": "Schreibaktionen erlauben",
-            "manage_endpoints": "LLM-Endpunkte verwalten"
+            "manage_endpoints": "LLM-Endpunkte verwalten",
+            "reasoning_effort": "Reasoning-Aufwand",
+            "reasoning_effort_provider_default": "Standard"
         }
     },
     "user_hover_card": {
@@ -4436,7 +4438,9 @@
                 "prompt_optional_description": "Optionaler System-Prompt für OpenAI-kompatible Übersetzungs-APIs.",
                 "connection": "LLM-Endpoint",
                 "connection_description": "Wird für OpenAI-kompatible Übersetzung verwendet.",
-                "connection_placeholder": "Endpoint auswählen"
+                "connection_placeholder": "Endpoint auswählen",
+                "reasoning_effort": "Reasoning-Aufwand",
+                "reasoning_effort_provider_default": "Standard"
             },
             "deepl": {
                 "api_key": "DeepL API-Schlüssel"

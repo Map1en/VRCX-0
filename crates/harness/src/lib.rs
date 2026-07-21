@@ -15,8 +15,9 @@ pub use config::{
     ASSISTANT_MODEL_CONFIG_KEY,
 };
 pub use endpoints::{
-    AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore, LlmEndpointDetectModelsInput,
-    LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
+    resolve_assistant_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus,
+    EndpointStore, LlmEndpointDetectModelsInput, LlmEndpointDto, LlmEndpointUpsertInput,
+    LlmTranslateInput,
 };
 pub use entities::Entity;
 pub use error::HarnessError;
@@ -26,3 +27,4 @@ pub use events::{
 };
 pub use runtime::{AssistantController, SendResult};
 pub use session::{ActiveTurn, Message, Role, Session, SessionSummary, TurnStatus};
+pub use vrcx_0_integrations::llm::{LlmEndpointDetectModelsResult, LlmModelReasoning};

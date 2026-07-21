@@ -22,6 +22,7 @@ type TranslationConfig = {
     endpoint: string;
     model: string;
     prompt: string;
+    reasoningEffort: string;
 };
 type TranslationOverrides = Partial<TranslationConfig>;
 
@@ -71,7 +72,8 @@ export async function getTranslationConfig(): Promise<TranslationConfig> {
         endpointId,
         endpoint,
         model,
-        prompt
+        prompt,
+        reasoningEffort
     ] = await Promise.all([
         configRepository.getBool('translationAPI', false),
         configRepository.getString('bioLanguage', 'en'),
@@ -86,7 +88,8 @@ export async function getTranslationConfig(): Promise<TranslationConfig> {
             'translationAPIModel',
             DEFAULT_TRANSLATION_MODEL
         ),
-        configRepository.getString('translationAPIPrompt', '')
+        configRepository.getString('translationAPIPrompt', ''),
+        configRepository.getString('translationAPIReasoningEffort', '')
     ]);
 
     return {
@@ -97,7 +100,8 @@ export async function getTranslationConfig(): Promise<TranslationConfig> {
         endpointId: String(endpointId || ''),
         endpoint: String(endpoint || DEFAULT_TRANSLATION_ENDPOINT),
         model: String(model || DEFAULT_TRANSLATION_MODEL),
-        prompt: String(prompt || '')
+        prompt: String(prompt || ''),
+        reasoningEffort: String(reasoningEffort || '')
     };
 }
 
@@ -227,7 +231,8 @@ export async function translateTextDetailed(
         model,
         prompt: config.prompt || null,
         targetLang: target,
-        text
+        text,
+        reasoningEffort: config.reasoningEffort || null
     });
     return {
         text: translated,

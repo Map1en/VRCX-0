@@ -45,7 +45,8 @@ function createInput(
             translationEndpointId: '',
             translationAPIEndpoint: '',
             translationAPIModel: '',
-            translationAPIPrompt: ''
+            translationAPIPrompt: '',
+            translationAPIReasoningEffort: ''
         },
         loading: false,
         migrateLegacyVrcxData: callback,

@@ -36,7 +36,10 @@
             "model_unset": "No models saved for this endpoint",
             "playbook_mode": "Analysis mode",
             "allow_writes": "Allow write actions",
-            "manage_endpoints": "Manage LLM Endpoints"
+            "manage_endpoints": "Manage LLM Endpoints",
+            "reasoning_effort": "Reasoning effort",
+            "reasoning_effort_provider_default": "Default",
+            "reasoning_effort_description": "Applies to all Social AI chats."
         }
     },
     "user_hover_card": {
@@ -4436,7 +4439,9 @@
                 "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs.",
                 "connection": "LLM Endpoint",
                 "connection_description": "Used by OpenAI-compatible translation.",
-                "connection_placeholder": "Select an endpoint"
+                "connection_placeholder": "Select an endpoint",
+                "reasoning_effort": "Reasoning effort",
+                "reasoning_effort_provider_default": "Provider default"
             },
             "deepl": {
                 "api_key": "DeepL API Key"
