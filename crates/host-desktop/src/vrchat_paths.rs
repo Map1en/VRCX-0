@@ -72,24 +72,28 @@ pub fn ugc_photo_location(path: Option<String>) -> String {
 pub fn vrchat_cache_location() -> String {
     if let Ok(content) = fs::read_to_string(vrchat_config_path()) {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
-            if let Some(folder) = v.get("cache_directory").and_then(|v| v.as_str()) {
-                if !folder.is_empty() {
-                    let base = PathBuf::from(folder);
-                    if base.is_dir() {
-                        return base
-                            .join("Cache-WindowsPlayer")
-                            .to_string_lossy()
-                            .into_owned();
-                    }
-                }
-            }
+            return vrchat_cache_location_for_directory(
+                v.get("cache_directory").and_then(|value| value.as_str()),
+            )
+            .to_string_lossy()
+            .into_owned();
         }
     }
 
-    vrchat_app_data()
-        .join("Cache-WindowsPlayer")
+    vrchat_cache_location_for_directory(None)
         .to_string_lossy()
         .into_owned()
+}
+
+pub fn vrchat_cache_location_for_directory(cache_directory: Option<&str>) -> PathBuf {
+    if let Some(folder) = cache_directory.filter(|folder| !folder.is_empty()) {
+        let base = PathBuf::from(folder);
+        if base.is_dir() {
+            return base.join("Cache-WindowsPlayer");
+        }
+    }
+
+    vrchat_app_data().join("Cache-WindowsPlayer")
 }
 
 pub fn vrchat_screenshots_location() -> String {

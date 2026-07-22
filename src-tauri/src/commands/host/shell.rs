@@ -136,6 +136,28 @@ pub fn app__write_config_file(json: String) -> Result<(), AppError> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn app__vrchat_cache_location_would_change(json: String) -> Result<bool, AppError> {
+    require_host_capability(HostCapability::VrchatPathDiscovery)?;
+    let normalized_json = shell_actions::normalize_config_file_json(&json)?;
+    Ok(shell_actions::vrchat_cache_location_would_change(
+        &normalized_json,
+    )?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__write_config_file_with_cache_cleanup(
+    json: String,
+) -> Result<shell_actions::VrchatConfigWriteResult, AppError> {
+    require_host_capability(HostCapability::VrchatPathDiscovery)?;
+    let normalized_json = shell_actions::normalize_config_file_json(&json)?;
+    Ok(shell_actions::write_config_file_with_cache_cleanup(
+        &normalized_json,
+    )?)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn app__open_vrcx_app_data_folder(state: State<'_, AppState>) -> Result<bool, AppError> {
     Ok(shell_actions::open_existing_folder(&state.paths.app_data)?)
 }

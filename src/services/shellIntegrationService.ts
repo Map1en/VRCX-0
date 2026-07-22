@@ -126,6 +126,19 @@ export async function writeVrchatConfigFile(json: string): Promise<void> {
     await commands.appWriteConfigFile(json);
 }
 
+export async function vrchatCacheLocationWouldChange(
+    json: string
+): Promise<boolean> {
+    return commands.appVrchatCacheLocationWouldChange(json);
+}
+
+export async function writeVrchatConfigFileWithCacheCleanup(
+    json: string
+): Promise<string | null> {
+    const result = await commands.appWriteConfigFileWithCacheCleanup(json);
+    return result.oldCacheCleanupError;
+}
+
 export async function setVrchatRegistryKey(
     key: string,
     value: unknown,

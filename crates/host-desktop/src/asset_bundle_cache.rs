@@ -157,16 +157,24 @@ fn delete_cache_in(
     }
 }
 
-pub fn delete_all_cache() {
+pub fn delete_all_cache() -> std::io::Result<()> {
     let cache_path = PathBuf::from(vrchat_paths::vrchat_cache_location());
-    delete_all_cache_in(&cache_path);
+    delete_all_cache_in(&cache_path)
 }
 
-fn delete_all_cache_in(cache_path: &Path) {
+fn delete_all_cache_in(cache_path: &Path) -> std::io::Result<()> {
     if cache_path.exists() {
-        let _ = fs::remove_dir_all(cache_path);
-        let _ = fs::create_dir_all(cache_path);
+        delete_cache_root(cache_path)?;
+        fs::create_dir_all(cache_path)?;
     }
+    Ok(())
+}
+
+pub fn delete_cache_root(cache_path: &Path) -> std::io::Result<()> {
+    if cache_path.exists() {
+        fs::remove_dir_all(cache_path)?;
+    }
+    Ok(())
 }
 
 pub fn sweep_cache() -> Vec<String> {
@@ -301,7 +309,7 @@ fn trim_cache_to_size(cache_path: &Path, max_size_bytes: i64, output: &mut Vec<S
         if total_size <= max_size_bytes {
             break;
         }
-        if fs::remove_dir_all(&candidate.path).is_ok() {
+        if remove_trim_candidate(&candidate.path) {
             total_size = total_size.saturating_sub(candidate.size);
             output.push(candidate.relative_path);
             if let Some(cache_dir) = candidate.path.parent() {
@@ -315,6 +323,10 @@ fn trim_cache_to_size(cache_path: &Path, max_size_bytes: i64, output: &mut Vec<S
             }
         }
     }
+}
+
+fn remove_trim_candidate(path: &Path) -> bool {
+    !path.join("__lock").exists() && fs::remove_dir_all(path).is_ok()
 }
 
 fn cache_relative_path(cache_dir: &Path, version_dir: &Path) -> String {
@@ -567,15 +579,35 @@ mod tests {
     }
 
     #[test]
+    fn trim_rechecks_a_cache_lock_immediately_before_deleting() {
+        let dir = TestDir::new("asset-cache-trim-late-lock");
+        let cache_entry = write_cache_entry(&dir.path, "file_late_lock", 1, "", 0, b"cache", false);
+        std::fs::write(cache_entry.join("__lock"), b"").unwrap();
+
+        assert!(!remove_trim_candidate(&cache_entry));
+        assert!(cache_entry.exists());
+    }
+
+    #[test]
     fn delete_all_cache_recreates_empty_cache_root() {
         let dir = TestDir::new("asset-cache-delete-all");
         write_cache_entry(&dir.path, "file_world", 1, "", 0, b"cache", false);
 
-        delete_all_cache_in(&dir.path);
+        delete_all_cache_in(&dir.path).unwrap();
 
         assert!(dir.path.is_dir());
         assert_eq!(std::fs::read_dir(&dir.path).unwrap().count(), 0);
         assert_eq!(cache_size_in(&dir.path), 0);
+    }
+
+    #[test]
+    fn delete_all_cache_reports_removal_failures() {
+        let dir = TestDir::new("asset-cache-delete-all-error");
+        let file_path = dir.path.join("not-a-directory");
+        std::fs::write(&file_path, b"cache").unwrap();
+
+        assert!(delete_all_cache_in(&file_path).is_err());
+        assert!(file_path.exists());
     }
 
     #[test]

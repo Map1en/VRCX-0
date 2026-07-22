@@ -55,7 +55,7 @@ pub fn asset_bundle__delete_cache(
 #[specta::specta]
 pub fn asset_bundle__delete_all_cache() -> Result<(), AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    asset_bundle_cache::delete_all_cache();
+    asset_bundle_cache::delete_all_cache()?;
     Ok(())
 }
 
