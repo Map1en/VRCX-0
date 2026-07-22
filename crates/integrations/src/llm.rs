@@ -17,6 +17,8 @@ pub enum LlmError {
 }
 
 const OPENROUTER_CANONICAL_BASE_URL: &str = "https://openrouter.ai/api/v1";
+const OPENROUTER_REASONING_EFFORTS: &[&str] =
+    &["max", "xhigh", "high", "medium", "low", "minimal", "none"];
 
 pub fn is_openrouter_base_url(base_url: &str) -> bool {
     normalize_base_url(base_url) == OPENROUTER_CANONICAL_BASE_URL
@@ -71,6 +73,8 @@ pub struct ChatMessage {
     pub content: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tool_calls: Vec<ToolCall>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub reasoning_details: Vec<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
 }
@@ -93,6 +97,7 @@ impl ChatMessage {
             role: "tool".into(),
             content: Some(content.into()),
             tool_calls: Vec::new(),
+            reasoning_details: Vec::new(),
             tool_call_id: Some(tool_call_id.into()),
         }
     }
@@ -102,6 +107,7 @@ impl ChatMessage {
             role: role.into(),
             content: Some(content.into()),
             tool_calls: Vec::new(),
+            reasoning_details: Vec::new(),
             tool_call_id: None,
         }
     }
@@ -118,6 +124,7 @@ pub struct ToolDefinition {
 pub struct AssistantTurn {
     pub content: String,
     pub tool_calls: Vec<ToolCall>,
+    pub reasoning_details: Vec<Value>,
 }
 
 impl AssistantTurn {
@@ -126,6 +133,7 @@ impl AssistantTurn {
             role: "assistant".into(),
             content: (!self.content.is_empty()).then_some(self.content),
             tool_calls: self.tool_calls,
+            reasoning_details: self.reasoning_details,
             tool_call_id: None,
         }
     }
@@ -197,6 +205,8 @@ struct ChunkDelta {
     content: Option<String>,
     #[serde(default)]
     tool_calls: Option<Vec<ChunkToolCall>>,
+    #[serde(default)]
+    reasoning_details: Option<Vec<Value>>,
 }
 
 #[derive(Deserialize)]
@@ -372,15 +382,28 @@ impl LlmClient {
         let mut buffer: Vec<u8> = Vec::new();
         let mut content = String::new();
         let mut tool_acc: Vec<ToolCallAcc> = Vec::new();
+        let mut reasoning_details = Vec::new();
 
         while let Some(chunk) = stream.next().await {
             buffer.extend_from_slice(&chunk?);
             for line in drain_complete_lines(&mut buffer) {
-                apply_chat_stream_line(&line, &mut on_text, &mut content, &mut tool_acc);
+                apply_chat_stream_line(
+                    &line,
+                    &mut on_text,
+                    &mut content,
+                    &mut tool_acc,
+                    &mut reasoning_details,
+                );
             }
         }
         if let Some(line) = take_remaining_line(&mut buffer) {
-            apply_chat_stream_line(&line, &mut on_text, &mut content, &mut tool_acc);
+            apply_chat_stream_line(
+                &line,
+                &mut on_text,
+                &mut content,
+                &mut tool_acc,
+                &mut reasoning_details,
+            );
         }
 
         let tool_names = tools
@@ -415,6 +438,7 @@ impl LlmClient {
         Ok(AssistantTurn {
             content,
             tool_calls,
+            reasoning_details,
         })
     }
 }
@@ -437,14 +461,18 @@ fn parse_models_response(
         let Some(reasoning) = entry.reasoning.as_ref().and_then(Value::as_object) else {
             continue;
         };
-        let Some(efforts) = reasoning.get("supported_efforts").and_then(Value::as_array) else {
-            continue;
+        let supported_efforts = match reasoning.get("supported_efforts") {
+            Some(Value::Array(efforts)) => efforts
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect::<Vec<_>>(),
+            Some(Value::Null) => OPENROUTER_REASONING_EFFORTS
+                .iter()
+                .map(|effort| (*effort).to_string())
+                .collect(),
+            _ => continue,
         };
-        let supported_efforts = efforts
-            .iter()
-            .filter_map(Value::as_str)
-            .map(str::to_string)
-            .collect::<Vec<_>>();
         if supported_efforts.is_empty() {
             continue;
         }
@@ -479,6 +507,7 @@ fn apply_chat_stream_line<F>(
     on_text: &mut F,
     content: &mut String,
     tool_acc: &mut Vec<ToolCallAcc>,
+    reasoning_details: &mut Vec<Value>,
 ) where
     F: FnMut(&str),
 {
@@ -498,6 +527,9 @@ fn apply_chat_stream_line<F>(
                 on_text(&text);
                 content.push_str(&text);
             }
+        }
+        if let Some(details) = choice.delta.reasoning_details {
+            reasoning_details.extend(details);
         }
         if let Some(calls) = choice.delta.tool_calls {
             for call in calls {
@@ -760,6 +792,46 @@ mod tests {
     }
 
     #[test]
+    fn list_models_expands_null_supported_efforts_but_not_an_omitted_field() {
+        let body = r#"{
+            "data": [
+                {
+                    "id": "unrestricted-model",
+                    "reasoning": {
+                        "supported_efforts": null,
+                        "mandatory": true
+                    }
+                },
+                {
+                    "id": "no-effort-selector",
+                    "reasoning": {
+                        "mandatory": false,
+                        "default_enabled": true
+                    }
+                }
+            ]
+        }"#;
+
+        let result = parse_models_response(body, 200).unwrap();
+
+        assert_eq!(
+            result.models,
+            vec!["no-effort-selector", "unrestricted-model"]
+        );
+        assert_eq!(
+            result.model_reasoning,
+            vec![LlmModelReasoning {
+                model_id: "unrestricted-model".into(),
+                supported_efforts: OPENROUTER_REASONING_EFFORTS
+                    .iter()
+                    .map(|effort| (*effort).to_string())
+                    .collect(),
+                mandatory: true,
+            }]
+        );
+    }
+
+    #[test]
     fn list_models_ignores_malformed_reasoning_metadata_per_model() {
         let body = r#"{
             "data": [
@@ -858,6 +930,82 @@ mod tests {
         let json = serde_json::to_value(body).unwrap();
         assert_eq!(json["stream"], true);
         assert_eq!(json["reasoning"]["effort"], "xhigh");
+    }
+
+    #[test]
+    fn streaming_reasoning_details_are_accumulated_in_response_order() {
+        let mut content = String::new();
+        let mut tool_acc = Vec::new();
+        let mut reasoning_details = Vec::new();
+        let mut on_text = |_: &str| {};
+
+        apply_chat_stream_line(
+            r#"data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.summary","summary":"Checking context","id":"summary-1","format":"anthropic-claude-v1","index":0}]}}]}"#,
+            &mut on_text,
+            &mut content,
+            &mut tool_acc,
+            &mut reasoning_details,
+        );
+        apply_chat_stream_line(
+            r#"data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.encrypted","data":"opaque-data","id":"encrypted-1","format":"anthropic-claude-v1","index":1}]}}]}"#,
+            &mut on_text,
+            &mut content,
+            &mut tool_acc,
+            &mut reasoning_details,
+        );
+
+        assert_eq!(
+            reasoning_details,
+            vec![
+                serde_json::json!({
+                    "type": "reasoning.summary",
+                    "summary": "Checking context",
+                    "id": "summary-1",
+                    "format": "anthropic-claude-v1",
+                    "index": 0
+                }),
+                serde_json::json!({
+                    "type": "reasoning.encrypted",
+                    "data": "opaque-data",
+                    "id": "encrypted-1",
+                    "format": "anthropic-claude-v1",
+                    "index": 1
+                }),
+            ]
+        );
+    }
+
+    #[test]
+    fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
+        let reasoning_details = vec![serde_json::json!({
+            "type": "reasoning.text",
+            "text": "Need current social data",
+            "signature": "signed-value",
+            "id": "reasoning-1",
+            "format": "anthropic-claude-v1",
+            "index": 0
+        })];
+        let message = AssistantTurn {
+            content: String::new(),
+            tool_calls: vec![ToolCall {
+                id: "call-1".into(),
+                kind: "function".into(),
+                function: FunctionCall {
+                    name: "get_summary".into(),
+                    arguments: "{}".into(),
+                },
+            }],
+            reasoning_details: reasoning_details.clone(),
+        }
+        .into_message();
+
+        let json = serde_json::to_value(message).unwrap();
+        assert_eq!(json["reasoning_details"], Value::Array(reasoning_details));
+        assert_eq!(json["tool_calls"][0]["id"], "call-1");
+        assert!(serde_json::to_value(ChatMessage::user("hi"))
+            .unwrap()
+            .get("reasoning_details")
+            .is_none());
     }
 
     #[test]
