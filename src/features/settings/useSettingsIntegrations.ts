@@ -205,15 +205,6 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 }
             })
             .catch(() => {});
-        commands
-            .appLlmTranslationReasoningEffort()
-            .then((effort) => {
-                setTranslationDraftValue(
-                    'translationAPIReasoningEffort',
-                    effort
-                );
-            })
-            .catch(() => {});
         const nextDraft = {
             bioLanguage: integrationPrefs.bioLanguage || 'en',
             translationAPIType: normalizeTranslationApiType(

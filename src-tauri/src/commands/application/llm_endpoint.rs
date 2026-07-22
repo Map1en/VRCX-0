@@ -102,31 +102,6 @@ pub async fn app__llm_translate(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__llm_translation_reasoning_effort(
-    state: State<'_, AppState>,
-) -> Result<String, AppError> {
-    state
-        .assistant()
-        .await?
-        .translation_reasoning_effort()
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__llm_set_translation_reasoning_effort(
-    state: State<'_, AppState>,
-    effort: String,
-) -> Result<String, AppError> {
-    state
-        .assistant()
-        .await?
-        .set_translation_reasoning_effort(&effort)
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn app__assistant_reasoning_effort(
     state: State<'_, AppState>,
 ) -> Result<String, AppError> {

@@ -101,14 +101,6 @@ impl AssistantController {
         self.endpoints.follow_custom_proxy()
     }
 
-    pub fn translation_reasoning_effort(&self) -> Result<String, HarnessError> {
-        self.endpoints.translation_reasoning_effort()
-    }
-
-    pub fn set_translation_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
-        self.endpoints.set_translation_reasoning_effort(effort)
-    }
-
     pub fn assistant_reasoning_effort(&self) -> Result<String, HarnessError> {
         self.endpoints.assistant_reasoning_effort()
     }

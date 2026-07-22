@@ -404,14 +404,6 @@ export const commands = {
     async appLlmTranslate(input: LlmTranslateInput): Promise<string> {
         return await TAURI_INVOKE('app__llm_translate', { input });
     },
-    async appLlmTranslationReasoningEffort(): Promise<string> {
-        return await TAURI_INVOKE('app__llm_translation_reasoning_effort');
-    },
-    async appLlmSetTranslationReasoningEffort(effort: string): Promise<string> {
-        return await TAURI_INVOKE('app__llm_set_translation_reasoning_effort', {
-            effort
-        });
-    },
     async appAssistantReasoningEffort(): Promise<string> {
         return await TAURI_INVOKE('app__assistant_reasoning_effort');
     },
@@ -3918,6 +3910,7 @@ export type LlmEndpointUpsertInput = {
     baseUrl: string;
     apiKey: string | null;
     models: string[];
+    modelReasoning: LlmModelReasoning[] | null;
 };
 export type LlmModelReasoning = {
     modelId: string;

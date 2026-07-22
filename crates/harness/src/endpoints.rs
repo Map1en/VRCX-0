@@ -25,7 +25,6 @@ const TRANSLATION_API_TYPE_CONFIG_KEY: &str = "translationAPIType";
 const TRANSLATION_API_ENDPOINT_CONFIG_KEY: &str = "translationAPIEndpoint";
 const TRANSLATION_API_KEY_CONFIG_KEY: &str = "translationAPIKey";
 const TRANSLATION_API_MODEL_CONFIG_KEY: &str = "translationAPIModel";
-const TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY: &str = "translationAPIReasoningEffort";
 const ASSISTANT_REASONING_EFFORT_CONFIG_KEY: &str = "assistantReasoningEffort";
 const DEFAULT_TRANSLATION_SYSTEM_PROMPT: &str =
     "You are a translation assistant. Translate the user message into {targetLang}. Only return the translated text.";
@@ -82,6 +81,7 @@ pub struct LlmEndpointUpsertInput {
     pub base_url: String,
     pub api_key: Option<String>,
     pub models: Vec<String>,
+    pub model_reasoning: Option<Vec<LlmModelReasoning>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Type)]
@@ -191,11 +191,14 @@ impl EndpointStore {
             }
         };
 
-        let model_reasoning = match &existing {
-            Some(endpoint) if normalize_llm_base_url(&endpoint.base_url) == base_url => {
-                retain_reasoning_for_models(endpoint.model_reasoning.clone(), &models)
-            }
-            _ => Vec::new(),
+        let model_reasoning = match input.model_reasoning {
+            Some(reasoning) => retain_reasoning_for_models(reasoning, &models),
+            None => match &existing {
+                Some(endpoint) if normalize_llm_base_url(&endpoint.base_url) == base_url => {
+                    retain_reasoning_for_models(endpoint.model_reasoning.clone(), &models)
+                }
+                _ => Vec::new(),
+            },
         };
 
         let endpoint = StoredLlmEndpoint {
@@ -295,18 +298,6 @@ impl EndpointStore {
         Ok(resolve_endpoint(endpoint))
     }
 
-    fn resolve_stored(&self, id: &str) -> Result<StoredLlmEndpoint, HarnessError> {
-        self.ensure_migrated()?;
-        let value = self
-            .config
-            .get_json(LLM_ENDPOINTS_CONFIG_KEY, Value::Null)?;
-        let endpoints: Vec<StoredLlmEndpoint> = serde_json::from_value(value).unwrap_or_default();
-        endpoints
-            .into_iter()
-            .find(|endpoint| endpoint.id == id)
-            .ok_or_else(|| HarnessError::EndpointRemoved(id.to_string()))
-    }
-
     pub fn runtime_status(&self) -> Result<AssistantRuntimeStatus, HarnessError> {
         let endpoints = self.list()?;
         Ok(AssistantRuntimeStatus {
@@ -385,19 +376,6 @@ impl EndpointStore {
             .map_err(HarnessError::from)
     }
 
-    pub fn translation_reasoning_effort(&self) -> Result<String, HarnessError> {
-        self.config
-            .get_string(TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY, "")
-            .map_err(HarnessError::from)
-    }
-
-    pub fn set_translation_reasoning_effort(&self, effort: &str) -> Result<String, HarnessError> {
-        let value = effort.to_string();
-        self.config
-            .set_string(TRANSLATION_API_REASONING_EFFORT_CONFIG_KEY, &value)?;
-        Ok(value)
-    }
-
     pub fn assistant_reasoning_effort(&self) -> Result<String, HarnessError> {
         self.config
             .get_string(ASSISTANT_REASONING_EFFORT_CONFIG_KEY, "")
@@ -409,18 +387,6 @@ impl EndpointStore {
         self.config
             .set_string(ASSISTANT_REASONING_EFFORT_CONFIG_KEY, &value)?;
         Ok(value)
-    }
-
-    pub fn model_reasoning(
-        &self,
-        endpoint_id: &str,
-        model_id: &str,
-    ) -> Result<Option<LlmModelReasoning>, HarnessError> {
-        let endpoint = self.resolve_stored(endpoint_id)?;
-        Ok(endpoint
-            .model_reasoning
-            .into_iter()
-            .find(|r| r.model_id == model_id))
     }
 
     fn explicit_proxy_url(&self) -> Result<Option<&str>, HarnessError> {

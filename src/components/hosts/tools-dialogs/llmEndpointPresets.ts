@@ -1,3 +1,5 @@
+import type { LlmModelReasoning } from '@/platform/tauri/bindings';
+
 export const CUSTOM_LLM_ENDPOINT_PROVIDER_ID = 'custom';
 export const DEFAULT_LLM_ENDPOINT_PROVIDER_ID = 'openai';
 
@@ -25,6 +27,7 @@ export type LlmEndpointProviderDraft = {
     apiKey: string;
     clearKey: boolean;
     modelsText: string;
+    detectedModelReasoning: LlmModelReasoning[] | null;
 };
 
 export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
@@ -116,7 +119,8 @@ export function applyLlmEndpointProviderPreset(
             baseUrl: '',
             apiKey: '',
             clearKey: false,
-            modelsText: ''
+            modelsText: '',
+            detectedModelReasoning: null
         };
     }
 
@@ -125,7 +129,8 @@ export function applyLlmEndpointProviderPreset(
         providerId: preset.id,
         name: preset.name,
         baseUrl: preset.baseUrl,
-        modelsText: ''
+        modelsText: '',
+        detectedModelReasoning: null
     };
 }
 
@@ -154,7 +159,8 @@ export function createEmptyLlmEndpointDraft(): LlmEndpointProviderDraft {
             baseUrl: '',
             apiKey: '',
             clearKey: false,
-            modelsText: ''
+            modelsText: '',
+            detectedModelReasoning: null
         },
         DEFAULT_LLM_ENDPOINT_PROVIDER_ID
     );

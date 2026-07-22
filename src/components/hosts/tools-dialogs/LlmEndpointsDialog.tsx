@@ -66,7 +66,8 @@ function draftFromEndpoint(endpoint: LlmEndpointDto): EndpointDraft {
         baseUrl: endpoint.baseUrl,
         apiKey: '',
         clearKey: false,
-        modelsText: endpoint.models.join('\n')
+        modelsText: endpoint.models.join('\n'),
+        detectedModelReasoning: null
     };
 }
 
@@ -196,7 +197,8 @@ export function LlmEndpointsDialog({
                 name: draft.name.trim(),
                 baseUrl,
                 apiKey: endpointApiKeyInput(draft),
-                models: mergeManualModels([], draft.modelsText)
+                models: mergeManualModels([], draft.modelsText),
+                modelReasoning: draft.detectedModelReasoning
             });
             toast.success(t('view.tools.llm_endpoints.saved'));
             setView('list');
@@ -223,7 +225,8 @@ export function LlmEndpointsDialog({
                 modelsText: mergeManualModels(
                     result.models,
                     current.modelsText
-                ).join('\n')
+                ).join('\n'),
+                detectedModelReasoning: result.modelReasoning
             }));
             toast.success(
                 result.models.length
@@ -555,7 +558,8 @@ export function LlmEndpointsDialog({
                                         providerId: findLlmEndpointProviderId(
                                             event.target.value,
                                             current.name
-                                        )
+                                        ),
+                                        detectedModelReasoning: null
                                     }))
                                 }
                             />
