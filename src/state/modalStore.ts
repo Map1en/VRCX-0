@@ -105,9 +105,9 @@ const createAlertDialogState = (): AlertDialogState => ({
     mode: 'alert',
     title: '',
     description: '',
-    confirmText: 'OK',
+    confirmText: '',
     alternativeText: '',
-    cancelText: 'Cancel',
+    cancelText: '',
     dismissible: true,
     destructive: false
 });
@@ -117,8 +117,8 @@ const createPromptDialogState = (): PromptDialogState => ({
     title: '',
     description: '',
     value: '',
-    confirmText: 'Confirm',
-    cancelText: 'Cancel',
+    confirmText: '',
+    cancelText: '',
     dismissible: true,
     inputType: 'text',
     inputPattern: null,
@@ -131,8 +131,8 @@ const createOtpDialogState = (): OtpDialogState => ({
     description: '',
     value: '',
     mode: 'totp',
-    confirmText: 'Confirm',
-    cancelText: 'Cancel',
+    confirmText: '',
+    cancelText: '',
     dismissible: true
 });
 

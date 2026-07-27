@@ -130,7 +130,8 @@ export function ModalHost() {
                                 variant="outline"
                                 onClick={handleCancel}
                             >
-                                {alertDialog.cancelText}
+                                {alertDialog.cancelText ||
+                                    t('dialog.alertdialog.cancel')}
                             </Button>
                         ) : null}
                         {alertDialog.alternativeText ? (
@@ -151,7 +152,12 @@ export function ModalHost() {
                             }
                             onClick={handleOk}
                         >
-                            {alertDialog.confirmText}
+                            {alertDialog.confirmText ||
+                                t(
+                                    alertDialog.mode === 'alert'
+                                        ? 'dialog.alertdialog.ok'
+                                        : 'dialog.alertdialog.confirm'
+                                )}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -198,14 +204,16 @@ export function ModalHost() {
                                 handlePromptCancel(promptDialog.value)
                             }
                         >
-                            {promptDialog.cancelText}
+                            {promptDialog.cancelText ||
+                                t('dialog.alertdialog.cancel')}
                         </Button>
                         <Button
                             type="button"
                             disabled={!promptValueIsValid}
                             onClick={() => handlePromptOk(promptDialog.value)}
                         >
-                            {promptDialog.confirmText}
+                            {promptDialog.confirmText ||
+                                t('dialog.alertdialog.confirm')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -291,13 +299,15 @@ export function ModalHost() {
                             variant="outline"
                             onClick={() => handleOtpCancel(otpDialog.value)}
                         >
-                            {otpDialog.cancelText}
+                            {otpDialog.cancelText ||
+                                t('dialog.alertdialog.cancel')}
                         </Button>
                         <Button
                             type="button"
                             onClick={() => handleOtpOk(otpDialog.value)}
                         >
-                            {otpDialog.confirmText}
+                            {otpDialog.confirmText ||
+                                t('dialog.alertdialog.confirm')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
