@@ -177,7 +177,7 @@ function AvatarOverviewReferences({
                                     <Button
                                         type="button"
                                         aria-label={t(
-                                            'common.actions.open_link'
+                                            'common.actions.view_on_website'
                                         )}
                                         size="icon-xs"
                                         variant="ghost"
@@ -189,7 +189,7 @@ function AvatarOverviewReferences({
                                 }
                             />
                             <TooltipContent>
-                                {t('common.actions.open_link')}
+                                {t('common.actions.view_on_website')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>

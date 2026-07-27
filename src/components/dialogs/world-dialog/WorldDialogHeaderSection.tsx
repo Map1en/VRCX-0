@@ -199,7 +199,7 @@ function WorldOverviewFacts({
                                     <Button
                                         type="button"
                                         aria-label={t(
-                                            'common.actions.open_link'
+                                            'common.actions.view_on_website'
                                         )}
                                         size="icon-xs"
                                         variant="ghost"
@@ -210,7 +210,7 @@ function WorldOverviewFacts({
                                 }
                             />
                             <TooltipContent>
-                                {t('common.actions.open_link')}
+                                {t('common.actions.view_on_website')}
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>

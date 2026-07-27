@@ -1,8 +1,10 @@
 import {
+    ExternalLinkIcon,
     GlobeIcon,
     LockIcon,
     MoreHorizontalIcon,
     PersonStandingIcon,
+    Share2Icon,
     Trash2Icon,
     TriangleAlertIcon,
     UserIcon
@@ -27,8 +29,14 @@ import {
     openWorldDialog
 } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
-import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
-import { vrcxWorldDeepLink } from '@/shared/constants/vrcxDeepLinks';
+import {
+    vrchatAvatarUrl,
+    vrchatWorldUrl
+} from '@/shared/constants/vrchatWebUrls';
+import {
+    vrcxAvatarDeepLink,
+    vrcxWorldDeepLink
+} from '@/shared/constants/vrcxDeepLinks';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -53,6 +61,7 @@ function resolvePresenceLocation(profile: unknown) {
 
 type FavoriteCardSeedData = SidebarFriendRecord & {
     groupName?: unknown;
+    releaseStatus?: unknown;
     travelingToWorld?: unknown;
     worldName?: unknown;
 };
@@ -186,6 +195,13 @@ const FavoriteCard = memo(function FavoriteCard({
         item.id !== currentAvatarId &&
         onAvatarSelect
     );
+    const avatarId = item.kind === 'avatar' ? item.id : '';
+    const vrchatAvatarPageUrl = avatarId ? vrchatAvatarUrl(avatarId) : '';
+    const vrcxAvatarShareUrl =
+        item.seedData?.releaseStatus === 'public'
+            ? vrcxAvatarDeepLink(avatarId)
+            : '';
+    const canUseAvatarLinks = Boolean(avatarId);
     const canUseWorldActions = Boolean(
         item.kind === 'world' && !item.isUnavailable && !item.isDeleted
     );
@@ -204,6 +220,7 @@ const FavoriteCard = memo(function FavoriteCard({
         canRemoveLocal ||
         canRemoveRemote ||
         canSelectAvatar ||
+        canUseAvatarLinks ||
         item.kind === 'friend' ||
         canUseWorldActions ||
         canCopyWorldId
@@ -255,6 +272,16 @@ const FavoriteCard = memo(function FavoriteCard({
             })
         });
         registerWorldOpenShare(worldId);
+    };
+    const copyVrcxAvatarShareLink = () => {
+        if (!vrcxAvatarShareUrl) {
+            return;
+        }
+        void copyTextToClipboard(vrcxAvatarShareUrl, {
+            successMessage: t('dialog.avatar.dynamic.value_copied', {
+                value: t('dialog.avatar.info.vrcx_url')
+            })
+        });
     };
     const activateCard = (shift: boolean) => {
         if (isSelectionActive) {
@@ -374,12 +401,14 @@ const FavoriteCard = memo(function FavoriteCard({
                                         );
                                     }}
                                 >
-                                    {t('dialog.world.info.url')}
+                                    <ExternalLinkIcon data-icon="inline-start" />
+                                    {t('common.actions.view_on_website')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!vrcxWorldShareUrl}
                                     onClick={copyVrcxWorldShareLink}
                                 >
+                                    <Share2Icon data-icon="inline-start" />
                                     {t('dialog.world.info.copy_vrcx_url')}
                                 </DropdownMenuItem>
                             </>
@@ -394,14 +423,42 @@ const FavoriteCard = memo(function FavoriteCard({
                             </DropdownMenuItem>
                         ) : null}
                         {item.kind === 'avatar' ? (
-                            <DropdownMenuItem
-                                disabled={!canSelectAvatar}
-                                onClick={() => onAvatarSelect?.(item)}
-                            >
-                                {t('dialog.avatar.actions.select')}
-                            </DropdownMenuItem>
+                            <>
+                                <DropdownMenuItem
+                                    disabled={!vrchatAvatarPageUrl}
+                                    onClick={() => {
+                                        void openExternalLink(
+                                            vrchatAvatarPageUrl
+                                        );
+                                    }}
+                                >
+                                    <ExternalLinkIcon data-icon="inline-start" />
+                                    {t('common.actions.view_on_website')}
+                                </DropdownMenuItem>
+                                {vrcxAvatarShareUrl ? (
+                                    <DropdownMenuItem
+                                        onClick={copyVrcxAvatarShareLink}
+                                    >
+                                        <Share2Icon data-icon="inline-start" />
+                                        {t('dialog.avatar.info.copy_vrcx_url')}
+                                    </DropdownMenuItem>
+                                ) : null}
+                            </>
                         ) : null}
                     </DropdownMenuGroup>
+                    {item.kind === 'avatar' ? (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                    disabled={!canSelectAvatar}
+                                    onClick={() => onAvatarSelect?.(item)}
+                                >
+                                    {t('dialog.avatar.actions.select')}
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </>
+                    ) : null}
                     {item.kind === 'friend' ? (
                         <>
                             <DropdownMenuSeparator />
