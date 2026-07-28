@@ -198,7 +198,7 @@ const FavoriteCard = memo(function FavoriteCard({
     const avatarId = item.kind === 'avatar' ? item.id : '';
     const vrchatAvatarPageUrl = avatarId ? vrchatAvatarUrl(avatarId) : '';
     const vrcxAvatarShareUrl =
-        item.seedData?.releaseStatus === 'public'
+        !item.isPrivate && item.seedData?.releaseStatus === 'public'
             ? vrcxAvatarDeepLink(avatarId)
             : '';
     const canUseAvatarLinks = Boolean(avatarId);

@@ -108,14 +108,17 @@ import { FavoriteCard, type FavoriteCardItem } from './FavoriteCard';
 const AVATAR_ID = 'avtr_12345678-1234-1234-1234-1234567890ab';
 const WORLD_ID = 'wrld_12345678-1234-1234-1234-1234567890ab';
 
-function renderAvatarCard(releaseStatus: 'public' | 'private') {
+function renderAvatarCard(
+    releaseStatus: 'public' | 'private',
+    isPrivate = releaseStatus === 'private'
+) {
     const item: FavoriteCardItem = {
         id: AVATAR_ID,
         key: `avatar:${releaseStatus}`,
         kind: 'avatar',
         source: 'remote',
         title: `${releaseStatus} avatar`,
-        isPrivate: releaseStatus === 'private',
+        isPrivate,
         seedData: { releaseStatus }
     };
 
@@ -176,5 +179,14 @@ describe('FavoriteCard avatar links', () => {
         const selectIndex = html.indexOf('dialog.avatar.actions.select');
         expect(separatorIndex).toBeGreaterThan(websiteLinkIndex);
         expect(selectIndex).toBeGreaterThan(separatorIndex);
+    });
+
+    it('hides the share link for a cached public avatar with a private lock', () => {
+        const html = renderAvatarCard('public', true);
+
+        expect(html).toContain('common.actions.view_on_website');
+        expect(html).not.toContain('dialog.avatar.info.copy_vrcx_url');
+        expect(html).toContain('lucide-external-link');
+        expect(html).not.toContain('lucide-share-2');
     });
 });
