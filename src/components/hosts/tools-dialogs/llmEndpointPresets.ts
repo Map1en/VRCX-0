@@ -9,6 +9,7 @@ export type LlmEndpointProviderId =
     | 'gemini'
     | 'deepseek'
     | 'xai'
+    | 'siliconflow'
     | typeof CUSTOM_LLM_ENDPOINT_PROVIDER_ID;
 
 export type LlmEndpointProviderPreset = {
@@ -60,6 +61,12 @@ export const LLM_ENDPOINT_PROVIDER_PRESETS: LlmEndpointProviderPreset[] = [
         name: 'xAI',
         labelKey: 'view.tools.llm_endpoints.presets.xai',
         baseUrl: 'https://api.x.ai/v1'
+    },
+    {
+        id: 'siliconflow',
+        name: 'SiliconFlow',
+        labelKey: 'view.tools.llm_endpoints.presets.siliconflow',
+        baseUrl: 'https://api.siliconflow.cn/v1'
     }
 ];
 

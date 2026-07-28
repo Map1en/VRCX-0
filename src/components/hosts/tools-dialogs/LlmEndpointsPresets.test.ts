@@ -29,7 +29,14 @@ describe('LLM endpoint presets', () => {
     it('exposes presets in the agreed order and defaults new drafts to OpenAI', () => {
         expect(
             LLM_ENDPOINT_PROVIDER_PRESETS.map((preset) => preset.id)
-        ).toEqual(['openai', 'openrouter', 'gemini', 'deepseek', 'xai']);
+        ).toEqual([
+            'openai',
+            'openrouter',
+            'gemini',
+            'deepseek',
+            'xai',
+            'siliconflow'
+        ]);
         expect(DEFAULT_LLM_ENDPOINT_PROVIDER_ID).toBe('openai');
         expect(createEmptyLlmEndpointDraft()).toMatchObject({
             providerId: 'openai',
@@ -92,6 +99,17 @@ describe('LLM endpoint presets', () => {
             providerId: 'openrouter',
             name: 'OpenRouter',
             baseUrl: 'https://openrouter.ai/api/v1',
+            apiKey: 'sk-existing',
+            clearKey: true,
+            modelsText: '',
+            detectedModelReasoning: null
+        });
+        expect(applyLlmEndpointProviderPreset(draft(), 'siliconflow')).toEqual({
+            id: 'ep_1',
+            savedBaseUrl: 'https://example.test/v1',
+            providerId: 'siliconflow',
+            name: 'SiliconFlow',
+            baseUrl: 'https://api.siliconflow.cn/v1',
             apiKey: 'sk-existing',
             clearKey: true,
             modelsText: '',

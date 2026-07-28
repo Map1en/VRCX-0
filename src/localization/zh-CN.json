@@ -1919,7 +1919,8 @@
                     "openrouter": "OpenRouter",
                     "gemini": "Google Gemini",
                     "deepseek": "DeepSeek",
-                    "xai": "xAI"
+                    "xai": "xAI (Grok)",
+                    "siliconflow": "硅基流动"
                 },
                 "name": "名称",
                 "base_url": "Base URL",

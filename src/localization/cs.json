@@ -1921,7 +1921,8 @@
                     "openrouter": "OpenRouter",
                     "gemini": "Google Gemini",
                     "deepseek": "DeepSeek",
-                    "xai": "xAI"
+                    "xai": "xAI (Grok)",
+                    "siliconflow": "SiliconFlow"
                 },
                 "name": "Název",
                 "base_url": "Základní URL",
