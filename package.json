@@ -69,7 +69,7 @@
         "react": "^19.2.8",
         "react-day-picker": "^10.0.1",
         "react-dom": "^19.2.8",
-        "react-easy-crop": "6.2.2",
+        "react-easy-crop": "6.2.3",
         "react-i18next": "^17.0.11",
         "react-markdown": "^10.1.0",
         "react-resizable-panels": "^4.12.2",
