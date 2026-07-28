@@ -537,6 +537,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
+
+[[package]]
 name = "bincode"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8734,7 +8740,7 @@ name = "vrcx-0-application"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.0",
  "chrono",
  "futures-util",
  "hex",
@@ -8901,7 +8907,7 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "ash",
- "base64 0.22.1",
+ "base64 0.23.0",
  "chrono",
  "dirs 6.0.0",
  "fontdb",
@@ -8960,7 +8966,7 @@ name = "vrcx-0-mcp"
 version = "0.1.0"
 dependencies = [
  "axum",
- "base64 0.22.1",
+ "base64 0.23.0",
  "chrono",
  "constant_time_eq",
  "getrandom 0.4.3",
@@ -8987,7 +8993,7 @@ dependencies = [
 name = "vrcx-0-media"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.0",
  "fast_image_resize",
  "fast_rsync",
  "hex",
@@ -9040,7 +9046,7 @@ dependencies = [
 name = "vrcx-0-persistence"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.0",
  "chacha20poly1305",
  "chrono",
  "dirs 6.0.0",
@@ -9123,7 +9129,7 @@ dependencies = [
 name = "vrcx-0-vrchat-client"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.0",
  "cookie_store",
  "hyper-util",
  "percent-encoding",
