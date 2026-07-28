@@ -230,10 +230,11 @@ describe('userDialogViewData', () => {
         });
 
         expect(summary.previousDisplayNames).toEqual([
-            { displayName: 'Old Name', updated_at: '2026-01-02T03:04:05' }
+            { displayName: 'Old Name', updated_at: '2026-01-02T03:04:05' },
+            { displayName: 'Profile Name', updated_at: '' }
         ]);
         expect(summary.previousDisplayNamesTitle).toBe(
-            'Old Name - 2026-01-02 03:04:05'
+            'Old Name - 2026-01-02 03:04:05\nProfile Name'
         );
         expect(summary.statusStateText).toBe('active / join me');
         expect(
@@ -254,5 +255,51 @@ describe('userDialogViewData', () => {
         expect(summary.mutualFriendCount).toBe(4);
         expect(summary.friendNumber).toBe(42);
         expect(summary.presenceActivityAt).toBe('2026-01-03T04:05:06');
+    });
+
+    it('merges current-user API history with locally observed names', () => {
+        const summary = buildUserDialogProfileSummary({
+            profile: {
+                id: 'usr_me',
+                displayName: 'Current Name',
+                pastDisplayNames: [
+                    {
+                        displayName: 'API Recent Name',
+                        updated_at: '2026-07-20T15:02:17.251Z'
+                    },
+                    {
+                        displayName: 'API Older Name',
+                        updated_at: '2025-10-20T16:34:53.541Z'
+                    },
+                    {
+                        displayName: 'Current Name',
+                        updated_at: '2026-07-21T00:00:00.000Z'
+                    }
+                ]
+            },
+            userStats: {
+                previousDisplayNames: [
+                    {
+                        displayName: 'API Recent Name',
+                        updated_at: '2026-07-19T00:00:00.000Z'
+                    }
+                ]
+            },
+            sortedProfileGroups: [],
+            isCurrentUser: true,
+            vrchatConfigConstants: {},
+            currentUserSnapshot: null
+        });
+
+        expect(summary.previousDisplayNames).toEqual([
+            {
+                displayName: 'API Recent Name',
+                updated_at: '2026-07-20T15:02:17.251Z'
+            },
+            {
+                displayName: 'API Older Name',
+                updated_at: '2025-10-20T16:34:53.541Z'
+            }
+        ]);
     });
 });

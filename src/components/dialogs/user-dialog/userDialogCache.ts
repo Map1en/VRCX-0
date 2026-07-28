@@ -1,13 +1,22 @@
 import { normalizeUserId } from './userProfileFields';
+
+export type UserDialogPreviousDisplayName = {
+    displayName: string;
+    updated_at?: string;
+};
+
+export type UserDialogPreviousDisplayNameSources = {
+    friendLog: UserDialogPreviousDisplayName[];
+    gameLog: UserDialogPreviousDisplayName[];
+};
+
 export type UserDialogStats = {
     timeSpent: number;
     lastSeen: string;
     friendedAt: string;
     joinCount: number;
-    previousDisplayNames: Array<{
-        displayName: string;
-        updated_at?: string;
-    }>;
+    previousDisplayNames: UserDialogPreviousDisplayName[];
+    previousDisplayNameSources?: UserDialogPreviousDisplayNameSources;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -36,10 +45,11 @@ export function dialogTargetKey(endpoint: unknown, userId: unknown) {
     return `${normalizeUserId(endpoint)}:${normalizedUserId}`;
 }
 
-function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
-    const stats = record(source);
-    const previousDisplayNames = Array.isArray(stats.previousDisplayNames)
-        ? stats.previousDisplayNames.map((entry) => {
+function clonePreviousDisplayNames(
+    source: unknown
+): UserDialogPreviousDisplayName[] {
+    return Array.isArray(source)
+        ? source.map((entry) => {
               const row = record(entry);
               return {
                   displayName: normalizeUserId(row.displayName),
@@ -49,12 +59,35 @@ function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
               };
           })
         : [];
+}
+
+function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
+    const stats = record(source);
+    const previousDisplayNames = clonePreviousDisplayNames(
+        stats.previousDisplayNames
+    );
+    const rawPreviousDisplayNameSources = record(
+        stats.previousDisplayNameSources
+    );
+    const previousDisplayNameSources =
+        Object.keys(rawPreviousDisplayNameSources).length > 0
+            ? {
+                  friendLog: clonePreviousDisplayNames(
+                      rawPreviousDisplayNameSources.friendLog
+                  ),
+                  gameLog: clonePreviousDisplayNames(
+                      rawPreviousDisplayNameSources.gameLog
+                  )
+              }
+            : undefined;
+
     return {
         timeSpent: Number(stats?.timeSpent) || 0,
         lastSeen: normalizeUserId(stats.lastSeen),
         friendedAt: normalizeUserId(stats.friendedAt),
         joinCount: Number(stats?.joinCount) || 0,
-        previousDisplayNames
+        previousDisplayNames,
+        ...(previousDisplayNameSources ? { previousDisplayNameSources } : {})
     };
 }
 

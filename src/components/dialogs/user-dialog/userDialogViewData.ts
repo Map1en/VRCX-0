@@ -9,7 +9,7 @@ import {
     formatCountText,
     formatStatsDate,
     hydrateMutualFriendRows,
-    normalizePreviousDisplayNames,
+    mergePreviousDisplayNames,
     normalizedText,
     resolveStatusStateText,
     sortAvatarRows,
@@ -345,10 +345,11 @@ export function buildUserDialogProfileSummary({
     )
         ? userStats.previousDisplayNames
         : [];
-    const previousDisplayNames = normalizePreviousDisplayNames(
-        statsPreviousDisplayNames.length
-            ? statsPreviousDisplayNames
-            : profile.previousDisplayNames || profile.pastDisplayNames
+    const previousDisplayNames = mergePreviousDisplayNames(
+        profile.displayName || profile.username,
+        profile.previousDisplayNames,
+        profile.pastDisplayNames,
+        statsPreviousDisplayNames
     );
     const previousDisplayNamesTitle = previousDisplayNames
         .map((entry) =>

@@ -16,6 +16,7 @@ import {
     isSameLocationTag,
     resolvePresenceLocation
 } from './userDialogContentHelpers';
+import { replacePreviousDisplayNameSource } from './userDialogRows';
 import { normalizeUserId } from './userProfileFields';
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
@@ -329,28 +330,23 @@ export function useUserDialogSupplementalData({
                 if (!active) {
                     return;
                 }
-                const previousDisplayNames =
-                    stats?.previousDisplayNames instanceof Map
-                        ? Array.from(
-                              stats.previousDisplayNames,
-                              ([displayName, updated_at]) => ({
-                                  displayName: normalizeUserId(displayName),
-                                  updated_at: normalizeUserId(updated_at)
-                              })
-                          )
-                        : Array.isArray(stats?.previousDisplayNames)
-                          ? stats.previousDisplayNames
-                          : [];
                 const nextStats = {
                     timeSpent: Number(stats?.timeSpent) || 0,
                     lastSeen: normalizeUserId(stats?.lastSeen),
-                    joinCount: Number(stats?.joinCount) || 0,
-                    previousDisplayNames
+                    joinCount: Number(stats?.joinCount) || 0
                 };
                 setUserStatsForTarget((current) => {
+                    const previousDisplayNames =
+                        replacePreviousDisplayNameSource(
+                            profile.displayName || profile.username,
+                            current.previousDisplayNameSources,
+                            'gameLog',
+                            stats?.previousDisplayNames
+                        );
                     const mergedStats = {
                         ...current,
-                        ...nextStats
+                        ...nextStats,
+                        ...previousDisplayNames
                     };
                     return mergedStats;
                 });
@@ -431,10 +427,24 @@ export function useUserDialogSupplementalData({
         const targetUserId = normalizeUserId(profile?.id);
 
         if (!ownerUserId || !targetUserId || isTargetCurrentUser) {
-            setUserStatsForTarget((current) => ({
-                ...current,
-                friendedAt: ''
-            }));
+            setUserStatsForTarget((current) => {
+                if (!isTargetCurrentUser) {
+                    return {
+                        ...current,
+                        friendedAt: ''
+                    };
+                }
+                return {
+                    ...current,
+                    friendedAt: '',
+                    ...replacePreviousDisplayNameSource(
+                        profile?.displayName || profile?.username,
+                        current.previousDisplayNameSources,
+                        'friendLog',
+                        []
+                    )
+                };
+            });
             return () => {
                 active = false;
             };
@@ -443,7 +453,7 @@ export function useUserDialogSupplementalData({
         friendLogHistoryRepository
             .getFriendLogHistory(ownerUserId, {
                 targetUserId,
-                types: ['Friend', 'Unfriend']
+                types: ['Friend', 'Unfriend', 'DisplayName']
             })
             .then((rows) => {
                 if (!active) {
@@ -452,9 +462,21 @@ export function useUserDialogSupplementalData({
                 const friendedAt = normalizeUserId(
                     resolveFriendedAtFromHistoryRows(rows)
                 );
+                const friendLogPreviousDisplayNames = rows
+                    .filter((row) => row.type === 'DisplayName')
+                    .map((row) => ({
+                        displayName: row.previousDisplayName,
+                        updated_at: row.created_at
+                    }));
                 setUserStatsForTarget((current) => ({
                     ...current,
-                    friendedAt
+                    friendedAt,
+                    ...replacePreviousDisplayNameSource(
+                        profile?.displayName || profile?.username,
+                        current.previousDisplayNameSources,
+                        'friendLog',
+                        friendLogPreviousDisplayNames
+                    )
                 }));
             })
             .catch(() => {});
@@ -468,7 +490,9 @@ export function useUserDialogSupplementalData({
         currentUserSnapshot?.userId,
         currentUserSnapshot?.user_id,
         isTargetCurrentUser,
+        profile?.displayName,
         profile?.id,
+        profile?.username,
         reloadToken,
         setUserStatsForTarget,
         targetKey

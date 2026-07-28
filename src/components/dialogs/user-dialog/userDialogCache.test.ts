@@ -66,11 +66,17 @@ describe('userDialogCache', () => {
             timeSpent: '2000',
             lastSeen: '2026-01-02T03:04:05.000Z',
             joinCount: '3',
-            previousDisplayNames: [{ displayName: 'Original' }]
+            previousDisplayNames: [{ displayName: 'Original' }],
+            previousDisplayNameSources: {
+                friendLog: [{ displayName: 'Friend Log Name' }],
+                gameLog: [{ displayName: 'Game Log Name' }]
+            }
         });
 
         const firstRead = readCachedUserStats(key);
         firstRead.previousDisplayNames[0].displayName = 'Mutated';
+        firstRead.previousDisplayNameSources!.friendLog[0].displayName =
+            'Mutated';
         firstRead.timeSpent = 0;
 
         expect(readCachedUserStats(key)).toEqual({
@@ -78,7 +84,11 @@ describe('userDialogCache', () => {
             lastSeen: '2026-01-02T03:04:05.000Z',
             friendedAt: '',
             joinCount: 3,
-            previousDisplayNames: [{ displayName: 'Original' }]
+            previousDisplayNames: [{ displayName: 'Original' }],
+            previousDisplayNameSources: {
+                friendLog: [{ displayName: 'Friend Log Name' }],
+                gameLog: [{ displayName: 'Game Log Name' }]
+            }
         });
     });
 

@@ -17,8 +17,10 @@ import {
     groupDisplayName,
     hydrateMutualFriendRows,
     isOfflineLikeValue,
+    mergePreviousDisplayNames,
     normalizeLanguageRows,
     normalizePreviousDisplayNames,
+    replacePreviousDisplayNameSource,
     resolveStatusStateText,
     resolveTabValue,
     sortAvatarRows,
@@ -257,6 +259,81 @@ describe('userDialogRows', () => {
             { displayName: 'Legacy Name', updated_at: '' },
             { displayName: 'Past Name', updated_at: '2025-01-01' }
         ]);
+    });
+
+    it('merges friend-log rename history and excludes a restored current name', () => {
+        expect(
+            mergePreviousDisplayNames(
+                'Original Name',
+                new Map([
+                    ['Observed Name', '2026-01-02T00:00:00.000Z'],
+                    ['Original Name', '2026-01-01T00:00:00.000Z']
+                ]),
+                [
+                    {
+                        displayName: 'Temporary Name',
+                        updated_at: '2026-01-04T00:00:00.000Z'
+                    },
+                    {
+                        displayName: 'Original Name',
+                        updated_at: '2026-01-03T00:00:00.000Z'
+                    },
+                    {
+                        displayName: 'Observed Name',
+                        updated_at: '2026-01-05T00:00:00.000Z'
+                    }
+                ]
+            )
+        ).toEqual([
+            {
+                displayName: 'Observed Name',
+                updated_at: '2026-01-05T00:00:00.000Z'
+            },
+            {
+                displayName: 'Temporary Name',
+                updated_at: '2026-01-04T00:00:00.000Z'
+            }
+        ]);
+    });
+
+    it('replaces one refreshed name source without retaining rows deleted from it', () => {
+        const initial = replacePreviousDisplayNameSource(
+            'Current Name',
+            {
+                gameLog: [
+                    {
+                        displayName: 'Observed Name',
+                        updated_at: '2026-01-02T00:00:00.000Z'
+                    }
+                ],
+                friendLog: [
+                    {
+                        displayName: 'Deleted Rename',
+                        updated_at: '2026-01-03T00:00:00.000Z'
+                    }
+                ]
+            },
+            'friendLog',
+            []
+        );
+
+        expect(initial).toEqual({
+            previousDisplayNames: [
+                {
+                    displayName: 'Observed Name',
+                    updated_at: '2026-01-02T00:00:00.000Z'
+                }
+            ],
+            previousDisplayNameSources: {
+                friendLog: [],
+                gameLog: [
+                    {
+                        displayName: 'Observed Name',
+                        updated_at: '2026-01-02T00:00:00.000Z'
+                    }
+                ]
+            }
+        });
     });
 
     it('uses readable fallback text for empty stats and unavailable locations', () => {

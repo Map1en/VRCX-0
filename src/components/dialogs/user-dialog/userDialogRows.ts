@@ -41,10 +41,17 @@ type LanguageRow = {
     value: string;
 };
 
-type PreviousDisplayNameRow = {
+export type PreviousDisplayNameRow = {
     displayName: string;
-    updated_at: unknown;
+    updated_at?: string;
 };
+
+export type PreviousDisplayNameSources = {
+    friendLog: PreviousDisplayNameRow[];
+    gameLog: PreviousDisplayNameRow[];
+};
+
+export type PreviousDisplayNameSource = keyof PreviousDisplayNameSources;
 
 type TranslateFn = (key: string) => string;
 
@@ -291,11 +298,65 @@ export function normalizePreviousDisplayNames(value: unknown) {
             const record = isRecord(entry) ? entry : {};
             return {
                 displayName: normalizedText(record.displayName || record.name),
-                updated_at:
+                updated_at: normalizedText(
                     record.updated_at || record.updatedAt || record.date || ''
+                )
             };
         })
         .filter((entry) => entry.displayName);
+}
+
+export function mergePreviousDisplayNames(
+    currentDisplayName: unknown,
+    ...sources: unknown[]
+) {
+    const currentName = normalizedText(currentDisplayName);
+    const namesByDisplayName = new Map<string, PreviousDisplayNameRow>();
+
+    for (const source of sources) {
+        for (const entry of normalizePreviousDisplayNames(source)) {
+            if (entry.displayName === currentName) {
+                continue;
+            }
+
+            const existing = namesByDisplayName.get(entry.displayName);
+            if (
+                !existing ||
+                normalizedText(entry.updated_at) >
+                    normalizedText(existing.updated_at)
+            ) {
+                namesByDisplayName.set(entry.displayName, entry);
+            }
+        }
+    }
+
+    return Array.from(namesByDisplayName.values()).sort((left, right) =>
+        normalizedText(right.updated_at).localeCompare(
+            normalizedText(left.updated_at)
+        )
+    );
+}
+
+export function replacePreviousDisplayNameSource(
+    currentDisplayName: unknown,
+    currentSources: Partial<PreviousDisplayNameSources> | null | undefined,
+    source: PreviousDisplayNameSource,
+    rows: unknown
+) {
+    const previousDisplayNameSources: PreviousDisplayNameSources = {
+        friendLog: normalizePreviousDisplayNames(currentSources?.friendLog),
+        gameLog: normalizePreviousDisplayNames(currentSources?.gameLog),
+        [source]: mergePreviousDisplayNames(currentDisplayName, rows)
+    };
+
+    return {
+        previousDisplayNames: mergePreviousDisplayNames(
+            currentDisplayName,
+            previousDisplayNameSources.friendLog,
+            previousDisplayNameSources.gameLog
+        ),
+        previousDisplayNameSources
+    };
 }
 
 export function userIdForRow(row: UserDialogRow | null | undefined) {
