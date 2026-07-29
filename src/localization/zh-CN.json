@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "确认操作",
         "cancel_button": "取消",
+        "close_instance": "确定要关闭这个房间吗？关闭后任何人都将无法进入",
         "logout": "确定要登出吗？",
         "delete_log": "确定要删除日志吗？",
         "disable_gamelog": "确定要禁用游戏日志吗？",

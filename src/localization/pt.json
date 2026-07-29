@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "Confirmar",
         "cancel_button": "Cancelar",
+        "close_instance": "Continuar? Encerrar Instância, ninguém poderá entrar",
         "logout": "Continuar? Sair",
         "delete_log": "Continue? Excluir Registro",
         "disable_gamelog": "Continuar? Desativar Registro do Jogo",

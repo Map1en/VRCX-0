@@ -383,6 +383,7 @@ function UserDialogPresenceSection({
                                 'dialog.user.info.refresh_instance_info'
                             )}
                             disableTooltip
+                            disableInstanceInfoTooltip={false}
                             showHistory={Boolean(previousInstances.length)}
                             onRefresh={() =>
                                 actions?.onRefreshLocation?.(

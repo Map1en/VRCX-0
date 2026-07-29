@@ -166,11 +166,8 @@ function InstanceOpenDuration({ joinedAtMs }: { joinedAtMs: number }) {
 
 function InstanceInfoTooltip({
     instance,
-    canClose,
-    closeDisabled,
     disableTooltip = false,
     joinedAtMs = 0,
-    onClose,
     children
 }: any) {
     const { t } = useTranslation();
@@ -190,24 +187,6 @@ function InstanceInfoTooltip({
                             {t('dialog.instance.label.closed_at')}{' '}
                             {formatDateFilter(instance.closedAt, 'long')}
                         </div>
-                    ) : null}
-                    {canClose ? (
-                        <Button
-                            type="button"
-                            size="xs"
-                            variant="outline"
-                            className="h-7"
-                            disabled={
-                                closeDisabled || Boolean(instance?.closedAt)
-                            }
-                            onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                onClose?.();
-                            }}
-                        >
-                            {t('dialog.instance.action.close_instance')}
-                        </Button>
                     ) : null}
                     {joinedAtMs ? (
                         <InstanceOpenDuration joinedAtMs={joinedAtMs} />
@@ -271,6 +250,7 @@ export function InstanceActionBar({
     instanceCountAlign = 'right',
     instanceSummaryOrder = 'count-first',
     disableTooltip = false,
+    disableInstanceInfoTooltip = disableTooltip,
     refreshTooltip = 'Refresh instance info',
     historyTooltip = 'Previous instance history',
     onRefresh,
@@ -486,10 +466,8 @@ export function InstanceActionBar({
         const requestLocation = actionTarget.instanceLocation;
         const requestEndpoint = endpoint;
         const result = await confirm({
-            title: t('component.instance_action_bar.modal.close_instance'),
-            description: requestLocation,
-            confirmText: t('common.actions.close'),
-            cancelText: t('common.actions.cancel'),
+            title: t('confirm.title'),
+            description: t('confirm.close_instance'),
             destructive: true
         });
         if (!result.ok) {
@@ -558,13 +536,6 @@ export function InstanceActionBar({
                     {friendCount}
                 </span>
             ) : null}
-            {canCloseCurrentInstance ? (
-                busy === 'close' ? (
-                    <Spinner className="size-3.5" />
-                ) : (
-                    <XCircleIcon className="size-3.5" />
-                )
-            ) : null}
             {queueSize ? (
                 <span>
                     {t('dialog.new_instance.queueEnabled')} {queueSize}
@@ -578,18 +549,44 @@ export function InstanceActionBar({
         </>
     );
 
-    const instanceSummary =
+    const closeInstanceLabel = t('dialog.instance.action.close_instance');
+    const closeInstanceControl =
+        showInstanceInfo && canCloseCurrentInstance ? (
+            <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                aria-label={closeInstanceLabel}
+                disabled={Boolean(busy) || Boolean(instanceInfo?.closedAt)}
+                onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeInstance();
+                }}
+            >
+                {busy === 'close' ? (
+                    <Spinner data-icon="inline-start" />
+                ) : (
+                    <XCircleIcon data-icon="inline-start" />
+                )}
+            </Button>
+        ) : null;
+    const closeInstanceButton =
+        closeInstanceControl && !disableInstanceInfoTooltip ? (
+            <Tooltip>
+                <TooltipTrigger render={<span>{closeInstanceControl}</span>} />
+                <TooltipContent>{closeInstanceLabel}</TooltipContent>
+            </Tooltip>
+        ) : (
+            closeInstanceControl
+        );
+    const instanceInfoSummary =
         showInstanceInfo && hasInstanceSummary ? (
             <InstanceInfoTooltip
                 instance={instanceInfo}
                 location={actionTarget.instanceLocation}
-                canClose={canCloseCurrentInstance}
-                closeDisabled={Boolean(busy)}
-                disableTooltip={disableTooltip}
+                disableTooltip={disableInstanceInfoTooltip}
                 joinedAtMs={joinedAtMs}
-                onClose={() => {
-                    closeInstance();
-                }}
             >
                 <div className="text-muted-foreground inline-flex items-center gap-1 text-xs">
                     {instanceSummaryOrder === 'markers-first'
@@ -600,6 +597,17 @@ export function InstanceActionBar({
                         : markerSummary}
                 </div>
             </InstanceInfoTooltip>
+        ) : null;
+    const instanceSummary =
+        instanceInfoSummary || closeInstanceButton ? (
+            <div className="inline-flex items-center gap-1">
+                {instanceSummaryOrder === 'markers-first'
+                    ? closeInstanceButton
+                    : instanceInfoSummary}
+                {instanceSummaryOrder === 'markers-first'
+                    ? instanceInfoSummary
+                    : closeInstanceButton}
+            </div>
         ) : null;
 
     return (

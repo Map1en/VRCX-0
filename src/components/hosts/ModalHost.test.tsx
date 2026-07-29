@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -55,11 +55,34 @@ vi.mock('@/ui/shadcn/button', () => ({
 }));
 
 vi.mock('@/ui/shadcn/dialog', () => ({
-    Dialog: ({ children, open }: PropsWithChildren<{ open: boolean }>) =>
-        open ? <div>{children}</div> : null,
-    DialogContent: ({ children }: PropsWithChildren) => (
-        <section>{children}</section>
-    ),
+    Dialog: ({
+        children,
+        open,
+        disablePointerDismissal = false,
+        onOpenChange
+    }: PropsWithChildren<{
+        open: boolean;
+        disablePointerDismissal?: boolean;
+        onOpenChange?(open: boolean): void;
+    }>) =>
+        open ? (
+            <div
+                data-testid="dialog-root"
+                data-disable-pointer-dismissal={disablePointerDismissal}
+            >
+                <button type="button" onClick={() => onOpenChange?.(false)}>
+                    dismiss dialog
+                </button>
+                {children}
+            </div>
+        ) : null,
+    DialogContent: ({
+        children,
+        showCloseButton: _showCloseButton,
+        ...props
+    }: PropsWithChildren<
+        ComponentProps<'section'> & { showCloseButton?: boolean }
+    >) => <section {...props}>{children}</section>,
     DialogDescription: ({ children }: PropsWithChildren) => <p>{children}</p>,
     DialogFooter: ({ children }: PropsWithChildren) => (
         <footer>{children}</footer>
@@ -119,5 +142,29 @@ describe('ModalHost', () => {
 
         expect(screen.getByRole('button', { name: '返回' })).toBeTruthy();
         expect(screen.getByRole('button', { name: '保存' })).toBeTruthy();
+    });
+
+    it('dismisses confirmations through the standard dialog close path', async () => {
+        const result = useModalStore.getState().confirm({
+            title: '关闭房间',
+            description: 'wrld_test:1'
+        });
+
+        render(<ModalHost />);
+
+        expect(screen.getByRole('alertdialog')).toBeTruthy();
+        expect(
+            screen
+                .getByTestId('dialog-root')
+                .getAttribute('data-disable-pointer-dismissal')
+        ).toBe('false');
+
+        fireEvent.click(screen.getByRole('button', { name: 'dismiss dialog' }));
+
+        await expect(result).resolves.toMatchObject({
+            ok: false,
+            reason: 'dismiss'
+        });
+        expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 });

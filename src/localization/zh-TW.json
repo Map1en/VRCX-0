@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "確定",
         "cancel_button": "取消",
+        "close_instance": "確定要關閉此房間嗎？關閉後將無法再加入",
         "logout": "要登出嗎？",
         "delete_log": "要刪除記錄檔嗎？",
         "disable_gamelog": "停用 GameLog？",

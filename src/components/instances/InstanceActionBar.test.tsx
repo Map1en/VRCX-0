@@ -1,6 +1,15 @@
+// @vitest-environment jsdom
+
+import {
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    within
+} from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     runtimeState: {
@@ -77,9 +86,13 @@ vi.mock('react-i18next', () => {
         'dialog.instance.label.ios': 'iOS:',
         'dialog.instance.action.launch_instance': 'Launch instance',
         'dialog.instance.action.open_in_game': 'Open In-Game',
+        'dialog.instance.action.close_instance': 'Close instance',
         'dialog.instance.label.self_invite': 'Self invite',
         'dialog.new_instance.ageGate': 'Age Gate',
-        'dialog.new_instance.queueEnabled': 'Queue'
+        'dialog.new_instance.queueEnabled': 'Queue',
+        'confirm.title': 'Confirm',
+        'confirm.close_instance':
+            'Continue? Close Instance, nobody will be able to join'
     };
 
     return {
@@ -106,7 +119,11 @@ vi.mock('@/ui/shadcn/tooltip', async () => {
 
     return {
         Tooltip: ({ children }: React.PropsWithChildren) =>
-            ReactRuntime.createElement(ReactRuntime.Fragment, null, children),
+            ReactRuntime.createElement(
+                'span',
+                { 'data-tooltip-root': true },
+                children
+            ),
         TooltipTrigger: ({
             children,
             render
@@ -141,6 +158,8 @@ type ActionBarTestProps = {
     showInvite?: boolean;
     showRefresh?: boolean;
     showHistory?: boolean;
+    disableTooltip?: boolean;
+    disableInstanceInfoTooltip?: boolean;
     historyTooltip?: string;
 };
 
@@ -163,6 +182,10 @@ describe('InstanceActionBar', () => {
         mocks.selfInvite.mockReset();
         mocks.toastSuccess.mockReset();
         mocks.toastError.mockReset();
+    });
+
+    afterEach(() => {
+        cleanup();
     });
 
     it('renders nothing without any location target', () => {
@@ -199,6 +222,109 @@ describe('InstanceActionBar', () => {
         expect(html).toContain('PC:');
         expect(html).toContain('Android:');
         expect(html).toContain('iOS:');
+    });
+
+    it('renders the close-instance marker as a neutral icon button', () => {
+        const html = renderActionBar({
+            location: 'wrld_test:12345',
+            instance: {
+                ownerId: 'usr_self',
+                userCount: 2,
+                capacity: 16
+            },
+            showLaunch: false,
+            showInvite: false,
+            showRefresh: false
+        });
+        const closeButton = html.match(
+            /<button[^>]*aria-label="Close instance"[^>]*>.*?<\/button>/
+        )?.[0];
+
+        expect(closeButton).toContain('data-slot="button"');
+        expect(closeButton).toContain('data-variant="ghost"');
+        expect(closeButton).toContain('data-size="icon-xs"');
+        expect(html).not.toContain('>Close instance</button>');
+    });
+
+    it('keeps the close action outside the instance-info tooltip', () => {
+        render(
+            <InstanceActionBar
+                location="wrld_test:12345"
+                instance={{
+                    ownerId: 'usr_self',
+                    userCount: 2,
+                    capacity: 16,
+                    platforms: {
+                        standalonewindows: 2,
+                        android: 0,
+                        ios: 0
+                    }
+                }}
+                showLaunch={false}
+                showInvite={false}
+                showRefresh={false}
+            />
+        );
+
+        const closeTooltip = screen
+            .getByRole('button', { name: 'Close instance' })
+            .closest('[data-tooltip-root]');
+
+        expect(closeTooltip).not.toBeNull();
+        expect(
+            within(closeTooltip as HTMLElement).getByText('Close instance')
+        ).toBeTruthy();
+        expect(
+            within(closeTooltip as HTMLElement).queryByText('PC:')
+        ).toBeNull();
+    });
+
+    it('uses the original VRCX close-instance confirmation copy', () => {
+        mocks.confirm.mockResolvedValue({ ok: false });
+
+        render(
+            <InstanceActionBar
+                location="wrld_test:12345"
+                instance={{
+                    ownerId: 'usr_self',
+                    userCount: 2,
+                    capacity: 16
+                }}
+                showLaunch={false}
+                showInvite={false}
+                showRefresh={false}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close instance' }));
+
+        expect(mocks.confirm).toHaveBeenCalledWith({
+            title: 'Confirm',
+            description:
+                'Continue? Close Instance, nobody will be able to join',
+            destructive: true
+        });
+    });
+
+    it('can show instance info while keeping action tooltips disabled', () => {
+        const html = renderActionBar({
+            location: 'wrld_test:12345',
+            instance: {
+                userCount: 2,
+                capacity: 16,
+                platforms: {
+                    standalonewindows: 1,
+                    android: 1,
+                    ios: 0
+                }
+            },
+            disableTooltip: true,
+            disableInstanceInfoTooltip: false
+        });
+
+        expect(html).toContain('data-tooltip-content="true"');
+        expect(html).toContain('PC:');
+        expect(html).toContain('2/16');
     });
 
     it('uses fallback player count and provided capacity without instance info', () => {

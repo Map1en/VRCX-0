@@ -4926,6 +4926,7 @@
     "confirm": {
         "title": "確認",
         "cancel_button": "キャンセル",
+        "close_instance": "インスタンスを閉じますか？、誰も参加できなくなります。",
         "logout": "ログアウトしますか？",
         "delete_log": "ログを削除しますか？",
         "disable_gamelog": "ゲームログを無効にしますか？",

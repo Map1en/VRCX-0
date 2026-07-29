@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "Confirm",
         "cancel_button": "Cancel",
+        "close_instance": "Continue? Close Instance, nobody will be able to join",
         "logout": "Log out?",
         "delete_log": "Delete log?",
         "disable_gamelog": "Disable GameLog?",

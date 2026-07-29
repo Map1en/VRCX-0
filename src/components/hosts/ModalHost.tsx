@@ -5,14 +5,6 @@ import { BoopEmojiDialog } from '@/components/dialogs/BoopEmojiDialog';
 import { FullscreenImageViewer } from '@/components/media/FullscreenImageViewer';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
-} from '@/ui/shadcn/alert-dialog';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -108,22 +100,26 @@ export function ModalHost() {
 
     return (
         <>
-            <AlertDialog
+            <Dialog
                 open={alertDialog.open}
+                disablePointerDismissal={!alertDialog.dismissible}
                 onOpenChange={(open) => {
                     if (!open) {
                         handleDismiss();
                     }
                 }}
             >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
-                        <AlertDialogDescription>
+                <DialogContent
+                    role="alertdialog"
+                    showCloseButton={alertDialog.dismissible}
+                >
+                    <DialogHeader>
+                        <DialogTitle>{alertDialog.title}</DialogTitle>
+                        <DialogDescription>
                             {alertDialog.description}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
                         {alertDialog.mode === 'confirm' ? (
                             <Button
                                 type="button"
@@ -159,9 +155,9 @@ export function ModalHost() {
                                         : 'dialog.alertdialog.confirm'
                                 )}
                         </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <Dialog
                 open={promptDialog.open}
                 onOpenChange={(open) => {
