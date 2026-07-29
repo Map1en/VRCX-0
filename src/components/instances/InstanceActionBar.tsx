@@ -572,7 +572,7 @@ export function InstanceActionBar({
             </Button>
         ) : null;
     const closeInstanceButton =
-        closeInstanceControl && !disableInstanceInfoTooltip ? (
+        closeInstanceControl && !disableTooltip ? (
             <Tooltip>
                 <TooltipTrigger render={<span>{closeInstanceControl}</span>} />
                 <TooltipContent>{closeInstanceLabel}</TooltipContent>

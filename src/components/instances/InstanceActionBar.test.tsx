@@ -307,24 +307,33 @@ describe('InstanceActionBar', () => {
     });
 
     it('can show instance info while keeping action tooltips disabled', () => {
-        const html = renderActionBar({
-            location: 'wrld_test:12345',
-            instance: {
-                userCount: 2,
-                capacity: 16,
-                platforms: {
-                    standalonewindows: 1,
-                    android: 1,
-                    ios: 0
-                }
-            },
-            disableTooltip: true,
-            disableInstanceInfoTooltip: false
-        });
+        render(
+            <InstanceActionBar
+                location="wrld_test:12345"
+                instance={{
+                    ownerId: 'usr_self',
+                    userCount: 2,
+                    capacity: 16,
+                    platforms: {
+                        standalonewindows: 1,
+                        android: 1,
+                        ios: 0
+                    }
+                }}
+                disableTooltip
+                disableInstanceInfoTooltip={false}
+            />
+        );
 
-        expect(html).toContain('data-tooltip-content="true"');
-        expect(html).toContain('PC:');
-        expect(html).toContain('2/16');
+        expect(
+            screen
+                .getByRole('button', { name: 'Close instance' })
+                .closest('[data-tooltip-root]')
+        ).toBeNull();
+        expect(screen.getByText('PC:').closest('[data-tooltip-root]')).not.toBe(
+            null
+        );
+        expect(screen.getByText('2/16')).toBeTruthy();
     });
 
     it('uses fallback player count and provided capacity without instance info', () => {

@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "Confirmar",
         "cancel_button": "Cancelar",
+        "close_instance": "¿Seguro que quieres cerrar esta instancia? Una vez cerrada, nadie podrá unirse.",
         "logout": "¿Cerrar sesión?",
         "delete_log": "¿Eliminar registro?",
         "disable_gamelog": "¿Desactivar GameLog?",

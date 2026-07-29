@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "Confirmation",
         "cancel_button": "Annuler",
+        "close_instance": "Voulez-vous vraiment fermer cette instance ? Une fois fermée, personne ne pourra la rejoindre.",
         "logout": "Se déconnecter ?",
         "delete_log": "Supprimer le journal ?",
         "disable_gamelog": "Désactiver le GameLog ?",

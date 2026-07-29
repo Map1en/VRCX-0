@@ -4934,6 +4934,7 @@
     "confirm": {
         "title": "Bestätigen",
         "cancel_button": "Abbrechen",
+        "close_instance": "Möchtest du diese Instanz wirklich schließen? Danach kann ihr niemand mehr beitreten.",
         "logout": "Abmelden?",
         "delete_log": "Protokoll löschen?",
         "disable_gamelog": "GameLog deaktivieren?",

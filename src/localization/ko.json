@@ -4864,6 +4864,7 @@
     "confirm": {
         "title": "확인",
         "cancel_button": "취소",
+        "close_instance": "이 인스턴스를 닫으시겠어요? 닫으면 아무도 참가할 수 없습니다.",
         "logout": "계속하시겠습니까? 로그아웃",
         "delete_log": "계속하시겠습니까? 로그 삭제",
         "disable_gamelog": "계속하시겠습니까? 게임로그 비활성화",

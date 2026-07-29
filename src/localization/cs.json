@@ -4938,6 +4938,7 @@
     "confirm": {
         "title": "Potvrdit",
         "cancel_button": "Zrušit",
+        "close_instance": "Opravdu chcete tuto instanci zavřít? Po zavření se už nikdo nebude moci připojit.",
         "logout": "Odhlásit se?",
         "delete_log": "Smazat záznam?",
         "disable_gamelog": "Vypnout GameLog?",
