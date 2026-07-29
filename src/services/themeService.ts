@@ -23,6 +23,8 @@ const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, number>> = Object.freeze({
     light: 0,
     dark: 1
 });
+let nativeThemeSyncQueue: Promise<void> = Promise.resolve();
+let themeApplySequence = 0;
 const VALID_THEME_COLORS = new Set<string>(Object.keys(THEME_COLOR_CONFIG));
 export const DEFAULT_ZOOM_LEVEL = 100;
 export const MIN_ZOOM_LEVEL = 30;
@@ -495,18 +497,26 @@ export function applyAppFontPreferences({
     };
 }
 
-export async function syncNativeTheme(themeMode: unknown): Promise<void> {
+export function syncNativeTheme(themeMode: unknown): Promise<void> {
     const normalized = resolveEffectiveThemeMode(themeMode);
+    const sync = nativeThemeSyncQueue.then(async () => {
+        await commands.appChangeTheme(NATIVE_THEME_VALUES[normalized]);
+    });
 
-    await commands.appChangeTheme(NATIVE_THEME_VALUES[normalized]);
+    nativeThemeSyncQueue = sync.catch(() => undefined);
+    return sync;
 }
 
 export async function applyThemeMode(themeMode: unknown): Promise<void> {
+    const sequence = ++themeApplySequence;
     const normalized = resolveThemeMode(themeMode);
     const effectiveThemeMode = resolveEffectiveThemeMode(normalized);
 
     if (effectiveThemeMode === 'system') {
         await syncNativeTheme(effectiveThemeMode);
+        if (sequence !== themeApplySequence) {
+            return;
+        }
     }
 
     const resolvedTheme = getResolvedThemeMode(effectiveThemeMode);
