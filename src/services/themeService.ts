@@ -18,6 +18,11 @@ type AppFontPreferenceInput = {
 };
 
 const VALID_THEME_MODES = new Set<ThemeMode>(['light', 'dark', 'system']);
+const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, number>> = Object.freeze({
+    system: -1,
+    light: 0,
+    dark: 1
+});
 const VALID_THEME_COLORS = new Set<string>(Object.keys(THEME_COLOR_CONFIG));
 export const DEFAULT_ZOOM_LEVEL = 100;
 export const MIN_ZOOM_LEVEL = 30;
@@ -491,15 +496,19 @@ export function applyAppFontPreferences({
 }
 
 export async function syncNativeTheme(themeMode: unknown): Promise<void> {
-    const resolvedTheme = getResolvedThemeMode(themeMode);
-    const nativeTheme = resolvedTheme === 'dark' ? 1 : 0;
+    const normalized = resolveEffectiveThemeMode(themeMode);
 
-    await commands.appChangeTheme(nativeTheme);
+    await commands.appChangeTheme(NATIVE_THEME_VALUES[normalized]);
 }
 
 export async function applyThemeMode(themeMode: unknown): Promise<void> {
     const normalized = resolveThemeMode(themeMode);
     const effectiveThemeMode = resolveEffectiveThemeMode(normalized);
+
+    if (effectiveThemeMode === 'system') {
+        await syncNativeTheme(effectiveThemeMode);
+    }
+
     const resolvedTheme = getResolvedThemeMode(effectiveThemeMode);
     const shouldUseDarkClass = resolvedTheme === 'dark';
 
@@ -507,7 +516,9 @@ export async function applyThemeMode(themeMode: unknown): Promise<void> {
     document.documentElement.setAttribute('data-theme', resolvedTheme);
 
     useShellStore.getState().setThemeMode(effectiveThemeMode);
-    await syncNativeTheme(effectiveThemeMode);
+    if (effectiveThemeMode !== 'system') {
+        await syncNativeTheme(effectiveThemeMode);
+    }
 }
 
 export async function setCommunityThemeAppearanceControl(
