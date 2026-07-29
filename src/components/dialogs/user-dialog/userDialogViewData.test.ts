@@ -261,7 +261,20 @@ describe('userDialogViewData', () => {
         const summary = buildUserDialogProfileSummary({
             profile: {
                 id: 'usr_me',
-                displayName: 'Current Name',
+                displayName: 'Current Name'
+            },
+            userStats: {
+                previousDisplayNames: [
+                    {
+                        displayName: 'API Recent Name',
+                        updated_at: '2026-07-19T00:00:00.000Z'
+                    }
+                ]
+            },
+            sortedProfileGroups: [],
+            isCurrentUser: true,
+            vrchatConfigConstants: {},
+            currentUserSnapshot: {
                 pastDisplayNames: [
                     {
                         displayName: 'API Recent Name',
@@ -276,19 +289,7 @@ describe('userDialogViewData', () => {
                         updated_at: '2026-07-21T00:00:00.000Z'
                     }
                 ]
-            },
-            userStats: {
-                previousDisplayNames: [
-                    {
-                        displayName: 'API Recent Name',
-                        updated_at: '2026-07-19T00:00:00.000Z'
-                    }
-                ]
-            },
-            sortedProfileGroups: [],
-            isCurrentUser: true,
-            vrchatConfigConstants: {},
-            currentUserSnapshot: null
+            }
         });
 
         expect(summary.previousDisplayNames).toEqual([

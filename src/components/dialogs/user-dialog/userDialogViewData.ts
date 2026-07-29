@@ -349,6 +349,7 @@ export function buildUserDialogProfileSummary({
         profile.displayName || profile.username,
         profile.previousDisplayNames,
         profile.pastDisplayNames,
+        isCurrentUser ? currentUserSnapshot?.pastDisplayNames : null,
         statsPreviousDisplayNames
     );
     const previousDisplayNamesTitle = previousDisplayNames
