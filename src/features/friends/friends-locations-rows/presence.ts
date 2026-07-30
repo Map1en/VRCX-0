@@ -122,6 +122,7 @@ export function buildSameInstanceGroups<TFriend extends FriendLocationFriend>(
     lastLocation: FriendsLocationsLastLocation | null = null
 ): SameInstanceGroup<TFriend>[] {
     const groupsByLocation = new Map<string, TFriend[]>();
+    const currentLocation = normalizeFriendsLocationId(lastLocation?.location);
 
     for (const friend of friends ?? []) {
         const location = resolveFriendPresenceLocation(friend, {
@@ -138,7 +139,11 @@ export function buildSameInstanceGroups<TFriend extends FriendLocationFriend>(
     }
 
     return Array.from(groupsByLocation.entries())
-        .filter(([, friendsInLocation]) => friendsInLocation.length > 1)
+        .filter(
+            ([location, friendsInLocation]) =>
+                friendsInLocation.length > 1 ||
+                (currentLocation !== '' && location === currentLocation)
+        )
         .map(([location, friendsInLocation]) => ({
             location,
             friends: friendsInLocation

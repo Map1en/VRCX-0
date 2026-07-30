@@ -31,6 +31,7 @@ export interface SidebarVirtualRow {
     location?: unknown;
     friend?: SidebarFriendRecord;
     isCurrentUser?: boolean;
+    isCurrentInstance?: boolean;
     isGroupByInstance?: boolean;
     className?: string;
     text?: string;
@@ -299,7 +300,8 @@ export function buildFriendsSidebarVirtualRows({
                     type: 'instance-header',
                     key: `instance:${group.location}:${index}`,
                     location: group.location,
-                    count: group.rows.length
+                    count: group.rows.length,
+                    isCurrentInstance: group.isCurrentInstance
                 });
                 pushFriendRows(
                     nextRows,

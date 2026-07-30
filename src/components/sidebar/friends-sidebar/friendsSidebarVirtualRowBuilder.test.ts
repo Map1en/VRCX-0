@@ -76,7 +76,8 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             sameInstanceGroups: [
                 {
                     location: 'wrld_live:1',
-                    rows: [{ id: 'usr_same' }]
+                    rows: [{ id: 'usr_same' }],
+                    isCurrentInstance: true
                 }
             ],
             t
@@ -101,6 +102,10 @@ describe('friendsSidebarVirtualRowBuilder', () => {
         expect(rows[1]).toMatchObject({
             type: 'friend',
             isCurrentUser: true
+        });
+        expect(rows[3]).toMatchObject({
+            type: 'instance-header',
+            isCurrentInstance: true
         });
         expect(rows[4]).toMatchObject({
             isGroupByInstance: true

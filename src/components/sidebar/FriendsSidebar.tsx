@@ -110,7 +110,6 @@ export function FriendsSidebar({
     const { t } = useTranslation();
     const {
         currentEndpoint,
-        currentLocation,
         currentUser,
         currentUserId,
         effectiveCurrentLocationPlayerIds,
@@ -150,14 +149,14 @@ export function FriendsSidebar({
     );
     const currentLocationSnapshot = useMemo<LastLocationSnapshot>(
         () => ({
-            location: currentLocation,
+            location: currentInviteLocation,
             friendList: new Set(
                 Array.isArray(effectiveCurrentLocationPlayerIds)
                     ? effectiveCurrentLocationPlayerIds
                     : []
             )
         }),
-        [currentLocation, effectiveCurrentLocationPlayerIds]
+        [currentInviteLocation, effectiveCurrentLocationPlayerIds]
     );
     const canInviteFromCurrentLocation = useMemo(
         () =>

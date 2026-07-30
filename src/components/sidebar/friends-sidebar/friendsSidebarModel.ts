@@ -81,6 +81,7 @@ type SidebarStatusOptions = {
 export type SameInstanceGroup = {
     location: string;
     rows: SidebarFriendRecord[];
+    isCurrentInstance: boolean;
 };
 
 function locationProjection(value: unknown): FriendLocationProjection | null {
@@ -558,6 +559,7 @@ export function buildSameInstanceGroups(
 ) {
     const groupsByLocation = new Map<string, SidebarFriendRecord[]>();
     const activeFallbackKeys = new Set<string>();
+    const currentLocationTag = normalizeId(lastLocation?.location);
     for (const friend of sortRows(rows, prefs)) {
         const locationTag = sameInstanceLocationTag(friend, lastLocation);
         if (!locationTag) {
@@ -589,12 +591,18 @@ export function buildSameInstanceGroups(
         }
     }
     return Array.from(groupsByLocation.entries())
-        .filter(([, groupRows]) => groupRows.length > 1)
+        .filter(
+            ([location, groupRows]) =>
+                groupRows.length > 1 ||
+                (currentLocationTag !== '' && location === currentLocationTag)
+        )
         .sort((left, right) => right[1].length - left[1].length)
         .map(
             ([location, groupRows]): SameInstanceGroup => ({
                 location,
-                rows: groupRows
+                rows: groupRows,
+                isCurrentInstance:
+                    currentLocationTag !== '' && location === currentLocationTag
             })
         );
 }

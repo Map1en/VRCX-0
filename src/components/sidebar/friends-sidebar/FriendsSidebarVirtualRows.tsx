@@ -220,6 +220,7 @@ function FriendsSidebarVirtualRow({
                 <InstanceHeaderRow
                     location={row.location}
                     count={row.count}
+                    isCurrentInstance={row.isCurrentInstance}
                     metadata={location.locationMetadataByKey.get(row.key)}
                     showInstanceIdInLocation={
                         appearance.showInstanceIdInLocation

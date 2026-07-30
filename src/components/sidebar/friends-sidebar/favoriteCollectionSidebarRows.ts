@@ -158,7 +158,8 @@ export function buildFavoriteCollectionSidebarVirtualRows({
                     type: 'instance-header',
                     key: `instance:${group.location}:${index}`,
                     location: group.location,
-                    count: group.rows.length
+                    count: group.rows.length,
+                    isCurrentInstance: group.isCurrentInstance
                 });
                 pushFriendRows(
                     nextRows,

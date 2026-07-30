@@ -1,6 +1,8 @@
 import { ChevronDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Collapsible, CollapsibleTrigger } from '@/ui/shadcn/collapsible';
 
@@ -96,16 +98,20 @@ export function FriendSectionHeader({
 export function InstanceHeaderRow({
     location,
     count,
+    isCurrentInstance = false,
     metadata = null,
     showInstanceIdInLocation = false,
     ageGatedInstancesVisible = false
 }: {
     location?: unknown;
     count?: number;
+    isCurrentInstance?: boolean;
     metadata?: Record<string, unknown> | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 }) {
+    const { t } = useTranslation();
+
     return (
         <div className="mb-1 flex min-w-0 items-center px-1.5 text-xs">
             <StaticSidebarLocation
@@ -117,6 +123,14 @@ export function InstanceHeaderRow({
                 showInstanceIdInLocation={showInstanceIdInLocation}
                 ageGatedInstancesVisible={ageGatedInstancesVisible}
             />
+            {isCurrentInstance ? (
+                <Badge
+                    variant="outline"
+                    className="border-border/70 bg-muted/70 text-muted-foreground ml-1.5 h-4 rounded px-1 py-0 text-[10px] leading-none font-semibold"
+                >
+                    {t('side_panel.you_are_here')}
+                </Badge>
+            ) : null}
             <span className="ml-1.5 shrink-0">{`(${count})`}</span>
         </div>
     );
