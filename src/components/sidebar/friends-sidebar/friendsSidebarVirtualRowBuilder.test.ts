@@ -88,6 +88,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             'friend:me:usr_me',
             'section:sameInstance',
             'instance:wrld_live:1:0',
+            'friend:sameInstance:wrld_live:1:0:currentUser:usr_me',
             'friend:sameInstance:wrld_live:1:0:usr_same',
             'section:favorites',
             'favorite-group:remote:favorites',
@@ -105,10 +106,61 @@ describe('friendsSidebarVirtualRowBuilder', () => {
         });
         expect(rows[3]).toMatchObject({
             type: 'instance-header',
+            count: 1,
             isCurrentInstance: true
         });
         expect(rows[4]).toMatchObject({
+            isCurrentUser: true,
             isGroupByInstance: true
         });
+        expect(rows[5]).toMatchObject({
+            isGroupByInstance: true
+        });
+    });
+
+    it('can hide the current user from same-instance while preserving the me row', () => {
+        const rows = buildFriendsSidebarVirtualRows({
+            activeRows: [],
+            currentUser: {
+                id: 'usr_me',
+                displayName: 'Me',
+                location: 'wrld_live:1'
+            },
+            currentUserId: 'usr_me',
+            favoriteGroupSections: [],
+            favoriteRows: [],
+            gameState: {
+                isGameRunning: true,
+                currentLocation: 'wrld_live:1'
+            },
+            loadStatus: 'ready',
+            offlineRows: [],
+            onlineRows: [],
+            openGroups: {
+                me: true,
+                sameInstance: true
+            },
+            prefs: {
+                isHideCurrentUserInSameInstance: true
+            },
+            rowsLength: 1,
+            sameInstanceGroups: [
+                {
+                    location: 'wrld_live:1',
+                    rows: [{ id: 'usr_same' }],
+                    isCurrentInstance: true
+                }
+            ],
+            t
+        });
+
+        expect(
+            rows
+                .filter((row) => row.type === 'friend' && row.isCurrentUser)
+                .map((row) => row.key)
+        ).toEqual(['friend:me:usr_me']);
+        expect(rows.map((row) => row.key)).toContain(
+            'friend:sameInstance:wrld_live:1:0:usr_same'
+        );
     });
 });

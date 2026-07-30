@@ -660,6 +660,7 @@
             "group_by_instance": "인스턴스별로 그룹화",
             "split_favorite_friends": "즐겨찾는 그룹 표시",
             "hide_friends_in_same_instance": "그룹화된 친구 숨기기",
+            "hide_current_user_in_same_instance": "같은 인스턴스의 나 숨기기",
             "same_instance_above_favorites": "동일한 인스턴스 우선순위 지정",
             "sort_secondary": "그런 다음",
             "sort_tertiary": "그런 다음",

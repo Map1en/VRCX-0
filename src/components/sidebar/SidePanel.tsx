@@ -44,6 +44,7 @@ import { useSidePanelTabData } from './useSidePanelTabData';
 
 const defaultPrefs: SidePanelPreferences = {
     sidebarGroupByInstance: true,
+    isHideCurrentUserInSameInstance: false,
     isHideFriendsInSameInstance: false,
     isSameInstanceAboveFavorites: false,
     isSidebarDivideByFriendGroup: false,
@@ -102,6 +103,10 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             let active = true;
             Promise.all([
                 configRepository.getBool('sidebarGroupByInstance', true),
+                configRepository.getBool(
+                    'isHideCurrentUserInSameInstance',
+                    false
+                ),
                 configRepository.getBool('isHideFriendsInSameInstance', false),
                 configRepository.getBool('isSameInstanceAboveFavorites', false),
                 configRepository.getBool('isSidebarDivideByFriendGroup', false),
@@ -122,6 +127,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 .then(
                     ([
                         sidebarGroupByInstance,
+                        isHideCurrentUserInSameInstance,
                         isHideFriendsInSameInstance,
                         isSameInstanceAboveFavorites,
                         isSidebarDivideByFriendGroup,
@@ -139,6 +145,9 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         setPrefs({
                             sidebarGroupByInstance: Boolean(
                                 sidebarGroupByInstance
+                            ),
+                            isHideCurrentUserInSameInstance: Boolean(
+                                isHideCurrentUserInSameInstance
                             ),
                             isHideFriendsInSameInstance: Boolean(
                                 isHideFriendsInSameInstance

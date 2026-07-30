@@ -662,6 +662,7 @@
             "group_by_instance": "Группировать по инстансу",
             "split_favorite_friends": "Показать избранные группы",
             "hide_friends_in_same_instance": "Скрывать друзей в том же инстансе",
+            "hide_current_user_in_same_instance": "Скрывать себя в том же инстансе",
             "same_instance_above_favorites": "Показывать тот же инстанс выше избранного",
             "sort_secondary": "Тогда к",
             "sort_tertiary": "Тогда к",

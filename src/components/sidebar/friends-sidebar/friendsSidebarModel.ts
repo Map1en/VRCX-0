@@ -53,6 +53,7 @@ export type SidebarFriendRecord = FriendRecordInput & {
 
 export type SidebarPreferences = {
     gameLogDisabled?: boolean;
+    isHideCurrentUserInSameInstance?: boolean;
     isHideFriendsInSameInstance?: boolean;
     isSameInstanceAboveFavorites?: boolean;
     isSidebarDivideByFriendGroup?: boolean;

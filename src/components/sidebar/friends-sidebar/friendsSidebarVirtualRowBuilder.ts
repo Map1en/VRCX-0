@@ -189,19 +189,28 @@ function buildCurrentUserRows({
     currentUser,
     currentUserId,
     gameState,
-    prefs
+    prefs,
+    sectionKey = 'me',
+    isGroupByInstance = false,
+    showSkeleton = true
 }: {
     currentUser: CurrentUserPresenceRecord | null | undefined;
     currentUserId?: string | null;
     gameState: SidebarGameState | null | undefined;
     prefs: SidebarPreferences;
+    sectionKey?: string;
+    isGroupByInstance?: boolean;
+    showSkeleton?: boolean;
 }): SidebarVirtualRow[] {
     if (!currentUser) {
+        if (!showSkeleton) {
+            return [];
+        }
         return Array.from(
             { length: 1 },
             (_unused, index): SidebarVirtualRow => ({
                 type: 'skeleton',
-                key: `skeleton:me:${index}`
+                key: `skeleton:${sectionKey}:${index}`
             })
         );
     }
@@ -216,7 +225,7 @@ function buildCurrentUserRows({
     );
 
     return buildFriendRows(
-        'me',
+        sectionKey,
         [
             {
                 ...currentUserDisplayRow,
@@ -225,7 +234,7 @@ function buildCurrentUserRows({
                 )
             }
         ],
-        { currentUserId, isCurrentUser: true }
+        { currentUserId, isCurrentUser: true, isGroupByInstance }
     );
 }
 
@@ -303,6 +312,22 @@ export function buildFriendsSidebarVirtualRows({
                     count: group.rows.length,
                     isCurrentInstance: group.isCurrentInstance
                 });
+                if (
+                    group.isCurrentInstance &&
+                    !prefs.isHideCurrentUserInSameInstance
+                ) {
+                    nextRows.push(
+                        ...buildCurrentUserRows({
+                            currentUser,
+                            currentUserId,
+                            gameState,
+                            prefs,
+                            sectionKey: `sameInstance:${group.location}:${index}:currentUser`,
+                            isGroupByInstance: true,
+                            showSkeleton: false
+                        })
+                    );
+                }
                 pushFriendRows(
                     nextRows,
                     `sameInstance:${group.location}:${index}`,

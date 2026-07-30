@@ -270,6 +270,24 @@ export function SidePanelSettingsPopover({
                                 />
                             </SettingRow>
                             <SettingRow
+                                id="side-panel-hide-current-user-in-same-instance"
+                                label={t(
+                                    'side_panel.settings.hide_current_user_in_same_instance'
+                                )}
+                            >
+                                <Switch
+                                    checked={
+                                        prefs.isHideCurrentUserInSameInstance
+                                    }
+                                    onCheckedChange={(value) =>
+                                        onUpdateBoolPreference(
+                                            'isHideCurrentUserInSameInstance',
+                                            value
+                                        )
+                                    }
+                                />
+                            </SettingRow>
+                            <SettingRow
                                 id="side-panel-same-instance-above-favorites"
                                 label={t(
                                     'side_panel.settings.same_instance_above_favorites'

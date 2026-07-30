@@ -662,6 +662,7 @@
             "group_by_instance": "Seskupit podle instance",
             "split_favorite_friends": "Zobrazit oblíbené skupiny",
             "hide_friends_in_same_instance": "Skrýt seskupené přátele",
+            "hide_current_user_in_same_instance": "Skrýt sebe ve stejné instanci",
             "same_instance_above_favorites": "Upřednostnit stejnou instanci",
             "sort_secondary": "Poté podle",
             "sort_tertiary": "Poté podle",
