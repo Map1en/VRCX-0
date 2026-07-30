@@ -4,6 +4,8 @@ import {
 } from '@/domain/instances/instanceRoster';
 
 export function buildUserDialogLocationUsers({
+    currentUserId,
+    friendsById,
     locationInstance,
     locationOwnerGroup,
     locationOwnerUser,
@@ -12,6 +14,8 @@ export function buildUserDialogLocationUsers({
     t,
     visiblePresenceParsedLocation
 }: {
+    currentUserId: unknown;
+    friendsById: unknown;
     locationInstance: unknown;
     locationOwnerGroup: unknown;
     locationOwnerUser: unknown;
@@ -59,9 +63,18 @@ export function buildUserDialogLocationUsers({
         profile: source(profile),
         users: Array.isArray(sameInstanceUsers) ? sameInstanceUsers : []
     });
+    const friendIds = new Set(Object.keys(record(friendsById)));
+    const normalizedCurrentUserId = firstText(currentUserId);
+    const visibleRows = roster.rows.filter((user) => {
+        const userId = firstText(user.id, user.userId);
+        return Boolean(
+            userId &&
+            (userId === normalizedCurrentUserId || friendIds.has(userId))
+        );
+    });
 
     return {
-        locationInstanceUsers: roster.rows,
+        locationInstanceUsers: visibleRows,
         locationOwnerId: roster.ownerId
     };
 }

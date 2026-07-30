@@ -130,6 +130,38 @@ export function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
+export function resolveEffectivePresenceLocation({
+    profile,
+    targetUserId,
+    currentLocation,
+    currentLocationPlayerIds
+}: {
+    profile: unknown;
+    targetUserId: unknown;
+    currentLocation: unknown;
+    currentLocationPlayerIds: unknown;
+}) {
+    const presenceLocation = resolvePresenceLocation(profile);
+    if (parseLocation(presenceLocation).isRealInstance) {
+        return presenceLocation;
+    }
+
+    const normalizedTargetUserId = normalizeUserId(targetUserId);
+    const normalizedCurrentLocation = normalizeUserId(currentLocation);
+    if (
+        !normalizedTargetUserId ||
+        !parseLocation(normalizedCurrentLocation).isRealInstance ||
+        !Array.isArray(currentLocationPlayerIds) ||
+        !currentLocationPlayerIds.some(
+            (playerId) => normalizeUserId(playerId) === normalizedTargetUserId
+        )
+    ) {
+        return presenceLocation;
+    }
+
+    return normalizedCurrentLocation;
+}
+
 export function isSameLocationTag(left: unknown, right: unknown) {
     const leftTag = normalizeUserId(left);
     const rightTag = normalizeUserId(right);

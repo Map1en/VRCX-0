@@ -26,7 +26,8 @@ import { parseLocation } from '@/shared/utils/location';
 import {
     buildCachedInstanceMap,
     locationCacheKey,
-    resolveCurrentInviteLocation
+    resolveCurrentInviteLocation,
+    resolveEffectivePresenceLocation
 } from './userDialogContentHelpers';
 import {
     loadLocationOwner,
@@ -200,6 +201,7 @@ export function useUserDialogLocationPanel({
     gameState,
     groupInstancesState,
     friendsById,
+    presenceLocation,
     profile,
     reloadToken
 }: {
@@ -209,6 +211,7 @@ export function useUserDialogLocationPanel({
     gameState: Record<string, unknown> | null;
     groupInstancesState: Record<string, unknown>;
     friendsById: Record<string, Record<string, unknown>>;
+    presenceLocation: string;
     profile: Record<string, unknown> | null;
     reloadToken: number;
 }) {
@@ -245,7 +248,8 @@ export function useUserDialogLocationPanel({
     useEffect(() => {
         let active = true;
 
-        const activeLocation = resolvePresenceLocation(profile);
+        const activeLocation =
+            presenceLocation || resolvePresenceLocation(profile);
         const parsedLocation = parseLocation(activeLocation);
         if (
             !profile?.id ||
@@ -290,8 +294,18 @@ export function useUserDialogLocationPanel({
             if (!user) {
                 return false;
             }
+            const userRecord = record(user);
+            const userId = normalizeUserId(
+                userRecord.id || userRecord.userId || userRecord.user_id
+            );
             return isSameLocationTag(
-                resolvePresenceLocation(user, { requireInstance: true }),
+                resolveEffectivePresenceLocation({
+                    profile: user,
+                    targetUserId: userId,
+                    currentLocation,
+                    currentLocationPlayerIds:
+                        gameState?.currentLocationPlayerIds
+                }),
                 activeLocation
             );
         }
@@ -316,9 +330,6 @@ export function useUserDialogLocationPanel({
 
         for (const friend of recordValues(friendsById)) {
             if (!userIsAtLocation(friend)) {
-                continue;
-            }
-            if (friend?.state !== 'online' && friend?.location === 'private') {
                 continue;
             }
             mergeLocationUser(rowsById, friend);
@@ -602,8 +613,10 @@ export function useUserDialogLocationPanel({
         currentUserSnapshot,
         friendsById,
         gameState?.currentLocationStartedAt,
+        gameState?.currentLocationPlayerIds,
         locationRefreshToken,
         normalizedCurrentUserId,
+        presenceLocation,
         profile,
         reloadToken
     ]);
@@ -659,7 +672,8 @@ export function useUserDialogLocationPanel({
     }, [currentEndpoint, currentInviteLocation, reloadToken]);
 
     function refreshLocationPanel(requestLocation: unknown): null {
-        const activeLocation = resolvePresenceLocation(profile);
+        const activeLocation =
+            presenceLocation || resolvePresenceLocation(profile);
         if (
             requestLocation &&
             activeLocation &&

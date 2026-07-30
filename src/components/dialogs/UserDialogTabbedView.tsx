@@ -427,6 +427,8 @@ export function UserDialogTabbedView({
     const { locationInstanceUsers, locationOwnerId } = useMemo(
         () =>
             buildUserDialogLocationUsers({
+                currentUserId,
+                friendsById,
                 locationInstance,
                 locationOwnerGroup,
                 locationOwnerUser,
@@ -436,6 +438,8 @@ export function UserDialogTabbedView({
                 visiblePresenceParsedLocation
             }),
         [
+            currentUserId,
+            friendsById,
             locationInstance,
             locationOwnerGroup,
             locationOwnerUser,
