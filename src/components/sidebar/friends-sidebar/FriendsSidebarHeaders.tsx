@@ -1,6 +1,6 @@
 import { ChevronDownIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
+import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -110,8 +110,6 @@ export function InstanceHeaderRow({
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 }) {
-    const { t } = useTranslation();
-
     return (
         <div className="mb-1 flex min-w-0 items-center px-1.5 text-xs">
             <StaticSidebarLocation
@@ -124,14 +122,11 @@ export function InstanceHeaderRow({
                 ageGatedInstancesVisible={ageGatedInstancesVisible}
             />
             {isCurrentInstance ? (
-                <Badge
-                    variant="outline"
-                    className="border-border/70 bg-muted/70 text-muted-foreground ml-1.5 h-4 rounded px-1 py-0 text-[10px] leading-none font-semibold"
-                >
-                    {t('side_panel.you_are_here')}
-                </Badge>
+                <CurrentInstanceBadge className="ml-1.5" />
             ) : null}
-            <span className="ml-1.5 shrink-0">{`(${count})`}</span>
+            <Badge variant="outline" className="ml-1.5">
+                {count}
+            </Badge>
         </div>
     );
 }

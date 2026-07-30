@@ -76,6 +76,9 @@ export function FriendsLocationsVirtualList({
                             {row.type === 'header' ? (
                                 <FriendsLocationsSectionHeader
                                     section={row.section}
+                                    currentLocation={
+                                        derived.currentInviteLocation
+                                    }
                                     onOpenWorld={
                                         locationCommands.openSectionWorld
                                     }

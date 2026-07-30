@@ -7,9 +7,11 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { FriendLocationCard } from '@/components/friends/FriendLocationCard';
+import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -47,6 +49,7 @@ type FriendsLocationsEmptyStateProps = {
 
 type FriendsLocationsSectionHeaderProps = {
     section: FriendsLocationsSection;
+    currentLocation?: string;
     onOpenWorld: (section: FriendsLocationsSection) => void;
     onOpenGroup: (section: FriendsLocationsSection) => void;
 };
@@ -89,6 +92,7 @@ export function FriendsLocationsEmptyState({
 
 export function FriendsLocationsSectionHeader({
     section,
+    currentLocation,
     onOpenWorld,
     onOpenGroup
 }: FriendsLocationsSectionHeaderProps) {
@@ -114,6 +118,12 @@ export function FriendsLocationsSectionHeader({
                             section.title
                         )}
                     </div>
+                    {isSameInstanceLocation(
+                        section.rawLocation,
+                        currentLocation
+                    ) ? (
+                        <CurrentInstanceBadge className="shrink-0" />
+                    ) : null}
                     <Badge variant="outline" className="shrink-0">
                         {section.friends.length}
                     </Badge>
