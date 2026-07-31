@@ -106,6 +106,7 @@ import { getFavoritesDensityConfig } from '../favoritesDensity';
 import { FavoriteCard, type FavoriteCardItem } from './FavoriteCard';
 
 const AVATAR_ID = 'avtr_12345678-1234-1234-1234-1234567890ab';
+const USER_ID = 'usr_12345678-1234-1234-1234-1234567890ab';
 const WORLD_ID = 'wrld_12345678-1234-1234-1234-1234567890ab';
 
 function renderAvatarCard(
@@ -132,6 +133,25 @@ function renderAvatarCard(
 }
 
 describe('FavoriteCard avatar links', () => {
+    it('shows the VRChat website link for a friend', () => {
+        const item: FavoriteCardItem = {
+            id: USER_ID,
+            key: 'friend:remote',
+            kind: 'friend',
+            source: 'remote',
+            title: 'Friend'
+        };
+        const html = renderToStaticMarkup(
+            <FavoriteCard
+                item={item}
+                densityConfig={getFavoritesDensityConfig('friend', 'standard')}
+            />
+        );
+
+        expect(html).toContain('common.actions.view_on_website');
+        expect(html).toContain('lucide-external-link');
+    });
+
     it('shows matching link icons for a world', () => {
         const item: FavoriteCardItem = {
             id: WORLD_ID,
