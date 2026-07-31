@@ -13,7 +13,7 @@ export type SidePanelSortMethod = FriendSortMethod | '';
 export type SidePanelPreferences = Required<
     Pick<
         SidebarPreferences,
-        | 'isHideCurrentUserInSameInstance'
+        | 'isShowCurrentUserInSameInstance'
         | 'isHideFriendsInSameInstance'
         | 'isSameInstanceAboveFavorites'
         | 'isSidebarDivideByFriendGroup'
@@ -30,7 +30,7 @@ export type SidePanelPreferences = Required<
 };
 
 export type SidePanelBooleanPreferenceKey =
-    | 'isHideCurrentUserInSameInstance'
+    | 'isShowCurrentUserInSameInstance'
     | 'isHideFriendsInSameInstance'
     | 'isSameInstanceAboveFavorites'
     | 'isSidebarDivideByFriendGroup'

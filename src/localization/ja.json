@@ -662,7 +662,7 @@
             "group_by_instance": "インスタンスでグループ化",
             "split_favorite_friends": "お気に入りのグループを表示",
             "hide_friends_in_same_instance": "グループ化されたフレンドを非表示",
-            "hide_current_user_in_same_instance": "同じインスタンスの自分を非表示",
+            "show_current_user_in_same_instance": "同じインスタンスの自分を表示",
             "same_instance_above_favorites": "同じインスタンスを優先",
             "sort_secondary": "次のソート基準",
             "sort_tertiary": "さらに次のソート基準",

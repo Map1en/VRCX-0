@@ -314,7 +314,7 @@ export function buildFriendsSidebarVirtualRows({
                 });
                 if (
                     group.isCurrentInstance &&
-                    !prefs.isHideCurrentUserInSameInstance
+                    prefs.isShowCurrentUserInSameInstance !== false
                 ) {
                     nextRows.push(
                         ...buildCurrentUserRows({

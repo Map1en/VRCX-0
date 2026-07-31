@@ -44,7 +44,7 @@ import { useSidePanelTabData } from './useSidePanelTabData';
 
 const defaultPrefs: SidePanelPreferences = {
     sidebarGroupByInstance: true,
-    isHideCurrentUserInSameInstance: false,
+    isShowCurrentUserInSameInstance: true,
     isHideFriendsInSameInstance: false,
     isSameInstanceAboveFavorites: false,
     isSidebarDivideByFriendGroup: false,
@@ -104,8 +104,8 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             Promise.all([
                 configRepository.getBool('sidebarGroupByInstance', true),
                 configRepository.getBool(
-                    'isHideCurrentUserInSameInstance',
-                    false
+                    'isShowCurrentUserInSameInstance',
+                    true
                 ),
                 configRepository.getBool('isHideFriendsInSameInstance', false),
                 configRepository.getBool('isSameInstanceAboveFavorites', false),
@@ -127,7 +127,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 .then(
                     ([
                         sidebarGroupByInstance,
-                        isHideCurrentUserInSameInstance,
+                        isShowCurrentUserInSameInstance,
                         isHideFriendsInSameInstance,
                         isSameInstanceAboveFavorites,
                         isSidebarDivideByFriendGroup,
@@ -146,8 +146,8 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             sidebarGroupByInstance: Boolean(
                                 sidebarGroupByInstance
                             ),
-                            isHideCurrentUserInSameInstance: Boolean(
-                                isHideCurrentUserInSameInstance
+                            isShowCurrentUserInSameInstance: Boolean(
+                                isShowCurrentUserInSameInstance
                             ),
                             isHideFriendsInSameInstance: Boolean(
                                 isHideFriendsInSameInstance

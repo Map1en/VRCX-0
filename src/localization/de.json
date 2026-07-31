@@ -662,7 +662,7 @@
             "group_by_instance": "Nach Instanz gruppieren",
             "split_favorite_friends": "Favoritengruppen anzeigen",
             "hide_friends_in_same_instance": "Gruppierte Freunde ausblenden",
-            "hide_current_user_in_same_instance": "Dich in derselben Instanz ausblenden",
+            "show_current_user_in_same_instance": "Dich in derselben Instanz anzeigen",
             "same_instance_above_favorites": "Gleiche Instanz priorisieren",
             "sort_secondary": "Dann nach",
             "sort_tertiary": "Dann nach",

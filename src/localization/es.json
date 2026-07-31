@@ -662,7 +662,7 @@
             "group_by_instance": "Agrupar por instancia",
             "split_favorite_friends": "Mostrar grupos de favoritos",
             "hide_friends_in_same_instance": "Ocultar amigos agrupados",
-            "hide_current_user_in_same_instance": "Ocultarte en la misma instancia",
+            "show_current_user_in_same_instance": "Mostrarte en la misma instancia",
             "same_instance_above_favorites": "Priorizar misma instancia",
             "sort_secondary": "Luego por",
             "sort_tertiary": "Luego por",

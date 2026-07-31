@@ -141,7 +141,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
                 sameInstance: true
             },
             prefs: {
-                isHideCurrentUserInSameInstance: true
+                isShowCurrentUserInSameInstance: false
             },
             rowsLength: 1,
             sameInstanceGroups: [
