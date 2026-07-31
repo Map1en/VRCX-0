@@ -46,6 +46,8 @@ const FRIEND_PRESENCE_OVERRIDE_FIELDS = [
 const ACTIVITY_TIMESTAMP_FIELDS = ['last_activity', 'last_login'];
 
 const LOCAL_SNAPSHOT_REFRESH_FIELDS = [
+    'friendNumber',
+    '$friendNumber',
     'status',
     'statusDescription',
     'state',

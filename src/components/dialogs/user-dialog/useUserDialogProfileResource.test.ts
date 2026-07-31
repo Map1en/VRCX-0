@@ -105,6 +105,40 @@ describe('useUserDialogProfileResource', () => {
         });
     });
 
+    it('keeps the friend number after the remote profile finishes loading', async () => {
+        mocks.getUserProfile.mockResolvedValue({
+            id: 'usr_target',
+            displayName: 'Target',
+            $friendNumber: 0
+        });
+
+        const { result } = renderHook(() =>
+            useUserDialogProfileResource({
+                currentEndpoint: 'https://api.vrchat.cloud/api/1',
+                isFriend: true,
+                isTargetCurrentUser: false,
+                localSnapshot: {
+                    id: 'usr_target',
+                    displayName: 'Target',
+                    friendNumber: 42,
+                    $friendNumber: 42
+                },
+                normalizedUserId: 'usr_target',
+                updateEntityDialogMetadata: vi.fn()
+            })
+        );
+
+        await waitFor(() => {
+            expect(result.current.loadStatus).toBe('ready');
+            expect(result.current.profile).toEqual(
+                expect.objectContaining({
+                    friendNumber: 42,
+                    $friendNumber: 42
+                })
+            );
+        });
+    });
+
     it('merges appearance fields without overwriting ordinary user state', async () => {
         mocks.getUserProfile.mockResolvedValue({
             id: 'usr_target',
