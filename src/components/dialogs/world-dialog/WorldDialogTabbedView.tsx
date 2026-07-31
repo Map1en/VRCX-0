@@ -162,6 +162,7 @@ export interface WorldDialogTabModel {
     screenshotsStatus: string;
     tabs: Array<{ value: string; label: ReactNode }>;
     totalVisitTime: number;
+    visibleInstanceUserIds: ReadonlySet<string>;
     world: WorldProfileRecord;
     worldDialogShortName: string;
 }
@@ -412,10 +413,22 @@ export function WorldDialogTabbedView({
         };
     });
     const currentResolvedLocation = currentGameLocation;
+    const visibleInstanceUserIds = useMemo(() => {
+        const userIds = new Set(Object.keys(friendsById || {}));
+        const normalizedCurrentUserId = firstText(
+            currentUserId,
+            currentUserSnapshot?.id
+        );
+        if (normalizedCurrentUserId) {
+            userIds.add(normalizedCurrentUserId);
+        }
+        return userIds;
+    }, [currentUserId, currentUserSnapshot?.id, friendsById]);
     const { creatorGroupKey, displayInstanceRows } =
         buildWorldDialogDisplayInstanceRows({
             creatorGroupsById,
             currentInstanceDetails,
+            currentLocation: currentResolvedLocation,
             friendsById,
             instanceRows: hydratedInstanceRows,
             isInstanceLocation,
@@ -1034,6 +1047,7 @@ export function WorldDialogTabbedView({
         screenshotsRefreshDisabled: worldScreenshotsStatus === 'loading',
         tabs,
         totalVisitTime,
+        visibleInstanceUserIds,
         world,
         worldDialogShortName
     };

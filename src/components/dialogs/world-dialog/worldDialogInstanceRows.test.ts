@@ -77,6 +77,8 @@ describe('worldDialogInstanceRows', () => {
                     name: 'Runtime Group'
                 }
             },
+            currentLocation:
+                'wrld_test:live~group(grp_live)~groupAccessType(public)&shortName=live-short',
             friendsById: {
                 usr_friend: {
                     id: 'usr_friend',
@@ -120,14 +122,16 @@ describe('worldDialogInstanceRows', () => {
             creatorGroup: {
                 id: 'grp_live',
                 name: 'Live Group'
-            }
+            },
+            isCurrentInstance: true
         });
         expect(
             result.displayInstanceRows[0].users.map((user) => user.id)
         ).toEqual(['usr_inside', 'usr_friend']);
         expect(result.displayInstanceRows[1]).toMatchObject({
             id: 'public',
-            location: 'wrld_test:public'
+            location: 'wrld_test:public',
+            isCurrentInstance: false
         });
     });
 

@@ -1,6 +1,7 @@
 import { RefreshCwIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
 import type { WorldDialogJson } from '@/domain/entities/profileEntities';
@@ -183,6 +184,7 @@ export function WorldDialogTabPanels({
         screenshotsStatus,
         tabs,
         totalVisitTime,
+        visibleInstanceUserIds,
         world,
         worldDialogShortName
     } = model;
@@ -267,7 +269,7 @@ export function WorldDialogTabPanels({
                                     className="bg-muted/10 hover:bg-muted/25 rounded-md border px-2.5 py-2 text-sm transition-colors"
                                 >
                                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="min-w-0 flex-1">
+                                        <div className="flex min-w-0 flex-1 items-center gap-1.5">
                                             <LocationWorld
                                                 className="min-w-0 text-sm"
                                                 locationObject={{
@@ -297,6 +299,9 @@ export function WorldDialogTabPanels({
                                                     ''
                                                 }
                                             />
+                                            {instance.isCurrentInstance ? (
+                                                <CurrentInstanceBadge className="shrink-0" />
+                                            ) : null}
                                         </div>
                                         <InstanceActionBar
                                             className="min-w-0 flex-wrap justify-start sm:justify-end"
@@ -329,7 +334,10 @@ export function WorldDialogTabPanels({
                                             }
                                         />
                                     </div>
-                                    <InstanceUserTiles instance={instance} />
+                                    <InstanceUserTiles
+                                        instance={instance}
+                                        visibleUserIds={visibleInstanceUserIds}
+                                    />
                                 </div>
                             );
                         })

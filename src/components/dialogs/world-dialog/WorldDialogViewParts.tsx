@@ -45,6 +45,7 @@ export type WorldDialogInstanceRow = WorldInstanceRecord & {
     creatorUser: unknown;
     creatorUserId: string;
     id: string;
+    isCurrentInstance?: boolean;
     location: string;
     users: InstanceRosterRow[];
 };

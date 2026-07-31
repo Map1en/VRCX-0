@@ -27,6 +27,7 @@ type CurrentInstanceDetails = {
 type BuildWorldDialogDisplayInstanceRowsInput = {
     creatorGroupsById: Record<string, EntityRecord>;
     currentInstanceDetails: CurrentInstanceDetails;
+    currentLocation?: unknown;
     friendsById: Record<string, unknown>;
     instanceRows: EntityRecord[];
     isInstanceLocation: boolean;
@@ -46,6 +47,7 @@ function record(value: unknown): EntityRecord {
 export function buildWorldDialogDisplayInstanceRows({
     creatorGroupsById,
     currentInstanceDetails,
+    currentLocation,
     friendsById,
     instanceRows,
     isInstanceLocation,
@@ -312,6 +314,11 @@ export function buildWorldDialogDisplayInstanceRows({
             : null;
         const instanceWithFriends: WorldDialogInstanceRow = {
             ...instance,
+            isCurrentInstance: sameInstanceLocation(
+                world,
+                instance,
+                currentLocation
+            ),
             users: mergeInstanceUsers(instance.users, friendsInInstance)
         };
         return creatorGroupProfile

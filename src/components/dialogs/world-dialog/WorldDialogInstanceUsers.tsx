@@ -105,7 +105,13 @@ function firstDisplayName(userId: unknown, ...sources: unknown[]) {
     return normalizedUserId;
 }
 
-export function InstanceUserTiles({ instance }: { instance: unknown }) {
+export function InstanceUserTiles({
+    instance,
+    visibleUserIds
+}: {
+    instance: unknown;
+    visibleUserIds?: ReadonlySet<string>;
+}) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -123,6 +129,9 @@ export function InstanceUserTiles({ instance }: { instance: unknown }) {
         endpoint: currentEndpoint
     });
     const knownCreatorUserRecord = record(knownCreatorUser);
+    const creatorIsVisible =
+        !visibleUserIds ||
+        Boolean(creatorUserId && visibleUserIds.has(creatorUserId));
     const creatorUserSeed = {
         ...knownCreatorUserRecord,
         ...creatorUser,
@@ -150,6 +159,7 @@ export function InstanceUserTiles({ instance }: { instance: unknown }) {
         enabled:
             Boolean(creatorUserId) &&
             !isGroupId(creatorUserId) &&
+            creatorIsVisible &&
             !creatorHasDisplayMedia,
         staleTime: entityQueryPolicies.userAvatarLookup.staleTime,
         gcTime: entityQueryPolicies.userAvatarLookup.gcTime,
@@ -163,14 +173,18 @@ export function InstanceUserTiles({ instance }: { instance: unknown }) {
         if (!row) {
             return;
         }
-        const key = firstText(row.id, row.userId, row.displayName);
+        const userId = firstText(row.userId, row.user_id, row.id);
+        if (visibleUserIds && (!userId || !visibleUserIds.has(userId))) {
+            return;
+        }
+        const key = firstText(userId, row.displayName);
         if (!key || userMap.has(key)) {
             return;
         }
         userMap.set(key, row);
     };
 
-    if (creatorUserId && !isGroupId(creatorUserId)) {
+    if (creatorUserId && !isGroupId(creatorUserId) && creatorIsVisible) {
         const creatorProfile = record(creatorProfileQuery.data);
         pushUser({
             ...knownCreatorUserRecord,

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type QueryOptions = {
     enabled?: boolean;
@@ -119,6 +119,8 @@ vi.mock('@/ui/shadcn/spinner', () => ({
 import { InstanceUserTiles } from './WorldDialogInstanceUsers';
 
 describe('InstanceUserTiles', () => {
+    afterEach(cleanup);
+
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.knownCreatorUser = null;
@@ -164,5 +166,28 @@ describe('InstanceUserTiles', () => {
         );
 
         expect(mocks.getUserProfile).not.toHaveBeenCalled();
+    });
+
+    it('filters non-friends before rendering or resolving profiles', () => {
+        render(
+            <InstanceUserTiles
+                instance={{
+                    creatorUserId: 'usr_non_friend_owner',
+                    users: [
+                        { id: 'usr_self', displayName: 'Self' },
+                        { id: 'usr_friend', displayName: 'Friend' },
+                        { id: 'usr_non_friend', displayName: 'Non-friend' }
+                    ]
+                }}
+                visibleUserIds={new Set(['usr_self', 'usr_friend'])}
+            />
+        );
+
+        expect(mocks.getUserProfile).not.toHaveBeenCalled();
+        expect(
+            screen
+                .getAllByTestId('user-detail-tile')
+                .map((tile) => tile.getAttribute('data-display-name'))
+        ).toEqual(['Self', 'Friend']);
     });
 });
