@@ -436,9 +436,9 @@ export { parseLocation, displayLocation, resolveRegion, translateAccessType };
 
 interface LastLocation {
     friendList?:
-        | Set<string>
-        | Map<string, unknown>
-        | string[]
+        | Set<unknown>
+        | Map<unknown, unknown>
+        | readonly unknown[]
         | Record<string, unknown>;
     location?: unknown;
 }
@@ -583,10 +583,12 @@ function isLastLocationFriend(
         return friendList.has(friendId);
     }
     if (Array.isArray(friendList)) {
-        return friendList.includes(friendId);
+        return friendList.some(
+            (candidate) => normalizeLocationValue(candidate) === friendId
+        );
     }
     if (friendList && typeof friendList === 'object') {
-        return Boolean(friendList[friendId]);
+        return Boolean((friendList as Record<string, unknown>)[friendId]);
     }
     return false;
 }

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import { useCurrentInstancePresence } from '@/lib/useCurrentInstancePresence';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -10,7 +9,6 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 const EMPTY_GROUP_ORDER: string[] = [];
-const EMPTY_CURRENT_LOCATION_PLAYER_IDS = Object.freeze([]);
 
 export function useUserDialogRuntimeState(normalizedUserId: string) {
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -41,7 +39,6 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const currentLocationPlayerIds = useRuntimeStore(
         (state) => state.gameState.currentLocationPlayerIds
     );
-    const domainCurrentInstancePresence = useCurrentInstancePresence();
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
     );
@@ -86,21 +83,16 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const knownTargetUser = useKnownUserFact(normalizedUserId, {
         endpoint: currentEndpoint
     });
-    const effectiveCurrentLocationPlayerIds =
-        currentLocationPlayerIds && currentLocationPlayerIds.length
-            ? currentLocationPlayerIds
-            : domainCurrentInstancePresence?.userIds ||
-              EMPTY_CURRENT_LOCATION_PLAYER_IDS;
     const gameState = useMemo(
         () => ({
             currentLocation: runtimeCurrentLocation,
             currentDestination: runtimeCurrentDestination,
             currentWorldId: runtimeCurrentWorldId,
-            currentLocationPlayerIds: effectiveCurrentLocationPlayerIds,
+            currentLocationPlayerIds,
             isGameRunning
         }),
         [
-            effectiveCurrentLocationPlayerIds,
+            currentLocationPlayerIds,
             isGameRunning,
             runtimeCurrentDestination,
             runtimeCurrentLocation,

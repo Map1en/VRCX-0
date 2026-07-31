@@ -1,0 +1,148 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+    buildSameInstanceFriendGroups,
+    resolveSameInstanceFriendLocation
+} from './sameInstanceFriends';
+
+describe('sameInstanceFriends', () => {
+    const currentLocation = 'wrld_current:123';
+    const otherLocation = 'wrld_other:456';
+
+    it('keeps the original two-friend threshold outside the current instance', () => {
+        const first = {
+            id: 'usr_1',
+            state: 'online',
+            location: otherLocation
+        };
+        const second = {
+            id: 'usr_2',
+            state: 'online',
+            location: otherLocation
+        };
+        const solo = {
+            id: 'usr_3',
+            state: 'online',
+            location: 'wrld_solo:789'
+        };
+
+        expect(
+            buildSameInstanceFriendGroups([first, solo, second], {
+                location: currentLocation
+            })
+        ).toEqual([
+            {
+                location: otherLocation,
+                friends: [first, second],
+                isCurrentInstance: false
+            }
+        ]);
+    });
+
+    it('keeps one friend when the current user is in that instance', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'online',
+            location: currentLocation
+        };
+
+        expect(
+            buildSameInstanceFriendGroups([friend], {
+                location: currentLocation
+            })
+        ).toEqual([
+            {
+                location: currentLocation,
+                friends: [friend],
+                isCurrentInstance: true
+            }
+        ]);
+    });
+
+    it('uses the observed current roster for an online friend with a hidden location', () => {
+        const friend = {
+            id: 'usr_hidden',
+            state: 'online',
+            location: 'private'
+        };
+        const lastLocation = {
+            location: currentLocation,
+            friendList: new Set(['usr_hidden'])
+        };
+
+        expect(resolveSameInstanceFriendLocation(friend, lastLocation)).toBe(
+            currentLocation
+        );
+        expect(buildSameInstanceFriendGroups([friend], lastLocation)).toEqual([
+            {
+                location: currentLocation,
+                friends: [friend],
+                isCurrentInstance: true
+            }
+        ]);
+    });
+
+    it('does not reveal a hidden friend who is absent from the observed roster', () => {
+        expect(
+            resolveSameInstanceFriendLocation(
+                {
+                    id: 'usr_hidden',
+                    state: 'online',
+                    location: 'private'
+                },
+                {
+                    location: currentLocation,
+                    friendList: new Set(['usr_other'])
+                }
+            )
+        ).toBe('');
+    });
+
+    it('keeps an explicit instance instead of overriding it from the observed roster', () => {
+        expect(
+            resolveSameInstanceFriendLocation(
+                {
+                    id: 'usr_visible',
+                    state: 'online',
+                    location: otherLocation
+                },
+                {
+                    location: currentLocation,
+                    friendList: new Set(['usr_visible'])
+                }
+            )
+        ).toBe(otherLocation);
+    });
+
+    it('does not promote an offline friend from the observed roster into the group', () => {
+        const friend = {
+            id: 'usr_offline',
+            state: 'offline',
+            location: 'private'
+        };
+
+        expect(
+            buildSameInstanceFriendGroups([friend], {
+                location: currentLocation,
+                friendList: new Set(['usr_offline'])
+            })
+        ).toEqual([]);
+    });
+
+    it('prefers current top-level presence over a stale nested ref', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'online',
+            location: currentLocation,
+            ref: {
+                id: 'usr_friend',
+                state: 'offline',
+                location: 'offline'
+            }
+        };
+
+        expect(resolveSameInstanceFriendLocation(friend, null)).toBe(
+            currentLocation
+        );
+    });
+});

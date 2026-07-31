@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveEffectivePresenceLocation } from './userDialogContentHelpers';
+import { resolveUserDialogTargetPresenceLocation } from './userDialogContentHelpers';
 
-describe('resolveEffectivePresenceLocation', () => {
+describe('resolveUserDialogTargetPresenceLocation', () => {
     const currentLocation = 'wrld_current:123';
 
     it('uses the current instance for a private user observed in its player list', () => {
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: { id: 'usr_target', location: 'private' },
                 targetUserId: 'usr_target',
                 currentLocation,
@@ -18,7 +18,7 @@ describe('resolveEffectivePresenceLocation', () => {
 
     it('uses the current instance for an offline non-friend observed in its player list', () => {
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: { id: 'usr_target', location: 'offline' },
                 targetUserId: 'usr_target',
                 currentLocation,
@@ -29,7 +29,7 @@ describe('resolveEffectivePresenceLocation', () => {
 
     it('keeps a hidden location when the user is not in the current player list', () => {
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: { id: 'usr_target', location: 'private' },
                 targetUserId: 'usr_target',
                 currentLocation,
@@ -46,7 +46,7 @@ describe('resolveEffectivePresenceLocation', () => {
         };
 
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: hiddenFriend,
                 targetUserId: hiddenFriend.id,
                 currentLocation,
@@ -59,7 +59,7 @@ describe('resolveEffectivePresenceLocation', () => {
         const visibleLocation = 'wrld_visible:456';
 
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: { id: 'usr_target', location: visibleLocation },
                 targetUserId: 'usr_target',
                 currentLocation,
@@ -70,7 +70,7 @@ describe('resolveEffectivePresenceLocation', () => {
 
     it('does not expose a location after the current instance stops being concrete', () => {
         expect(
-            resolveEffectivePresenceLocation({
+            resolveUserDialogTargetPresenceLocation({
                 profile: { id: 'usr_target', location: 'private' },
                 targetUserId: 'usr_target',
                 currentLocation: 'traveling',

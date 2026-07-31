@@ -15,7 +15,7 @@ import {
 import { dialogTargetKey } from './user-dialog/userDialogCache';
 import {
     isSameLocationTag,
-    resolveEffectivePresenceLocation,
+    resolveUserDialogTargetPresenceLocation,
     resolveFriendRequestState,
     resolvePlatformMeta
 } from './user-dialog/userDialogContentHelpers';
@@ -180,7 +180,7 @@ export function UserDialogContent({
     const currentSnapshotLocation = normalizeUserId(
         currentUserSnapshot?.$locationTag || currentUserSnapshot?.location
     );
-    const presenceLocation = resolveEffectivePresenceLocation({
+    const presenceLocation = resolveUserDialogTargetPresenceLocation({
         profile,
         targetUserId: normalizedUserId,
         currentLocation: currentGameLocation || currentSnapshotLocation,

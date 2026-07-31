@@ -4,16 +4,18 @@ import {
     type FriendSortItem,
     type FriendSortMethod
 } from '@/shared/utils/friend';
-import { isRealInstance } from '@/shared/utils/instance';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import type {
     FriendLocationProjection,
     FriendRecordInput
 } from '@/domain/friends/friendRosterTypes';
 import {
-    parseLocation,
-    resolveFriendPresenceLocation
-} from '@/shared/utils/location';
+    buildSameInstanceFriendGroups,
+    isOnlineSameInstanceFriend,
+    resolveSameInstanceFriendLocation,
+    type SameInstanceLastLocation
+} from '@/domain/friends/sameInstanceFriends';
+import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { getTrustColor } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -65,14 +67,7 @@ export type SidebarPreferences = {
     sidebarSortMethod3?: FriendSortMethod | '';
 };
 
-export type LastLocationSnapshot = {
-    friendList?:
-        | Set<unknown>
-        | Map<string, unknown>
-        | readonly string[]
-        | Record<string, unknown>;
-    location?: unknown;
-};
+export type LastLocationSnapshot = SameInstanceLastLocation;
 
 type SidebarStatusOptions = {
     hideNonFriend?: boolean;
@@ -450,51 +445,15 @@ export function sortActiveRows(
     return [...sortedRows].sort(compareByActiveStatus);
 }
 
-export function lastLocationHasFriend(
-    lastLocation: LastLocationSnapshot | null | undefined,
-    friendId: unknown
-) {
-    const normalizedFriendId = normalizeId(friendId);
-    if (!normalizedFriendId) {
-        return false;
-    }
-    const friendList = lastLocation?.friendList;
-    if (friendList instanceof Set || friendList instanceof Map) {
-        return friendList.has(normalizedFriendId);
-    }
-    if (Array.isArray(friendList)) {
-        return friendList.some((id) => normalizeId(id) === normalizedFriendId);
-    }
-    if (friendList && typeof friendList === 'object') {
-        return Boolean(
-            (friendList as Record<string, unknown>)[normalizedFriendId]
-        );
-    }
-    return false;
-}
-
 export function sameInstanceLocationTag(
     friend: SidebarFriendRecord,
     lastLocation: LastLocationSnapshot | null | undefined
 ) {
     const source = readFriendStatusSource(friend);
-    if (
-        normalizeLocationStatus(source?.stateBucket || source?.state) !==
-        'online'
-    ) {
+    if (!isOnlineSameInstanceFriend(source)) {
         return '';
     }
-    const parsedLocation =
-        locationProjection(source?.$location) ||
-        parseLocation(source?.location);
-    let locationTag = normalizeId(parsedLocation?.tag || source?.location);
-    if (
-        !parsedLocation?.isRealInstance &&
-        lastLocationHasFriend(lastLocation, friend?.id)
-    ) {
-        locationTag = normalizeId(lastLocation?.location);
-    }
-    return isRealInstance(locationTag) ? locationTag : '';
+    return resolveSameInstanceFriendLocation(source, lastLocation);
 }
 
 export function readFriendInstanceEpoch(
@@ -558,52 +517,35 @@ export function buildSameInstanceGroups(
     lastLocation: LastLocationSnapshot | null | undefined,
     fallbackJoinTimes: Map<string, number>
 ) {
-    const groupsByLocation = new Map<string, SidebarFriendRecord[]>();
     const activeFallbackKeys = new Set<string>();
-    const currentLocationTag = normalizeId(lastLocation?.location);
-    for (const friend of sortRows(rows, prefs)) {
-        const locationTag = sameInstanceLocationTag(friend, lastLocation);
-        if (!locationTag) {
-            continue;
-        }
-        if (!groupsByLocation.has(locationTag)) {
-            groupsByLocation.set(locationTag, []);
+    const preparedRows = sortRows(rows, prefs).map((friend) => {
+        const location = sameInstanceLocationTag(friend, lastLocation);
+        if (!location) {
+            return friend;
         }
         const source = readFriendStatusSource(friend);
         const needsFallback = !timestampMsFromValue(
             readFriendInstanceEpoch(source, false)
         );
-        const groupRows = groupsByLocation.get(locationTag);
-        if (!groupRows) {
-            continue;
-        }
-        groupRows.push(
-            withSameInstanceJoinTime(friend, locationTag, fallbackJoinTimes)
-        );
         if (needsFallback) {
-            activeFallbackKeys.add(
-                sameInstanceFallbackKey(locationTag, friend)
-            );
+            activeFallbackKeys.add(sameInstanceFallbackKey(location, friend));
         }
-    }
+        return withSameInstanceJoinTime(friend, location, fallbackJoinTimes);
+    });
+    const groups = buildSameInstanceFriendGroups(
+        preparedRows,
+        lastLocation
+    ).map(
+        ({ location, friends, isCurrentInstance }): SameInstanceGroup => ({
+            location,
+            rows: friends,
+            isCurrentInstance
+        })
+    );
     for (const key of fallbackJoinTimes.keys()) {
         if (!activeFallbackKeys.has(key)) {
             fallbackJoinTimes.delete(key);
         }
     }
-    return Array.from(groupsByLocation.entries())
-        .filter(
-            ([location, groupRows]) =>
-                groupRows.length > 1 ||
-                (currentLocationTag !== '' && location === currentLocationTag)
-        )
-        .sort((left, right) => right[1].length - left[1].length)
-        .map(
-            ([location, groupRows]): SameInstanceGroup => ({
-                location,
-                rows: groupRows,
-                isCurrentInstance:
-                    currentLocationTag !== '' && location === currentLocationTag
-            })
-        );
+    return groups;
 }

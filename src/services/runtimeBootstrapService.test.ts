@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    startCurrentInstanceSnapshotSync: vi.fn(),
     startRuntimeGameClientSync: vi.fn(),
     getTimeUnitLabels: vi.fn(),
     setI18nLanguage: vi.fn(),
@@ -9,6 +10,10 @@ const mocks = vi.hoisted(() => ({
     applyThemeMode: vi.fn(),
     startRuntimeUpdateLoop: vi.fn(),
     startVrcStatusPolling: vi.fn()
+}));
+
+vi.mock('./currentInstanceSnapshotSyncService', () => ({
+    startCurrentInstanceSnapshotSync: mocks.startCurrentInstanceSnapshotSync
 }));
 
 vi.mock('./gameClientLifecycle', () => ({
@@ -85,6 +90,7 @@ describe('runtimeBootstrapService', () => {
         mocks.setI18nLanguage.mockResolvedValue(undefined);
         mocks.initializeReactRuntime.mockResolvedValue(undefined);
         mocks.bindRuntimeEvents.mockResolvedValue(undefined);
+        mocks.startCurrentInstanceSnapshotSync.mockReturnValue(undefined);
         mocks.startRuntimeGameClientSync.mockReturnValue(undefined);
         mocks.startRuntimeUpdateLoop.mockReturnValue(undefined);
         mocks.startVrcStatusPolling.mockReturnValue(undefined);
@@ -119,11 +125,15 @@ describe('runtimeBootstrapService', () => {
     it('shares React runtime startup across consumers', async () => {
         const initialization = deferred<void>();
         const eventCleanup = vi.fn();
+        const currentInstanceCleanup = vi.fn();
         const gameClientCleanup = vi.fn();
         const updateLoopCleanup = vi.fn();
         const statusCleanup = vi.fn();
         mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
         mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
+        mocks.startCurrentInstanceSnapshotSync.mockReturnValue(
+            currentInstanceCleanup
+        );
         mocks.startRuntimeGameClientSync.mockReturnValue(gameClientCleanup);
         mocks.startRuntimeUpdateLoop.mockReturnValue(updateLoopCleanup);
         mocks.startVrcStatusPolling.mockReturnValue(statusCleanup);
@@ -141,6 +151,7 @@ describe('runtimeBootstrapService', () => {
         cleanupSecond();
 
         expect(eventCleanup).toHaveBeenCalledTimes(1);
+        expect(currentInstanceCleanup).toHaveBeenCalledTimes(1);
         expect(gameClientCleanup).toHaveBeenCalledTimes(1);
         expect(updateLoopCleanup).toHaveBeenCalledTimes(1);
         expect(statusCleanup).toHaveBeenCalledTimes(1);

@@ -43,6 +43,45 @@ describe('friendsSidebarModel same-instance groups', () => {
             }
         ]);
     });
+
+    it('keeps a fallback join time while a remote instance still has one friend', () => {
+        const location = 'wrld_remote:456';
+        const first = {
+            id: 'usr_1',
+            displayName: 'First',
+            state: 'online',
+            location
+        };
+        const fallbackJoinTimes = new Map<string, number>();
+
+        expect(
+            buildSameInstanceGroups(
+                [first],
+                {},
+                { location: 'wrld_current:123' },
+                fallbackJoinTimes
+            )
+        ).toEqual([]);
+        const firstJoinTime = fallbackJoinTimes.get(`${location}:${first.id}`);
+        expect(firstJoinTime).toBeTypeOf('number');
+
+        const groups = buildSameInstanceGroups(
+            [
+                first,
+                {
+                    id: 'usr_2',
+                    displayName: 'Second',
+                    state: 'online',
+                    location
+                }
+            ],
+            {},
+            { location: 'wrld_current:123' },
+            fallbackJoinTimes
+        );
+
+        expect(groups[0]?.rows[0]?.$location_at).toBe(firstJoinTime);
+    });
 });
 
 describe('friendsSidebarModel friend status source', () => {

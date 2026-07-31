@@ -153,16 +153,19 @@ describe('friends locations row helpers', () => {
         const first = {
             id: 'usr_1',
             displayName: 'First',
+            state: 'online',
             location: sharedLocation
         };
         const second = {
             id: 'usr_2',
             displayName: 'Second',
+            state: 'online',
             location: sharedLocation
         };
         const solo = {
             id: 'usr_3',
             displayName: 'Solo',
+            state: 'online',
             location: soloLocation
         };
 
@@ -180,11 +183,13 @@ describe('friends locations row helpers', () => {
         const friendWithCurrentUser = {
             id: 'usr_1',
             displayName: 'With current user',
+            state: 'online',
             location: currentLocation
         };
         const soloElsewhere = {
             id: 'usr_2',
             displayName: 'Solo elsewhere',
+            state: 'online',
             location: otherLocation
         };
 

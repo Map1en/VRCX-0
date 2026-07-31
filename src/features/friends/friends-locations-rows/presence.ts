@@ -1,3 +1,4 @@
+import { buildSameInstanceFriendGroups } from '@/domain/friends/sameInstanceFriends';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -121,38 +122,10 @@ export function buildSameInstanceGroups<TFriend extends FriendLocationFriend>(
     friends: TFriend[] | null,
     lastLocation: FriendsLocationsLastLocation | null = null
 ): SameInstanceGroup<TFriend>[] {
-    const groupsByLocation = new Map<string, TFriend[]>();
-    const currentLocation = normalizeFriendsLocationId(lastLocation?.location);
-
-    for (const friend of friends ?? []) {
-        const location = resolveFriendPresenceLocation(friend, {
-            requireInstance: true,
-            lastLocation
-        });
-        if (!isShareableInstanceLocation(location)) {
-            continue;
-        }
-        if (!groupsByLocation.has(location)) {
-            groupsByLocation.set(location, []);
-        }
-        groupsByLocation.get(location)?.push(friend);
-    }
-
-    return Array.from(groupsByLocation.entries())
-        .filter(
-            ([location, friendsInLocation]) =>
-                friendsInLocation.length > 1 ||
-                (currentLocation !== '' && location === currentLocation)
-        )
-        .map(([location, friendsInLocation]) => ({
+    return buildSameInstanceFriendGroups(friends ?? [], lastLocation).map(
+        ({ location, friends: groupedFriends }) => ({
             location,
-            friends: friendsInLocation
-        }))
-        .sort(
-            (left, right) =>
-                right.friends.length - left.friends.length ||
-                left.location.localeCompare(right.location, undefined, {
-                    sensitivity: 'base'
-                })
-        );
+            friends: groupedFriends
+        })
+    );
 }

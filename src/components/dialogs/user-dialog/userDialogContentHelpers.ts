@@ -130,7 +130,7 @@ export function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
-export function resolveEffectivePresenceLocation({
+export function resolveUserDialogTargetPresenceLocation({
     profile,
     targetUserId,
     currentLocation,

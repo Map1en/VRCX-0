@@ -1,4 +1,5 @@
 import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { SameInstanceLastLocation } from '@/domain/friends/sameInstanceFriends';
 import type { parseLocation } from '@/shared/utils/location';
 
 export type TranslationFn = (
@@ -61,14 +62,7 @@ export type FavoriteGroupSortValue = {
     label?: string;
 };
 
-export type FriendsLocationsLastLocation = {
-    friendList?:
-        | Set<string>
-        | Map<string, unknown>
-        | string[]
-        | Record<string, unknown>;
-    location?: unknown;
-};
+export type FriendsLocationsLastLocation = SameInstanceLastLocation;
 
 export type SameInstanceGroup<
     TFriend extends FriendLocationFriend = FriendLocationFriend

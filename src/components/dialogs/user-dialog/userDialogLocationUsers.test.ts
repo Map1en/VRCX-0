@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildUserDialogLocationUsers } from './userDialogLocationUsers';
+import {
+    buildUserDialogLocationUsers,
+    shouldIncludeUserDialogLocationFriend
+} from './userDialogLocationUsers';
 
 describe('buildUserDialogLocationUsers', () => {
     const t = (key: string) => key;
@@ -60,5 +63,28 @@ describe('buildUserDialogLocationUsers', () => {
         });
 
         expect(result.locationInstanceUsers).toEqual([]);
+    });
+
+    it('keeps the original private inactive friend guard outside the observed current roster', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'active',
+            location: 'private'
+        };
+
+        expect(
+            shouldIncludeUserDialogLocationFriend({
+                currentLocationMatches: false,
+                currentLocationPlayerIds: new Set(['usr_friend']),
+                friend
+            })
+        ).toBe(false);
+        expect(
+            shouldIncludeUserDialogLocationFriend({
+                currentLocationMatches: true,
+                currentLocationPlayerIds: new Set(['usr_friend']),
+                friend
+            })
+        ).toBe(true);
     });
 });
