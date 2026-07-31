@@ -22,6 +22,9 @@ export function useFriendsLocationsRuntime() {
     const currentLocationPlayerIds = useRuntimeStore(
         (state) => state.gameState.currentLocationPlayerIds
     );
+    const currentLocationPlayers = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayers
+    );
     const domainCurrentInstancePresence = useCurrentInstancePresence();
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
@@ -36,9 +39,11 @@ export function useFriendsLocationsRuntime() {
             currentLocation: runtimeCurrentLocation,
             currentDestination: runtimeCurrentDestination,
             currentLocationPlayerIds: effectiveCurrentLocationPlayerIds,
+            currentLocationPlayers,
             isGameRunning
         }),
         [
+            currentLocationPlayers,
             effectiveCurrentLocationPlayerIds,
             isGameRunning,
             runtimeCurrentDestination,

@@ -118,7 +118,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
         });
     });
 
-    it('can hide the current user from same-instance while preserving the me row', () => {
+    it('can hide the current user from a valid same-instance group while preserving the me row', () => {
         const rows = buildFriendsSidebarVirtualRows({
             activeRows: [],
             currentUser: {
@@ -147,7 +147,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             sameInstanceGroups: [
                 {
                     location: 'wrld_live:1',
-                    rows: [{ id: 'usr_same' }],
+                    rows: [{ id: 'usr_same' }, { id: 'usr_other' }],
                     isCurrentInstance: true
                 }
             ],

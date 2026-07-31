@@ -1,5 +1,6 @@
 import { AppleIcon, MonitorIcon, RectangleGogglesIcon } from 'lucide-react';
 
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     parseLocation,
@@ -134,12 +135,16 @@ export function resolveUserDialogTargetPresenceLocation({
     profile,
     targetUserId,
     currentLocation,
-    currentLocationPlayerIds
+    currentLocationPlayerIds,
+    currentLocationPlayers,
+    friendsById = {}
 }: {
     profile: unknown;
     targetUserId: unknown;
     currentLocation: unknown;
     currentLocationPlayerIds: unknown;
+    currentLocationPlayers?: unknown;
+    friendsById?: Record<string, unknown>;
 }) {
     const presenceLocation = resolvePresenceLocation(profile);
     if (parseLocation(presenceLocation).isRealInstance) {
@@ -151,10 +156,11 @@ export function resolveUserDialogTargetPresenceLocation({
     if (
         !normalizedTargetUserId ||
         !parseLocation(normalizedCurrentLocation).isRealInstance ||
-        !Array.isArray(currentLocationPlayerIds) ||
-        !currentLocationPlayerIds.some(
-            (playerId) => normalizeUserId(playerId) === normalizedTargetUserId
-        )
+        !resolveObservedPlayerUserIds(
+            currentLocationPlayerIds,
+            currentLocationPlayers,
+            friendsById
+        ).includes(normalizedTargetUserId)
     ) {
         return presenceLocation;
     }

@@ -177,7 +177,7 @@ describe('friends locations row helpers', () => {
         ]);
     });
 
-    it('groups one friend with the current user but not a solo friend elsewhere', () => {
+    it('keeps the original two-friend threshold on Friends Locations', () => {
         const currentLocation = 'wrld_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:123';
         const otherLocation = 'wrld_bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb:456';
         const friendWithCurrentUser = {
@@ -197,12 +197,7 @@ describe('friends locations row helpers', () => {
             buildSameInstanceGroups([friendWithCurrentUser, soloElsewhere], {
                 location: currentLocation
             })
-        ).toEqual([
-            {
-                location: currentLocation,
-                friends: [friendWithCurrentUser]
-            }
-        ]);
+        ).toEqual([]);
     });
 
     it('matches search text against friend and location summary fields', () => {

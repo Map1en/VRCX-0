@@ -184,7 +184,9 @@ export function UserDialogContent({
         profile,
         targetUserId: normalizedUserId,
         currentLocation: currentGameLocation || currentSnapshotLocation,
-        currentLocationPlayerIds: gameState?.currentLocationPlayerIds
+        currentLocationPlayerIds: gameState?.currentLocationPlayerIds,
+        currentLocationPlayers: gameState?.currentLocationPlayers,
+        friendsById
     });
 
     useEffect(

@@ -1,4 +1,7 @@
+import { commands } from '@/platform/tauri/bindings';
+import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import { buildCurrentUserGameStatePresencePatch } from '@/shared/utils/currentUserPresence';
+import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useInstanceJoinHistoryStore } from '@/state/instanceJoinHistoryStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -108,6 +111,65 @@ export function applyRuntimeGameLogProjection(payload: unknown) {
         currentLocationPlayers,
         currentWorldName
     });
+}
+
+export async function restoreRuntimeGameLogProjectionFromPersistence(): Promise<boolean> {
+    const initialState = useRuntimeStore.getState();
+    const currentUserId = normalizeString(initialState.auth.currentUserId);
+    if (
+        !currentUserId ||
+        !(await commands.appIsGameRunning().catch(() => false))
+    ) {
+        return false;
+    }
+
+    const currentLocation = normalizeLocationValue(
+        initialState.gameState.currentLocation
+    );
+    const requestedLocation = parseLocation(currentLocation).isRealInstance
+        ? currentLocation
+        : '';
+    const snapshot =
+        await playerListPersistenceRepository.getCurrentInstanceSnapshot({
+            currentUserId,
+            currentLocation: requestedLocation,
+            currentLocationStartedAt:
+                initialState.gameState.currentLocationStartedAt || ''
+        });
+    const snapshotLocation = normalizeLocationValue(snapshot.context.location);
+    const parsedSnapshotLocation = parseLocation(snapshotLocation);
+    if (!parsedSnapshotLocation.isRealInstance) {
+        return false;
+    }
+
+    const latestState = useRuntimeStore.getState();
+    const latestLocation = parseLocation(latestState.gameState.currentLocation);
+    if (
+        normalizeString(latestState.auth.currentUserId) !== currentUserId ||
+        latestState.gameState.currentLocationPlayers.length > 0 ||
+        (latestLocation.isRealInstance &&
+            (latestLocation.worldId !== parsedSnapshotLocation.worldId ||
+                latestLocation.instanceId !==
+                    parsedSnapshotLocation.instanceId)) ||
+        !(await commands.appIsGameRunning().catch(() => false))
+    ) {
+        return false;
+    }
+
+    applyRuntimeGameLogProjection({
+        currentLocation: snapshotLocation,
+        currentWorldId: snapshot.context.worldId,
+        currentWorldName: snapshot.context.worldName,
+        currentLocationStartedAt: snapshot.context.createdAt,
+        currentLocationPlayers: snapshot.players.map((player) => ({
+            userId: player.userId,
+            displayName: player.displayName,
+            joinTimeMs: player.joinedAtMs
+        })),
+        lastGameLogAt: snapshot.context.createdAt,
+        lastGameLogType: 'startup-roster'
+    });
+    return true;
 }
 
 function patchCurrentUserLocationFromGameState(

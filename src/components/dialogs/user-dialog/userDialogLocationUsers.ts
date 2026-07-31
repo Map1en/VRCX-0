@@ -1,3 +1,4 @@
+import { resolveObservedPlayerUserId } from '@/domain/friends/sameInstanceFriends';
 import {
     buildInstanceRosterRows,
     firstText,
@@ -100,6 +101,7 @@ export function buildUserDialogLocationUsers({
               : null;
     const instance = record(locationInstance);
     const parsedLocation = record(visiblePresenceParsedLocation);
+    const friendDirectory = record(friendsById);
     const group =
         instance.group && typeof instance.group === 'object'
             ? Object.fromEntries(Object.entries(instance.group))
@@ -125,7 +127,21 @@ export function buildUserDialogLocationUsers({
         ownerUser: source(locationOwnerUser),
         parsedLocation,
         profile: source(profile),
-        users: Array.isArray(sameInstanceUsers) ? sameInstanceUsers : []
+        users: (Array.isArray(sameInstanceUsers) ? sameInstanceUsers : []).map(
+            (user) => {
+                const userId = resolveObservedPlayerUserId(
+                    user,
+                    friendDirectory
+                );
+                return userId
+                    ? {
+                          ...record(user),
+                          id: userId,
+                          userId
+                      }
+                    : user;
+            }
+        )
     });
     const visibleRows = filterVisibleUserDialogLocationUsers({
         currentUserId,

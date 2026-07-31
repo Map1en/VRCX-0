@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     appRuntimeGroupInstancesRefresh: vi.fn(),
     getInstanceJoinHistory: vi.fn(),
     isHostCapabilityAvailable: vi.fn(),
+    restoreRuntimeGameLogProjectionFromPersistence: vi.fn(),
     syncStartupServicesTask: vi.fn()
 }));
 
@@ -23,6 +24,11 @@ vi.mock('@/repositories/gameLogPersistenceRepository', () => ({
 
 vi.mock('./hostCapabilityService', () => ({
     isHostCapabilityAvailable: mocks.isHostCapabilityAvailable
+}));
+
+vi.mock('./gameLogIngestService', () => ({
+    restoreRuntimeGameLogProjectionFromPersistence:
+        mocks.restoreRuntimeGameLogProjectionFromPersistence
 }));
 
 vi.mock('./startupServicesStatus', () => ({
@@ -56,6 +62,26 @@ describe('sessionBootstrapService', () => {
         mocks.getInstanceJoinHistory.mockResolvedValue(
             new Map([['wrld_test:123', 123456]])
         );
+        mocks.restoreRuntimeGameLogProjectionFromPersistence.mockResolvedValue(
+            false
+        );
+    });
+
+    it('restores the persisted GameLog roster after game detection', async () => {
+        mocks.isHostCapabilityAvailable.mockReturnValue(true);
+        const { beginAuthAttempt } = await import('./authAttempt');
+        const { bootstrapAuthenticatedSession } =
+            await import('./sessionBootstrapService');
+
+        await bootstrapAuthenticatedSession(
+            { id: 'usr_self', displayName: 'Self' },
+            beginAuthAttempt()
+        );
+
+        expect(mocks.appCheckGameRunning).toHaveBeenCalledTimes(2);
+        expect(
+            mocks.restoreRuntimeGameLogProjectionFromPersistence
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('hydrates the frontend after the backend session is committed', async () => {

@@ -1,6 +1,8 @@
 use vrcx_0_core::log_watcher::{GameLogEvent, GameLogEventKind};
 
-use super::{GameLogIngestEngine, GameLogIngestOptions, GameLogJoinLeaveSnapshot};
+use super::{
+    GameLogIngestEngine, GameLogIngestOptions, GameLogJoinLeaveSnapshot, GameLogProcessEvent,
+};
 
 fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
     GameLogEvent {
@@ -229,6 +231,77 @@ fn seeded_location_applies_to_join_without_location_event() {
         engine.runtime_snapshot().started_at,
         "2026-05-14T10:00:00.000Z"
     );
+}
+
+#[test]
+fn game_start_projects_seeded_location_and_roster() {
+    let mut engine = GameLogIngestEngine::default();
+    engine.seed_current_location(
+        "wrld_seed:1".into(),
+        "Seed World".into(),
+        "2026-05-14T10:00:00.000Z".into(),
+    );
+    engine.seed_current_roster(&[
+        join_leave_snapshot(
+            "2026-05-14T10:00:10.000Z",
+            "OnPlayerJoined",
+            "Known Friend",
+            "usr_friend",
+        ),
+        join_leave_snapshot(
+            "2026-05-14T10:00:20.000Z",
+            "OnPlayerJoined",
+            "Name Only",
+            "",
+        ),
+    ]);
+
+    let output = engine.handle_process_event(GameLogProcessEvent {
+        is_game_running: true,
+        is_steamvr_running: false,
+        game_changed: true,
+        changed_at: "2026-05-14T10:05:00.000Z".into(),
+    });
+    let projection = output.projection.expect("game start projection");
+
+    assert_eq!(projection.current_location, "wrld_seed:1");
+    assert_eq!(projection.current_world_name, "Seed World");
+    assert_eq!(projection.current_location_players.len(), 2);
+    assert!(projection
+        .current_location_players
+        .iter()
+        .any(|player| player.user_id == "usr_friend"));
+    assert!(projection
+        .current_location_players
+        .iter()
+        .any(|player| player.user_id.is_empty() && player.display_name == "Name Only"));
+    assert_eq!(projection.last_game_log_type, "game-started");
+}
+
+#[test]
+fn later_game_start_does_not_restore_a_stale_seeded_location() {
+    let mut engine = GameLogIngestEngine::default();
+    engine.seed_current_location(
+        "wrld_stale:1".into(),
+        "Stale World".into(),
+        "2026-05-14T10:00:00.000Z".into(),
+    );
+
+    let initial_stopped = engine.handle_process_event(GameLogProcessEvent {
+        is_game_running: false,
+        is_steamvr_running: false,
+        game_changed: false,
+        changed_at: "2026-05-14T10:05:00.000Z".into(),
+    });
+    let later_start = engine.handle_process_event(GameLogProcessEvent {
+        is_game_running: true,
+        is_steamvr_running: false,
+        game_changed: true,
+        changed_at: "2026-05-14T11:00:00.000Z".into(),
+    });
+
+    assert!(initial_stopped.projection.is_none());
+    assert!(later_start.projection.is_none());
 }
 
 #[test]

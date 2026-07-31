@@ -532,10 +532,9 @@ export function buildSameInstanceGroups(
         }
         return withSameInstanceJoinTime(friend, location, fallbackJoinTimes);
     });
-    const groups = buildSameInstanceFriendGroups(
-        preparedRows,
-        lastLocation
-    ).map(
+    const groups = buildSameInstanceFriendGroups(preparedRows, lastLocation, {
+        includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false
+    }).map(
         ({ location, friends, isCurrentInstance }): SameInstanceGroup => ({
             location,
             rows: friends,

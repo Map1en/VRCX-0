@@ -24,6 +24,9 @@ export function useFriendsSidebarRuntimeSnapshot() {
     const currentLocationPlayerIds = useRuntimeStore(
         (state) => state.gameState.currentLocationPlayerIds
     );
+    const currentLocationPlayers = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayers
+    );
     const domainCurrentInstancePresence = useCurrentInstancePresence();
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
@@ -62,6 +65,7 @@ export function useFriendsSidebarRuntimeSnapshot() {
         currentUser,
         currentUserId,
         effectiveCurrentLocationPlayerIds,
+        currentLocationPlayers,
         gameState,
         isDarkMode
     };

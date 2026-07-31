@@ -3,7 +3,6 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
 
-import { startCurrentInstanceSnapshotSync } from './currentInstanceSnapshotSyncService';
 import { startRuntimeGameClientSync } from './gameClientLifecycle';
 import { getTimeUnitLabels, setI18nLanguage } from './i18nService';
 import { bindRuntimeEvents } from './runtimeEventBridgeService';
@@ -50,7 +49,6 @@ function createReactRuntimeStartPromise() {
         .then((cleanup) => {
             cleanups.push(cleanup ?? null);
             cleanups.push(startRuntimeGameClientSync());
-            cleanups.push(startCurrentInstanceSnapshotSync());
             cleanups.push(startRuntimeUpdateLoop());
             cleanups.push(startVrcStatusPolling());
             reactRuntimeCleanup = () => {

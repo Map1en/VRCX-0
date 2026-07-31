@@ -39,6 +39,9 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const currentLocationPlayerIds = useRuntimeStore(
         (state) => state.gameState.currentLocationPlayerIds
     );
+    const currentLocationPlayers = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayers
+    );
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning
     );
@@ -89,10 +92,12 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
             currentDestination: runtimeCurrentDestination,
             currentWorldId: runtimeCurrentWorldId,
             currentLocationPlayerIds,
+            currentLocationPlayers,
             isGameRunning
         }),
         [
             currentLocationPlayerIds,
+            currentLocationPlayers,
             isGameRunning,
             runtimeCurrentDestination,
             runtimeCurrentLocation,

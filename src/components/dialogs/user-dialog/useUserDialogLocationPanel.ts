@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { firstNonNegativeLocationNumber } from '@/components/location/locationModel';
-import { resolveSameInstanceFriendLocation } from '@/domain/friends/sameInstanceFriends';
+import {
+    resolveObservedPlayerUserId,
+    resolveObservedPlayerUserIds,
+    resolveSameInstanceFriendLocation
+} from '@/domain/friends/sameInstanceFriends';
 import {
     createInstanceUserRow as createLocationUserRow,
     isSameInstanceLocation as isSameLocationTag,
@@ -274,12 +278,11 @@ export function useUserDialogLocationPanel({
             activeLocation
         );
         const currentLocationPlayerIds = new Set(
-            (Array.isArray(gameState?.currentLocationPlayerIds)
-                ? gameState.currentLocationPlayerIds
-                : []
+            resolveObservedPlayerUserIds(
+                gameState?.currentLocationPlayerIds,
+                gameState?.currentLocationPlayers,
+                friendsById
             )
-                .map(normalizeUserId)
-                .filter(Boolean)
         );
         const currentFriendLocationSnapshot = {
             location: currentLocation,
@@ -431,12 +434,18 @@ export function useUserDialogLocationPanel({
                         Array.isArray(playerSnapshot?.players)
                             ? playerSnapshot.players
                             : []
-                    ).map((player) => ({
-                        id: player.userId,
-                        userId: player.userId,
-                        displayName: player.displayName,
-                        joinedAt: player.joinedAt
-                    }));
+                    ).map((player) => {
+                        const userId = resolveObservedPlayerUserId(
+                            player,
+                            friendsById
+                        );
+                        return {
+                            id: userId,
+                            userId,
+                            displayName: player.displayName,
+                            joinedAt: player.joinedAt
+                        };
+                    });
                     const instanceOwnerId = resolveOwnerId(
                         instance,
                         parsedLocation.userId,
@@ -644,6 +653,7 @@ export function useUserDialogLocationPanel({
         friendsById,
         gameState?.currentLocationStartedAt,
         gameState?.currentLocationPlayerIds,
+        gameState?.currentLocationPlayers,
         locationRefreshToken,
         normalizedCurrentUserId,
         presenceLocation,

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -112,6 +113,7 @@ export function FriendsSidebar({
         currentEndpoint,
         currentUser,
         currentUserId,
+        currentLocationPlayers,
         effectiveCurrentLocationPlayerIds,
         gameState,
         isDarkMode
@@ -151,12 +153,19 @@ export function FriendsSidebar({
         () => ({
             location: currentInviteLocation,
             friendList: new Set(
-                Array.isArray(effectiveCurrentLocationPlayerIds)
-                    ? effectiveCurrentLocationPlayerIds
-                    : []
+                resolveObservedPlayerUserIds(
+                    effectiveCurrentLocationPlayerIds,
+                    currentLocationPlayers,
+                    friendsById
+                )
             )
         }),
-        [currentInviteLocation, effectiveCurrentLocationPlayerIds]
+        [
+            currentInviteLocation,
+            currentLocationPlayers,
+            effectiveCurrentLocationPlayerIds,
+            friendsById
+        ]
     );
     const canInviteFromCurrentLocation = useMemo(
         () =>

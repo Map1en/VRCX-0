@@ -1,4 +1,5 @@
 import type { EntityRecord } from '@/domain/entities/profileEntities';
+import { resolveObservedPlayerUserId } from '@/domain/friends/sameInstanceFriends';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -128,7 +129,7 @@ export function buildWorldDialogDisplayInstanceRows({
         Array.isArray(playerSnapshot.players) ? playerSnapshot.players : []
     ).map((player) => {
         const source = record(player);
-        const userId = firstText(source.userId, source.user_id);
+        const userId = resolveObservedPlayerUserId(source, friendsById);
         return {
             id: userId,
             userId,

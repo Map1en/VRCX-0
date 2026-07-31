@@ -65,6 +65,41 @@ describe('buildUserDialogLocationUsers', () => {
         expect(result.locationInstanceUsers).toEqual([]);
     });
 
+    it('restores name-only Busy and Ask Me friends from the observed roster', () => {
+        const result = buildUserDialogLocationUsers({
+            currentUserId: 'usr_self',
+            friendsById: {
+                usr_busy: {
+                    id: 'usr_busy',
+                    displayName: 'Busy Friend',
+                    status: 'busy',
+                    location: 'private'
+                },
+                usr_ask: {
+                    id: 'usr_ask',
+                    displayName: 'Ask Friend',
+                    status: 'ask me',
+                    location: 'private'
+                }
+            },
+            locationInstance: {},
+            locationOwnerGroup: null,
+            locationOwnerUser: null,
+            profile: null,
+            sameInstanceUsers: [
+                { userId: '', displayName: 'Busy Friend' },
+                { userId: '', displayName: 'Ask Friend' }
+            ],
+            t,
+            visiblePresenceParsedLocation: parsedLocation
+        });
+
+        expect(result.locationInstanceUsers.map((user) => user.id)).toEqual([
+            'usr_busy',
+            'usr_ask'
+        ]);
+    });
+
     it('keeps the original private inactive friend guard outside the observed current roster', () => {
         const friend = {
             id: 'usr_friend',
@@ -87,4 +122,24 @@ describe('buildUserDialogLocationUsers', () => {
             })
         ).toBe(true);
     });
+
+    it.each(['busy', 'ask me'])(
+        'keeps an observed %s friend despite a private remote presence',
+        (status) => {
+            const friend = {
+                id: 'usr_friend',
+                state: 'active',
+                status,
+                location: 'private'
+            };
+
+            expect(
+                shouldIncludeUserDialogLocationFriend({
+                    currentLocationMatches: true,
+                    currentLocationPlayerIds: new Set(['usr_friend']),
+                    friend
+                })
+            ).toBe(true);
+        }
+    );
 });

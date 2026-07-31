@@ -55,6 +55,30 @@ describe('resolveUserDialogTargetPresenceLocation', () => {
         ).toBe(currentLocation);
     });
 
+    it('promotes a name-only GameLog player after resolving it from the friend roster', () => {
+        expect(
+            resolveUserDialogTargetPresenceLocation({
+                profile: {
+                    id: 'usr_friend',
+                    displayName: 'Hidden Friend',
+                    location: 'private'
+                },
+                targetUserId: 'usr_friend',
+                currentLocation,
+                currentLocationPlayerIds: [],
+                currentLocationPlayers: [
+                    { userId: '', displayName: 'Hidden Friend' }
+                ],
+                friendsById: {
+                    usr_friend: {
+                        id: 'usr_friend',
+                        displayName: 'Hidden Friend'
+                    }
+                }
+            })
+        ).toBe(currentLocation);
+    });
+
     it('keeps a visible presence location instead of overriding it', () => {
         const visibleLocation = 'wrld_visible:456';
 

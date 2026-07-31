@@ -184,4 +184,53 @@ describe('worldDialogInstanceRows', () => {
             userId: 'usr_dup'
         });
     });
+
+    it('restores name-only Busy and Ask Me friends in the current instance', () => {
+        const location =
+            'wrld_test:live~group(grp_live)~groupAccessType(public)';
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {
+                location,
+                instance: {
+                    id: 'live~group(grp_live)~groupAccessType(public)',
+                    groupId: 'grp_live'
+                },
+                playerSnapshot: {
+                    context: { playerCount: 2 },
+                    players: [
+                        { userId: '', displayName: 'Busy Friend' },
+                        { userId: '', displayName: 'Ask Friend' }
+                    ]
+                }
+            },
+            friendsById: {
+                usr_busy: {
+                    id: 'usr_busy',
+                    displayName: 'Busy Friend',
+                    state: 'online',
+                    status: 'busy',
+                    location: 'private'
+                },
+                usr_ask: {
+                    id: 'usr_ask',
+                    displayName: 'Ask Friend',
+                    state: 'online',
+                    status: 'ask me',
+                    location: 'private'
+                }
+            },
+            instanceRows: [],
+            isInstanceLocation: true,
+            normalizedWorldId: location,
+            world: {
+                id: 'wrld_test',
+                capacity: 40
+            }
+        });
+
+        expect(
+            result.displayInstanceRows[0].users.map((user) => user.id)
+        ).toEqual(['usr_busy', 'usr_ask']);
+    });
 });

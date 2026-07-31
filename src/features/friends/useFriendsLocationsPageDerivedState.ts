@@ -5,6 +5,7 @@ import type {
     FriendRecord,
     FriendRosterById
 } from '@/domain/friends/friendRosterTypes';
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
 import {
     getVisibleKnownSizeRows,
     positionKnownSizeRows
@@ -67,6 +68,7 @@ type FriendsLocationsScrollMetrics = {
 
 type FriendsLocationsGameState = InviteLocationGameState & {
     currentLocationPlayerIds?: unknown;
+    currentLocationPlayers?: unknown;
     isGameRunning?: unknown;
 };
 
@@ -190,16 +192,24 @@ export function useFriendsLocationsPageDerivedState({
         [gameState, currentUserSnapshot]
     );
     const currentLocationPlayerIds = gameState?.currentLocationPlayerIds;
+    const currentLocationPlayers = gameState?.currentLocationPlayers;
     const currentLocationSnapshot = useMemo(
         () => ({
             location: currentInviteLocation,
             friendList: new Set(
-                Array.isArray(currentLocationPlayerIds)
-                    ? currentLocationPlayerIds
-                    : []
+                resolveObservedPlayerUserIds(
+                    currentLocationPlayerIds,
+                    currentLocationPlayers,
+                    friendsById
+                )
             )
         }),
-        [currentInviteLocation, currentLocationPlayerIds]
+        [
+            currentInviteLocation,
+            currentLocationPlayerIds,
+            currentLocationPlayers,
+            friendsById
+        ]
     );
     const canInviteFromCurrentLocation = useMemo(
         () =>

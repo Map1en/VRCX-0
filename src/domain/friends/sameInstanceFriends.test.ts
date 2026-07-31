@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildSameInstanceFriendGroups,
+    resolveObservedPlayerUserId,
+    resolveObservedPlayerUserIds,
     resolveSameInstanceFriendLocation
 } from './sameInstanceFriends';
 
@@ -39,7 +41,7 @@ describe('sameInstanceFriends', () => {
         ]);
     });
 
-    it('keeps one friend when the current user is in that instance', () => {
+    it('keeps one friend when the current user is included in that instance', () => {
         const friend = {
             id: 'usr_friend',
             state: 'online',
@@ -47,9 +49,15 @@ describe('sameInstanceFriends', () => {
         };
 
         expect(
-            buildSameInstanceFriendGroups([friend], {
-                location: currentLocation
-            })
+            buildSameInstanceFriendGroups(
+                [friend],
+                {
+                    location: currentLocation
+                },
+                {
+                    includeCurrentUser: true
+                }
+            )
         ).toEqual([
             {
                 location: currentLocation,
@@ -73,7 +81,11 @@ describe('sameInstanceFriends', () => {
         expect(resolveSameInstanceFriendLocation(friend, lastLocation)).toBe(
             currentLocation
         );
-        expect(buildSameInstanceFriendGroups([friend], lastLocation)).toEqual([
+        expect(
+            buildSameInstanceFriendGroups([friend], lastLocation, {
+                includeCurrentUser: true
+            })
+        ).toEqual([
             {
                 location: currentLocation,
                 friends: [friend],
@@ -144,5 +156,48 @@ describe('sameInstanceFriends', () => {
         expect(resolveSameInstanceFriendLocation(friend, null)).toBe(
             currentLocation
         );
+    });
+
+    it('requires two friends in the current instance when the current user is hidden', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'online',
+            location: currentLocation
+        };
+
+        expect(
+            buildSameInstanceFriendGroups([friend], {
+                location: currentLocation
+            })
+        ).toEqual([]);
+    });
+
+    it('resolves a name-only observed player from the friend roster like original VRCX', () => {
+        const friendsById = {
+            usr_friend: {
+                id: 'usr_friend',
+                displayName: 'Exact Friend'
+            }
+        };
+
+        expect(
+            resolveObservedPlayerUserId(
+                { userId: '', displayName: 'Exact Friend' },
+                friendsById
+            )
+        ).toBe('usr_friend');
+        expect(
+            resolveObservedPlayerUserId(
+                { userId: '', displayName: 'exact friend' },
+                friendsById
+            )
+        ).toBe('');
+        expect(
+            resolveObservedPlayerUserIds(
+                ['usr_known', 'display:Name Only'],
+                [{ userId: '', displayName: 'Exact Friend' }],
+                friendsById
+            )
+        ).toEqual(['usr_known', 'usr_friend']);
     });
 });

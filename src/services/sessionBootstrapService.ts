@@ -5,6 +5,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { ensureCurrentAuthAttempt, type AuthAttempt } from './authAttempt';
+import { restoreRuntimeGameLogProjectionFromPersistence } from './gameLogIngestService';
 import { isHostCapabilityAvailable } from './hostCapabilityService';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
@@ -104,6 +105,15 @@ export async function bootstrapAuthenticatedSession(
     ensureCurrentAuthAttempt(attempt);
     if (gameStateRestored) {
         await requestGameRunningStateRefresh();
+        ensureCurrentAuthAttempt(attempt);
+        await restoreRuntimeGameLogProjectionFromPersistence().catch(
+            (error: unknown) => {
+                console.warn(
+                    'Current GameLog roster restore failed during session bootstrap:',
+                    error
+                );
+            }
+        );
         ensureCurrentAuthAttempt(attempt);
     }
     syncStartupServicesTask([

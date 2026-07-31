@@ -72,6 +72,7 @@ pub struct GameLogIngestOutput {
 #[derive(Clone, Debug, Default)]
 pub struct GameLogIngestEngine {
     state: GameLogRuntimeState,
+    has_seen_process_event: bool,
 }
 
 impl GameLogIngestEngine {
@@ -270,9 +271,13 @@ impl GameLogIngestEngine {
 
     pub fn handle_process_event(&mut self, event: GameLogProcessEvent) -> GameLogIngestOutput {
         let mut output = GameLogIngestOutput::default();
+        let should_restore_seeded_state = !self.has_seen_process_event && event.is_game_running;
+        self.has_seen_process_event = true;
         self.state.is_game_running = event.is_game_running;
         self.state.is_steamvr_running = event.is_steamvr_running;
-        if event.game_changed && !event.is_game_running {
+        if should_restore_seeded_state {
+            output.projection = Some(self.state.projection(&event.changed_at, "game-started"));
+        } else if event.game_changed && !event.is_game_running {
             self.finalize_location_session(&mut output.batch, &event.changed_at);
             self.state.current_location.clear();
             self.state.current_world_name.clear();
