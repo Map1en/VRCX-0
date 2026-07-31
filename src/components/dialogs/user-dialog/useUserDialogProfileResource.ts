@@ -82,6 +82,10 @@ export function useUserDialogProfileResource({
     localSnapshotRef.current = normalizedLocalSnapshot;
     const activitySnapshotRef = useRef(normalizedActivitySnapshot);
     activitySnapshotRef.current = normalizedActivitySnapshot;
+    const appearanceProfileRef = useRef<{
+        key: string;
+        value: unknown;
+    } | null>(null);
     const avatarHydrationKeyRef = useRef('');
     const [baseProfile, setBaseProfile] = useState<UserDialogProfileSnapshot>(
         () => normalizedLocalSnapshot
@@ -192,12 +196,44 @@ export function useUserDialogProfileResource({
         setLoadStatus('running');
         setDetail('');
 
-        const appearanceProfileRequest = userProfileRepository
+        const appearanceKey = `${currentEndpoint || ''}\u0000${normalizedUserId}\u0000${isTargetCurrentUser}`;
+        if (appearanceProfileRef.current?.key !== appearanceKey) {
+            appearanceProfileRef.current = null;
+        }
+
+        userProfileRepository
             .getUserAppearanceProfile({
                 userId: normalizedUserId,
-                asSelf: isTargetCurrentUser
+                asSelf: isTargetCurrentUser,
+                force: reloadToken > 0
             })
-            .catch(() => null);
+            .then((appearanceProfile) => {
+                if (!active || !appearanceProfile) {
+                    return;
+                }
+                appearanceProfileRef.current = {
+                    key: appearanceKey,
+                    value: appearanceProfile
+                };
+                setBaseProfile((currentProfile) => {
+                    const targetProfile = previousTargetProfile(
+                        currentProfile,
+                        normalizedUserId
+                    ) || {
+                        id: normalizedUserId
+                    };
+                    return preserveProfileIdentity(
+                        currentProfile,
+                        mergeUserDialogProfileAppearance(
+                            targetProfile,
+                            appearanceProfile,
+                            normalizedUserId
+                        ),
+                        normalizedUserId
+                    );
+                });
+            })
+            .catch(() => {});
 
         userProfileRepository
             .getUserProfile({
@@ -215,58 +251,43 @@ export function useUserDialogProfileResource({
                     {}
                 );
 
-                setBaseProfile((currentProfile) =>
-                    preserveProfileIdentity(
-                        currentProfile,
-                        mergeActivityTimestampsIntoProfile(
-                            (() => {
-                                const previousProfile = previousTargetProfile(
-                                    currentProfile,
-                                    normalizedUserId
-                                );
-                                return isTargetCurrentUser
-                                    ? mergeCurrentUserAvatarFields(
-                                          mergeCurrentUserPresenceFields(
-                                              remoteProfile,
-                                              previousProfile
-                                          ),
+                setBaseProfile((currentProfile) => {
+                    const nextProfile = mergeActivityTimestampsIntoProfile(
+                        (() => {
+                            const previousProfile = previousTargetProfile(
+                                currentProfile,
+                                normalizedUserId
+                            );
+                            return isTargetCurrentUser
+                                ? mergeCurrentUserAvatarFields(
+                                      mergeCurrentUserPresenceFields(
+                                          remoteProfile,
                                           previousProfile
-                                      )
-                                    : mergeLocalSnapshotIntoProfile(
-                                          localSnapshotRef.current,
-                                          remoteProfile
-                                      );
-                            })(),
-                            activitySnapshotRef.current
+                                      ),
+                                      previousProfile
+                                  )
+                                : mergeLocalSnapshotIntoProfile(
+                                      localSnapshotRef.current,
+                                      remoteProfile
+                                  );
+                        })(),
+                        activitySnapshotRef.current
+                    );
+                    const appearanceProfile =
+                        appearanceProfileRef.current?.key === appearanceKey
+                            ? appearanceProfileRef.current.value
+                            : null;
+                    return preserveProfileIdentity(
+                        currentProfile,
+                        mergeUserDialogProfileAppearance(
+                            nextProfile,
+                            appearanceProfile,
+                            normalizedUserId
                         ),
                         normalizedUserId
-                    )
-                );
-                setLoadStatus('ready');
-
-                appearanceProfileRequest.then((appearanceProfile) => {
-                    if (!active || !appearanceProfile) {
-                        return;
-                    }
-                    setBaseProfile((currentProfile) => {
-                        const targetProfile = previousTargetProfile(
-                            currentProfile,
-                            normalizedUserId
-                        );
-                        if (!targetProfile) {
-                            return currentProfile;
-                        }
-                        return preserveProfileIdentity(
-                            currentProfile,
-                            mergeUserDialogProfileAppearance(
-                                targetProfile,
-                                appearanceProfile,
-                                normalizedUserId
-                            ),
-                            normalizedUserId
-                        );
-                    });
+                    );
                 });
+                setLoadStatus('ready');
             })
             .catch((error: unknown) => {
                 if (!active) {

@@ -9,10 +9,13 @@ const tauriMock = vi.hoisted(() => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({ commands: tauriMock.commands }));
 
+import { clearEntityQueryCache } from '@/lib/entityQueryCache';
+
 import userProfileRepository from './userProfileRepository';
 
 describe('UserProfileRepository', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await clearEntityQueryCache();
         vi.mocked(tauriMock.commands.appVrchatUserProfileGet).mockReset();
         vi.mocked(tauriMock.commands.appVrchatUserMutualFriendsGet).mockReset();
     });
@@ -204,6 +207,47 @@ describe('UserProfileRepository', () => {
         expect(
             tauriMock.commands.appVrchatUserProfileGet
         ).not.toHaveBeenCalled();
+    });
+
+    it('caches appearance profiles and supports forced refreshes', async () => {
+        const firstProfile = {
+            id: 'usr_cached',
+            backgroundTextureId: 'prbg_first'
+        };
+        const refreshedProfile = {
+            id: 'usr_cached',
+            backgroundTextureId: 'prbg_refreshed'
+        };
+        vi.mocked(tauriMock.commands.appVrchatUserProfileGet)
+            .mockResolvedValueOnce({
+                status: 200,
+                data: firstProfile
+            })
+            .mockResolvedValueOnce({
+                status: 200,
+                data: refreshedProfile
+            });
+
+        await expect(
+            userProfileRepository.getUserAppearanceProfile({
+                userId: 'usr_cached'
+            })
+        ).resolves.toBe(firstProfile);
+        await expect(
+            userProfileRepository.getUserAppearanceProfile({
+                userId: 'usr_cached'
+            })
+        ).resolves.toBe(firstProfile);
+        await expect(
+            userProfileRepository.getUserAppearanceProfile({
+                userId: 'usr_cached',
+                force: true
+            })
+        ).resolves.toBe(refreshedProfile);
+
+        expect(
+            tauriMock.commands.appVrchatUserProfileGet
+        ).toHaveBeenCalledTimes(2);
     });
 
     it('strips the default robot avatar image so it resolves as unknown, not "Robot"', () => {

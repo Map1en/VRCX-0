@@ -26,6 +26,13 @@ type FetchWithEntityPolicyOptions<TData = unknown> = {
     force?: boolean;
 };
 
+const PROFILE_DECORATION_QUERY_POLICY = Object.freeze({
+    staleTime: 60 * MINUTE_MS,
+    gcTime: 240 * MINUTE_MS,
+    retry: 1,
+    refetchOnWindowFocus: false
+});
+
 export const entityQueryPolicies = Object.freeze({
     instance: Object.freeze({
         staleTime: 0,
@@ -111,12 +118,8 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
-    inventoryTemplate: Object.freeze({
-        staleTime: 60 * MINUTE_MS,
-        gcTime: 240 * MINUTE_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
+    inventoryTemplate: PROFILE_DECORATION_QUERY_POLICY,
+    userAppearance: PROFILE_DECORATION_QUERY_POLICY,
     fileAnalysis: Object.freeze({
         staleTime: 60 * MINUTE_MS,
         gcTime: 240 * MINUTE_MS,
@@ -195,6 +198,12 @@ function stableParams(params: unknown = {}): Record<string, unknown> {
 export const queryKeys = Object.freeze({
     user: (userId: unknown, endpoint: unknown = '') =>
         withEndpoint(['user', userId], endpoint),
+    userAppearance: (
+        userId: unknown,
+        asSelf: unknown = false,
+        endpoint: unknown = ''
+    ) =>
+        withEndpoint(['user', userId, 'appearance', Boolean(asSelf)], endpoint),
     mutualCounts: (userId: unknown, endpoint: unknown = '') =>
         withEndpoint(['user', userId, 'mutualCounts'], endpoint),
     userGroups: (userId: unknown, endpoint: unknown = '') =>

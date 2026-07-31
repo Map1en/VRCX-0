@@ -81,6 +81,7 @@ interface UserProfileInput extends UserEndpointInput {
 
 interface UserAppearanceProfileInput extends UserEndpointInput {
     asSelf?: boolean;
+    force?: boolean;
 }
 
 interface UserGroupsInput extends UserEndpointInput {
@@ -243,7 +244,8 @@ async function getUserProfile({
 
 async function getUserAppearanceProfile({
     userId,
-    asSelf = false
+    asSelf = false,
+    force = false
 }: UserAppearanceProfileInput) {
     const normalizedUserId =
         typeof userId === 'string'
@@ -255,15 +257,27 @@ async function getUserAppearanceProfile({
         );
     }
 
-    const response = await commands.appVrchatUserProfileGet({
-        userId: normalizedUserId,
-        asSelf: asSelf === true
+    const normalizedAsSelf = asSelf === true;
+    return fetchCachedData({
+        queryKey: queryKeys.userAppearance(
+            normalizedUserId,
+            normalizedAsSelf,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
+        policy: entityQueryPolicies.userAppearance,
+        force,
+        queryFn: async () => {
+            const response = await commands.appVrchatUserProfileGet({
+                userId: normalizedUserId,
+                asSelf: normalizedAsSelf
+            });
+            const json = unwrapVrchatUserResponse<UserProfileEntity>(
+                response,
+                `profile/${encodeURIComponent(normalizedUserId)}`
+            ).json;
+            return isRecord(json) ? json : {};
+        }
     });
-    const json = unwrapVrchatUserResponse<UserProfileEntity>(
-        response,
-        `profile/${encodeURIComponent(normalizedUserId)}`
-    ).json;
-    return isRecord(json) ? json : {};
 }
 
 async function getMutualCounts({ userId }: UserEndpointInput) {
