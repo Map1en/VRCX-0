@@ -159,17 +159,20 @@ export function UserDialogHeaderBadges({
                 {PlatformIcon ? <PlatformIcon /> : platform.label}
             </Badge>
             {discordId ? (
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    className="h-5 rounded-4xl px-2 py-0.5 text-xs"
-                    aria-label={t('dialog.user.tags.open_in_discord')}
-                    title={t('dialog.user.tags.open_in_discord')}
-                    onClick={() => onOpenDiscordProfile(discordId)}
+                <Badge
+                    variant="outline"
+                    className="hover:bg-muted hover:text-muted-foreground cursor-pointer"
+                    render={
+                        <button
+                            type="button"
+                            aria-label={t('dialog.user.tags.open_in_discord')}
+                            title={t('dialog.user.tags.open_in_discord')}
+                            onClick={() => onOpenDiscordProfile(discordId)}
+                        />
+                    }
                 >
                     Discord
-                </Button>
+                </Badge>
             ) : null}
         </>
     );

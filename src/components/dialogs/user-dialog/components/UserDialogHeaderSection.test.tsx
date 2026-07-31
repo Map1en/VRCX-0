@@ -153,6 +153,25 @@ describe('UserDialogHeaderSection nameplate', () => {
         expect(actionButton.classList.contains('size-9')).toBe(true);
     });
 
+    it('renders the Discord action with the same outline style as profile badges', () => {
+        const headerModel = createHeaderModel();
+        headerModel.profile.discordId = '123456789012345678';
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const discordButton = screen.getByRole('button', {
+            name: 'dialog.user.tags.open_in_discord'
+        });
+
+        expect(discordButton.classList.contains('border-border')).toBe(true);
+        expect(discordButton.classList.contains('bg-secondary')).toBe(false);
+    });
+
     it.each([
         ['a static asset', nameplateEffect],
         ['a gradient', gradientNameplateEffect]
